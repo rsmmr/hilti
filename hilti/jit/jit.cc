@@ -60,7 +60,7 @@ JIT::~JIT()
 llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
 {
     // Or llvm::CodeGenOpt::Aggressive? (-O3)
-    auto opt = _ctx->options().optimize ? llvm::CodeGenOpt::Default : llvm::CodeGenOpt::None;
+    auto opt = _ctx->options().optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
 
     string errormsg;
 

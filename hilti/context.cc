@@ -9,6 +9,7 @@
 #include "autogen/hilti-config.h"
 #include "jit/jit.h"
 #include "options.h"
+#include "codegen/optimizer.h"
 
 using namespace hilti;
 using namespace hilti::passes;
@@ -345,7 +346,22 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
     _debugAST(this, module, "CodeGen");
 
     codegen::CodeGen cg(this, module->compilerContext()->options().libdirs_hlt);
-    return cg.generateLLVM(module);
+    auto compiled = cg.generateLLVM(module);
+
+    if ( ! compiled )
+        return nullptr;
+
+    if ( options().optimize ) {
+        if ( options().cgDebugging("context" ) )
+            std::cerr << "Optimizing compiled module ... " << std::endl;
+
+        codegen::Optimizer optimizer(this);
+
+        if ( ! optimizer.optimize(compiled, false) )
+            return nullptr;
+    }
+
+    return compiled;
 }
 
 bool CompilerContext::print(shared_ptr<Module> module, std::ostream& out, bool cfg)
@@ -469,7 +485,22 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         std::cerr << util::fmt("  Final set modules to link: %s ...", util::strjoin(names, ", ")) << std::endl;
     }
 
-    return linker.link(output, modules);
+    auto linked = linker.link(output, modules);
+
+    if ( ! linked )
+        return nullptr;
+
+    if ( options().optimize ) {
+        if ( options().cgDebugging("context" ) )
+            std::cerr << "Optimizing final linked module ... " << std::endl;
+
+        codegen::Optimizer optimizer(this);
+
+        if ( ! optimizer.optimize(linked, true) )
+            return nullptr;
+    }
+
+    return linked;
 }
 
 llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module)

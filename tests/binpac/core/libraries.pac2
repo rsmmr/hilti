@@ -1,0 +1,8 @@
+# @TEST-EXEC: pac-driver -D context -O %INPUT 2>&1 | grep -q libbinpac-rt.bc
+# @TEST-EXEC: pac-driver -D context -d %INPUT 2>&1 | grep -q libbinpac-rt-dbg.bc
+
+module Test;
+
+print "Hello, world!";
+print 42;
+print True;

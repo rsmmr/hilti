@@ -2992,7 +2992,7 @@ void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, con
         val = tmp;
     }
 
-    auto loc = llvmCurrentLocation(string("llvmDtor/") + location_addl);
+    auto loc = options().debug ? llvmCurrentLocation(string("llvmDtor/") + location_addl) : llvmConstNull();
 
     value_list args;
     args.push_back(llvmRtti(type));
@@ -3015,7 +3015,7 @@ void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, co
         val = tmp;
     }
 
-    auto loc = llvmCurrentLocation(string("llvmCctor/") + location_addl);
+    auto loc = options().debug ? llvmCurrentLocation(string("llvmCctor/") + location_addl) : llvmConstNull();
 
     value_list args;
     args.push_back(llvmRtti(type));

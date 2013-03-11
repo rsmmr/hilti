@@ -23,6 +23,12 @@
 #include <llvm/ADT/Triple.h>
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
 #include <llvm/Intrinsics.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetLibraryInfo.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Transforms/IPO/PassManagerBuilder.h>
+#include <llvm/Transforms/IPO.h>
+#include <llvm/Support/TargetSelect.h>
 
 #include "../common.h"
 

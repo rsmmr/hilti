@@ -1,0 +1,19 @@
+#! /usr/bin/env bash
+
+tmp=`basename $0`.$$.tmp
+
+cat >$tmp
+
+# Don't have these.
+if egrep -q '\[llvmDtor/' $tmp; then
+    echo "Pattern unexpectedly found"
+    exit 1
+fi
+
+# Have these.
+if ! egrep -q 'tail.*call.*trap' $tmp; then
+    echo "Expected pattern not found"
+    exit 1
+fi
+
+rm -f $tmp

@@ -1,0 +1,12 @@
+# @TEST-EXEC: hiltic -j -O %INPUT >outout
+# @TEST-EXEC: btest-diff output
+
+module Main
+
+import Hilti
+
+void run()
+{
+    call Hilti::print ("Hello, World!", True)
+}
+

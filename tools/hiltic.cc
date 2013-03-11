@@ -71,7 +71,7 @@ void usage()
             "  -L | --llvm-always    Like -l, but don't verify correctness first.\n"
             "  -V | --llvm-first     Like -L, but print each file individually to stdout and don't link.\n"
             "  -o | --output <file>  Specify output file.                    [Default: stdout].\n"
-            "  -O | --opt <n>        Optimization level from 0-3             [Default: 0].\n"
+            "  -O | --opt            Optimize generated code.                [Default: off].\n"
             "  -p | --print          Just output all parsed HILTI code again.\n"
             "  -c | --cfg            Add control/data flow information to output of -p.\n"
             "  -P | --prototypes     Generate C prototypes for HILTI module.\n"
@@ -223,7 +223,7 @@ int main(int argc, char** argv)
     hilti::Options options;
 
     while ( true ) {
-        int c = getopt_long(argc, argv, "AdD:hjpcFPWbClLsVo:O:vI:", long_options, 0);
+        int c = getopt_long(argc, argv, "AdD:hjpcFPWbClLsVo:OvI:", long_options, 0);
 
         if ( c < 0 )
             break;

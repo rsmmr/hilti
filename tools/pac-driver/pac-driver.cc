@@ -107,7 +107,7 @@ static void usage(const char* prog)
 #ifdef PAC_DRIVER_JIT
     fprintf(stderr, "    -d            Enable debug mode for JIT compilation\n");
     fprintf(stderr, "    -D <type>     Debug output during code generation; type can be %s\n", dbgstr.c_str());
-    fprintf(stderr, "    -O            Optimization level from 0-3             [Default: 0].\n");
+    fprintf(stderr, "    -O            Optimize generated code.             [Default: off].\n");
 #endif
     fprintf(stderr, "\n");
 
@@ -523,7 +523,7 @@ int main(int argc, char** argv)
     ::Options options;
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dO:BhD:UlTPg")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dOBhD:UlTPg")) != -1) {
 
         switch (ch) {
 

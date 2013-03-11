@@ -1,0 +1,14 @@
+# @TEST-EXEC: HILTI_DEBUG= hiltic -O -j    %INPUT -D context 2>&1 | grep -q libhilti-rt.bc
+# @TEST-EXEC: HILTI_DEBUG= hiltic -O -s -l %INPUT -D context 2>&1 | grep -q libhilti-rt.bc
+# @TEST-EXEC: HILTI_DEBUG= hiltic -d -O -j    %INPUT -D context 2>&1 | grep -q libhilti-rt-dbg.bc
+# @TEST-EXEC: HILTI_DEBUG= hiltic -d -O -s -l %INPUT -D context 2>&1 | grep -q libhilti-rt-dbg.bc
+
+module Main
+
+import Hilti
+
+void run()
+{
+    call Hilti::print ("Hello, World!", True)
+}
+

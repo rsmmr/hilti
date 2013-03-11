@@ -213,6 +213,7 @@ add_library (hilti STATIC
     codegen/instructions/vector.cc
     codegen/linker.cc
     codegen/loader.cc
+    codegen/optimizer.cc
     codegen/protogen.cc
     codegen/stmt-builder.cc
     codegen/storer.cc

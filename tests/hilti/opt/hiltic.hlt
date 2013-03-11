@@ -1,0 +1,11 @@
+# @TEST-EXEC:  hiltic -l -O %INPUT | ${SCRIPTS}/check-bitcode-is-optimized
+
+module Main
+
+import Hilti
+
+void run()
+{
+    call Hilti::print ("Hello, World!", True)
+}
+

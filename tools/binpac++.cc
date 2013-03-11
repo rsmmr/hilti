@@ -31,7 +31,7 @@ static struct option long_options[] = {
     { "output",  required_argument, 0, 'o' },
     { "version", no_argument, 0, 'v' },
     { "llvm", no_argument, 0, 'l' },
-    { "opt", required_argument, 0, 'O' },
+    { "optimize", no_argument, 0, 'O' },
     { "add-stdlibs", no_argument, 0, 's' },
     { 0, 0, 0, 0 }
 };
@@ -56,7 +56,7 @@ void usage()
             "  -p | --print          Just output all parsed BinPAC++ code again.\n"
             "  -W | --print-always   Like -p, but don't verify correctness first.\n"
             "  -l | --llvm           Output the final LLVM code.\n"
-            "  -O | --opt <n>        Optimization level from 0-3 (for -l)         [Default: 0].\n"
+            "  -O | --optimize       Optimize generated code (for -l         [Default: off].\n"
             "  -s | --add-stdlibs    Add standard HILTI runtime libraries (for -l).\n"
             "\n";
 }
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
     binpac::Options options;
 
     while ( true ) {
-        int c = getopt_long(argc, argv, "AcdD:o:nO:WlspI:vh", long_options, 0);
+        int c = getopt_long(argc, argv, "AcdD:o:nOWlspI:vh", long_options, 0);
 
         if ( c < 0 )
             break;
