@@ -151,7 +151,10 @@ llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const strin
             _dumpCall(func, args, where, ::util::fmt("type of parameter %d does not match prototype", i+1));
     }
 
-    return builder->CreateCall(callee, args, name);
+    auto cfunc = llvm::cast<llvm::Function>(callee);
+    auto ci = builder->CreateCall(callee, args, name);
+    ci->setCallingConv(cfunc->getCallingConv());
+    return ci;
 }
 
 llvm::MDNode* codegen::util::llvmMdFromValue(llvm::LLVMContext& ctx, llvm::Value* v)
