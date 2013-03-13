@@ -19,4 +19,10 @@ void run() {
     i = decr i
     i = decr i
     call Hilti::print (i)
+
+    i = incr_by i 2
+    call Hilti::print (i)
+
+    i = decr_by i 2
+    call Hilti::print (i)
 }
