@@ -94,6 +94,24 @@ hlt_bytes* hilti_bytes_to_lower(hlt_bytes* b, hlt_exception** excpt, hlt_executi
     return hlt_bytes_new_from_data(tmp, len, excpt, ctx);
 }
 
+hlt_bytes* hilti_bytes_to_upper(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
+    int8_t* tmp = hlt_malloc(len);
+    int8_t* p = tmp;
+
+    hlt_iterator_bytes cur = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
+
+    while ( ! hlt_iterator_bytes_eq(cur, end, excpt, ctx) )
+        *p++ = toupper(__hlt_bytes_extract_one(&cur, end, excpt, ctx));
+
+    GC_DTOR(cur, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+
+    return hlt_bytes_new_from_data(tmp, len, excpt, ctx);
+}
+
 int8_t hilti_bytes_starts_with(hlt_bytes* b, hlt_bytes* s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes_size len_b = hlt_bytes_len(b, excpt, ctx);
