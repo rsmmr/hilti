@@ -666,7 +666,7 @@ expr          : scoped_id                        { $$ = std::make_shared<express
               | expr EQ expr                     { $$ = makeOp(operator_::Equal, { $1, $3 }, loc(@$)); }
               | expr '<' expr                    { $$ = makeOp(operator_::Lower, { $1, $3 }, loc(@$)); }
               | expr PLUSASSIGN expr             { $$ = makeOp(operator_::PlusAssign, { $1, $3 }, loc(@$)); }
-              | expr MINUSASSIGN expr            { $$ = makeOp(operator_::PlusAssign, { $1, $3 }, loc(@$)); }
+              | expr MINUSASSIGN expr            { $$ = makeOp(operator_::MinusAssign, { $1, $3 }, loc(@$)); }
               | expr '[' expr ']' '=' expr       { $$ = makeOp(operator_::IndexAssign, { $1, $3, $6 }, loc(@$)); }
               | expr '.' member_expr tuple_expr  { $$ = makeOp(operator_::MethodCall, { $1, $3, $4 }, loc(@$)); }
               | CAST '<' type '>' '(' expr ')'   { $$ = makeOp(operator_::Cast, { $6, std::make_shared<expression::Type>($3) }, loc(@$)); }

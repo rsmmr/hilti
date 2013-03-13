@@ -179,6 +179,14 @@ void CodeBuilder::visit(expression::operator_::integer::Minus* i)
     setResult(result);
 }
 
+void CodeBuilder::visit(expression::operator_::integer::MinusAssign* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto op2 = cg()->hiltiExpression(i->op2(), i->op1()->type());
+    cg()->builder()->addInstruction(op1, hilti::instruction::integer::DecrBy, op1, op2);
+    setResult(op1);
+}
+
 void CodeBuilder::visit(expression::operator_::integer::Plus* i)
 {
     auto rtype = _intResultType(i);
@@ -187,6 +195,14 @@ void CodeBuilder::visit(expression::operator_::integer::Plus* i)
     auto op2 = cg()->hiltiExpression(i->op2(), rtype);
     cg()->builder()->addInstruction(result, hilti::instruction::integer::Add, op1, op2);
     setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::integer::PlusAssign* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto op2 = cg()->hiltiExpression(i->op2(), i->op1()->type());
+    cg()->builder()->addInstruction(op1, hilti::instruction::integer::IncrBy, op1, op2);
+    setResult(op1);
 }
 
 void CodeBuilder::visit(expression::operator_::integer::Mult* i)

@@ -19,7 +19,7 @@ void StatementBuilder::visit(statement::instruction::integer::Equal* i)
 
 void StatementBuilder::visit(statement::instruction::integer::Incr* i)
 {
-    auto width = as<type::Integer>(i->op1()->type())->width();
+    auto width = as<type::Integer>(i->target()->type())->width();
     auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
 
     auto result = builder()->CreateAdd(op1, cg()->llvmConstInt(1, width));
@@ -27,12 +27,34 @@ void StatementBuilder::visit(statement::instruction::integer::Incr* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::integer::IncrBy* i)
+{
+    auto width = as<type::Integer>(i->target()->type())->width();
+    auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
+    auto op2 = cg()->llvmValue(i->op2(), i->target()->type());
+
+    auto result = builder()->CreateAdd(op1, op2);
+
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::integer::Decr* i)
 {
-    auto width = as<type::Integer>(i->op1()->type())->width();
+    auto width = as<type::Integer>(i->target()->type())->width();
     auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
 
     auto result = builder()->CreateSub(op1, cg()->llvmConstInt(1, width));
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::integer::DecrBy* i)
+{
+    auto width = as<type::Integer>(i->target()->type())->width();
+    auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
+    auto op2 = cg()->llvmValue(i->op2(), i->target()->type());
+
+    auto result = builder()->CreateSub(op1, op2);
 
     cg()->llvmStore(i, result);
 }

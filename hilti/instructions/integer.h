@@ -58,6 +58,19 @@ iBegin(integer, Incr, "incr")
     )")
 iEnd
 
+iBegin(integer, IncrBy, "incr_by")
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Increments *op1* by *op2*.
+    )")
+iEnd
+
 iBegin(integer, Decr, "decr")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
@@ -68,6 +81,19 @@ iBegin(integer, Decr, "decr")
 
     iDoc(R"(
         Decrements *op1* by one.
+    )")
+iEnd
+
+iBegin(integer, DecrBy, "decr_by")
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Decreases *op1* by *op2*.
     )")
 iEnd
 

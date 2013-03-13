@@ -109,6 +109,20 @@ opBegin(integer::Plus)
     }
 opEnd
 
+opBegin(integer::PlusAssign)
+    opOp1(std::make_shared<type::Integer>())
+    opOp2(std::make_shared<type::Integer>())
+
+    opDoc("Increases an integer by a given amount.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return op1()->type();
+    }
+opEnd
+
 opBegin(integer::Minus)
     opOp1(std::make_shared<type::Integer>())
     opOp2(std::make_shared<type::Integer>())
@@ -123,6 +137,20 @@ opBegin(integer::Minus)
         return _resultType(op1(), op2());
     }
 
+opEnd
+
+opBegin(integer::MinusAssign)
+    opOp1(std::make_shared<type::Integer>())
+    opOp2(std::make_shared<type::Integer>())
+
+    opDoc("Decreases an integer by a given amount.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return op1()->type();
+    }
 opEnd
 
 opBegin(integer::Div)

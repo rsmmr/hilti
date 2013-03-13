@@ -75,7 +75,10 @@ a = 3;
 b = 4;
 print a ** b;
 
-
+a += 2;
+print a;
+a -= 4;
+print a;
 
 
 
