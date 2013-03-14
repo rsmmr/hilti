@@ -328,10 +328,18 @@ void Linker::makeHooks(const std::list<string>& module_names, llvm::Module* modu
         auto node = llvm::cast<llvm::MDNode>(decls->getOperand(i));
         auto name = llvm::cast<llvm::MDString>(node->getOperand(0))->getString();
 
-        decl.func = llvm::cast<llvm::Function>(node->getOperand(1));
+        auto op1 = llvm::cast_or_null<llvm::Constant>(node->getOperand(1));
+
+        if ( ! op1 || op1->isNullValue() )
+            // Optimization may throw out the function if it's not
+            // used/empty, in which case the pointer in the meta-data will be
+            // set to null.
+            continue;
+
+        decl.func = llvm::cast<llvm::Function>(op1);
 
         if ( node->getNumOperands() > 2 )
-            decl.result = node->getOperand(1)->getType();
+            decl.result = node->getOperand(2)->getType();
         else
             decl.result = nullptr;
 
