@@ -364,6 +364,10 @@ string util::basename(const string& path)
     return path.substr(i+1, string::npos);
 }
 
+bool util::makeDir(const string& path)
+{
+    return mkdir(path.c_str(), 0700) == 0;
+}
 
 string util::findInPaths(const string& file, const path_list& paths)
 {

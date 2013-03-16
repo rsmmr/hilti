@@ -15,6 +15,13 @@ binpac::CompilerContext::CompilerContext(const Options& options)
 
     if ( options.cgDebugging("visitors") )
         ast::enableDebuggingForAllVisitors();
+
+    if ( options.module_cache.size() ) {
+        if ( options.cgDebugging("cache") )
+            std::cerr << "Enabling module cache in " << options.module_cache << std::endl;
+
+        _cache = std::make_shared<::util::cache::FileCache>(options.module_cache);
+    }
 }
 
 llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules, std::list<string> libs, path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)

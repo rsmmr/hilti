@@ -108,6 +108,7 @@ static void usage(const char* prog)
     fprintf(stderr, "    -d            Enable debug mode for JIT compilation\n");
     fprintf(stderr, "    -D <type>     Debug output during code generation; type can be %s\n", dbgstr.c_str());
     fprintf(stderr, "    -O            Optimize generated code.             [Default: off].\n");
+    fprintf(stderr, "    -C            Use module cache.                    [Default: off].\n");
 #endif
     fprintf(stderr, "\n");
 
@@ -462,14 +463,7 @@ bool jitPac2(const std::list<string>& pac2, const binpac::Options& options)
     std::list<shared_ptr<hilti::Module>> hilti_modules;
 
     for ( auto p : pac2 ) {
-        auto module = PacContext->load(p);
-
-        if ( ! module ) {
-            fprintf(stderr, "loading %p failed\n", p.c_str());
-            return false;
-        }
-
-        auto hltmod = PacContext->compile(module);
+        auto hltmod = PacContext->compile(p);
 
         if ( ! hltmod ) {
             fprintf(stderr, "compiling %p failed\n", p.c_str());
@@ -523,7 +517,7 @@ int main(int argc, char** argv)
     ::Options options;
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dOBhD:UlTPg")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dOBhD:UlTPgC")) != -1) {
 
         switch (ch) {
 
@@ -566,6 +560,10 @@ int main(int argc, char** argv)
 
          case 'O':
             options.optimize = true;
+            break;
+
+         case 'C':
+            options.module_cache = ".cache";
             break;
 #endif
 

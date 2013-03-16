@@ -26,7 +26,7 @@ bool Options::cgDebugging(const string& label) const
 
 Options::string_set Options::cgDebugLabels() const
 {
-    return { "codegen", "linker", "parser", "scanner", "scopes", "context", "dump-ast", "print-ast", "visitors" };
+    return { "codegen", "linker", "parser", "scanner", "scopes", "context", "dump-ast", "print-ast", "visitors", "cache" };
 }
 
 Options::string_set Options::optimizationLabels() const
@@ -34,3 +34,16 @@ Options::string_set Options::optimizationLabels() const
     return string_set();
 }
 
+void Options::toCacheKey(::util::cache::FileCache::Key* key) const
+{
+    key->options += (debug ? "D" : "d");
+    key->options += (optimize ? "O" : "o");
+    key->options += (profile ? "P" : "p");
+    key->options += (verify ? "V" : "v");
+
+    for ( auto d : libdirs_hlt )
+        key->dirs.push_back(d);
+
+    for ( auto o : optimizations )
+        key->hashes.push_back(o);
+}

@@ -25,6 +25,7 @@ public:
 
     string_set cgDebugLabels() const override;
     string_set optimizationLabels() const override;
+    void toCacheKey(::util::cache::FileCache::Key* key) const override;
 };
 
 }

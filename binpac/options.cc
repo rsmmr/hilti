@@ -26,3 +26,11 @@ Options::string_set Options::optimizationLabels() const
 {
     return hilti::Options::optimizationLabels();
 }
+
+void Options::toCacheKey(::util::cache::FileCache::Key* key) const
+{
+    hilti::Options::toCacheKey(key);
+
+    for ( auto d : libdirs_pac2 )
+        key->dirs.push_back(d);
+}

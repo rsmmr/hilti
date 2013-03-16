@@ -23,15 +23,17 @@
 #include "codegen/codegen.h"
 #include "codegen/type-builder.h"
 
+#include "hilti/context.h"
+
 using namespace binpac;
 using namespace binpac::passes;
 
-const Options& CompilerContext::options() const
+const binpac::Options& binpac::CompilerContext::options() const
 {
     return *_options;
 }
 
-shared_ptr<binpac::Module> CompilerContext::load(string path, bool finalize)
+shared_ptr<binpac::Module> binpac::CompilerContext::load(string path, bool finalize)
 {
     path = util::strtolower(path);
 
@@ -65,7 +67,7 @@ shared_ptr<binpac::Module> CompilerContext::load(string path, bool finalize)
     if ( ! module )
         return nullptr;
 
-    if ( finalize && ! CompilerContext::finalize(module) )
+    if ( finalize && ! binpac::CompilerContext::finalize(module) )
         return nullptr;
 
     _modules.insert(std::make_pair(full_path, module));
@@ -74,7 +76,7 @@ shared_ptr<binpac::Module> CompilerContext::load(string path, bool finalize)
 }
 
 
-shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& sname)
+shared_ptr<binpac::Module> binpac::CompilerContext::parse(std::istream& in, const std::string& sname)
 {
     binpac_parser::Driver driver;
     driver.forwardLoggingTo(this);
@@ -83,7 +85,7 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
     return driver.parse(this, in, sname);
 }
 
-static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast::Logger& before)
+static void _debugAST(binpac::CompilerContext* ctx, shared_ptr<binpac::Module> module, const ast::Logger& before)
 {
     if ( ctx->options().cgDebugging("dump-ast") ) {
         std::cerr << std::endl
@@ -106,7 +108,7 @@ static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast
     }
 }
 
-bool CompilerContext::finalize(shared_ptr<Module> module)
+bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
 {
     // Just a double-check ...
     if ( ! OperatorRegistry::globalRegistry()->byKind(operator_::Plus).size() ) {
@@ -193,25 +195,74 @@ bool CompilerContext::finalize(shared_ptr<Module> module)
     return true;
 }
 
-shared_ptr<hilti::Module> CompilerContext::compile(shared_ptr<Module> module)
+shared_ptr<hilti::Module> binpac::CompilerContext::compile(shared_ptr<Module> module)
 {
     CodeGen codegen(this);
     return codegen.compile(module);
 }
 
-bool CompilerContext::print(shared_ptr<Module> module, std::ostream& out)
+shared_ptr<hilti::Module> binpac::CompilerContext::compile(const string& path)
+{
+    ::util::cache::FileCache::Key key;
+    key.scope = "hlt";
+    key.name = ::util::strreplace(path, "/", "_");
+    key.files.push_back(path);
+    options().toCacheKey(&key);
+
+    if ( _cache ) {
+        auto cache_path = _cache->lookup(key);
+
+        if ( cache_path.size() ) {
+            if ( auto mod = _hilti_context->loadModule(cache_path) ) {
+                if ( options().cgDebugging("cache") )
+                    std::cerr << "Reusing cached module for " << path << std::endl;
+
+                return mod;
+            }
+
+            else {
+                if ( options().cgDebugging("cache") )
+                    std::cerr << "Cached module for " << path << " did not compile" << std::endl;
+            }
+        }
+
+        if ( options().cgDebugging("cache") )
+            std::cerr << "No cached module for " << path << " found" << std::endl;
+
+    }
+
+    auto module = load(path);
+
+    if ( ! module )
+        return nullptr;
+
+    auto compiled = compile(module);
+
+    if ( ! compiled )
+        return nullptr;
+
+    if ( _cache ) {
+        std::stringstream src;
+        _hilti_context->print(compiled, src);
+        _cache->store(key, src.str());
+    }
+
+    return compiled;
+}
+
+bool binpac::CompilerContext::print(shared_ptr<Module> module, std::ostream& out)
 {
     passes::Printer printer(out);
     return printer.run(module);
 }
 
-bool CompilerContext::dump(shared_ptr<Node> ast, std::ostream& out)
+bool binpac::CompilerContext::dump(shared_ptr<Node> ast, std::ostream& out)
 {
     ast->dump(out);
     return true;
 }
 
-shared_ptr<hilti::CompilerContext> CompilerContext::hiltiContext() const
+shared_ptr<hilti::CompilerContext> binpac::CompilerContext::hiltiContext() const
 {
     return _hilti_context;
 }

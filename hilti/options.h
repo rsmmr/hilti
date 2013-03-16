@@ -6,7 +6,10 @@
 #include <set>
 #include <string>
 
+#include <util/file-cache.h>
+
 using std::string;
+
 
 namespace hilti {
 
@@ -54,6 +57,10 @@ public:
     /// list of valid labels. By default, this set is empty.
     string_set cg_debug;
 
+    /// A directory where to cache compiled modules. If left unset, caching
+    /// is disabled.
+    string module_cache;
+
     /// Returns true if the given label is enabled in \a optimization. This
     /// is just a convinience method.
     bool optimizing(const string& label) const;
@@ -67,6 +74,10 @@ public:
 
     /// Returns all available debugging options for the code generator.
     virtual string_set cgDebugLabels() const;
+
+    /// Initialized the cache key with option-specific values.
+    virtual void toCacheKey(::util::cache::FileCache::Key* key) const;
+
 };
 
 }

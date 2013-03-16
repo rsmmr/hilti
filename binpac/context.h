@@ -8,6 +8,7 @@
 namespace hilti { class Module; class Type; }
 namespace hilti { class CompilerContext; }
 namespace llvm  { class Module; }
+namespace util  { namespace cache { class FileCache;} }
 
 #include "libhilti/types.h"
 
@@ -80,6 +81,17 @@ public:
     /// Returns: The HILTI module, or null if errors are encountered. Passes
     /// ownership to the caller.
     shared_ptr<hilti::Module> compile(shared_ptr<Module> module);
+
+    /// Compiles a BinPAC++ source file into a HILTI module. Internally, this
+    /// is a combination of load() and compile(), with additional caching if
+    /// enabled. After compilation, the module needs to be linked with
+    /// linkModules().
+    ///
+    /// path: The relative or absolute path to the source to load.
+    ///
+    /// Returns: The HILTI module, or null if errors are encountered. Passes
+    /// ownership to the caller.
+    shared_ptr<hilti::Module> compile(const string& path);
 
     /// Links a set of compiled BinPAC++ modules into a single LLVM module.
     /// All modules produced by compileModule() must be linked (and all
@@ -164,6 +176,7 @@ public:
 private:
     shared_ptr<Options> _options;
     shared_ptr<hilti::CompilerContext> _hilti_context;
+    shared_ptr<util::cache::FileCache> _cache;
 
     /// We keep a global map of all module nodes we have instantiated so far,
     /// indexed by their path. This is for avoid duplicate imports, in

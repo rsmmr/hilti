@@ -140,6 +140,7 @@ extern string pathJoin(const string& p1, const string& p2);
 extern string findInPaths(const string& file, const path_list& paths);
 extern string dirname(const string& path);
 extern string basename(const string& path);
+extern bool makeDir(const string& path);
 
 extern void abort_with_backtrace();
 
