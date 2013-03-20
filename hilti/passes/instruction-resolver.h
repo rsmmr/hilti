@@ -34,7 +34,7 @@ protected:
    void visit(statement::Block *s) override;
 
 private:
-   bool run(shared_ptr<Node> module) override { assert(false); }
+   bool run(shared_ptr<Node> module) override { assert(false); return false; }
    void processInstruction(shared_ptr<statement::Instruction> instr, shared_ptr<ID> id);
 
    bool _report_errors = true;

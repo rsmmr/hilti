@@ -36,7 +36,7 @@ public:
     virtual bool _isConstant() const { return false; }
 
     // See Expression::type().
-    virtual shared_ptr<Type> _type() const { assert(false); }
+    virtual shared_ptr<Type> _type() const { assert(false); return nullptr; }
 
 };
 

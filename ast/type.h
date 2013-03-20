@@ -18,7 +18,7 @@ template<class AstInfo>
 class TypeOverrider : public Overrider<typename AstInfo::type> {
 public:
     /// See Type::repr().
-    virtual string repr() const { assert(false); }
+    virtual string repr() const { assert(false); return ""; }
 };
 
 /// Base class for AST nodes representing types.
