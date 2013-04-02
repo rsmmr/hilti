@@ -43,16 +43,6 @@ struct __hlt_global_state {
     int8_t multi_threaded;
     int8_t thread_mgr_terminate;
 
-#ifdef DEBUG
-    uint64_t job_counter;
-    FILE* debug_out;
-    _Atomic(uint_fast64_t) debug_counter;
-    _Atomic(uint_fast64_t) num_allocs;
-    _Atomic(uint_fast64_t) num_deallocs;
-    _Atomic(uint_fast64_t) num_refs;
-    _Atomic(uint_fast64_t) num_unrefs;
-#endif
-
     // hook.c
     hlt_hook_state* hook_state;
     pthread_mutex_t hook_state_lock; // Lock to protect access to hook_state.
@@ -65,6 +55,19 @@ struct __hlt_global_state {
     int8_t profiling_enabled;
     int8_t papi_available;
     int papi_set;
+
+    // The following are for debugging only. However, we can't compile them
+    // out in the non-debugging version because a host application might link
+    // to a different runtime version that compiled code, but both may still
+    // access the same global state object. (Actually having these at the end
+    // could work, but don't want to rely on that.)
+    uint64_t job_counter;
+    FILE* debug_out;
+    _Atomic(uint_fast64_t) debug_counter;
+    _Atomic(uint_fast64_t) num_allocs;
+    _Atomic(uint_fast64_t) num_deallocs;
+    _Atomic(uint_fast64_t) num_refs;
+    _Atomic(uint_fast64_t) num_unrefs;
 };
 
 // A type holding all of libhilti's global state.

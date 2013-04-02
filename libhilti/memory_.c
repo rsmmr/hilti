@@ -10,6 +10,7 @@
 #include "debug.h"
 
 #ifdef DEBUG
+
 const char* __hlt_make_location(const char* file, int line)
 {
     static char buffer[128];
@@ -283,17 +284,13 @@ hlt_free_list* hlt_free_list_new()
 {
     hlt_free_list* list = hlt_malloc(sizeof(hlt_free_list));
     list->pool = 0;
-#ifdef DEBUG
     list->size = 0;
-#endif
     return list;
 }
 
 void* hlt_free_list_alloc(hlt_free_list* list, size_t size)
 {
-#ifdef DEBUG
     assert(size == list->size || ! list->size);
-#endif
 
     __hlt_free_list_block* b = 0;
 
@@ -304,9 +301,7 @@ void* hlt_free_list_alloc(hlt_free_list* list, size_t size)
     }
     else {
         b = (__hlt_free_list_block*) hlt_malloc(sizeof(__hlt_free_list_block) + size);
-#ifdef DEBUG
         list->size = size;
-#endif
     }
 
     return ((char *)b) + sizeof(__hlt_free_list_block*);
@@ -314,9 +309,7 @@ void* hlt_free_list_alloc(hlt_free_list* list, size_t size)
 
 void hlt_free_list_free(hlt_free_list* list, void* p, size_t size)
 {
-#ifdef DEBUG
     assert(size == list->size);
-#endif
 
     __hlt_free_list_block* b = (__hlt_free_list_block*) (((char *)p) - sizeof(__hlt_free_list_block*));
     b->next = list->pool;
@@ -341,18 +334,11 @@ hlt_memory_stats hlt_memory_statistics()
     hlt_memory_stats stats;
     hlt_memory_usage(&stats.size_heap, &stats.size_alloced);
 
-#ifdef DEBUG
     __hlt_global_state* globals = __hlt_globals();
     stats.num_allocs = globals->num_allocs;
     stats.num_deallocs = globals->num_deallocs;
     stats.num_refs = globals->num_refs;
     stats.num_unrefs = globals->num_unrefs;
-#else
-    stats.num_allocs = 0;
-    stats.num_deallocs = 0;
-    stats.num_refs = 0;
-    stats.num_unrefs = 0;
-#endif
 
     return stats;
 }

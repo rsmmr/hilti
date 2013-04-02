@@ -208,9 +208,7 @@ typedef struct __hlt_free_list_block {
 
 typedef struct {
     __hlt_free_list_block* pool;
-#ifdef DEBUG
     size_t size; // For ensuring the size arguments remain consistent.
-#endif
 } hlt_free_list;
 
 /// Creates a new free list managing memory objects.
