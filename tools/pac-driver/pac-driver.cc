@@ -339,11 +339,20 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
     if ( ! chunk_size ) {
         // Feed all input at once.
         hlt_bytes_freeze(input, 1, &excpt, ctx);
+
+        if ( driver_debug )
+            fprintf(stderr, "--- pac-driver: starting parsing single input chunk.\n");
+
         void *pobj = (*p->parse_func)(input, 0, &excpt, ctx);
+
+        if ( driver_debug )
+            fprintf(stderr, "--- pac-driver: done parsing single input chunk.\n");
+
         GC_DTOR_GENERIC(&pobj, p->type_info);
         GC_DTOR(input, hlt_bytes);
         GC_DTOR(cur, hlt_iterator_bytes);
         check_exception(excpt);
+        dump_memstats();
         return;
     }
 
