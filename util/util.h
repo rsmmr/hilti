@@ -133,6 +133,9 @@ extern string escapeUTF8(const string& s);
 /// Returns: The escaped string.
 extern string escapeBytes(const string& s);
 
+/// Returns the curren time in seconds since the epoch.
+extern double currentTime();
+
 extern bool pathExists(const string& path);
 extern bool pathIsFile(const string& path);
 extern bool pathIsDir(const string& path);

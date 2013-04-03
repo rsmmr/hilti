@@ -82,7 +82,11 @@ shared_ptr<binpac::Module> binpac::CompilerContext::parse(std::istream& in, cons
     driver.forwardLoggingTo(this);
     driver.enableDebug(options().cgDebugging("scanner"), options().cgDebugging("parser"));
 
-    return driver.parse(this, in, sname);
+    _beginPass(sname, "Parser");
+    auto module = driver.parse(this, in, sname);
+    _endPass();
+
+    return module;
 }
 
 static void _debugAST(binpac::CompilerContext* ctx, shared_ptr<binpac::Module> module, const ast::Logger& before)
@@ -108,6 +112,56 @@ static void _debugAST(binpac::CompilerContext* ctx, shared_ptr<binpac::Module> m
     }
 }
 
+void binpac::CompilerContext::_beginPass(const string& module, const string& name)
+{
+    PassInfo pass;
+    pass.module = module;
+    pass.time = ::util::currentTime();
+    pass.name = name;
+    pass.cached = false;
+    _passes.push_back(pass);
+}
+
+void binpac::CompilerContext::_beginPass(shared_ptr<Module> module, const string& name)
+{
+    assert(module);
+    _debugAST(this, module, name);
+    _beginPass(module->id()->pathAsString(), name);
+}
+
+void binpac::CompilerContext::_beginPass(shared_ptr<Module> module, const ast::Logger& pass)
+{
+    _beginPass(module, pass.loggerName());
+}
+
+void binpac::CompilerContext::_beginPass(const string& module, const ast::Logger& pass)
+{
+    _beginPass(module, pass.loggerName());
+}
+
+void binpac::CompilerContext::_endPass()
+{
+    assert(_passes.size());
+    auto pass = _passes.back();
+
+    if ( options().cgDebugging("passes") ) {
+        auto cached = pass.cached ? " (cached)" : "";
+        std::cerr << util::fmt("(%2.2fs) binpac::%s [module \"%s\"] %s",
+                               util::currentTime() - pass.time, pass.name, pass.module, cached) << std::endl;
+    }
+
+    _passes.pop_back();
+}
+
+void binpac::CompilerContext::_markPassAsCached()
+{
+    assert(_passes.size());
+    auto pass = _passes.back();
+    pass.cached = true;
+    _passes.pop_back();
+    _passes.push_back(pass);
+}
+
 bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
 {
     // Just a double-check ...
@@ -125,71 +179,91 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
     passes::UnitScopeBuilder unit_scope_builder;
     passes::Validator        validator;
 
-    _debugAST(this, module, scope_builder);
+    _beginPass(module, scope_builder);
 
     if ( ! scope_builder.run(module) )
         return false;
 
+    _endPass();
+
     if ( options().cgDebugging("scopes") )
         scope_printer.run(module);
 
-    _debugAST(this, module, id_resolver);
+    _beginPass(module, id_resolver);
 
     if ( ! id_resolver.run(module, false) )
         return false;
 
-    _debugAST(this, module, unit_scope_builder);
+    _endPass();
+
+    _beginPass(module, unit_scope_builder);
 
     if ( ! unit_scope_builder.run(module) )
         return false;
 
-    _debugAST(this, module, id_resolver);
+    _endPass();
+
+    _beginPass(module, id_resolver);
 
     if ( ! id_resolver.run(module, true) )
         return false;
 
-    _debugAST(this, module, overload_resolver);
+    _endPass();
+
+    _beginPass(module, overload_resolver);
 
     if ( ! overload_resolver.run(module) )
         return false;
 
-    _debugAST(this, module, op_resolver);
+    _endPass();
+
+    _beginPass(module, op_resolver);
 
     if ( ! op_resolver.run(module) )
         return false;
 
+    _endPass();
+
     // The operators may have some unresolved types, too.
-    _debugAST(this, module, id_resolver);
+    _beginPass(module, id_resolver);
     if ( ! id_resolver.run(module, true) )
         return false;
 
-    _debugAST(this, module, validator);
+    _endPass();
 
     if ( options().verify ) {
-        _debugAST(this, module, validator);
+        _beginPass(module, validator);
 
         if ( ! validator.run(module) )
             return false;
+
+        _endPass();
     }
 
-    _debugAST(this, module, normalizer);
+    _beginPass(module, normalizer);
 
     if ( ! normalizer.run(module) )
         return false;
 
+    _endPass();
+
     if ( options().cgDebugging("grammars") )
         grammar_builder.enableDebug();
 
-    _debugAST(this, module, grammar_builder);
+    _beginPass(module, grammar_builder);
 
     if ( ! grammar_builder.run(module) )
         return false;
 
+    _endPass();
+
     if ( options().verify ) {
-        _debugAST(this, module, validator);
+        _beginPass(module, validator);
 
         if ( ! validator.run(module) )
             return false;
+
+        _endPass();
     }
 
     return true;
@@ -198,7 +272,14 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
 shared_ptr<hilti::Module> binpac::CompilerContext::compile(shared_ptr<Module> module)
 {
     CodeGen codegen(this);
-    return codegen.compile(module);
+
+    _beginPass(module, "CodeGen");
+
+    auto m = codegen.compile(module);
+
+    _endPass();
+
+    return m;
 }
 
 shared_ptr<hilti::Module> binpac::CompilerContext::compile(const string& path)
@@ -213,14 +294,20 @@ shared_ptr<hilti::Module> binpac::CompilerContext::compile(const string& path)
         auto cache_path = _cache->lookup(key);
 
         if ( cache_path.size() ) {
+            _beginPass(path, "LoadFromCache");
+
             if ( auto mod = _hilti_context->loadModule(cache_path) ) {
                 if ( options().cgDebugging("cache") )
                     std::cerr << "Reusing cached module for " << path << std::endl;
 
+                _markPassAsCached();
+                _endPass();
                 return mod;
             }
 
             else {
+                _endPass();
+
                 if ( options().cgDebugging("cache") )
                     std::cerr << "Cached module for " << path << " did not compile" << std::endl;
             }
@@ -246,6 +333,8 @@ shared_ptr<hilti::Module> binpac::CompilerContext::compile(const string& path)
         _hilti_context->print(compiled, src);
         _cache->store(key, src.str());
     }
+
+    _endPass();
 
     return compiled;
 }

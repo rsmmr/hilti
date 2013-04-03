@@ -1,6 +1,7 @@
 
 #include <algorithm>
 
+#include <sys/time.h>
 #include <sys/stat.h>
 #include <execinfo.h>
 
@@ -389,3 +390,9 @@ void util::abort_with_backtrace()
     abort();
 }
 
+double util::currentTime()
+{
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return double(tv.tv_sec) + double(tv.tv_usec) / 1e6;
+}

@@ -140,9 +140,54 @@ static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const str
     }
 }
 
-static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast::Logger& before)
+void CompilerContext::_beginPass(const string& module, const string& name)
 {
-    _debugAST(ctx, module, before.loggerName());
+    PassInfo pass;
+    pass.module = module;
+    pass.time = ::util::currentTime();
+    pass.name = name;
+    pass.cached = false;
+    _passes.push_back(pass);
+}
+
+void CompilerContext::_beginPass(shared_ptr<Module> module, const string& name)
+{
+    assert(module);
+    _debugAST(this, module, name);
+    _beginPass(module->id()->pathAsString(), name);
+}
+
+void CompilerContext::_beginPass(shared_ptr<Module> module, const ast::Logger& pass)
+{
+    _beginPass(module, pass.loggerName());
+}
+
+void CompilerContext::_beginPass(const string& module, const ast::Logger& pass)
+{
+    _beginPass(module, pass.loggerName());
+}
+
+void CompilerContext::_endPass()
+{
+    assert(_passes.size());
+    auto pass = _passes.back();
+
+    if ( options().cgDebugging("passes") ) {
+        auto cached = pass.cached ? " (cached)" : "";
+        std::cerr << util::fmt("(%2.2fs) hilti::%s [module \"%s\"] %s",
+                               util::currentTime() - pass.time, pass.name, pass.module, cached) << std::endl;
+    }
+
+    _passes.pop_back();
+}
+
+void CompilerContext::_markPassAsCached()
+{
+    assert(_passes.size());
+    auto pass = _passes.back();
+    pass.cached = true;
+    _passes.pop_back();
+    _passes.push_back(pass);
 }
 
 bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
@@ -163,73 +208,91 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     passes::Validator             validator;
     passes::ScopeBuilder          scope_builder(this);
 
-    _debugAST(this, module, instruction_normalizer);
+    _beginPass(module, instruction_normalizer);
 
     if ( ! instruction_normalizer.run(module) )
         return false;
 
-    _debugAST(this, module, block_flattener);
+    _endPass();
+
+    _beginPass(module, block_flattener);
 
     if ( ! block_flattener.run(module) )
         return false;
 
-    _debugAST(this, module, instruction_resolver);
+    _endPass();
+
+    _beginPass(module, instruction_resolver);
 
     if ( ! instruction_resolver.run(module, false) )
         return false;
 
-    _debugAST(this, module, block_normalizer);
+    _endPass();
+
+    _beginPass(module, block_normalizer);
 
     if ( ! block_normalizer.run(module) )
         return false;
 
+    _endPass();
+
     // Rebuilt scopes.
-    _debugAST(this, module, scope_builder);
+    _beginPass(module, scope_builder);
 
     if ( ! scope_builder.run(module) )
             return false;
 
-    _debugAST(this, module, instruction_resolver);
+    _endPass();
+
+    _beginPass(module, instruction_resolver);
 
     if ( ! instruction_resolver.run(module, false) )
         return false;
 
+    _endPass();
+
     // Run these again, we have inserted new instructions.
 
-    _debugAST(this, module, id_resolver);
+    _beginPass(module, id_resolver);
 
     if ( ! id_resolver.run(module, true) )
         return false;
 
-    _debugAST(this, module, instruction_resolver);
+    _endPass();
+
+    _beginPass(module, instruction_resolver);
 
     if ( ! instruction_resolver.run(module, true) )
         return false;
 
-    _debugAST(this, module, validator);
+    _endPass();
+
+    _beginPass(module, validator);
 
     if ( options().verify && ! validator.run(module) )
         return false;
 
-#if 1
+    _endPass();
+
     auto cfg = std::make_shared<passes::CFG>(this);
 
-    _debugAST(this, module, *cfg);
+    _beginPass(module, *cfg);
 
     if ( ! cfg->run(module) )
         return false;
 
+    _endPass();
+
     auto liveness = std::make_shared<passes::Liveness>(this, cfg);
 
-    _debugAST(this, module, *liveness);
+    _beginPass(module, *liveness);
 
     if ( ! liveness->run(module) )
         return false;
 
+    _endPass();
+
     module->setPasses(cfg, liveness);
-#else
-    module->setPasses(0, 0);
-#endif
 
     return true;
 }
@@ -270,14 +333,17 @@ bool CompilerContext::finalize(shared_ptr<Module> module)
         passes::ScopeBuilder scope_builder(this);
         passes::ScopePrinter scope_printer(std::cerr);
 
-        _debugAST(this, module, scope_builder);
+        _beginPass(module, scope_builder);
 
         if ( ! scope_builder.run(module) )
             return false;
 
+        _endPass();
+
         if ( options().cgDebugging("scopes") ) {
-            _debugAST(this, module, scope_printer);
+            _beginPass(module, scope_printer);
             scope_printer.run(module);
+            _endPass();
         }
 
     }
@@ -287,10 +353,12 @@ bool CompilerContext::finalize(shared_ptr<Module> module)
 
         passes::IdResolver id_resolver;
 
-        _debugAST(this, module, id_resolver);
+        _beginPass(module, id_resolver);
 
         if ( ! id_resolver.run(module, false) )
             return false;
+
+        _endPass();
     }
 
     for ( auto m : _modules ) {
@@ -335,7 +403,12 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
     hilti_parser::Driver driver;
     driver.forwardLoggingTo(this);
     driver.enableDebug(options().cgDebugging("scanner"), options().cgDebugging("parser"));
-    return driver.parse(shared_from_this(), in, sname);
+
+    _beginPass(sname, "Parser");
+    auto module = driver.parse(shared_from_this(), in, sname);
+    _endPass();
+
+    return module;
 }
 
 llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
@@ -343,7 +416,7 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Compiling module %s ...", module->id()->pathAsString()) << std::endl;
 
-    _debugAST(this, module, "CodeGen");
+    _beginPass(module, "CodeGen");
 
     codegen::CodeGen cg(this, module->compilerContext()->options().libdirs_hlt);
     auto compiled = cg.generateLLVM(module);
@@ -351,14 +424,20 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
     if ( ! compiled )
         return nullptr;
 
+    _endPass();
+
     if ( options().optimize ) {
         if ( options().cgDebugging("context" ) )
             std::cerr << "Optimizing compiled module ... " << std::endl;
 
         codegen::Optimizer optimizer(this);
 
+        _beginPass(module, optimizer);
+
         if ( ! optimizer.optimize(compiled, false) )
             return nullptr;
+
+        _endPass();
     }
 
     return compiled;
@@ -485,10 +564,14 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         std::cerr << util::fmt("  Final set modules to link: %s ...", util::strjoin(names, ", ")) << std::endl;
     }
 
+    _beginPass(output, linker);
+
     auto linked = linker.link(output, modules);
 
     if ( ! linked )
         return nullptr;
+
+    _endPass();
 
     if ( options().optimize ) {
         if ( options().cgDebugging("context" ) )
@@ -496,8 +579,12 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
 
         codegen::Optimizer optimizer(this);
 
+        _beginPass(output, optimizer);
+
         if ( ! optimizer.optimize(linked, true) )
             return nullptr;
+
+        _endPass();
     }
 
     return linked;
@@ -511,7 +598,13 @@ llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module)
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("JITing module %s ...", module->getModuleIdentifier()) << std::endl;
 
-    return _jit->jitModule(module);
+    _beginPass("<JIT>", "JIT");
+
+    auto ee = _jit->jitModule(module);
+
+    _endPass();
+
+    return ee;
 }
 
 void* CompilerContext::nativeFunction(llvm::Module* module, llvm::ExecutionEngine* ee, const string& function)

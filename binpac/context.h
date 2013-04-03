@@ -178,10 +178,40 @@ private:
     shared_ptr<hilti::CompilerContext> _hilti_context;
     shared_ptr<util::cache::FileCache> _cache;
 
+    /// If debugging stream cg-passes is set, log the beginning of a pass. If timing is requested, 
+    ///
+    /// module: The current module.
+    ///
+    /// pass: The pass. All we need from it is the name, so this is actually
+    /// more generic
+    ///
+    void _beginPass(shared_ptr<Module> module, const ast::Logger& pass);
+    void _beginPass(shared_ptr<Module> module, const string& name);
+    void _beginPass(const string& module, const string& name);
+    void _beginPass(const string& module, const ast::Logger& pass);
+
+    /// If debugging stream cg-passes is set, log the end of the most recent
+    /// pass.
+    void _endPass();
+
+    /// Sets the \a cached flag in the current pass.
+    void _markPassAsCached();
+
     /// We keep a global map of all module nodes we have instantiated so far,
     /// indexed by their path. This is for avoid duplicate imports, in
     /// particular when encountering cycles.
     std::map<string, shared_ptr<Module>> _modules;
+
+    // Tracking passes.
+    struct PassInfo {
+        string module;
+        double time;
+        string name;
+        bool cached;
+    };
+
+    typedef std::list<PassInfo> pass_list;
+    pass_list _passes;
 };
 
 }

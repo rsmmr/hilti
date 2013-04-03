@@ -232,6 +232,25 @@ private:
     ///
     bool _finalizeModule(shared_ptr<Module> module);
 
+    /// If debugging stream cg-passes is set, log the beginning of a pass. If timing is requested, 
+    ///
+    /// module: The current module.
+    ///
+    /// pass: The pass. All we need from it is the name, so this is actually
+    /// more generic
+    ///
+    void _beginPass(shared_ptr<Module> module, const ast::Logger& pass);
+    void _beginPass(shared_ptr<Module> module, const string& name);
+    void _beginPass(const string& module, const string& name);
+    void _beginPass(const string& module, const ast::Logger& pass);
+
+    /// If debugging stream cg-passes is set, log the end of the most recent
+    /// pass.
+    void _endPass();
+
+    /// Sets the \a cached flag in the current pass.
+    void _markPassAsCached();
+
     shared_ptr<Options> _options;
 
     jit::JIT* _jit = nullptr;
@@ -244,6 +263,17 @@ private:
     std::set<string> _loaded;
 
     std::list<shared_ptr<ID>> _imported;
+
+    // Tracking passes.
+    struct PassInfo {
+        string module;
+        double time;
+        string name;
+        bool cached;
+    };
+
+    typedef std::list<PassInfo> pass_list;
+    pass_list _passes;
 };
 
 }
