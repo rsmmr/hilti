@@ -158,7 +158,7 @@ string scopedID(Printer<AstInfo>* printer, Expr expr, Id id)
     if ( expr && expr->scope().size() ) {
         auto path = id->pathAsString();
         auto scope = expr->scope() + "::";
-        return util::startsWith(path, scope) ? path : scope + path;
+        return ::util::startsWith(path, scope) ? path : scope + path;
     }
     else
         return id->pathAsString();

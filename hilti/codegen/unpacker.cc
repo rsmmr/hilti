@@ -193,7 +193,7 @@ static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackR
     }
 
     else
-        cg->llvmGCClear(result.value_ptr, bytes_type);
+        cg->llvmGCClear(result.value_ptr, bytes_type, "bytes-unpack");
 
     // Leave builder on stack.
 }

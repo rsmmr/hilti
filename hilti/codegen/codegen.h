@@ -1529,7 +1529,7 @@ public:
    void llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone, bool dtor_first = true);
 
    /// XXXX
-   void llvmGCClear(llvm::Value* addr, shared_ptr<Type> type);
+   void llvmGCClear(llvm::Value* addr, shared_ptr<Type> type, const char* tag);
 
    /// XXXX
    void llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type);

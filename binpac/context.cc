@@ -114,12 +114,12 @@ static void _debugAST(binpac::CompilerContext* ctx, shared_ptr<binpac::Module> m
 
 void binpac::CompilerContext::_beginPass(const string& module, const string& name)
 {
-    PassInfo pass;
+    hilti::CompilerContext::PassInfo pass;
     pass.module = module;
     pass.time = ::util::currentTime();
     pass.name = name;
     pass.cached = false;
-    _passes.push_back(pass);
+    _hilti_context->passes().push_back(pass);
 }
 
 void binpac::CompilerContext::_beginPass(shared_ptr<Module> module, const string& name)
@@ -141,25 +141,32 @@ void binpac::CompilerContext::_beginPass(const string& module, const ast::Logger
 
 void binpac::CompilerContext::_endPass()
 {
-    assert(_passes.size());
-    auto pass = _passes.back();
+    assert(_hilti_context->passes().size());
+    auto pass = _hilti_context->passes().back();
 
-    if ( options().cgDebugging("passes") ) {
+    auto cg_time = options().cgDebugging("time");
+    auto cgpasses = options().cgDebugging("passes");
+
+    if ( cg_time || cgpasses ) {
+        auto delta = util::currentTime() - pass.time;
         auto cached = pass.cached ? " (cached)" : "";
-        std::cerr << util::fmt("(%2.2fs) binpac::%s [module \"%s\"] %s",
-                               util::currentTime() - pass.time, pass.name, pass.module, cached) << std::endl;
+        auto indent = string(_hilti_context->passes().size(), ' ');
+
+        if ( cgpasses || delta >= 0.1 || pass.cached )
+            std::cerr << util::fmt("(%2.2fs) %sbinpac::%s [module \"%s\"] %s",
+                                   delta, indent, pass.name, pass.module, cached) << std::endl;
     }
 
-    _passes.pop_back();
+    _hilti_context->passes().pop_back();
 }
 
 void binpac::CompilerContext::_markPassAsCached()
 {
-    assert(_passes.size());
-    auto pass = _passes.back();
+    assert(_hilti_context->passes().size());
+    auto pass = _hilti_context->passes().back();
     pass.cached = true;
-    _passes.pop_back();
-    _passes.push_back(pass);
+    _hilti_context->passes().pop_back();
+    _hilti_context->passes().push_back(pass);
 }
 
 bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
@@ -271,6 +278,46 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
 
 shared_ptr<hilti::Module> binpac::CompilerContext::compile(shared_ptr<Module> module)
 {
+#if 0
+    auto name = module->id()->name();
+
+    std::stringstream pac2;
+    print(module, pac2);
+
+    ::util::cache::FileCache::Key key;
+    key.scope = "hlt";
+    key.name = name;
+    key.hashes.push_back(::util::cache::hash(pac2));
+    options().toCacheKey(&key);
+
+    if ( _cache ) {
+        auto cache_path = _cache->lookup(key);
+
+        if ( cache_path.size() ) {
+            _beginPass(name, "LoadFromCache");
+
+            if ( auto mod = _hilti_context->loadModule(cache_path) ) {
+                if ( options().cgDebugging("cache") )
+                    std::cerr << "Reusing cached module for " << name << std::endl;
+
+                _markPassAsCached();
+                _endPass();
+                return mod;
+            }
+
+            else {
+                _endPass();
+
+                if ( options().cgDebugging("cache") )
+                    std::cerr << "Cached module for " << name << " did not compile" << std::endl;
+            }
+        }
+
+        if ( options().cgDebugging("cache") )
+            std::cerr << "No cached module for " << name << " found" << std::endl;
+
+    }
+#endif
     CodeGen codegen(this);
 
     _beginPass(module, "CodeGen");
@@ -279,11 +326,19 @@ shared_ptr<hilti::Module> binpac::CompilerContext::compile(shared_ptr<Module> mo
 
     _endPass();
 
+#if 0
+    if ( _cache ) {
+        std::stringstream src;
+        _hilti_context->print(m, src);
+        _cache->store(key, src.str());
+    }
+#endif
     return m;
 }
 
 shared_ptr<hilti::Module> binpac::CompilerContext::compile(const string& path)
 {
+#if 0
     ::util::cache::FileCache::Key key;
     key.scope = "hlt";
     key.name = ::util::strreplace(path, "/", "_");
@@ -317,6 +372,7 @@ shared_ptr<hilti::Module> binpac::CompilerContext::compile(const string& path)
             std::cerr << "No cached module for " << path << " found" << std::endl;
 
     }
+#endif
 
     auto module = load(path);
 
@@ -328,13 +384,13 @@ shared_ptr<hilti::Module> binpac::CompilerContext::compile(const string& path)
     if ( ! compiled )
         return nullptr;
 
+#if 0
     if ( _cache ) {
         std::stringstream src;
         _hilti_context->print(compiled, src);
         _cache->store(key, src.str());
     }
-
-    _endPass();
+#endif
 
     return compiled;
 }

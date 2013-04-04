@@ -22,15 +22,6 @@ Liveness::~Liveness()
 {
 }
 
-static string renderSet(const Liveness::variable_set& vars)
-{
-    std::set<string> s;
-    for ( auto v : vars )
-        s.insert(v->name);
-
-    return util::strjoin(s, ", ");
-}
-
 size_t Liveness::hashLiveness()
 {
     uint64_t hash = 0;

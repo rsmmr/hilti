@@ -162,17 +162,20 @@ bool FileCache::store(const Key& key, std::istream& data)
         return false;
 
     auto fname = fileForKey(key);
-    auto out = std::ofstream(fname + ".key");
+    auto skey = string("key.") + fname;
+    auto sdata = string("data.") + fname;
+
+    auto out = std::ofstream(skey);
     out << key;
     out.close();
 
-    out = std::ofstream(fname + ".data");
+    out = std::ofstream(sdata);
     out << data.rdbuf();
     out.close();
 
     auto ct = currentTime();
-    touchFile(fname + ".key", ct);
-    touchFile(fname + ".data", ct);
+    touchFile(skey, ct);
+    touchFile(sdata, ct);
 
     return true;
 }

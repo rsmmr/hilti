@@ -59,8 +59,8 @@ JIT::~JIT()
 
 llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
 {
-    // Or llvm::CodeGenOpt::Aggressive? (-O3)
-    auto opt = _ctx->options().optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
+    // Seems llvm::CodeGenOpt::Aggressive? (-O3) hangs here.
+    auto opt = _ctx->options().optimize ? llvm::CodeGenOpt::Default : llvm::CodeGenOpt::None;
 
     string errormsg;
 
@@ -88,8 +88,8 @@ llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
         return nullptr;
     }
 
-    // ee->DisableLazyCompilation(true);
-    // ee->runStaticConstructorsDestructors(false);
+    ee->DisableLazyCompilation(true);
+    ee->runStaticConstructorsDestructors(false);
 
     return ee;
 }
@@ -109,6 +109,7 @@ void* JIT::nativeFunction(llvm::ExecutionEngine* ee, llvm::Module* module, const
     }
 
     _mm->invalidateInstructionCache();
+
     return fp;
 }
 

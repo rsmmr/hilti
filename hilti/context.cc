@@ -18,6 +18,13 @@ CompilerContext::CompilerContext(const Options& options)
 {
     _options = std::shared_ptr<Options>(new Options(options));
 
+    if ( options.module_cache.size() ) {
+        if ( options.cgDebugging("cache") )
+            std::cerr << "Enabling module cache in " << options.module_cache << std::endl;
+
+        _cache = std::make_shared<::util::cache::FileCache>(options.module_cache);
+    }
+
     if ( _options->cgDebugging("visitors") )
         ast::enableDebuggingForAllVisitors();
 }
@@ -172,10 +179,17 @@ void CompilerContext::_endPass()
     assert(_passes.size());
     auto pass = _passes.back();
 
-    if ( options().cgDebugging("passes") ) {
+    auto cg_time = options().cgDebugging("time");
+    auto cg_passes = options().cgDebugging("passes");
+
+    if ( cg_time || cg_passes ) {
+        auto delta = util::currentTime() - pass.time;
         auto cached = pass.cached ? " (cached)" : "";
-        std::cerr << util::fmt("(%2.2fs) hilti::%s [module \"%s\"] %s",
-                               util::currentTime() - pass.time, pass.name, pass.module, cached) << std::endl;
+        auto indent = string(_passes.size(), ' ');
+
+        if ( cg_passes || delta >= 0.1 || pass.cached )
+            std::cerr << util::fmt("(%2.2fs) %shilti::%s [module \"%s\"]%s",
+                                   delta, indent, pass.name, pass.module, cached) << std::endl;
     }
 
     _passes.pop_back();
@@ -413,6 +427,46 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
 
 llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
 {
+#if 0
+    auto path = module->path() != "-" ? module->path() : module->id()->name();
+
+    ::util::cache::FileCache::Key key;
+    key.scope = "ll";
+    key.name = ::util::strreplace(path, "/", "_");
+    key.files.push_back(path);
+    options().toCacheKey(&key);
+
+    if ( _cache ) {
+        auto cache_path = _cache->lookup(key);
+
+        if ( cache_path.size() ) {
+            _beginPass(path, "LoadFromCache");
+
+            llvm::SMDiagnostic err;
+
+            if ( auto mod = llvm::ParseIRFile(path, err, llvm::getGlobalContext()) ) {
+                if ( options().cgDebugging("cache") )
+                    std::cerr << "Reusing cached module for " << path << std::endl;
+
+                _markPassAsCached();
+                _endPass();
+                return mod;
+            }
+
+            else {
+                _endPass();
+
+                if ( options().cgDebugging("cache") )
+                    std::cerr << "Cached module for " << path << " did not compile" << std::endl;
+            }
+        }
+
+        if ( options().cgDebugging("cache") )
+            std::cerr << "No cached module for " << path << " found" << std::endl;
+
+    }
+#endif
+
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Compiling module %s ...", module->id()->pathAsString()) << std::endl;
 
@@ -439,6 +493,17 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
 
         _endPass();
     }
+
+#if 0
+    if ( _cache ) {
+        fprintf(stderr, "X\n");
+        string out;
+        llvm::raw_string_ostream llvm_out(out);
+        llvm::WriteBitcodeToFile(compiled, llvm_out);
+        _cache->store(key, out);
+        fprintf(stderr, "Y 5d\n", out.size());
+    }
+#endif
 
     return compiled;
 }
@@ -573,21 +638,38 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
 
     _endPass();
 
+#if 0
+    // It doesn't really make sense to optimize here because the JIT later
+    // will just do it again, and we can skip that because it will apply
+    // further backend-specific optimization as well. We provide a separate
+    // optimize() method instead that does this for when we don't jit.
     if ( options().optimize ) {
-        if ( options().cgDebugging("context" ) )
-            std::cerr << "Optimizing final linked module ... " << std::endl;
-
-        codegen::Optimizer optimizer(this);
-
-        _beginPass(output, optimizer);
-
-        if ( ! optimizer.optimize(linked, true) )
+        if ( ! optimize(linked, true) )
             return nullptr;
-
-        _endPass();
     }
+#endif
 
     return linked;
+}
+
+bool CompilerContext::optimize(llvm::Module* module, bool is_linked)
+{
+    if ( ! options().optimize )
+        return true;
+
+    if ( options().cgDebugging("context" ) )
+        std::cerr << "Optimizing final linked module ... " << std::endl;
+
+    codegen::Optimizer optimizer(this);
+
+    _beginPass(module->getModuleIdentifier(), optimizer);
+
+    if ( ! optimizer.optimize(module, is_linked) )
+        return false;
+
+    _endPass();
+
+    return true;
 }
 
 llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module)
@@ -598,7 +680,7 @@ llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module)
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("JITing module %s ...", module->getModuleIdentifier()) << std::endl;
 
-    _beginPass("<JIT>", "JIT");
+    _beginPass("<JIT>", "JIT-setup");
 
     auto ee = _jit->jitModule(module);
 
@@ -615,7 +697,13 @@ void* CompilerContext::nativeFunction(llvm::Module* module, llvm::ExecutionEngin
     if ( ! _jit )
         _jit = new jit::JIT(this);
 
-    return _jit->nativeFunction(ee, module, function);
+    _beginPass("<JIT>", "JIT-nativeFunction");
+
+    auto func = _jit->nativeFunction(ee, module, function);
+
+    _endPass();
+
+    return func;
 }
 
 void CompilerContext::installFunctionTable(const FunctionMapping* ftable)

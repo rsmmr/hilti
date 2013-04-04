@@ -16,7 +16,8 @@ uint64_t Statement::_counter = 0;
 static void _addExpressionToVariables(Statement::variable_set* vars, shared_ptr<Expression> expr)
 {
     if ( auto v = ast::tryCast<expression::Variable>(expr) ) {
-        vars->insert(std::make_shared<Statement::FlowVariable>(v));
+        if ( auto l = ast::tryCast<variable::Local>(v->variable()) )
+            vars->insert(std::make_shared<Statement::FlowVariable>(v));
     }
 
     if ( auto p = ast::tryCast<expression::Parameter>(expr) )

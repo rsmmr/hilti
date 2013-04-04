@@ -12,6 +12,8 @@ namespace llvm {
     class ExecutionEngine;
 }
 
+namespace util  { namespace cache { class FileCache;} }
+
 namespace hilti {
 
 namespace passes { class ScopeBuilder; }
@@ -108,6 +110,19 @@ public:
     /// ownership to the caller.
     llvm::Module* compile(shared_ptr<Module> module);
 
+    /// Optimizes an LLVM module according to the CompilerContext's options
+    /// (including not all if the options don't request optimization). Note
+    /// that you don't need this if calling jitModule() later; the latter
+    /// will optimize automatically.
+    ///
+    /// module: The module to optimize.
+    ///
+    /// is_linked: True if this is the final linked module, false if it's an
+    /// individual module that will later be linked.
+    ///
+    /// Returns: True if successful.
+    bool optimize(llvm::Module* module, bool is_linked);
+
     /// Renders an AST back into HILTI source code.
     ///
     /// module: The AST to render.
@@ -175,11 +190,10 @@ public:
                               bool add_stdlibs = true,
                               bool add_sharedlibs = true);
 
-    /// JITs an LLVM module retuned by linkModules().
+    /// JITs an LLVM module retuned by linkModules(). This also optimizes the
+    /// code according to the current set of options.
     ///
     /// module: The module. The function takes ownership.
-    ///
-    /// optimize: The optimization level, corresponding to \c -Ox
     ///
     /// Returns: The LLVM execution engine that was used for JITing the
     /// module, or null if there was an error. This passes ownership of the
@@ -254,6 +268,7 @@ private:
     shared_ptr<Options> _options;
 
     jit::JIT* _jit = nullptr;
+    shared_ptr<util::cache::FileCache> _cache;
 
     /// We keep global maps of all module nodes and, separately, their
     /// scopes, both indexed by their path. This is for avoiding duplicate
@@ -264,6 +279,8 @@ private:
 
     std::list<shared_ptr<ID>> _imported;
 
+    /// TODO: binpac context needs this, should be doing it differently.
+public:
     // Tracking passes.
     struct PassInfo {
         string module;
@@ -273,7 +290,12 @@ private:
     };
 
     typedef std::list<PassInfo> pass_list;
+
+private:
     pass_list _passes;
+
+public:
+    pass_list& passes() { return _passes; }
 };
 
 }

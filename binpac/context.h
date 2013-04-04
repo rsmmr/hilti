@@ -201,17 +201,6 @@ private:
     /// indexed by their path. This is for avoid duplicate imports, in
     /// particular when encountering cycles.
     std::map<string, shared_ptr<Module>> _modules;
-
-    // Tracking passes.
-    struct PassInfo {
-        string module;
-        double time;
-        string name;
-        bool cached;
-    };
-
-    typedef std::list<PassInfo> pass_list;
-    pass_list _passes;
 };
 
 }

@@ -1200,7 +1200,7 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
         if ( init_in_entry_block )
             pushBuilder(builder);
 
-        llvmGCClear(local, type);
+        llvmGCClear(local, type, "add-local");
         llvmCreateStore(init, local);
 
         if ( init_in_entry_block )
@@ -1761,7 +1761,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
 
         for ( auto l : _functions.back()->locals ) {
             if ( l.second.first == tmp ) {
-                llvmGCClear(tmp, type);
+                llvmGCClear(tmp, type, "instr-cleanup-1");
                 break;
             }
         }
@@ -1783,7 +1783,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
             // const parameter that we don't need to unref.
             for ( auto l : _functions.back()->locals ) {
                 if ( l.second.first == tmp ) {
-                    llvmGCClear(l.second.first, l.second.second);
+                    llvmGCClear(l.second.first, l.second.second, "instr-cleanup-2");
                     break;
                 }
             }
@@ -2201,7 +2201,7 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
         auto tmp = llvmValueAddress(l);
 
         if ( tmp )
-            llvmGCClear(tmp, l->type());
+            llvmGCClear(tmp, l->type(), "trigger-excpt-handling");
 
         else {
             // A constant parameter.
@@ -3037,11 +3037,11 @@ void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> 
         llvmCctor(dst, type, true, "gc-assign");
 }
 
-void CodeGen::llvmGCClear(llvm::Value* addr, shared_ptr<Type> type)
+void CodeGen::llvmGCClear(llvm::Value* addr, shared_ptr<Type> type, const char* tag)
 {
     assert(ast::isA<type::ValueType>(type));
     auto init_val = typeInfo(type)->init_val;
-    llvmDtor(addr, type, true, "gc-clear");
+    llvmDtor(addr, type, true, string("gc-clear/") + tag);
     llvmCreateStore(init_val, addr);
 }
 
@@ -3401,7 +3401,7 @@ void CodeGen::llvmStructUnset(shared_ptr<Type> stype, llvm::Value* sval, const s
     llvmCreateStore(new_, addr);
 
     addr = llvmGEP(sval, zero, llvmGEPIdx(idx + 2));
-    llvmGCClear(addr, f->type());
+    llvmGCClear(addr, f->type(), "struct-unset");
 }
 
 llvm::Value* CodeGen::llvmStructIsSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field)

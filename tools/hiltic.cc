@@ -413,6 +413,11 @@ int main(int argc, char** argv)
 
         if ( ! linked_module )
             error(output, "Aborted linking.");
+
+        if ( ! use_jit ) {
+            if ( ! ctx->optimize(linked_module, true) )
+                error(output, "Optimization of linked module failed.");
+        }
     }
 
     else
