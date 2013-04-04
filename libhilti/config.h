@@ -22,7 +22,10 @@ struct __hlt_config
     double time_terminate;
 
     /// Stack size for worker threads.
-    size_t stack_size;
+    size_t thread_stack_size;
+
+    /// Stack size for fibers.
+    size_t fiber_stack_size;
 
     /// File where debug output is to be sent. Default is stderr.
     const char* debug_out;

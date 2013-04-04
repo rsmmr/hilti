@@ -7,14 +7,11 @@
 #include <setjmp.h>
 
 #include "fiber.h"
+#include "config.h"
 #include "memory_.h"
 #include "context.h"
 
 #include "3rdparty/libtask/taskimpl.h"
-
-// TODO: This should be customizable, however the we'll need separate free
-// lists.
-static const int STACK_SIZE = 100 * 1024 * 1024;
 
 enum __hlt_fiber_state { INIT=1, RUNNING=2, FINISHED=3, YIELDED=4 };
 
@@ -27,7 +24,6 @@ struct __hlt_fiber {
     void* result;
     hlt_execution_context* context;
     hlt_fiber_func run;
-    char stack[STACK_SIZE];
 };
 
 static void _fiber_trampoline(unsigned int y, unsigned int x)
@@ -55,13 +51,15 @@ hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* ctx, voi
         abort();
     }
 
+    size_t stack_size = hlt_config_get()->fiber_stack_size;
+
     fiber->state = INIT;
     fiber->run = func;
     fiber->cookie = p;
     fiber->context = ctx;
     fiber->uctx.uc_link = 0;
-    fiber->uctx.uc_stack.ss_sp = &fiber->stack;
-    fiber->uctx.uc_stack.ss_size = STACK_SIZE;
+    fiber->uctx.uc_stack.ss_size = stack_size;
+    fiber->uctx.uc_stack.ss_sp = hlt_malloc(stack_size);
     fiber->uctx.uc_stack.ss_flags = 0;
 
     // Magic from from libtask/task.c to turn the pointer into two words.

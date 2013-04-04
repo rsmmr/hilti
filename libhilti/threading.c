@@ -669,7 +669,7 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
     // Initialize the worker threads.
     pthread_attr_t attr;
     pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, hlt_config_get()->stack_size);
+    pthread_attr_setstacksize(&attr, hlt_config_get()->thread_stack_size);
 
     for ( int i = 0 ; i < mgr->num_workers; i++ ) {
         hlt_worker_thread* thread = hlt_malloc(sizeof(hlt_worker_thread));

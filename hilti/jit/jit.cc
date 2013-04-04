@@ -80,6 +80,7 @@ llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
     Options.JITExceptionHandling = false;
     Options.JITEmitDebugInfo = true;
     Options.JITEmitDebugInfoToDisk = true;
+    // Options.EnableSegmentedStacks = true; // Leads to "varargs not supported".
     builder.setTargetOptions(Options);
 
     auto ee = builder.create();
