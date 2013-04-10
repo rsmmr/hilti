@@ -161,6 +161,40 @@ void CodeBuilder::visit(expression::Coerced* c)
     setResult(coerced);
 }
 
+void CodeBuilder::visit(expression::Conditional* c)
+{
+    auto cond = cg()->hiltiExpression(c->condition(), std::make_shared<type::Bool>());
+    auto rtype = c->true_()->type();
+    auto result = cg()->moduleBuilder()->addTmp("cond", cg()->hiltiType(rtype));
+
+    auto cont = cg()->moduleBuilder()->newBuilder("cond-cont");
+    auto true_ = cg()->moduleBuilder()->newBuilder("cond-true");
+    auto false_ = cg()->moduleBuilder()->newBuilder("cond-false");
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, true_->block(), false_->block());
+
+    shared_ptr<hilti::Expression> expr;
+
+    cg()->moduleBuilder()->pushBuilder(true_);
+    expr = cg()->hiltiExpression(c->true_(), rtype);
+    cg()->builder()->addInstruction(result, hilti::instruction::operator_::Assign, expr);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+    cg()->moduleBuilder()->popBuilder(true_);
+
+    cg()->moduleBuilder()->pushBuilder(false_);
+    expr = cg()->hiltiExpression(c->false_(), rtype);
+    cg()->builder()->addInstruction(result, hilti::instruction::operator_::Assign, expr);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+    cg()->moduleBuilder()->popBuilder(false_);
+
+
+    cg()->moduleBuilder()->pushBuilder(cont);
+
+    // Leave on stack.
+    //
+    setResult(result);
+}
+
 void CodeBuilder::visit(expression::Constant* c)
 {
     shared_ptr<hilti::Node> result = nullptr;

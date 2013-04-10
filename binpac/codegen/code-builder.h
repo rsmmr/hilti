@@ -90,6 +90,7 @@ protected:
     void visit(expression::Assign* a) override;
     void visit(expression::CodeGen* c) override;
     void visit(expression::Coerced* c) override;
+    void visit(expression::Conditional* c) override;
     void visit(expression::Constant* c) override;
     void visit(expression::Ctor* c) override;
     void visit(expression::Default* d) override;

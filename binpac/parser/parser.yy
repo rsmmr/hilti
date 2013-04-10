@@ -641,6 +641,7 @@ expr2         : scoped_id                        { $$ = std::make_shared<express
               | ctor                             { $$ = std::make_shared<expression::Ctor>($1, loc(@$)); }
               | constant                         { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
               | expr '=' expr                    { $$ = std::make_shared<expression::Assign>($1, $3, loc(@$)); }
+              | expr '?' expr ':' expr           { $$ = std::make_shared<expression::Conditional>($1, $3, $5, loc(@$)); }
 /*            | atomic_type '(' ')'                { $$ = std::make_shared<expression::Default>($1, loc(@$)); } */
 
               /* Overloaded operators */

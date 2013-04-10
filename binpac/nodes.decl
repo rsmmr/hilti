@@ -46,6 +46,7 @@ Expression
 expression::Assign
 expression::CodeGen
 expression::Coerced
+expression::Conditional
 expression::Constant
 expression::Ctor
 expression::Default

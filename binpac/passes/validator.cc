@@ -232,6 +232,15 @@ void Validator::visit(expression::Constant* c)
 {
 }
 
+void Validator::visit(expression::Conditional* c)
+{
+    if ( ! c->condition()->canCoerceTo(std::make_shared<type::Bool>()) )
+        error(c->condition(), "condition must be a boolean value");
+
+    if ( ! c->false_()->canCoerceTo(c->true_()->type()) )
+        error(c, "conditional alternatives have incompatible types");
+}
+
 void Validator::visit(expression::Ctor* c)
 {
 }

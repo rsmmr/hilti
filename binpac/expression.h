@@ -363,6 +363,40 @@ private:
     node_ptr<Expression> _dst;
 };
 
+/// AST node for a conditional (ternary) expression.
+class Conditional : public CustomExpression
+{
+public:
+    /// Constructor.
+    ///
+    /// cond: The condition node.
+    ///
+    /// true_: The node for the true branch.
+    ///
+    /// false_: The node for the false branch.
+    ///
+    /// l: An associated location.
+    Conditional(shared_ptr<Expression> cond, shared_ptr<Expression> true_, shared_ptr<Expression> false_, const Location& l=Location::None);
+
+    /// Returns the condition's expression.
+    shared_ptr<Expression> condition() const;
+
+    /// Returns the expression for the true branch.
+    shared_ptr<Expression> true_() const;
+
+    /// Returns the expression for the false branch.
+    shared_ptr<Expression> false_() const;
+
+    shared_ptr<Type> type() const override;
+
+    ACCEPT_VISITOR(binpac::Expression);
+
+private:
+    node_ptr<Expression> _cond;
+    node_ptr<Expression> _true;
+    node_ptr<Expression> _false;
+};
+
 /// A not yet resolved (and potentially overloaded) operator. Initially, all
 /// operators are instantiated as Unresolved and later turned into instances
 /// derived from Resolved by passes::OperandResolver.

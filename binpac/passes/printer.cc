@@ -412,6 +412,12 @@ void Printer::visit(expression::Coerced* c)
     p << "coerce<" << c->type() << ">(" << c->expression() << ")";
 }
 
+void Printer::visit(expression::Conditional* c)
+{
+    Printer& p = *this;
+    p << c->condition() << " ? " << c->true_() << " : " << c->false_();
+}
+
 void Printer::visit(expression::Constant* c)
 {
     Printer& p = *this;

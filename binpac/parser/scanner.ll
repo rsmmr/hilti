@@ -173,7 +173,7 @@ b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strle
 
 
 
-[][.,=:;<>(){}/|*/&^%!+-] return (token_type) yytext[0];
+[][?.,=:;<>(){}/|*/&^%!+-] return (token_type) yytext[0];
 
 .                     driver.error("invalid character", *yylloc);
 

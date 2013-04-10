@@ -273,6 +273,39 @@ shared_ptr<Type> expression::Assign::type() const
     return _dst->type();
 }
 
+
+expression::Conditional::Conditional(shared_ptr<Expression> cond, shared_ptr<Expression> true_, shared_ptr<Expression> false_, const Location& l)
+{
+    _cond = cond;
+    _true = true_;
+    _false = false_;
+    addChild(_cond);
+    addChild(_true);
+    addChild(_false);
+}
+
+shared_ptr<Expression> expression::Conditional::condition() const
+{
+    return _cond;
+}
+
+shared_ptr<Expression> expression::Conditional::true_() const
+{
+    return _true;
+}
+
+shared_ptr<Expression> expression::Conditional::false_() const
+{
+    return _false;
+}
+
+shared_ptr<Type> expression::Conditional::type() const
+{
+    // We always return the type of the first operand here. The validator
+    // makes sure that the two alternatives match.
+    return _true->type();
+}
+
 expression::UnresolvedOperator::UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops, const Location& l)
     : CustomExpression(l)
 {
@@ -293,7 +326,6 @@ operator_::Kind expression::UnresolvedOperator::kind() const
 {
     return _kind;
 }
-
 
 expression_list expression::UnresolvedOperator::operands() const
 {
