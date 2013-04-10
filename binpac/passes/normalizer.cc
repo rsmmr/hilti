@@ -96,3 +96,18 @@ void Normalizer::visit(binpac::expression::operator_::unit::Input* i)
     auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
     unit->enableBuffering();
 }
+
+void Normalizer::visit(statement::Return* r)
+{
+    // If the function's return type is still unknown, derive it from the
+    // expression's type.
+    auto func = current<Function>();
+
+    if ( ! func )
+        return;
+
+    auto rtype = func->type()->result()->type();
+
+    if ( ast::isA<type::Unknown>(rtype) )
+        rtype->replace(r->expression()->type());
+}
