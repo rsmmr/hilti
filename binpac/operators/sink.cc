@@ -157,3 +157,16 @@ opBegin(sink::AddFilter : MethodCall)
     }
 opEnd
 
+opBegin(sink::Size)
+    opOp1(std::make_shared<type::Sink>())
+
+    opDoc("Returns the number of bytes written into the sink so far. If the sink has filters attached, this returns the value after filtering.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Integer>(64, false);
+    }
+opEnd
+

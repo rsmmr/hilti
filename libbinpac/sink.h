@@ -69,4 +69,12 @@ extern void binpachilti_sink_close(binpac_sink* sink, hlt_exception** excpt, hlt
 /// ctx: &
 extern void binpachilti_sink_add_filter(binpac_sink* sink, hlt_enum ftype, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Returns the number of bytes written to a sink so far. If the sink has
+/// filters attached, this returns the size after filtering.
+///
+/// sink: The sink to report the value for..
+/// excpt: &
+/// ctx: &
+extern uint64_t binpachilti_sink_size(binpac_sink* sink, hlt_exception** excpt, hlt_execution_context* ctx);
+
 #endif

@@ -111,3 +111,14 @@ void CodeBuilder::visit(binpac::expression::operator_::sink::AddFilter* i)
     setResult(std::make_shared<hilti::expression::Void>());
 }
 
+void CodeBuilder::visit(expression::operator_::sink::Size* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto size = cg()->builder()->addTmp("size", hilti::builder::integer::type(64));
+
+    cg()->builder()->addInstruction(size,
+                                    hilti::instruction::flow::CallResult,
+                                    hilti::builder::id::create("BinPACHilti::sink_size"),
+                                    hilti::builder::tuple::create( { sink } ));
+    setResult(size);
+}

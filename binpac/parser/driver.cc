@@ -36,7 +36,7 @@ shared_ptr<binpac::Module> Driver::parse(CompilerContext* ctx, std::istream& in,
 
 shared_ptr<binpac::Expression> Driver::parseExpression(binpac::CompilerContext* ctx, const std::string& expr)
 {
-    _sname = "<individual expression>";
+    _sname = util::fmt("<%s>", expr);
     _context = ctx;
     _next_token = binpac_parser::Parser::token::START_EXPR;
 

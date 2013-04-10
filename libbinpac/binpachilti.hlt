@@ -50,6 +50,7 @@ declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj)
 declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, UserCookie user)
 declare "C-HILTI" void sink_close(ref<Sink> sink)
 declare "C-HILTI" void sink_add_filter(ref<Sink> sink, Filter ftype)
+declare "C-HILTI" int<64> sink_size(ref<Sink> sink)
 
 # Support functions for filters.
 type ParseFilter = struct {

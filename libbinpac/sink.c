@@ -18,6 +18,7 @@ struct binpac_sink {
     __hlt_gchdr __gch;                  // Header for garbage collection.
     __parser_state* head;               // List of parsing states.
     binpac_filter* filter;              // Potential filter attached.
+    uint64_t size;                      // Number of bytes written so far.
 };
 
 __HLT_RTTI_GC_TYPE(binpac_sink, HLT_TYPE_BINPAC_SINK);
@@ -105,6 +106,7 @@ binpac_sink* binpachilti_sink_new(hlt_exception** excpt, hlt_execution_context* 
     binpac_sink* sink = GC_NEW(binpac_sink);
     sink->head = 0;
     sink->filter = 0;
+    sink->size = 0;
     return sink;
 }
 
@@ -226,11 +228,6 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
 {
     DBG_LOG("binpac-sinks", "starting to write to sink %p", sink);
 
-    if ( ! sink->head ) {
-        DBG_LOG("binpac-sinks", "done writing to sink %p, no parser connected", sink);
-        return;
-    }
-
     // If the HILTI function that we'll call suspends, it will change the
     // yield/resume fields. We need to reset them when we leave this
     // function.
@@ -253,6 +250,16 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
 
         GC_DTOR(data, hlt_bytes);
         data = decoded;
+    }
+
+    sink->size += hlt_bytes_len(data, excpt, ctx);
+
+    if ( *excpt )
+        return;
+
+    if ( ! sink->head ) {
+        DBG_LOG("binpac-sinks", "done writing to sink %p, no parser connected", sink);
+        return;
     }
 
     // data at +1 here.
@@ -382,4 +389,9 @@ void binpachilti_sink_add_filter(binpac_sink* sink, hlt_enum ftype, hlt_exceptio
     GC_DTOR(old_filter, binpac_filter);
 
     DBG_LOG("binpac-sinks", "attached filter %s to sink %p", sink->filter->def->name, sink);
+}
+
+uint64_t binpachilti_sink_size(binpac_sink* sink, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return sink->size;
 }
