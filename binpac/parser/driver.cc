@@ -14,6 +14,7 @@ shared_ptr<binpac::Module> Driver::parse(CompilerContext* ctx, std::istream& in,
 {
     _sname = sname;
     _context = ctx;
+    _next_token = binpac_parser::Parser::token::START_MODULE;
 
     Scanner scanner(&in);
     _scanner = &scanner;
@@ -33,6 +34,39 @@ shared_ptr<binpac::Module> Driver::parse(CompilerContext* ctx, std::istream& in,
     return module();
 }
 
+shared_ptr<binpac::Expression> Driver::parseExpression(binpac::CompilerContext* ctx, const std::string& expr)
+{
+    _sname = "<individual expression>";
+    _context = ctx;
+    _next_token = binpac_parser::Parser::token::START_EXPR;
+
+    std::stringstream str;
+    str << expr;
+    Scanner scanner(&str);
+    _scanner = &scanner;
+    _scanner->set_debug(_dbg_scanner);
+
+    Parser parser(*this);
+    _parser = &parser;
+    _parser->set_debug_level(_dbg_parser);
+    _parser->parse();
+
+    _scanner = 0;
+    _parser = 0;
+
+    if ( errors() > 0 )
+        return 0;
+
+    return expression();
+}
+
+int Driver::nextToken()
+{
+    int next = _next_token;
+    _next_token = 0;
+    return next;
+}
+
 void Driver::error(const std::string& m, const binpac_parser::location& l)
 {
     std::ostringstream loc;
@@ -50,6 +84,17 @@ void Driver::setModule(shared_ptr<Module> module)
 {
     _module = module;
     pushScope(_module->body()->scope());
+}
+
+shared_ptr<Expression> Driver::expression() const
+{
+    assert(_expr);
+    return _expr;
+}
+
+void Driver::setExpression(shared_ptr<Expression> expr)
+{
+    _expr = expr;
 }
 
 void Driver::pushScope(shared_ptr<Scope> scope)

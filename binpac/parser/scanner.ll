@@ -46,6 +46,13 @@ string    \"(\\.|[^\\"])*\"
     typedef binpac_parser::Parser::token_type token_type;
 %}
 
+%{
+    int next = driver.nextToken();
+
+    if ( next )
+        return (token_type)next;
+%}
+
 {blank}+              yylloc->step();
 [\n]+                 yylloc->lines(yyleng);
 {comment}             /* Eat. */

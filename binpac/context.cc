@@ -89,6 +89,15 @@ shared_ptr<binpac::Module> binpac::CompilerContext::parse(std::istream& in, cons
     return module;
 }
 
+shared_ptr<binpac::Expression> binpac::CompilerContext::parseExpression(const std::string& expr)
+{
+    binpac_parser::Driver driver;
+    driver.forwardLoggingTo(this);
+    driver.enableDebug(options().cgDebugging("scanner"), options().cgDebugging("parser"));
+
+    return driver.parseExpression(this, expr);
+}
+
 static void _debugAST(binpac::CompilerContext* ctx, shared_ptr<binpac::Module> module, const ast::Logger& before)
 {
     if ( ctx->options().cgDebugging("dump-ast") ) {
@@ -124,9 +133,8 @@ void binpac::CompilerContext::_beginPass(const string& module, const string& nam
 
 void binpac::CompilerContext::_beginPass(shared_ptr<Module> module, const string& name)
 {
-    assert(module);
     _debugAST(this, module, name);
-    _beginPass(module->id()->pathAsString(), name);
+    _beginPass(module->id()->name(), name);
 }
 
 void binpac::CompilerContext::_beginPass(shared_ptr<Module> module, const ast::Logger& pass)
@@ -169,6 +177,11 @@ void binpac::CompilerContext::_markPassAsCached()
     _hilti_context->passes().push_back(pass);
 }
 
+bool binpac::CompilerContext::partialFinalize(shared_ptr<Module> module)
+{
+    return finalize(module, false);
+}
+
 bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
 {
     // Just a double-check ...
@@ -176,6 +189,11 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
         internalError("binpac: no operators defined, did you call binpac::init()?");
     }
 
+    return finalize(module, options().verify);
+}
+
+bool binpac::CompilerContext::finalize(shared_ptr<Module> node, bool verify)
+{
     passes::GrammarBuilder   grammar_builder(std::cerr);
     passes::IDResolver       id_resolver;
     passes::OverloadResolver overload_resolver;
@@ -186,70 +204,70 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
     passes::UnitScopeBuilder unit_scope_builder;
     passes::Validator        validator;
 
-    _beginPass(module, scope_builder);
+    _beginPass(node, scope_builder);
 
-    if ( ! scope_builder.run(module) )
+    if ( ! scope_builder.run(node) )
         return false;
 
     _endPass();
 
     if ( options().cgDebugging("scopes") )
-        scope_printer.run(module);
+        scope_printer.run(node);
 
-    _beginPass(module, id_resolver);
+    _beginPass(node, id_resolver);
 
-    if ( ! id_resolver.run(module, false) )
+    if ( ! id_resolver.run(node, false) )
         return false;
 
     _endPass();
 
-    _beginPass(module, unit_scope_builder);
+    _beginPass(node, unit_scope_builder);
 
-    if ( ! unit_scope_builder.run(module) )
+    if ( ! unit_scope_builder.run(node) )
         return false;
 
     _endPass();
 
-    _beginPass(module, id_resolver);
+    _beginPass(node, id_resolver);
 
-    if ( ! id_resolver.run(module, true) )
+    if ( ! id_resolver.run(node, true) )
         return false;
 
     _endPass();
 
-    _beginPass(module, overload_resolver);
+    _beginPass(node, overload_resolver);
 
-    if ( ! overload_resolver.run(module) )
+    if ( ! overload_resolver.run(node) )
         return false;
 
     _endPass();
 
-    _beginPass(module, op_resolver);
+    _beginPass(node, op_resolver);
 
-    if ( ! op_resolver.run(module) )
+    if ( ! op_resolver.run(node) )
         return false;
 
     _endPass();
 
     // The operators may have some unresolved types, too.
-    _beginPass(module, id_resolver);
-    if ( ! id_resolver.run(module, true) )
+    _beginPass(node, id_resolver);
+    if ( ! id_resolver.run(node, true) )
         return false;
 
     _endPass();
 
-    if ( options().verify ) {
-        _beginPass(module, validator);
+    if ( verify ) {
+        _beginPass(node, validator);
 
-        if ( ! validator.run(module) )
+        if ( ! validator.run(node) )
             return false;
 
         _endPass();
     }
 
-    _beginPass(module, normalizer);
+    _beginPass(node, normalizer);
 
-    if ( ! normalizer.run(module) )
+    if ( ! normalizer.run(node) )
         return false;
 
     _endPass();
@@ -257,17 +275,17 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
     if ( options().cgDebugging("grammars") )
         grammar_builder.enableDebug();
 
-    _beginPass(module, grammar_builder);
+    _beginPass(node, grammar_builder);
 
-    if ( ! grammar_builder.run(module) )
+    if ( ! grammar_builder.run(node) )
         return false;
 
     _endPass();
 
-    if ( options().verify ) {
-        _beginPass(module, validator);
+    if ( verify ) {
+        _beginPass(node, validator);
 
-        if ( ! validator.run(module) )
+        if ( ! validator.run(node) )
             return false;
 
         _endPass();

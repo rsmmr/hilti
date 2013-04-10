@@ -96,6 +96,7 @@ class location;
 class Driver : public ast::Logger {
 public:
     shared_ptr<binpac::Module> parse(binpac::CompilerContext* ctx, std::istream& in, const std::string& sname);
+    shared_ptr<binpac::Expression> parseExpression(binpac::CompilerContext* ctx, const std::string& expr);
 
     // Report parsing errors.
     void error(const std::string& m, const binpac_parser::location& l);
@@ -110,6 +111,9 @@ public:
     shared_ptr<binpac::Module> module() const;
     void setModule(shared_ptr<binpac::Module> module);
 
+    shared_ptr<binpac::Expression> expression() const;
+    void setExpression(shared_ptr<binpac::Expression> expr);
+
     void pushScope(shared_ptr<binpac::Scope> scope);
     shared_ptr<binpac::Scope> popScope();
     shared_ptr<binpac::Scope> scope() const;
@@ -120,6 +124,8 @@ public:
 
     void disablePatternMode();
     void enablePatternMode();
+
+    int nextToken();
 
     /// Enables additional debugging output.
     ///
@@ -132,12 +138,15 @@ private:
     std::string _sname;
     binpac::CompilerContext* _context = nullptr;
     shared_ptr<binpac::Module> _module = nullptr;
+    shared_ptr<binpac::Expression> _expr = nullptr;
 
     Scanner* _scanner = 0;
     Parser* _parser = 0;
 
     bool _dbg_scanner = false;
     bool _dbg_parser = false;
+
+    int _next_token;
 
     std::list<shared_ptr<binpac::Scope>> _scopes;
     std::list<shared_ptr<binpac::statement::Block>> _blocks;

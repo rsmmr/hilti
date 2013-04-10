@@ -58,19 +58,30 @@ public:
     /// Returns: The parsed module AST, or null if there were errors.
     shared_ptr<Module> parse(std::istream& in, const std::string& sname = "<input>");
 
+    /// Parses a single BinPAC++ expression into a corresponding AST.
+    ///
+    /// expr: The expression to parse.
+    ///
+    /// Returns: The parsed expression, or null if there were errors.
+    shared_ptr<Expression> parseExpression(const std::string& expr);
+
     /// Finalizes an AST before it can be used for compilation. This checks
     /// for correctness, resolves any unknown bindings, and builds a set of
     /// internal data structures.
     ///
     /// module: The AST to finalize.
     ///
-    /// libdirs: A list of paths to search for any libraries that might be
-    /// needed.
-    ///
-    /// verify: If false, no correctness verification is done.
-    ///
     /// Returns: True if no errors were found.
     bool finalize(shared_ptr<Module> module);
+
+    /// Partially finalizes an AST. This attempts to resolved as many
+    /// unknown bindings as possible, but doesn't further validate the
+    /// result.
+    ///
+    /// node: The root node of the branch to finalize.
+    ///
+    /// Returns: True if the partial finalizing proceeded as expected.
+    bool partialFinalize(shared_ptr<Module> module);
 
     /// Compiles an AST into a HILTI module. This is the main interface to the
     /// code generater. The AST must have passed through finalize(). After
@@ -177,6 +188,9 @@ private:
     shared_ptr<Options> _options;
     shared_ptr<hilti::CompilerContext> _hilti_context;
     shared_ptr<util::cache::FileCache> _cache;
+
+    // Backend for both finalize() and partialFinalize().
+    bool finalize(shared_ptr<Module> module, bool verify);
 
     /// If debugging stream cg-passes is set, log the beginning of a pass. If timing is requested, 
     ///

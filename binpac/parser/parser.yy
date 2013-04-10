@@ -175,7 +175,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <ctor>             ctor
 %type <declaration>      global_decl type_decl var_decl const_decl func_decl hook_decl local_decl
 %type <declarations>     opt_global_decls opt_local_decls
-%type <expression>       expr opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr opt_unit_vector_len
+%type <expression>       expr expr2 opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr opt_unit_vector_len
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
 %type <id>               local_id scoped_id path_id hook_id opt_unit_field_name
 %type <statement>        stmt block
@@ -216,7 +216,13 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %left UINT UINT8 UINT16 UINT32 UINT64;
 %left PREC_HIGH;
 
-%start module;
+// Magic states send by the scanner to provide two separate entry points.
+%token START_MODULE START_EXPR;
+%start start;
+
+start         : START_MODULE module
+              | START_EXPR expr
+              ;
 
 module        : MODULE local_id ';'              { auto module = std::make_shared<Module>(driver.context(), $2, *driver.streamName(), loc(@$));
                                                   driver.setModule(module);
@@ -628,8 +634,9 @@ re_pattern    : re_pattern_constant              { $$ = std::make_pair($1, ""); 
 re_pattern_constant
               : '/' { driver.enablePatternMode(); } CREGEXP { driver.disablePatternMode(); } '/' { $$ = $3; }
 
+expr          : expr2                            { driver.setExpression($1); }
 
-expr          : scoped_id                        { $$ = std::make_shared<expression::ID>($1, loc(@$)); }
+expr2         : scoped_id                        { $$ = std::make_shared<expression::ID>($1, loc(@$)); }
               | '(' expr ')'                     { $$ = $2; }
               | ctor                             { $$ = std::make_shared<expression::Ctor>($1, loc(@$)); }
               | constant                         { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
