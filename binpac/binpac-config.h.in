@@ -68,6 +68,7 @@ struct Configuration {
     };
 
     std::list<string> runtime_shared_libraries = {
+        "z"
     };
 
     ////

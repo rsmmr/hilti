@@ -13,7 +13,8 @@ type AddrFamily = enum { IPv4 = 1, IPv6 = 2 };
 # just one definition.
 type Filter = enum {
     BASE64 = 1,  # MIME base64 decoding.
-    GZIP = 2     # gzipd decompression.
+    GZIP = 2,    # gzipd decompression.
+    ZLIB = 3     # zlib/deflate decompression.
 };
 
 import "HILTI-C" bytes base64_encode(b: bytes);

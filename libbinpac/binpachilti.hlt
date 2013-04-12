@@ -62,7 +62,8 @@ type ParseFilter = struct {
 type Filter = enum {
     NONE = 0,    # Place-holder.
     BASE64 = 1,  # MIME base64 decoding.
-    GZIP = 2     # gzipd decompression.
+    GZIP = 2,    # gzip decompression.
+    ZLIB = 3     # zlib/deflate decompression.
 }
 
 declare "C-HILTI" ref<ParseFilter> filter_add(ref<ParseFilter> head, Filter ftype)

@@ -8,10 +8,13 @@
 __HLT_RTTI_GC_TYPE(binpac_filter, HLT_TYPE_BINPAC_FILTER);
 
 #include "filter_base64.c"
+#include "filter_zlib.c"
 
 // FIXME: Can't use the enums here directly; better way?
 static struct __binpac_filter_definition filters[] = {
     { {0, 1}, "BASE64", __binpac_filter_base64_allocate, __binpac_filter_base64_dtor, __binpac_filter_base64_decode, __binpac_filter_base64_close },
+    { {0, 2}, "GZIP", __binpac_filter_zlib_allocate, __binpac_filter_zlib_dtor, __binpac_filter_zlib_decode, __binpac_filter_zlib_close },
+    { {0, 3}, "ZLIB", __binpac_filter_zlib_allocate, __binpac_filter_zlib_dtor, __binpac_filter_zlib_decode, __binpac_filter_zlib_close },
     { {0, 0}, 0, 0, 0, 0 },
 };
 

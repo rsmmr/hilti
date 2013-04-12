@@ -20,5 +20,5 @@ add_dependencies(pac-driver libhilti-rt libbinpac-rt)
 target_link_libraries(pac-driver binpacxx ${HILTI_LIBS}
     binpac-rt
     ${LLVM_LIBS} ${LLVM_LDFLAGS}
-    pcap ${PAPI}
+    pcap ${PAPI} z
     )
