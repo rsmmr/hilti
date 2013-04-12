@@ -3,8 +3,11 @@
 #include "context.h"
 
 struct __hlt_global_state;
-extern "C" { void __hlt_init_from_state(struct __hlt_global_state* state); }
-
+extern "C" {
+    void __hlt_init_from_state(struct __hlt_global_state* state);
+    struct hlt_config;
+    const hlt_config* hlt_config_get();
+}
 
 // TODO: Maybe we don't need to do all this globals magic with redirecting the pointer via init_from_state.
 //
@@ -32,6 +35,12 @@ void hlt_init_jit(std::shared_ptr<hilti::CompilerContext> ctx, llvm::Module* mod
     f = ctx->nativeFunction(module, ee, "__hlt_globals");
     auto func_globals = (__hlt_global_state* (*)())f;
     assert(func_globals);
+
+    f = ctx->nativeFunction(module, ee, "hlt_config_set");
+    auto config_set = (void (*)(const hlt_config*))f;
+    assert(config_set);
+
+    (*config_set)(hlt_config_get());
 
     (*init)();
     __hlt_init_from_state(((*func_globals)()));

@@ -24,6 +24,7 @@ struct __hlt_fiber {
     void* result;
     hlt_execution_context* context;
     hlt_fiber_func run;
+    char stack[]; // Begin of stack.
 };
 
 static void _fiber_trampoline(unsigned int y, unsigned int x)
@@ -44,14 +45,13 @@ static void _fiber_trampoline(unsigned int y, unsigned int x)
 
 hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* ctx, void* p)
 {
-    hlt_fiber* fiber = (hlt_fiber*) hlt_free_list_alloc(ctx->fiber_pool, sizeof(hlt_fiber));
+    size_t stack_size = hlt_config_get()->fiber_stack_size;
+    hlt_fiber* fiber = (hlt_fiber*) hlt_free_list_alloc(ctx->fiber_pool, sizeof(hlt_fiber) + stack_size);
 
     if ( getcontext(&fiber->uctx) < 0 ) {
         fprintf(stderr, "getcontext failed in hlt_fiber_create\n");
         abort();
     }
-
-    size_t stack_size = hlt_config_get()->fiber_stack_size;
 
     fiber->state = INIT;
     fiber->run = func;
@@ -59,7 +59,7 @@ hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* ctx, voi
     fiber->context = ctx;
     fiber->uctx.uc_link = 0;
     fiber->uctx.uc_stack.ss_size = stack_size;
-    fiber->uctx.uc_stack.ss_sp = hlt_malloc(stack_size);
+    fiber->uctx.uc_stack.ss_sp = &fiber->stack;
     fiber->uctx.uc_stack.ss_flags = 0;
 
     // Magic from from libtask/task.c to turn the pointer into two words.
@@ -75,7 +75,8 @@ hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* ctx, voi
 
 void hlt_fiber_delete(hlt_fiber* fiber)
 {
-    hlt_free_list_free(fiber->context->fiber_pool, fiber, sizeof(hlt_fiber));
+    size_t stack_size = hlt_config_get()->fiber_stack_size;
+    hlt_free_list_free(fiber->context->fiber_pool, fiber, sizeof(hlt_fiber) + stack_size);
 }
 
 int8_t hlt_fiber_start(hlt_fiber* fiber)
