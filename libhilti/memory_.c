@@ -280,38 +280,42 @@ void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location
     }
 }
 
-hlt_free_list* hlt_free_list_new()
+hlt_free_list* hlt_free_list_new(size_t size)
 {
     hlt_free_list* list = hlt_malloc(sizeof(hlt_free_list));
     list->pool = 0;
-    list->size = 0;
+    list->size = sizeof(__hlt_free_list_block) + size;
     return list;
 }
 
-void* hlt_free_list_alloc(hlt_free_list* list, size_t size)
-{
-    assert(size == list->size || ! list->size);
 
+size_t hlt_free_list_block_size(hlt_free_list* list)
+{
+    return list->size - sizeof(__hlt_free_list_block);
+}
+
+#define __data_offset ((int) &((__hlt_free_list_block*)0)->data)
+
+void* hlt_free_list_alloc(hlt_free_list* list)
+{
     __hlt_free_list_block* b = 0;
 
     if ( list->pool ) {
         b = list->pool;
         list->pool = list->pool->next;
-        bzero(b, sizeof(__hlt_free_list_block) + size); // Make contents consistent.
+        bzero(b, list->size); // Make contents consistent.
     }
     else {
-        b = (__hlt_free_list_block*) hlt_malloc(sizeof(__hlt_free_list_block) + size);
-        list->size = size;
+        b = (__hlt_free_list_block*) hlt_malloc(list->size);
     }
 
-    return ((char *)b) + sizeof(__hlt_free_list_block*);
+    return ((char *)b) + __data_offset;
 }
 
-void hlt_free_list_free(hlt_free_list* list, void* p, size_t size)
+void hlt_free_list_free(hlt_free_list* list, void* p)
 {
-    assert(size == list->size);
+    __hlt_free_list_block* b = (__hlt_free_list_block*) (((char *)p) - __data_offset);
 
-    __hlt_free_list_block* b = (__hlt_free_list_block*) (((char *)p) - sizeof(__hlt_free_list_block*));
     b->next = list->pool;
     list->pool = b;
 }

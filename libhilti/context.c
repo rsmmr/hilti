@@ -53,7 +53,7 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
 
     ctx->excpt = 0;
     ctx->fiber = 0;
-    ctx->fiber_pool = hlt_free_list_new();
+    ctx->fiber_pool = hlt_free_list_new(hlt_config_get()->fiber_stack_size);
     ctx->worker = 0;
     ctx->tcontext = 0;
     ctx->tcontext_type = 0;

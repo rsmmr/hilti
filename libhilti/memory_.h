@@ -213,8 +213,15 @@ typedef struct {
 
 /// Creates a new free list managing memory objects.
 ///
+/// size: The size of the blocks to allocate.
+///
 /// Returns: A pointer to the new free list object.
-hlt_free_list* hlt_free_list_new();
+hlt_free_list* hlt_free_list_new(size_t size);
+
+/// Returns the block size of a free list.
+///
+/// list: The list to return the block size for.
+size_t hlt_free_list_block_size(hlt_free_list* list);
 
 /// Allocates a new chunk of memory. If the free list has currently unused
 /// blocks, one of them will be returned; otherwise, a new one will be
@@ -222,24 +229,18 @@ hlt_free_list* hlt_free_list_new();
 ///
 /// list: The list to allocate from.
 ///
-/// size: The size of the block to allocate. Note that this must be constant
-/// across all calls, or results are undefined.
-///
 /// Returns: A pointer of size at least \a size.
 ///
 /// \note This will abort execution if it can't satisfy the request.
-void* hlt_free_list_alloc(hlt_free_list* list, size_t size);
+void* hlt_free_list_alloc(hlt_free_list* list);
 
 /// Frees a chunk of memory formerly returned by hlt_free_list_alloc(). It
 /// will be returned to the pool.
 ///
 /// list: The list to return the block to.
 ///
-/// size: The size of the block freed; this must match what was past to
-/// hlt_free_list_alloc(), or result will be undefined.
-///
 /// p: The memory to return to the pool.
-void hlt_free_list_free(hlt_free_list* list, void* p, size_t size);
+void hlt_free_list_free(hlt_free_list* list, void* p);
 
 /// Deletes a free list, freeing all resources still pooled (but not those
 /// currently handed out) as well as the the free list itself.
