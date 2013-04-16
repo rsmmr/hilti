@@ -1,5 +1,5 @@
 //
-// @TEST-EXEC: ${CXX} -g -O0 -o a.out %INPUT -lhilti-jit `${HILTI_CONFIG} --compiler --runtime --cxxflags --ldflags --libs`
+// @TEST-EXEC: ${CXX} -g -O0 -o a.out %INPUT `${HILTI_CONFIG} --compiler --runtime --cxxflags --ldflags --libs` -lhilti-jit 
 // @TEST-EXEC: ./a.out >output
 // @TEST-EXEC: btest-diff output
 //
@@ -8,6 +8,10 @@
 
 #include <hilti/hilti.h>
 #include <hilti/jit/libhilti-jit.h>
+
+extern "C" {
+#include <libhilti/libhilti.h>
+}
 
 int main(int argc, char** argv)
 {
@@ -55,14 +59,16 @@ int main(int argc, char** argv)
 
     hlt_init_jit(ctx, linked_module, ee);
 
-    auto main_run = (void (*)()) ctx->nativeFunction(linked_module, ee, "main_run");
+    auto main_run = (void (*)(hlt_exception**, hlt_execution_context*)) ctx->nativeFunction(linked_module, ee, "main_run");
 
     if ( ! main_run ) {
         fprintf(stderr, "nativeFunction failed\n");
         return 1;
     }
 
-    (*main_run)();
+    hlt_exception* excpt = 0;
+    hlt_execution_context* ectx = hlt_global_execution_context();
+    (*main_run)(&excpt, ectx);
 
     return 0;
 }
