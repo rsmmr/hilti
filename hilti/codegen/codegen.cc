@@ -3549,7 +3549,7 @@ llvm::Value* CodeGen::llvmTuple(shared_ptr<Type> type, const expression_list& el
 
 llvm::Value* CodeGen::llvmTuple(const value_list& elems)
 {
-    return llvmValueStruct(elems);
+    return llvmValueStruct(elems, true);
 }
 
 llvm::Value* CodeGen::llvmClassifierField(shared_ptr<Type> field_type, shared_ptr<Type> src_type, llvm::Value* src_val, const Location& l)
