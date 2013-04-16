@@ -41,6 +41,9 @@ public:
    /// XXXX
    virtual ByteOrder byteOrder() const;
 
+   /// XXX
+   virtual string dataLayout() const = 0;
+
 protected:
    ABI() {}
 
@@ -70,6 +73,8 @@ public:
 
    llvm::Function* createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc) override;
    llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args, type::function::CallingConvention cc) override;
+
+   string dataLayout() const override;
 
 private:
    struct ClassifiedArguments {
