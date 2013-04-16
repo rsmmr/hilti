@@ -1,6 +1,7 @@
 
 #include "module.h"
 #include "context.h"
+#include "options.h"
 
 using namespace hilti;
 
@@ -18,6 +19,10 @@ Module::Module(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, const string&
     // Implicitly always import the internal libhilti module.
     if ( id->name() != "hlt" )
         import("libhilti");
+
+    if ( ctx->options().profile && util::strtolower(id->name()) != "hilti" )
+        // Need this for Hilti::ProfileStyle.
+        import("Hilti");
 
     // Implicitly always export Main::run().
     if ( util::strtolower(id->name()) == "main" )

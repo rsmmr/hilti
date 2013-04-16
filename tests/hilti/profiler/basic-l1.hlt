@@ -1,7 +1,7 @@
 #
 # @TEST-REQUIRES: which hilti-prof
 #
-# @TEST-EXEC:  hilti-build -FF %INPUT -o a.out
+# @TEST-EXEC:  hilti-build -d -F %INPUT -o a.out
 # @TEST-EXEC:  ./a.out -P
 # @TEST-EXEC:  hilti-prof hlt.prof.*.dat | canonify-hilti-prof >output
 # @TEST-EXEC:  btest-diff output
@@ -19,11 +19,11 @@ void run() {
 
     sum = int.add 12 30
 
-    profiler.update "testt" 100
+    profiler.update "testt"
 
     call Hilti::print (sum, True)
 
-    profiler.update "testt" 200
+    profiler.update "testt"
 
     profiler.stop "testt"
     profiler.stop "testt"

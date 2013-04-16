@@ -19,7 +19,29 @@ StatementBuilder::~StatementBuilder()
 
 void StatementBuilder::llvmStatement(shared_ptr<Statement> stmt, bool cleanup)
 {
+    string tag;
+
+    if ( cg()->options().profile >= 2 ) {
+        auto instr = ast::tryCast<statement::instruction::Resolved>(stmt);
+
+        // Skip terminators, their code generation may end the current basic
+        // block so that we can't add our code for profiler.stop.
+        if ( instr && ! instr->instruction()->terminator() ) {
+            auto name = instr->instruction()->id()->name();
+            if ( ! ::util::startsWith(name, "profiler.") &&
+                 ! ::util::startsWith(name, "call") )
+                // tag = ::util::fmt("instr/%s#%s", name, string(stmt->location()));
+                tag = ::util::fmt("instr/%s", name);
+        }
+    }
+
+    if ( ! tag.empty() )
+        cg()->llvmProfilerStart(tag);
+
     call(stmt);
+
+    if ( ! tag.empty() )
+        cg()->llvmProfilerStop(tag);
 }
 
 shared_ptr<Statement> StatementBuilder::currentStatement()
@@ -284,7 +306,7 @@ void StatementBuilder::visit(declaration::Function* f)
     if ( cg()->options().debug )
         cg()->llvmDebugPrint("hilti-flow", string("entering ") + name);
 
-    if ( cg()->options().profile )
+    if ( cg()->options().profile >= 1 )
         cg()->llvmProfilerStart(string("func/") + name);
 
     // Create shadow locals for non-const parameters so that we can modify

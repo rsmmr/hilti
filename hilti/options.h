@@ -33,9 +33,10 @@ public:
     /// passes can be disabled individually my modifying optimization_passes.
     bool optimize = false;
 
-    /// If true, include instrumentation for runtime profiling into generated
-    /// code. Enabling this has a significant performance impact.
-    bool profile = false;
+    /// If >0, include instrumentation for runtime profiling into generated
+    /// code. For larger values, more fine-granular profiling may be
+    /// included. Enabling profiling has a significant performance impact.
+    unsigned int profile = 0;
 
     /// If true, all generated code is verified for correctness. Disabling
     /// this is primarily for debugging purposes.

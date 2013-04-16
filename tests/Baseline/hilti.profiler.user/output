@@ -1,7 +1,15 @@
 #! ctime cwall tag type time wall updates cycles misses alloced heap user 
+0 - fiber/create B 0 - 0 - - - - 0
+0 - fiber/create E 0 - 0 - - - - 0
+0 - fiber/start B 0 - 0 - - - - 0
+0 - fiber/inner B 0 - 0 - - - - 0
 0 - func/Main::run B 0 - 0 - - - - 0
 0 - testt B 0 - 0 - - - - 0
+0 - instr/int.add B 0 - 0 - - - - 0
+0 - instr/int.add E 0 - 0 - - - - 0
 0 - testt U 0 - 1 - - - - 100
 0 - testt U 0 - 2 - - - - 300
 0 - testt E 0 - 2 - - - - 300
 0 - func/Main::run E 0 - 0 - - - - 0
+0 - fiber/inner E 0 - 0 - - - - 0
+0 - fiber/start E 0 - 0 - - - - 0

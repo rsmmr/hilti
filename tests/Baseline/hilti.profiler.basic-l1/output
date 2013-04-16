@@ -4,10 +4,10 @@
 0 - fiber/start B 0 - 0 - - - - 0
 0 - fiber/inner B 0 - 0 - - - - 0
 0 - func/Main::run B 0 - 0 - - - - 0
-0 - test B 0 - 0 - - - - 0
-0 - test S 0 - 5 - - - - 0
-0 - test S 0 - 10 - - - - 0
-0 - test E 0 - 10 - - - - 0
+0 - testt B 0 - 0 - - - - 0
+0 - testt U 0 - 1 - - - - 0
+0 - testt U 0 - 2 - - - - 0
+0 - testt E 0 - 2 - - - - 0
 0 - func/Main::run E 0 - 0 - - - - 0
 0 - fiber/inner E 0 - 0 - - - - 0
 0 - fiber/start E 0 - 0 - - - - 0

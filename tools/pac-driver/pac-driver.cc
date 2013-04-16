@@ -51,7 +51,8 @@ struct Options {
     bool profile;
 
     Options() {
-        debug = optimize = profile = false;
+        debug = optimize = false;
+        profile = 0;
     }
 };
 
@@ -555,7 +556,7 @@ int main(int argc, char** argv)
             break;
 
           case 'P':
-            options.profile = true;
+            ++options.profile;
             break;
 
           case 'l':

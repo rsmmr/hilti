@@ -1,5 +1,6 @@
 
 #include "options.h"
+#include "util/util.h"
 #include "autogen/hilti-config.h"
 
 using namespace hilti;
@@ -38,7 +39,7 @@ void Options::toCacheKey(::util::cache::FileCache::Key* key) const
 {
     key->options += (debug ? "D" : "d");
     key->options += (optimize ? "O" : "o");
-    key->options += (profile ? "P" : "p");
+    key->options += (profile ? ::util::fmt("P%d", profile) : "p");
     key->options += (verify ? "V" : "v");
 
     for ( auto d : libdirs_hlt )

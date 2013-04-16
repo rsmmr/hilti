@@ -1,7 +1,7 @@
 #
 # @TEST-REQUIRES: which hilti-prof
 #
-# @TEST-EXEC:  hilti-build -d -F %INPUT -o a.out
+# @TEST-EXEC:  hilti-build -d -FF %INPUT -o a.out
 # @TEST-EXEC:  ./a.out -P
 # @TEST-EXEC:  hilti-prof hlt.prof.*.dat | canonify-hilti-prof >output
 # @TEST-EXEC:  btest-diff output

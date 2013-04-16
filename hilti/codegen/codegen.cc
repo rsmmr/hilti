@@ -1657,7 +1657,7 @@ void CodeGen::llvmBuildExitBlock()
             llvmDebugPrint("hilti-flow", msg);
         }
 
-        if ( options().profile ) {
+        if ( options().profile >= 1 ) {
             // As this may be run in an exit block where we won't clean up
             // after us anymore, we do the string's mgt manually here.
             auto str = llvmStringFromData(string("func/") + name);
@@ -2490,6 +2490,8 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
         value_list cargs { fiber };
         _functions.back()->context = llvmCallC("hlt_fiber_context", cargs, false, false);
 
+        llvmProfilerStart("fiber/inner");
+
         expr_list fargs;
 
         for ( int i = 0; i < args.size(); ++i ) {
@@ -2498,6 +2500,8 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
         }
 
         auto result = llvmCall(llvm_func, ftype, fargs, false);
+
+        llvmProfilerStop("fiber/inner");
 
         _functions.back()->context = nullptr;
 
@@ -2517,6 +2521,8 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
 
     // Create the fiber and start it.
 
+    llvmProfilerStart("fiber/create");
+
     auto tmp = llvmAddTmp("fiber.arg", sty, sval, true);
     auto funcp = builder()->CreateBitCast(func, llvmTypePtr());
     auto svalp = builder()->CreateBitCast(tmp, llvmTypePtr());
@@ -2524,11 +2530,17 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
     value_list cargs { funcp, llvmExecutionContext(), svalp };
     auto fiber = llvmCallC("hlt_fiber_create", cargs, false, false);
 
-    return llvmFiberStart(fiber, rtype);
+    llvmProfilerStop("fiber/create");
+
+    auto result = llvmFiberStart(fiber, rtype);
+
+    return result;
 }
 
 llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
 {
+    llvmProfilerStart("fiber/start");
+
     llvm::Value* rptr = 0;
 
     if ( ! rtype->equal(builder::void_::type()) ) {
@@ -2543,6 +2555,8 @@ llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
     auto is_null = builder()->CreateIsNull(result);
     auto done = newBuilder("done");
     auto yield = newBuilder("yielded");
+
+    llvmProfilerStop("fiber/start");
 
     llvmCreateCondBr(is_null, yield, done);
 
@@ -3764,7 +3778,7 @@ void CodeGen::llvmProfilerStart(llvm::Value* tag, llvm::Value* style, llvm::Valu
 {
     assert(tag);
 
-    if ( ! options().profile )
+    if ( options().profile == 0 )
         return;
 
     if ( ! style )
@@ -3808,7 +3822,7 @@ void CodeGen::llvmProfilerStop(llvm::Value* tag)
 {
     assert(tag);
 
-    if ( ! options().profile )
+    if ( options().profile == 0 )
         return;
 
     expr_list args = {
@@ -3831,7 +3845,7 @@ void CodeGen::llvmProfilerUpdate(llvm::Value* tag, llvm::Value* arg)
 {
     assert(tag);
 
-    if ( ! options().profile )
+    if ( options().profile == 0 )
         return;
 
     if ( ! arg )

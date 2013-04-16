@@ -296,7 +296,7 @@ int main(int argc, char** argv)
             break;
 
          case 'F':
-            options.profile = true;
+            ++options.profile;
             break;
 
          case 'j':

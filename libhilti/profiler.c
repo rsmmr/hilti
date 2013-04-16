@@ -28,7 +28,7 @@ typedef hlt_hash khint_t;
 #include "3rdparty/khash/khash.h"
 
 #ifdef HAVE_PAPI
-#include <papi.h>
+# include <papi.h>
 
 #define PAPI_NUM_EVENTS 2
 
@@ -96,11 +96,7 @@ void init_papi()
         goto error;
     }
 
-    if ( ret != PAPI_OK ) {
-        DBG_LOG("hilti-profiler", "PAPI: cannot create event set, %s", PAPI_strerror(ret));
-        goto error;
-		}
-
+    __hlt_globals()->papi_set = PAPI_NULL;
     ret = PAPI_create_eventset(&__hlt_globals()->papi_set);
 
     if ( ret != PAPI_OK ) {
@@ -473,6 +469,7 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
         // We don't know this profiler yet.
         __hlt_profiler* p = hlt_calloc(1, sizeof(__hlt_profiler));
         p->tag = tag;
+        GC_CCTOR(p->tag, hlt_string);
         p->tmgr = tmgr;
         GC_CCTOR(p->tmgr, hlt_timer_mgr);
         p->timer = 0;
@@ -617,9 +614,10 @@ void hlt_profiler_stop(hlt_string tag, hlt_exception** excpt, hlt_execution_cont
             p->timer = 0;
         }
 
+        GC_DTOR(p->tag, hlt_string);
         GC_DTOR(p->tmgr, hlt_timer_mgr);
         hlt_free(p);
-        kh_value(ctx->pstate->profilers, i) = 0;
+        kh_del_table(ctx->pstate->profilers, i);
     }
 }
 
