@@ -9,6 +9,23 @@
 #include "scope-builder.h"
 #include "context.h"
 
+namespace binpac {
+
+class ScopeClearer : public ast::Pass<AstInfo>
+{
+public:
+    ScopeClearer() : Pass<AstInfo>("binpac::ScopeClearer") {}
+    virtual ~ScopeClearer() {}
+
+    bool run(shared_ptr<ast::NodeBase> module) override { return processAllPreOrder(module); }
+
+protected:
+    void visit(statement::Block* b) override { b->scope()->clear(); }
+
+};
+
+}
+
 using namespace binpac;
 using namespace binpac::passes;
 
@@ -23,11 +40,13 @@ ScopeBuilder::~ScopeBuilder()
 
 bool ScopeBuilder::run(shared_ptr<ast::NodeBase> module)
 {
-    auto m = ast::checkedCast<Module>(module);
-    m->body()->scope()->clear();
+    ScopeClearer clearer;
+    clearer.run(module);
 
     if ( ! processAllPreOrder(module) )
         return false;
+
+    auto m = ast::checkedCast<Module>(module);
 
     for ( auto i : m->importedIDs() ) {
 
