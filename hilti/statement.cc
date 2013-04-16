@@ -243,6 +243,7 @@ void statement::Block::setStatements(stmt_list stmts)
 bool statement::Block::nop()
 {
     assert(false && "not implemented.");
+    return false;
 }
 
 shared_ptr<Statement> statement::Block::firstNonBlock()

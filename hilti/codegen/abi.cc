@@ -116,6 +116,7 @@ static ffi_type* _llvmToCif(CodeGen* cg, llvm::Type* type)
     }
 
     assert(false); // cannot be reached.
+    return 0;
 }
 
 ffi_cif* ABI::getCIF(const string& name, llvm::Type* rtype, const argument_type_list& args)
