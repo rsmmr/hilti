@@ -475,9 +475,7 @@ void TypeBuilder::visit(type::Tuple* t)
     for ( auto t : t->typeList() )
         elems.push_back(cg()->llvmInitVal(t));
 
-    // TODO: This must be packed to keep the offsets correct. See
-    // visit(type::Struct) for more details.
-    auto init_val = cg()->llvmConstStruct(elems, true);
+    auto init_val = cg()->llvmConstStruct(elems);
 
     // Aux information is an array with the fields' offsets. We calculate the
     // offsets via a sizeof-style hack ...
@@ -982,15 +980,7 @@ void TypeBuilder::visit(type::Struct* t)
         for ( auto f : t->fields() )
             fields.push_back(cg()->llvmType(f->type()));
 
-        // TODO: The struct type must be packed, otherwise the alignment may
-        // end up not matching with our calculated offsets; the optimizer can
-        // mess around with it. That's of course not so great because it may
-        // misalign the individual fields. Ideally, LLVM will eventually
-        // allow to specify per-field aligments explicitly so that the
-        // optimizer can't mess with it. Alternatively, we could try to add
-        // some padding ourselved, but that's quite a hassle to do right on
-        // different platforms.
-        stype->setBody(fields, true);
+        stype->setBody(fields);
     }
 
     TypeInfo* ti = new TypeInfo(t);
