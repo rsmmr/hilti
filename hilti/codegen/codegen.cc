@@ -1087,7 +1087,7 @@ llvm::Value* CodeGen::llvmStringPtr(const string& s)
 
     if ( _functions.back()->is_init_func ) {
         auto data = llvmAddTmp("string", llvmTypeString(), llvmStringFromData(s));
-        llvmDtorAfterInstruction(data, builder::string::type(), true);
+        llvmDtorAfterInstruction(data, builder::string::type(), true, "llvmStringPtr");
         return data;
     }
 
@@ -1118,7 +1118,7 @@ llvm::Value* CodeGen::llvmString(const string& s)
         return llvmConstNull(llvmTypeString());
 
     auto val = llvmStringFromData(s);
-    llvmDtorAfterInstruction(val, builder::string::type(), false);
+    llvmDtorAfterInstruction(val, builder::string::type(), false, "llvmString");
     return val;
 }
 
@@ -1682,7 +1682,7 @@ void CodeGen::llvmBuildExitBlock()
     --_in_build_exit;
 }
 
-void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
+void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl)
 {
     auto tmp = llvmAddTmp("dtor", val->getType());
     auto stmt = _stmt_builder->currentStatement();
@@ -1691,10 +1691,10 @@ void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, 
     // aren't directly associated with a statement.
 
     llvmGCAssign(tmp, val, type, true);
-    _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(tmp, is_ptr, type, false)));
+    _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(tmp, is_ptr, type, false, location_addl)));
 }
 
-void CodeGen::llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type)
+void CodeGen::llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type, const string& location_addl)
 {
     auto stmt = _stmt_builder->currentStatement();
 
@@ -1706,7 +1706,7 @@ void CodeGen::llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type>
     if ( ti->dtor.size() == 0 && ti->dtor_func == 0 )
         return;
 
-    _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(addr, true, type, true)));
+    _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(addr, true, type, true, "clear-local/" + location_addl)));
 }
 
 void CodeGen::llvmClearLocalOnException(shared_ptr<Expression> expr)
@@ -1719,7 +1719,7 @@ void CodeGen::llvmFlushLocalsClearedOnException()
     _functions.back()->locals_cleared_on_excpt.clear();
 }
 
-void CodeGen::llvmClearLocalAfterInstruction(shared_ptr<Expression> expr)
+void CodeGen::llvmClearLocalAfterInstruction(shared_ptr<Expression> expr, const string& location_addl)
 {
     auto stmt = _stmt_builder->currentStatement();
 
@@ -1731,7 +1731,7 @@ void CodeGen::llvmClearLocalAfterInstruction(shared_ptr<Expression> expr)
     if ( ti->dtor.size() == 0 && ti->dtor_func == 0 )
         return;
 
-    _functions.back()->dtors_after_ins_exprs.insert(std::make_pair(stmt, expr));
+    _functions.back()->dtors_after_ins_exprs.insert(std::make_pair(stmt, std::make_tuple(expr, location_addl)));
 }
 
 void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
@@ -1756,12 +1756,16 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
         if ( dont_do_locals )
             continue;
 
-        auto tmp = llvmValueAddress((*i).second);
-        auto type = (*i).second->type();
+        auto tupl = (*i).second;
+        auto expr = std::get<0>(tupl);
+        auto loc_addl = std::get<1>(tupl);
+
+        auto tmp = llvmValueAddress(expr);
+        auto type = expr->type();
 
         for ( auto l : _functions.back()->locals ) {
             if ( l.second.first == tmp ) {
-                llvmGCClear(tmp, type, "instr-cleanup-1");
+                llvmGCClear(tmp, type, "instr-cleanup-1/" + loc_addl);
                 break;
             }
         }
@@ -1774,6 +1778,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
         auto ptr = std::get<1>(unref);
         auto type = std::get<2>(unref);
         auto local = std::get<3>(unref);
+        auto loc_addl = std::get<4>(unref);
 
         if ( local ) {
             if ( dont_do_locals )
@@ -1783,7 +1788,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
             // const parameter that we don't need to unref.
             for ( auto l : _functions.back()->locals ) {
                 if ( l.second.first == tmp ) {
-                    llvmGCClear(l.second.first, l.second.second, "instr-cleanup-2");
+                    llvmGCClear(l.second.first, l.second.second, string("instr-cleanup-2/") + loc_addl);
                     break;
                 }
             }
@@ -1798,7 +1803,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
         llvm::Value* ptr_val = ptr ? val : tmp;
 
         if ( val->getType()->isStructTy() ) {
-            llvmDtor(ptr_val, type, true, "function-instruction-struct-tmp");
+            llvmDtor(ptr_val, type, true, "function-instruction-struct-tmp/" + loc_addl);
             llvmCreateStore(llvmConstNull(val->getType()), tmp);
             continue;
         }
@@ -1808,7 +1813,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
 
         pushBuilder(dtor);
 
-        llvmDtor(ptr_val, type, true, "instruction-cleanup-tmp");
+        llvmDtor(ptr_val, type, true, "instruction-cleanup-tmp/" + loc_addl);
 
         llvmCreateStore(llvmConstNull(val->getType()), tmp);
         llvmCreateBr(cont);
@@ -3037,7 +3042,7 @@ void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> 
         llvmCctor(dst, type, true, "gc-assign");
 }
 
-void CodeGen::llvmGCClear(llvm::Value* addr, shared_ptr<Type> type, const char* tag)
+void CodeGen::llvmGCClear(llvm::Value* addr, shared_ptr<Type> type, const string& tag)
 {
     assert(ast::isA<type::ValueType>(type));
     auto init_val = typeInfo(type)->init_val;

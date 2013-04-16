@@ -1517,7 +1517,7 @@ public:
    ///
    /// is_ptr: True if *val* is in fact a pointer to an instance of the type
    /// described by *type*; false if it's the instance itself.
-   void llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr);
+   void llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl);
 
    /// XXX.
    void llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl);
@@ -1529,13 +1529,13 @@ public:
    void llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone, bool dtor_first = true);
 
    /// XXXX
-   void llvmGCClear(llvm::Value* addr, shared_ptr<Type> type, const char* tag);
+   void llvmGCClear(llvm::Value* addr, shared_ptr<Type> type, const string& tag);
 
    /// XXXX
-   void llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type);
+   void llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type, const string& location_addl);
 
    /// XXXX
-   void llvmClearLocalAfterInstruction(shared_ptr<Expression> expr);
+   void llvmClearLocalAfterInstruction(shared_ptr<Expression> expr, const string& location_addl);
 
    /// XXXX
    void llvmClearLocalOnException(shared_ptr<Expression> expr);
@@ -2231,8 +2231,8 @@ private:
    typedef std::map<string, int> label_map;
    typedef std::map<string, IRBuilder*> builder_map;
    typedef std::map<string, std::pair<llvm::Value*, shared_ptr<Type>>> local_map;
-   typedef std::multimap<shared_ptr<Statement>, std::tuple<llvm::Value*, bool, shared_ptr<Type>, bool>> dtor_map;
-   typedef std::multimap<shared_ptr<Statement>, shared_ptr<Expression>> dtor_expr_map;
+   typedef std::multimap<shared_ptr<Statement>, std::tuple<llvm::Value*, bool, shared_ptr<Type>, bool, string>> dtor_map;
+   typedef std::multimap<shared_ptr<Statement>, std::tuple<shared_ptr<Expression>, string>> dtor_expr_map;
    typedef std::list<std::pair<llvm::BasicBlock*, llvm::Value*>> exit_point_list;
 
    struct FunctionState {

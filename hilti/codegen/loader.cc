@@ -31,7 +31,7 @@ llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type
 
     else {
         if ( result.cctor )
-            cg()->llvmDtorAfterInstruction(result.value, type, result.is_ptr);
+            cg()->llvmDtorAfterInstruction(result.value, type, result.is_ptr, "Loader.normResult");
     }
 
     if ( result.is_ptr )

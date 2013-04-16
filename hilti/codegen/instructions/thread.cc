@@ -62,7 +62,7 @@ llvm::Value* _promoteContext(CodeGen* cg, llvm::Value* tctx,
         cg->llvmDtor(val, f->type(), false, "thread.cc::_promoteContext");
     }
 
-    cg->llvmDtorAfterInstruction(new_tctx, builder::reference::type(dst_context), false);
+    cg->llvmDtorAfterInstruction(new_tctx, builder::reference::type(dst_context), false, "thread.cc::_promoteContext");
 
     return new_tctx;
 }

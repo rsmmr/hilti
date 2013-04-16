@@ -41,7 +41,7 @@ void StatementBuilder::preAccept(shared_ptr<ast::NodeBase> node)
         auto live = cg()->hiltiModule()->liveness()->liveness(stmt);
 
         for ( auto v : *live.dead )
-            cg()->llvmClearLocalAfterInstruction(v->expression);
+            cg()->llvmClearLocalAfterInstruction(v->expression, "live.dead");
 
         for ( auto v : *live.in )
             cg()->llvmClearLocalOnException(v->expression);
