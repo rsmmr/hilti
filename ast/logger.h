@@ -69,19 +69,11 @@ public:
     int warnings() const { return _forward ? _forward->warnings() : _errors; }
     void reset() { _errors = _warnings = 0; }
 
-#ifdef DEBUG
     int debugLevel() const;
     void debugSetLevel(int level);
     void debug(int level, string msg);
     void debugPushIndent();
     void debugPopIndent();
-#else
-    int debugLevel() const { return 0; }
-    void debugSetLevel(int level) { }
-    void debug(int level, string msg) {}
-    void debugPushIndent() { }
-    void debugPopIndent()  { }
-#endif
 
 private:
     string _name;
@@ -90,10 +82,8 @@ private:
     mutable int _warnings = 0;
     mutable int _errors = 0;
 
-#ifdef DEBUG
     int _debug_level = 0;
     int _debug_indent = 0;
-#endif
 
 protected:
     enum ErrorType { Warning, Error, Internal, Fatal };

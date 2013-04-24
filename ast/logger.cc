@@ -169,8 +169,6 @@ void Logger::doError(const string& message, NodeBase* node, const string& locati
 #endif
 }
 
-#ifdef DEBUG
-
 int Logger::debugLevel() const
 {
     if ( _forward )
@@ -223,5 +221,4 @@ void Logger::debug(int level, string msg) {
 
     std::cerr << msg << std::endl;
 }
-#endif
 
