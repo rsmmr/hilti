@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <string.h>
+#include <errno.h>
+#include <sys/mman.h>
 
 #include "memory_.h"
 #include "globals.h"
@@ -280,6 +282,44 @@ void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location
     }
 }
 
+void* hlt_stack_alloc(size_t size)
+{
+    void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+
+    if ( stack == MAP_FAILED ) {
+        fprintf(stderr, "mmap failed: %s\n", strerror(errno));
+        exit(1);
+    }
+
+#ifdef DEBUG
+    ++__hlt_globals()->num_stacks;
+    __hlt_globals()->size_stacks += size;
+#endif
+
+    return stack;
+}
+
+void hlt_stack_invalidate(void* stack, size_t size)
+{
+    if ( msync(stack, size, MS_INVALIDATE) < 0 ) {
+        fprintf(stderr, "msync failed: %s\n", strerror(errno));
+        exit(1);
+    }
+}
+
+void hlt_stack_free(void* stack, size_t size)
+{
+    if ( munmap(stack, size) < 0 ) {
+        fprintf(stderr, "munmap failed: %s\n", strerror(errno));
+        exit(1);
+    }
+
+#ifdef DEBUG
+    --__hlt_globals()->num_stacks;
+    __hlt_globals()->size_stacks -= size;
+#endif
+}
+
 hlt_free_list* hlt_free_list_new(size_t size)
 {
     hlt_free_list* list = hlt_malloc(sizeof(hlt_free_list));
@@ -343,6 +383,8 @@ hlt_memory_stats hlt_memory_statistics()
     stats.num_deallocs = globals->num_deallocs;
     stats.num_refs = globals->num_refs;
     stats.num_unrefs = globals->num_unrefs;
+    stats.size_stacks = globals->size_stacks;
+    stats.num_stacks = globals->num_stacks;
 
     return stats;
 }

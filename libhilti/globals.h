@@ -68,6 +68,8 @@ struct __hlt_global_state {
     _Atomic(uint_fast64_t) num_deallocs;
     _Atomic(uint_fast64_t) num_refs;
     _Atomic(uint_fast64_t) num_unrefs;
+    _Atomic(uint_fast64_t) num_stacks;
+    _Atomic(uint_fast64_t) size_stacks;
 };
 
 // A type holding all of libhilti's global state.

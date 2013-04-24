@@ -26,7 +26,6 @@ struct __hlt_fiber {
     hlt_execution_context* context;
     hlt_fiber_func run;
     struct __hlt_fiber* next; // If a member of fiber tool, subsequent fiber or null.
-    uint64_t stack[]; // Begin of stack. We use an uint64_t to make sure it's well aligned.
 };
 
 struct __hlt_fiber_pool {
@@ -81,9 +80,7 @@ static void _fiber_trampoline(unsigned int y, unsigned int x)
 // this function does not intialize the "run" and "cookie" fields.
 static hlt_fiber* __hlt_fiber_create(hlt_execution_context* ctx)
 {
-    size_t stack_size = hlt_config_get()->fiber_stack_size;
-
-    hlt_fiber* fiber = (hlt_fiber*) hlt_malloc(sizeof(hlt_fiber) + stack_size);
+    hlt_fiber* fiber = (hlt_fiber*) hlt_malloc(sizeof(hlt_fiber));
 
     if ( getcontext(&fiber->uctx) < 0 ) {
         fprintf(stderr, "getcontext failed in __hlt_fiber_create\n");
@@ -95,8 +92,8 @@ static hlt_fiber* __hlt_fiber_create(hlt_execution_context* ctx)
     fiber->cookie = 0;
     fiber->context = ctx;
     fiber->uctx.uc_link = 0;
-    fiber->uctx.uc_stack.ss_size = stack_size;
-    fiber->uctx.uc_stack.ss_sp = &fiber->stack;
+    fiber->uctx.uc_stack.ss_size = hlt_config_get()->fiber_stack_size;
+    fiber->uctx.uc_stack.ss_sp = hlt_stack_alloc(fiber->uctx.uc_stack.ss_size);
     fiber->uctx.uc_stack.ss_flags = 0;
     fiber->next = 0;
 
@@ -116,6 +113,8 @@ static hlt_fiber* __hlt_fiber_create(hlt_execution_context* ctx)
 static void __hlt_fiber_delete(hlt_fiber* fiber)
 {
     assert(fiber->state != RUNNING);
+
+    hlt_stack_free(fiber->uctx.uc_stack.ss_sp, fiber->uctx.uc_stack.ss_size);
     hlt_free(fiber);
 }
 
@@ -173,6 +172,8 @@ void hlt_fiber_delete(hlt_fiber* fiber)
         __hlt_fiber_delete(fiber);
         return;
     }
+
+    hlt_stack_invalidate(fiber->uctx.uc_stack.ss_sp, fiber->uctx.uc_stack.ss_size);
 
     fiber->next = fiber->context->fiber_pool->head;
     fiber->context->fiber_pool->head = fiber;

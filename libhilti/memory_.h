@@ -28,6 +28,8 @@ typedef struct {
 typedef struct {
     uint64_t size_heap;     /// Current size of heap in bytes.
     uint64_t size_alloced;  /// Total number of bytes currently handed out by allocations.
+    uint64_t size_stacks;   /// Total number of bytes currently allocated for stacks via hlt_alloc_stack() (debug-only).
+    uint64_t num_stacks;    /// Total number of stacks currently allocated via hlt_alloc_stack() (debug-only)
     uint64_t num_allocs;    /// Total number of calls to allocation functions (debug-only).
     uint64_t num_deallocs;  /// Total number of calls to deallocation functions (debug-only).
     uint64_t num_refs;      /// Total number of reference count increments (debug-only).
@@ -115,6 +117,33 @@ extern void* __hlt_realloc(void* ptr, uint64_t size, const char* type, const cha
 /// location: A string describing the location where the object is allocaged.
 /// This is for debugging purposes only.
 extern void __hlt_free(void* ptr, const char* type, const char* location);
+
+/// Allocates a chunk of stack space. This is handled separated from other
+/// memory allocation to allow to internally optimze for large allocations of
+/// memory that may be used only partially. It internally uses mmap(). The
+/// function won't return if the allocation fails, but abort execution.
+///
+/// size: The size of the stack space to allocate.
+///
+/// Returns: The allocated space. The memory will be zero-initialized.
+extern void* hlt_stack_alloc(size_t size);
+
+/// Frees a stack allocated via hlt_alloc_stack().
+///
+/// stack: The memory allocated by hlt_stack_alloc().
+///
+/// size: The size that was specified for the corresponding hlt_alloc_stack()
+/// call.
+extern void hlt_stack_free(void* stack, size_t size);
+
+/// Invalidates a stack's memory without releasing it. This may allow the OS
+/// to recycle previously allocated physical memory.
+///
+/// stack: The memory allocated by hlt_stack_alloc().
+///
+/// size: The size that was specified for the corresponding hlt_alloc_stack()
+/// call.
+extern void hlt_stack_invalidate(void* stack, size_t size);
 
 #define hlt_malloc(size)        __hlt_malloc(size, "-", __hlt_make_location(__FILE__,__LINE__))
 #define hlt_calloc(count, size) __hlt_calloc(count, size, "-", __hlt_make_location(__FILE__,__LINE__))
