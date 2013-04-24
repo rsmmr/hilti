@@ -457,6 +457,7 @@ string Operator::render() const
      default:
         fprintf(stderr, "unknown operator %d in Operator::render()", (int)op.kind);
         assert(false);
+        return false;
     }
 }
 

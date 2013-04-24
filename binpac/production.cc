@@ -661,7 +661,7 @@ bool Unknown::atomic() const
 {
     // This object shouldn't exist anymore at the time this is called.
     assert(false);
-
+    return false;
 }
 
 string Unknown::renderProduction() const
