@@ -10,6 +10,9 @@ struct __hlt_execution_context;
 /// and allow resumption at a later time.
 typedef struct __hlt_fiber hlt_fiber;
 
+/// An internal type for managing a pool of available fibers.
+typedef struct __hlt_fiber_pool __hlt_fiber_pool;
+
 typedef void (*hlt_fiber_func)(hlt_fiber* fiber, void* p);
 
 /// Creates a new fiber instance.
@@ -75,5 +78,12 @@ extern void* hlt_fiber_get_cookie(hlt_fiber* fiber);
 ///
 /// Returns: The context.
 extern struct __hlt_execution_context* hlt_fiber_context(hlt_fiber* fiber);
+
+/// Internal functin to create a new, initially empty pool of available
+/// fibers.
+extern __hlt_fiber_pool* __hlt_fiber_pool_new();
+
+/// Internal function to delete a pool of available fibers.
+extern void __hlt_fiber_pool_delete(__hlt_fiber_pool* pool);
 
 #endif

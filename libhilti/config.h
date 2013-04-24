@@ -27,6 +27,9 @@ struct __hlt_config
     /// Stack size for fibers.
     size_t fiber_stack_size;
 
+    /// Maximum size of pool of recycalable fibers.
+    size_t fiber_max_pool_size;
+
     /// File where debug output is to be sent. Default is stderr.
     const char* debug_out;
 

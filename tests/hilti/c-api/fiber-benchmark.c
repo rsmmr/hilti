@@ -52,8 +52,6 @@ int main(int argc, char** argv)
             break;
     }
 
-    hlt_fiber_delete(fiber);
-
     double delta = current_time() - start;
     double rate = rounds / delta;
 
@@ -61,14 +59,13 @@ int main(int argc, char** argv)
 
     //////////////////////
 
-    rounds = 100;
+    rounds = 10000000;
     start = current_time();
 
     for ( int i = 0; i < rounds; i++ ) {
         fiber = hlt_fiber_create(fiber_func_return, hlt_global_execution_context(), (void*)0x1234567890);
         int r = hlt_fiber_start(fiber);
         assert(r == 1);
-        hlt_fiber_delete(fiber);
     }
 
     delta = current_time() - start;

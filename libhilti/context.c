@@ -37,7 +37,7 @@ void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
         GC_DTOR_GENERIC(&ctx->tcontext, ctx->tcontext_type);
     }
 
-    hlt_free_list_delete(ctx->fiber_pool);
+    __hlt_fiber_pool_delete(ctx->fiber_pool);
 }
 
 __HLT_RTTI_GC_TYPE(hlt_execution_context, HLT_TYPE_CONTEXT)
@@ -53,7 +53,7 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
 
     ctx->excpt = 0;
     ctx->fiber = 0;
-    ctx->fiber_pool = hlt_free_list_new(hlt_config_get()->fiber_stack_size);
+    ctx->fiber_pool = __hlt_fiber_pool_new();
     ctx->worker = 0;
     ctx->tcontext = 0;
     ctx->tcontext_type = 0;

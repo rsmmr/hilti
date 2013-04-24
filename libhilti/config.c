@@ -29,6 +29,7 @@ static hlt_config* _default_config()
     cfg->time_terminate = 1.0;
     cfg->thread_stack_size = 2684354560; // This is generous.
     cfg->fiber_stack_size = 100 * 1024 * 1024; // This is generous.
+    cfg->fiber_max_pool_size = 1000;
     cfg->debug_out = "hlt-debug.log";
     cfg->debug_streams = dbg;
     cfg->profiling = 0;

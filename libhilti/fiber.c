@@ -13,19 +13,29 @@
 
 #include "3rdparty/libtask/taskimpl.h"
 
-enum __hlt_fiber_state { INIT=1, RUNNING=2, FINISHED=3, YIELDED=4 };
+enum __hlt_fiber_state { INIT, RUNNING, YIELDED, IDLE, FINISHED };
 
 struct __hlt_fiber {
     enum __hlt_fiber_state state;
     ucontext_t uctx;
     jmp_buf fiber;
+    jmp_buf trampoline;
     jmp_buf parent;
     void* cookie;
     void* result;
     hlt_execution_context* context;
     hlt_fiber_func run;
-    char stack[]; // Begin of stack.
+    struct __hlt_fiber* next; // If a member of fiber tool, subsequent fiber or null.
+    uint64_t stack[]; // Begin of stack. We use an uint64_t to make sure it's well aligned.
 };
+
+struct __hlt_fiber_pool {
+    hlt_fiber* head;
+    size_t size;
+};
+
+static void __hlt_fiber_yield(hlt_fiber* fiber, enum __hlt_fiber_state state);
+static void __hlt_fiber_return(hlt_fiber* fiber, enum __hlt_fiber_state state);
 
 static void _fiber_trampoline(unsigned int y, unsigned int x)
 {
@@ -38,28 +48,57 @@ static void _fiber_trampoline(unsigned int y, unsigned int x)
     z |= y;
     fiber = (hlt_fiber*)z;
 
-    (*fiber->run)(fiber, fiber->cookie);
+    // Via recycling a fiber can run an arbitrary number of user jobs. So
+    // this trampoline is really a loop that yields after it has finished its
+    // run() function, and expects a new run function once it's resumed.
 
-    hlt_fiber_return(fiber);
+    while ( 1 ) {
+        assert(fiber->run);
+
+        hlt_fiber_func run = fiber->run;
+        void* cookie = fiber->cookie;
+
+        assert(fiber->state == RUNNING);
+
+        if ( ! _setjmp(fiber->trampoline) ) {
+            (*run)(fiber, cookie);
+        }
+
+        if ( ! _setjmp(fiber->fiber) ) {
+            fiber->run = 0;
+            fiber->cookie = 0;
+            fiber->state = IDLE;
+            _longjmp(fiber->parent, 1);
+        }
+    }
+
+    // Cannot be reached.
+    abort();
 }
 
-hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* ctx, void* p)
+// Internal version that really creates a fiber (vs. the external version
+// that might recycle a previously created on from a fiber pool). Note that
+// this function does not intialize the "run" and "cookie" fields.
+static hlt_fiber* __hlt_fiber_create(hlt_execution_context* ctx)
 {
-    hlt_fiber* fiber = (hlt_fiber*) hlt_free_list_alloc(ctx->fiber_pool);
+    size_t stack_size = hlt_config_get()->fiber_stack_size;
+
+    hlt_fiber* fiber = (hlt_fiber*) hlt_malloc(sizeof(hlt_fiber) + stack_size);
 
     if ( getcontext(&fiber->uctx) < 0 ) {
-        fprintf(stderr, "getcontext failed in hlt_fiber_create\n");
+        fprintf(stderr, "getcontext failed in __hlt_fiber_create\n");
         abort();
     }
 
     fiber->state = INIT;
-    fiber->run = func;
-    fiber->cookie = p;
+    fiber->run = 0;
+    fiber->cookie = 0;
     fiber->context = ctx;
     fiber->uctx.uc_link = 0;
-    fiber->uctx.uc_stack.ss_size = (hlt_free_list_block_size(ctx->fiber_pool) - sizeof(hlt_fiber));
+    fiber->uctx.uc_stack.ss_size = stack_size;
     fiber->uctx.uc_stack.ss_sp = &fiber->stack;
     fiber->uctx.uc_stack.ss_flags = 0;
+    fiber->next = 0;
 
     // Magic from from libtask/task.c to turn the pointer into two words.
     unsigned long z = (unsigned long)fiber;
@@ -72,9 +111,72 @@ hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* ctx, voi
     return fiber;
 }
 
+// Internal version that really deletes a fiber (vs. the external version
+// that might put the fiber back into a pool to recycle later).
+static void __hlt_fiber_delete(hlt_fiber* fiber)
+{
+    assert(fiber->state != RUNNING);
+    hlt_free(fiber);
+}
+
+__hlt_fiber_pool* __hlt_fiber_pool_new()
+{
+    __hlt_fiber_pool* pool = hlt_malloc(sizeof(__hlt_fiber_pool));
+    pool->head = 0;
+    pool->size = 0;
+    return pool;
+}
+
+void __hlt_fiber_pool_delete(__hlt_fiber_pool* pool)
+{
+    while ( pool->head ) {
+        hlt_fiber* fiber = pool->head;
+        pool->head = pool->head->next;
+        __hlt_fiber_delete(fiber);
+    }
+
+    hlt_free(pool);
+}
+
+hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* ctx, void* p)
+{
+    // If there's a fiber available in the pool, use that. Otherwise create a
+    // new one.
+
+    hlt_fiber* fiber = 0;
+
+    if ( ctx->fiber_pool->head ) {
+        fiber = ctx->fiber_pool->head;
+        ctx->fiber_pool->head = ctx->fiber_pool->head->next;
+        --ctx->fiber_pool->size;
+        fiber->next = 0;
+        assert(fiber->state == IDLE);
+    }
+
+    else
+        fiber = __hlt_fiber_create(ctx);
+
+    fiber->run = func;
+    fiber->cookie = p;
+
+    return fiber;
+}
+
 void hlt_fiber_delete(hlt_fiber* fiber)
 {
-    hlt_free_list_free(fiber->context->fiber_pool, fiber);
+    assert(! fiber->next);
+
+    // Return the fiber to the pool as long as we haven't reached us maximum
+    // pool size yet.
+
+    if ( fiber->context->fiber_pool->size >= hlt_config_get()->fiber_max_pool_size ) {
+        __hlt_fiber_delete(fiber);
+        return;
+    }
+
+    fiber->next = fiber->context->fiber_pool->head;
+    fiber->context->fiber_pool->head = fiber;
+    ++fiber->context->fiber_pool->size;
 }
 
 int8_t hlt_fiber_start(hlt_fiber* fiber)
@@ -95,13 +197,13 @@ int8_t hlt_fiber_start(hlt_fiber* fiber)
     }
 
     switch ( fiber->state ) {
-     case FINISHED:
+     case YIELDED:
+        return 0;
+
+     case IDLE:
         __hlt_context_set_fiber(fiber->context, 0);
         hlt_fiber_delete(fiber);
         return 1;
-
-     case YIELDED:
-        return 0;
 
      default:
         abort();
@@ -119,11 +221,8 @@ void hlt_fiber_yield(hlt_fiber* fiber)
 
 void hlt_fiber_return(hlt_fiber* fiber)
 {
-    if ( ! _setjmp(fiber->fiber) ) {
-        __hlt_context_set_fiber(fiber->context, 0);
-        fiber->state = FINISHED;
-        _longjmp(fiber->parent, 1);
-    }
+    __hlt_context_set_fiber(fiber->context, 0);
+    _longjmp(fiber->trampoline, 1);
 }
 
 void hlt_fiber_set_result_ptr(hlt_fiber* fiber, void* p)
