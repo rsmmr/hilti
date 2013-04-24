@@ -96,7 +96,7 @@ shared_ptr<Type> expression::CustomExpression::type() const
 {
     // Must be overridden.
     assert(false);
-    return false;
+    return nullptr;
 }
 
 bool expression::CustomExpression::isConstant() const
