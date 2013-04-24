@@ -1,13 +1,10 @@
 #! /usr/bin/env bash
 
-echo $0: $@ >>/tmp/llvm
-
 shift # Remove command
 output=$1
 shift
 inputs=$@
 
-echo llvm-link -o $output $inputs >>/tmp/llvm
 llvm-link -o $output $inputs
 
 
