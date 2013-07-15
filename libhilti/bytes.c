@@ -1058,7 +1058,7 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
                 i = 0;
             }
 
-            char c = *(char *)p;
+            unsigned char c = *(unsigned char *)p;
 
             if ( isprint((char)c) && c < 128 )
                 buffer[i++] = c;

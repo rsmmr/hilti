@@ -1,7 +1,6 @@
 
 #include "mime.h"
-
-static hlt_map* mtypes = 0;
+#include "globals.h"
 
 typedef struct __mime_parser {
     __hlt_gchdr __gch;
@@ -21,9 +20,6 @@ void __mime_parser_dtor(hlt_type_info* ti, __mime_parser* mime_parser)
 
 static void __add_parser(hlt_bytes* mt, binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! mtypes )
-        mtypes = hlt_map_new(&hlt_type_info_hlt_bytes, &hlt_type_info___mime_parser, 0, excpt, ctx);
-
     __mime_parser* mp = GC_NEW(__mime_parser);
     GC_INIT(mp->parser, parser, hlt_Parser);
     mp->next = 0;
@@ -35,12 +31,12 @@ static void __add_parser(hlt_bytes* mt, binpac_parser* parser, hlt_exception** e
     *cmt = mt;
     *cmp = mp;
 
-    __mime_parser** current = hlt_map_get_default(mtypes, &hlt_type_info_hlt_bytes, cmt, &hlt_type_info___mime_parser, 0, excpt, ctx);
+    __mime_parser** current = hlt_map_get_default(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, cmt, &hlt_type_info___mime_parser, 0, excpt, ctx);
 
     if ( current )
         mp->next = *current; // +1 already.
 
-    hlt_map_insert(mtypes, &hlt_type_info_hlt_bytes, cmt, &hlt_type_info___mime_parser, cmp, excpt, ctx);
+    hlt_map_insert(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, cmt, &hlt_type_info___mime_parser, cmp, excpt, ctx);
 
     GC_DTOR(mp, __mime_parser);
 
@@ -86,10 +82,10 @@ static hlt_bytes* __main_type(hlt_bytes* mtype, hlt_exception** excpt, hlt_execu
 
 static void __connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_full, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! mtypes )
+    if ( ! __binpac_globals_get()->mime_types )
         return;
 
-    __mime_parser** current = hlt_map_get_default(mtypes, &hlt_type_info_hlt_bytes, &mtype, &hlt_type_info___mime_parser, 0, excpt, ctx);
+    __mime_parser** current = hlt_map_get_default(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, &mtype, &hlt_type_info___mime_parser, 0, excpt, ctx);
 
     if ( ! current )
         return;
@@ -162,15 +158,6 @@ void binpachilti_mime_register_parser(binpac_parser* parser, hlt_exception** exc
     GC_DTOR(i, hlt_iterator_list);
     GC_DTOR(end, hlt_iterator_list);
     GC_DTOR(ascii, hlt_string);
-}
-
-void binpachilti_mime_unregister_all(hlt_exception** excpt, hlt_execution_context* ctx)
-{
-    if ( ! mtypes )
-        return;
-
-    hlt_map_clear(mtypes, excpt, ctx);
-    GC_DTOR(mtypes, hlt_map);
 }
 
 void binpachilti_sink_connect_mimetype_string(binpac_sink* sink, hlt_string mtype, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)

@@ -73,13 +73,8 @@ extern const hlt_config* hlt_config_get();
 /// internally so the instance can be deleted afterwards.
 extern void hlt_config_set(const hlt_config* new_config);
 
-/// Initializes libhilti's configuration subsystem. The function is called
-/// from hlt_init().
-extern void __hlt_config_init();
-
-/// Terminates libhilti's debugging subsystem. The function is called from
-/// hlt_done().
-extern void __hlt_config_done();
+/// XXX
+extern hlt_config* __hlt_default_config();
 
 #endif
 

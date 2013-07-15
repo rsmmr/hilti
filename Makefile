@@ -2,7 +2,7 @@
 # This is just a wrapper around the CMake setup.
 #
 
-all: release
+all: debug
 
 debug:
 	test -d build || mkdir build

@@ -40,7 +40,11 @@ for line in sorted:
             sys.exit(1)
 
     if op == "free":
-        del objs[addr]
+        try:
+            del objs[addr]
+        except KeyError:
+            pass
+
         continue
 
     try:

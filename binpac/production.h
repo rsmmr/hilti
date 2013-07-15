@@ -498,7 +498,7 @@ public:
     ACCEPT_VISITOR(NonTerminal);
 
 protected:
-    friend class Grammar;
+    friend class ::binpac::Grammar;
 
     /// Sets the look-ahead sets for the two alternative. Called from the
     /// Grammar calss when it computes the parsing tables.

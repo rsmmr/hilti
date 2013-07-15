@@ -75,15 +75,16 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod)
             _libhilti = llvm::ParseAssemblyFile(libhilti, diag, llvmContext());
 
             if ( ! _libhilti )
-                fatalError(string("cannot load libhilti.ll: ") + diag.getMessage() + "  (\"" + diag.getLineContents() + "\")");
+                fatalError(::util::fmt("cannot load libhilti.ll: %s (\"%s\")", diag.getMessage().str(), diag.getLineContents().str()));
         }
 
         _abi = std::move(ABI::createABI(this));
-        _data_layout = new ::llvm::DataLayout(_abi->dataLayout());
 
         _module = new ::llvm::Module(util::mangle(hltmod->id(), false), llvmContext());
         _module->setTargetTriple(_abi->targetTriple());
-        _module->setDataLayout(_data_layout->getStringRepresentation());
+        _module->setDataLayout(_abi->dataLayout());
+
+        _data_layout = new ::llvm::DataLayout(_abi->dataLayout());
 
         createInitFunction();
 

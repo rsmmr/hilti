@@ -8,7 +8,7 @@ MESSAGE(STATUS "Adapting compiler settings")
 set(clang_debug_flags    "-DDEBUG -D_DEBUG -Wno-error=unused-function -Werror -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 set(clang_release_flags  "-DNDEBUG -O3")
 
-set(clang_cflags_Linux               "-lcxxrt -ldl") # FIXME: Why does not work in ldflags?
+set(clang_cflags_Linux               "")
 set(clang_ldflags_Linux              "")
 set(clang_shared_linker_flags_Linux  "")
 

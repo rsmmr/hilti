@@ -82,7 +82,7 @@ int main() {
 #include "../../memory_.h"
 #define malloc  hlt_malloc
 #define calloc  hlt_calloc
-#define realloc hlt_realloc
+#define realloc hlt_realloc_no_init
 #define free    hlt_free
 
 #define AC_VERSION_KHASH_H "0.2.2"

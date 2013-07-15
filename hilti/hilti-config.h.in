@@ -60,10 +60,6 @@ struct Configuration {
     };
 
     std::list<string> compiler_shared_libraries = {
-#ifdef __linux__
-        "cxxrt",
-        "dl",
-#endif
     };
 
     std::list<string> compiler_static_libraries_jit = {

@@ -92,6 +92,8 @@ done
 
 if [ "$debug" == "1" ]; then
     build_opts="$build_opts -d"
+else
+    build_opts="$build_opts -O"
 fi
 
 if [ "$incr" != "" ]; then

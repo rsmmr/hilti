@@ -552,7 +552,7 @@ ssize_t utf8proc_map(
   }
   {
     int32_t *newptr;
-    newptr = hlt_realloc(buffer, result+1);
+    newptr = hlt_realloc_no_init(buffer, result+1);
     if (newptr) buffer = newptr;
   }
   *dstptr = (uint8_t *)buffer;

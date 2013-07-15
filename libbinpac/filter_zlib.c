@@ -101,7 +101,7 @@ hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* dat
 
             if ( have ) {
                 if ( ! decoded )
-                    decoded = hlt_bytes_new_from_data(0, 0, excpt, ctx);
+                    decoded = hlt_bytes_new_from_data_copy((int8_t*)buf, have, excpt, ctx);
                 else
                     hlt_bytes_append_raw_copy(decoded, (int8_t*)buf, have, excpt, ctx);
             }
@@ -118,5 +118,5 @@ hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* dat
     GC_DTOR(begin, hlt_iterator_bytes);
     GC_DTOR(end, hlt_iterator_bytes);
 
-    return decoded ? decoded : hlt_bytes_new_from_data(0, 0, excpt, ctx);
+    return decoded ? decoded : hlt_bytes_new(excpt, ctx);
 }

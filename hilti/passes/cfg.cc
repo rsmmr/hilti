@@ -51,7 +51,7 @@ protected:
         }
 
         else {
-            for ( auto p : *_cfg->successors(stmt) )
+            for ( auto p : _cfg->successors(stmt) )
                 processOne(p);
 
             _statements.push_back(stmt);
@@ -100,18 +100,18 @@ bool CFG::run(shared_ptr<Node> node)
     return _run;
 }
 
-shared_ptr<std::set<shared_ptr<Statement>>> CFG::predecessors(shared_ptr<Statement> stmt)
+std::set<shared_ptr<Statement>> CFG::predecessors(shared_ptr<Statement> stmt)
 {
     assert(_run || _pass > 0);
     auto i = _predecessors.find(stmt);
-    return i != _predecessors.end() ? i->second : std::make_shared<std::set<shared_ptr<Statement>>>();
+    return i != _predecessors.end() ? i->second : std::set<shared_ptr<Statement>>();
 }
 
-shared_ptr<std::set<shared_ptr<Statement>>> CFG::successors(shared_ptr<Statement> stmt)
+std::set<shared_ptr<Statement>> CFG::successors(shared_ptr<Statement> stmt)
 {
     assert(_run || _pass > 0);
     auto i = _successors.find(stmt);
-    return i != _successors.end() ? i->second : std::make_shared<std::set<shared_ptr<Statement>>>();
+    return i != _successors.end() ? i->second : std::set<shared_ptr<Statement>>();
 }
 
 void CFG::addSuccessor(Statement* stmt, shared_ptr<Statement> succ)
@@ -133,26 +133,26 @@ void CFG::addSuccessor(shared_ptr<Statement> stmt, shared_ptr<Statement> succ)
     auto i = _successors.find(stmt);
 
     if ( i == _successors.end() ) {
-        auto set = std::make_shared<std::set<shared_ptr<Statement>>>();
+        auto set = std::set<shared_ptr<Statement>>();
         auto j = _successors.insert(std::make_pair(stmt, set));
         i = j.first;
     }
 
-    if ( i->second->find(succ) == i->second->end() ) {
-        i->second->insert(succ);
+    if ( i->second.find(succ) == i->second.end() ) {
+        i->second.insert(succ);
         _changed = true;
     }
 
     i = _predecessors.find(succ);
 
     if ( i == _predecessors.end() ) {
-        auto set = std::make_shared<std::set<shared_ptr<Statement>>>();
+        auto set = std::set<shared_ptr<Statement>>();
         auto j = _predecessors.insert(std::make_pair(succ, set));
         i = j.first;
     }
 
-    if ( i->second->find(stmt) == i->second->end() ) {
-        i->second->insert(stmt);
+    if ( i->second.find(stmt) == i->second.end() ) {
+        i->second.insert(stmt);
         _changed = true;
     }
 }
@@ -162,14 +162,14 @@ void CFG::setSuccessors(shared_ptr<Statement> stmt, std::set<shared_ptr<Statemen
     auto i = _successors.find(stmt);
 
     if ( i == _successors.end() ) {
-        auto set = std::make_shared<std::set<shared_ptr<Statement>>>();
+        auto set = std::set<shared_ptr<Statement>>();
         auto j = _successors.insert(std::make_pair(stmt, set));
         i = j.first;
     }
 
-    auto old_set = *i->second;
+    auto old_set = i->second;
     if ( old_set != succs ) {
-        *i->second = succs;
+        i->second = succs;
         _changed = true;
     }
 }
@@ -179,14 +179,14 @@ void CFG::setPredecessors(shared_ptr<Statement> stmt, std::set<shared_ptr<Statem
     auto i = _predecessors.find(stmt);
 
     if ( i == _predecessors.end() ) {
-        auto set = std::make_shared<std::set<shared_ptr<Statement>>>();
+        auto set = std::set<shared_ptr<Statement>>();
         auto j = _predecessors.insert(std::make_pair(stmt, set));
         i = j.first;
     }
 
-    auto old_set = *i->second;
+    auto old_set = i->second;
     if ( old_set != preds ) {
-        *i->second = preds;
+        i->second = preds;
         _changed = true;
     }
 }

@@ -372,6 +372,9 @@ bool util::makeDir(const string& path)
 
 string util::findInPaths(const string& file, const path_list& paths)
 {
+    if ( startsWith(file, "/") )
+        return pathIsFile(file) ? file : "";
+
     for ( auto d : paths ) {
         string path = pathJoin(d, file);
         if ( pathIsFile(path) )

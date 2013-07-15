@@ -127,11 +127,14 @@ const Options& Linker::options() const
     return _ctx->options();
 }
 
-void Linker::error(const llvm::Linker& linker, const string& where, const string& file, const string& error)
+void Linker::fatalError(const string& msg, const string& file, const string& error)
 {
-    string err = error.size() ? error : linker.getLastError();
+    string err = error.size() ? ::util::fmt(" (%s)", error) : "";
 
-    ast::Logger::error(::util::fmt("error linking %s in %s: %s", file.c_str(), where.c_str(), err.c_str()));
+    if ( file.empty() )
+        ast::Logger::fatalError(::util::fmt("error linking: %s", msg));
+    else
+        ast::Logger::fatalError(::util::fmt("error linking %s: %s%s", file, msg, err));
 }
 
 llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& modules)
@@ -142,15 +145,12 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
     if ( modules.size() == 0 )
         fatalError("no modules given to linker");
 
+    llvm::Module* composite = new llvm::Module("<HILTI>", llvm::getGlobalContext());
+    llvm::Linker linker(composite);
+
     std::list<string> module_names;
-    llvm::Linker linker("<HILTI>", output, llvm::getGlobalContext());
 
-    linker.addSystemPaths();
-
-    for ( auto p : _paths ) {
-        llvm::sys::Path path(p);
-        linker.addPath(path);
-    }
+    // Link in all the modules.
 
     for ( auto i : modules ) {
 
@@ -159,35 +159,34 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
         if ( isHiltiModule(i) )
             module_names.push_back(name);
 
+        linkInModule(&linker, i);
+
+        if ( options().verify && ! util::llvmVerifyModule(linker.getModule()) )
+            fatalError("verification failed", name);
+    }
+
+    // Link in bitcode libraries.
+
+    for ( auto i : _bcs ) {
         string err;
 
-        if ( linker.LinkInModule(i, &err) ) {
-            error(linker, "module", name, err);
-            return nullptr;
-        }
+        llvm::OwningPtr<llvm::MemoryBuffer> buffer;
 
-        if ( options().verify && ! util::llvmVerifyModule(linker.getModule()) ) {
-            error(linker, "verify", name);
-            return nullptr;
-        }
+        if ( llvm::MemoryBuffer::getFile(i.c_str(), buffer) )
+            fatalError("reading bitcode failed", i);
+
+        llvm::Module* bc = llvm::ParseBitcodeFile(buffer.get(), llvm::getGlobalContext(), &err);
+
+        if ( ! bc )
+            fatalError("parsing bitcode failed", i, err);
+
+        linkInModule(&linker, bc);
     }
 
-    for ( auto i : _bcas ) {
-        llvm::sys::Path path(i);
-        bool native = false;
-        if ( linker.LinkInFile(path, native) ) {
-            error(linker, "archive", i);
-            return nullptr;
-        }
-    }
+    // Link native library.
 
-    for ( auto i : _libs ) {
-        bool native = true;
-        if ( linker.LinkInLibrary(i, native) ) {
-            error(linker, "library", i);
-            return nullptr;
-        }
-    }
+    for ( auto i : _natives )
+        linkInNativeLibrary(&linker, i);
 
     if ( module_names.size() ) {
         // We need to add these to a separate module that we then link in; if
@@ -196,14 +195,14 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
         auto linker_stuff = new ::llvm::Module("__linker_stuff", llvm::getGlobalContext());
         addModuleInfo(linker_stuff, module_names, linker.getModule());
         addGlobalsInfo(linker_stuff, module_names, linker.getModule());
-        linker.LinkInModule(linker_stuff);
 
+        string err;
+
+        linkInModule(&linker, linker_stuff);
         makeHooks(module_names, linker.getModule());
     }
 
-    auto module = linker.releaseModule();
-    assert(module);
-    return module;
+    return linker.getModule();
 }
 
 bool Linker::isHiltiModule(llvm::Module* module)
@@ -459,7 +458,7 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
         auto base_func = module->getFunction(symbols::FuncGlobalsBase + string(".") + name);
 
         if ( ! type )
-            fatalError(::util::fmt("no type for globals defined in module %s", name.c_str()));
+            fatalError("no type for globals defined", name);
 
         if ( ! base_func ) {
             debug(1, ::util::fmt("no globals.base function defined for module %s", name.c_str()));
@@ -476,12 +475,17 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
     // Create the joint globals type.
     auto ty_globals = llvm::StructType::create(ctx, globals, symbols::TypeGlobals);
 
-    // Create the global storing the size, using the "portable sizeof" idiom ...
+    // Create the function returning the size of the globals struct, using the "portable sizeof" idiom ...
     auto null = llvm::Constant::getNullValue(llvm::PointerType::get(ty_globals, 0));
     auto one = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), 1);
     auto addr = llvm::ConstantExpr::getGetElementPtr(null, one);
     auto size = llvm::ConstantExpr::getPtrToInt(addr, llvm::Type::getIntNTy(ctx, 64));
-    auto glob = new llvm::GlobalVariable(*dst, size->getType(), false, llvm::GlobalValue::ExternalLinkage, size, symbols::ConstantGlobalsSize);
+
+    auto gftype = llvm::FunctionType::get(llvm::Type::getIntNTy(ctx, 64), false);
+    auto gfunc = llvm::Function::Create(gftype, llvm::Function::ExternalLinkage, symbols::FunctionGlobalsSize, dst);
+    gfunc->setCallingConv(llvm::CallingConv::C);
+    auto builder = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "", gfunc));
+    builder->CreateRet(size);
 
     // Now run a pass over all the modules replacing the
     // @hlt.globals.base.<Module>() calls.
@@ -498,3 +502,247 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
     mgr.run(*module);
 }
 
+///// This remaining code is here adapted from LLVM 3.2. It got removed from
+///// LLVM 3.3, and there's probably a better way to do this, but we keep using
+///// it for now.
+
+//===- lib/Linker/LinkArchives.cpp - Link LLVM objects and libraries ------===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file contains routines to handle linking together LLVM bitcode files,
+// and to handle annoying things like static libraries.
+//
+//===----------------------------------------------------------------------===//
+
+#include <llvm/Linker.h>
+#include <llvm/IR/Module.h>
+#include <llvm/ADT/SetOperations.h>
+#include <llvm/Bitcode/Archive.h>
+#include <memory>
+#include <set>
+using namespace llvm;
+
+/// GetAllUndefinedSymbols - calculates the set of undefined symbols that still
+/// exist in an LLVM module. This is a bit tricky because there may be two
+/// symbols with the same name but different LLVM types that will be resolved to
+/// each other but aren't currently (thus we need to treat it as resolved).
+///
+/// Inputs:
+///  M - The module in which to find undefined symbols.
+///
+/// Outputs:
+///  UndefinedSymbols - A set of C++ strings containing the name of all
+///                     undefined symbols.
+///
+static void
+GetAllUndefinedSymbols(llvm::Module *M, std::set<std::string> &UndefinedSymbols) {
+  std::set<std::string> DefinedSymbols;
+  UndefinedSymbols.clear();
+
+  // If the program doesn't define a main, try pulling one in from a .a file.
+  // This is needed for programs where the main function is defined in an
+  // archive, such f2c'd programs.
+  llvm::Function *Main = M->getFunction("main");
+  if (Main == 0 || Main->isDeclaration())
+    UndefinedSymbols.insert("main");
+
+  for (llvm::Module::iterator I = M->begin(), E = M->end(); I != E; ++I)
+    if (I->hasName()) {
+      if (I->isDeclaration())
+        UndefinedSymbols.insert(I->getName());
+      else if (!I->hasLocalLinkage()) {
+        assert(!I->hasDLLImportLinkage()
+               && "Found dllimported non-external symbol!");
+        DefinedSymbols.insert(I->getName());
+      }
+    }
+
+  for (llvm::Module::global_iterator I = M->global_begin(), E = M->global_end();
+       I != E; ++I)
+    if (I->hasName()) {
+      if (I->isDeclaration())
+        UndefinedSymbols.insert(I->getName());
+      else if (!I->hasLocalLinkage()) {
+        assert(!I->hasDLLImportLinkage()
+               && "Found dllimported non-external symbol!");
+        DefinedSymbols.insert(I->getName());
+      }
+    }
+
+  for (llvm::Module::alias_iterator I = M->alias_begin(), E = M->alias_end();
+       I != E; ++I)
+    if (I->hasName())
+      DefinedSymbols.insert(I->getName());
+
+  // Prune out any defined symbols from the undefined symbols set...
+  for (std::set<std::string>::iterator I = UndefinedSymbols.begin();
+       I != UndefinedSymbols.end(); )
+    if (DefinedSymbols.count(*I))
+      UndefinedSymbols.erase(I++);  // This symbol really is defined!
+    else
+      ++I; // Keep this symbol in the undefined symbols list
+}
+
+void hilti::codegen::Linker::linkInModule(llvm::Linker* linker, llvm::Module* module)
+{
+    auto name = module->getModuleIdentifier();
+
+    debug(1, ::util::fmt("linking in module %s", name));
+
+    string err;
+
+    if ( linker->linkInModule(module, &err) )
+        fatalError("module linking error", name, err);
+}
+
+void hilti::codegen::Linker::linkInNativeLibrary(llvm::Linker* linker, const string& library)
+{
+    fatalError("native libraries not supported currently", library);
+
+#if 0
+    llvm::Module* Composite = linker->getModule();
+
+    auto path = ::util::findInPaths(library, _paths);
+
+    if ( path.empty() )
+        fatalError("library not found", library);
+
+    llvm::sys::Path Pathname(path);
+
+    // If its an archive, try to link it in
+    std::string Magic;
+    Pathname.getMagicNumber(Magic, 64);
+
+    fprintf(stderr, "MAIUGC: %s\n", Magic.c_str());
+
+    switch ( llvm::sys::IdentifyFileType(Magic.c_str(), 64) ) {
+     case sys::Archive_FileType:
+        linkInArchive(linker, path);
+        break;
+
+     default:
+        fatalError("unsupport library type", path, Magic);
+    }
+#endif
+}
+
+#if 0
+
+/// LinkInArchive - opens an archive library and link in all objects which
+/// provide symbols that are currently undefined.
+///
+/// Inputs:
+///  Filename - The pathname of the archive.
+///
+/// Return Value:
+///  TRUE  - An error occurred.
+///  FALSE - No errors.
+void hilti::codegen::Linker::linkInArchive(llvm::Linker* linker, const string& library)
+{
+    llvm::Module* Composite = linker->getModule();
+
+    debug(1, ::util::fmt("linking in archive %s", library));
+
+    auto path = ::util::findInPaths(library, _paths);
+
+    if ( path.empty() )
+        fatalError("archive not found", library);
+
+    llvm::sys::Path Filename(path);
+
+  // Make sure this is an archive file we're dealing with
+  if (!Filename.isArchive())
+      fatalError("not an archive", path);
+
+  // Find all of the symbols currently undefined in the bitcode program.
+  // If all the symbols are defined, the program is complete, and there is
+  // no reason to link in any archive files.
+  std::set<std::string> UndefinedSymbols;
+  GetAllUndefinedSymbols(Composite, UndefinedSymbols);
+
+  if (UndefinedSymbols.empty())
+    return;  // No need to link anything in!
+
+  std::string ErrMsg;
+  std::auto_ptr<Archive> AutoArch (
+    Archive::OpenAndLoadSymbols(Filename, llvm::getGlobalContext(), &ErrMsg));
+
+  Archive* arch = AutoArch.get();
+
+  if (!arch)
+      fatalError("reading archive failed", Filename.str(), ErrMsg);
+
+  if (!arch->isBitcodeArchive())
+      fatalError("not a bitcode archive", Filename.str(), ErrMsg);
+
+  // Save a set of symbols that are not defined by the archive. Since we're
+  // entering a loop, there's no point searching for these multiple times. This
+  // variable is used to "set_subtract" from the set of undefined symbols.
+  std::set<std::string> NotDefinedByArchive;
+
+  // Save the current set of undefined symbols, because we may have to make
+  // multiple passes over the archive:
+  std::set<std::string> CurrentlyUndefinedSymbols;
+
+  do {
+    CurrentlyUndefinedSymbols = UndefinedSymbols;
+
+    // Find the modules we need to link into the target module.  Note that arch
+    // keeps ownership of these modules and may return the same Module* from a
+    // subsequent call.
+    SmallVector<llvm::Module*, 16> Modules;
+    if (!arch->findModulesDefiningSymbols(UndefinedSymbols, Modules, &ErrMsg))
+        fatalError("finding symbols failed", Filename.str(), ErrMsg);
+
+    // If we didn't find any more modules to link this time, we are done
+    // searching this archive.
+    if (Modules.empty())
+      break;
+
+    // Any symbols remaining in UndefinedSymbols after
+    // findModulesDefiningSymbols are ones that the archive does not define. So
+    // we add them to the NotDefinedByArchive variable now.
+    NotDefinedByArchive.insert(UndefinedSymbols.begin(),
+        UndefinedSymbols.end());
+
+    // Loop over all the Modules that we got back from the archive
+    for (SmallVectorImpl<llvm::Module*>::iterator I=Modules.begin(), E=Modules.end();
+         I != E; ++I) {
+
+      // Get the module we must link in.
+      std::string moduleErrorMsg;
+      llvm::Module* aModule = *I;
+      if (aModule != NULL) {
+        if (aModule->MaterializeAll(&moduleErrorMsg))
+            fatalError("loading module failed", Filename.str(), moduleErrorMsg);
+        }
+
+        // Link it in
+        linkInModule(linker, aModule);
+    }
+
+    // Get the undefined symbols from the aggregate module. This recomputes the
+    // symbols we still need after the new modules have been linked in.
+    GetAllUndefinedSymbols(Composite, UndefinedSymbols);
+
+    // At this point we have two sets of undefined symbols: UndefinedSymbols
+    // which holds the undefined symbols from all the modules, and
+    // NotDefinedByArchive which holds symbols we know the archive doesn't
+    // define. There's no point searching for symbols that we won't find in the
+    // archive so we subtract these sets.
+    set_subtract(UndefinedSymbols, NotDefinedByArchive);
+
+    // If there's no symbols left, no point in continuing to search the
+    // archive.
+    if (UndefinedSymbols.empty())
+      break;
+  } while (CurrentlyUndefinedSymbols != UndefinedSymbols);
+}
+
+#endif

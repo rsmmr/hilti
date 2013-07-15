@@ -86,12 +86,39 @@ void* __hlt_malloc(uint64_t size, const char* type, const char* location)
     return p;
 }
 
-void* __hlt_realloc(void* p, uint64_t size, const char* type, const char* location)
+void* __hlt_realloc(void* p, uint64_t size, uint64_t old_size, const char* type, const char* location)
 {
 #ifdef DEBUG
     if ( p ) {
         ++__hlt_globals()->num_deallocs;
         _dbg_mem_raw("free", p, size, type, location, "realloc");
+    }
+#endif
+
+    if ( size > old_size ) {
+        p = realloc(p, size);
+        memset(p + old_size, 0, size - old_size);
+
+        if ( ! p ) {
+            fputs("out of memory in hlt_malloc, aborting", stderr);
+            exit(1);
+        }
+    }
+
+#ifdef DEBUG
+    ++__hlt_globals()->num_allocs;
+    _dbg_mem_raw("malloc", p, size, type, location, "realloc");
+#endif
+
+    return p;
+}
+
+void* __hlt_realloc_no_init(void* p, uint64_t size, const char* type, const char* location)
+{
+#ifdef DEBUG
+    if ( p ) {
+        ++__hlt_globals()->num_deallocs;
+        _dbg_mem_raw("free", p, size, type, location, "realloc_no_init");
     }
 #endif
 
@@ -104,7 +131,7 @@ void* __hlt_realloc(void* p, uint64_t size, const char* type, const char* locati
 
 #ifdef DEBUG
     ++__hlt_globals()->num_allocs;
-    _dbg_mem_raw("malloc", p, size, type, location, "realloc");
+    _dbg_mem_raw("malloc", p, size, type, location, "realloc_no_init");
 #endif
 
     return p;

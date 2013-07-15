@@ -1,0 +1,7 @@
+  Available parsers: 
+
+    Mini::Main1              Foo Bar  [80/tcp, 53/udp, application/foo, application/bar]
+    Mini::Main2              Foo Bar  [80/tcp, 53/udp]
+    Mini::Main3              No description.  [application/foo, application/bar]
+    Mini::Main4              Foo Bar
+

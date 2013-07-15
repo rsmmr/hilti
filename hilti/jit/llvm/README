@@ -1,2 +1,0 @@
-The files here are copied from LLVM's unittests/ExecutionEngine/MCJIT
-directory. These tests set up a bunch of infrastructure that we reuse.

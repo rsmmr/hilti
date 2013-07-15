@@ -1,4 +1,1 @@
-
->>> $$
-wrong-id.pac2:6-6: error, $$ not defined here [pass::binpac::IDResolver]
-wrong-id.pac2: Aborting due to input error.
+<no location>: internal error, $$ not bound in CodeBuilder::visit(expression::ParserState* p)

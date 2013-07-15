@@ -57,7 +57,7 @@ namespace symbols {
     static const char* FunctionGlobalsInit = "__hlt_globals_init";
     static const char* FunctionGlobalsDtor = "__hlt_globals_dtor";
     static const char* FunctionModulesInit = "__hlt_modules_init";
-    static const char* ConstantGlobalsSize = "__hlt_globals_size";
+    static const char* FunctionGlobalsSize = "__hlt_globals_size";
 
     // Names for argument added internally for our calling conventions.
     static const char* ArgExecutionContext = "__ctx";

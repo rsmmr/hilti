@@ -40,12 +40,12 @@ public:
    /// name: The name of library, like you would give it with ``-l<name>``.
    /// It will searched in the paths given to the constructor, plus any
    /// system linker paths.
-   void addNativeLibrary(const string& name) { _libs.push_back(name); }
+   void addNativeLibrary(const string& name) { _natives.push_back(name); }
 
-   /// Adds an LLVM bitcode archive to be linked in when link() is called.
+   /// Adds an LLVM bitcode file to be linked in when link() is called.
    ///
-   /// path: The full path to the ``*.bca`` file.
-   void addBitcodeArchive(const string& path)  { _bcas.push_back(path); }
+   /// path: The full path to the ``*.bc`` file.
+   void addBitcodeFile(const string& path)  { _bcs.push_back(path); }
 
    /// Links a set of compiled HILTI modules together.
    ///
@@ -70,12 +70,17 @@ private:
    void addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_names, llvm::Module* module);
    void joinFunctions(llvm::Module* dst, const char* new_func, const char* meta, llvm::FunctionType* default_ftype, const std::list<string>& module_names, llvm::Module* module);
    void makeHooks(const std::list<string>& module_names, llvm::Module* module);
-   void error(const llvm::Linker& linker, const string& where, const string& file, const string& error="");
+   void fatalError(const string& where, const string& file = "", const string& error = "");
+
+   // These following three abort directly on error.
+   void linkInModule(llvm::Linker* linker, llvm::Module* module);
+   void linkInNativeLibrary(llvm::Linker* linker, const string& library);
+// void linkInArchive(llvm::Linker* linker, const string& library);
 
    CompilerContext* _ctx;
    path_list _paths;
-   path_list _libs;
-   path_list _bcas;
+   path_list _natives;
+   path_list _bcs;
 
    llvm::Type* _execution_context_type = nullptr;
 };

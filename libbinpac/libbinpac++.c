@@ -6,22 +6,65 @@
 #include <stdlib.h>
 
 #include "libbinpac++.h"
+#include "globals.h"
 
-static int       _initialized = 0;
-static int       _done = 0;
-static hlt_list* _parsers = 0;
-static int8_t    _debugging = 0;
+struct _tmp_parser_def {
+    binpac_parser* parser;
+    hlt_type_info* pobj;
+};
 
-static void _ensure_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
+int _initialized = 0;
+static int _done = 0;
+static struct _tmp_parser_def* _tmp_parsers = 0;
+static int _tmp_parsers_size = 0;
+
+extern __binpac_globals* _globals;
+
+static void _register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! _parsers )
-        _parsers = hlt_list_new(&hlt_type_info_hlt_Parser, 0, excpt, ctx);
+    parser->type_info = pobj;
+    hlt_list_push_back(__binpac_globals_get()->parsers, &hlt_type_info_hlt_Parser, &parser, excpt, ctx);
+    binpachilti_mime_register_parser(parser, excpt, ctx);
+    GC_DTOR(parser, hlt_Parser);
+}
+
+static void _move_tmp_parsers()
+{
+    if ( ! _tmp_parsers )
+        return;
+
+    hlt_exception* excpt = 0;
+    hlt_execution_context* ctx = hlt_global_execution_context();
+
+    for ( int i = 0; i < _tmp_parsers_size; i++ )
+        _register_parser(_tmp_parsers[i].parser, _tmp_parsers[i].pobj, &excpt, ctx);
+
+    free(_tmp_parsers);
 }
 
 void binpac_init()
 {
+    if ( _initialized )
+        return;
+
+    hlt_exception* excpt = 0;
+    hlt_execution_context* ctx = hlt_global_execution_context();
+
     _initialized = 1;
+
+    __binpac_globals_init();
+
     atexit(binpac_done);
+
+    _move_tmp_parsers();
+}
+
+void __binpac_init_from_state(__binpac_globals* state)
+{
+    _done = 1; // Don't clean up.
+
+    __binpac_globals_set(state);
+    _move_tmp_parsers();
 }
 
 void binpac_done()
@@ -32,32 +75,31 @@ void binpac_done()
     _done = 1;
 
     hlt_exception* excpt = 0;
-
     hlt_execution_context* ctx = hlt_global_execution_context();
-    binpachilti_mime_unregister_all(&excpt, ctx);
 
     if ( excpt )
         hlt_exception_print_uncaught(excpt, ctx);
 
-    GC_DTOR(_parsers, hlt_list);
+    int64_t size = hlt_list_size(__binpac_globals_get()->parsers, &excpt, ctx);
+
+    __binpac_globals_done();
 }
 
 hlt_list* binpac_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    _ensure_parsers(excpt, ctx);
-    GC_CCTOR(_parsers, hlt_list);
-    return _parsers;
+    GC_CCTOR(__binpac_globals_get()->parsers, hlt_list);
+    return __binpac_globals_get()->parsers;
 }
 
 void binpac_enable_debugging(int8_t enabled)
 {
     // Should be (sufficiently) thread-safe.
-    _debugging = enabled;
+    __binpac_globals_get()->debugging = enabled;
 }
 
 int8_t binpac_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return _debugging;
+    return __binpac_globals_get()->debugging;
 }
 
 int8_t binpachilti_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ctx)
@@ -73,10 +115,18 @@ void binpac_fatal_error(const char* msg)
 // Note that this function can be called before binpac_init().
 void binpachilti_register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    _ensure_parsers(excpt, ctx);
-    parser->type_info = pobj;
-    hlt_list_push_back(_parsers, &hlt_type_info_hlt_Parser, &parser, excpt, ctx);
-    binpachilti_mime_register_parser(parser, excpt, ctx);
+    GC_CCTOR(parser, hlt_Parser);
+
+    if ( _initialized )
+        _register_parser(parser, pobj, excpt, ctx);
+
+    else {
+        int new_size = (_tmp_parsers_size + 1);
+        _tmp_parsers = realloc(_tmp_parsers, new_size * sizeof(struct _tmp_parser_def));
+        _tmp_parsers[_tmp_parsers_size].parser = parser;
+        _tmp_parsers[_tmp_parsers_size].pobj = pobj;
+        _tmp_parsers_size = new_size;
+    }
 }
 
 void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* ctx))
@@ -93,6 +143,5 @@ void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* c
 void binpac_debug_print_ptr(hlt_string tag, const hlt_type_info* type, void** ptr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const char* s = hlt_string_to_native(tag, excpt, ctx);
-    fprintf(stderr, "debug: %s %p\n", s, *ptr);
 }
 

@@ -264,9 +264,7 @@ static hlt_execution_context* _worker_get_ctx(hlt_worker_thread* thread, hlt_vth
         while ( new_max < vid )
             new_max *= 2;
 
-        thread->ctxs = hlt_realloc(thread->ctxs, (new_max+1) * sizeof(hlt_execution_context*));
-        memset(thread->ctxs + max + 1, 0, (new_max - max) * sizeof(hlt_execution_context*));
-
+        thread->ctxs = hlt_realloc(thread->ctxs, (new_max+1) * sizeof(hlt_execution_context*), (max+1) * sizeof(hlt_execution_context*));
         thread->max_vid = new_max;
     }
 

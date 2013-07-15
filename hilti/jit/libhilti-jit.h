@@ -39,5 +39,6 @@ namespace llvm {
 ///
 /// ee: The LLVM execution engine that jitModule() returned.
 extern void hlt_init_jit(std::shared_ptr<hilti::CompilerContext> ctx, llvm::Module* module, llvm::ExecutionEngine* ee);
+extern void binpac_init_jit(std::shared_ptr<hilti::CompilerContext> ctx, llvm::Module* module, llvm::ExecutionEngine* ee);
 
 #endif

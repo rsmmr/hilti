@@ -94,6 +94,7 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory_.c int.c
     net.c port.c time.c hook.c timer.c threading.c list.c fiber.c
     vector.c map_set.c struct.c regexp.c tqueue.c file.c cmdqueue.c
     system.c classifier.c iosrc.c profiler.c channel.c main.c rtti.c
+    linker.c
 
     module/fmt.c
     module/misc.c

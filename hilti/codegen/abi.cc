@@ -38,10 +38,10 @@ unique_ptr<ABI> ABI::createABI(CodeGen* cg)
 
 ABI::ByteOrder ABI::byteOrder() const
 {
-    if ( llvm::sys::isLittleEndianHost() )
+    if ( llvm::sys::IsLittleEndianHost )
         return LittleEndian;
 
-    if ( llvm::sys::isBigEndianHost() )
+    if ( llvm::sys::IsBigEndianHost )
         return BigEndian;
 
     cg()->internalError("unknown endianess of target arch");
@@ -315,13 +315,13 @@ llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtyp
     auto func = llvm::Function::Create(ftype, linkage, name, module);
 
     if ( cargs.return_in_mem ) {
-        func->addAttribute(1, llvm::Attributes::get(cg()->llvmContext(), llvm::Attributes::StructRet));
-        func->addAttribute(1, llvm::Attributes::get(cg()->llvmContext(), llvm::Attributes::NoAlias));
+        func->addAttribute(1, llvm::Attribute::StructRet);
+        func->addAttribute(1, llvm::Attribute::NoAlias);
     }
 
     for ( auto i : byvals ) {
-        func->addAttribute(i + 1 + arg_base, llvm::Attributes::get(cg()->llvmContext(), llvm::Attributes::ByVal));
-        func->addAttribute(i + 1 + arg_base, llvm::Attributes::get(cg()->llvmContext(), llvm::Attributes::NoAlias));
+        func->addAttribute(i + 1 + arg_base, llvm::Attribute::ByVal);
+        func->addAttribute(i + 1 + arg_base, llvm::Attribute::NoAlias);
     }
 
     auto i = nnames.begin();

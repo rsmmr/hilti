@@ -159,7 +159,7 @@ pqueue_insert(pqueue_t *q, void *d)
     /* allocate more memory if necessary */
     if (q->size >= q->avail) {
         newsize = q->size + q->step;
-        if (!(tmp = hlt_realloc(q->d, sizeof(void *) * newsize)))
+        if (!(tmp = hlt_realloc_no_init(q->d, sizeof(void *) * newsize)))
             return 1;
         q->d = tmp;
         q->avail = newsize;

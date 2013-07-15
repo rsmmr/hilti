@@ -228,13 +228,14 @@ void hlt_vector_reserve(hlt_vector* v, hlt_vector_idx n, hlt_exception** excpt, 
     if ( v->capacity >= n )
         return;
 
-    v->capacity = n;
-    v->elems = hlt_realloc(v->elems, v->type->size * n);
+    v->elems = hlt_realloc(v->elems, v->type->size * n, v->type->size * v->capacity);
 
     if ( v->timers ) {
-        v->timers = hlt_realloc(v->timers, sizeof(hlt_timer*) * n);
+        v->timers = hlt_realloc(v->timers, sizeof(hlt_timer*) * n, sizeof(hlt_timer*) * v->capacity);
         assert(v->timers);
     }
+
+    v->capacity = n;
 }
 
 hlt_iterator_vector hlt_vector_begin(hlt_vector* v, hlt_exception** excpt, hlt_execution_context* ctx)

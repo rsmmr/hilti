@@ -55,11 +55,11 @@ void Printer::printFlow(Statement* stmt, const string& prefix)
     auto cfg = _module->cfg();
 
     std::set<string> succ;
-    for ( auto s : *cfg->successors(stmt->sharedPtr<Statement>()) )
+    for ( auto s : cfg->successors(stmt->sharedPtr<Statement>()) )
         succ.insert(_statementName(s.get()));
 
     std::set<string> pred;
-    for ( auto s : *cfg->predecessors(stmt->sharedPtr<Statement>()) )
+    for ( auto s : cfg->predecessors(stmt->sharedPtr<Statement>()) )
         pred.insert(_statementName(s.get()));
 
     string spred = (pred.size() ? util::strjoin(pred, ", ") : "<none>");

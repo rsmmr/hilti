@@ -222,7 +222,6 @@ add_library (hilti STATIC
     codegen/util.cc
 
     jit/jit.cc
-    jit/llvm/SectionMemoryManager.cpp
 
     ${autogen}/instructions.h
     ${autogen}/instructions-declare.h

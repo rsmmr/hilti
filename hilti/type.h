@@ -1197,7 +1197,7 @@ public:
    ACCEPT_VISITOR_ROOT();
 
 private:
-   friend class Overlay;
+   friend class hilti::type::Overlay;
 
    shared_ptr<ID> _name;
    shared_ptr<Type> _type;

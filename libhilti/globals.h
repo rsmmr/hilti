@@ -90,8 +90,10 @@ extern hlt_thread_mgr* hlt_global_thread_mgr();
 /// called by the threading code.
 extern void __hlt_global_set_thread_mgr(hlt_thread_mgr* mgr);
 
-/// Initializes all global state. The function is called from hlt_init().
-extern void __hlt_global_state_init();
+/// Initializes all global state. The function is called from hlt_init() and
+/// other initialization code. If init is zero, it will allocate the memory
+/// for the globals but not yet initalized its content.
+extern void __hlt_global_state_init(int init);
 
 /// Cleans up all global state. The function is called from hlt_done(). Note
 /// that when multiple instance of libhilti share a set of global state (via

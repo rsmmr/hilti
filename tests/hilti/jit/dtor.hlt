@@ -1,0 +1,15 @@
+#
+# @TEST-EXEC:  hiltic -j %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+global ref<bytes> b1
+
+void run() {
+    b1 = b"1223"
+    call Hilti::print (b1)
+}

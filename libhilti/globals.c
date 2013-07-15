@@ -8,14 +8,18 @@
 
 static __hlt_global_state  our_globals;
 static __hlt_global_state* globals = 0;
+static int globals_initialized = 0;
 
-void __hlt_global_state_init()
+void __hlt_global_state_init(int init)
 {
-    globals = &our_globals;
+    if ( ! globals ) {
+        globals = &our_globals;
+        memset(&our_globals, 0, sizeof(our_globals));
+        globals->config = __hlt_default_config();
+    }
 
-    memset(&our_globals, 0, sizeof(our_globals));
-
-    __hlt_config_init();
+    if ( globals_initialized || ! init )
+        return;
 
     globals->context = __hlt_execution_context_new(HLT_VID_MAIN);
     globals->multi_threaded = (__hlt_globals()->config->num_workers != 0);
@@ -25,6 +29,8 @@ void __hlt_global_state_init()
     __hlt_hooks_init();
     __hlt_threading_init();
     __hlt_profiler_init();
+
+    globals_initialized = 1;
 }
 
 void __hlt_global_state_done()
@@ -42,16 +48,32 @@ void __hlt_global_state_done()
     __hlt_hooks_done();
     __hlt_cmd_queue_done();
     __hlt_debug_done();
-    __hlt_config_done();
 
     GC_DTOR(globals->context, hlt_execution_context);
 
     if ( globals->debug_streams )
         free(globals->debug_streams);
+
+    free(globals->config);
 }
 
 __hlt_global_state* __hlt_globals()
 {
+    if ( ! globals ) {
+        __hlt_global_state_init(1);
+        assert(globals);
+    }
+
+    return globals;
+}
+
+__hlt_global_state* __hlt_globals_object_no_init()
+{
+    if ( ! globals ) {
+        __hlt_global_state_init(0);
+        assert(globals);
+    }
+
     return globals;
 }
 
@@ -59,7 +81,6 @@ void __hlt_globals_set(__hlt_global_state* state)
 {
     globals = state;
 }
-
 
 hlt_execution_context* hlt_global_execution_context()
 {

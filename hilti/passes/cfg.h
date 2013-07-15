@@ -40,7 +40,7 @@ public:
     ///
     /// TODO: The block chaining does't work right yet and disabled. Indeed
     /// it's not clear if it can with the current structure.
-    shared_ptr<std::set<shared_ptr<Statement>>> predecessors(shared_ptr<Statement> stmt);
+    std::set<shared_ptr<Statement>> predecessors(shared_ptr<Statement> stmt);
 
     /// Returns all successors of a statement.  Note that this operates
     /// differently for blocks and non-block statements: the successors of a
@@ -51,7 +51,7 @@ public:
     ///
     /// TODO: The block chaining does't work right yet and disabled. Indeed
     /// it's not clear if it can with the current structure.
-    shared_ptr<std::set<shared_ptr<Statement>>> successors(shared_ptr<Statement> stmt);
+    std::set<shared_ptr<Statement>> successors(shared_ptr<Statement> stmt);
 
     /// Returns a depth-first-ordered list of all statements. Must only be
     /// called after run().
@@ -80,7 +80,7 @@ private:
     std::list<shared_ptr<Statement>> _siblings;
     std::list<std::pair<shared_ptr<expression::Block>, shared_ptr<Type>>> _excpt_handlers;
 
-    typedef std::unordered_map<shared_ptr<Statement>, shared_ptr<std::set<shared_ptr<Statement>>>> stmt_map;
+    typedef std::unordered_map<shared_ptr<Statement>, std::set<shared_ptr<Statement>>> stmt_map;
 
     stmt_map _predecessors;
     stmt_map _successors;

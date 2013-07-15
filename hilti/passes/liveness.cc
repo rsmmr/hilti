@@ -208,7 +208,7 @@ void Liveness::setLiveness(shared_ptr<Statement> stmt, variable_set in, variable
     *sets.dead = ::util::set_union(*sets.dead, ::util::set_difference(fi.defined, out));
 
     variable_set pred_live;
-    for ( auto p : *_cfg->predecessors(stmt) )
+    for ( auto p : _cfg->predecessors(stmt) )
         pred_live = ::util::set_union(pred_live, *liveness(p).out);
 
     pred_live = ::util::set_difference(pred_live, *sets.in);
@@ -234,7 +234,7 @@ void Liveness::processStatement(shared_ptr<Statement> stmt)
 
     variable_set in, out;
 
-    for ( auto succ : *_cfg->successors(stmt) )
+    for ( auto succ : _cfg->successors(stmt) )
         out = util::set_union(out, *liveness(succ).in);
 
     auto fi = stmt->flowInfo();

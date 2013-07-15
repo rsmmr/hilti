@@ -48,7 +48,7 @@ extern "C" {
 struct Options {
     bool debug;
     bool optimize;
-    bool profile;
+    unsigned int profile;
 
     Options() {
         debug = optimize = false;
@@ -150,6 +150,7 @@ void listParsers()
 
     while ( ! (hlt_iterator_list_eq(i, end, &excpt, ctx) || excpt) ) {
         ++count;
+
         binpac_parser* p = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
 
         fputs("    ", stderr);
@@ -218,6 +219,7 @@ void listParsers()
         fputc('\n', stderr);
 
         GC_DTOR(p, hlt_Parser);
+
         hlt_iterator_list i2 = i;
         i = hlt_iterator_list_incr(i, &excpt, ctx);
         GC_DTOR(i2, hlt_iterator_list);
@@ -500,6 +502,8 @@ bool jitPac2(const std::list<string>& pac2, const binpac::Options& options)
     // TODO: This should be done by jitModule, which however then needs to
     // move into hilti-jit.
     hlt_init_jit(PacContext->hiltiContext(), llvm_module, ee);
+    binpac_init();
+    binpac_init_jit(PacContext->hiltiContext(), llvm_module, ee);
 
     auto func = PacContext->hiltiContext()->nativeFunction(llvm_module, ee, "binpac_parsers");
 
@@ -587,6 +591,15 @@ int main(int argc, char** argv)
     argc -= optind;
     argv += optind;
 
+    hlt_config cfg = *hlt_config_get();
+
+    if ( options.profile ) {
+        fprintf(stderr, "Enabling profiling ...\n");
+        cfg.profiling = 1;
+    }
+
+    hlt_config_set(&cfg);
+
 #ifdef PAC_DRIVER_JIT
     std::list<string> pac2;
 
@@ -607,15 +620,6 @@ int main(int argc, char** argv)
         listParsers();
         return 0;
     }
-
-    hlt_config cfg = *hlt_config_get();
-
-    if ( options.profile ) {
-        fprintf(stderr, "Enabling profiling ...\n");
-        cfg.profiling = 1;
-    }
-
-    hlt_config_set(&cfg);
 
     hlt_execution_context* ctx = hlt_global_execution_context();
 

@@ -7,10 +7,7 @@
 #include "memory_.h"
 #include "globals.h"
 
-// Store a configuration set before hlt_init() is called.
-static hlt_config* pre_init_config = 0;
-
-static hlt_config* _default_config()
+hlt_config* __hlt_default_config()
 {
     hlt_config* cfg = malloc(sizeof(hlt_config));
 
@@ -40,50 +37,21 @@ static hlt_config* _default_config()
     return cfg;
 }
 
+extern __hlt_global_state* __hlt_globals_object_no_init();
+
 const hlt_config* hlt_config_get()
 {
-    if ( __hlt_globals() )
-        return __hlt_globals()->config;
-
-    if ( pre_init_config )
-        return pre_init_config;
-
-    pre_init_config = _default_config();
-    return pre_init_config;
+    return __hlt_globals_object_no_init()->config;
 }
 
 void hlt_config_set(const hlt_config* new_config)
 {
-    if ( __hlt_globals() ) {
-        *__hlt_globals()->config = *new_config;
+    __hlt_global_state* globals = __hlt_globals_object_no_init();
 
-        // We copy this over so that it stays valid even when the global
-        // context goes away.
-        free(__hlt_globals()->debug_streams);
-        __hlt_globals()->debug_streams = strdup(new_config->debug_streams);
-        return;
-    }
+    *globals->config = *new_config;
 
-    hlt_config_get(); // Make sure pre_init_config is initialized.
-    *pre_init_config = *new_config;
-    return;
-}
-
-void __hlt_config_init()
-{
-    if ( pre_init_config ) {
-        __hlt_globals()->config = pre_init_config;
-        pre_init_config = 0;
-    }
-
-    else
-        __hlt_globals()->config = _default_config();
-
-    __hlt_globals()->debug_streams = strdup(__hlt_globals()->config->debug_streams);
-}
-
-void __hlt_config_done()
-{
-    // Handled outside of the normal memory management.
-    free(__hlt_globals()->config);
+    // We copy this over so that it stays valid even when the global
+    // context goes away.
+    free(globals->debug_streams);
+    globals->debug_streams = strdup(new_config->debug_streams);
 }

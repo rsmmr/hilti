@@ -52,8 +52,7 @@ bool Optimizer::optimize(llvm::Module* module, bool is_linked)
 
     auto tm = target->createTargetMachine(triple, llvm::sys::getHostCPUName(), "" /* CPU features */, to, llvm::Reloc::Default, llvm::CodeModel::Default, llvm::CodeGenOpt::Aggressive);
 
-    passes.add(new llvm::TargetTransformInfo(tm->getScalarTargetTransformInfo(),
-                                             tm->getVectorTargetTransformInfo()));
+    tm->addAnalysisPasses(passes);
 
     llvm::PassManagerBuilder builder;
     builder.Inliner = llvm::createFunctionInliningPass(255);

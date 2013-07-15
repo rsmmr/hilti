@@ -255,11 +255,11 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
     sink->size += hlt_bytes_len(data, excpt, ctx);
 
     if ( *excpt )
-        return;
+        goto exit;
 
     if ( ! sink->head ) {
         DBG_LOG("binpac-sinks", "done writing to sink %p, no parser connected", sink);
-        return;
+        goto exit;
     }
 
     // data at +1 here.
@@ -359,10 +359,6 @@ exit:
 
     ctx->fiber = saved_fiber;
     ctx->blockable = saved_blockable;
-
-    // FIXME: Replace with something new needed?
-    // ctx->yield = saved_yield;
-    // ctx->resume = saved_resume;
 
     DBG_LOG("binpac-sinks", "done writing to sink %p", sink);
 }

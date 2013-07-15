@@ -565,7 +565,7 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         if ( options().cgDebugging("context" ) )
             std::cerr << "Linker: adding bitcode library " << b << std::endl;
 
-        linker.addBitcodeArchive(b);
+        linker.addBitcodeFile(b);
     }
 
     if ( add_stdlibs ) {
@@ -588,12 +588,15 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         if ( options().cgDebugging("context" ) )
             std::cerr << "Linker: adding bitcode runtime library " << rlbca << std::endl;
 
-        linker.addBitcodeArchive(rlbca);
+        linker.addBitcodeFile(rlbca);
 
+        // Linker doesn't support native libraries currently, but it doesn't look like we need it actualy.
+#if 0
         if ( options().cgDebugging("context" ) )
             std::cerr << "Linker: adding native runtime library " << configuration().runtime_library_a << std::endl;
 
         linker.addNativeLibrary(configuration().runtime_library_a);
+#endif
     }
 
     if ( add_sharedlibs ) {

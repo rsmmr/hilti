@@ -49,16 +49,14 @@ void FieldBuilder::visit(type::Address* t)
     auto a2 = cg()->llvmExtractValue(src_val, 1);
     a2 = cg()->llvmHtoN(a2);
 
-    auto tmp = cg()->llvmAddTmp("addr-field", src_val->getType(), nullptr, true);
+    std::vector<llvm::Type*> fields = { a1->getType(), a2->getType() };
+    auto packed = cg()->llvmTypeStruct("", fields, true);
+    auto tmp = cg()->llvmAddTmp("addr-field", packed, nullptr, true);
+
     auto addr = cg()->llvmGEP(tmp, cg()->llvmGEPIdx(0), cg()->llvmGEPIdx(0));
     cg()->llvmCreateStore(a1, addr);
-
-    tmp = cg()->llvmAddTmp("addr-field", src_val->getType(), nullptr, true);
     addr = cg()->llvmGEP(tmp, cg()->llvmGEPIdx(0), cg()->llvmGEPIdx(1));
     cg()->llvmCreateStore(a2, addr);
-
-    // len = cg.llvmSizeOf(self.llvmType(cg).elements[0]);
-    // len = cg.builder().add(len, cg.llvmSizeOf(self.llvmType(cg).elements[1]));
 
     auto len = cg()->llvmSizeOf(src_val->getType());
     auto result = cg()->llvmClassifierField(tmp, len);
@@ -76,18 +74,16 @@ void FieldBuilder::visit(type::Network* t)
     auto a2 = cg()->llvmExtractValue(src_val, 1);
     a2 = cg()->llvmHtoN(a2);
 
-    auto tmp = cg()->llvmAddTmp("net-field", src_val->getType(), nullptr, true);
+    std::vector<llvm::Type*> fields = { a1->getType(), a2->getType() };
+    auto packed = cg()->llvmTypeStruct("", fields, true);
+    auto tmp = cg()->llvmAddTmp("net-field", packed, nullptr, true);
+
     auto addr = cg()->llvmGEP(tmp, cg()->llvmGEPIdx(0), cg()->llvmGEPIdx(0));
     cg()->llvmCreateStore(a1, addr);
-
-    tmp = cg()->llvmAddTmp("net-field", src_val->getType(), nullptr, true);
     addr = cg()->llvmGEP(tmp, cg()->llvmGEPIdx(0), cg()->llvmGEPIdx(1));
     cg()->llvmCreateStore(a2, addr);
 
-    // len = cg.llvmSizeOf(self.llvmType(cg).elements[0]);
-    // len = cg.builder().add(len, cg.llvmSizeOf(self.llvmType(cg).elements[1]));
-
-    auto len = cg()->llvmSizeOf(src_val->getType());
+    auto len = cg()->llvmSizeOf(packed);
     auto bits = cg()->llvmExtractValue(src_val, 2);
     bits = cg()->builder()->CreateZExt(bits, cg()->llvmTypeInt(64));
 

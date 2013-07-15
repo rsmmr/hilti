@@ -59,7 +59,7 @@ void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception** excpt,
         int64_t old_size = __hlt_globals()->hook_state->size;
         int64_t new_size = n + 1;
 
-        __hlt_globals()->hook_state->state = hlt_realloc(__hlt_globals()->hook_state->state, new_size * sizeof(int32_t));
+        __hlt_globals()->hook_state->state = hlt_realloc(__hlt_globals()->hook_state->state, new_size * sizeof(int32_t), old_size * sizeof(int32_t));
 
         // Default is enabled.
         memset(__hlt_globals()->hook_state->state + old_size, 255, (new_size - old_size)  * sizeof(int32_t));

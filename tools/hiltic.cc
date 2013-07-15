@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <llvm/Module.h>
+#include <llvm/IR/Module.h>
 
 #include <hilti.h>
 #include <hilti/jit/libhilti-jit.h>
@@ -116,9 +116,9 @@ llvm::Module* loadLLVM(const string& path)
         diag.print("", os);
 
         if ( diag.getLineNo() > 0 )
-            error(path, util::fmt("line %d, %s", diag.getLineNo(), diag.getMessage().c_str()));
+            error(path, util::fmt("line %d, %s", diag.getLineNo(), diag.getMessage().str()));
         else
-            error(path, diag.getMessage().c_str());
+            error(path, diag.getMessage().str());
     }
 
     return module;

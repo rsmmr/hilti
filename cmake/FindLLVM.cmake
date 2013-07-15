@@ -98,7 +98,7 @@ else ()
       STRING(REGEX REPLACE "${f}" "" LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
   endforeach()
 
-  set(llvm_libs "core bitreader bitwriter linker asmparser interpreter executionengine jit mcjit runtimedyld nativecodegen ipo")
+  set(llvm_libs "archive core bitreader bitwriter linker asmparser interpreter executionengine jit mcjit runtimedyld nativecodegen ipo irreader x86asmparser")
   exec_program(${LLVM_CONFIG_EXEC} ARGS --libs ${llvm_libs} OUTPUT_VARIABLE LLVM_LIBS)
 
   set(LLVM_LDFLAGS "${LLVM_LDFLAGS} -Wl,-rpath,${LLVM_LIB_DIR}")

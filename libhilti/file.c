@@ -210,7 +210,7 @@ static void _add_to_cmd_data(__hlt_cmd_file* cmd, const int8_t* data, int len)
 {
     int old_len = cmd->len;
     cmd->len += len;
-    cmd->data = hlt_realloc(cmd->data, cmd->len);
+    cmd->data = hlt_realloc(cmd->data, cmd->len, old_len);
     memcpy(cmd->data + old_len, data, len);
 }
 

@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  pac-driver-test %INPUT -- -l >output
+# @TEST-EXEC:  pac-driver-test %INPUT -- -l >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 module Mini;

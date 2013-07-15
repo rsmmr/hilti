@@ -69,7 +69,7 @@ static void dbg_print_fields(hlt_classifier* c, const char* func, hlt_classifier
     for ( int i = 0; i < c->num_fields; ++i ) {
         hlt_classifier_field* f = fields[i];
 
-        char buffer[f->len * 3 + 1];
+        char buffer[f->len * 4 + 1];
         for ( int j = 0; j < f->len; ++j )
             snprintf(buffer + j*3, 4, "%02x ", (int)f->data[j]);
 
@@ -102,8 +102,9 @@ void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_
 
     if ( c->num_rules >= c->max_rules ) {
         // Grow rule array.
-        c->max_rules = (c->max_rules ? (int)(c->max_rules * 1.5) : 5);
-        c->rules = (hlt_classifier_rule**) hlt_realloc(c->rules, c->max_rules * sizeof(hlt_classifier_rule));
+        int64_t old_max_rules = c->max_rules;
+        c->max_rules = (old_max_rules ? (int)(old_max_rules * 1.5) : 5);
+        c->rules = (hlt_classifier_rule**) hlt_realloc(c->rules, c->max_rules * sizeof(hlt_classifier_rule), old_max_rules * sizeof(hlt_classifier_rule));
     }
 
     c->rules[c->num_rules++] = r;
@@ -155,16 +156,16 @@ static int8_t match_single_rule(hlt_classifier* c, hlt_classifier_rule* r, hlt_c
             return 0;
 
         // Compare complete bytes.
-        int n = field->bits / 8;
-        if ( memcmp(&field->data, &val->data, n) != 0 )
+        int bytes = (field->bits + 8 - 1) / 8;
+        if ( bytes > 1 && memcmp(&field->data, &val->data, bytes - 1) != 0 )
             // No match.
             return 0;
 
         // Compare "fractional" bits.
-        uint8_t bits = field->bits - (n*8);
+        uint8_t bits = field->bits - ((bytes - 1) * 8) - 1;
         uint8_t mask = 0xff << (8 - bits);
 
-        if ( (val->data[n] & mask) != (field->data[n] & mask) )
+        if ( (val->data[bytes - 1] & mask) != (field->data[bytes - 1] & mask) )
              // No match.
             return 0;
     }
