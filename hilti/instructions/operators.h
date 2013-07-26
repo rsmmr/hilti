@@ -1,5 +1,5 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 // Most operators are implemented by overloading, rather than by providing a
 // direct instruction. For these, we still creates instructions here so that

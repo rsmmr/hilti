@@ -8,7 +8,7 @@
 ///
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 static shared_ptr<type::struct_::Field> _structField(const Instruction* i, shared_ptr<Expression> op, shared_ptr<Expression> field)
 {

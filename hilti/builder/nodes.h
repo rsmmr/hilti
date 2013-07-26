@@ -2,7 +2,7 @@
 #ifndef HILTI_BUILDER_H
 #define HILTI_BUILDER_H
 
-#include "hilti-intern.h"
+#include "hilti/hilti-intern.h"
 
 namespace hilti {
 

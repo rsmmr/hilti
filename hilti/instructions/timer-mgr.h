@@ -4,7 +4,7 @@
 /// 
 /// \cproto hlt_timer_mgr*
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(timer_mgr, New, "new")
     iTarget(optype::refTimerMgr)

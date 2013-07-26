@@ -2,7 +2,7 @@
 #ifndef BINPAC_CODEGEN_CODE_BUILDER_H
 #define BINPAC_CODEGEN_CODE_BUILDER_H
 
-#include "common.h"
+#include "../common.h"
 #include "cg-visitor.h"
 
 #include <hilti/ast-info.h>
@@ -121,7 +121,7 @@ protected:
 
     /// Automatically generated visit() methods for ResolverOperator-derived
     /// classes.
-    #include "autogen/operators/operators-expression-builder.h"
+    #include <binpac/autogen/operators/operators-expression-builder.h>
 
 private:
     shared_ptr<hilti::Expression> _dollardollar = nullptr;

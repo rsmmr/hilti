@@ -1,6 +1,6 @@
 
 #include "cg-operator-common.h"
-#include "autogen/operators/list.h"
+#include <binpac/autogen/operators/list.h>
 
 using namespace binpac;
 using namespace binpac::codegen;

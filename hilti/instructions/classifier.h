@@ -13,7 +13,7 @@
 /// \cproto hlt_classifier*
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBeginH(classifier, New, "new")
     iTarget(optype::refClassifier)

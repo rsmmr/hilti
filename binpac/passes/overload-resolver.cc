@@ -1,13 +1,13 @@
 
 #include "overload-resolver.h"
-#include "id.h"
-#include "type.h"
-#include "function.h"
-#include "expression.h"
-#include "operator.h"
-#include "statement.h"
-#include "scope.h"
-#include "autogen/operators/function.h"
+#include "../id.h"
+#include "../type.h"
+#include "../function.h"
+#include "../expression.h"
+#include "../operator.h"
+#include "../statement.h"
+#include "../scope.h"
+#include <binpac/autogen/operators/function.h>
 
 using namespace binpac;
 using namespace binpac::passes;

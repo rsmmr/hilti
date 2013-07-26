@@ -6,11 +6,11 @@ all: debug
 
 debug:
 	test -d build || mkdir build
-	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug ..; $(MAKE) )
+	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
 
 release:
 	test -d build || mkdir build
-	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=RelWithDebInfo ..; $(MAKE) )
+	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
 
 clean:
 	rm -rf build

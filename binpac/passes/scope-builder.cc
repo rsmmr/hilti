@@ -1,13 +1,13 @@
 
-#include "declaration.h"
-#include "expression.h"
-#include "function.h"
-#include "scope.h"
-#include "statement.h"
-#include "variable.h"
+#include "../declaration.h"
+#include "../expression.h"
+#include "../function.h"
+#include "../scope.h"
+#include "../statement.h"
+#include "../variable.h"
 
 #include "scope-builder.h"
-#include "context.h"
+#include "../context.h"
 
 namespace binpac {
 

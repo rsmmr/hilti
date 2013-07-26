@@ -18,7 +18,7 @@
 ///
 /// \cproto hlt_enum
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(enum_, Equal, "equal")
     iTarget(optype::boolean)

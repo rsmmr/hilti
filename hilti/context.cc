@@ -6,7 +6,7 @@
 
 #include "hilti-intern.h"
 #include "parser/driver.h"
-#include "autogen/hilti-config.h"
+#include "hilti/autogen/hilti-config.h"
 #include "jit/jit.h"
 #include "options.h"
 #include "codegen/optimizer.h"

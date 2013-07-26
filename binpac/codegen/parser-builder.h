@@ -4,7 +4,7 @@
 
 #include <ast/visitor.h>
 
-#include "common.h"
+#include "../common.h"
 #include "cg-visitor.h"
 
 namespace binpac {

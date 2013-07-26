@@ -4,8 +4,8 @@
 
 #include <ast/passes/printer.h>
 
-#include "common.h"
-#include "ast-info.h"
+#include "../common.h"
+#include "../ast-info.h"
 
 namespace hilti {
 namespace passes {

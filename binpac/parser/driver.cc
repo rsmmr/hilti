@@ -3,9 +3,9 @@
 
 #include "driver.h"
 #include "scanner.h"
-#include "statement.h"
-#include "module.h"
-#include "autogen/parser.h"
+#include "../statement.h"
+#include "../module.h"
+#include <binpac/autogen/parser.h>
 
 using namespace binpac;
 using namespace binpac_parser;

@@ -4,7 +4,7 @@
 #include "stmt-builder.h"
 #include "codegen.h"
 #include "util.h"
-#include "options.h"
+#include "../options.h"
 
 using namespace hilti;
 using namespace codegen;

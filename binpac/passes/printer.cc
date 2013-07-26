@@ -3,15 +3,15 @@
 
 #include "printer.h"
 
-#include "attribute.h"
-#include "constant.h"
-#include "ctor.h"
-#include "declaration.h"
-#include "expression.h"
-#include "module.h"
-#include "statement.h"
-#include "type.h"
-#include "variable.h"
+#include "../attribute.h"
+#include "../constant.h"
+#include "../ctor.h"
+#include "../declaration.h"
+#include "../expression.h"
+#include "../module.h"
+#include "../statement.h"
+#include "../type.h"
+#include "../variable.h"
 
 using namespace binpac;
 using namespace binpac::passes;

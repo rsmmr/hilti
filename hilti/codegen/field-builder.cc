@@ -3,7 +3,7 @@
 
 #include "field-builder.h"
 #include "codegen.h"
-#include "builder/nodes.h"
+#include "../builder/nodes.h"
 
 using namespace hilti;
 using namespace hilti::codegen;

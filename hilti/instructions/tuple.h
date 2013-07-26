@@ -10,7 +10,7 @@
 /// True)``. If not explictly initialized, tuples are set to their
 /// components' default values initially.
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(tuple, Equal, "equal")
     iTarget(optype::boolean);

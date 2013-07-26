@@ -12,7 +12,7 @@
 #include <llvm/Bitcode/ReaderWriter.h>
 
 #include "jit.h"
-#include "options.h"
+#include "../options.h"
 
 extern void* __hlt_internal_global_globals;
 

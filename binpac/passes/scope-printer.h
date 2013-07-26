@@ -4,8 +4,8 @@
 
 #include <ast/pass.h>
 
-#include "common.h"
-#include "ast-info.h"
+#include "../common.h"
+#include "../ast-info.h"
 
 namespace binpac {
 namespace passes {

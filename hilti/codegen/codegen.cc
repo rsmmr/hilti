@@ -2,10 +2,10 @@
 #include <util/util.h>
 
 #include "../module.h"
+#include "../options.h"
 
 #include "codegen.h"
 #include "util.h"
-#include "options.h"
 #include "loader.h"
 #include "storer.h"
 #include "unpacker.h"
@@ -15,8 +15,8 @@
 #include "type-builder.h"
 #include "abi.h"
 #include "debug-info-builder.h"
-#include "passes/collector.h"
-#include "builder/nodes.h"
+#include "../passes/collector.h"
+#include "../builder/nodes.h"
 
 #include "libhilti/enum.h"
 

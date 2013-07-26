@@ -1,8 +1,8 @@
 
-#include "declaration.h"
-#include "expression.h"
-#include "scope.h"
-#include "statement.h"
+#include "../declaration.h"
+#include "../expression.h"
+#include "../scope.h"
+#include "../statement.h"
 
 #include "unit-scope-builder.h"
 

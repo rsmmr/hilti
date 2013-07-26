@@ -4,9 +4,9 @@
 
 #include <ast/passes/printer.h>
 
-#include "common.h"
-#include "ast-info.h"
-#include "operator.h"
+#include "../common.h"
+#include "../ast-info.h"
+#include "../operator.h"
 
 namespace binpac {
 namespace passes {

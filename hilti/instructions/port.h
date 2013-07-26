@@ -8,7 +8,7 @@
 ///
 /// \cproto hlt_port
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBeginH(port, Equal, "equal")
     iTarget(optype::boolean)

@@ -5,13 +5,13 @@
 #include <iostream>
 #include <string>
 
-#include "common.h"
-#include "attribute.h"
-#include "declaration.h"
-#include "ctor.h"
-#include "type.h"
-#include "context.h"
-#include "visitor-interface.h"
+#include "../common.h"
+#include "../attribute.h"
+#include "../declaration.h"
+#include "../ctor.h"
+#include "../type.h"
+#include "../context.h"
+#include "../visitor-interface.h"
 
 #undef YY_DECL
 #define	YY_DECL						                 \

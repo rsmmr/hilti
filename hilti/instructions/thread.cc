@@ -1,8 +1,8 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 #include "thread.h"
-#include "module.h"
+#include "../module.h"
 
 iBeginCC(thread)
     iValidateCC(GetContext) {

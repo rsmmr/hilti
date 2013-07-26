@@ -1,7 +1,7 @@
 
-#include "hilti-intern.h"
-#include "instructions/flow.h"
-#include "instructions/exception.h"
+#include "hilti/hilti-intern.h"
+#include "../instructions/flow.h"
+#include "../instructions/exception.h"
 
 using namespace hilti::passes;
 

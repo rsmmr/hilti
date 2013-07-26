@@ -1,20 +1,20 @@
 
-#include <hilti.h>
+#include <hilti/hilti.h>
 
 #include "codegen.h"
-#include "context.h"
-#include "options.h"
+#include "../context.h"
+#include "../options.h"
 
 #include "code-builder.h"
 #include "parser-builder.h"
 #include "type-builder.h"
-#include "context.h"
-#include "attribute.h"
+#include "../context.h"
+#include "../attribute.h"
 
-#include "module.h"
-#include "statement.h"
-#include "expression.h"
-#include "grammar.h"
+#include "../module.h"
+#include "../statement.h"
+#include "../expression.h"
+#include "../grammar.h"
 
 using namespace binpac;
 

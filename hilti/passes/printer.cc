@@ -1,7 +1,7 @@
 
 #include <arpa/inet.h>
 
-#include "hilti-intern.h"
+#include "hilti/hilti-intern.h"
 
 using namespace hilti;
 using namespace hilti::passes;

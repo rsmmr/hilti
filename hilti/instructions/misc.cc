@@ -1,9 +1,9 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 #include "misc.h"
-#include "module.h"
-#include "builder/nodes.h"
+#include "../module.h"
+#include "../builder/nodes.h"
 
 iBeginCC(Misc)
     iValidateCC(Select) {

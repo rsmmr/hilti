@@ -8,7 +8,7 @@
 ///
 /// \cproto double
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(double_, Equal, "equal")
     iTarget(optype::boolean)

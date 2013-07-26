@@ -1,6 +1,6 @@
 
-#include "builder/block.h"
-#include "autogen/instructions.h"
+#include "block.h"
+#include "hilti/autogen/instructions.h"
 
 namespace hilti {
 namespace builder {

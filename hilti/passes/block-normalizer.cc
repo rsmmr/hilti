@@ -1,11 +1,11 @@
 
 #include "../statement.h"
 #include "../module.h"
+#include "../builder/nodes.h"
 
 #include "block-normalizer.h"
 #include "printer.h"
-#include "builder/nodes.h"
-#include "autogen/instructions.h"
+#include "hilti/autogen/instructions.h"
 
 using namespace hilti;
 using namespace passes;

@@ -1,5 +1,5 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 #include "exception.h"
 

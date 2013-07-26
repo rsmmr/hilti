@@ -1,14 +1,14 @@
 
 #include <util/util.h>
 
-#include "attribute.h"
-#include "declaration.h"
-#include "expression.h"
 #include "normalizer.h"
-#include "statement.h"
-#include "type.h"
+#include "../attribute.h"
+#include "../declaration.h"
+#include "../expression.h"
+#include "../statement.h"
+#include "../type.h"
 
-#include "autogen/operators/unit.h"
+#include <binpac/autogen/operators/unit.h>
 
 using namespace binpac;
 using namespace binpac::passes;

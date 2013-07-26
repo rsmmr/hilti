@@ -40,7 +40,7 @@
 ///
 /// \cproto hlt_bitset
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(bitset, Equal, "equal")
     iTarget(optype::boolean)

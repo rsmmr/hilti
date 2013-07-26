@@ -1,6 +1,6 @@
 
-#include "hilti-intern.h"
-#include "autogen/instructions.h"
+#include "hilti/hilti-intern.h"
+#include "hilti/autogen/instructions.h"
 
 using namespace hilti::passes;
 

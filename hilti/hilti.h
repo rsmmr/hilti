@@ -8,6 +8,6 @@
 
 #include "hilti-intern.h"
 #include "options.h"
-#include "autogen/instructions.h"
+#include "hilti/autogen/instructions.h"
 
 #endif

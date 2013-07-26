@@ -1,9 +1,9 @@
 
 // Instructions controlling flow.
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
-#include "passes/validator.h"
+#include "../passes/validator.h"
 
 iBeginH(flow, ReturnResult, "return.result")
     iTerminator()

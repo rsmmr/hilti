@@ -1,8 +1,8 @@
 
-#include <hilti-intern.h>
+#include <hilti/hilti-intern.h>
 
 #include "../stmt-builder.h"
-#include "options.h"
+#include "../../options.h"
 
 using namespace hilti;
 using namespace codegen;

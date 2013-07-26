@@ -13,7 +13,7 @@
 
 #include "libhilti-intern.h"
 #include "module/module.h"
-#include "autogen/hilti-hlt.h"
+#include "libhilti/autogen/hilti-hlt.h"
 
 #endif
 

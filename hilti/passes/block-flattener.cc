@@ -2,7 +2,7 @@
 #include "../statement.h"
 #include "../module.h"
 #include "../hilti-intern.h"
-#include "autogen/instructions.h"
+#include "hilti/autogen/instructions.h"
 
 #include "block-flattener.h"
 #include "printer.h"

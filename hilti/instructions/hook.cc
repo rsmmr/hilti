@@ -1,8 +1,8 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 #include "hook.h"
-#include "builder/nodes.h"
+#include "../builder/nodes.h"
 
 iBeginCC(hook)
     iValidateCC(DisableGroup) {

@@ -2,7 +2,7 @@
 #include "../hilti-intern.h"
 #include "../module.h"
 #include "../scope.h"
-#include "autogen/instructions.h"
+#include "hilti/autogen/instructions.h"
 
 #include "instruction-normalizer.h"
 

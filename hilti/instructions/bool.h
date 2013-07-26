@@ -8,7 +8,7 @@
 ///
 /// \cproto int8_t
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(boolean, Equal, "equal")
     iTarget(optype::boolean)

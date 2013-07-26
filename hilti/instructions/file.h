@@ -4,7 +4,7 @@
 /// \cproto hlt_file*
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(file, New, "new")
     iTarget(optype::refFile)

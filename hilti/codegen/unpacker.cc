@@ -4,7 +4,7 @@
 #include "unpacker.h"
 #include "codegen.h"
 #include "abi.h"
-#include "builder/nodes.h"
+#include "../builder/nodes.h"
 #include "libhilti/port.h"
 
 using namespace hilti;

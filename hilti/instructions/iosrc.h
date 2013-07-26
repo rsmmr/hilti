@@ -16,7 +16,7 @@
 /// \cproto hlt_bytes_iter
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBeginH(iterIOSource, Begin, "begin")
     iTarget(optype::iterIOSource);

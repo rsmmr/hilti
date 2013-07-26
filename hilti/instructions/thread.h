@@ -1,5 +1,5 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBeginH(thread, GetContext, "thread.get_context")
     iTarget(optype::refContext)

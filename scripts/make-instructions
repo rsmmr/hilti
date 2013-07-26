@@ -54,10 +54,10 @@ if [ "$kind" == "-cc" ]; then
 
         cat >$cc <<EOF
 
-#include "hilti-intern.h"
+#include <hilti/hilti-intern.h>
 
-#include "instructions/define-instruction.h"
-#include "$hdr"
+#include <hilti/instructions/define-instruction.h>
+#include <hilti/$hdr>
 
 EOF
 
@@ -93,18 +93,18 @@ if [ "$kind" == "-h" ]; then
 #ifndef HILTI_INSTRUCTIONS_INSTRUCTIONS_H
 #define HILTI_INSTRUCTIONS_INSTRUCTIONS_H
 
-#include "instructions/define-instruction.h"
+#include <hilti/instructions/define-instruction.h>
 
 EOF
 
     cat >$dst/instructions-define.cc <<EOF
 
-#include "hilti-intern.h"
+#include <hilti/hilti-intern.h>
 
 EOF
 
     for h in $hdrs; do
-        echo "#include \"$h\"" >>$dst/instructions.h
+        echo "#include <hilti/$h>" >>$dst/instructions.h
     done
 
     echo >>$dst/instructions.h

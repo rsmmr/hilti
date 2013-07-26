@@ -19,7 +19,7 @@
 ///
 /// \cproto hlt_interval
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(interval, Equal, "equal")
     iTarget(optype::boolean)

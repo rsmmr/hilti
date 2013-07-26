@@ -1,5 +1,5 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBeginH(Misc, Select, "select")
     iTarget(optype::any)

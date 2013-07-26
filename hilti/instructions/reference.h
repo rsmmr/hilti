@@ -1,5 +1,5 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(reference, AsBool, "ref.as_bool")
     iTarget(optype::boolean)

@@ -7,7 +7,7 @@
 #include "instruction.h"
 #include "builder/nodes.h"
 #include "passes/printer.h"
-#include "autogen/instructions.h"
+#include "hilti/autogen/instructions.h"
 
 using namespace hilti;
 

@@ -5,7 +5,7 @@
 %{
 namespace binpac_parser { class Parser; }
 
-#include "parser/driver.h"
+#include <binpac/parser/driver.h>
 
 %}
 
@@ -29,14 +29,14 @@ namespace binpac_parser { class Parser; }
 %union {}
 
 %{
-#include "parser/scanner.h"
+#include <binpac/parser/scanner.h>
 
-#include "declaration.h"
-#include "module.h"
-#include "statement.h"
-#include "expression.h"
-#include "type.h"
-#include "scope.h"
+#include <binpac/declaration.h>
+#include <binpac/module.h>
+#include <binpac/statement.h>
+#include <binpac/expression.h>
+#include <binpac/type.h>
+#include <binpac/scope.h>
 
 #undef yylex
 #define yylex driver.scanner()->lex

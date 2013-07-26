@@ -1,8 +1,8 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 #include "channel.h"
-#include "module.h"
+#include "../module.h"
 
 iBeginCC(channel)
     iValidateCC(New) {

@@ -7,7 +7,7 @@
 
 #include <functional>
 
-#include "hilti-intern.h"
+#include "hilti/hilti-intern.h"
 
 using namespace hilti::passes;
 

@@ -1,6 +1,6 @@
 
-#include "builder/module.h"
-#include "hilti-intern.h"
+#include "module.h"
+#include "hilti/hilti-intern.h"
 
 namespace hilti {
 namespace builder {

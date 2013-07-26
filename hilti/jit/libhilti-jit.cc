@@ -1,6 +1,6 @@
 
 #include "libhilti-jit.h"
-#include "context.h"
+#include "../context.h"
 
 extern "C" {
     #include "libhilti/linker.h"

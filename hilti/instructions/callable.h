@@ -6,7 +6,7 @@
 /// \cproto X
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(callable, New, "new")
     iTarget(optype::refCallable)

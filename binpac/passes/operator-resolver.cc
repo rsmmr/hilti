@@ -1,8 +1,8 @@
 
 #include "operator-resolver.h"
 
-#include "operator.h"
-#include "expression.h"
+#include "../operator.h"
+#include "../expression.h"
 
 using namespace binpac;
 using namespace binpac::passes;

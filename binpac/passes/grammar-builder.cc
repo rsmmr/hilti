@@ -2,13 +2,13 @@
 #include <util/util.h>
 
 #include "grammar-builder.h"
-#include "declaration.h"
-#include "type.h"
-#include "grammar.h"
-#include "production.h"
-#include "attribute.h"
-#include "expression.h"
-#include "constant.h"
+#include "../declaration.h"
+#include "../type.h"
+#include "../grammar.h"
+#include "../production.h"
+#include "../attribute.h"
+#include "../expression.h"
+#include "../constant.h"
 
 using namespace binpac;
 using namespace binpac::passes;

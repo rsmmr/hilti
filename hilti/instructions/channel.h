@@ -17,7 +17,7 @@
 /// \cproto hlt_channel*
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBeginH(channel, New, "new")
     iTarget(optype::refChannel)

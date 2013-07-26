@@ -3,8 +3,8 @@
 #ifndef $STDIFDEF
 #define $STDIFDEF
 
-#include "expression.h"
-#include "operator.h"
+#include <binpac/expression.h>
+#include <binpac/operator.h>
 
 ===
 > <<FOOTER>> h

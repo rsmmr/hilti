@@ -1,12 +1,12 @@
 
 #include "id-resolver.h"
 
-#include "attribute.h"
-#include "declaration.h"
-#include "expression.h"
-#include "scope.h"
-#include "statement.h"
-#include "type.h"
+#include "../attribute.h"
+#include "../declaration.h"
+#include "../expression.h"
+#include "../scope.h"
+#include "../statement.h"
+#include "../type.h"
 
 using namespace binpac;
 using namespace binpac::passes;

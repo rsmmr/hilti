@@ -1,6 +1,6 @@
 
 #include "cg-operator-common.h"
-#include "autogen/operators/bool.h"
+#include <binpac/autogen/operators/bool.h>
 
 using namespace binpac;
 using namespace binpac::codegen;

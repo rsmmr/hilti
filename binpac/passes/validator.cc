@@ -1,12 +1,12 @@
 
 #include "validator.h"
-#include "type.h"
-#include "declaration.h"
-#include "expression.h"
-#include "statement.h"
-#include "grammar.h"
-#include "attribute.h"
-#include "scope.h"
+#include "../type.h"
+#include "../declaration.h"
+#include "../expression.h"
+#include "../statement.h"
+#include "../grammar.h"
+#include "../attribute.h"
+#include "../scope.h"
 
 using namespace binpac;
 using namespace binpac::passes;

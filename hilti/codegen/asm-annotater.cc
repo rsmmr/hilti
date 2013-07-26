@@ -1,6 +1,6 @@
 
 #include "asm-annotater.h"
-#include "id.h"
+#include "../id.h"
 #include "codegen.h"
 
 using namespace hilti;

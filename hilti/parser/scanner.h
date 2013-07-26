@@ -6,8 +6,8 @@
 
 #include <string>
 
-#include "parser/driver.h"
-#include "autogen/parser.h"
+#include "driver.h"
+#include "hilti/autogen/parser.h"
 
 namespace hilti_parser {
 

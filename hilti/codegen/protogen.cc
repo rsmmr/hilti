@@ -1,6 +1,6 @@
 
 #include "protogen.h"
-#include "module.h"
+#include "../module.h"
 #include "util.h"
 
 using namespace hilti;
@@ -68,7 +68,7 @@ void ProtoGen::generatePrototypes(shared_ptr<hilti::Module> module)
     out << "#ifndef " << ifdefname << std::endl;
     out << "#define " << ifdefname << std::endl;
     out << std::endl;
-    out << "#include <libhilti.h>" << std::endl;
+    out << "#include <libhilti/libhilti.h>" << std::endl;
     out << std::endl;
 
     // Generate body.

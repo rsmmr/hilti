@@ -1,9 +1,9 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 #include "classifier.h"
-#include "module.h"
-#include "builder/nodes.h"
+#include "../module.h"
+#include "../builder/nodes.h"
 
 static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, shared_ptr<Expression> op)
 {

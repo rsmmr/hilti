@@ -26,7 +26,7 @@
 /// \cproto hlt_map_iter
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(iterMap, Begin, "begin")
     iTarget(optype::iterMap);

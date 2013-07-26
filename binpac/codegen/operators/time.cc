@@ -1,6 +1,6 @@
 
 #include "cg-operator-common.h"
-#include "autogen/operators/time.h"
+#include <binpac/autogen/operators/time.h>
 
 using namespace binpac;
 using namespace binpac::codegen;

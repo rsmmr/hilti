@@ -1,8 +1,8 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 #include "profiler.h"
-#include "module.h"
+#include "../module.h"
 
 iBeginCC(profiler)
     iValidateCC(Start) {

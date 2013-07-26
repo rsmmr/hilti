@@ -1,6 +1,6 @@
 
 #include "options.h"
-#include "autogen/binpac-config.h"
+#include "binpac/autogen/binpac-config.h"
 
 using namespace binpac;
 

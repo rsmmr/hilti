@@ -1,8 +1,8 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 #include "iosrc.h"
-#include "module.h"
+#include "../module.h"
 
 iBeginCC(iterIOSource)
     iValidateCC(Begin) {

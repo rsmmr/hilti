@@ -7,8 +7,7 @@ set(ffi     "${CMAKE_CURRENT_BINARY_DIR}/autogen/ffi")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${ffi})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/libhilti ${CMAKE_BINARY_DIR}/libhilti)
+# include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package(PAPI)
 

@@ -29,7 +29,7 @@
 /// \cproto hlt_vector_iter
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(iterVector, Begin, "begin")
     iTarget(optype::iterVector);

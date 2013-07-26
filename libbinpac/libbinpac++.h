@@ -5,10 +5,10 @@
 #ifndef LIBBINPAC_BINPAC_H
 #define LIBBINPAC_BINPAC_H
 
-#include <libhilti.h>
+#include <libhilti/libhilti.h>
 
 #include "rtti.h"
-#include "autogen/binpac-hlt.h"
+#include "libbinpac/autogen/binpac-hlt.h"
 
 /// The main entry function to a BinPAC-generated parser.
 typedef void* binpac_parse_function(hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx);

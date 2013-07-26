@@ -1,6 +1,6 @@
 
 #include "cg-operator-common.h"
-#include "autogen/operators/tuple.h"
+#include <binpac/autogen/operators/tuple.h>
 
 using namespace binpac;
 using namespace binpac::codegen;

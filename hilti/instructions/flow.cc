@@ -1,9 +1,9 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 #include "flow.h"
-#include "module.h"
-#include "builder/nodes.h"
+#include "../module.h"
+#include "../builder/nodes.h"
 
 iBeginCC(flow)
     iValidateCC(ReturnResult) {

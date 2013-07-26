@@ -1,5 +1,5 @@
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBeginH(exception, New, "new")
     iTarget(optype::refException)

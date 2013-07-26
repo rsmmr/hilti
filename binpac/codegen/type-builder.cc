@@ -1,7 +1,7 @@
 
 #include "type-builder.h"
-#include "type.h"
-#include "module.h"
+#include "../type.h"
+#include "../module.h"
 
 #include <hilti/builder/builder.h>
 

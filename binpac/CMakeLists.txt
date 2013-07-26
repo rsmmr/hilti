@@ -4,9 +4,8 @@ set(BINPAC_VERSION "0.2")
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
-include_directories(${CMAKE_SOURCE_DIR}/libhilti ${CMAKE_BINARY_DIR}/libhilti)
+# include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/binpac-config.h.in ${autogen}/binpac-config.h)
 

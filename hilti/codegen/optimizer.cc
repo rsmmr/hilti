@@ -2,8 +2,8 @@
 #include "optimizer.h"
 #include "util.h"
 #include "codegen.h"
-#include "options.h"
-#include "context.h"
+#include "../options.h"
+#include "../context.h"
 
 using namespace hilti;
 using namespace codegen;

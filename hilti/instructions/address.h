@@ -9,7 +9,7 @@
 ///
 /// \cproto hlt_addr
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(address, Equal, "equal")
     iTarget(optype::boolean);

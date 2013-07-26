@@ -1,12 +1,13 @@
 
 // FIXME: Due to namespace issues, we can't have this in context.cc.
 
-#include "autogen/binpac-config.h"
+#include "binpac/autogen/binpac-config.h"
 
 #include "context.h"
 #include "options.h"
-#include "hilti/context.h"
-#include "jit/libhilti-jit.h"
+
+#include <hilti/context.h>
+#include <hilti/jit/libhilti-jit.h>
 
 binpac::CompilerContext::CompilerContext(const Options& options)
 {

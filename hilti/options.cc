@@ -1,7 +1,7 @@
 
 #include "options.h"
 #include "util/util.h"
-#include "autogen/hilti-config.h"
+#include "hilti/autogen/hilti-config.h"
 
 using namespace hilti;
 

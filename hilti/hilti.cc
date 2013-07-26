@@ -1,6 +1,6 @@
 
 #include "hilti-intern.h"
-#include "autogen/hilti-config.h"
+#include "hilti/autogen/hilti-config.h"
 
 // Auto-generated in ${autogen}/instructions-register.cc
 extern void __registerAllInstructions();

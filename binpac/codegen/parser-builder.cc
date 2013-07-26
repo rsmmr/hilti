@@ -1,15 +1,15 @@
 
-#include <hilti.h>
+#include <hilti/hilti.h>
 
 #include "parser-builder.h"
-#include "expression.h"
-#include "grammar.h"
-#include "production.h"
-#include "statement.h"
-#include "type.h"
-#include "declaration.h"
-#include "attribute.h"
-#include "options.h"
+#include "../expression.h"
+#include "../grammar.h"
+#include "../production.h"
+#include "../statement.h"
+#include "../type.h"
+#include "../declaration.h"
+#include "../attribute.h"
+#include "../options.h"
 
 using namespace binpac;
 using namespace binpac::codegen;

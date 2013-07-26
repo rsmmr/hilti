@@ -2,7 +2,7 @@
 #ifndef BINPAC_CODEGEN_TYPE_BUILDER_H
 #define BINPAC_CODEGEN_TYPE_BUILDER_H
 
-#include "common.h"
+#include "../common.h"
 #include "cg-visitor.h"
 
 namespace binpac {

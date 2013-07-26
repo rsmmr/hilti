@@ -9,7 +9,7 @@
 /// \cproto hlt_regexp*
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 static inline void _checkMatchTokenTupleBytes(const Instruction* i, shared_ptr<Expression> target)
 {

@@ -29,7 +29,7 @@
 ///     33..64  int64_t
 ///     ======  =======
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(integer, Equal, "equal")
     iTarget(optype::boolean)

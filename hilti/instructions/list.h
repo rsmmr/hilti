@@ -12,7 +12,7 @@
 /// \cproto hlt_list_iter
 ///
 
-#include "instructions/define-instruction.h"
+#include "define-instruction.h"
 
 iBegin(iterList, Begin, "begin")
     iTarget(optype::iterList);

@@ -1,7 +1,7 @@
 
-#include "expression.h"
-#include "statement.h"
-#include "scope.h"
+#include "../expression.h"
+#include "../statement.h"
+#include "../scope.h"
 
 #include "scope-printer.h"
 #include "printer.h"

@@ -2,8 +2,8 @@
 #include "linker.h"
 #include "util.h"
 #include "codegen.h"
-#include "options.h"
-#include "context.h"
+#include "../options.h"
+#include "../context.h"
 
 // TODO: THis needs cleanup.
 

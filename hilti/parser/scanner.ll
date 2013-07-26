@@ -5,8 +5,8 @@
 
 #include <string>
 
-#include "parser/scanner.h"
-#include "parser/driver.h"
+#include <hilti/parser/scanner.h>
+#include <hilti/parser/driver.h>
 
 #define yyterminate() return token::END
 

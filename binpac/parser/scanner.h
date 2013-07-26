@@ -6,8 +6,8 @@
 
 #include <string>
 
-#include "parser/driver.h"
-#include "autogen/parser.h"
+#include "driver.h"
+#include <binpac/autogen/parser.h>
 
 namespace binpac_parser {
 
