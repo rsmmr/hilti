@@ -1,0 +1,19 @@
+#! /usr/bin/env bash
+#
+# Extracts the CMake variables $1 from the HILTI build cache.
+#
+
+if [ $# != 1 ]; then
+    echo "usage: `basename $0` <var>"
+    exit 1
+fi
+
+var=$1
+cache=`dirname $0`/../../../build/CMakeCache.txt
+
+if [ ! -e "$cache" ]; then
+    echo "$cache does not exist; have you built HILTI?"
+    exit 1
+fi
+
+cat $cache | grep "^$1:" | cut -d '=' -f 2

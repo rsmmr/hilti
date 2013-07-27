@@ -1,0 +1,12 @@
+#! /usr/bin/env bash
+#
+# Returns the PATH to use with tests.
+
+base=`dirname $0`
+build=`$base/get-cmake-var BRO_PLUGIN_BRO_BUILD`
+dist=`$base/get-cmake-var BRO_DIST`
+
+echo "$base/Scripts:$build/src:$dist/aux/btest:$dist/aux/bro-aux/bro-cut:$PATH"
+
+
+
