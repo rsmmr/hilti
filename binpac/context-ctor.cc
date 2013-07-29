@@ -16,39 +16,10 @@ binpac::CompilerContext::CompilerContext(const Options& options)
 
     if ( options.cgDebugging("visitors") )
         ast::enableDebuggingForAllVisitors();
-
-    if ( options.module_cache.size() ) {
-        if ( options.cgDebugging("cache") )
-            std::cerr << "Enabling module cache in " << options.module_cache << std::endl;
-
-        _cache = std::make_shared<::util::cache::FileCache>(options.module_cache);
-    }
 }
 
-llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules, std::list<string> libs, path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)
+llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm::Module*> modules, std::list<string> libs, path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)
 {
-#if 0
-    if ( add_stdlibs ) {
-        auto runtime_hlt = _hilti_context->loadModule(configuration().runtime_hlt);
-
-        if ( ! runtime_hlt )
-            return nullptr;
-
-        modules.push_back(runtime_hlt);
-    }
-#endif
-
-    std::list<llvm::Module*> llvm_modules;
-
-    for ( auto m : modules ) {
-        auto llvm_module = _hilti_context->compile(m);
-
-        if ( ! llvm_module )
-            return nullptr;
-
-        llvm_modules.push_back(llvm_module);
-    }
-
     if ( add_stdlibs ) {
         if ( options().debug )
             bcas.push_back(configuration().runtime_library_bca_dbg);
@@ -56,10 +27,10 @@ llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shar
             bcas.push_back(configuration().runtime_library_bca);
     };
 
-    return _hilti_context->linkModules(output, llvm_modules, libs, bcas, dylds, add_stdlibs, add_sharedlibs);
+    return _hilti_context->linkModules(output, modules, libs, bcas, dylds, add_stdlibs, add_sharedlibs);
 }
 
-llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules)
+llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm::Module*> modules)
 {
     return linkModules(output, modules,
                        std::list<string>(),

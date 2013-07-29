@@ -93,10 +93,15 @@ string util::strtrim(const string& s)
 
 uint64_t util::hash(const string& str)
 {
+    return util::hash(str.data(), str.size());
+}
+
+uint64_t util::hash(const char* data, size_t len)
+{
     uint64_t h = 0;
 
-    for ( int i = 0; i < str.size(); i++ )
-        h = (h << 5) - h + (uint64_t)str[i];
+    while ( len-- )
+        h = (h << 5) - h + (uint64_t)*data++;
 
 	return h;
 }

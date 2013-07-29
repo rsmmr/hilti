@@ -1,11 +1,9 @@
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 if ( BRO_DIST )
 
-    if ( NOT BRO_DIST )
-        message(FATAL_ERROR "BRO_DIST not set")
-    endif ()
-
-    set(CMAKE_MODULE_PATH ${BRO_DIST}/cmake)
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${BRO_DIST}/cmake)
 
     if ( "${CMAKE_BUILD_TYPE}" MATCHES "Debug" )
 	    # Bro's CMakeConfig checks this and adjusts CMAKE_BUILD_TYPE
@@ -17,6 +15,7 @@ if ( BRO_DIST )
 
     if ( BUILDING_HILTI )
         message(STATUS "Building Bro plugin as part of HILTI tree")
+        set(addl_libs ${PAPI_LIBRARIES})
 
     else ()
         project(Bro-Plugin-Hilti)
@@ -65,14 +64,15 @@ if ( BRO_DIST )
         if ( "${CMAKE_BUILD_TYPE}" MATCHES "Debug" )
             set(plugin_hilti_libs  ${plugin_hilti_libs} ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-dbg.bc)
             set(plugin_binpac_libs ${plugin_binpac_libs} ${PROJECT_BINARY_DIR}/libbinpac/libbinpac-rt-dbg.bc)
-            set(plugin_deps libhilti-rt-dbg.bc libbinpac-rt-dbg.bc)
         else ()
             set(plugin_hilti_libs  ${plugin_hilti_libs} ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt.bc)
             set(plugin_binpac_libs ${plugin_binpac_libs} ${PROJECT_BINARY_DIR}/libbinpac/libbinpac-rt.bc)
-            set(plugin_deps libhilti-rt.bc libbinpac-rt.bc)
         endif ()
 
+        set(plugin_deps libhilti-rt-dbg.bc libbinpac-rt-dbg.bc libhilti-rt.bc libbinpac-rt.bc)
+
         target_link_libraries(${_plugin_lib} ${plugin_hilti_libs} ${plugin_binpac_libs} ${plugin_external_libs})
+        target_link_libraries(${_plugin_lib} ${addl_libs})
         add_dependencies(${_plugin_lib} ${plugin_deps})
     else ()
         message(FATAL_ERROR "Building the Bro plugin outside of the HILTI tree is not yet supported.")
@@ -81,10 +81,16 @@ if ( BRO_DIST )
     # Turn the build directory into a plugin.
     add_custom_command(TARGET ${_plugin_lib} POST_BUILD
                        COMMAND touch ${CMAKE_CURRENT_BINARY_DIR}/__bro_plugin__
-					   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/scripts && mkdir ${CMAKE_CURRENT_BINARY_DIR}/scripts
-					   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/pac2 && mkdir ${CMAKE_CURRENT_BINARY_DIR}/pac2
-                       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/scripts ${CMAKE_CURRENT_BINARY_DIR}/scripts
-                       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/pac2    ${CMAKE_CURRENT_BINARY_DIR}/pac2)
+                       COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/scripts ${CMAKE_CURRENT_BINARY_DIR}/scripts
+                       COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/pac2 ${CMAKE_CURRENT_BINARY_DIR}/pac2
+                       )
+
+                       # If we copy, changes to {scripts,pac2} won't reflected until the plugin gets relinked.
+					   # COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/scripts && mkdir ${CMAKE_CURRENT_BINARY_DIR}/scripts
+					   # COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/pac2 && mkdir ${CMAKE_CURRENT_BINARY_DIR}/pac2
+                       # COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/scripts ${CMAKE_CURRENT_BINARY_DIR}/scripts
+                       # COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/pac2    ${CMAKE_CURRENT_BINARY_DIR}/pac2
+
 
 else ()
     message(STATUS "Not building Bro plugin")

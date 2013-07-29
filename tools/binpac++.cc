@@ -184,41 +184,45 @@ int main(int argc, char** argv)
     if ( output_binpac )
         return ctx->print(module, out);
 
-    auto hilti_module = ctx->compile(module);
+    shared_ptr<hilti::Module> hilti_module = 0;
+    auto llvm_module = ctx->compile(module, &hilti_module);
 
-    if ( ! hilti_module ) {
+    if ( hilti_module ) {
+
+        if ( dump_ast ) {
+            hilti_module->dump(cerr);
+            cerr << std::endl;
+        }
+
+        if ( ctx->options().cgDebugging("scopes") ) {
+            hilti::passes::ScopePrinter scope_printer(cerr);
+
+            if ( ! scope_printer.run(hilti_module) )
+                return 1;
+        }
+    }
+
+    if ( ! llvm_module ) {
         error(input, "Aborting due to compilation error.");
         return 1;
     }
 
-    if ( dump_ast ) {
-        hilti_module->dump(cerr);
-        cerr << std::endl;
-    }
-
-    if ( ctx->options().cgDebugging("scopes") ) {
-        hilti::passes::ScopePrinter scope_printer(cerr);
-
-        if ( ! scope_printer.run(hilti_module) )
-            return 1;
-    }
-
     if ( output_llvm ) {
-        std::list<shared_ptr<hilti::Module>> mods = { hilti_module };
-        auto llvm_module = ctx->linkModules(input, mods,
-                                            std::list<string>(),
-                                            path_list(), path_list(),
-                                            false, add_stdlibs);
+        std::list<llvm::Module *> mods = { llvm_module };
+        auto linked_module = ctx->linkModules(input, mods,
+                                              std::list<string>(),
+                                              path_list(), path_list(),
+                                              false, add_stdlibs);
 
-        if ( ! llvm_module ) {
+        if ( ! linked_module ) {
             error(input, "Aborting due to link error.");
             return 1;
         }
 
-        if ( ! ctx->hiltiContext()->optimize(llvm_module, true) )
+        if ( ! ctx->hiltiContext()->optimize(linked_module, true) )
             error(input, "Optimization of linked module failed.");
 
-        if ( ! ctx->hiltiContext()->printBitcode(llvm_module, std::cout) ) {
+        if ( ! ctx->hiltiContext()->printBitcode(linked_module, std::cout) ) {
             error(input, "Aborting due to LLVM problem.");
             return 1;
         }
@@ -226,7 +230,7 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    if ( ! ctx->hiltiContext()->print(hilti_module, out, cfg) ) {
+    if ( hilti_module && ! ctx->hiltiContext()->print(hilti_module, out, cfg) ) {
         error(input, "Aborting due to HILTI printer error.");
         return 1;
     }

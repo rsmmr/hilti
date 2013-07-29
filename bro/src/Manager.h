@@ -35,6 +35,8 @@
 #include <istream>
 #include <functional>
 
+#include "util/file-cache.h"
+
 class BroType;
 
 struct __hlt_list;
@@ -65,6 +67,10 @@ namespace binpac  {
 	namespace declaration {
 		class Function;
 	}
+}
+
+namespace llvm {
+	class Module;
 }
 
 namespace bro {
@@ -292,25 +298,35 @@ protected:
 	bool CreateHiltiEventFunction(Pac2EventInfo* ev);
 
 	/**
-	 * 
+	 * XXX
 	 */
 	void AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev);
-
-	/**
-	 * Returns the current HILTI block builder.
-	 */
-	::hilti::builder::BlockBuilder* Builder() const;
-
-	/**
-	 * Returns the current HILTI module builder.
-	 */
-	::hilti::builder::ModuleBuilder* ModuleBuilder() const;
 
 	/**
 	 * Adds information from BinPAC+s binpac_parsers() list to our
 	 * analyzer data structures.
 	 */
 	void ExtractParsers(__hlt_list* parsers);
+
+	/**
+	 * JIT's and executes the final linked module.
+	 *
+	 * @param llvm_module The code to jit and run.
+	 */
+	bool RunJIT(llvm::Module* llvm_module);
+
+	/**
+	 * Returns the cache key to use for looking up / storing the final
+	 * linked module.
+	 */
+	util::cache::FileCache::Key CacheKeyForLinkedModule();
+
+	/**
+	 * Looks up the cache to see if we have linked module in there that's
+	 * compatible with the current compile options; if so returns it, and
+	 * null otherwise.
+	 */
+	llvm::Module* CheckCacheForLinkedModule();
 
 private:
 	bool pre_scripts_init_run;

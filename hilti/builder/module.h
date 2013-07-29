@@ -62,6 +62,9 @@ public:
    /// module: The name of the module to check for.
    bool idImported(const std::string& id) const;
 
+   // Returns a list of paths of modules imported so far.
+   std::list<std::string> importedPaths() const;
+
    /// Exports an ID so that it can be accessed from other modules.
    ///
    /// id: The id to export.
@@ -706,6 +709,8 @@ private:
    };
 
    std::list<std::shared_ptr<TryCatch>> _tries;
+
+   std::list<std::string> _imported_paths;
 
 };
 

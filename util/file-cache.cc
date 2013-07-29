@@ -12,6 +12,13 @@ using namespace util::cache;
 
 bool FileCache::Key::operator==(const FileCache::Key& other) const
 {
+#if 0
+    std::cerr << "%%%%%%" << std::endl;
+    std::cerr << *this << std::endl;
+    std::cerr << other << std::endl;
+    std::cerr << "%%%%%%" << std::endl;
+#endif
+
     if ( ! valid() )
         return false;
 
@@ -30,26 +37,24 @@ bool FileCache::Key::operator==(const FileCache::Key& other) const
     if ( dirs.size() != other.dirs.size() )
         return false;
 
-    for ( auto p : zip2(dirs, other.dirs) ) {
-        if ( p.first != p.second )
-            return false;
-    }
+    if ( ! util::set_difference(dirs, other.dirs).empty() )
+        return false;
 
     if ( files.size() != other.files.size() )
         return false;
 
-    for ( auto p : zip2(files, other.files) ) {
-        if ( p.first != p.second )
-            return false;
-    }
+    if ( ! util::set_difference(files, other.files).empty() )
+        return false;
 
     if ( hashes.size() != other.hashes.size() )
         return false;
 
-    for ( auto p : zip2(hashes, other.hashes) ) {
-        if ( p.first != p.second )
-            return false;
-    }
+    if ( ! util::set_difference(hashes, other.hashes).empty() )
+        return false;
+
+#if 0
+    std::cerr << "--->>>> EQUAL" << std::endl;
+#endif
 
     return true;
 }
@@ -86,6 +91,7 @@ std::ostream& operator<<(std::ostream &out, const FileCache::Key& key)
     out << key.scope << std::endl;
     out << key.name << std::endl;
     out << key.options << std::endl;
+    out << key._parts << std::endl;
 
     for ( auto d : key.dirs )
         out << "dir " << d << std::endl;
@@ -113,6 +119,10 @@ std::istream& operator>>(std::istream &in, FileCache::Key& key)
     std::getline(in, key.name);
     std::getline(in, key.options);
 
+    string parts;
+    std::getline(in, parts);
+    key._parts = std::atoi(parts.c_str());
+
     while ( true ) {
         string line;
         std::getline(in, line);
@@ -126,13 +136,13 @@ std::istream& operator>>(std::istream &in, FileCache::Key& key)
         auto val = *i++;
 
         if ( tag == "dir" )
-            key.dirs.push_back(val);
+            key.dirs.insert(val);
 
         if ( tag == "file" )
-            key.files.push_back(val);
+            key.files.insert(val);
 
         if ( tag == "hash" )
-            key.hashes.push_back(val);
+            key.hashes.insert(val);
     }
 
     return in;
@@ -156,96 +166,96 @@ FileCache::~FileCache()
 {
 }
 
-bool FileCache::store(const Key& key, std::istream& data)
+bool FileCache::store(const Key& key, const char* data, size_t len)
+{
+    std::list<std::pair<const char*, size_t>> l;
+    l.push_back(std::make_pair(data, len));
+    return store(key, l);
+}
+
+bool FileCache::store(const Key& key, std::list<std::pair<const char*, size_t>> data)
 {
     if ( _dir.empty() )
         return false;
 
-    auto fname = fileForKey(key);
-    auto skey = string("key.") + fname;
-    auto sdata = string("data.") + fname;
+    std::list<string> l;
 
-    auto out = std::ofstream(skey);
-    out << key;
-    out.close();
+    for ( auto d : data )
+        l.push_back(string(d.first, d.second));
 
-    out = std::ofstream(sdata);
-    out << data.rdbuf();
-    out.close();
+    return store(key, l);
+}
+
+bool FileCache::store(const Key& key, std::list<std::string> data)
+{
+    if ( _dir.empty() )
+        return false;
 
     auto ct = currentTime();
+    auto skey = fileForKey(key, "key");
+    auto out = std::ofstream(skey);
+
+    Key ckey(key);
+    ckey._parts = data.size();
+
+    out << ckey;
+    out.close();
+
     touchFile(skey, ct);
-    touchFile(sdata, ct);
+
+    int idx = 1;
+
+    for ( auto s : data ) {
+        auto sdata = fileForKey(key, "data", idx++);
+
+        out = std::ofstream(sdata);
+        out.write(s.data(), s.size());
+        out.close();
+
+        touchFile(sdata, ct);
+    }
 
     return true;
 }
 
-bool FileCache::store(const Key& key, const string& data)
+std::list<string> FileCache::lookup(const Key& key)
 {
+    std::list<string> outputs;
+
     if ( _dir.empty() )
-        return false;
+        return outputs;
 
-    std::stringstream s(data);
-    return store(key, s);
-}
-
-bool FileCache::lookup(const Key& key, std::ostream& data)
-{
-    auto path = lookup(key);
-
-    if ( path.empty() )
-        return false;
-
-    auto in = std::ifstream(path);
+    auto keyfile = fileForKey(key, "key");
+    auto in = std::ifstream(keyfile);
 
     if ( ! in.good() )
-        return false;
-
-    data << in.rdbuf();
-
-    return true;
-}
-
-bool FileCache::lookup(const Key& key, string* data)
-{
-    if ( _dir.empty() )
-        return false;
-
-    std::stringstream s;
-    if  ( ! lookup(key, s) )
-        return false;
-
-    *data = s.str();
-    return true;
-}
-
-string FileCache::lookup(const Key& key)
-{
-    if ( _dir.empty() )
-        return "";
-
-    auto fname = fileForKey(key);
-
-    auto in = std::ifstream(fname + ".key");
-
-    if ( ! in.good() )
-        return "";
+        return outputs;
 
     Key dkey;
     in >> dkey;
 
-    dkey._timestamp = modificationTime(fname + ".key");
+    dkey._timestamp = modificationTime(keyfile);
 
     if ( key != dkey )
-        return "";
+        return outputs;
 
-    auto path = fname + ".data";
-    return pathIsFile(path) ? path : "";
+    for ( int idx = 1; idx <= dkey._parts; idx++ ) {
+        auto path = fileForKey(key, "data", idx);
+
+        if ( pathIsFile(path) ) {
+            std::ifstream f(path);
+            outputs.push_back(std::string((std::istreambuf_iterator<char>(f)),
+                                          std::istreambuf_iterator<char>()));
+        }
+    }
+
+    return outputs;
 }
 
-string FileCache::fileForKey(const Key& key)
+string FileCache::fileForKey(const Key& key, const string& prefix, int idx)
 {
-    return pathJoin(_dir, fmt("%s.%s.%s", key.name, key.options, key.scope));
+    string part = idx > 0 ? ::util::fmt(".%d", idx) : string();
+    return pathJoin(_dir, fmt("%s.%s.%s%s.%s", prefix, key.name, key.options, part, key.scope));
 }
 
 bool FileCache::touchFile(const string& path, time_t time)
@@ -278,11 +288,17 @@ FileCache::Key::Hash cache::hash(std::istream& in)
     return uitoa_n(::util::hash(s.str()), 64);
 }
 
-FileCache::Key::Hash cache::hash(const string& path)
+FileCache::Key::Hash cache::hash(const string& s)
 {
-    if ( ! pathIsFile(path) )
-        return "";
+    return uitoa_n(::util::hash(s.data(), s.size()), 64);
+}
 
-    std::stringstream s(path);
-    return hash(s);
+FileCache::Key::Hash cache::hash(const char* data, size_t len)
+{
+    return uitoa_n(::util::hash(data, len), 64);
+}
+
+FileCache::Key::Hash cache::hash(size_t size)
+{
+    return uitoa_n(size, 64);
 }

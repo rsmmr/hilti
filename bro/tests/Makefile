@@ -2,7 +2,7 @@
 DIAG=diag.log
 BTEST=`./Scripts/get-cmake-var BRO_DIST`/aux/btest/btest
 
-all: cleanup btest-verbose coverage
+all: cleanup btest-verbose
 
 # Showing all tests.
 btest-verbose:

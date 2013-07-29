@@ -76,13 +76,6 @@ struct Port {
 	operator string() const	{ return ::util::fmt("%u/%s", port, transportToString(proto)); }
 	};
 
-// Description of a BinPAC++ module.
-struct bro::hilti::Pac2ModuleInfo {
-	string path; 					// The path the module was read from.
-	shared_ptr<::binpac::CompilerContext> context;	// The context used for the module.
-	shared_ptr<::binpac::Module> module;		// The module itself.
-	};
-
 // Description of a BinPAC++ analyzer.
 struct bro::hilti::Pac2AnalyzerInfo {
 	string location;				// Location where the analyzer was defined.
@@ -93,8 +86,8 @@ struct bro::hilti::Pac2AnalyzerInfo {
 	string replaces;				// Name of another analyzer this one replaces.
 	string unit_name_orig;				// The fully-qualified name of the unit type to parse the originator side.
 	string unit_name_resp;				// The fully-qualified name of the unit type to parse the originator side.
-	shared_ptr<binpac::type::Unit> unit_orig;	// The type of the unit to parse the originator side.
-	shared_ptr<binpac::type::Unit> unit_resp;	// The type of the unit to parse the originator side.
+	shared_ptr<Pac2AST::UnitInfo> unit_orig;	// The type of the unit to parse the originator side.
+	shared_ptr<Pac2AST::UnitInfo> unit_resp;	// The type of the unit to parse the originator side.
 	binpac_parser* parser_orig;                     // The parser for the originator side (coming out of JIT).
 	binpac_parser* parser_resp;                     // The parser for the responder side (coming out of JIT).
 };
@@ -110,12 +103,35 @@ struct bro::hilti::Pac2ExpressionAccessor {
 	std::shared_ptr<::hilti::declaration::Function> hlt_func = nullptr;	// Declaration of a function that evaluates the expression.
 	};
 
+// Description of a BinPAC++ module.
+struct bro::hilti::Pac2ModuleInfo {
+	string path;					// The path the module was read from.
+	shared_ptr<::binpac::CompilerContext> context;	// The context used for the module.
+	shared_ptr<::binpac::Module> module;		// The module itself.
+	shared_ptr<ValueConverter> value_converter;
+
+	// The BroFunc_*.hlt module.
+	shared_ptr<::hilti::builder::ModuleBuilder>  hilti_mbuilder;
+	shared_ptr<::hilti::Module>                  hilti_module;
+
+	// The BroHooks_*.pac2 module.
+	shared_ptr<::binpac::Module>                 pac2_module;
+	shared_ptr<::hilti::Module>                  pac2_hilti_module;
+
+	// Cache information.
+	bool cached = false;
+	std::set<string> dependencies;
+	std::list<llvm::Module*> llvm_modules;
+	util::cache::FileCache::Key key;
+	};
+
 // Description of an event defined by an *.evt file
 struct bro::hilti::Pac2EventInfo
 	{
 	typedef std::list<shared_ptr<Pac2ExpressionAccessor>> accessor_list;
 
 	// Information parsed directly from the *.evt file.
+	string file;            // The path of the *.evt file we parsed this from.
 	string name;		// The name of the event.
 	string path;		// The hook path as specified in the evt file.
 	std::list<string> exprs;	// The argument expressions.
@@ -129,6 +145,7 @@ struct bro::hilti::Pac2EventInfo
 	shared_ptr<::binpac::Module> unit_module;       // The module the referenced unit is defined in.
 	shared_ptr<::binpac::declaration::Hook> pac2_hook;	// The generated BinPAC hook.
 	shared_ptr<::hilti::declaration::Function> hilti_raise;	// The generated HILTI raise() function.
+	shared_ptr<Pac2ModuleInfo> minfo;		// The module the event was defined in.
 	BroType* bro_event_type;                        // The type of the Bro event.
 	EventHandlerPtr bro_event_handler;              // The type of the corresponding Bro event. Set only if we have a handler.
 	accessor_list expr_accessors;                   // One HILTI function per expression to access the value.
@@ -142,6 +159,8 @@ struct Manager::PIMPL
 	typedef std::list<shared_ptr<Pac2AnalyzerInfo>>   pac2_analyzer_list;
 	typedef std::vector<shared_ptr<Pac2AnalyzerInfo>> pac2_analyzer_vector;
 	typedef std::list<shared_ptr<::hilti::Module>>    hilti_module_list;
+	typedef std::list<llvm::Module*>                  llvm_module_list;
+	typedef std::list<std::string>                    path_list;
 
 	::hilti::Options hilti_options;
 	::binpac::Options pac2_options;
@@ -158,26 +177,26 @@ struct Manager::PIMPL
 
 	std::list<string> import_paths;
 	Pac2AST* pac2_ast;
+	string libbro_path;
 
 	pac2_module_list pac2_modules;			// All loaded modules. Indexed by their paths.
 	pac2_event_list  pac2_events;			// All events found in the *.evt files.
 	pac2_analyzer_list pac2_analyzers;		// All analyzers found in the *.evt files.
 	pac2_analyzer_vector pac2_analyzers_by_subtype;	// All analyzers indexed by their analyzer::Tag subtype.
+	path_list evt_files;                            // All loaded *.evt files.
 
-	// The generated raise() module.
-	shared_ptr<::hilti::CompilerContext>         hilti_context = nullptr;	// Context for the raise() function module.
-	shared_ptr<::hilti::builder::ModuleBuilder>  hilti_mbuilder = nullptr;	// The HILTI moduled builder ised fpr compilation.
-	shared_ptr<::hilti::Module>                  hilti_module = nullptr;	// The HILTI module builder ised fpr compilation.
-
-	// The generated hook module.
+	shared_ptr<::hilti::CompilerContext>         hilti_context = nullptr;
 	shared_ptr<::binpac::CompilerContext>        pac2_context = nullptr;
-	shared_ptr<::binpac::Module>                 pac2_module = nullptr;
-	shared_ptr<::hilti::Module>                  pac2_hilti_module = nullptr;
 
-	hilti_module_list hilti_modules;	// All HILTI modules (loaded and compiled).
+	// All compiled LLVM modules. These will eventually be linked into
+	// the final code.
+	llvm_module_list llvm_modules;
 
+	// All HILTI modules (loaded and compiled, including
+	// intermediaries.). This is for debugging/printing only, they won't
+	// be used further.
+	hilti_module_list hilti_modules;
 	shared_ptr<TypeConverter> type_converter;
-	shared_ptr<ValueConverter> value_converter;
 	};
 
 Manager::Manager()
@@ -298,13 +317,7 @@ bool Manager::Load()
 	pimpl->hilti_context = std::make_shared<::hilti::CompilerContext>(pimpl->hilti_options);
 	pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
 
-	pimpl->pac2_module = std::make_shared<::binpac::Module>(pimpl->pac2_context.get(), std::make_shared<::binpac::ID>("BroHooks"));
-
-	pimpl->hilti_mbuilder = std::make_shared<::hilti::builder::ModuleBuilder>(pimpl->hilti_context, "BroFuncs");
-	pimpl->hilti_module = pimpl->hilti_mbuilder->module();
-	pimpl->hilti_mbuilder->importModule("Hilti");
-	pimpl->hilti_mbuilder->importModule("LibBro");
-	pimpl->value_converter = std::make_shared<ValueConverter>(pimpl->hilti_mbuilder);
+        pimpl->libbro_path = pimpl->hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
 
 	if ( ! SearchFiles("pac2", [&](std::istream& in, const string& path) -> bool { return LoadPac2Module(in, path); }) )
 		return false;
@@ -353,13 +366,13 @@ bool Manager::Compile()
 		{
 		// If we find the path directly, it's a unit type; then add a "%done"
 		// to form the hook name.
-		auto unit_type = pimpl->pac2_ast->LookupUnit(ev->path);
+		auto uinfo = pimpl->pac2_ast->LookupUnit(ev->path);
 
 		string hook;
 		string hook_local;
 		string unit;
 
-		if ( unit_type )
+		if ( uinfo )
 			{
 			hook += ev->path + "::%done";
 			hook_local = "%done";
@@ -376,22 +389,26 @@ bool Manager::Compile()
 				hook_local = p.back();
 				p.pop_back();
 				unit = ::util::strjoin(p, "::");
-				unit_type = pimpl->pac2_ast->LookupUnit(unit);
+				uinfo = pimpl->pac2_ast->LookupUnit(unit);
 				hook = ev->path;
 				}
 			}
 
-		if ( ! unit_type )
+		if ( ! uinfo )
 			{
 			reporter::error(::util::fmt("unknown unit type in %s", hook));
 			return 0;
 			}
 
+		uinfo->minfo->dependencies.insert(ev->file);
+
 		ev->hook = hook;
 		ev->hook_local = hook_local;
 		ev->unit = unit;
-		ev->unit_type = unit_type;
-		ev->unit_module = unit_type->firstParent<::binpac::Module>();
+		ev->unit_type = uinfo->unit_type;
+		ev->unit_module = uinfo->unit_type->firstParent<::binpac::Module>();
+		ev->minfo = uinfo->minfo;
+
 		assert(ev->unit_module);
 
 		if ( ! CreateExpressionAccessors(ev) )
@@ -428,19 +445,13 @@ bool Manager::Compile()
 			analyzer_mgr->RegisterAnalyzerForPort(a->tag, p.proto, p.port);
 		}
 
-	// Compile all the *.pac2 modules we have loaded directly.
-	for ( auto m : pimpl->pac2_modules )
-		{
-		auto hltmod = m->context->compile(m->module);
+	// See if we can short-cut this all by reusing our cache.
+	auto llvm_module = CheckCacheForLinkedModule();
 
-		if ( ! hltmod )
-			return false;
+	if ( llvm_module )
+		return RunJIT(llvm_module);
 
-		pimpl->hilti_modules.push_back(hltmod);
-		}
-
-	// Finalize and compile the pac2 module with the event hooks.
-
+	// Create the pac2 hooks and accessor functions.
 	for ( auto ev : pimpl->pac2_events )
 		{
 		if ( ! ev->bro_event_handler && ! pimpl->compile_all )
@@ -451,48 +462,88 @@ bool Manager::Compile()
 			return false;
 		}
 
-	if ( pimpl->pac2_module )
+	if ( pimpl->hilti_context->fileCache() )
 		{
+		// See which modules we can find in the cache.
+		for ( auto m : pimpl->pac2_modules )
+			{
+			pimpl->pac2_context->toCacheKey(m->module, &m->key);
+
+			for ( auto d : m->dependencies )
+				m->key.files.insert(d);
+
+			auto lms = pimpl->hilti_context->checkCache(m->key);
+
+			if ( ! lms.size() )
+				continue;
+
+			for ( auto l : lms )
+				pimpl->llvm_modules.push_back(l);
+
+			m->cached = true;
+			}
+		}
+
+	// Compile all the *.pac2 modules.
+	for ( auto m : pimpl->pac2_modules )
+		{
+		if ( m->cached )
+			continue;
+
+		// Compile the *.pac2 module itself.
+		auto llvm_module = m->context->compile(m->module);
+
+		if ( ! llvm_module )
+			return false;
+
+		pimpl->llvm_modules.push_back(llvm_module);
+		m->llvm_modules.push_back(llvm_module);
+
+		// Compile the generated hooks *.pac2 module.
 		if ( pimpl->dump_code_pre_finalize )
 			{
-			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.pac2\n", pimpl->pac2_module->id()->name()) << std::endl;
-			pimpl->pac2_context->dump(pimpl->pac2_module, std::cerr);
-			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.pac2\n", pimpl->pac2_module->id()->name()) << std::endl;
-			pimpl->pac2_context->print(pimpl->pac2_module, std::cerr);
+			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
+			pimpl->pac2_context->dump(m->pac2_module, std::cerr);
+			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
+			pimpl->pac2_context->print(m->pac2_module, std::cerr);
 			}
 
-		if ( ! pimpl->pac2_context->finalize(pimpl->pac2_module) )
+		if ( ! pimpl->pac2_context->finalize(m->pac2_module) )
 			return false;
 
 		if ( pimpl->dump_code_pre_finalize )
 			{
-			std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile AST: %s.pac2\n", pimpl->pac2_module->id()->name()) << std::endl;
-			pimpl->pac2_context->dump(pimpl->pac2_module, std::cerr);
-			std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile code: %s.pac2\n", pimpl->pac2_module->id()->name()) << std::endl;
-			pimpl->pac2_context->print(pimpl->pac2_module, std::cerr);
+			std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile AST: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
+			pimpl->pac2_context->dump(m->pac2_module, std::cerr);
+			std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile code: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
+			pimpl->pac2_context->print(m->pac2_module, std::cerr);
 			}
 
-		auto hltmod = pimpl->pac2_context->compile(pimpl->pac2_module);
+		llvm_module = pimpl->pac2_context->compile(m->pac2_module, &m->pac2_hilti_module);
 
-		if ( ! hltmod )
+		if ( ! llvm_module )
 			return false;
 
-		pimpl->pac2_hilti_module = hltmod;
-		pimpl->hilti_modules.push_back(hltmod);
+		pimpl->llvm_modules.push_back(llvm_module);
+		m->llvm_modules.push_back(llvm_module);
+
+		if ( m->pac2_hilti_module )
+			pimpl->hilti_modules.push_back(m->pac2_hilti_module);
 
 		if ( pimpl->save_pac2 )
 			{
-			ofstream out(::util::fmt("bro.%s.pac2", pimpl->pac2_module->id()->name()));
-			pimpl->pac2_context->print(pimpl->pac2_module, out);
+			ofstream out(::util::fmt("bro.%s.pac2", m->pac2_module->id()->name()));
+			pimpl->pac2_context->print(m->pac2_module, out);
 			out.close();
 			}
-
 		}
 
-	// Build the HILTI module with raise() functions.
-
+	// Create the HILTi raise functions().
 	for ( auto ev : pimpl->pac2_events )
 		{
+		if ( ev->minfo->cached )
+			continue;
+
 		AddHiltiTypesForEvent(ev);
 
 		if ( ! ev->bro_event_handler && ! pimpl->compile_all )
@@ -503,21 +554,38 @@ bool Manager::Compile()
 			return false;
 		}
 
-	if ( pimpl->hilti_module )
+	// Compile all the *.hlt modules.
+	for ( auto m : pimpl->pac2_modules )
 		{
+		if ( m->cached )
+			continue;
+
 		if ( pimpl->dump_code_pre_finalize )
 			{
-			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.hlt\n", pimpl->hilti_module->id()->name()) << std::endl;
-			pimpl->hilti_context->dump(pimpl->hilti_module, std::cerr);
-			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.hlt\n", pimpl->hilti_module->id()->name()) << std::endl;
-			pimpl->hilti_context->print(pimpl->hilti_module, std::cerr);
+			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.hlt\n", m->hilti_module->id()->name()) << std::endl;
+			pimpl->hilti_context->dump(m->hilti_module, std::cerr);
+			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.hlt\n", m->hilti_module->id()->name()) << std::endl;
+			pimpl->hilti_context->print(m->hilti_module, std::cerr);
 			}
 
 		// Finalize the HILTI module.
-		if ( ! pimpl->hilti_context->finalize(pimpl->hilti_module) )
+		if ( ! pimpl->hilti_context->finalize(m->hilti_module) )
 			return false;
 
-		pimpl->hilti_modules.push_back(pimpl->hilti_module);
+		pimpl->hilti_modules.push_back(m->hilti_module);
+
+		auto llvm_hilti_module = pimpl->hilti_context->compile(m->hilti_module);
+
+		if ( ! llvm_hilti_module )
+			{
+			reporter::error("compiling LibBro library module failed");
+			return false;
+			}
+
+		pimpl->llvm_modules.push_back(llvm_hilti_module);
+		m->llvm_modules.push_back(llvm_hilti_module);
+
+		pimpl->hilti_context->updateCache(m->key, m->llvm_modules);
 		}
 
 	auto hilti_context = pimpl->pac2_context->hiltiContext();
@@ -534,17 +602,15 @@ bool Manager::Compile()
 
 	// Add the standard LibBro module.
 
-	auto libbro_path = hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
-
-	if ( ! libbro_path.size() )
+	if ( ! pimpl->libbro_path.size() )
 		{
 		reporter::error("LibBro library module not found");
 		return false;
 		}
 
-	PLUGIN_DBG_LOG(HiltiPlugin, "loading %s", libbro_path.c_str());
+	PLUGIN_DBG_LOG(HiltiPlugin, "loading %s", pimpl->libbro_path.c_str());
 
-	auto libbro = hilti_context->loadModule(libbro_path);
+	auto libbro = hilti_context->loadModule(pimpl->libbro_path);
 
 	if ( ! libbro )
 		{
@@ -554,13 +620,41 @@ bool Manager::Compile()
 
 	pimpl->hilti_modules.push_back(libbro);
 
-	// Now compile and link all the HILTI modules into LLVM. We use the
+	llvm::Module* llvm_libbro = nullptr;
+
+	util::cache::FileCache::Key libbro_key;
+	libbro_key.scope = "bc";
+	libbro_key.name = "LibBro";
+	pimpl->pac2_context->options().toCacheKey(&libbro_key);
+	pimpl->hilti_context->toCacheKey(libbro, &libbro_key);
+
+	auto lms = pimpl->hilti_context->checkCache(libbro_key);
+
+	if ( lms.size() )
+		llvm_libbro = lms.front();
+
+	else
+		{
+		llvm_libbro = hilti_context->compile(libbro);
+
+		if ( ! llvm_libbro )
+			{
+			reporter::error("compiling LibBro library module failed");
+			return false;
+			}
+
+		pimpl->hilti_context->updateCache(libbro_key, llvm_libbro);
+		}
+
+	pimpl->llvm_modules.push_back(llvm_libbro);
+
+	// Compile and link all the HILTI modules into LLVM. We use the
 	// BinPAC++ context here to make sure we gets its additional
 	// libraries linked.
-
+	//
 	PLUGIN_DBG_LOG(HiltiPlugin, "compiling & linking all HILTI code into a single LLVM module");
 
-	auto llvm_module = pimpl->pac2_context->linkModules("<all Bro JIT code>", pimpl->hilti_modules, false);
+	llvm_module = pimpl->pac2_context->linkModules("__bro_linked__", pimpl->llvm_modules, false);
 
 	if ( ! llvm_module )
 		{
@@ -575,9 +669,19 @@ bool Manager::Compile()
 		out.close();
 		}
 
+	llvm_module->setModuleIdentifier("__bro_linked__");
+
+	pimpl->hilti_context->updateCache(CacheKeyForLinkedModule(), llvm_module);
+
+	return RunJIT(llvm_module);
+	}
+
+bool Manager::RunJIT(llvm::Module* llvm_module)
+	{
 	PLUGIN_DBG_LOG(HiltiPlugin, "running JIT on LLVM module");
 
-	// Now JIT it into native code.
+	auto hilti_context = pimpl->hilti_context;
+
 	auto ee = hilti_context->jitModule(llvm_module);
 
 	if ( ! ee )
@@ -596,9 +700,9 @@ bool Manager::Compile()
 	cfg.profiling = pimpl->profile;
 	hlt_config_set(&cfg);
 
-    hlt_init_jit(hilti_context, llvm_module, ee);
-    binpac_init();
-    binpac_init_jit(hilti_context, llvm_module, ee);
+	hlt_init_jit(hilti_context, llvm_module, ee);
+	binpac_init();
+	binpac_init_jit(hilti_context, llvm_module, ee);
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "retrieving binpac_parsers() function");
 
@@ -632,6 +736,67 @@ bool Manager::Compile()
 	return true;
 	}
 
+util::cache::FileCache::Key Manager::CacheKeyForLinkedModule()
+	{
+	util::cache::FileCache::Key key;
+	key.scope = "bc";
+	key.name = "__bro_linked__";
+	pimpl->pac2_context->options().toCacheKey(&key);
+
+	for ( auto m : pimpl->pac2_modules )
+		{
+                if ( m->path != "-" )
+                        key.files.insert(m->path);
+
+		for ( auto d : pimpl->pac2_context->dependencies(m->module) )
+			key.files.insert(d);
+		}
+
+	for ( auto m : pimpl->hilti_modules )
+		{
+                if ( m->path() != "-" )
+                        key.files.insert(m->path());
+
+		for ( auto d : pimpl->hilti_context->dependencies(m) )
+			key.files.insert(d);
+		}
+
+	for ( auto m : pimpl->evt_files )
+		key.files.insert(m);
+
+	for ( auto d : pimpl->import_paths )
+		key.dirs.insert(d);
+
+	key.files.insert(pimpl->libbro_path);
+
+	auto path = HiltiPlugin.PluginPath();
+	auto dir = HiltiPlugin.PluginDirectory();
+
+	assert(path && dir);
+
+	key.files.insert(path);
+	key.dirs.insert(dir);
+
+	return key;
+	}
+
+llvm::Module* Manager::CheckCacheForLinkedModule()
+	{
+	auto key = CacheKeyForLinkedModule();
+	auto lms = pimpl->hilti_context->checkCache(key);
+	assert(lms.size() <= 1);
+	auto llvm_module = lms.size() ? lms.front() : nullptr;
+
+	// When coming out of the cache, it has lost its name, but the JIT
+	// needs a name. Furthermore, the name needs to be same as whenever
+	// compiled directly, so we just set it to a static here in any case.
+
+	if ( llvm_module )
+		llvm_module->setModuleIdentifier("__bro_linked__");
+
+	return llvm_module;
+	}
+
 bool Manager::LoadPac2Module(std::istream& in, const string& path)
 	{
 	PLUGIN_DBG_LOG(HiltiPlugin, "loading units from %s", path.c_str());
@@ -649,13 +814,29 @@ bool Manager::LoadPac2Module(std::istream& in, const string& path)
 		return false;
 		}
 
-	pimpl->pac2_ast->process(module);
+	auto name = module->id()->name();
 
 	auto minfo = std::make_shared<Pac2ModuleInfo>();
 	minfo->path = path;
 	minfo->context = ctx;
 	minfo->module = module;
+
+	minfo->pac2_module = std::make_shared<::binpac::Module>(pimpl->pac2_context.get(), std::make_shared<::binpac::ID>(::util::fmt("BroHooks_%s", name)));
+
+	minfo->hilti_mbuilder = std::make_shared<::hilti::builder::ModuleBuilder>(pimpl->hilti_context, ::util::fmt("BroFuncs_%s", name));
+	minfo->hilti_module = minfo->hilti_mbuilder->module();
+	minfo->hilti_mbuilder->importModule("Hilti");
+	minfo->hilti_mbuilder->importModule("LibBro");
+	minfo->value_converter = std::make_shared<ValueConverter>(minfo->hilti_mbuilder);
+
+	// TODO: We don't check file content for hashing yet.
+	minfo->key.scope = "bc";
+	minfo->key.name = name;
+	pimpl->pac2_context->options().toCacheKey(&minfo->key);
+
 	pimpl->pac2_modules.push_back(minfo);
+
+	pimpl->pac2_ast->process(minfo, module);
 
 	return true;
 	}
@@ -886,6 +1067,8 @@ bool Manager::LoadPac2Events(std::istream& in, const string& path)
 	{
 	PLUGIN_DBG_LOG(HiltiPlugin, "loading events from %s", path.c_str());
 
+	pimpl->evt_files.push_back(path);
+
 	int lineno = 0;
 	string chunk;
 
@@ -940,6 +1123,8 @@ bool Manager::LoadPac2Events(std::istream& in, const string& path)
 
 			if ( ! ev )
 				goto error;
+
+			ev->file = path;
 
 			PLUGIN_DBG_LOG(HiltiPlugin, "finished processing event definition for %s", ev->name.c_str());
 			pimpl->pac2_events.push_back(ev);
@@ -1294,18 +1479,19 @@ static shared_ptr<::binpac::Expression> id_expr(const string& id)
 
 bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 	{
+	// Find the pac2 module that this event belongs to.
 	PLUGIN_DBG_LOG(HiltiPlugin, "adding pac2 hook %s for event %s", ev->hook.c_str(), ev->name.c_str());
 
-	pimpl->pac2_module->import(ev->unit_module->id());
+	ev->minfo->pac2_module->import(ev->unit_module->id());
 
 	::binpac::expression_list args_tuple = { id_expr("self") };
 	auto args = std::make_shared<::binpac::expression::Constant>(std::make_shared<::binpac::constant::Tuple>(args_tuple));
 
-	auto raise_name = ::util::fmt("BroFuncs::raise_%s", ::util::strreplace(ev->name, "::", "_"));
+	auto raise_name = ::util::fmt("%s::raise_%s", ev->minfo->hilti_module->id()->name(), ::util::strreplace(ev->name, "::", "_"));
 	::binpac::expression_list op_args = { id_expr(raise_name), args };
 	auto call = std::make_shared<::binpac::expression::UnresolvedOperator>(::binpac::operator_::Call, op_args);
 	auto stmt = std::make_shared<::binpac::statement::Expression>(call);
-	auto body = std::make_shared<::binpac::statement::Block>(pimpl->pac2_module->body()->scope());
+	auto body = std::make_shared<::binpac::statement::Block>(ev->minfo->pac2_module->body()->scope());
 
 	body->addStatement(stmt);
 
@@ -1320,11 +1506,11 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 	};
 
 	auto raise_type = std::make_shared<::binpac::type::Function>(raise_result, raise_params, ::binpac::type::function::BINPAC_HILTI);
-	auto raise_func = std::make_shared<::binpac::Function>(std::make_shared<::binpac::ID>(raise_name), raise_type, pimpl->pac2_module);
+	auto raise_func = std::make_shared<::binpac::Function>(std::make_shared<::binpac::ID>(raise_name), raise_type, ev->minfo->pac2_module);
 	auto rdecl = std::make_shared<::binpac::declaration::Function>(raise_func, ::binpac::Declaration::IMPORTED);
 
-	pimpl->pac2_module->body()->addDeclaration(hdecl);
-	pimpl->pac2_module->body()->addDeclaration(rdecl);
+	ev->minfo->pac2_module->body()->addDeclaration(hdecl);
+	ev->minfo->pac2_module->body()->addDeclaration(rdecl);
 
 	ev->pac2_hook = hdecl;
 
@@ -1359,8 +1545,8 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
 		}
 
 	// Resolve the code as far possible.
-	pimpl->pac2_module->import(ev->unit_module->id());
-	pimpl->pac2_context->partialFinalize(pimpl->pac2_module);
+	ev->minfo->pac2_module->import(ev->unit_module->id());
+	pimpl->pac2_context->partialFinalize(ev->minfo->pac2_module);
 
 	for ( auto acc : ev->expr_accessors )
 		{
@@ -1390,7 +1576,7 @@ shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(
 		}
 
 	auto stmt = std::make_shared<::binpac::statement::Return>(pac2_expr);
-	auto body = std::make_shared<::binpac::statement::Block>(pimpl->pac2_module->body()->scope());
+	auto body = std::make_shared<::binpac::statement::Block>(ev->minfo->pac2_module->body()->scope());
 	body->addStatement(stmt);
 
 	auto unknown = std::make_shared<::binpac::type::Unknown>();
@@ -1402,10 +1588,10 @@ shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(
 	};
 
 	auto ftype = std::make_shared<::binpac::type::Function>(func_result, func_params, ::binpac::type::function::HILTI);
-	auto func = std::make_shared<::binpac::Function>(std::make_shared<::binpac::ID>(fname), ftype, pimpl->pac2_module, body);
+	auto func = std::make_shared<::binpac::Function>(std::make_shared<::binpac::ID>(fname), ftype, ev->minfo->pac2_module, body);
 	auto fdecl = std::make_shared<::binpac::declaration::Function>(func, ::binpac::Declaration::EXPORTED);
 
-	pimpl->pac2_module->body()->addDeclaration(fdecl);
+	ev->minfo->pac2_module->body()->addDeclaration(fdecl);
 
 	return fdecl;
 	}
@@ -1413,7 +1599,7 @@ shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(
 
 shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccessor(shared_ptr<Pac2EventInfo> ev, int nr, shared_ptr<::hilti::Type> rtype)
 	{
-	auto fname = ::util::fmt("BroHooks::accessor_%s_arg%d", ::util::strreplace(ev->name, "::", "_"), nr);
+	auto fname = ::util::fmt("%s::accessor_%s_arg%d", ev->minfo->pac2_module->id()->name(), ::util::strreplace(ev->name, "::", "_"), nr);
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "declaring HILTI function %s for parameter %d of event %s", fname.c_str(), nr, ev->name.c_str());
 
@@ -1423,8 +1609,8 @@ shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccess
 		::hilti::builder::function::parameter("self", ::hilti::builder::reference::type(::hilti::builder::type::byName(ev->unit)), false, nullptr),
 		};
 
-	auto func = ModuleBuilder()->declareFunction(fname, result, args);
-	ModuleBuilder()->exportID(fname);
+	auto func = ev->minfo->hilti_mbuilder->declareFunction(fname, result, args);
+	ev->minfo->hilti_mbuilder->exportID(fname);
 
 	return func;
 	}
@@ -1433,14 +1619,15 @@ void Manager::AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev)
 	{
 	auto uid = ::hilti::builder::id::node(ev->unit);
 
-	if ( ModuleBuilder()->declared(uid) )
+	if ( ev->minfo->hilti_mbuilder->declared(uid) )
 		return;
 
-	auto t = pimpl->pac2_hilti_module->body()->scope()->lookup(uid, true);
+	assert(ev->minfo->pac2_hilti_module);
+	auto t = ev->minfo->pac2_hilti_module->body()->scope()->lookup(uid, true);
 	assert(t.size() == 1);
 
 	auto unit_type = ast::checkedCast<::hilti::expression::Type>(t.front())->typeValue();
-	pimpl->hilti_mbuilder->addType(ev->unit, unit_type);
+	ev->minfo->hilti_mbuilder->addType(ev->unit, unit_type);
 	}
 
 bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
@@ -1456,75 +1643,65 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 		::hilti::builder::function::parameter("cookie", ::hilti::builder::type::byName("LibBro::Cookie"), false, nullptr)
 		};
 
-	auto func = ModuleBuilder()->pushFunction(fname, result, args);
-	ModuleBuilder()->exportID(fname);
+	auto mbuilder = ev->minfo->hilti_mbuilder;
 
-	Builder()->addInstruction(::hilti::instruction::profiler::Start,
-				  ::hilti::builder::string::create(string("bro/") + fname));
+	auto func = mbuilder->pushFunction(fname, result, args);
+	mbuilder->exportID(fname);
+
+	mbuilder->builder()->addInstruction(::hilti::instruction::profiler::Start,
+					    ::hilti::builder::string::create(string("bro/") + fname));
 
 	::hilti::builder::tuple::element_list vals;
 
 	for ( auto e : ev->expr_accessors )
 		{
-		auto val = ModuleBuilder()->addTmp("val", ::hilti::builder::type::byName("LibBro::BroVal"));
+		auto val = mbuilder->addTmp("val", ::hilti::builder::type::byName("LibBro::BroVal"));
 
 		if ( e->expr == "$conn" )
 			{
-			Builder()->addInstruction(val,
-						  ::hilti::instruction::flow::CallResult,
-						  ::hilti::builder::id::create("LibBro::cookie_to_conn_val"),
-						  ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
+			mbuilder->builder()->addInstruction(val,
+							    ::hilti::instruction::flow::CallResult,
+							    ::hilti::builder::id::create("LibBro::cookie_to_conn_val"),
+							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
 			}
 
 		else if ( e->expr == "$is_orig" )
 			{
-			Builder()->addInstruction(val,
-						  ::hilti::instruction::flow::CallResult,
-						  ::hilti::builder::id::create("LibBro::cookie_to_is_orig"),
-						  ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
+			mbuilder->builder()->addInstruction(val,
+							    ::hilti::instruction::flow::CallResult,
+							    ::hilti::builder::id::create("LibBro::cookie_to_is_orig"),
+							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
 			}
 
 		else
 			{
-			auto tmp = ModuleBuilder()->addTmp("t", e->htype);
+			auto tmp = mbuilder->addTmp("t", e->htype);
 			auto func_id = e->hlt_func ? e->hlt_func->id() : ::hilti::builder::id::node("null-function>");
 
-			Builder()->addInstruction(tmp,
-						  ::hilti::instruction::flow::CallResult,
-						  ::hilti::builder::id::create(func_id),
-						  ::hilti::builder::tuple::create( { ::hilti::builder::id::create("self") } ));
+			mbuilder->builder()->addInstruction(tmp,
+							    ::hilti::instruction::flow::CallResult,
+							    ::hilti::builder::id::create(func_id),
+							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("self") } ));
 
-			pimpl->value_converter->Convert(tmp, val, e->btype);
+			ev->minfo->value_converter->Convert(tmp, val, e->btype);
 			}
 
 		vals.push_back(val);
 		}
 
-	Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
-				  ::hilti::builder::id::create("LibBro::raise_event"),
-				  ::hilti::builder::tuple::create({ ::hilti::builder::bytes::create(ev->name),
-				                                    ::hilti::builder::tuple::create(vals) } ));
+	mbuilder->builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+					    ::hilti::builder::id::create("LibBro::raise_event"),
+					    ::hilti::builder::tuple::create({ ::hilti::builder::bytes::create(ev->name),
+					    ::hilti::builder::tuple::create(vals) } ));
 
-	Builder()->addInstruction(::hilti::instruction::profiler::Stop,
-				  ::hilti::builder::string::create(string("bro/") + fname));
+	mbuilder->builder()->addInstruction(::hilti::instruction::profiler::Stop,
+					    ::hilti::builder::string::create(string("bro/") + fname));
 
-	ModuleBuilder()->popFunction();
+	mbuilder->popFunction();
 
 	ev->hilti_raise = func;
 
 	return true;
-	}
-
-::hilti::builder::BlockBuilder* Manager::Builder() const
-	{
-	assert(pimpl->hilti_mbuilder);
-	return pimpl->hilti_mbuilder->builder().get();
-	}
-
-::hilti::builder::ModuleBuilder* Manager::ModuleBuilder() const
-	{
-	assert(pimpl->hilti_mbuilder);
-	return pimpl->hilti_mbuilder.get();
 	}
 
 void Manager::ExtractParsers(hlt_list* parsers)
@@ -1628,7 +1805,7 @@ void Manager::DumpDebug()
 
 		std::cerr << "    " << a->name << " [" << proto << ", subtype " << a->tag.Subtype() << "] [" << a->location << "]" << std::endl;
 		std::cerr << "        Ports      : " << (ports.size() ? ::util::strjoin(ports, ", ") : "none") << std::endl;
-		std::cerr << "        Orig parser: " << (a->unit_orig ? a->unit_orig->id()->pathAsString() : "none" ) << " ";
+		std::cerr << "        Orig parser: " << (a->unit_orig ? a->unit_orig->unit_type->id()->pathAsString() : "none" ) << " ";
 
 		string desc = "not compiled";
 
@@ -1643,7 +1820,7 @@ void Manager::DumpDebug()
 
 		std::cerr << "[" << desc << "]" << std::endl;
 
-		std::cerr << "        Resp parser: " << (a->unit_resp ? a->unit_resp->id()->pathAsString() : "none" ) << " ";
+		std::cerr << "        Resp parser: " << (a->unit_resp ? a->unit_resp->unit_type->id()->pathAsString() : "none" ) << " ";
 
 		desc = "not compiled";
 
@@ -1665,8 +1842,8 @@ void Manager::DumpDebug()
 
 	for ( Pac2AST::unit_map::const_iterator i = pimpl->pac2_ast->Units().begin(); i != pimpl->pac2_ast->Units().end(); i++ )
 		{
-		Pac2AST::UnitInfo uinfo = i->second;
-		std::cerr << "    " << uinfo.name << std::endl;
+		auto uinfo = i->second;
+		std::cerr << "    " << uinfo->name << std::endl;
 		}
 
 	std::cerr << std::endl;
@@ -1740,6 +1917,7 @@ void Manager::DumpDebug()
 
 void Manager::DumpCode(bool all)
 	{
+#if 0
 	std::cerr << ::util::fmt("\n=== Final code: %s.pac2\n", pimpl->pac2_module->id()->name()) << std::endl;
 
 	if ( pimpl->pac2_context && pimpl->pac2_module )
@@ -1765,6 +1943,7 @@ void Manager::DumpCode(bool all)
 			pimpl->hilti_context->print(m, std::cerr);
 			}
 		}
+#endif
 	}
 
 void Manager::DumpMemoryStatistics()

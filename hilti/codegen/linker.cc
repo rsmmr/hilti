@@ -145,7 +145,7 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
     if ( modules.size() == 0 )
         fatalError("no modules given to linker");
 
-    llvm::Module* composite = new llvm::Module("<HILTI>", llvm::getGlobalContext());
+    llvm::Module* composite = new llvm::Module(output, llvm::getGlobalContext());
     llvm::Linker linker(composite);
 
     std::list<string> module_names;
@@ -154,7 +154,7 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
 
     for ( auto i : modules ) {
 
-        auto name = i->getModuleIdentifier();
+        auto name = CodeGen::llvmGetModuleIdentifier(i);
 
         if ( isHiltiModule(i) )
             module_names.push_back(name);
@@ -207,7 +207,7 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
 
 bool Linker::isHiltiModule(llvm::Module* module)
 {
-    string id = module->getModuleIdentifier();
+    string id = CodeGen::llvmGetModuleIdentifier(module);
     string name = string(symbols::MetaModule) + "." + id;
 
     auto md = module->getNamedMetadata(name);
@@ -458,7 +458,7 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
         auto base_func = module->getFunction(symbols::FuncGlobalsBase + string(".") + name);
 
         if ( ! type )
-            fatalError("no type for globals defined", name);
+            continue;
 
         if ( ! base_func ) {
             debug(1, ::util::fmt("no globals.base function defined for module %s", name.c_str()));
@@ -591,7 +591,7 @@ GetAllUndefinedSymbols(llvm::Module *M, std::set<std::string> &UndefinedSymbols)
 
 void hilti::codegen::Linker::linkInModule(llvm::Linker* linker, llvm::Module* module)
 {
-    auto name = module->getModuleIdentifier();
+    auto name = CodeGen::llvmGetModuleIdentifier(module);
 
     debug(1, ::util::fmt("linking in module %s", name));
 

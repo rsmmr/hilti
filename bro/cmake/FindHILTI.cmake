@@ -27,6 +27,8 @@ else ()
     set(hcdbg "")
 endif ()
 
+message("X")
+
 if ( HILTI_CONFIG )
     execute_process(COMMAND "${HILTI_CONFIG}" ${hcdbg} --compiler --runtime --cxxflags
                     OUTPUT_VARIABLE HILTI_CXX_FLAGS

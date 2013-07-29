@@ -620,9 +620,13 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::addTmp(const std::string&
 
 void ModuleBuilder::importModule(shared_ptr<ID> id)
 {
+    std::string path;
     _module->import(id);
-    if ( ! _module->compilerContext()->importModule(id) )
+
+    if ( ! _module->compilerContext()->importModule(id, &path) )
         error("import error");
+
+    _imported_paths.push_back(path);
 }
 
 void ModuleBuilder::importModule(const std::string& id)
@@ -645,6 +649,11 @@ bool ModuleBuilder::idImported(shared_ptr<ID> id) const
 bool ModuleBuilder::idImported(const std::string& id) const
 {
     return idImported(std::make_shared<ID>(id));
+}
+
+std::list<std::string> ModuleBuilder::importedPaths() const
+{
+    return _imported_paths;
 }
 
 void ModuleBuilder::cacheNode(const std::string& component, const std::string& idx, shared_ptr<Node> node)

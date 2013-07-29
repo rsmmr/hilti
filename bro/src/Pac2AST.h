@@ -11,6 +11,8 @@
 namespace bro {
 namespace hilti {
 
+struct Pac2ModuleInfo;
+
 /// That visitor that provides information extracted from an BinPAC++ AST.
 class Pac2AST : ast::Visitor<binpac::AstInfo>
 {
@@ -19,12 +21,13 @@ public:
 	/// file.
 	struct UnitInfo
 		{
-		string name;				// The fully-qualified name of the unit type.
-		bool exported;				// True if the unit is exported.
-		shared_ptr<binpac::type::Unit> unit;	// The unit's type.
+		string name;					// The fully-qualified name of the unit type.
+		bool exported;					// True if the unit is exported.
+		shared_ptr<binpac::type::Unit> unit_type;	// The unit's type.
+		shared_ptr<Pac2ModuleInfo> minfo;		// The module this unit was defined in.
 		};
 
-	typedef std::map<string, UnitInfo> unit_map;
+	typedef std::map<string, shared_ptr<UnitInfo>> unit_map;
 
 	Pac2AST()	{}
 
@@ -33,13 +36,13 @@ public:
 	 * from all ASTs it has walked already, and makes the information
 	 * available through the corresponding accessor methods.
 	 */
-	void process(shared_ptr<binpac::Module> module);
+	void process(shared_ptr<Pac2ModuleInfo> minfo, shared_ptr<binpac::Module> module);
 
 	/**
 	 * Looks up a fully-qualified unit ID and returns the unit type if
 	 * found, or null if not.
 	 */
-	shared_ptr<binpac::type::Unit> LookupUnit(const string& id);
+	shared_ptr<UnitInfo> LookupUnit(const string& id);
 
 	/**
 	 * Returns a map of all units encountered so far, indexed by their
@@ -52,6 +55,7 @@ private:
 	void visit(binpac::declaration::Type* t) override;
 
 	unit_map units;
+	shared_ptr<Pac2ModuleInfo> minfo;
 };
 
 #endif

@@ -43,8 +43,8 @@ void Options::toCacheKey(::util::cache::FileCache::Key* key) const
     key->options += (verify ? "V" : "v");
 
     for ( auto d : libdirs_hlt )
-        key->dirs.push_back(d);
+        key->dirs.insert(d);
 
     for ( auto o : optimizations )
-        key->hashes.push_back(o);
+        key->hashes.insert(o);
 }

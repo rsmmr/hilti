@@ -29,7 +29,7 @@ void plugin::Bro_Hilti::Plugin::InitPreScript()
 	{
 	plugin::Plugin::InitPreScript();
 
-	SetName("Hilti::BinPAC");
+	SetName("Bro::Hilti");
 	SetDynamicPlugin(true);
 
 	BRO_PLUGIN_VERSION(1);

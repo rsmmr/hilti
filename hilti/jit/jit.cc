@@ -4,6 +4,7 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
+#include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Support/Host.h>
@@ -87,6 +88,78 @@ void* MemoryManager::getPointerToNamedFunction(const std::string& name, bool abo
     return _mm->getPointerToNamedFunction(name, abort_on_failure);
 }
 
+// An object cache that caches already JITed native code for later reuse.
+class hilti::jit::ObjectCache : public llvm::ObjectCache
+{
+public:
+    ObjectCache(CompilerContext* ctx);
+
+    // Overriden from llvm::ObjectCache.
+    void notifyObjectCompiled(const llvm::Module *module, const llvm::MemoryBuffer *obj) override;
+    llvm::MemoryBuffer* getObject(const llvm::Module *module) override;
+
+private:
+    CompilerContext* _ctx;
+    const llvm::Module* _key_module;
+    ::util::cache::FileCache::Key _key;
+};
+
+hilti::jit::ObjectCache::ObjectCache(CompilerContext* ctx)
+{
+    _ctx = ctx;
+    _key_module = 0;
+}
+
+void hilti::jit::ObjectCache::notifyObjectCompiled(const llvm::Module *module, const llvm::MemoryBuffer *obj)
+{
+    if ( ! _ctx->fileCache() )
+        return;
+
+    if ( _ctx->options().cgDebugging("cache" ) )
+        std::cerr << util::fmt("Received compiled module %s for caching ...", module->getModuleIdentifier()) << std::endl;
+
+    // Note that we can't just rebuild the key here. It seems the content of
+    // module changes between the getObject() call and this method, so that
+    // if we hash it now, we won't get matching results.
+
+    assert(_key_module == module);
+
+    if ( _key_module != module )
+        abort();
+
+    _ctx->fileCache()->store(_key, obj->getBufferStart(), obj->getBufferSize());
+}
+
+llvm::MemoryBuffer* hilti::jit::ObjectCache::getObject(const llvm::Module *module)
+{
+    if ( ! _ctx->fileCache() )
+        return nullptr;
+
+    ::util::cache::FileCache::Key key;
+    key.scope = "a";
+    key.name = module->getModuleIdentifier();
+    _ctx->toCacheKey(module, &key);
+    _ctx->options().toCacheKey(&key);
+
+    _key_module = module;
+    _key = key;
+
+    auto lms = _ctx->fileCache()->lookup(key);
+    assert(lms.size() <= 1);
+
+    if ( lms.size() ) {
+        if ( _ctx->options().cgDebugging("cache" ) )
+            std::cerr << util::fmt("Reusing cached compiled module for %s.a", module->getModuleIdentifier()) << std::endl;
+
+        return llvm::MemoryBuffer::getMemBufferCopy(lms.front());
+    }
+
+    if ( _ctx->options().cgDebugging("cache" ) )
+        std::cerr << util::fmt("No cached compiled module for %s.a", module->getModuleIdentifier()) << std::endl;
+
+    return nullptr;
+}
+
 JIT::JIT(CompilerContext* ctx)
 {
     LLVMLinkInMCJIT();
@@ -96,6 +169,7 @@ JIT::JIT(CompilerContext* ctx)
 
     _ctx = ctx;
     _mm = new MemoryManager(llvm::JITMemoryManager::CreateDefaultMemManager());
+    _cache = new ObjectCache(ctx);
 }
 
 JIT::~JIT()
@@ -146,6 +220,7 @@ llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
 
     ee->DisableLazyCompilation(true);
     ee->runStaticConstructorsDestructors(false);
+    ee->setObjectCache(_cache);
 
     return ee;
 }

@@ -38,6 +38,7 @@ namespace symbols {
 
     // Names of globals examined by custom linker pass.
     static const char* MetaModule       = "hlt.module";
+    static const char* MetaModuleName   = "hlt.module.id";
     static const char* MetaModuleInit   = "hlt.modules.init";
     static const char* MetaGlobalsInit  = "hlt.globals.init";
     static const char* MetaGlobalsDtor  = "hlt.globals.dtor";
@@ -2094,6 +2095,12 @@ public:
    ///
    /// arg: The argument for the update.
    void llvmProfilerUpdate(const string& tag, int64_t arg);
+
+   /// Returns the name of an LLVM module. This first looks for corresponding
+   /// meta-data that the code generator inserts and returns that if found,
+   /// and the standard LLVM module name otherwise. The meta data is helpful
+   /// because LLVM's bitcode represenation doesn't preserve a module's name.
+   static string llvmGetModuleIdentifier(llvm::Module* module);
 
 private:
    // Creates/finishes the module intialization function that will receive all global

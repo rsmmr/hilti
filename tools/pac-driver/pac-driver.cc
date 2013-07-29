@@ -472,27 +472,27 @@ bool jitPac2(const std::list<string>& pac2, const binpac::Options& options)
 
     PacContext = new binpac::CompilerContext(options);
 
-    std::list<shared_ptr<hilti::Module>> hilti_modules;
+    std::list<llvm::Module* > llvm_modules;
 
     for ( auto p : pac2 ) {
-        auto hltmod = PacContext->compile(p);
+        auto llvm_module = PacContext->compile(p);
 
-        if ( ! hltmod ) {
+        if ( ! llvm_module ) {
             fprintf(stderr, "compiling %p failed\n", p.c_str());
             return false;
         }
 
-        hilti_modules.push_back(hltmod);
+        llvm_modules.push_back(llvm_module);
     }
 
-    auto llvm_module = PacContext->linkModules("<jit analyzers>", hilti_modules);
+    auto linked_module = PacContext->linkModules("<jit analyzers>", llvm_modules);
 
-    if ( ! llvm_module ) {
+    if ( ! linked_module ) {
         fprintf(stderr, "linking failed\n");
         return false;
     }
 
-    auto ee = PacContext->hiltiContext()->jitModule(llvm_module);
+    auto ee = PacContext->hiltiContext()->jitModule(linked_module);
 
     if ( ! ee ) {
         fprintf(stderr, "jit failed");
@@ -501,11 +501,11 @@ bool jitPac2(const std::list<string>& pac2, const binpac::Options& options)
 
     // TODO: This should be done by jitModule, which however then needs to
     // move into hilti-jit.
-    hlt_init_jit(PacContext->hiltiContext(), llvm_module, ee);
+    hlt_init_jit(PacContext->hiltiContext(), linked_module, ee);
     binpac_init();
-    binpac_init_jit(PacContext->hiltiContext(), llvm_module, ee);
+    binpac_init_jit(PacContext->hiltiContext(), linked_module, ee);
 
-    auto func = PacContext->hiltiContext()->nativeFunction(llvm_module, ee, "binpac_parsers");
+    auto func = PacContext->hiltiContext()->nativeFunction(linked_module, ee, "binpac_parsers");
 
     if ( ! func ) {
         fprintf(stderr, "jitBinpacParser error: no function 'binpac_parsers'");

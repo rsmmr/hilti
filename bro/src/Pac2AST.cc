@@ -7,15 +7,16 @@
 
 using namespace bro::hilti;
 
-void Pac2AST::process(shared_ptr<binpac::Module> module)
+void Pac2AST::process(shared_ptr<Pac2ModuleInfo> arg_minfo, shared_ptr<binpac::Module> module)
 	{
+	minfo = arg_minfo;
 	processAllPreOrder(module);
 	}
 
-shared_ptr<binpac::type::Unit> Pac2AST::LookupUnit(const string& id)
+shared_ptr<Pac2AST::UnitInfo> Pac2AST::LookupUnit(const string& id)
 	{
 	auto i = units.find(id);
-	return i != units.end() ? i->second.unit : nullptr;
+	return i != units.end() ? i->second : nullptr;
 	}
 
 void Pac2AST::visit(binpac::Module* u)
@@ -32,10 +33,11 @@ void Pac2AST::visit(binpac::declaration::Type* t)
 	string name = t->id()->name();
 	string fq = current<binpac::Module>()->id()->name() + "::" + name;
 
-	UnitInfo uinfo;
-	uinfo.name = fq;
-	uinfo.exported = (t->linkage() == binpac::Declaration::EXPORTED);
-	uinfo.unit = unit;
+	auto uinfo = std::make_shared<UnitInfo>();
+	uinfo->name = fq;
+	uinfo->exported = (t->linkage() == binpac::Declaration::EXPORTED);
+	uinfo->unit_type = unit;
+	uinfo->minfo = minfo;
 
 	units.insert(std::make_pair(fq, uinfo));
 	}

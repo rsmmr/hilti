@@ -6,13 +6,12 @@
 
 #include "common.h"
 #include "module.h"
+#include "util/file-cache.h"
 
 namespace llvm {
     class Module;
     class ExecutionEngine;
 }
-
-namespace util  { namespace cache { class FileCache;} }
 
 namespace hilti {
 
@@ -55,8 +54,11 @@ public:
     /// file-system name, which may differ from the module's declared
     /// identifier.
     ///
+    /// path_out: If given, the path to the imported module will be stored in
+    /// there.
+    ///
     /// Returns: True on success.
-    bool importModule(shared_ptr<ID> id);
+    bool importModule(shared_ptr<ID> id, string* path_out = nullptr);
 
     /// Finds the file a module is to be imported from.
     ///
@@ -102,13 +104,29 @@ public:
 
     /// Compiles an AST into a LLVM module. This is the main interface to the
     /// code generater. The AST must have passed through finalize(). After
-    /// compilation, it needs to be linked with linkModules().
+    /// compilation, it needs to be linked with linkModules(). If caching is
+    /// enabled, this method may return a previously cached copy.
     ///
     /// module: The module to compile.
     ///
     /// Returns: The HILTI module, or null if errors are encountered. Passes
     /// ownership to the caller.
     llvm::Module* compile(shared_ptr<Module> module);
+
+    /// Compiles an AST into a LLVM module. This is a variant of compile()
+    /// that takes a prepopulated cache key under which the compiled module
+    /// will be stored if caching is enabled. However, this version will
+    /// never return a previously cached version, it doesn't check whether
+    /// the key already exists. After compilation, it needs to be linked with
+    /// linkModules().
+    ///
+    /// module: The module to compile.
+    ///
+    /// key: The cache key to store the compiled module under.
+    ///
+    /// Returns: The HILTI module, or null if errors are encountered. Passes
+    /// ownership to the caller.
+    llvm::Module* compile(shared_ptr<Module> module, const ::util::cache::FileCache::Key& key);
 
     /// Optimizes an LLVM module according to the CompilerContext's options
     /// (including not all if the options don't request optimization). Note
@@ -225,6 +243,9 @@ public:
     /// be null pointers to mark the end of the array.
     void installFunctionTable(const FunctionMapping* ftable);
 
+    /// Returns the file cache the context is using, or null if none.
+    shared_ptr<util::cache::FileCache> fileCache() const;
+
     /// Dumps out an AST in (somewhat) readable format for debugging.
     ///
     /// ast: The AST to dump. This can be a partial AST, i.e., it doesn't need
@@ -234,6 +255,62 @@ public:
     ///
     /// Returns: True if no errors are encountered.
     bool dump(shared_ptr<Node> ast, std::ostream& out);
+
+    /// Check if we have cached LLVM modules associated with a cache key.
+    ///
+    /// The method is a no-op if the context doesn't use caching.
+    ///
+    /// key: The key to use.
+    ///
+    /// Returns: The cached modules if available, or an empty list if not.
+    /// The latter will always be the case if the context is not using
+    /// caching.
+    std::list<llvm::Module*> checkCache(const ::util::cache::FileCache::Key& key);
+
+    /// Stores/Updates cached versions for a set of LLVM modules.
+    ///
+    /// key: The key to associate with *all* the modules.
+    ///
+    /// module: THe modules to cache under \a key.
+    void updateCache(const ::util::cache::FileCache::Key& key, std::list<llvm::Module*> module);
+
+    /// Stores/updates cached version of a single LLVM module.
+    ///
+    /// key: The key to associate with the module.
+    ///
+    /// module: THe module to cache under \a key.
+    void updateCache(const ::util::cache::FileCache::Key& key, llvm::Module* module);
+
+    /// Augments the cache key with values suitable to check if a HILTI
+    /// module (or any of its dependencies) has changed.
+    ///
+    /// \todo Dependencies aren't tracked yet.
+    ///
+    /// module: The module to update the key for.
+    ///
+    /// key: The key to update.
+    void toCacheKey(shared_ptr<Module> module, ::util::cache::FileCache::Key* key);
+
+    /// Augments the cache key with values suitable to check if an LLVM
+    /// module has changed.
+    ///
+    /// module: The module to update the key for.
+    ///
+    /// key: The key to update.
+    void toCacheKey(const llvm::Module* module, ::util::cache::FileCache::Key* key);
+
+    /// Returns a list of path names that this module depends on.
+    ///
+    /// \todo This is actually not yet implemented and always returns an
+    /// empty list currently.
+    std::list<string> dependencies(shared_ptr<Module> module);
+
+    /// Returns the name of an LLVM module. This first looks for
+    /// corresponding meta-data that the code generator inserts and returns
+    /// that if found, and the standard LLVM module name otherwise. The meta
+    /// data is helpful because LLVM's bitcode represenation doesn't preserve
+    /// a module's name.
+    static std::string llvmGetModuleIdentifier(llvm::Module* module);
 
 private:
     /// Finalizes an AST before it can be used for compilation. This checks
@@ -246,7 +323,7 @@ private:
     ///
     bool _finalizeModule(shared_ptr<Module> module);
 
-    /// If debugging stream cg-passes is set, log the beginning of a pass. If timing is requested, 
+    /// If debugging stream cg-passes is set, log the beginning of a pass. If timing is requested,
     ///
     /// module: The current module.
     ///
@@ -261,9 +338,6 @@ private:
     /// If debugging stream cg-passes is set, log the end of the most recent
     /// pass.
     void _endPass();
-
-    /// Sets the \a cached flag in the current pass.
-    void _markPassAsCached();
 
     shared_ptr<Options> _options;
 
@@ -286,7 +360,6 @@ public:
         string module;
         double time;
         string name;
-        bool cached;
     };
 
     typedef std::list<PassInfo> pass_list;

@@ -71,7 +71,7 @@ error:
     return "";
 }
 
-bool CompilerContext::importModule(shared_ptr<ID> id)
+bool CompilerContext::importModule(shared_ptr<ID> id, string* path_out)
 {
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Importing module %s ...", id->pathAsString()) << std::endl;
@@ -80,6 +80,9 @@ bool CompilerContext::importModule(shared_ptr<ID> id)
 
     if ( ! path.size() )
         return nullptr;
+
+    if ( path_out )
+        *path_out = path;
 
     return (loadModule(path, false) != nullptr);
 }
@@ -153,7 +156,6 @@ void CompilerContext::_beginPass(const string& module, const string& name)
     pass.module = module;
     pass.time = ::util::currentTime();
     pass.name = name;
-    pass.cached = false;
     _passes.push_back(pass);
 }
 
@@ -184,24 +186,14 @@ void CompilerContext::_endPass()
 
     if ( cg_time || cg_passes ) {
         auto delta = util::currentTime() - pass.time;
-        auto cached = pass.cached ? " (cached)" : "";
         auto indent = string(_passes.size(), ' ');
 
-        if ( cg_passes || delta >= 0.1 || pass.cached )
+        if ( cg_passes || delta >= 0.1 )
             std::cerr << util::fmt("(%2.2fs) %shilti::%s [module \"%s\"]%s",
-                                   delta, indent, pass.name, pass.module, cached) << std::endl;
+                                   delta, indent, pass.name, pass.module) << std::endl;
     }
 
     _passes.pop_back();
-}
-
-void CompilerContext::_markPassAsCached()
-{
-    assert(_passes.size());
-    auto pass = _passes.back();
-    pass.cached = true;
-    _passes.pop_back();
-    _passes.push_back(pass);
 }
 
 bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
@@ -425,48 +417,114 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
     return module;
 }
 
-llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
+std::list<llvm::Module*> CompilerContext::checkCache(const ::util::cache::FileCache::Key& key)
 {
-#if 0
-    auto path = module->path() != "-" ? module->path() : module->id()->name();
+    std::list<llvm::Module*> outputs;
 
-    ::util::cache::FileCache::Key key;
-    key.scope = "ll";
-    key.name = ::util::strreplace(path, "/", "_");
-    key.files.push_back(path);
-    options().toCacheKey(&key);
+    if ( ! _cache )
+        return outputs;
 
-    if ( _cache ) {
-        auto cache_path = _cache->lookup(key);
+    auto data = _cache->lookup(key);
 
-        if ( cache_path.size() ) {
-            _beginPass(path, "LoadFromCache");
+    int idx = 0;
 
-            llvm::SMDiagnostic err;
+    for ( auto d : data ) {
+        _beginPass(key.name, "LoadFromCache");
 
-            if ( auto mod = llvm::ParseIRFile(path, err, llvm::getGlobalContext()) ) {
-                if ( options().cgDebugging("cache") )
-                    std::cerr << "Reusing cached module for " << path << std::endl;
+        llvm::MemoryBuffer* mb = llvm::MemoryBuffer::getMemBuffer(d);
+        assert(mb);
 
-                _markPassAsCached();
-                _endPass();
-                return mod;
-            }
+        string err;
+        if ( auto mod = llvm::ParseBitcodeFile(mb, llvm::getGlobalContext(), &err) ) {
+            if ( options().cgDebugging("cache") )
+                std::cerr << util::fmt("Reusing cached module for %s.%s (%d/%d)", key.name, key.scope, ++idx, data.size()) << std::endl;
 
-            else {
-                _endPass();
-
-                if ( options().cgDebugging("cache") )
-                    std::cerr << "Cached module for " << path << " did not compile" << std::endl;
-            }
+            _endPass();
+            outputs.push_back(mod);
         }
 
-        if ( options().cgDebugging("cache") )
-            std::cerr << "No cached module for " << path << " found" << std::endl;
+        else {
+            _endPass();
 
+            if ( options().cgDebugging("cache") )
+                std::cerr << util::fmt("Cached module for %s.%s (%d/%d) did not compile", key.name, key.scope, ++idx, data.size()) << std::endl;
+        }
     }
-#endif
 
+    if ( options().cgDebugging("cache") && ! outputs.size() )
+        std::cerr << util::fmt("No cached module for %s.%s", key.name, key.scope) << std::endl;
+
+    return outputs;
+}
+
+void CompilerContext::updateCache(const ::util::cache::FileCache::Key& key, llvm::Module* module)
+{
+    std::list<llvm::Module*> modules = { module };
+    return updateCache(key, modules);
+}
+
+void CompilerContext::updateCache(const ::util::cache::FileCache::Key& key, std::list<llvm::Module*> modules)
+{
+    if ( ! _cache )
+        return;
+
+    std::list<string> outputs;
+
+    for ( auto m : modules ) {
+        if ( options().cgDebugging("cache") )
+            std::cerr << "Updating cache for compiled LLVM module " << m->getModuleIdentifier() << std::endl;
+
+        string out;
+        llvm::raw_string_ostream llvm_out(out);
+        llvm::WriteBitcodeToFile(m, llvm_out);
+        outputs.push_back(string(llvm_out.str()));
+    }
+
+    _cache->store(key, outputs);
+}
+
+void CompilerContext::toCacheKey(shared_ptr<Module> module, ::util::cache::FileCache::Key* key)
+{
+    if ( module->path() != "-" )
+        key->files.insert(module->path());
+
+    else {
+        std::ostringstream s;
+        print(module, s);
+        auto hash = util::cache::hash(s.str());
+        key->hashes.insert(hash);
+    }
+
+    for ( auto d : dependencies(module) )
+        key->files.insert(d);
+}
+
+void CompilerContext::toCacheKey(const llvm::Module* module, ::util::cache::FileCache::Key* key)
+{
+    string out;
+    llvm::raw_string_ostream llvm_out(out);
+    llvm::WriteBitcodeToFile(module, llvm_out);
+
+    // We take the size as hash. That's not ideal but (1) the output of
+    // neither bitcode nor assemly writer is stable, (2) writing the whole
+    // module is also pretty slow.
+    auto hash = util::cache::hash(llvm_out.str().size());
+    key->hashes.insert(hash);
+}
+
+std::list<string> CompilerContext::dependencies(shared_ptr<Module> module)
+{
+    // TODO: Not implementated.
+    return std::list<string>();
+}
+
+std::string CompilerContext::llvmGetModuleIdentifier(llvm::Module* module)
+{
+    return codegen::CodeGen::llvmGetModuleIdentifier(module);
+}
+
+llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
+{
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Compiling module %s ...", module->id()->pathAsString()) << std::endl;
 
@@ -493,17 +551,6 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
 
         _endPass();
     }
-
-#if 0
-    if ( _cache ) {
-        fprintf(stderr, "X\n");
-        string out;
-        llvm::raw_string_ostream llvm_out(out);
-        llvm::WriteBitcodeToFile(compiled, llvm_out);
-        _cache->store(key, out);
-        fprintf(stderr, "Y 5d\n", out.size());
-    }
-#endif
 
     return compiled;
 }
@@ -547,7 +594,7 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         std::list<string> names;
 
         for ( auto m : modules )
-            names.push_back(m->getModuleIdentifier());
+            names.push_back(llvmGetModuleIdentifier(m));
 
         std::cerr << util::fmt("Linking modules %s ...", util::strjoin(names, ", ")) << std::endl;
     }
@@ -627,7 +674,7 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         std::list<string> names;
 
         for ( auto m : modules )
-            names.push_back(m->getModuleIdentifier());
+            names.push_back(llvmGetModuleIdentifier(m));
 
         std::cerr << util::fmt("  Final set modules to link: %s ...", util::strjoin(names, ", ")) << std::endl;
     }
@@ -718,4 +765,9 @@ void CompilerContext::installFunctionTable(const FunctionMapping* ftable)
         _jit = new jit::JIT(this);
 
     _jit->installFunctionTable(ftable);
+}
+
+shared_ptr<util::cache::FileCache> CompilerContext::fileCache() const
+{
+    return _cache;
 }

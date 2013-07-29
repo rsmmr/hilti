@@ -84,6 +84,9 @@ extern bool endsWith(const string& s, const string& suffix);
 /// Returns a simple (non-crypto) hash value of a string.
 extern uint64_t hash(const string& str);
 
+/// Returns a simple (non-crypto) hash value of a memory block.
+extern uint64_t hash(const char* data, size_t len);
+
 /// Converts an integer into a string relative to a given base.
 ///
 /// value: The value.

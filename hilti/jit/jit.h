@@ -16,6 +16,7 @@ namespace hilti {
 namespace jit {
 
 class MemoryManager;
+class ObjectCache;
 
 // Central JIT engine.
 class JIT : public ast::Logger
@@ -56,6 +57,7 @@ public:
 private:
     CompilerContext* _ctx;
     MemoryManager* _mm;
+    ObjectCache* _cache;
 };
 
 }

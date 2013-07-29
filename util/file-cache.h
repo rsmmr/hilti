@@ -4,6 +4,7 @@
 
 #include <ostream>
 #include <istream>
+#include <set>
 #include <list>
 #include <string>
 #include <stdint.h>
@@ -36,23 +37,27 @@ public:
 
         /// A list of directories to associate with the content. Two keys
         /// with different directory lists will never match (order matters).
-        std::list<std::string> dirs;
+        std::set<std::string> dirs;
 
         /// A list of files to associate with the content. Two keys with
         /// different file lists will never match (order matters).
         /// Furthermore, if any of the files given here is newer than \a
         /// timestamp, the key will be considered invalid and not yield any
         /// matches.
-        std::list<std::string> files;
+        std::set<std::string> files;
 
         /// A list of hashes to associate with the context. Two keys with
         /// different hash lists will never match (order matters)..
-        std::list<Hash> hashes;
+        std::set<Hash> hashes;
 
         /// An internally managed timestamp that must be more recent than all
         /// dependencies for the key to be valid. A timestamp of zero
         /// disabled that check.
-        time_t _timestamp;
+        time_t _timestamp = 0;
+
+        // An internally managed field counting the number of data items
+        // associated with the key.
+        int _parts = 0;
 
         bool valid() const;
         void setInvalid();
@@ -72,52 +77,40 @@ public:
     FileCache(const std::string& dir);
     ~FileCache();
 
-    /// Stores the data under a given key.
+    /// Stores data under a given key.
     ///
     /// key: The key to identify the data.
     ///
-    /// data: The data itself.
-    bool store(const Key& key, std::istream& data);
+    /// data: A list of data objects.
+    bool store(const Key& key, std::list<std::string> data);
 
-    /// Stores the data under a given key.
+    /// Store data under a given key.
     ///
-    /// key: The key to identify the data.
+    /// data: A list of data objects to store, each with a pointer to
+    /// beginning of the data and a size.
     ///
-    /// data: The data itself.
-    bool store(const Key& key, const std::string& data);
+    /// Returns: True if the storage was successful.
+    bool store(const Key& key, std::list<std::pair<const char*, size_t>> data);
+
+    /// Store a single data object under a given key.
+    ///
+    /// data: Pointer to beginning of data.
+    ///
+    /// len: Length of data.
+    ///
+    /// Returns: True if the storage was successful.
+    bool store(const Key& key, const char* data, size_t len);
 
     /// Looks up data under a given key. If the key is found and its content
     /// valid, returns the path to file containing the content.
     ///
     /// key: The key.
     ///
-    /// Returns: The path to the content, or an empty string if not found.
-    std::string lookup(const Key& key);
-
-    /// Looks up data under a given key. If the key is found and its content
-    /// valid, the cached data is saved into \a data.
-    ///
-    /// key: The key.
-    ///
-    /// data: Where to store the cached content if valid.
-    ///
-    /// Returns: True if cached content is found an valid. In that case, \a
-    /// data will be filled accordingly.
-    bool lookup(const Key& key, std::ostream& data);
-
-    /// Looks up data under a given key. If the key is found and its content
-    /// valid, the cached data is saved into \a data.
-    ///
-    /// key: The key.
-    ///
-    /// data: Where to store the cached content if valid.
-    ///
-    /// Returns: True if cached content is found an valid. In that case, \a
-    /// data will be filled accordingly.
-    bool lookup(const Key& key, std::string* data);
+    /// Returns: A list of the data objects stored under the jey, or an empty list if not found.
+    std::list<std::string> lookup(const Key& key);
 
 private:
-    std::string fileForKey(const Key& key);
+    std::string fileForKey(const Key& key, const std::string& prefix, int idx = 0);
     bool touchFile(const std::string& path, time_t time);
 
     std::string _dir;
@@ -132,15 +125,26 @@ time_t currentTime();
 /// path: The full path to the file.
 time_t modificationTime(const std::string& path);
 
-/// Helper function that hashes the contents of an input stream into an integer.
+/// Helper function that hashes the contents of an input stream.
 ///
 /// Returns a hash on success, or "" if there's an error.
 FileCache::Key::Hash hash(std::istream& in);
 
-/// Helper function that hashes the contents of a file into an integer.
+/// Helper function that hashes the contents of a string.
 ///
 /// Returns a hash on success, or "" if there's an error.
 FileCache::Key::Hash hash(const std::string& str);
+
+/// Helper function that hashes the contents of a memory block.
+///
+/// Returns a hash on success, or "" if there's an error.
+FileCache::Key::Hash hash(const char* data, size_t len);
+
+/// Helper function that hashes a size value.
+///
+/// Returns a hash on success, or "" if there's an error.
+FileCache::Key::Hash hash(size_t size);
+
 
 }
 

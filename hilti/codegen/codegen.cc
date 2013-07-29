@@ -84,6 +84,10 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod)
         _module->setTargetTriple(_abi->targetTriple());
         _module->setDataLayout(_abi->dataLayout());
 
+        auto name = llvm::MDString::get(llvmContext(), _module->getModuleIdentifier());
+        auto md = _module->getOrInsertNamedMetadata(symbols::MetaModuleName);
+        md->addOperand(codegen::util::llvmMdFromValue(llvmContext(), name));
+
         _data_layout = new ::llvm::DataLayout(_abi->dataLayout());
 
         createInitFunction();
@@ -3868,4 +3872,16 @@ void CodeGen::llvmProfilerUpdate(const string& tag, int64_t arg)
     auto larg = llvmConstInt(arg, 64);
 
     llvmProfilerUpdate(ltag, larg);
+}
+
+string CodeGen::llvmGetModuleIdentifier(llvm::Module* module)
+{
+    auto md = module->getNamedMetadata(symbols::MetaModuleName);
+
+    if ( md ) {
+        auto node = llvm::cast<llvm::MDNode>(md->getOperand(0));
+        return llvm::cast<llvm::MDString>(node->getOperand(0))->getString();
+    }
+
+    return module->getModuleIdentifier();
 }
