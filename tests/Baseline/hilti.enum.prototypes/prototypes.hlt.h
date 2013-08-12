@@ -3,7 +3,7 @@
 #ifndef MAIN_HLT_H
 #define MAIN_HLT_H
 
-#include <libhilti.h>
+#include <libhilti/libhilti.h>
 
 static const hlt_enum Main_Foo_A = { 0, 1 };
 static const hlt_enum Main_Foo_BC = { 0, 2 };
