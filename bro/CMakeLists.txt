@@ -69,7 +69,7 @@ if ( BRO_DIST )
             set(plugin_binpac_libs ${plugin_binpac_libs} ${PROJECT_BINARY_DIR}/libbinpac/libbinpac-rt.bc)
         endif ()
 
-        set(plugin_deps libhilti-rt-dbg.bc libbinpac-rt-dbg.bc libhilti-rt.bc libbinpac-rt.bc)
+        set(plugin_deps hilti binpacxx libhilti-rt-dbg.bc libbinpac-rt-dbg.bc libhilti-rt.bc libbinpac-rt.bc)
 
         target_link_libraries(${_plugin_lib} ${plugin_hilti_libs} ${plugin_binpac_libs} ${plugin_external_libs})
         target_link_libraries(${_plugin_lib} ${addl_libs})
