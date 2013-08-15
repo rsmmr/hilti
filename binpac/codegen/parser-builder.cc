@@ -342,10 +342,12 @@ void ParserBuilder::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
     }
 }
 
-void ParserBuilder::hiltiRunFieldHooks(shared_ptr<type::unit::Item> item)
+void ParserBuilder::hiltiRunFieldHooks(shared_ptr<type::unit::Item> item, shared_ptr<hilti::Expression> self)
 {
-    _hiltiRunHook(state()->unit, _hookForItem(state()->unit, item, false, true), item, false, nullptr);
-    _hiltiRunHook(state()->unit, _hookForItem(state()->unit, item, false, false), item, false, nullptr);
+    auto unit = item->unit() ? item->unit() : state()->unit;
+
+    _hiltiRunHook(unit, self, _hookForItem(unit, item, false, true), item, false, nullptr);
+    _hiltiRunHook(unit, self, _hookForItem(unit, item, false, false), item, false, nullptr);
 }
 
 void ParserBuilder::hiltiUnitHooks(shared_ptr<type::Unit> unit)
@@ -902,7 +904,7 @@ void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params
             cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self, hilti::builder::string::create("__sink"), sink);
     }
 
-    _hiltiRunHook(state()->unit, _hookForUnit(state()->unit, "%init"), nullptr, false, nullptr);
+    _hiltiRunHook(state()->unit, state()->self, _hookForUnit(state()->unit, "%init"), nullptr, false, nullptr);
 }
 
 void ParserBuilder::_finalizeParseObject()
@@ -910,7 +912,7 @@ void ParserBuilder::_finalizeParseObject()
     auto unit = state()->unit;
 
     _hiltiSaveInputPostion();
-    _hiltiRunHook(unit, _hookForUnit(unit, "%done"), nullptr, false, nullptr);
+    _hiltiRunHook(unit, state()->self, _hookForUnit(unit, "%done"), nullptr, false, nullptr);
     _hiltiUpdateInputPostion();
     _hiltiTrimInput();
 
@@ -1069,16 +1071,16 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
     }
 
     if ( p && p->pgMeta()->for_each ) {
-        auto stop = _hiltiRunHook(state()->unit, _hookForItem(state()->unit, p->pgMeta()->for_each, true, true), p->pgMeta()->for_each, true, value);
+        auto stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, p->pgMeta()->for_each, true, true), p->pgMeta()->for_each, true, value);
         if ( ! stop )
-            stop = _hiltiRunHook(state()->unit, _hookForItem(state()->unit, p->pgMeta()->for_each, true, false), p->pgMeta()->for_each, true, value);
+            stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, p->pgMeta()->for_each, true, false), p->pgMeta()->for_each, true, value);
 
         // FIXME: We ignore stop here. Can we pay attention to that here?
     }
 
     if ( field ) {
         _hiltiSaveInputPostion();
-        hiltiRunFieldHooks(field);
+        hiltiRunFieldHooks(field, state()->self);
         _hiltiUpdateInputPostion();
     }
 
@@ -1275,7 +1277,7 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiCookie()
     return state()->cookie;
 }
 
-shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar)
+shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar)
 {
     if ( item && ! item->hooksEnabled() ) {
         if ( foreach )
@@ -1302,7 +1304,7 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<binpac::ty
     // Declare the hook if we don't have done that yet.
     if ( ! cg()->moduleBuilder()->lookupNode("hook", name) ) {
         hilti::builder::function::parameter_list p = {
-            hilti::builder::function::parameter("__self", cg()->hiltiTypeParseObjectRef(state()->unit), false, nullptr),
+            hilti::builder::function::parameter("__self", cg()->hiltiTypeParseObjectRef(unit), false, nullptr),
             hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr)
         };
 
@@ -1322,7 +1324,7 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<binpac::ty
     }
 
     // Run the hook.
-    hilti::builder::tuple::element_list args = { state()->self, state()->cookie };
+    hilti::builder::tuple::element_list args = { self, state()->cookie };
 
     if ( dollardollar )
         args.push_back(dollardollar);
@@ -2340,9 +2342,9 @@ void ParserBuilder::visit(production::Counter* c)
     enableStoringValues();
 
     // Run foreach hook.
-    auto stop = _hiltiRunHook(state()->unit, _hookForItem(state()->unit, field, true, true), field, true, value);
+    auto stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, true), field, true, value);
     if ( ! stop )
-        stop = _hiltiRunHook(state()->unit, _hookForItem(state()->unit, field, true, false), field, true, value);
+        stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, false), field, true, value);
 
     cg()->builder()->addInstruction(i, hilti::instruction::integer::Decr, i);
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, cont->block(), loop->block());
@@ -2652,9 +2654,9 @@ void ParserBuilder::visit(production::Until* w)
 
     cg()->moduleBuilder()->pushBuilder(cont);
 
-    auto stop = _hiltiRunHook(state()->unit, _hookForItem(state()->unit, field, true, true), field, true, value);
+    auto stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, true), field, true, value);
     if ( ! stop )
-        stop = _hiltiRunHook(state()->unit, _hookForItem(state()->unit, field, true, false), field, true, value);
+        stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, false), field, true, value);
 
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, done->block(), loop->block());
     cg()->moduleBuilder()->popBuilder(cont);
@@ -2691,9 +2693,9 @@ void ParserBuilder::visit(production::Loop* l)
     enableStoringValues();
 
     // Run foreach hook.
-    auto stop = _hiltiRunHook(state()->unit, _hookForItem(state()->unit, field, true, true), field, true, value);
+    auto stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, true), field, true, value);
     if ( ! stop )
-        stop = _hiltiRunHook(state()->unit, _hookForItem(state()->unit, field, true, false), field, true, value);
+        stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, false), field, true, value);
 
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, done->block(), loop->block());
     cg()->moduleBuilder()->popBuilder(loop);

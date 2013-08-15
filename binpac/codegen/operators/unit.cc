@@ -29,15 +29,16 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
     auto item = unit->item(attr->id());
     assert(item && item->type());
 
+    auto uval = cg()->hiltiExpression(i->op1());
     auto expr = cg()->hiltiExpression(i->op3(), item->fieldType());
 
     auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->fieldType()), nullptr, false);
     cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
-                                    cg()->hiltiExpression(i->op1()),
+                                    uval,
                                     hilti::builder::string::create(attr->id()->name()),
                                     expr);
 
-    cg()->hiltiRunFieldHooks(item);
+    cg()->hiltiRunFieldHooks(item, uval);
 
     setResult(expr);
 }

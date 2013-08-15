@@ -152,8 +152,11 @@ public:
     /// Generates code to execute the hooks associated with an unit item.
     /// This must only be called while a unit is being parsed.
     ///
-    /// f: The field.
-    void hiltiRunFieldHooks(shared_ptr<type::unit::Item> item);
+    /// item: The item.
+    ///
+    /// self: The expression to pass as the hook's \a self argument. Must
+    /// match the type of the unit that \a item is part of.
+    void hiltiRunFieldHooks(shared_ptr<type::unit::Item> item, shared_ptr<hilti::Expression> self);
 
     // Returns the HILTI struct type for a unit's parse object.
     //

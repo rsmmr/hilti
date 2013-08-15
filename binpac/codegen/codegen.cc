@@ -244,9 +244,9 @@ void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
     _parser_builder->hiltiUnitHooks(unit);
 }
 
-void CodeGen::hiltiRunFieldHooks(shared_ptr<type::unit::Item> item)
+void CodeGen::hiltiRunFieldHooks(shared_ptr<type::unit::Item> item, shared_ptr<hilti::Expression> self)
 {
-    _parser_builder->hiltiRunFieldHooks(item);
+    _parser_builder->hiltiRunFieldHooks(item, self);
 }
 
 void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)

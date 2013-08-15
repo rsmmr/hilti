@@ -928,6 +928,16 @@ unit::Item::Item(shared_ptr<ID> id, shared_ptr<Type> type, const hook_list& hook
     _scope = std::make_shared<Scope>(); // The scope builder will initialize  this and link it in.
 }
 
+shared_ptr<type::Unit> unit::Item::unit() const
+{
+    return _unit ? _unit->sharedPtr<type::Unit>() : nullptr;
+}
+
+void unit::Item::setUnit(type::Unit* unit)
+{
+    _unit = unit;
+}
+
 bool unit::Item::anonymous() const
 {
     return _anonymous;
@@ -1383,8 +1393,10 @@ Unit::Unit(const parameter_list& params, const unit_item_list& items, const Loca
     for ( auto p : _params )
         addChild(p);
 
-    for ( auto i : items )
+    for ( auto i : items ) {
         _items.push_back(i);
+        i->setUnit(this);
+    }
 
     for ( auto d : _items )
         addChild(d);

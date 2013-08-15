@@ -64,8 +64,11 @@ public:
     /// Generates code to execute the hooks associated with an unit item.
     /// This must only be called while a unit is being parsed.
     ///
-    /// f: The field.
-    void hiltiRunFieldHooks(shared_ptr<type::unit::Item> item);
+    /// item: The item.
+    ///
+    /// self: The expression to pass as the hook's \a self argument. Must
+    /// match the type of the unit that \a item is part of.
+    void hiltiRunFieldHooks(shared_ptr<type::unit::Item> item, shared_ptr<hilti::Expression> self);
 
     /// Returns a HILTI expression referencing the current parser object
     /// (assuming parsing is in process; if not aborts());
@@ -246,13 +249,14 @@ private:
     // Prints the upcoming input bytes to binpac-verbose.
     void _hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur);
 
-    // Executes a hook. <id> is the full path to the hooked element,
-    // including the module. \a foreach must be true if this is a \c forach
-    // hook. \a dolllardollar is the value for the \a $$ identifier within
-    // the hook, if it takes one (or null). If \a foreach is true, returns a
-    // boolean expression that is true if the hook has called "hook.stop
-    // true". If \a foreach is false, returns null.
-    shared_ptr<hilti::Expression> _hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar = nullptr);
+    // Executes a hook. \a self is the self parameter to pass to the hook. \a
+    // id is the full path to the hooked element, including the module. \a
+    // foreach must be true if this is a \c forach hook. \a dolllardollar is
+    // the value for the \a $$ identifier within the hook, if it takes one
+    // (or null). If \a foreach is true, returns a boolean expression that is
+    // true if the hook has called "hook.stop true". If \a foreach is false,
+    // returns null.
+    shared_ptr<hilti::Expression> _hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar = nullptr);
 
     // Defines a hook's implementation. <id> is the full path to the hooked
     // element, including the module. <forach> is true if this is a \c

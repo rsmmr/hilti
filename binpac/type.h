@@ -1086,6 +1086,9 @@ public:
     /// &convert.
     virtual shared_ptr<binpac::Type> fieldType();
 
+    /// Returns the unit this item is part of, or null if none.
+    shared_ptr<type::Unit> unit() const;
+
     /// Returns true if no ID was passed to the constructor.
     bool anonymous() const;
 
@@ -1120,12 +1123,18 @@ public:
     ACCEPT_VISITOR_ROOT();
 
 protected:
+    friend class type::Unit;
+
     /// Adds a hook to the item. Note that this must be called before we
     /// resolve the AST.
     void addHook(shared_ptr<binpac::Hook> hook);
 
     /// Changes the item's type.
     void setType(shared_ptr<binpac::Type> type);
+
+    /// Sets the unit this item is part of. Only the unit itself should call
+    /// this.
+    void setUnit(type::Unit* unit);
 
 private:
     bool _anonymous = false;
@@ -1136,6 +1145,10 @@ private:
     std::list<node_ptr<Hook>> _hooks;
 
     shared_ptr<Scope> _scope;
+
+    // We don't use a shared ptr here because it's set from the Unit's ctor,
+    // where we don't have one yet.
+    type::Unit* _unit = 0;
 
     static int _id_counter;
 };
