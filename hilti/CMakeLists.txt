@@ -140,6 +140,7 @@ add_library (hilti STATIC
     builder/block.cc
     builder/module.cc
 
+    instructions/bytes.cc
     instructions/channel.cc
     instructions/classifier.cc
     instructions/flow.cc

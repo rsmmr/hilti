@@ -157,6 +157,66 @@ void StatementBuilder::visit(statement::instruction::bytes::Unfreeze* i)
     cg()->llvmCall("hlt::bytes_freeze", args);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::ToInt* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_to_int", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Lower* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    auto result = cg()->llvmCall("hlt::bytes_lower", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Upper* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    auto result = cg()->llvmCall("hlt::bytes_upper", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::StartsWith* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_starts_with", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Strip* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    auto result = cg()->llvmCall("hlt::bytes_strip", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Split1* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_split1", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Split* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_split", args);
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::iterBytes::Begin* i)
 {
     CodeGen::expr_list args;

@@ -32,3 +32,4 @@ export iterator<set<*>>
 export iterator<map<*>>
 
 export tuple<iterator<bytes>, iterator<bytes>>
+export tuple<ref<bytes>, ref<bytes>>

@@ -1169,6 +1169,8 @@ shared_ptr<Pac2AnalyzerInfo> Manager::ParsePac2AnalyzerSpec(const string& chunk)
 	if ( ! extract_id(chunk, &i, &a->name) )
 		return 0;
 
+	a->name = ::util::strreplace(a->name, "::", "_");
+
 	if ( ! eat_token(chunk, &i, "over") )
 		return 0;
 

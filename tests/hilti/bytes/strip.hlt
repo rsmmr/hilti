@@ -1,0 +1,40 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local string f
+
+    b = bytes.strip b" ABC "
+    f = call Hilti::fmt ("|%s|", (b))
+    call Hilti::print (f)
+
+    b = bytes.strip b"ABC"
+    f = call Hilti::fmt ("|%s|", (b))
+    call Hilti::print (f)
+
+    b = bytes.strip b"    ABC"
+    f = call Hilti::fmt ("|%s|", (b))
+    call Hilti::print (f)
+
+    b = bytes.strip b"ABC    "
+    f = call Hilti::fmt ("|%s|", (b))
+    call Hilti::print (f)
+
+    b = bytes.strip b""
+    f = call Hilti::fmt ("|%s|", (b))
+    call Hilti::print (f)
+
+    b = bytes.strip b"     "
+    f = call Hilti::fmt ("|%s|", (b))
+    call Hilti::print (f)
+
+    b = bytes.strip b" "
+    f = call Hilti::fmt ("|%s|", (b))
+    call Hilti::print (f)
+}

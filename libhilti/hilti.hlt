@@ -11,11 +11,6 @@ declare "C-HILTI" void sleep(double secs)
 declare "C-HILTI" void wait_for_threads()
 declare "C-HILTI" void terminate()
 
-declare "C-HILTI" int<64> bytes_to_int(ref<bytes> b, int<64> base=10)
-declare "C-HILTI" ref<bytes> bytes_to_lower(ref<bytes> b)
-declare "C-HILTI" ref<bytes> bytes_to_upper(ref<bytes> b)
-declare "C-HILTI" bool bytes_starts_with(ref<bytes> b, ref<bytes> s)
-
 ## Predefined exceptions.
 
 # FIXME: Add the other internal exceptions here as well.

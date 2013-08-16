@@ -1,0 +1,29 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local bool b
+
+    b = bytes.startswith b"abc" b"ab"
+    call Hilti::print (b)
+
+    b = bytes.startswith b"ab" b"ab"
+    call Hilti::print (b)
+
+    b = bytes.startswith b"abc" b"xbd"
+    call Hilti::print (b)
+
+    b = bytes.startswith b"" b"ABC"
+    call Hilti::print (b)
+
+    b = bytes.startswith b"ab" b"abc"
+    call Hilti::print (b)
+
+    b = bytes.startswith b"abc" b""
+    call Hilti::print (b)
+}

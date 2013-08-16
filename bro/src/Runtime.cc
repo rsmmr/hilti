@@ -89,12 +89,6 @@ void libbro_raise_event(hlt_bytes* name, const hlt_type_info* type, const void* 
 		vals->append(broval);
 		}
 
-#ifdef DEBUG
-	ODesc d;
-	describe_vals(vals, &d);
-	PLUGIN_DBG_LOG(HiltiPlugin, "Queuing event '%s(%s)'", evname, d.Description());
-#endif
-
 	mgr.QueueEvent(ev, vals);
 	}
 

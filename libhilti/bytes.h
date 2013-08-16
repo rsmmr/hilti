@@ -34,6 +34,7 @@
 #define LIBHILTI_bytes_H
 
 #include "types.h"
+#include "vector.h"
 #include "rtti.h"
 
 typedef int64_t hlt_bytes_size;     ///< Size of a ~~hlt_bytes instance, and also used for offsets.
@@ -54,6 +55,12 @@ typedef struct hlt_iterator_bytes {
     // that's probably not worth the gain we get by having chunk->end
     // available directly.
 } hlt_iterator_bytes;
+
+/// A pair of bytes instances.
+typedef struct {
+    hlt_bytes* first;  /// First element.
+    hlt_bytes* second; /// Second element.
+} hlt_bytes_pair;
 
 /// Instantiates a new bytes object. The bytes object is initially empty.
 ///
@@ -164,6 +171,15 @@ extern void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size 
 ///
 /// Returns: The position where the byte is found, or ~~hlt_bytes_end if not found.
 extern hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Searches for the first occurance of another bytes object in a bytes object.
+///
+/// b: The bytes object to search.
+/// other: The other bytes to search.
+/// \hlt_c
+///
+/// Returns: The position where bytes is found, or ~~hlt_bytes_end if not found.
+extern hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Matches a bytes objects against the sequence started by an interator. 
 ///
@@ -446,7 +462,30 @@ typedef struct hlt_bytes_block hlt_bytes_block;
 /// Returns: Cookie for next call, or NULL if end has been reached. In the
 /// latter case, block will still contain the final data (which may have a
 /// length of zero); don't call the function again then.
-void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+extern hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+extern hlt_bytes* hlt_bytes_upper(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+extern int8_t hlt_bytes_starts_with(hlt_bytes* b, hlt_bytes* s, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+extern hlt_bytes_pair hlt_bytes_split1(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+extern hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
 
 /// @}
 

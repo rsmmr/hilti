@@ -394,6 +394,41 @@ hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception**
     return GenericEndPos;
 }
 
+hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_iterator_bytes i = hlt_bytes_begin(other, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(other, excpt, ctx);
+
+    if ( hlt_iterator_bytes_eq(i, end, excpt, ctx) ) {
+        // Empty pattern returns start position.
+        GC_DTOR(i, hlt_iterator_bytes);
+        GC_DTOR(end, hlt_iterator_bytes);
+        return hlt_bytes_begin(b, excpt, ctx);
+    }
+
+    hlt_iterator_bytes p = hlt_bytes_find_byte(b, *i.cur, excpt, ctx);
+
+    GC_DTOR(i, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+
+    end = hlt_bytes_end(b, excpt, ctx);
+
+    if ( hlt_iterator_bytes_eq(p, end, excpt, ctx) ) {
+        GC_DTOR(end, hlt_iterator_bytes);
+        return p; // Not found.
+    }
+
+    GC_DTOR(end, hlt_iterator_bytes);
+
+    if ( hlt_bytes_match_at(p, other, excpt, ctx) )
+        // Found.
+        return p;
+
+    // Not found.
+    GC_DTOR(p, hlt_iterator_bytes);
+    return GenericEndPos;
+}
+
 static inline int8_t is_end(hlt_iterator_bytes pos)
 {
     return pos.chunk == 0 || (!pos.cur) || pos.cur >= pos.chunk->end;
@@ -1214,3 +1249,267 @@ done:
 
     return result;
 }
+
+int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_iterator_bytes cur = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
+
+    int64_t value = 0;
+    int64_t t = 0;
+    int8_t first = 1;
+    int8_t negate = 0;
+
+    while ( ! hlt_iterator_bytes_eq(cur, end, excpt, ctx) ) {
+        int8_t ch = __hlt_bytes_extract_one(&cur, end, excpt, ctx);
+
+        if ( isdigit(ch) )
+            t = ch - '0';
+        else if ( isalpha(ch) )
+            t = 10 + tolower(ch) - 'a';
+
+        else if ( first && ch == '-' )
+            negate = 1;
+
+        else {
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            GC_DTOR(cur, hlt_iterator_bytes);
+            GC_DTOR(end, hlt_iterator_bytes);
+            return 0;
+        }
+
+        if ( t >= base ) {
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            return 0;
+        }
+
+        value = (value * base) + t;
+        first = 0;
+    }
+
+    GC_DTOR(cur, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+
+    return negate ? -value : value;
+}
+
+hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
+    int8_t* tmp = hlt_malloc(len);
+    int8_t* p = tmp;
+
+    hlt_iterator_bytes cur = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
+
+    while ( ! hlt_iterator_bytes_eq(cur, end, excpt, ctx) )
+        *p++ = tolower(__hlt_bytes_extract_one(&cur, end, excpt, ctx));
+
+    GC_DTOR(cur, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+
+    return hlt_bytes_new_from_data(tmp, len, excpt, ctx);
+}
+
+hlt_bytes* hlt_bytes_upper(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
+    int8_t* tmp = hlt_malloc(len);
+    int8_t* p = tmp;
+
+    hlt_iterator_bytes cur = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
+
+    while ( ! hlt_iterator_bytes_eq(cur, end, excpt, ctx) )
+        *p++ = toupper(__hlt_bytes_extract_one(&cur, end, excpt, ctx));
+
+    GC_DTOR(cur, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+
+    return hlt_bytes_new_from_data(tmp, len, excpt, ctx);
+}
+
+int8_t hlt_bytes_starts_with(hlt_bytes* b, hlt_bytes* s, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes_size len_b = hlt_bytes_len(b, excpt, ctx);
+    hlt_bytes_size len_s = hlt_bytes_len(s, excpt, ctx);
+
+    if ( len_s > len_b )
+        return 0;
+
+    hlt_iterator_bytes cur_b = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes cur_s = hlt_bytes_begin(s, excpt, ctx);
+    hlt_iterator_bytes end_b = hlt_bytes_end(b, excpt, ctx);
+    hlt_iterator_bytes end_s = hlt_bytes_end(s, excpt, ctx);
+
+    int result = 1;
+
+    while ( ! hlt_iterator_bytes_eq(cur_s, end_s, excpt, ctx) ) {
+        int8_t c1 = __hlt_bytes_extract_one(&cur_b, end_b, excpt, ctx);
+        int8_t c2 = __hlt_bytes_extract_one(&cur_s, end_s, excpt, ctx);
+        if ( c1 != c2 ) {
+            result = 0;
+            break;
+        }
+    }
+
+    GC_DTOR(cur_b, hlt_iterator_bytes);
+    GC_DTOR(cur_s, hlt_iterator_bytes);
+    GC_DTOR(end_b, hlt_iterator_bytes);
+    GC_DTOR(end_s, hlt_iterator_bytes);
+
+    return result;
+}
+
+static int8_t split1(hlt_bytes_pair* result, hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes_size sep_len = hlt_bytes_len(sep, excpt, ctx);
+
+    hlt_iterator_bytes i;
+    hlt_iterator_bytes j;
+
+    if ( sep_len ) {
+        hlt_iterator_bytes sep_end = hlt_bytes_end(sep, excpt, ctx);
+
+        i = hlt_bytes_find_bytes(b, sep, excpt, ctx);
+
+        if ( hlt_iterator_bytes_eq(i, sep_end, excpt, ctx) ) {
+            GC_DTOR(i, hlt_iterator_bytes);
+            GC_DTOR(sep_end, hlt_iterator_bytes);
+            goto not_found;
+        }
+
+        j = hlt_iterator_bytes_incr_by(i, sep_len, excpt, ctx);
+
+        GC_DTOR(sep_end, hlt_iterator_bytes);
+    }
+
+    else {
+        int looking_for_ws = 1;
+
+        // Special-case: empty separator, split at white-space.
+        for ( __hlt_bytes_chunk* c = b->head; c; c = c->next ) {
+            for ( int8_t* p = c->start; p < c->end; p++ ) {
+                if ( looking_for_ws ) {
+                    if ( isspace(*p) ) {
+                        i.chunk = c;
+                        i.cur = p;
+                        GC_CCTOR(i, hlt_iterator_bytes);
+                        j = hlt_iterator_bytes_incr(i, excpt, ctx);
+                        looking_for_ws = 0;
+                    }
+                }
+
+                else {
+                    if ( ! isspace(*p) ) {
+                        GC_DTOR(j, hlt_iterator_bytes);
+                        j.chunk = c;
+                        j.cur = p;
+                        GC_CCTOR(j, hlt_iterator_bytes);
+                        goto done;
+                    }
+                }
+            }
+        }
+
+done:
+        if ( looking_for_ws )
+            goto not_found;
+    }
+
+    hlt_iterator_bytes begin = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes end   = hlt_bytes_end(b, excpt, ctx);
+
+    result->first = hlt_bytes_sub(begin, i, excpt, ctx);
+    result->second = hlt_bytes_sub(j, end, excpt, ctx);
+
+    GC_DTOR(begin, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+    GC_DTOR(i, hlt_iterator_bytes);
+    GC_DTOR(j, hlt_iterator_bytes);
+
+    return 1;
+
+not_found:
+    // Not found, return (b, b"").
+    GC_CCTOR(b, hlt_bytes);
+    result->first = b;
+    result->second = hlt_bytes_new(excpt, ctx);
+    return 0;
+}
+
+hlt_bytes_pair hlt_bytes_split1(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes_pair result;
+    split1(&result, b, sep, excpt, ctx);
+    return result;
+}
+
+hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes* def = hlt_bytes_new(excpt, ctx);
+    hlt_vector* v = hlt_vector_new(&hlt_type_info_hlt_bytes, &def, 0, excpt, ctx);
+    GC_DTOR(def, hlt_bytes);
+
+    GC_CCTOR(b, hlt_bytes);
+
+    while ( 1 ) {
+        hlt_bytes_pair result;
+        int found = split1(&result, b, sep, excpt, ctx);
+
+        if ( ! found ) {
+            GC_DTOR(result.first, hlt_bytes);
+            GC_DTOR(result.second, hlt_bytes);
+            hlt_vector_push_back(v, &hlt_type_info_hlt_bytes, &b, excpt, ctx);
+            break;
+        }
+
+        hlt_vector_push_back(v, &hlt_type_info_hlt_bytes, &result.first, excpt, ctx);
+        GC_DTOR(result.first, hlt_bytes);
+
+        GC_DTOR(b, hlt_bytes);
+        b = result.second;
+    }
+
+    GC_DTOR(b, hlt_bytes);
+
+    return v;
+}
+
+hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_iterator_bytes start;
+    hlt_iterator_bytes end;
+
+    __hlt_bytes_chunk* c = 0;
+    int8_t* p = 0;
+
+    for ( c = b->head; c; c = c->next ) {
+        for ( p = c->start; p < c->end; p++ ) {
+            if ( ! isspace(*p) )
+                goto end_loop1;
+        }
+    }
+
+end_loop1:
+    start.chunk = c;
+    start.cur = p;
+    normalize_pos(&start, 0);
+
+    for ( c = b->tail; c; c = c->prev ) {
+        for ( p = c->end - 1; p >= c->start; --p ) {
+            if ( ! isspace(*p) ) {
+                ++p;
+                goto end_loop2;
+            }
+        }
+    }
+
+end_loop2:
+    end.chunk = c;
+    end.cur = p;
+    normalize_pos(&end, 0);
+
+    return hlt_bytes_sub(start, end, excpt, ctx);
+}
+

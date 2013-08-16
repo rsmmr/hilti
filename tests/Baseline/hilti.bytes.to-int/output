@@ -1,0 +1,6 @@
+(12345,12345)
+(-12345,-12345)
+(ff,255)
+(,0)
+(99,99)
+hilti: uncaught exception, ValueError (from /home/robin/work/binpacpp/hilti2/libhilti/bytes.c:1273)

@@ -1,0 +1,61 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local ref<vector<ref<bytes>>> v = vector<ref<bytes>>()
+    local tuple<ref<bytes>, ref<bytes>> t
+
+    # Sep given.
+
+    t = bytes.split1 b"1@2@3" b"@"
+    v = bytes.split  b"1@2@3" b"@"
+    call Hilti::print ((t, v))
+
+    t = bytes.split1 b"1XYZ2XYZ3" b"XYZ"
+    v = bytes.split  b"1XYZ2XYZ3" b"XYZ"
+    call Hilti::print ((t, v))
+
+    t = bytes.split1 b"1111XYZ2222XYZ3333" b"XYZ"
+    v = bytes.split  b"1111XYZ2222XYZ3333" b"XYZ"
+    call Hilti::print ((t, v))
+
+    t = bytes.split1 b"1XYZXYZ2XYZ3" b"XYZ"
+    v = bytes.split  b"1XYZXYZ2XYZ3" b"XYZ"
+    call Hilti::print ((t, v))
+
+    t = bytes.split1 b"1" b"@"
+    v = bytes.split  b"1" b"@"
+    call Hilti::print ((t, v))
+
+    t = bytes.split1 b"" b"@"
+    v = bytes.split  b"" b"@"
+    call Hilti::print ((t, v))
+
+    # Split at ws.
+
+    t = bytes.split1 b"1 2 3 4 5" b""
+    v = bytes.split b"1 2 3 4 5" b""
+    call Hilti::print ((t, v))
+
+    t = bytes.split1 b"1 2\t3   4\t5" b""
+    v = bytes.split b"1 2\t3   4\t5" b""
+    call Hilti::print ((t, v))
+
+    t = bytes.split1 b"11   22    33   44   55" b""
+    v = bytes.split b"11   22    33   44   55" b""
+    call Hilti::print ((t, v))
+
+    t = bytes.split1 b"1" b""
+    v = bytes.split b"1" b""
+    call Hilti::print ((t, v))
+
+    t = bytes.split1 b"" b""
+    v = bytes.split b"" b""
+    call Hilti::print ((t, v))
+}

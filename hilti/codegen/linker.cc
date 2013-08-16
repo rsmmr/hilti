@@ -384,9 +384,7 @@ void Linker::makeHooks(const std::list<string>& module_names, llvm::Module* modu
         std::sort((*h).second.impls.begin(), (*h).second.impls.end());
     }
 
-#ifdef DEBUG
     _debugDumpHooks(this, hooks);
-#endif
 
     // Finally, we can build the functions that call the hook implementations.
 
