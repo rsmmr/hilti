@@ -4,9 +4,9 @@
 // These function all assume "HILTI-C" linkage.
 
 #include "Runtime.h"
-#include "Plugin.h"
-
 #undef DBG_LOG
+
+#include "Plugin.h"
 #include "Conn.h"
 #include "Val.h"
 #include "Event.h"

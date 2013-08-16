@@ -155,6 +155,9 @@ def fmtPac2Operator(op):
     if kind == "PlusAssign":
         return ("+=", "%s <sp> op:+= <sp>  %s" % (op1, op2))
 
+    if kind == "MinusAssign":
+        return ("-=", "%s <sp> op:+= <sp>  %s" % (op1, op2))
+
     if kind == "Power":
         return ("**", "%s <sp> op:\*\* <sp>  %s" % (op1, op2))
 
