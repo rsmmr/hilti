@@ -589,6 +589,12 @@ public:
     type_parameter_list parameters() const override;
     std::list<ParseAttribute> parseAttributes() const override;
 
+    /// XXX
+    static shared_ptr<Integer> signedInteger(int width, const Location& l=Location::None);
+
+    /// XXX
+    static shared_ptr<Integer> unsignedInteger(int width, const Location& l=Location::None);
+
     ACCEPT_VISITOR(PacType);
 
 private:

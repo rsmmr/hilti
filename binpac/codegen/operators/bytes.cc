@@ -65,20 +65,6 @@ void CodeBuilder::visit(expression::operator_::bytes::Match* i)
     setResult(result);
 }
 
-void CodeBuilder::visit(expression::operator_::bytes::StartsWith* i)
-{
-    auto op1 = cg()->hiltiExpression(i->op1());
-    auto pat = cg()->hiltiExpression(callParameter(i->op3(), 0));
-    auto result = cg()->builder()->addTmp("starts", hilti::builder::boolean::type());
-
-    cg()->builder()->addInstruction(result,
-                                    hilti::instruction::flow::CallResult,
-                                    hilti::builder::id::create("Hilti::bytes_starts_with"),
-                                    hilti::builder::tuple::create( { op1, pat } ));
-
-    setResult(result);
-}
-
 void CodeBuilder::visit(expression::operator_::bytes::Begin* i)
 {
     auto op1 = cg()->hiltiExpression(i->op1());
@@ -94,3 +80,88 @@ void CodeBuilder::visit(expression::operator_::bytes::End* i)
     cg()->builder()->addInstruction(iter, hilti::instruction::operator_::End, op1);
     setResult(iter);
 }
+
+void CodeBuilder::visit(expression::operator_::bytes::Upper* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto result = cg()->builder()->addTmp("result", hilti::builder::reference::type(hilti::builder::bytes::type()));
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::Upper, op1);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::bytes::Lower* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto result = cg()->builder()->addTmp("result", hilti::builder::reference::type(hilti::builder::bytes::type()));
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::Lower, op1);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::bytes::Strip* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto result = cg()->builder()->addTmp("result", hilti::builder::reference::type(hilti::builder::bytes::type()));
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::Strip, op1);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::bytes::Split1* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto sep = callParameter(i->op3(), 0);
+    auto hsep = sep ? cg()->hiltiExpression(sep) : hilti::builder::bytes::create("");
+
+    auto tb = hilti::builder::reference::type(hilti::builder::bytes::type());
+    auto tt = hilti::builder::tuple::type({ tb, tb });
+    auto result = cg()->builder()->addTmp("result", tt);
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::Split1, op1, hsep);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::bytes::Split* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto sep = callParameter(i->op3(), 0);
+    auto hsep = sep ? cg()->hiltiExpression(sep) : hilti::builder::bytes::create("");
+
+    auto tb = hilti::builder::reference::type(hilti::builder::bytes::type());
+    auto tv = hilti::builder::reference::type(hilti::builder::vector::type(tb));
+    auto result = cg()->builder()->addTmp("result", tv);
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::Split, op1, hsep);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::bytes::StartsWith* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto op2 = cg()->hiltiExpression(callParameter(i->op3(), 0));
+    auto result = cg()->builder()->addTmp("starts", hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::StartsWith, op1, op2);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::bytes::ToInt* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto base = callParameter(i->op3(), 0);
+    auto hbase = base ? cg()->hiltiExpression(base) : hilti::builder::integer::create(10);
+
+    auto result = cg()->builder()->addTmp("i", hilti::builder::integer::type(64));
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::ToInt, op1, hbase);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::bytes::ToUInt* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto base = callParameter(i->op3(), 0);
+    auto hbase = base ? cg()->hiltiExpression(base) : hilti::builder::integer::create(10);
+
+    auto result = cg()->builder()->addTmp("u", hilti::builder::integer::type(64));
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::ToInt, op1, hbase);
+    setResult(result);
+}
+
+
+
+

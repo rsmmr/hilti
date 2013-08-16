@@ -5,22 +5,8 @@
 
 module Mini;
 
-# These are implemented in libhilti.
-import "HILTI-C" int64 Hilti::bytes_to_int(b: bytes, base: uint<64>);
-import "HILTI-C" bytes Hilti::bytes_to_lower(b: bytes);
-
-bytes to_lower(b: bytes)
-{
-     return Hilti::bytes_to_lower(b);
-}
-
-int64 to_int(b: bytes)
-{
-     return Hilti::bytes_to_int(b, 10) + 1;
-}
-
 export type test = unit {
-       a: bytes &length=4 &convert=to_lower($$);
-       b: bytes &length=6 &convert=to_int($$)
+       a: bytes &length=4 &convert=$$.upper();
+       b: bytes &length=6 &convert=$$.to_int()
           { print self.a; print self.b; }
 };

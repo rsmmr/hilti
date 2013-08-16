@@ -43,7 +43,9 @@ void UnitScopeBuilder::visit(declaration::Type* t)
 
         iscope->setParent(uscope);
         uscope->addChild(std::make_shared<ID>(util::fmt("__item_%s", i->id()->name())), iscope);
-        auto dd = i->type();
+
+        auto parseable = ast::type::tryTrait<type::trait::Parseable>(i->type());
+        auto dd = parseable ? parseable->fieldType() : i->type();
 
         iscope->insert(std::make_shared<ID>("$$"),
                        std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR, nullptr, unit, dd));

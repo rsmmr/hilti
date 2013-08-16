@@ -5,7 +5,7 @@
 
 module Test;
 
-global b = b"12345ABBBBC67890";
+global b = b"12aWsEdRf3";
 
-print b.startswith(b"12345");
-print b.startswith(b"Foo");
+print b.upper();
+print b.lower();

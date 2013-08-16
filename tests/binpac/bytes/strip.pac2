@@ -1,0 +1,14 @@
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+print b"|" + b"  1212  ".strip() + b"|";
+print b"|" + b"abc".strip() + b"|";
+print b"|" + b" abc".strip() + b"|";
+print b"|" + b" abc ".strip() + b"|";
+print b"|" + b"   ".strip() + b"|";
+print b"|" + b"".strip() + b"|";
+

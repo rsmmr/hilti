@@ -114,5 +114,108 @@ opBegin(bytes::End : MethodCall)
     }
 opEnd
 
+opBegin(bytes::Upper : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("upper")))
+
+    opDoc("Returns an upper-case version.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Bytes>();
+    }
+opEnd
+
+opBegin(bytes::Lower : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("lower")))
+
+    opDoc("Returns a lower-case version.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Bytes>();
+    }
+opEnd
+
+opBegin(bytes::Strip : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("strip")))
+
+    opDoc("Strips off leading and trailing white-space.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Bytes>();
+    }
+opEnd
+
+opBegin(bytes::ToUInt : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_uint")))
+    opCallArg1("base", std::make_shared<type::OptionalArgument>(type::Integer::unsignedInteger(64)))
+
+    opDoc("Interprets the ``bytes`` as representing an ASCII-encoded number and converts it into an unsigned integer, using a base of *base*. If *base* is not given, the default is 10.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Integer>(64, false);
+    }
+opEnd
+
+opBegin(bytes::ToInt : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_int")))
+    opCallArg1("base", std::make_shared<type::OptionalArgument>(type::Integer::unsignedInteger(64)))
+
+    opDoc("Interprets the ``bytes`` as representing an ASCII-encoded number and converts it into a signed integer, using a base of *base*. If *base* is not given, the default is 10.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Integer>(64, true);
+    }
+opEnd
+
+opBegin(bytes::Split1 : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("split1")))
+    opCallArg1("sep", std::make_shared<type::OptionalArgument>(std::make_shared<type::Bytes>()))
+
+    opDoc("Splits at the first occurence of ``sep``, returning a pair of ``bytes`` representing everything before and afterwards, respectively. If *sep* is skipped, the default is to split at any sequence of white-space.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        type_list t = { std::make_shared<type::Bytes>(), std::make_shared<type::Bytes>() };
+        return std::make_shared<type::Tuple>(t);
+    }
+opEnd
+
+opBegin(bytes::Split : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("split")))
+    opCallArg1("sep", std::make_shared<type::OptionalArgument>(std::make_shared<type::Bytes>()))
+
+    opDoc("Splits at each occurence of ``sep``, returning a vector of ``bytes`` representing each piece excluding the separators. If *sep* is skipped, the default is to split at any sequence of white-space.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Vector>(std::make_shared<type::Bytes>());
+    }
+opEnd
+
 
 

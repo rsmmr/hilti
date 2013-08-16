@@ -524,6 +524,16 @@ std::list<trait::Parseable::ParseAttribute> Integer::parseAttributes() const
     };
 }
 
+shared_ptr<Integer> Integer::unsignedInteger(int width, const Location& l)
+{
+    return std::make_shared<Integer>(width, false, l);
+}
+
+shared_ptr<Integer> Integer::signedInteger(int width, const Location& l)
+{
+    return std::make_shared<Integer>(width, true, l);
+}
+
 trait::Parameterized::type_parameter_list Integer::parameters() const
 {
     type_parameter_list params;

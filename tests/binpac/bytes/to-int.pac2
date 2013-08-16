@@ -1,0 +1,11 @@
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+print b"-123".to_int();
+print b"123".to_uint();
+print b"a0".to_int(16);
+

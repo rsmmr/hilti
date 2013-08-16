@@ -1,0 +1,33 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type myException = exception
+
+void run() {
+
+     call Hilti::print ("A")
+
+     hook.run foo ()
+
+     call Hilti::print ("B")
+}
+
+hook void foo() &priority=2 {
+    call Hilti::print("h1-a")
+
+    local ref<myException> e
+    e = new myException
+    exception.throw e
+
+    call Hilti::print("h1-b")
+}
+
+hook void foo() &priority=1 {
+    call Hilti::print("h2")
+}
