@@ -335,16 +335,34 @@ void StatementBuilder::visit(declaration::Function* f)
     }
 
     if ( hook_decl ) {
-        // If a hook, first check whether its group is enabled.
+        // If a hook, first check whether we have an exception raised from
+        // the previous implementastion. It would be nicer if the linker did
+        // this check in the merged hook function before it calls each
+        // implementation, but it's tricky to get to the execution context
+        // there.
+        auto excpt = cg()->newBuilder("excpt-yes");
+        auto cont = cg()->newBuilder("excpt-no");
+
+        auto current = cg()->llvmCurrentException();
+        auto is_null = cg()->builder()->CreateIsNull(current);
+        cg()->llvmCreateCondBr(is_null, cont, excpt);
+
+        cg()->pushBuilder(excpt);
+        cg()->llvmReturn(0, cg()->llvmConstInt(0, 1)); // Return false.
+        cg()->popBuilder();
+
+        cg()->pushBuilder(cont);
+
+        // Check whether the hook's group is enabled.
         CodeGen::expr_list args { builder::integer::create(hook_decl->hook()->group()) };
-        auto cont = cg()->llvmCall("hlt::hook_group_is_enabled", args, false);
+        auto cont2 = cg()->llvmCall("hlt::hook_group_is_enabled", args, false);
 
         auto disabled = cg()->pushBuilder("disabled");
         cg()->llvmReturn(0, cg()->llvmConstInt(0, 1)); // Return false.
         cg()->popBuilder();
 
         auto enabled = cg()->newBuilder("enabled");
-        cg()->llvmCreateCondBr(cont, enabled, disabled);
+        cg()->llvmCreateCondBr(cont2, enabled, disabled);
 
         cg()->pushBuilder(enabled); // Leave on stack.
     }
