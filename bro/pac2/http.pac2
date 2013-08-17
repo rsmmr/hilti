@@ -2,9 +2,7 @@
 # TODO:
 #
 # - Continued headers
-# - b":" instead of /:/
 # - decode URIs
-# - {transfer,content}-encoding: gzip, deflate
 # - connection: keep-alive, close
 # - software versions
 
@@ -68,7 +66,7 @@ on RequestLine::version %debug {
 type ReplyLine = unit {
     version: Version;
     :        WhiteSpace;
-    status:  Integer &convert=dec_to_uint($$);
+    status:  Integer &convert=$$.to_uint();
     :        OptionalWhiteSpace;
     reason:  RestOfLine;
     :        NewLine;
@@ -85,9 +83,8 @@ type Message = unit(body_default: bool) {
 
     var content_length: uint64;
 	var content_encoding: bytes;
-    var content_type: bytes;
-    var content_type_main: bytes;
-    var content_type_sub: bytes;
+    var content_type: tuple<bytes, bytes>;
+    var content_type_parameter: bytes;
     var transfer_encoding: bytes;
     var multipart_boundary: bytes;
 
@@ -102,13 +99,13 @@ type Message = unit(body_default: bool) {
         if ( self?.content_length )
             self.delivery_mode = DeliveryMode::Length;
 
-        if ( self?.content_type_main && self.content_type_main == b"multipart" ) {
+        if ( self?.content_type && self.content_type[0] == b"MULTIPART" ) {
             local boundary : bytes;
 
-            boundary = self.content_type.match(/boundary="([^"]*)"/, 1);
+            boundary = self.content_type_parameter.match(/boundary="([^"]*)"/, 1);
 
             if ( ! |boundary| )
-                boundary = self.content_type.match(/boundary=([^ ;]*)/, 1);
+                boundary = self.content_type_parameter.match(/boundary=([^ ;]*)/, 1);
 
             self.delivery_mode = DeliveryMode::Multipart;
             self.multipart_boundary = b"--" + boundary + b"--\r\n";
@@ -123,14 +120,14 @@ const HeaderName  = /[^:\r\n]+/;
 const HeaderValue = /[^\r\n]*/;
 
 type Header = unit(msg: Message) {
-    name:    HeaderName &convert=to_upper($$);
+    name:    HeaderName &convert=$$.upper();
     :        /:[\t ]*/;
     content: HeaderValue;
     :        NewLine;
 
     on content {
         if ( self.name == b"CONTENT-LENGTH" ) {
-            msg.content_length = dec_to_uint(self.content);
+            msg.content_length = self.content.to_uint();
             msg.has_body = True;
             }
 
@@ -143,13 +140,10 @@ type Header = unit(msg: Message) {
             msg.content_encoding = self.content;
 
         if ( self.name == b"CONTENT-TYPE" ) {
-            msg.content_type_main = self.content.match(/ *([^\/]*) *\/ *([^ ]*)/, 1);
-            msg.content_type_sub  = self.content.match(/ *([^\/]*) *\/ *([^ ]*)/, 2);
-
-			# Order is important here. We set content_type after the
-			# other ones. The hook is on this one, but it accesses the
-			# other ones.
-            msg.content_type = self.content;
+	    local ct: tuple<bytes,bytes> = self.content.split1(b";");
+	    local ty: tuple<bytes,bytes> = ct[0].split1(b"/");
+            msg.content_type = (ty[0].strip().upper(), ty[1].strip().upper());
+            msg.content_type_parameter = ct[1].strip();
             }
         }
 };
@@ -173,8 +167,8 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
     var content: Content;
 
     on %init {
-        if ( msg?.content_type_main && msg.content_type_main != b"" && msg.content_type_sub != b"" )
-            self.data.connect_mime_type(msg.content_type_main + b"/" + msg.content_type_sub);
+        if ( msg?.content_type && msg.content_type[0] != b"" && msg.content_type[1] != b"" )
+            self.data.connect_mime_type(msg.content_type[0] + b"/" + msg.content_type[1]);
 
         if ( msg?.content_encoding ) {
 		    if ( msg.content_encoding == b"gzip" )
@@ -208,36 +202,10 @@ type Chunks = unit(body: Body, msg: Message) {
 };
 
 type Chunk = unit(body: Body) {
-    length:    HexInteger &convert=hex_to_uint($$);
+    length:    Integer &convert=$$.to_uint(16);
     :          OptionalWhiteSpace;
     extension: RestOfLine;
     :          NewLine;
     :          bytes &length=self.length &chunked -> body.data;
     :          NewLine if ( self.length != 0 );
 };
-
-# These are implemented in libhilti.
-import "HILTI-C" int64 Hilti::bytes_to_int(b: bytes, base: uint64);
-import "HILTI-C" bytes Hilti::bytes_to_lower(b: bytes);
-import "HILTI-C" bytes Hilti::bytes_to_upper(b: bytes);
-
-# These will eventually move into libbinpac.
-bytes to_lower(b: bytes)
-{
-     return Hilti::bytes_to_lower(b);
-}
-
-bytes to_upper(b: bytes)
-{
-     return Hilti::bytes_to_upper(b);
-}
-
-uint64 dec_to_uint(b: bytes)
-{
-     return cast<uint64>(Hilti::bytes_to_int(b, 10));
-}
-
-uint64 hex_to_uint(b: bytes)
-{
-     return cast<uint64>(Hilti::bytes_to_int(b, 16));
-}
