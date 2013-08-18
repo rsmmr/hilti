@@ -348,10 +348,6 @@ private:
     /// scopes, both indexed by their path. This is for avoiding duplicate
     /// imports, in particular when encountering cycles.
     std::map<string, shared_ptr<Module>> _modules;
-    std::map<string, shared_ptr<Scope>> _scopes;
-    std::set<string> _loaded;
-
-    std::list<shared_ptr<ID>> _imported;
 
     /// TODO: binpac context needs this, should be doing it differently.
 public:

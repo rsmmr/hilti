@@ -393,11 +393,11 @@ shared_ptr<Scope> CompilerContext::scopeAlias(shared_ptr<ID> id)
         return nullptr;
 
     auto m = _modules.find(path);
-
     if ( m == _modules.end() )
-        internalError(util::fmt("unknown module %s in CompilerContext::scopeAlias", id->pathAsString()));
+        internalError(util::fmt("cannot find module %s in CompilerContext::scopeAlias", id->pathAsString()));
 
     auto module = m->second;
+
     return module->body()->scope()->createAlias();
 }
 

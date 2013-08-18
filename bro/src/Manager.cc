@@ -111,6 +111,7 @@ struct bro::hilti::Pac2ModuleInfo {
 	shared_ptr<ValueConverter> value_converter;
 
 	// The BroFunc_*.hlt module.
+	shared_ptr<::hilti::CompilerContext>         hilti_context;
 	shared_ptr<::hilti::builder::ModuleBuilder>  hilti_mbuilder;
 	shared_ptr<::hilti::Module>                  hilti_module;
 
@@ -314,10 +315,10 @@ bool Manager::Load()
 		pimpl->pac2_options.libdirs_pac2.push_back(dir);
 		}
 
-	pimpl->hilti_context = std::make_shared<::hilti::CompilerContext>(pimpl->hilti_options);
 	pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
+	pimpl->hilti_context = pimpl->pac2_context->hiltiContext();
 
-        pimpl->libbro_path = pimpl->hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
+	pimpl->libbro_path = pimpl->hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
 
 	if ( ! SearchFiles("pac2", [&](std::istream& in, const string& path) -> bool { return LoadPac2Module(in, path); }) )
 		return false;
@@ -554,52 +555,6 @@ bool Manager::Compile()
 			return false;
 		}
 
-	// Compile all the *.hlt modules.
-	for ( auto m : pimpl->pac2_modules )
-		{
-		if ( m->cached )
-			continue;
-
-		if ( pimpl->dump_code_pre_finalize )
-			{
-			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.hlt\n", m->hilti_module->id()->name()) << std::endl;
-			pimpl->hilti_context->dump(m->hilti_module, std::cerr);
-			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.hlt\n", m->hilti_module->id()->name()) << std::endl;
-			pimpl->hilti_context->print(m->hilti_module, std::cerr);
-			}
-
-		// Finalize the HILTI module.
-		if ( ! pimpl->hilti_context->finalize(m->hilti_module) )
-			return false;
-
-		pimpl->hilti_modules.push_back(m->hilti_module);
-
-		auto llvm_hilti_module = pimpl->hilti_context->compile(m->hilti_module);
-
-		if ( ! llvm_hilti_module )
-			{
-			reporter::error("compiling LibBro library module failed");
-			return false;
-			}
-
-		pimpl->llvm_modules.push_back(llvm_hilti_module);
-		m->llvm_modules.push_back(llvm_hilti_module);
-
-		pimpl->hilti_context->updateCache(m->key, m->llvm_modules);
-		}
-
-	auto hilti_context = pimpl->pac2_context->hiltiContext();
-
-	if ( pimpl->save_hilti )
-		{
-		for ( auto m : pimpl->hilti_modules )
-			{
-			ofstream out(::util::fmt("bro.%s.hlt", m->id()->name()));
-			hilti_context->print(m, out);
-			out.close();
-			}
-		}
-
 	// Add the standard LibBro module.
 
 	if ( ! pimpl->libbro_path.size() )
@@ -610,7 +565,7 @@ bool Manager::Compile()
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "loading %s", pimpl->libbro_path.c_str());
 
-	auto libbro = hilti_context->loadModule(pimpl->libbro_path);
+	auto libbro = pimpl->hilti_context->loadModule(pimpl->libbro_path);
 
 	if ( ! libbro )
 		{
@@ -635,7 +590,7 @@ bool Manager::Compile()
 
 	else
 		{
-		llvm_libbro = hilti_context->compile(libbro);
+		llvm_libbro = pimpl->hilti_context->compile(libbro);
 
 		if ( ! llvm_libbro )
 			{
@@ -647,6 +602,51 @@ bool Manager::Compile()
 		}
 
 	pimpl->llvm_modules.push_back(llvm_libbro);
+
+	// Compile all the *.hlt modules.
+	for ( auto m : pimpl->pac2_modules )
+		{
+		if ( m->cached )
+			continue;
+
+		if ( pimpl->dump_code_pre_finalize )
+			{
+			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.hlt\n", m->hilti_module->id()->name()) << std::endl;
+			m->hilti_context->dump(m->hilti_module, std::cerr);
+			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.hlt\n", m->hilti_module->id()->name()) << std::endl;
+			m->hilti_context->print(m->hilti_module, std::cerr);
+			}
+
+		// Finalize the HILTI module.
+		if ( ! m->hilti_context->finalize(m->hilti_module) )
+			return false;
+
+		pimpl->hilti_modules.push_back(m->hilti_module);
+
+		auto llvm_hilti_module = m->hilti_context->compile(m->hilti_module);
+
+		if ( ! llvm_hilti_module )
+			{
+			reporter::error("compiling LibBro library module failed");
+			return false;
+			}
+
+		pimpl->llvm_modules.push_back(llvm_hilti_module);
+		m->llvm_modules.push_back(llvm_hilti_module);
+
+		pimpl->hilti_context->updateCache(m->key, m->llvm_modules);
+		}
+
+	if ( pimpl->save_hilti )
+		{
+		for ( auto m : pimpl->hilti_modules )
+			{
+			ofstream out(::util::fmt("bro.%s.hlt", m->id()->name()));
+			pimpl->hilti_context->print(m, out);
+			out.close();
+			}
+		}
+
 
 	// Compile and link all the HILTI modules into LLVM. We use the
 	// BinPAC++ context here to make sure we gets its additional
@@ -665,7 +665,7 @@ bool Manager::Compile()
 	if ( pimpl->save_llvm )
 		{
 		ofstream out("bro.ll");
-		hilti_context->printBitcode(llvm_module, out);
+		pimpl->hilti_context->printBitcode(llvm_module, out);
 		out.close();
 		}
 
@@ -823,13 +823,13 @@ bool Manager::LoadPac2Module(std::istream& in, const string& path)
 
 	minfo->pac2_module = std::make_shared<::binpac::Module>(pimpl->pac2_context.get(), std::make_shared<::binpac::ID>(::util::fmt("BroHooks_%s", name)));
 
-	minfo->hilti_mbuilder = std::make_shared<::hilti::builder::ModuleBuilder>(pimpl->hilti_context, ::util::fmt("BroFuncs_%s", name));
+    minfo->hilti_context = std::make_shared<::hilti::CompilerContext>(pimpl->hilti_options);
+	minfo->hilti_mbuilder = std::make_shared<::hilti::builder::ModuleBuilder>(minfo->hilti_context, ::util::fmt("BroFuncs_%s", name));
 	minfo->hilti_module = minfo->hilti_mbuilder->module();
 	minfo->hilti_mbuilder->importModule("Hilti");
 	minfo->hilti_mbuilder->importModule("LibBro");
 	minfo->value_converter = std::make_shared<ValueConverter>(minfo->hilti_mbuilder);
 
-	// TODO: We don't check file content for hashing yet.
 	minfo->key.scope = "bc";
 	minfo->key.name = name;
 	pimpl->pac2_context->options().toCacheKey(&minfo->key);
