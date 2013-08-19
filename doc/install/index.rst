@@ -8,12 +8,11 @@ Installation
 Prerequisites
 -------------
 
-The HILTI framework is being developed on MacOS and Linux currently;
-usage on other platforms is likely to fail~(and generally, Linux is
-more to support all functionality right now than MacOS). Also, it
-currently supports 64-bit OS version only.
+The HILTI framework is being developed on 64-bit Linux only currently;
+usage on other platforms is likely to fail. Specifically, MacOS
+support is targeted for the near-future, but currently doesn't work.
 
-To compile the framework, you need LLVM 3.2 and Clang 3.2 from
+To compile the framework, you need LLVM 3.3 and Clang 3.3 from
 http://llvm.org, along with C++11-compatible standard libraries. This
 combo can still be painful to set up; see below for more.
 
@@ -54,14 +53,14 @@ an old version).
 Installing LLVM/clang/libc++
 ----------------------------
 
-If your OS doesn't come with a full LLVM/clang 3.2 setup that also
+If your OS doesn't come with a full LLVM/clang 3.3 setup that also
 includes C++11 standard libraries (which is likely), you'll need to
 compile it yourself. This is a bit cumbersome unfortunately as one
 needs to compile clang twice: once to boostrap and once with the right
 ``libc++``. Order of the involved steps is important.
 
 To make this easier, there's a script doing the necessary steps at
-http://github.org/rsmmr/install-llvm. See the installation
+http://github.org/rsmmr/install-clang. See the installation
 instructions there. In the following we assume that LLVM/clang is
 available via ``PATH``.
 
@@ -77,6 +76,14 @@ the top-level directory::
 
     > cd binpacpp/hilti2
     > make
+
+If you want to compile the included Bro plugin as well, you also need
+to tell ``make`` where your Bro source tree is::
+
+    > make BRO_DIST=/path/to/bro
+
+.. note:: You currently need a special topic branch of Bro to work
+   with HILTI/BinPAC++. See :ref:`bro-plugin` for more information.
 
 If everything has worked right, there should now be a binary
 ``build/tools/hiltic`` afterwards (as well as a few others).
@@ -98,7 +105,7 @@ want to link to them from some directory that's in your ``PATH``, such
 as::
 
      > export PATH=$HOME/bin:$PATH
-     > ln -s binpacpp/hilti2/build/tools/{hiltic,hilti-config,binpac++} $HOME/bin
+     > ln -s binpacpp/hilti2/build/tools/{hiltic,hilti-config,hilti-prof,binpac++} $HOME/bin
      > ln -s binpacpp/hilti2/build/tools/pac-driver/pac-driver $HOME/bin
      > ln -s binpacpp/hilti2/tools/hilti-build $HOME/bin
 

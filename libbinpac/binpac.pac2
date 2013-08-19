@@ -1,7 +1,10 @@
 
 module BinPAC;
 
+# %begin-ByteOrder
+# Byte-order.
 type ByteOrder = enum { Little = 1, Big = 2, Network = 2, Host = 3 };
+# %end-ByteOrder
 
 # These values must match Hilti::AddrFamily.
 # %begin-AddrFamily
@@ -11,19 +14,21 @@ type AddrFamily = enum { IPv4 = 1, IPv6 = 2 };
 
 # These values must match those in binpac.hlt. FIXME: We should have
 # just one definition.
+# # %begin-Filter
+# Filter type.
 type Filter = enum {
     BASE64 = 1,  # MIME base64 decoding.
     GZIP = 2,    # gzipd decompression.
     ZLIB = 3     # zlib/deflate decompression.
 };
+# %end-Filter
 
+# %begin-base64_encode
+# Function for base64 encoding a bytes object.
 import "HILTI-C" bytes base64_encode(b: bytes);
+# %end-base64_encode
+
+# %begin-base64_decode
+# Function for base64 decoding a bytes object.
 import "HILTI-C" bytes base64_decode(b: bytes);
-
-#### Functions defined in hilti.hlt.
-
-# Converts a bytes instance an integer.
-import "HILTI" int64 Hilti::bytes_to_int(b: bytes, base: int<64>);
-
-# Lower-cases a bytes instance.
-import "HILTI"  bytes Hilti::bytes_to_lower(b: bytes);
+# %end-base64_decode

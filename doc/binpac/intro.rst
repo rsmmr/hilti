@@ -19,7 +19,7 @@ Here's a simple "Hello, World!" in BinPAC++::
     print "Hello, world!"
 
 Assuming that's stored in ``hello.pac2``, we can compile and run it
-with :ref:`pac2_pac-driver` and then run it like this::
+with :ref:`pac2_pac-driver` like this::
 
     > pac-driver hello.pac2
     Hello, World!
@@ -34,13 +34,13 @@ stand-alone binary for subsequent execution::
 
 Note the inclusion of ``pac-driver.c`` here: BinPAC++ generated code
 cannot run on its own but needs a *driver program* that provides a
-``main`` function, and normally (though not in this trivial example)
-also the input data for the generated parsers. ``pac-driver.cc`` is a
-generic version of such a driver that can be used for testing and
-debugging parsers from the command line, without the need for any
-further host application. If you run the generated binary ``a.out``
-with ``--help``, you'll see all the options that ``pac-driver.cc``
-provides. 
+``main`` function as well as normally (though not in this trivial
+example) also the input data for the generated parsers.
+``pac-driver.cc`` is a generic version of such a driver that can be
+used for testing and debugging parsers from the command line, without
+the need for any further host application. If you run the generated
+binary ``a.out`` with ``--help``, you'll see all the options that
+``pac-driver.cc`` provides. 
 
 .. note::
 
@@ -99,7 +99,7 @@ In this example, you can see a number of things:
       unit. 
 
     * We can specify code to be executed when a unit has been
-      completely parsed by defining an `on %done` :ref:`hook
+      completely parsed by defining an ``on %done`` :ref:`hook
       <pac2_hooks>` The statements in the hook can refer to the
       current unit instance by using the implicitly defined ``self``
       identifier; and they can access the parsed fields by using a

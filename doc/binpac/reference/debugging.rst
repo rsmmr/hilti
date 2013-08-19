@@ -25,7 +25,7 @@ latter enables the hooks)::
        b: bytes &length=6;
 
        on b %debug { print self.b; }
-};
+   };
 
 
 The second form of debugging support uses HILTI's *debugging streams*
@@ -40,11 +40,15 @@ stream ``binpac``, which logs unit fields as they are parsed::
     > echo "GET /index.html HTTP/1.0" | HILTI_DEBUG=binpac pac-driver -d request.pac2
     GET /index.html 1.0
     > cat hlt-debug.log
-    [binpac] RequestLine
-    [binpac]    method = 'GET'
-    [binpac]    uri = '/index.html'
-    [binpac]    Version
-    [binpac]       number = '1.0'
+    00000001 [binpac/main-thread]           RequestLine
+    00000002 [binpac/main-thread]             method = GET
+    00000003 [binpac/main-thread]             __anon1 =
+    00000004 [binpac/main-thread]             uri = /index.html
+    00000005 [binpac/main-thread]             __anon2 =
+    00000006 [binpac/main-thread]             version
+    00000007 [binpac/main-thread]               __anon4 = HTTP/
+    00000008 [binpac/main-thread]               number = 1.0
+    00000009 [binpac/main-thread]             __anon3 = \x0a
 
 The following debugging streams are currently available:
 
@@ -84,4 +88,7 @@ Note that multiple streams can be enabled by separating them with
 colons. Furthermore, when using :ref:`hilti_hilti-build` with its
 ``-d`` options, the ``HILTI_DEBUG`` works in the same way with the
 generated executable.
+
+Also note that generating code with debugging instrumentation (``-d``)
+can be quite a bit slower.
 

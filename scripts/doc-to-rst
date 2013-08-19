@@ -240,7 +240,10 @@ for section in Doc.sections():
         if not group in hiltiGroups:
             hiltiGroups[group] = {}
 
-        hiltiGroups[group][idx] = section
+        if not idx in hiltiGroups[group]:
+            hiltiGroups[group][idx] = []
+
+        hiltiGroups[group][idx] += [section]
 
     if section.startswith("binpac-operator:"):
         idx = getDoc(section, "kind")
@@ -252,14 +255,18 @@ for section in Doc.sections():
         if not group in pac2Groups:
             pac2Groups[group] = {}
 
-        pac2Groups[group][idx] = section
+        if not idx in pac2Groups[group]:
+            pac2Groups[group][idx] = []
+
+        pac2Groups[group][idx] += [section]
 
 for group in hiltiGroups.keys():
 
     out = open(os.path.join(OutputDir, "hilti-instr-%s.rst" % group), "w")
 
     for idx in sorted(hiltiGroups[group].keys()):
-        hiltiInstruction(out, hiltiGroups[group][idx])
+        for section in hiltiGroups[group][idx]:
+            hiltiInstruction(out, section)
 
     out.close()
 
@@ -274,8 +281,9 @@ for group in pac2Groups.keys():
 
     for idx in sorted(pac2Groups[group].keys()):
         if idx != "MethodCall":
-            pac2Operator(out, pac2Groups[group][idx])
-            cnt += 1
+            for method in pac2Groups[group][idx]:
+                pac2Operator(out, method)
+                cnt += 1
 
     if not cnt:
         print >>out, "None defined."
@@ -288,8 +296,9 @@ for group in pac2Groups.keys():
 
     for idx in sorted(pac2Groups[group].keys()):
         if idx == "MethodCall":
-            pac2Method(out, pac2Groups[group][idx])
-            cnt += 1
+            for method in pac2Groups[group][idx]:
+                pac2Method(out, method)
+                cnt += 1
 
     if not cnt:
         print >>out, "None defined."

@@ -10,7 +10,7 @@ Address
 ~~~~~~~
 
 * Type: ``addr``
-* Constants: ``192.168.1.1``,  ``[2001:db8:85a3:8d3:1319:8a2e:370:7348]``, ``[::1]``
+* Example constants: ``192.168.1.1``,  ``[2001:db8:85a3:8d3:1319:8a2e:370:7348]``, ``[::1]``
 * Addresses are passed by value.
 
 The ``addr`` type stores IP addresses. It handles IPv4 and IPv6
@@ -26,7 +26,7 @@ Bool
 ~~~~
 
 * Type: ``bool``
-* Constants: ``True``, ``False``
+* Example constants: ``True``, ``False``
 * Booleans are passed by values.
 
 [TODO: Overview]

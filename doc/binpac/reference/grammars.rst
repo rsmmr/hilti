@@ -28,7 +28,7 @@ Global Definitions
     TODO.
 
 Statements
-    Statements at the global level will executed once as a module is
+    Statements at the global level will execute once as a module is
     initialized for the first time by the host application.
 
 Units
@@ -48,10 +48,13 @@ TODO.
 Properties
 ^^^^^^^^^^
 
-``%mime-type``
+``%byteorder``
     TODO.
 
 ``%description``
+    TODO.
+
+``%mimetype``
     TODO.
 
 ``%port``
@@ -66,7 +69,8 @@ A hook is code that is will be executed during parsing at certain
 points of time. There are three types of hooks, field hooks, unit
 hooks, and item hooks.
 
-In all hooks, the ``self`` identifier refers to the unit being parsed.
+Inside all hooks, the ``self`` identifier refers to the unit being
+parsed.
 
 Unit Hooks
     Unit hooks are not tied to a specific field but apply to the
@@ -118,35 +122,40 @@ Field and Variable Hooks
 
         var proxy : bool;
 
-    Field hooks can also be specified at the unit level using the ``on
-    <field-name>`` syntax:
+   Field hooks can also be specified at the unit level using the ``on
+   <field-name>`` syntax::
 
-        uri: Token;
+        type Foo = unit {
+             ...
 
-        ...
+             uri: Token;
 
-        on uri {
-            print self.uri;
-            }
+             ...
+
+             on uri {
+                 print self.uri;
+             }
+       }
 
 Item Hooks
     Item hooks are associated with container types (e.g.,
-    :pac2:type::`list`, :pac2:type::`vector`) and execute each time
-    one containter items has beed parsed. These hooks are marked with
-    the ``foreach`` keyword, and they have access to the current item
-    via the reserved ``$$`` identifier. Example:
+    :pac2:type:`list`, :pac2:type:`vector`) and execute each time one
+    container items has beed parsed. These hooks are marked with the
+    ``foreach`` keyword, and they have access to the current item via
+    the reserved ``$$`` identifier. Example::
 
         lines: list<Item> &until($$.line == b"---\n")
                           foreach { print $$; }
 
-    As this parses :pac2:type:`list` elements, each will be printed
-    out. (Note how the list's ``&until`` also has access to ``$$``.)
+    While this is parsing :pac2:type:`list` elements, each will be
+    printed out. (Note how the list's ``&until`` also has access to
+    ``$$``.)
 
 
-In addition to specifying hooks inside a unit, they can also be
-proivded externally at the global level, using again the ``on
+In addition to specifying hooks inside a unit, they can all also be
+provided externally at the global level, using again the ``on
 <hook-name>`` syntax where ``<hook-name>`` is now the fully qualified
-name:
+name::
 
     type RequestLine = unit {
         ...
@@ -167,7 +176,7 @@ anywhere in the input specification. It's perfectly fine to define a
 field hook inline and later add more external hooks to the same field;
 all of them will be executed (in an undefined order). This even works
 across units: if you :ref:`import <pac2_global_import>` the
-``Request`` module, into the another specification, you can add a hook
+``Request`` module into the another specification, you can add a hook
 to it like this::
 
     on Request::RequestLine::uri {
