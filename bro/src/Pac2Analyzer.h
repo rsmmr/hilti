@@ -32,6 +32,7 @@ public:
 
 	struct Cookie {
 		analyzer::Analyzer* analyzer;
+		analyzer::Tag tag;
 		bool is_orig;
 	};
 

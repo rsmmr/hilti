@@ -167,6 +167,18 @@ public:
 	 */
 	struct __binpac_parser* ParserForAnalyzer(const analyzer::Tag& tag, bool is_orig);
 
+	/**
+	 * Returns the analyzer tag that should be passed to script-land when
+	 * talking about an analyzer. This is normally the analyzer's
+	 * standard tag, but may be replaced with somethign else if the
+	 * analyzers substitutes for an existing one.
+	 *
+	 * tag: The original tag we query for how to pass it to script-land.
+	 *
+	 * Returns: The desired tag for passing to script-land.
+	 */
+	analyzer::Tag TagForAnalyzer(const analyzer::Tag& tag);
+
 	/** Dumps a summary all BinPAC++/HILTI analyzers/events/code to standard error.
 	 */
 	void DumpDebug();

@@ -23,10 +23,9 @@ Pac2_Analyzer::Pac2_Analyzer(analyzer::Analyzer* analyzer)
 	{
 	orig.cookie.analyzer = analyzer;
 	orig.cookie.is_orig = true;
+
 	resp.cookie.analyzer = analyzer;
 	resp.cookie.is_orig = false;
-
-	Init();
 	}
 
 Pac2_Analyzer::~Pac2_Analyzer()
@@ -42,6 +41,9 @@ void Pac2_Analyzer::Init()
 	resp.parser = 0;
 	resp.data = 0;
 	resp.resume = 0;
+
+	orig.cookie.tag = HiltiPlugin.Mgr()->TagForAnalyzer(orig.cookie.analyzer->GetAnalyzerTag());
+	resp.cookie.tag = orig.cookie.tag;
 	}
 
 void Pac2_Analyzer::Done()

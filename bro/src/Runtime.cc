@@ -119,7 +119,7 @@ void bro_file_set_size(uint64_t size, void* cookie, hlt_exception** excpt, hlt_e
 	{
 	assert(cookie);
 	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
-	file_mgr->SetSize(size, c->analyzer->GetAnalyzerTag(), c->analyzer->Conn(), c->is_orig);
+	file_mgr->SetSize(size, c->tag, c->analyzer->Conn(), c->is_orig);
 	}
 
 void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -139,7 +139,7 @@ void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_
 
 		file_mgr->DataIn((const u_char*)block.start,
 				 block.end - block.start,
-				 c->analyzer->GetAnalyzerTag(),
+				 c->tag,
 				 c->analyzer->Conn(),
 				 c->is_orig);
 
@@ -169,7 +169,7 @@ void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie, 
 		file_mgr->DataIn((const u_char*)block.start,
 				 block.end - block.start,
 				 offset,
-				 c->analyzer->GetAnalyzerTag(),
+				 c->tag,
 				 c->analyzer->Conn(),
 				 c->is_orig);
 
@@ -187,21 +187,21 @@ void bro_file_gap(uint64_t offset, uint64_t len, void* cookie, hlt_exception** e
 	{
 	assert(cookie);
 	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
-	file_mgr->Gap(offset, len, c->analyzer->GetAnalyzerTag(), c->analyzer->Conn(), c->is_orig);
+	file_mgr->Gap(offset, len, c->tag, c->analyzer->Conn(), c->is_orig);
 	}
 
 void bro_file_end(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	assert(cookie);
 	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
-	file_mgr->EndOfFile(c->analyzer->GetAnalyzerTag(), c->analyzer->Conn(), c->is_orig);
+	file_mgr->EndOfFile(c->tag, c->analyzer->Conn(), c->is_orig);
 	}
 
 void bro_dpd_confirm(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	assert(cookie);
 	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
-	c->analyzer->ProtocolConfirmation();
+	c->analyzer->ProtocolConfirmation(c->tag);
 	}
 
 void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t eol, int8_t clear, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)

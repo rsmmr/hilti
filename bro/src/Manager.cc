@@ -84,6 +84,7 @@ struct bro::hilti::Pac2AnalyzerInfo {
 	TransportProto proto;				// The transport layer the analyzer uses.
 	std::list<Port> ports;				// The ports associated with the analyzer.
 	string replaces;				// Name of another analyzer this one replaces.
+	analyzer::Tag replaces_tag;                     // Name of the analyzer replaced translated into a tag.
 	string unit_name_orig;				// The fully-qualified name of the unit type to parse the originator side.
 	string unit_name_resp;				// The fully-qualified name of the unit type to parse the originator side.
 	shared_ptr<Pac2AST::UnitInfo> unit_orig;	// The type of the unit to parse the originator side.
@@ -284,6 +285,7 @@ bool Manager::InitPostScripts()
 				a->replaces.c_str(), a->name.c_str());
 
 			analyzer_mgr->DisableAnalyzer(tag);
+			a->replaces_tag = tag;
 			}
 
 		else
@@ -1767,6 +1769,12 @@ struct __binpac_parser* Manager::ParserForAnalyzer(const analyzer::Tag& tag, boo
 		return pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->parser_orig;
 	else
 		return pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->parser_resp;
+	}
+
+analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
+	{
+	analyzer::Tag replaces = pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->replaces_tag;
+	return replaces ? replaces : tag;
 	}
 
 void Manager::DumpDebug()
