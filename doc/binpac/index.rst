@@ -11,6 +11,7 @@ Table of Contents:
 
    intro
    reference/index
+   bro/index
    c-api
    internals
    todo
