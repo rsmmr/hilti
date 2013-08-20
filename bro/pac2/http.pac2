@@ -5,10 +5,12 @@
 # - decode URIs
 # - connection: keep-alive, close
 # - software versions
+# - partial content
 
 module HTTP;
 
 import BinPAC;
+import Bro;
 
 type DeliveryMode = enum { EndOfData, Length, Multipart, Chunked };
 
@@ -27,13 +29,21 @@ bool reply_code_needs_body(status: uint64)
    return status <= 99 || (status >= 200 && status != 204 && status != 304);
 }
 
+void rule_match(msg: Message, pt_requ: Bro::PatternType, pt_resp: Bro::PatternType, data: bytes, bol: bool, eol: bool, clear: bool)
+{
+    if ( msg.is_request )
+        Bro::rule_match(pt_requ, data, bol, eol, clear);
+    else
+        Bro::rule_match(pt_resp, data, bol, eol, clear);
+}
+
 export type Requests = unit {
     :  list<Request> &transient;
 };
 
 type Request = unit {
     request: RequestLine;
-    message: Message(False);
+    message: Message(False, True);
 };
 
 export type Replies = unit {
@@ -42,7 +52,7 @@ export type Replies = unit {
 
 type Reply = unit {
     reply: ReplyLine;
-    message: Message(reply_code_needs_body(self.reply.status));
+    message: Message(reply_code_needs_body(self.reply.status), False);
 };
 
 type Version = unit {
@@ -57,6 +67,11 @@ export type RequestLine = unit {
     :        WhiteSpace;
     version: Version;
     :        NewLine;
+
+    on %done {
+        Bro::dpd_confirm();
+        Bro::rule_match(Bro::PatternType::HTTP_REQUEST, self.uri, True, True, True);
+	}
 };
 
 on RequestLine::version %debug {
@@ -70,36 +85,45 @@ type ReplyLine = unit {
     :        OptionalWhiteSpace;
     reason:  RestOfLine;
     :        NewLine;
+
+    on %done {
+        Bro::dpd_confirm();
+	}
 };
 
 on ReplyLine::reason %debug {
     print "reply  ", self.version.number, "|", self.status, "|", self.reason;
     }
 
-type Message = unit(body_default: bool) {
+type Message = unit(body_default: bool, is_request: bool) {
     headers:    list<Header(self)>;
     end_of_hdr: NewLine;
     body:       Body(self, self.delivery_mode) if ( self.has_body );
 
     var content_length: uint64;
 	var content_encoding: bytes;
-    var content_type: tuple<bytes, bytes>;
+    var content_type: tuple<bytes, bytes> = (b"TEXT", b"PLAIN");
     var content_type_parameter: bytes;
     var transfer_encoding: bytes;
     var multipart_boundary: bytes;
 
     var has_body: bool;
-    var delivery_mode: DeliveryMode = DeliveryMode::EndOfData;
+    var is_request: bool;
+	var use_content_length: bool = True;
+    var delivery_mode: DeliveryMode;
 
     on %init {
         self.has_body = body_default;
+        self.is_request = is_request;
+        # FIXME: This as &default doesn't work for some reason.
+        self.delivery_mode = DeliveryMode::EndOfData;
         }
 
     on end_of_hdr {
-        if ( self?.content_length )
+        if ( self?.content_length && self.content_length > 0 )
             self.delivery_mode = DeliveryMode::Length;
 
-        if ( self?.content_type && self.content_type[0] == b"MULTIPART" ) {
+        if ( self.content_type[0] == b"MULTIPART" ) {
             local boundary : bytes;
 
             boundary = self.content_type_parameter.match(/boundary="([^"]*)"/, 1);
@@ -140,11 +164,17 @@ type Header = unit(msg: Message) {
             msg.content_encoding = self.content;
 
         if ( self.name == b"CONTENT-TYPE" ) {
-	    local ct: tuple<bytes,bytes> = self.content.split1(b";");
-	    local ty: tuple<bytes,bytes> = ct[0].split1(b"/");
+            local ct: tuple<bytes,bytes> = self.content.split1(b";");
+            local ty: tuple<bytes,bytes> = ct[0].split1(b"/");
             msg.content_type = (ty[0].strip().upper(), ty[1].strip().upper());
             msg.content_type_parameter = ct[1].strip();
             }
+
+        rule_match(msg,
+                   Bro::PatternType::HTTP_REQUEST_HEADER,
+                   Bro::PatternType::HTTP_REPLY_HEADER,
+                   self.name + b": " + self.content,
+                   True, True, True);
         }
 };
 
@@ -163,22 +193,26 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
     };
 
     var data: sink;
-	var data_len: uint64;
+    var data_len: uint64;
     var content: Content;
 
     on %init {
-        if ( msg?.content_type && msg.content_type[0] != b"" && msg.content_type[1] != b"" )
+        if ( msg.content_type[0] != b"" && msg.content_type[1] != b"" )
             self.data.connect_mime_type(msg.content_type[0] + b"/" + msg.content_type[1]);
 
         if ( msg?.content_encoding ) {
-		    if ( msg.content_encoding == b"gzip" )
+		    if ( msg.content_encoding == b"gzip" ) {
                 self.data.add_filter(BinPAC::Filter::GZIP);
+                msg.use_content_length = False;
+				}
 
-		    if ( msg.content_encoding == b"deflate" )
+		    if ( msg.content_encoding == b"deflate" ) {
                 self.data.add_filter(BinPAC::Filter::ZLIB);
+                msg.use_content_length = False;
+				}
         }
 
-        self.content = new Content;
+        self.content = new Content(msg);
         self.data.connect(self.content);
     }
 
@@ -190,8 +224,42 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
 		}
 };
 
-export type Content = unit {
-    data: bytes &chunked &eod;
+export type Content = unit(msg: Message) {
+    data: bytes &chunked &eod {
+        if ( |self.data| > 0 ) {
+            self.have_content = True;
+            Bro::file_data_in(self.data);
+            }
+
+        rule_match(msg,
+                   Bro::PatternType::HTTP_REQUEST_BODY,
+                   Bro::PatternType::HTTP_REPLY_BODY,
+                   self.data, False, False, False);
+	}
+
+    on %init {
+        Bro::file_begin();
+
+        if ( msg?.content_length && msg.use_content_length )
+            Bro::file_set_size(msg.content_length);
+
+        rule_match(msg,
+                   Bro::PatternType::HTTP_REQUEST_BODY,
+                   Bro::PatternType::HTTP_REPLY_BODY,
+                   b"", True, False, True);
+	}
+
+    on %done {
+        if ( self.have_content )
+            Bro::file_end();
+
+        rule_match(msg,
+                   Bro::PatternType::HTTP_REQUEST_BODY,
+                   Bro::PatternType::HTTP_REPLY_BODY,
+                   b"", False, True, False);
+        }
+
+    var have_content: bool = False;
 };
 
 type Chunks = unit(body: Body, msg: Message) {

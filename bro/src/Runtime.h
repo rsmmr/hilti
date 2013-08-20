@@ -32,6 +32,29 @@ void* libbro_h2b_integer_unsigned(uint64_t i, hlt_exception** excpt, hlt_executi
 // instances. The function takes ownership of those instances.
 void libbro_raise_event(hlt_bytes* name, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// XXX
+void bro_file_begin(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// XXX
+void bro_file_set_size(uint64_t size, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// XXX
+void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// XXX
+void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// XXX
+void bro_file_gap(uint64_t offset, uint64_t len, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// XXX
+void bro_file_end(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// XXX
+void bro_dpd_confirm(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// XXX
+void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t eol, int8_t clear, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 }
 
 #endif

@@ -11,11 +11,15 @@ if ( BRO_DIST )
         set(ENABLE_DEBUG true)
 	endif ()
 
+    set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
+
     include(BroPlugin)
 
     if ( BUILDING_HILTI )
         message(STATUS "Building Bro plugin as part of HILTI tree")
         set(addl_libs ${PAPI_LIBRARIES})
+        set(binpac "${CMAKE_CURRENT_BINARY_DIR}/../tools/binpac++")
 
     else ()
         project(Bro-Plugin-Hilti)
@@ -36,12 +40,23 @@ if ( BRO_DIST )
         set(CMAKE_CXX_FLAGS           "${CMAKE_CXX_FLAGS} ${HILTI_CXX_FLAGS}")
         set(CMAKE_LD_FLAGS            "${CMAKE_LD_FLAGS} ${HILTI_LD_FLAGS}")
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_LD_FLAGS} ${HILTI_LD_FLAGS}")
+
+        set(binpac "XXX")
     endif ()
 
     # Make sure the library ends up in the right directory where Bro
     # will find it.
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dylib")
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dylib")
+
+    # Autogenerate bro.pac2 C prototypes.
+    add_custom_command(
+        OUTPUT   ${autogen}/bro.pac2.h
+        COMMAND  ${binpac} -P ${CMAKE_CURRENT_SOURCE_DIR}/pac2/bro.pac2 -o ${autogen}/bro.pac2.h
+        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/bro.pac2 ${binpac}
+        )
+
+    set_source_files_properties(${autogen}/bro.pac2.h PROPERTIES GENERATED 1)
 
     bro_plugin_begin(Bro Hilti)
     bro_plugin_cc(src/Converter.cc)
@@ -54,6 +69,7 @@ if ( BRO_DIST )
     bro_plugin_bif(src/consts.bif)
     bro_plugin_bif(src/events.bif)
     bro_plugin_bif(src/functions.bif)
+    bro_plugin_obj(${autogen}/bro.pac2.h)
     bro_plugin_end()
 
     if ( BUILDING_HILTI )
@@ -73,7 +89,7 @@ if ( BRO_DIST )
 
         target_link_libraries(${_plugin_lib} ${plugin_hilti_libs} ${plugin_binpac_libs} ${plugin_external_libs})
         target_link_libraries(${_plugin_lib} ${addl_libs})
-        add_dependencies(${_plugin_lib} ${plugin_deps})
+        add_dependencies(${_plugin_lib} ${autogen}/bro.pac2.h ${plugin_deps})
     else ()
         message(FATAL_ERROR "Building the Bro plugin outside of the HILTI tree is not yet supported.")
     endif ()

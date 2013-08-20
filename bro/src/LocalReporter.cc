@@ -14,7 +14,8 @@ std::list<Location *> locations;
 
 void __push_location(const char* file, int line)
 	{
-	Location* loc = new Location(file, line, line, 0, 0);
+	Location* loc = new Location(copy_string(file), line, line, 0, 0);
+	loc->delete_data = true;
 	locations.push_back(loc);
 	::reporter->PushLocation(loc);
 	}
@@ -32,13 +33,18 @@ char* __current_location()
 	assert(locations.size());
 	Location* loc = locations.back();
 	ODesc desc;
-	loc->Describe(&desc);
+    // loc->Describe(&desc); Crashes in debug mode ...
 	return strdup(desc.Description());
 	}
 
 extern void __error(const char* msg)
 	{
 	::reporter->Error("%s", msg);
+	}
+
+extern void __internal_error(const char* msg)
+	{
+	::reporter->InternalError("%s", msg);
 	}
 
 extern void __weird(Connection* conn, const char* msg)
