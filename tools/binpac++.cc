@@ -15,6 +15,7 @@ bool dump_ast = false;
 bool cfg = false;
 bool output_binpac = false;
 bool output_llvm = false;
+bool output_prototypes = false;
 bool add_stdlibs = false;
 
 string output = "/dev/stdout";
@@ -57,6 +58,7 @@ void usage()
             "  -W | --print-always   Like -p, but don't verify correctness first.\n"
             "  -l | --llvm           Output the final LLVM code.\n"
             "  -O | --optimize       Optimize generated code (for -l         [Default: off].\n"
+            "  -P | --prototypes     Generate C API prototypes for generated module.\n"
             "  -s | --add-stdlibs    Add standard HILTI runtime libraries (for -l).\n"
             "\n";
 }
@@ -80,7 +82,7 @@ int main(int argc, char** argv)
     binpac::Options options;
 
     while ( true ) {
-        int c = getopt_long(argc, argv, "AcdD:o:nOWlspI:vh", long_options, 0);
+        int c = getopt_long(argc, argv, "AcdD:o:nOPWlspI:vh", long_options, 0);
 
         if ( c < 0 )
             break;
@@ -117,6 +119,10 @@ int main(int argc, char** argv)
 
          case 'p':
             output_binpac = true;
+            break;
+
+         case 'P':
+            output_prototypes = true;
             break;
 
          case 'l':
@@ -192,6 +198,11 @@ int main(int argc, char** argv)
         if ( dump_ast ) {
             hilti_module->dump(cerr);
             cerr << std::endl;
+        }
+
+        if ( output_prototypes ) {
+            ctx->hiltiContext()->generatePrototypes(hilti_module, out);
+            return 0;
         }
 
         if ( ctx->options().cgDebugging("scopes") ) {
