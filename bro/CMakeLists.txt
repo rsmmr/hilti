@@ -5,6 +5,14 @@ if ( BRO_DIST )
 
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${BRO_DIST}/cmake)
 
+    include(BroPlugin)
+
+    if ( BRO_PLUGIN_ENABLE_DEBUG )
+	    set(CMAKE_BUILD_TYPE "Debug")
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -DDEBUG")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
+	endif()
+
     if ( "${CMAKE_BUILD_TYPE}" MATCHES "Debug" )
 	    # Bro's CMakeConfig checks this and adjusts CMAKE_BUILD_TYPE
 		# if this is not set.
@@ -13,8 +21,6 @@ if ( BRO_DIST )
 
     set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
     execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
-
-    include(BroPlugin)
 
     if ( BUILDING_HILTI )
         message(STATUS "Building Bro plugin as part of HILTI tree")

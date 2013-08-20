@@ -33,7 +33,7 @@ char* __current_location()
 	assert(locations.size());
 	Location* loc = locations.back();
 	ODesc desc;
-    // loc->Describe(&desc); Crashes in debug mode ...
+	loc->Describe(&desc);
 	return strdup(desc.Description());
 	}
 
