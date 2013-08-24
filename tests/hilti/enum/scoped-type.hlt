@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type Test::Foo = enum { A, BC, DEF }
+
+void run() {
+    local Test::Foo i
+
+    call Hilti::print(i)
+    call Hilti::print(Test::Foo::DEF)
+}

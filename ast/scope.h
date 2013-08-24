@@ -9,6 +9,7 @@
 #include <typeinfo>
 
 #include "common.h"
+#include "util/util.h"
 
 namespace ast {
 
@@ -62,12 +63,11 @@ public:
     /// Adds a child scope.
     ///
     /// id: The name of child's scope. If that's, e.g., \c Foo, lookup() now
-    /// searches there when \c Foo::bar is queried. If the ID is scoped, it
-    /// will be inserted \a without the scope.
+    /// searches there when \c Foo::bar is queried.
     ///
     /// child: The child scope.
     void addChild(shared_ptr<ID> id, shared_ptr<Scope> child) {
-       _data->childs.insert(typename scope_map::value_type(id->name(), child));
+       _data->childs.insert(typename scope_map::value_type(id->pathAsString(), child));
         // TODO: Should this set chold->parent? We might need to use new the
         // alias support more if changed.
     }
@@ -227,30 +227,30 @@ inline std::list<shared_ptr<typename AstInfo::scope_value>> Scope<AstInfo>::find
     if ( begin == end )
         return std::list<Value>();
 
-    auto head = *begin;
-    ++begin;
+   // See if it directly references a value.
+    auto second = begin;
 
-    auto val = _data->values.find(head);
+    if ( ++second == end ) {
+        auto val = _data->values.find(*begin);
 
-    if ( val != _data->values.end() ) {
-        if ( begin != end )
-            // We have reached a leaf but not consumed the whole path.
-            goto try_childs;
-
-        // Found.
-        return *val->second;
+        if ( val != _data->values.end() )
+            return *val->second;
     }
 
-try_childs:
-
     if ( ! traverse )
+        // Not found.
         return std::list<Value>();
 
-    auto child = _data->childs.find(head);
+    // Try lookups in child scopes of successive "left-anchored" subpaths,
+    // starting with most specific.
+    for ( auto j = end; j != begin; --j ) {
+        auto id = ::util::strjoin(begin, j, "::");
+        auto child = _data->childs.find(id);
 
-    if ( child != _data->childs.end() )
-        // Found a child that matches our first component.
-        return child->second->find(begin, end, traverse);
+        if ( child != _data->childs.end() )
+            // Found a child that matches our subpath.
+            return child->second->find(j, end, traverse);
+    }
 
     // Not found.
     return std::list<Value>();
@@ -260,6 +260,7 @@ template<typename AstInfo>
 inline std::list<shared_ptr<typename AstInfo::scope_value>> Scope<AstInfo>::find(shared_ptr<ID> id, bool traverse) const
 {
     // Try a direct lookup on the full path first.
+    // TODO: I believe we can skip this now that the other find() tries the full path.
     auto i = _data->values.find(id->pathAsString());
     if ( i != _data->values.end() )
         return *i->second;
