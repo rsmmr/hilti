@@ -1,0 +1,19 @@
+#! /usr/bin/env bash
+
+if [ $# != 1 ]; then
+    echo "usage: `basename $0` <trace>"
+    exit 1
+fi
+
+trace=$1
+scripts=`dirname $0`/http-events.bro
+seed=`dirname $0`/random.seed
+
+export BRO_SEED_FILE=$seed
+
+echo === Running BinPAC++ Bro ...
+time bro -r ${trace} ${scripts} HTTPEvents::log_events=F HTTPEvents::pac2=T
+
+echo === Running standard Bro ...
+time bro -r ${trace} ${scripts} HTTPEvents::log_events=F HTTPEvents::pac2=F
+

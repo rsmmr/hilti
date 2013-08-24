@@ -1,0 +1,39 @@
+#! /usr/bin/env bash
+
+if [ $# != 1 ]; then
+    echo "usage: `basename $0` <trace>"
+    exit 1
+fi
+
+trace=$1
+scripts=`dirname $0`/http-events.bro
+seed=`dirname $0`/random.seed
+
+rm -f events-std.bst events-pac.bst
+rm -f http-events-std.log http-events-pac.log
+rm -f types-events-std.bst* types-events-pac.bst*
+rm -f results.events-types.txt results.events.txt
+
+export BRO_SEED_FILE=$seed
+
+echo === Running BinPAC++ Bro ...
+bro -r ${trace} ${scripts} HTTPEvents::log_events=T HTTPEvents::pac2=T
+
+echo === Running standard Bro ...
+bro -r ${trace} ${scripts} HTTPEvents::log_events=T HTTPEvents::pac2=F
+
+echo === Comparing events ....
+cat http-events-std.log http-events-pac.log | sort -k 3 | uniq -c -f 2 | sort -rn >results.events.txt
+
+echo === Comparing event types ...
+for i in events-std.bst events-pac.bst; do
+    bro -x ${i} ${scripts} | sed 's/^[^]]*\] //g' | sed 's/(.*//g' | sort | uniq -c | sort -rn >types-${i}.txt
+done
+
+diff -u types-events-std.bst.txt types-events-pac.bst.txt >results.events-types.txt
+head -100 types-events-std.bst.txt types-events-pac.bst.txt >>results.events-types.txt
+
+echo === Results in
+ls results*.txt
+
+
