@@ -1,4 +1,6 @@
 
+.. _data_types:
+
 Data Types
 ----------
 

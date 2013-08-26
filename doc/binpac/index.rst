@@ -6,7 +6,7 @@ BinPAC++: A Parser Generator For Network Protocols
 Table of Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :numbered:
 
    intro
