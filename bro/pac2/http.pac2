@@ -270,7 +270,7 @@ type Chunks = unit(body: Body, msg: Message) {
 };
 
 type Chunk = unit(body: Body) {
-    length:    Integer &convert=$$.to_uint(16);
+    length:    HexInteger &convert=$$.to_uint(16);
     :          OptionalWhiteSpace;
     extension: RestOfLine;
     :          NewLine;

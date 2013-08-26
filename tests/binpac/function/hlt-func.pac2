@@ -1,9 +1,21 @@
 # $Id$
 #
-# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  hilti-build %INPUT foo.c -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 module Test;
 
-import "HILTI-C" bytes Hilti::bytes_to_lower(b: bytes);
-print Hilti::bytes_to_lower(b"AbCdEfG");
+import "HILTI-C" bytes Foo::mess_with_bytes(b: bytes);
+print Foo::mess_with_bytes(b"AbCdEfG");
+
+@TEST-START-FILE foo.c
+
+#include <libhilti.h>
+
+hlt_bytes* foo_mess_with_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return hlt_bytes_new_from_data_copy((int8_t*)"Foo", 3, excpt, ctx);
+}
+
+@TEST-END-FILE

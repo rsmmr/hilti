@@ -1,0 +1,5 @@
+Hook A <a=1234, foo=(not set), b=(not set), s=(not set)>
+<i=1>
+Hook A <a=new-value, foo=<null>, b=(not set), s=(not set)>
+Hook S <a=new-value, foo=<null>, b=(not set), s=new-value>
+<a=new-value, foo=<i=1>, b=567890, s=new-value>

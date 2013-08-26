@@ -1,11 +1,15 @@
-# $Id$
 #
 # TODO:
 #
 # - Continued headers
-# - b":" instead of /:/
+# - decode URIs
+# - connection: keep-alive, close
+# - software versions
+# - partial content
 
 module HTTP;
+
+import BinPAC;
 
 type DeliveryMode = enum { EndOfData, Length, Multipart, Chunked };
 
@@ -30,7 +34,7 @@ export type Requests = unit {
 
 type Request = unit {
     request: RequestLine;
-    message: Message(False);
+    message: Message(False, True);
 };
 
 export type Replies = unit {
@@ -39,12 +43,12 @@ export type Replies = unit {
 
 type Reply = unit {
     reply: ReplyLine;
-    message: Message(reply_code_needs_body(self.reply.status));
+    message: Message(reply_code_needs_body(self.reply.status), False);
 };
 
 type Version = unit {
     :        /HTTP\//;
-    number: /[0-9]+\.[0-9]+/;
+    number: /[0-9]+\.[0-9]*/;
 };
 
 export type RequestLine = unit {
@@ -63,7 +67,7 @@ on RequestLine::version %debug {
 type ReplyLine = unit {
     version: Version;
     :        WhiteSpace;
-    status:  Integer &convert=dec_to_uint($$);
+    status:  Integer &convert=$$.to_uint();
     :        OptionalWhiteSpace;
     reason:  RestOfLine;
     :        NewLine;
@@ -73,34 +77,41 @@ on ReplyLine::reason %debug {
     print "reply  ", self.version.number, "|", self.status, "|", self.reason;
     }
 
-type Message = unit(body_default: bool) {
+type Message = unit(body_default: bool, is_request: bool) {
     headers:    list<Header(self)>;
     end_of_hdr: NewLine;
     body:       Body(self, self.delivery_mode) if ( self.has_body );
 
     var content_length: uint64;
-    var content_type: bytes;
+	var content_encoding: bytes;
+    var content_type: tuple<bytes, bytes> = (b"TEXT", b"PLAIN");
+    var content_type_parameter: bytes;
     var transfer_encoding: bytes;
     var multipart_boundary: bytes;
 
     var has_body: bool;
-    var delivery_mode: DeliveryMode = DeliveryMode::EndOfData;
+    var is_request: bool;
+	var use_content_length: bool = True;
+    var delivery_mode: DeliveryMode;
 
     on %init {
         self.has_body = body_default;
+        self.is_request = is_request;
+        # FIXME: This as &default doesn't work for some reason.
+        self.delivery_mode = DeliveryMode::EndOfData;
         }
 
     on end_of_hdr {
-        if ( self?.content_length )
+        if ( self?.content_length && self.content_length > 0 )
             self.delivery_mode = DeliveryMode::Length;
 
-        if ( self?.content_type && (self.content_type).startswith(b"multipart/") ) {
+        if ( self.content_type[0] == b"MULTIPART" ) {
             local boundary : bytes;
 
-            boundary = self.content_type.match(/boundary="([^"]*)"/, 1);
+            boundary = self.content_type_parameter.match(/boundary="([^"]*)"/, 1);
 
             if ( ! |boundary| )
-                boundary = self.content_type.match(/boundary=([^ ;]*)/, 1);
+                boundary = self.content_type_parameter.match(/boundary=([^ ;]*)/, 1);
 
             self.delivery_mode = DeliveryMode::Multipart;
             self.multipart_boundary = b"--" + boundary + b"--\r\n";
@@ -115,24 +126,31 @@ const HeaderName  = /[^:\r\n]+/;
 const HeaderValue = /[^\r\n]*/;
 
 type Header = unit(msg: Message) {
-    name:    HeaderName &convert=to_lower($$);
+    name:    HeaderName &convert=$$.upper();
     :        /:[\t ]*/;
     content: HeaderValue;
     :        NewLine;
 
     on content {
-        if ( self.name == b"content-length" ) {
-            msg.content_length = dec_to_uint(self.content);
+        if ( self.name == b"CONTENT-LENGTH" ) {
+            msg.content_length = self.content.to_uint();
             msg.has_body = True;
             }
 
-        if ( self.name == b"transfer-encoding" ) {
+        if ( self.name == b"TRANSFER-ENCODING" ) {
             msg.transfer_encoding = self.content;
             msg.has_body = True;
             }
 
-        if ( self.name == b"content-type" )
-            msg.content_type = self.content;
+        if ( self.name == b"CONTENT-ENCODING" )
+            msg.content_encoding = self.content;
+
+        if ( self.name == b"CONTENT-TYPE" ) {
+            local ct: tuple<bytes,bytes> = self.content.split1(b";");
+            local ty: tuple<bytes,bytes> = ct[0].split1(b"/");
+            msg.content_type = (ty[0].strip().upper(), ty[1].strip().upper());
+            msg.content_type_parameter = ct[1].strip();
+            }
         }
 };
 
@@ -151,11 +169,39 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
     };
 
     var data: sink;
+    var data_len: uint64;
+    var content: Content;
 
     on %init {
-        if ( msg.content_type != b"" )
-            self.data.connect_mime_type(msg.content_type);
+        if ( msg.content_type[0] != b"" && msg.content_type[1] != b"" )
+            self.data.connect_mime_type(msg.content_type[0] + b"/" + msg.content_type[1]);
+
+        if ( msg?.content_encoding ) {
+		    if ( msg.content_encoding == b"gzip" ) {
+                self.data.add_filter(BinPAC::Filter::GZIP);
+                msg.use_content_length = False;
+				}
+
+		    if ( msg.content_encoding == b"deflate" ) {
+                self.data.add_filter(BinPAC::Filter::ZLIB);
+                msg.use_content_length = False;
+				}
         }
+
+        self.content = new Content(msg);
+        self.data.connect(self.content);
+    }
+
+	on %done {
+	    # FIXME: Currently the sink becomes invalid after parsing for
+		# the current instance finished. That's not great. See
+		# ParserBuilder::_finalizeParseObject() to fix.
+		self.data_len = |self.data|;
+		}
+};
+
+export type Content = unit(msg: Message) {
+    data: bytes &chunked &eod;
 };
 
 type Chunks = unit(body: Body, msg: Message) {
@@ -166,30 +212,10 @@ type Chunks = unit(body: Body, msg: Message) {
 };
 
 type Chunk = unit(body: Body) {
-    length:    HexInteger &convert=hex_to_uint($$);
+    length:    HexInteger &convert=$$.to_uint(16);
     :          OptionalWhiteSpace;
     extension: RestOfLine;
     :          NewLine;
     :          bytes &length=self.length &chunked -> body.data;
     :          NewLine if ( self.length != 0 );
 };
-
-# These are implemented in libhilti.
-import "HILTI-C" int64 Hilti::bytes_to_int(b: bytes, base: uint64);
-import "HILTI-C" bytes Hilti::bytes_to_lower(b: bytes);
-
-# These will eventually move into libbinpac.
-bytes to_lower(b: bytes)
-{
-     return Hilti::bytes_to_lower(b);
-}
-
-uint64 dec_to_uint(b: bytes)
-{
-     return cast<uint64>(Hilti::bytes_to_int(b, 10));
-}
-
-uint64 hex_to_uint(b: bytes)
-{
-     return cast<uint64>(Hilti::bytes_to_int(b, 16));
-}

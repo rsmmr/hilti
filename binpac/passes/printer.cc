@@ -924,7 +924,21 @@ void Printer::visit(type::Map* m)
         return;
 
     Printer& p = *this;
-    p << "map<" << m->keyType() << "," << m->valueType() << ">";
+    p << "map<";
+
+    if ( m->keyType() )
+        p << m->keyType();
+    else
+        p << "*";
+
+    p << ",";
+
+    if ( m->valueType() )
+        p << m->valueType();
+    else
+        p << "*";
+
+    p << ">";
 }
 
 void Printer::visit(type::Module* m)

@@ -1,6 +1,6 @@
 #
 # @TEST-EXEC: hilti-build %INPUT ${PARSERS}/http.pac2 ${PAC_DRIVER} -d -o a.out
-# @TEST-EXEC: awk -f generate.awk | ./a.out -i 50 -g -p HTTP::Replies >output 2>&1
+# @TEST-EXEC: awk -f generate.awk | HILTI_DEBUG= ./a.out -i 50 -g -p HTTP::Replies >output 2>&1
 # @TEST-EXEC: cat output | ${SCRIPTS}/canonify-gc-leaks >gc-leaks
 # @TEST-EXEC: btest-diff gc-leaks
 #

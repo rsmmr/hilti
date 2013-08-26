@@ -39,8 +39,6 @@ export type tB = unit {
        }
 };
 
-import "HILTI-C" int64 Hilti::bytes_to_int(b: bytes, base: uint<64>);
-
 on tB::x {
     print "tB: x-1 $", self.x;
     }
@@ -50,7 +48,7 @@ on tB::x {
     }
 
 on tB::y {
-    print "tB: y $", Hilti::bytes_to_int(self.y, 10);
+    print "tB: y $", self.y.to_int();
     }
 ### @TEST-END-FILE test.txt
 
