@@ -1243,7 +1243,13 @@ void Printer::visit(ctor::List* c)
 
 void Printer::visit(ctor::Map* c)
 {
+    auto rtype = ast::checkedCast<type::Reference>(c->type());
+    auto ktype = ast::checkedCast<type::Map>(rtype->argType())->keyType();
+    auto vtype = ast::checkedCast<type::Map>(rtype->argType())->valueType();
+
     Printer& p = *this;
+
+    p << "map<" << ktype << ", " << vtype << ">(";
 
     bool first = true;
     for ( auto e: c->elements() ) {
@@ -1254,6 +1260,8 @@ void Printer::visit(ctor::Map* c)
 
         first = false;
     }
+
+    p << ")";
 }
 
 void Printer::visit(ctor::Set* c)

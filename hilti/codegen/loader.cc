@@ -472,9 +472,28 @@ void Loader::visit(ctor::Vector* c)
 
 void Loader::visit(ctor::Map* c)
 {
-    assert(false);
-    // Not implemented;
-    // setResult(val, true, false);
+    auto rtype = ast::as<type::Reference>(c->type())->argType();
+    auto ktype = ast::as<type::Map>(rtype)->keyType();
+    auto vtype = ast::as<type::Map>(rtype)->valueType();
+    assert(ktype && vtype);
+
+    auto op1 = builder::type::create(ktype);
+    auto op2 = builder::type::create(vtype);
+    auto op3 = _tmgrNull(cg());
+
+    CodeGen::expr_list args = {op1, op2, op3};
+    auto map = cg()->llvmCall("hlt::map_new", args);
+
+    auto mapop = builder::codegen::create(c->type(), map);
+
+    for ( auto e : c->elements() ) {
+        auto k = e.first->coerceTo(ktype);
+        auto v = e.second->coerceTo(vtype);
+        CodeGen::expr_list args = { mapop, k, v };
+        cg()->llvmCall("hlt::map_insert", args);
+    }
+
+    setResult(map, true, false);
 }
 
 void Loader::visit(ctor::RegExp* c)

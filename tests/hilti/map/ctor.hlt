@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<map<string,int<64>>> m
+
+    m = map<string, int<64>>("a": 1, "b": 2)
+    call Hilti::print(m)
+
+    call Hilti::print(map<ref<bytes>, string>())
+}
