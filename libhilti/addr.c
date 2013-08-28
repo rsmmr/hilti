@@ -54,6 +54,37 @@ hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_
     }
 }
 
+int8_t hlt_addr_is_v6(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return ! is_v4(addr);
+}
+
+struct in_addr hlt_addr_to_in4(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( ! is_v4(addr) ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+		struct in_addr sa;
+        return sa;
+    }
+
+    unsigned long a = (unsigned long)addr.a2;
+    struct in_addr sa = { hlt_hton32(a) };
+	return sa;
+}
+
+struct in6_addr hlt_addr_to_in6(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+	struct in6_addr sa;
+
+	uint64_t a = hlt_hton64(addr.a1);
+	memcpy(&sa, &a, 8);
+
+	a = hlt_hton64(addr.a2);
+	memcpy(((char*)&sa) + 8, &a, 8);
+
+	return sa;
+}
+
 hlt_addr hlt_addr_from_asciiz(const char* s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_addr a;

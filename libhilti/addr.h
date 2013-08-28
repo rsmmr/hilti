@@ -9,6 +9,8 @@
 #ifndef LIBHILTI_ADDR_H
 #define LIBHILTI_ADDR_H
 
+#include <netinet/in.h>
+
 #include "exceptions.h"
 #include "rtti.h"
 #include "string.h"
@@ -34,6 +36,31 @@ struct __hlt_addr {
 /// excpt: &
 /// ctx: & 
 extern hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Returns true for an address of IPv6 family and false for IPv4.
+///
+/// addr: The address to check.
+///
+/// excpt: &
+/// ctx: &
+extern int8_t hlt_addr_is_v6(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Converts an address into an \c in_addr representation. This will throw a
+/// \a ValueError exception for IPv6 addresses.
+///
+/// addr: The address to convert.
+///
+/// excpt: &
+/// ctx: & 
+extern struct in_addr hlt_addr_to_in4(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Converts an address into an \c in6_addr representation.
+///
+/// addr: The address to convert.
+///
+/// excpt: &
+/// ctx: & 
+extern struct in6_addr hlt_addr_to_in6(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts an ASCIIZ string into an address. The string can be either an
 /// IPv4 or IPv6 address in their standard ASCII representations.
