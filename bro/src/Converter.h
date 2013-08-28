@@ -39,8 +39,12 @@ public:
 	BroType* Convert(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype = nullptr);
 
 private:
+	void visit(::hilti::type::Address* b) override;
+	void visit(::hilti::type::Bool* b) override;
 	void visit(::hilti::type::Bytes* b) override;
+	void visit(::hilti::type::Double* d) override;
 	void visit(::hilti::type::Integer* i) override;
+	void visit(::hilti::type::String* s) override;
 	void visit(::hilti::type::Reference* b) override;
 };
 
@@ -79,8 +83,12 @@ protected:
 	shared_ptr<::hilti::builder::BlockBuilder> Builder() const;
 
 private:
+	void visit(::hilti::type::Address* a) override;
+	void visit(::hilti::type::Bool* b) override;
 	void visit(::hilti::type::Bytes* b) override;
+	void visit(::hilti::type::Double* d) override;
 	void visit(::hilti::type::Integer* i) override;
+	void visit(::hilti::type::String* s) override;
 	void visit(::hilti::type::Reference* b) override;
 
 	shared_ptr<::hilti::builder::ModuleBuilder> mbuilder;

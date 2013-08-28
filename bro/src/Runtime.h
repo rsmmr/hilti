@@ -28,6 +28,18 @@ void* libbro_h2b_integer_signed(int64_t i, hlt_exception** excpt, hlt_execution_
 // Converts an unsigned HILTI integer value into a Bro Val.
 void* libbro_h2b_integer_unsigned(uint64_t i, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Converts a HILTI address value into a Bro AddrVal.
+void* libbro_h2b_address(hlt_addr a, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Converts a HILTI string value into a Bro StringVal.
+void* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Converts a HILTI double value into a Bro Val.
+void* libbro_h2b_double(double d, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Converts a HILTI double value into a Bro Val.
+void* libbro_h2b_bool(int8_t d, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Raises a given Bro events. The arguments are given as a tuple of Bro Val
 // instances. The function takes ownership of those instances.
 void libbro_raise_event(hlt_bytes* name, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx);

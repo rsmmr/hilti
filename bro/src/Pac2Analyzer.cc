@@ -1,5 +1,6 @@
 
 #include <memory.h>
+#include <netinet/in.h>
 
 #include <util/util.h>
 
@@ -99,7 +100,13 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 	if ( ! endp->parser )
 		{
 		endp->parser = HiltiPlugin.Mgr()->ParserForAnalyzer(endp->cookie.analyzer->GetAnalyzerTag(), is_orig);
-		assert(endp->parser);
+
+		if ( ! endp->parser )
+			{
+			debug_msg(endp->cookie.analyzer, "no unit specificed for parsing", 0, 0, is_orig);
+			return 1;
+			}
+
 		GC_CCTOR(endp->parser, hlt_Parser);
 		}
 

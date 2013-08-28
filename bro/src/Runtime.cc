@@ -32,6 +32,9 @@ extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[] =
 	{ "libbro_h2b_bytes", (void*)&libbro_h2b_bytes},
 	{ "libbro_h2b_integer_signed", (void*)&libbro_h2b_integer_signed},
 	{ "libbro_h2b_integer_unsigned", (void*)&libbro_h2b_integer_unsigned},
+	{ "libbro_h2b_address", (void*)&libbro_h2b_address},
+	{ "libbro_h2b_double", (void*)&libbro_h2b_double},
+	{ "libbro_h2b_string", (void*)&libbro_h2b_string},
 	{ "libbro_raise_event", (void*)&libbro_raise_event },
 	{ "bro_file_begin", (void*)bro_file_begin },
 	{ "bro_file_set_size", (void*)bro_file_set_size },
@@ -79,6 +82,38 @@ void* libbro_h2b_integer_signed(int64_t i, hlt_exception** excpt, hlt_execution_
 void* libbro_h2b_integer_unsigned(uint64_t i, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new Val(i, TYPE_COUNT);
+	}
+
+void* libbro_h2b_address(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+        if ( hlt_addr_is_v6(addr, excpt, ctx) )
+		{
+		struct in6_addr in6 = hlt_addr_to_in6(addr, excpt, ctx);
+		return new AddrVal(IPAddr(in6));
+		}
+	else
+		{
+		struct in_addr in4 = hlt_addr_to_in4(addr, excpt, ctx);
+		return new AddrVal(IPAddr(in4));
+		}
+	}
+
+void* libbro_h2b_double(double d, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new Val(d, TYPE_DOUBLE);
+	}
+
+void* libbro_h2b_bool(int8_t b, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new Val(b, TYPE_BOOL);
+	}
+
+void* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	const char* str = hlt_string_to_native(s, excpt, ctx);
+	Val* v = new StringVal(str); // copies data.
+	hlt_free((void *)str);
+	return v;
 	}
 
 void libbro_raise_event(hlt_bytes* name, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)

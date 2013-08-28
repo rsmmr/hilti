@@ -12,8 +12,8 @@ seed=`dirname $0`/random.seed
 export BRO_SEED_FILE=$seed
 
 echo === Running BinPAC++ Bro ...
-time bro -r ${trace} ${scripts} HTTPEvents::log_events=F HTTPEvents::pac2=T
+time bro -Q -r ${trace} ${scripts} HTTPEvents::log_events=F HTTPEvents::pac2=T
 
 echo === Running standard Bro ...
-time bro -r ${trace} ${scripts} HTTPEvents::log_events=F HTTPEvents::pac2=F
+time bro -Q -r ${trace} ${scripts} HTTPEvents::log_events=F HTTPEvents::pac2=F
 

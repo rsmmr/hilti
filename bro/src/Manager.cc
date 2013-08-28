@@ -206,6 +206,10 @@ Manager::Manager()
 	pimpl = new PIMPL;
 	pre_scripts_init_run = false;
 	post_scripts_init_run = false;
+
+        char* dir = getenv("BRO_PAC2_PATH");
+	if ( dir )
+		AddLibraryPath(dir);
 	}
 
 Manager::~Manager()
@@ -1735,21 +1739,27 @@ void Manager::ExtractParsers(hlt_list* parsers)
 
 	for ( auto a : pimpl->pac2_analyzers )
 		{
-		auto i = parser_map.find(a->unit_name_orig);
+		if ( a->unit_name_orig.size() )
+				{
+				auto i = parser_map.find(a->unit_name_orig);
 
-		if ( i != parser_map.end() )
-			{
-			a->parser_orig = i->second;
-			GC_CCTOR(a->parser_orig, hlt_Parser);
-			}
+				if ( i != parser_map.end() )
+						{
+						a->parser_orig = i->second;
+						GC_CCTOR(a->parser_orig, hlt_Parser);
+						}
+				}
 
-		i = parser_map.find(a->unit_name_resp);
+		if ( a->unit_name_resp.size() )
+				{
+				auto i = parser_map.find(a->unit_name_resp);
 
-		if ( i != parser_map.end() )
-			{
-			a->parser_resp = i->second;
-			GC_CCTOR(a->parser_resp, hlt_Parser);
-			}
+				if ( i != parser_map.end() )
+						{
+						a->parser_resp = i->second;
+						GC_CCTOR(a->parser_resp, hlt_Parser);
+						}
+				}
 		}
 
 	for ( auto p : parser_map )

@@ -59,7 +59,7 @@ if ( BRO_DIST )
     add_custom_command(
         OUTPUT   ${autogen}/bro.pac2.h
         COMMAND  ${binpac} -P ${CMAKE_CURRENT_SOURCE_DIR}/pac2/bro.pac2 -o ${autogen}/bro.pac2.h
-        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/bro.pac2 ${binpac}
+        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/bro.pac2 binpac.hlt ${binpac}
         )
 
     set_source_files_properties(${autogen}/bro.pac2.h PROPERTIES GENERATED 1)

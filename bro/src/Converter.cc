@@ -56,12 +56,28 @@ void TypeConverter::visit(::hilti::type::Reference* b)
 	setResult(rtype);
 	}
 
-void ValueConverter::visit(::hilti::type::Reference* b)
+void TypeConverter::visit(::hilti::type::Address* a)
 	{
-	bool set = false;
-	bool success = processOne(b->argType(), &set);
-	assert(set);
-	setResult(true);
+	auto result = base_type(TYPE_ADDR);
+	setResult(result);
+	}
+
+void TypeConverter::visit(::hilti::type::Bool* a)
+	{
+	auto result = base_type(TYPE_BOOL);
+	setResult(result);
+	}
+
+void TypeConverter::visit(::hilti::type::Bytes* b)
+	{
+	auto result = base_type(TYPE_STRING);
+	setResult(result);
+	}
+
+void TypeConverter::visit(::hilti::type::Double* d)
+	{
+	auto result = base_type(TYPE_DOUBLE);
+	setResult(result);
 	}
 
 void TypeConverter::visit(::hilti::type::Integer* i)
@@ -72,12 +88,18 @@ void TypeConverter::visit(::hilti::type::Integer* i)
 	setResult(result);
 	}
 
-void TypeConverter::visit(::hilti::type::Bytes* b)
+void TypeConverter::visit(::hilti::type::String* s)
 	{
-	auto btype = arg1();
-
 	auto result = base_type(TYPE_STRING);
 	setResult(result);
+	}
+
+void ValueConverter::visit(::hilti::type::Reference* b)
+	{
+	bool set = false;
+	bool success = processOne(b->argType(), &set);
+	assert(set);
+	setResult(true);
 	}
 
 void ValueConverter::visit(::hilti::type::Integer* i)
@@ -114,6 +136,28 @@ void ValueConverter::visit(::hilti::type::Integer* i)
 	setResult(true);
 	}
 
+void ValueConverter::visit(::hilti::type::Address* a)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+
+	auto args = ::hilti::builder::tuple::create( { val } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::h2b_address"), args);
+	setResult(true);
+	}
+
+void ValueConverter::visit(::hilti::type::Bool* b)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+
+	auto args = ::hilti::builder::tuple::create( { val } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::h2b_bool"), args);
+	setResult(true);
+	}
+
 void ValueConverter::visit(::hilti::type::Bytes* b)
 	{
 	auto val = arg1();
@@ -126,4 +170,25 @@ void ValueConverter::visit(::hilti::type::Bytes* b)
 	setResult(true);
 	}
 
+void ValueConverter::visit(::hilti::type::Double* d)
+	{
+	auto val = arg1();
+	auto dst = arg2();
 
+	auto args = ::hilti::builder::tuple::create( { val } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::h2b_double"), args);
+	setResult(true);
+	}
+
+
+void ValueConverter::visit(::hilti::type::String* s)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+
+	auto args = ::hilti::builder::tuple::create( { val } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::h2b_string"), args);
+	setResult(true);
+	}
