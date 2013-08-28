@@ -70,22 +70,22 @@ Bool::Bool(bool value, const Location& l)
 }
 
 Address::Address(const string& addr, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, string>(addr, shared_ptr<Type>(new type::String()), l)
+    : ast::SpecificConstant<AstInfo, Constant, string>(addr, shared_ptr<Type>(new type::Address()), l)
 {
 }
 
 Network::Network(const string& net, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, string>(net, shared_ptr<Type>(new type::String()), l)
+    : ast::SpecificConstant<AstInfo, Constant, string>(net, shared_ptr<Type>(new type::Address()), l)
 {
 }
 
 Network::Network(const string& net, int width, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, string>(::util::fmt("%s/%d", net.c_str(), width), shared_ptr<Type>(new type::String()), l)
+    : ast::SpecificConstant<AstInfo, Constant, string>(::util::fmt("%s/%d", net.c_str(), width), shared_ptr<Type>(new type::Address()), l)
 {
 }
 
 Port::Port(const string& port, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, string>(port, shared_ptr<Type>(new type::String()), l)
+    : ast::SpecificConstant<AstInfo, Constant, string>(port, shared_ptr<Type>(new type::Port()), l)
 {
 }
 
