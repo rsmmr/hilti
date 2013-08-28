@@ -283,7 +283,7 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> node, bool verify)
     return true;
 }
 
-llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module, shared_ptr<hilti::Module>* hilti_module_out)
+llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module, shared_ptr<hilti::Module>* hilti_module_out, bool hilti_only)
 {
     CodeGen codegen(this);
 
@@ -295,6 +295,9 @@ llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module, shared
         *hilti_module_out = compiled;
 
     _endPass();
+
+    if ( hilti_only || ! compiled )
+        return nullptr;
 
     auto llvm_module = _hilti_context->compile(compiled);
 

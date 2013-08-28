@@ -191,7 +191,7 @@ int main(int argc, char** argv)
         return ctx->print(module, out);
 
     shared_ptr<hilti::Module> hilti_module = 0;
-    auto llvm_module = ctx->compile(module, &hilti_module);
+    auto llvm_module = ctx->compile(module, &hilti_module, ! output_llvm);
 
     if ( hilti_module ) {
 
@@ -213,12 +213,18 @@ int main(int argc, char** argv)
         }
     }
 
-    if ( ! llvm_module ) {
+    if ( ! hilti_module ) {
         error(input, "Aborting due to compilation error.");
         return 1;
     }
 
     if ( output_llvm ) {
+
+        if ( ! llvm_module ) {
+            error(input, "Aborting due to LLVM compilation error.");
+            return 1;
+        }
+
         std::list<llvm::Module *> mods = { llvm_module };
         auto linked_module = ctx->linkModules(input, mods,
                                               std::list<string>(),
@@ -241,7 +247,7 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    if ( hilti_module && ! ctx->hiltiContext()->print(hilti_module, out, cfg) ) {
+    if ( ! ctx->hiltiContext()->print(hilti_module, out, cfg) ) {
         error(input, "Aborting due to HILTI printer error.");
         return 1;
     }

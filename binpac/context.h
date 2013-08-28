@@ -92,9 +92,12 @@ public:
     /// hilti_module: If given, a pointer to the intermediary HILTI module
     /// will be stored in there.
     ///
+    /// hilti_only: If true, the method compiles only into HILTI but skips
+    /// the final llvm step.
+    ///
     /// Returns: The LLVM module, or null if errors are encountered. Passes
-    /// ownership to the caller.
-    llvm::Module* compile(shared_ptr<Module> module, shared_ptr<hilti::Module>* hilti_module = nullptr);
+    /// ownership to the caller. Also returns null if *hilti_only* is true.
+    llvm::Module* compile(shared_ptr<Module> module, shared_ptr<hilti::Module>* hilti_module = nullptr, bool hilti_only = false);
 
     /// Compiles a BinPAC++ source file into an LLVM module. Internally, this
     /// is a combination of load() and compile(), with additional caching if
