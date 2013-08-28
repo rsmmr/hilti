@@ -307,7 +307,8 @@ void Printer::visit(ctor::List* l)
 
 void Printer::visit(ctor::Map* m)
 {
-    internalError("Cannot print maps yet");
+    Printer& p = *this;
+    p << "<ctor::Map>";
 }
 
 void Printer::visit(ctor::RegExp* r)
@@ -525,6 +526,10 @@ void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
     }
 
     switch ( op.kind ) {
+     case operator_::Add:
+        p << "add " << op1 << "[" << op2 << "]";
+        break;
+
      case operator_::Attribute:
         p << op1 << "." << op2;
         break;
@@ -547,6 +552,10 @@ void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
 
      case operator_::DecrPostfix:
         p << op1 << "--";
+        break;
+
+     case operator_::Delete:
+        p << "delete " << op1 << "[" << op2 << "]";
         break;
 
      case operator_::HasAttribute:

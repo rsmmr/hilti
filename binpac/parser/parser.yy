@@ -83,6 +83,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token <sval>  CPORT          "port"
 %token <dval>  CDOUBLE        "double"
 
+%token         ADD
 %token         ADDR
 %token         ANY
 %token         ARROW
@@ -95,6 +96,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         CONST
 %token         CONSTANT
 %token         DEBUG_
+%token         DELETE
 %token         DOTDOT
 %token         DOUBLE
 %token         END            0 "end of file"
@@ -202,6 +204,8 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <re_pattern>       re_pattern
 %type <sval>             re_pattern_constant
 %type <types>            types
+%type <map_element>      map_elem
+%type <map_elements>     map_elems opt_map_elems
 %%
 
 %token PREC_HIGH;
@@ -620,10 +624,21 @@ ctor          : CBYTES                           { $$ = std::make_shared<ctor::B
               | SET                 '(' opt_exprs ')' { $$ = std::make_shared<ctor::Set>(nullptr, $3, loc(@$)); }
               | SET    '<' type '>' '(' opt_exprs ')' { $$ = std::make_shared<ctor::Set>($3, $6, loc(@$)); }
 
+              | MAP                          '(' opt_map_elems ')' { $$ = std::make_shared<ctor::Map>(nullptr, nullptr, $3, loc(@$)); }
+              | MAP    '<' type ',' type '>' '(' opt_map_elems ')' { $$ = std::make_shared<ctor::Map>($3, $5, $8, loc(@$)); }
+
               | VECTOR              '(' opt_exprs ')' { $$ = std::make_shared<ctor::Vector>(nullptr, $3, loc(@$)); }
               | VECTOR '<' type '>' '(' opt_exprs ')' { $$ = std::make_shared<ctor::Vector>($3, $6, loc(@$)); }
 
               ;
+
+opt_map_elems : map_elems                        { $$ = $1; }
+              | /* empty */                      { $$ = ctor::Map::element_list(); }
+
+map_elems     : map_elems ',' map_elem           { $$ = $1; $$.push_back($3); }
+              | map_elem                         { $$ = ctor::Map::element_list(); $$.push_back($1); }
+
+map_elem      : expr ':' expr                    { $$ = ctor::Map::element($1, $3); }
 
 re_patterns   : re_patterns '|' re_pattern       { $$ = $1; $$.push_back($3); }
               | re_pattern                       { $$ = ctor::RegExp::pattern_list(); $$.push_back($1); }
@@ -672,11 +687,14 @@ expr2         : scoped_id                        { $$ = std::make_shared<express
               | expr '/' expr                    { $$ = makeOp(operator_::Div, { $1, $3 }, loc(@$)); }
               | expr MOD expr                    { $$ = makeOp(operator_::Mod, { $1, $3 }, loc(@$)); }
               | expr EQ expr                     { $$ = makeOp(operator_::Equal, { $1, $3 }, loc(@$)); }
+              | expr IN expr                     { $$ = makeOp(operator_::In, { $1, $3 }, loc(@$)); }
               | expr '<' expr                    { $$ = makeOp(operator_::Lower, { $1, $3 }, loc(@$)); }
               | expr PLUSASSIGN expr             { $$ = makeOp(operator_::PlusAssign, { $1, $3 }, loc(@$)); }
               | expr MINUSASSIGN expr            { $$ = makeOp(operator_::MinusAssign, { $1, $3 }, loc(@$)); }
               | expr '[' expr ']' '=' expr       { $$ = makeOp(operator_::IndexAssign, { $1, $3, $6 }, loc(@$)); }
               | expr '.' member_expr tuple_expr  { $$ = makeOp(operator_::MethodCall, { $1, $3, $4 }, loc(@$)); }
+              | ADD expr '[' expr ']'            { $$ = makeOp(operator_::Add, { $2, $4 }, loc(@$)); }
+              | DELETE expr '[' expr ']'         { $$ = makeOp(operator_::Delete, { $2, $4 }, loc(@$)); }
               | CAST '<' type '>' '(' expr ')'   { $$ = makeOp(operator_::Cast, { $6, std::make_shared<expression::Type>($3) }, loc(@$)); }
               | NEW id_expr                      { $$ = makeOp(operator_::New, {$2 }, loc(@$)); }
               | NEW id_expr tuple_expr           { $$ = makeOp(operator_::New, {$2, $3}, loc(@$)); }

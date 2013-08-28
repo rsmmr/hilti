@@ -48,6 +48,8 @@ set(operators
     operators/interval.cc
     operators/iterator.cc
     operators/list.cc
+    operators/map.cc
+    operators/set.cc
     operators/sink.cc
     operators/time.cc
     operators/tuple.cc

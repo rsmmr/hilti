@@ -15,6 +15,7 @@ namespace operator_ {
 
 enum Kind {
     None = 0,
+    Add,
     Attribute,
     AttributeAssign,
     BitAnd,
@@ -25,6 +26,7 @@ enum Kind {
     Cast,
     DecrPostfix,
     DecrPrefix,
+    Delete,
     Deref,
     Div,
     Equal,
@@ -32,6 +34,7 @@ enum Kind {
     HasAttribute,
     IncrPostfix,
     IncrPrefix,
+    In,
     Index,
     IndexAssign,
     LogicalAnd,
@@ -87,6 +90,7 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(Div, "/", BINARY),
     _OP(Equal, "==", BINARY_COMMUTATIVE),
     _OP(Greater, ">", BINARY),
+    _OP(In, "in", BINARY),
     _OP(LogicalAnd, "&&", BINARY),
     _OP(LogicalOr, "||", BINARY),
     _OP(Lower, "<", BINARY),
@@ -100,11 +104,13 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(ShiftLeft, "<<", BINARY),
     _OP(ShiftRight, ">>", BINARY),
 
+    _OP(Add, "<Add>", OTHER),
     _OP(Attribute, "<Attribute>", OTHER),
-    _OP(AttributeAssign, "<AttribteAssign>", OTHER),
+    _OP(AttributeAssign, "<AttributeAssign>", OTHER),
     _OP(Call, "<Call>", OTHER),
     _OP(Coerce, "<Coerce>", OTHER),
     _OP(Cast, "<Cast>", OTHER),
+    _OP(Delete, "<Delete>", OTHER),
     _OP(HasAttribute, "<HasAttribute>", OTHER),
     _OP(Index, "<INdex>", OTHER),
     _OP(IndexAssign, "<IndexAssign>", OTHER),
@@ -228,6 +234,18 @@ public:
     ///
     /// Returns: True if coercable.
     bool sameType(shared_ptr<Type> type1, shared_ptr<Type> type2);
+
+    /// Checks whether an element expression can be coerced into a
+    /// container's element type. If not, an error is reported.
+    ///
+    /// element: The expression which's type to match against the container's
+    /// element type.
+    ///
+    /// container: The container type, which must be of trait of
+    /// type::trait::Container.
+    ///
+    /// Returns: True if the element is compatible with the container..
+    bool matchesElementType(shared_ptr<Expression> element, shared_ptr<Type> container);
 
     /// Method to report errors found by validate(). This forwards to the
     /// current passes::Validator.

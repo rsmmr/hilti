@@ -172,6 +172,14 @@ void TypeBuilder::visit(type::List* l)
 
 void TypeBuilder::visit(type::Map* m)
 {
+    auto key = hiltiType(m->keyType());
+    auto val = hiltiType(m->valueType());
+
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::reference::type(hilti::builder::map::type(key, val, m->location()));
+    ti.hilti_default = hilti::builder::map::create(key, val, {}, m->location());
+    ti.always_initialize = true;
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Module* m)
@@ -205,6 +213,13 @@ void TypeBuilder::visit(type::RegExp* r)
 
 void TypeBuilder::visit(type::Set* s)
 {
+    auto item = hiltiType(s->elementType());
+
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::reference::type(hilti::builder::set::type(item, s->location()));
+    ti.hilti_default = hilti::builder::set::create(item, {}, s->location());
+    ti.always_initialize = true;
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::String* s)

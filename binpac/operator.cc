@@ -159,6 +159,16 @@ bool Operator::sameType(shared_ptr<Type> type1, shared_ptr<Type> type2)
     return true;
 }
 
+bool Operator::matchesElementType(shared_ptr<Expression> element, shared_ptr<Type> container)
+{
+    auto ctype = ast::type::checkedTrait<type::trait::Container>(container);
+
+    if ( ! element->canCoerceTo(ctype->elementType()) )
+        error(element, "element type incompatible with container");
+
+    return true;
+}
+
 void Operator::error(Node* op, string msg) const
 {
     assert(_validator);

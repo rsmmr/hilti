@@ -38,7 +38,6 @@ void CodeBuilder::visit(expression::operator_::vector::IndexAssign* i)
     auto op2 = cg()->hiltiExpression(i->op2());
     auto op3 = cg()->hiltiExpression(i->op3());
     cg()->builder()->addInstruction(hilti::instruction::vector::Set, op1, op2, op3);
-    setResult(op3);
 }
 
 void CodeBuilder::visit(expression::operator_::vector::PushBack* i)

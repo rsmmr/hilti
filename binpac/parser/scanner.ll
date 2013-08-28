@@ -60,6 +60,7 @@ string    \"(\\.|[^\\"])*\"
 <RE>(\\.|[^\\\/])*    yylval->sval = yytext; return token::CREGEXP;
 <RE>[/\\\n]	          return (token_type) yytext[0];
 
+add                   return token::ADD;
 addr                  return token::ADDR;
 any                   return token::ANY;
 attribute             return token::ATTRIBUTE;
@@ -76,6 +77,7 @@ constant              return token::CONSTANT;
 cport                 return token::CPORT;
 cregexp               return token::CREGEXP;
 cstring               return token::CSTRING;
+delete                return token::DELETE;
 double                return token::DOUBLE;
 else                  return token::ELSE;
 enum                  return token::ENUM;

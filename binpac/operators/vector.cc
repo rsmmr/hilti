@@ -28,7 +28,7 @@ opBegin(vector::IndexAssign)
 
     opResult() {
         auto v = ast::checkedCast<type::Vector>(op1()->type());
-        return v->argType();
+        return std::make_shared<type::Void>();
     }
 opEnd
 

@@ -28,11 +28,11 @@ struct yystype_binpac {
     int64_t     ival;
     std::string sval;
 
+    binpac::ctor::Map::element map_element;
+    binpac::ctor::Map::element_list map_elements;
 #if 0
-    ctor::Map::element map_element;
-    ctor::Map::element_list map_elements;
-    ctor::RegExp::pattern re_pattern;
-    ctor::RegExp::pattern_list re_patterns;
+    binpac::ctor::RegExp::pattern re_pattern;
+    binpac::ctor::RegExp::pattern_list re_patterns;
 #endif
 
     binpac::Declaration::Linkage linkage;

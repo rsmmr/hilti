@@ -162,9 +162,11 @@ public:
 
     /// Constructor.
     ///
-    /// ktype: The type of the map's index values.
+    /// ktype: The type of the map's index values. Can be left null if \a
+    /// elems contains at least one element.
     ///
-    /// vtype: The type of the map's values.
+    /// vtype: The type of the map's values. Can be left null if \a elems
+    /// contains at least one element.
     ///
     /// elems: The elements for the instance being constructed.
     ///
