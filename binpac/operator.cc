@@ -423,6 +423,9 @@ string Operator::render() const
         return util::fmt("%s %s %s", op1->render(), op.display, op2->render());
 
     switch ( op.kind ) {
+     case operator_::Add:
+        return util::fmt("add %s[%s]", op1->render(), op2->render());
+
      case operator_::Attribute:
         return util::fmt("%s.%s", op1->render(), op2->render());
 
@@ -440,6 +443,9 @@ string Operator::render() const
 
      case operator_::DecrPostfix:
         return util::fmt("%s--", op1->render());
+
+     case operator_::Delete:
+        return util::fmt("delete %s[%s]", op1->render(), op2->render());
 
      case operator_::HasAttribute:
         return util::fmt("%s?.%s", op1->render(), op2->render());

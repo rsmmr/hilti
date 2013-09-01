@@ -68,6 +68,9 @@ def fmtPac2Operator(op):
     op2 = "t:%s" % getDoc(op, "type_op2").replace("<*>", "")
     op3 = "t:%s" % getDoc(op, "type_op3").replace("<*>", "")
 
+    if kind == "Add":
+        return ("add", "op:add %s op:[ %s op:]" % (op1, op2))
+
     if kind == "Attribute":
         return ("attribute", "%s op:. a:<attr>" % op1)
 
@@ -98,6 +101,9 @@ def fmtPac2Operator(op):
     if kind == "DecrPrefix":
         return ("--", "op:-- %s" % op1)
 
+    if kind == "Delete":
+        return ("delete", "op:delete %s op:[ %s op:]" % (op1, op2))
+
     if kind == "Deref":
         return ("*", "op:\* %s" % op1)
 
@@ -121,6 +127,9 @@ def fmtPac2Operator(op):
 
     if kind == "Index":
         return ("[]", "%s op:[ %s op:]" % (op1, op2))
+
+    if kind == "In":
+        return ("in", "%s <sp> op:in <sp> %s" % (op1, op2))
 
     if kind == "IndexAssign":
         return ("[]=", "%s op:[ %s op:] op:= %s" % (op1, op2, op3))
