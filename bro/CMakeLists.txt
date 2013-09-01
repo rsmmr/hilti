@@ -23,8 +23,11 @@ if ( BRO_DIST )
     execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
     if ( BUILDING_HILTI )
+        if ( ${PAPI_FOUND} )
+            set(addl_libs "${PAPI_LIBRARIES}")
+        endif ()
+
         message(STATUS "Building Bro plugin as part of HILTI tree")
-        set(addl_libs ${PAPI_LIBRARIES})
         set(binpac "${CMAKE_CURRENT_BINARY_DIR}/../tools/binpac++")
 
     else ()
@@ -79,7 +82,7 @@ if ( BRO_DIST )
     bro_plugin_end()
 
     if ( BUILDING_HILTI )
-        set(plugin_external_libs ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap ${PAPI})
+        set(plugin_external_libs ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap)
         set(plugin_hilti_libs    hilti hilti-jit ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a)
         set(plugin_binpac_libs   binpacxx)
 
