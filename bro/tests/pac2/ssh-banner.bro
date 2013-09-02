@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC: bro -r ${TRACES}/ssh-single-conn.trace %INPUT >output
+# @TEST-EXEC: bro -r ${TRACES}/ssh-single-conn.trace ssh.evt %INPUT >output
 # @TEST-EXEC: btest-diff output
 #
 

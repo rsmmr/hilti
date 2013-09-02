@@ -22,6 +22,7 @@ event bro_init()
 		capture_events(fmt("events-%s.bst", prefix));
 		}
 
+@ifdef ( Analyzer::ANALYZER_PAC2_HTTP )
 	if ( pac2 )
 		{
 		Analyzer::disable_analyzer(Analyzer::ANALYZER_HTTP);
@@ -32,6 +33,7 @@ event bro_init()
 		Analyzer::enable_analyzer(Analyzer::ANALYZER_HTTP);
 		Analyzer::disable_analyzer(Analyzer::ANALYZER_PAC2_HTTP);
 		}
+@endif
 	}
 
 event http_request(c: connection, method: string, original_URI: string, unescaped_URI: string, version: string)

@@ -115,6 +115,26 @@ List
 .. include:: /build/autogen/pac2-list.rst
 
 
+.. pac2:type:: map
+
+Map
+~~~
+
+[TODO: Overview]
+
+.. include:: /build/autogen/pac2-map.rst
+
+
+.. pac2:type:: set
+
+Set
+~~~~
+
+[TODO: Overview]
+
+.. include:: /build/autogen/pac2-set.rst
+
+
 .. pac2:type:: sink
 
 Sink

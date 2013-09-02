@@ -16,7 +16,7 @@ Here's a simple "Hello, World!" in BinPAC++::
 
     module Test;
 
-    print "Hello, world!"
+    print "Hello, world!";
 
 Assuming that's stored in ``hello.pac2``, we can compile and run it
 with :ref:`pac2_pac-driver` like this::
@@ -28,11 +28,11 @@ with :ref:`pac2_pac-driver` like this::
 and then runs it directly. Alternatively, :ref:`hilti_hilti-build`  produces a
 stand-alone binary for subsequent execution::
 
-    > hilti-build -o a.out tools/pac-driver/pac-driver.c hello.pac2
+    > hilti-build -o a.out tools/pac-driver/pac-driver.cc hello.pac2
     > ./a.out
     Hello, World!
 
-Note the inclusion of ``pac-driver.c`` here: BinPAC++ generated code
+Note the inclusion of ``pac-driver.cc`` here: BinPAC++ generated code
 cannot run on its own but needs a *driver program* that provides a
 ``main`` function as well as normally (though not in this trivial
 example) also the input data for the generated parsers.
@@ -86,7 +86,7 @@ In this example, you can see a number of things:
       if a field has a regular expression as it's type, the parsed
       value will later have a type of :pac2:type:`bytes`.
 
-      If a field has a name, it can later be refereced for getting to
+      If a field has a name, it can later be referenced for getting to
       its content. Consequently, all fields with semantic meanings
       have names in the example, while those which are unlikely to be
       relevant later don't (e.g., the whitespaces).
@@ -148,7 +148,7 @@ number of known problems. In particular:
 
     - The language still lacks many basic features, including data
       types and operators. It's generally rather easy to add them (in
-      particular if HILTI already has the corresponding support), the
+      particular if HILTI already has the corresponding support); the
       current set is simply driven by what's been needed so far.
 
 If you find any problems---including bugs, missing features, and
@@ -161,16 +161,16 @@ Exploring More
 --------------
 
 * The BinPAC++ :ref:`pac2_reference` is slowly growing. Eventually, it
-  will document all available features.  Note that the
-  :ref:`data_types` section is auto-generated and comprehensively
-  lists all available operators. Operations not in there aren't
-  supported right now.
+  will document all available features.  Note though that the
+  :ref:`data_types` section is auto-generated from the source code and
+  hence comprehensively lists all currently available operators.
+  Operations not in there aren't supported yet.
 
-* There are two (preliminary) parsers for HTTP and DNS in
-  ``libbinpac/protocols``.
-
-* Look at the BinPAC++ source files (``*.pac2``) in the
+* There are some preliminary protocol parsers ``libbinpac/parsers/``,
+  and also in ``bro/pac2/``.
+  
+* Look at BinPAC++ source files (``*.pac2``) across the
   ``tests/binpac/*`` subdirectories to see how BinPAC++ grammars look
-  like. In particular, ``test/unit/*.pac2`` show the various features
-  available for expressing grammars. 
+  like. In particular, the ``test/unit/*.pac2`` show the various
+  features available for defining units.
 

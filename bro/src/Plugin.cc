@@ -31,6 +31,7 @@ void plugin::Bro_Hilti::Plugin::InitPreScript()
 
 	SetName("Bro::Hilti");
 	SetDynamicPlugin(true);
+	SetFileExtensions("pac2:evt");
 
 	BRO_PLUGIN_VERSION(1);
 	BRO_PLUGIN_DESCRIPTION("Dynamically compiled HILTI/BinPAC++ functionality");
@@ -44,11 +45,6 @@ void plugin::Bro_Hilti::Plugin::InitPreScript()
 
 	if ( ! _manager->InitPreScripts() )
 		exit(1);
-
-	for ( auto c : components )
-		AddComponent(c);
-
-	components.clear();
 	}
 
 void plugin::Bro_Hilti::Plugin::InitPostScript()
@@ -58,7 +54,7 @@ void plugin::Bro_Hilti::Plugin::InitPostScript()
 	if ( ! _manager->InitPostScripts() )
 		exit(1);
 
-	if ( ! _manager->Load() )
+	if ( ! _manager->FinishLoading() )
 		exit(1);
 
 	if ( ! _manager->Compile() )
@@ -67,6 +63,11 @@ void plugin::Bro_Hilti::Plugin::InitPostScript()
 
 void plugin::Bro_Hilti::Plugin::Done()
 	{
+	}
+
+bool plugin::Bro_Hilti::Plugin::LoadFile(const char* file)
+	{
+    return _manager->LoadFile(file);
 	}
 
 analyzer::Tag plugin::Bro_Hilti::Plugin::AddAnalyzer(const string& name, TransportProto proto, analyzer::Tag::subtype_t stype)
@@ -88,10 +89,13 @@ analyzer::Tag plugin::Bro_Hilti::Plugin::AddAnalyzer(const string& name, Transpo
 	}
 
 	auto c = new analyzer::Component(name.c_str(), factory, stype);
-	components.push_back(c);
 
-	auto t = c->Tag();
-	return t;
+#if 0
+	components.push_back(c);
+#endif
+
+    AddComponent(c);
+	return c->Tag();
 	}
 
 void plugin::Bro_Hilti::Plugin::AddEvent(const string& name)

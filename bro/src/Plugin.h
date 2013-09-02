@@ -30,6 +30,7 @@ protected:
 	// Overridden from Bro's Plugin.
 	void InitPreScript() override;
 	void InitPostScript() override;
+	bool LoadFile(const char* file) override;
 	void Done() override;
 
 private:

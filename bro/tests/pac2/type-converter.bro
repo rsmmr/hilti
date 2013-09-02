@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC: BRO_PAC2_PATH=. bro -r ${TRACES}/ssh-single-conn.trace %INPUT >output
+# @TEST-EXEC: bro -r ${TRACES}/ssh-single-conn.trace ./conv.evt %INPUT >output
 # @TEST-EXEC: btest-diff output
 #
 
@@ -24,6 +24,8 @@ export type Test = unit {
 
 
 @TEST-START-FILE conv.evt
+
+grammar conv;
 
 analyzer Conv over TCP:
     parse originator with Conv::Test,

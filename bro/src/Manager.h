@@ -124,13 +124,19 @@ public:
 	bool InitPostScripts();
 
 	/**
-	 * Compiles all *.pac2 analyzers found in any of the library paths.
-	 * This implements step 1 and 2.
+	 * Loaded all files still queued for doing so.
 	 *
-	 * @return True if all files have read and compiled successfully; if
-	 * not, error messages will have been written to the reporter.
+	 * @return True if all files have read and compiled successfully; if not,
+	 * error messages will have been written to the reporter.
 	 */
-	bool Load();
+	bool FinishLoading();
+
+	/**
+	 * Marks an *.pac2 or *.evt for loading. Note that it won't necessarily
+	 * load them all immediately, but may queue some for later compilation
+	 * via LoadAll().
+	 */
+	bool LoadFile(const std::string& file);
 
 	/**
 	 * After user scripts have been read, compiles and links all
@@ -204,6 +210,7 @@ protected:
 	 */
 	void InitHILTI();
 
+#if 0
 	/** Implements the search logic for both LoadPac2Modules() and LoadPac2Events().
 	 *
 	 * @param ext The file extension to search.
@@ -214,30 +221,39 @@ protected:
 	 * not, error messages will have been written to the reporter.
 	 */
 	bool SearchFiles(const char*ext, std::function<bool (std::istream& in, const std::string& path)> const & callback);
+#endif
+
+    /**
+     * Searches a file along the manager's library paths.
+     *
+     * file: The name of the file to search for. This can be an absolute or
+     * relative path.
+     *
+     * relative_to: If given, the method chdirs to this directory before
+     * starting to search *file*. It will chdir back to the original location
+     * before return.
+     *
+     * Returns: The full absolute path to the file, or an empty string if not found.
+     */
+    std::string SearchFile(const std::string& file, const std::string& relative_to = "") const;
 
 	/**
 	 * Loads one *.pac2 file.
 	 *
-	 * @param in The stream to read from.
-	 *
-	 * @param path The path associated with the stream, used for error
-	 * messages and debugging.
+	 * @param path The full path to load the file from.
 	 *
 	 * @return True if successfull.
 	 */
-	bool LoadPac2Module(std::istream& in, const std::string& path);
+	bool LoadPac2Module(const std::string& path);
 
 	/**
 	 * Loads one *.evt file.
 	 *
-	 * @param in The stream to read from.
-	 *
-	 * @param path The path associated with the stream, used for error
-	 * messages and debugging.
+	 * @param path The full path to load the file from.
 	 *
 	 * @return True if successfull.
 	 */
-	bool LoadPac2Events(std::istream& in, const std::string& path);
+	bool LoadPac2Events(const std::string& path);
 
 	/**
 	 * Parses a single event specification.

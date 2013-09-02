@@ -83,7 +83,8 @@ to tell ``make`` where your Bro source tree is::
     > make BRO_DIST=/path/to/bro
 
 .. note:: You currently need a special topic branch of Bro to work
-   with HILTI/BinPAC++. See :ref:`bro-plugin` for more information.
+   with HILTI/BinPAC++. See :ref:`pac2_bro-plugin` for more
+   information.
 
 If everything has worked right, there should now be a binary
 ``build/tools/hiltic`` afterwards (as well as a few others).

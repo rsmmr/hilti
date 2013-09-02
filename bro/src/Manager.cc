@@ -162,7 +162,7 @@ struct Manager::PIMPL
 	typedef std::vector<shared_ptr<Pac2AnalyzerInfo>> pac2_analyzer_vector;
 	typedef std::list<shared_ptr<::hilti::Module>>    hilti_module_list;
 	typedef std::list<llvm::Module*>                  llvm_module_list;
-	typedef std::list<std::string>                    path_list;
+	typedef std::set<std::string>                     path_set;
 
 	::hilti::Options hilti_options;
 	::binpac::Options pac2_options;
@@ -185,7 +185,8 @@ struct Manager::PIMPL
 	pac2_event_list  pac2_events;			// All events found in the *.evt files.
 	pac2_analyzer_list pac2_analyzers;		// All analyzers found in the *.evt files.
 	pac2_analyzer_vector pac2_analyzers_by_subtype;	// All analyzers indexed by their analyzer::Tag subtype.
-	path_list evt_files;                            // All loaded *.evt files.
+	path_set evt_files;                             // All loaded *.evt files.
+	path_set pac2_files;                            // All loaded *.pac2 files.
 
 	shared_ptr<::hilti::CompilerContext>         hilti_context = nullptr;
 	shared_ptr<::binpac::CompilerContext>        pac2_context = nullptr;
@@ -207,7 +208,7 @@ Manager::Manager()
 	pre_scripts_init_run = false;
 	post_scripts_init_run = false;
 
-        char* dir = getenv("BRO_PAC2_PATH");
+	char* dir = getenv("BRO_PAC2_PATH");
 	if ( dir )
 		AddLibraryPath(dir);
 	}
@@ -231,9 +232,6 @@ bool Manager::InitPreScripts()
 	{
 	assert(! pre_scripts_init_run);
 	assert(! post_scripts_init_run);
-
-	if ( ! SearchFiles("evt", [&](std::istream& in, const string& path) -> bool { return LoadPac2Events(in, path); }) )
-		return false;
 
 	pre_scripts_init_run = true;
 
@@ -285,7 +283,7 @@ bool Manager::InitPostScripts()
 
 		if ( tag )
 			{
-			PLUGIN_DBG_LOG(HiltiPlugin, "disabling %s for %s",
+			PLUGIN_DBG_LOG(HiltiPlugin, "Disabling %s for %s",
 				a->replaces.c_str(), a->name.c_str());
 
 			analyzer_mgr->DisableAnalyzer(tag);
@@ -307,7 +305,7 @@ bool Manager::InitPostScripts()
 	return true;
 	}
 
-bool Manager::Load()
+bool Manager::FinishLoading()
 	{
 	assert(pre_scripts_init_run);
 	assert(post_scripts_init_run);
@@ -326,12 +324,50 @@ bool Manager::Load()
 
 	pimpl->libbro_path = pimpl->hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
 
-	if ( ! SearchFiles("pac2", [&](std::istream& in, const string& path) -> bool { return LoadPac2Module(in, path); }) )
-		return false;
+        for ( auto i = pimpl->pac2_files.begin(); i != pimpl->pac2_files.end(); i++ )
+		{
+		if ( ! LoadPac2Module(*i) )
+			return false;
+		}
 
 	return true;
 	}
 
+bool Manager::LoadFile(const std::string& file)
+	{
+	std::string path = SearchFile(file);
+
+	if ( path.empty() )
+		{
+		reporter::error(::util::fmt("cannot find file %s", file));
+		return false;
+		}
+
+	if ( path.size() > 5 && path.substr(path.size() - 5) == ".pac2" )
+		{
+		if ( pimpl->pac2_files.find(path) != pimpl->pac2_files.end() )
+			// Already loaded.
+			return true;
+
+		pimpl->pac2_files.insert(path);
+		return true;
+		}
+
+	if ( path.size() > 4 && path.substr(path.size() - 4) == ".evt" )
+		{
+		if ( pimpl->evt_files.find(path) != pimpl->evt_files.end() )
+			// Already loaded.
+			return true;
+
+		pimpl->evt_files.insert(path);
+		return LoadPac2Events(path);
+		}
+
+	reporter::internal_error(::util::fmt("unknown file type passed to HILTI loader: %s", path));
+	return false;
+	}
+
+#if 0
 bool Manager::SearchFiles(const char* ext, std::function<bool (std::istream& in, const string& path)> const & callback)
 	{
 	for ( auto dir : pimpl->import_paths )
@@ -339,7 +375,7 @@ bool Manager::SearchFiles(const char* ext, std::function<bool (std::istream& in,
 		glob_t g;
 		string p = dir + "/*." + ext;
 
-		PLUGIN_DBG_LOG(HiltiPlugin, "searching %s", p.c_str());
+		PLUGIN_DBG_LOG(HiltiPlugin, "Searching %s", p.c_str());
 
 		if ( glob(p.c_str(), 0, 0, &g) < 0 )
 			continue;
@@ -362,6 +398,61 @@ bool Manager::SearchFiles(const char* ext, std::function<bool (std::istream& in,
 		}
 
 	return true;
+	}
+#endif
+
+std::string Manager::SearchFile(const std::string& file, const std::string& relative_to) const
+	{
+	char cwd[PATH_MAX] = "\0";
+	char rpath[PATH_MAX];
+	string result = "";
+
+	if ( file.empty() )
+		goto done;
+
+	if ( ! getcwd(cwd, PATH_MAX) )
+		{
+		reporter::error("cannot get current working directory");
+		return "";
+		}
+
+	if ( relative_to.size() )
+		{
+		if ( chdir(relative_to.c_str()) < 0 )
+			reporter::error(::util::fmt("cannot chdir to %s", relative_to));
+		}
+
+	if ( is_file(file) )
+		{
+		result = realpath(file.c_str(), rpath) ? rpath : "";
+		goto done;
+		}
+
+	if ( file[0] == '/' || is_dir(file) )
+		goto done;
+
+	for ( auto dir : pimpl->import_paths )
+		{
+		std::string path = dir + "/" + file;
+
+		if ( ! realpath(path.c_str(), rpath) )
+			continue;
+
+		if ( is_file(rpath) )
+			{
+			result = rpath;
+			goto done;
+			}
+		}
+
+done:
+	if ( cwd[0] )
+		{
+		if ( chdir(cwd) < 0 )
+			reporter::error(::util::fmt("cannot chdir back to %s", relative_to));
+		}
+
+	return result;
 	}
 
 bool Manager::Compile()
@@ -569,7 +660,7 @@ bool Manager::Compile()
 		return false;
 		}
 
-	PLUGIN_DBG_LOG(HiltiPlugin, "loading %s", pimpl->libbro_path.c_str());
+	PLUGIN_DBG_LOG(HiltiPlugin, "Loading %s", pimpl->libbro_path.c_str());
 
 	auto libbro = pimpl->hilti_context->loadModule(pimpl->libbro_path);
 
@@ -658,7 +749,7 @@ bool Manager::Compile()
 	// BinPAC++ context here to make sure we gets its additional
 	// libraries linked.
 	//
-	PLUGIN_DBG_LOG(HiltiPlugin, "compiling & linking all HILTI code into a single LLVM module");
+	PLUGIN_DBG_LOG(HiltiPlugin, "Compiling & linking all HILTI code into a single LLVM module");
 
 	llvm_module = pimpl->pac2_context->linkModules("__bro_linked__", pimpl->llvm_modules, false);
 
@@ -684,7 +775,7 @@ bool Manager::Compile()
 
 bool Manager::RunJIT(llvm::Module* llvm_module)
 	{
-	PLUGIN_DBG_LOG(HiltiPlugin, "running JIT on LLVM module");
+	PLUGIN_DBG_LOG(HiltiPlugin, "Running JIT on LLVM module");
 
 	auto hilti_context = pimpl->hilti_context;
 
@@ -699,7 +790,7 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 	extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[];
 	hilti_context->installFunctionTable(libbro_function_table);
 
-	PLUGIN_DBG_LOG(HiltiPlugin, "initializing HILTI runtime");
+	PLUGIN_DBG_LOG(HiltiPlugin, "Initializing HILTI runtime");
 
 	hlt_config cfg = *hlt_config_get();
 	cfg.fiber_stack_size = 5000 * 1024;
@@ -710,7 +801,7 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 	binpac_init();
 	binpac_init_jit(hilti_context, llvm_module, ee);
 
-	PLUGIN_DBG_LOG(HiltiPlugin, "retrieving binpac_parsers() function");
+	PLUGIN_DBG_LOG(HiltiPlugin, "Retrieving binpac_parsers() function");
 
 	typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
 	auto binpac_parsers = (binpac_parsers_func)hilti_context->nativeFunction(llvm_module, ee, "binpac_parsers");
@@ -721,7 +812,7 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 		return false;
 		}
 
-	PLUGIN_DBG_LOG(HiltiPlugin, "calling binpac_parsers() function");
+	PLUGIN_DBG_LOG(HiltiPlugin, "Calling binpac_parsers() function");
 
 	hlt_exception* excpt = 0;
 	hlt_execution_context* ctx = hlt_global_execution_context();
@@ -803,9 +894,17 @@ llvm::Module* Manager::CheckCacheForLinkedModule()
 	return llvm_module;
 	}
 
-bool Manager::LoadPac2Module(std::istream& in, const string& path)
+bool Manager::LoadPac2Module(const string& path)
 	{
-	PLUGIN_DBG_LOG(HiltiPlugin, "loading units from %s", path.c_str());
+	std::ifstream in(path);
+
+	if ( ! in )
+		{
+		reporter::error(::util::fmt("cannot open %s", path));
+		return false;
+		}
+
+	PLUGIN_DBG_LOG(HiltiPlugin, "Loading units from %s", path.c_str());
 
 	// ctx->enableDebug(dbg_scanner, dbg_parser, dbg_scopes, dbg_grammars);
 
@@ -829,7 +928,7 @@ bool Manager::LoadPac2Module(std::istream& in, const string& path)
 
 	minfo->pac2_module = std::make_shared<::binpac::Module>(pimpl->pac2_context.get(), std::make_shared<::binpac::ID>(::util::fmt("BroHooks_%s", name)));
 
-    minfo->hilti_context = std::make_shared<::hilti::CompilerContext>(pimpl->hilti_options);
+	minfo->hilti_context = std::make_shared<::hilti::CompilerContext>(pimpl->hilti_options);
 	minfo->hilti_mbuilder = std::make_shared<::hilti::builder::ModuleBuilder>(minfo->hilti_context, ::util::fmt("BroFuncs_%s", name));
 	minfo->hilti_module = minfo->hilti_mbuilder->module();
 	minfo->hilti_mbuilder->importModule("Hilti");
@@ -896,6 +995,34 @@ error:
 	reporter::error(::util::fmt("expected id"));
 	return false;
 
+	}
+
+static bool is_path_char(const string& chunk, size_t i)
+	{
+	char c = chunk[i];
+	return (! isspace(c)) && c != ';';
+	}
+
+static bool extract_path(const string& chunk, size_t* i, string* id)
+	{
+	eat_spaces(chunk, i);
+
+	size_t j = *i;
+
+	while ( j < chunk.size() && is_path_char(chunk, j) )
+		++j;
+
+	if ( *i == j )
+		goto error;
+
+	*id = chunk.substr(*i, j - *i);
+	*i = j;
+
+	return true;
+
+error:
+	reporter::error(::util::fmt("expected path"));
+	return false;
 	}
 
 // TODO: Not used anymore currently.
@@ -1069,11 +1196,17 @@ error:
 	return false;
 	}
 
-bool Manager::LoadPac2Events(std::istream& in, const string& path)
+bool Manager::LoadPac2Events(const string& path)
 	{
-	PLUGIN_DBG_LOG(HiltiPlugin, "loading events from %s", path.c_str());
+	std::ifstream in(path);
 
-	pimpl->evt_files.push_back(path);
+	if ( ! in )
+		{
+		reporter::error(::util::fmt("cannot open %s", path));
+		return false;
+		}
+
+	PLUGIN_DBG_LOG(HiltiPlugin, "Loading events from %s", path.c_str());
 
 	int lineno = 0;
 	string chunk;
@@ -1120,7 +1253,7 @@ bool Manager::LoadPac2Events(std::istream& in, const string& path)
 
 			pimpl->pac2_analyzers.push_back(a);
 			RegisterBroAnalyzer(a);
-			PLUGIN_DBG_LOG(HiltiPlugin, "finished processing analyzer definition for %s", a->name.c_str());
+			PLUGIN_DBG_LOG(HiltiPlugin, "Finished processing analyzer definition for %s", a->name.c_str());
 			}
 
 		else if ( looking_at(chunk, 0, "on") )
@@ -1132,13 +1265,47 @@ bool Manager::LoadPac2Events(std::istream& in, const string& path)
 
 			ev->file = path;
 
-			PLUGIN_DBG_LOG(HiltiPlugin, "finished processing event definition for %s", ev->name.c_str());
+			PLUGIN_DBG_LOG(HiltiPlugin, "Finished processing event definition for %s", ev->name.c_str());
 			pimpl->pac2_events.push_back(ev);
 			HiltiPlugin.AddEvent(ev->name);
 			}
 
+		else if ( looking_at(chunk, 0, "grammar") )
+			{
+			size_t i = 0;
+
+			if ( ! eat_token(chunk, &i, "grammar") )
+				return 0;
+
+			string pac2;
+
+			if ( ! extract_path(chunk, &i, &pac2) )
+				goto error;
+
+			size_t j = pac2.find_last_of("/.");
+
+			if ( j == string::npos || pac2[j] == '/' )
+				pac2 += ".pac2";
+
+			string dirname;
+
+			j = path.find_last_of("/");
+			if ( j != string::npos )
+				{
+				dirname = path.substr(0, j);
+				pimpl->pac2_options.libdirs_pac2.push_front(dirname);
+				}
+
+			pac2 = SearchFile(pac2, dirname);
+
+			PLUGIN_DBG_LOG(HiltiPlugin, "Loading Bro file %s", pac2.c_str());
+
+			if ( ! HiltiPlugin.LoadBroFile(pac2.c_str()) )
+				goto error;
+			}
+
 		else
-			reporter::error("expected 'analyzer' or 'on'");
+			reporter::error("expected 'grammar', 'analyzer', or 'on'");
 
 		chunk = "";
 
@@ -1476,7 +1643,7 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 	d.SetShort();
 	ev->bro_event_type->Describe(&d);
 	const char* handled = (ev->bro_event_handler ? "has handler" : "no handlers");
-	PLUGIN_DBG_LOG(HiltiPlugin, "new Bro event '%s: %s' (%s)", ev->name.c_str(), d.Description(), handled);
+	PLUGIN_DBG_LOG(HiltiPlugin, "New Bro event '%s: %s' (%s)", ev->name.c_str(), d.Description(), handled);
 #endif
 	}
 
@@ -1488,7 +1655,7 @@ static shared_ptr<::binpac::Expression> id_expr(const string& id)
 bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 	{
 	// Find the pac2 module that this event belongs to.
-	PLUGIN_DBG_LOG(HiltiPlugin, "adding pac2 hook %s for event %s", ev->hook.c_str(), ev->name.c_str());
+	PLUGIN_DBG_LOG(HiltiPlugin, "Adding pac2 hook %s for event %s", ev->hook.c_str(), ev->name.c_str());
 
 	ev->minfo->pac2_module->import(ev->unit_module->id());
 
@@ -1573,7 +1740,7 @@ shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(
 	{
 	auto fname = ::util::fmt("accessor_%s_arg%d", ::util::strreplace(ev->name, "::", "_"), nr);
 
-	PLUGIN_DBG_LOG(HiltiPlugin, "defining BinPAC++ function %s for parameter %d of event %s", fname.c_str(), nr, ev->name.c_str());
+	PLUGIN_DBG_LOG(HiltiPlugin, "Defining BinPAC++ function %s for parameter %d of event %s", fname.c_str(), nr, ev->name.c_str());
 
 	auto pac2_expr = pimpl->pac2_context->parseExpression(expr);
 
@@ -1609,7 +1776,7 @@ shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccess
 	{
 	auto fname = ::util::fmt("%s::accessor_%s_arg%d", ev->minfo->pac2_module->id()->name(), ::util::strreplace(ev->name, "::", "_"), nr);
 
-	PLUGIN_DBG_LOG(HiltiPlugin, "declaring HILTI function %s for parameter %d of event %s", fname.c_str(), nr, ev->name.c_str());
+	PLUGIN_DBG_LOG(HiltiPlugin, "Declaring HILTI function %s for parameter %d of event %s", fname.c_str(), nr, ev->name.c_str());
 
 	auto result = ::hilti::builder::function::result(rtype);
 
@@ -1642,7 +1809,7 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 	{
 	string fname = ::util::fmt("raise_%s", ::util::strreplace(ev->name, "::", "_"));
 
-	PLUGIN_DBG_LOG(HiltiPlugin, "adding HILTI function %s for event %s", fname.c_str(), ev->name.c_str());
+	PLUGIN_DBG_LOG(HiltiPlugin, "Adding HILTI function %s for event %s", fname.c_str(), ev->name.c_str());
 
 	auto result = ::hilti::builder::function::result(::hilti::builder::void_::type());
 

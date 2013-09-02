@@ -1,12 +1,11 @@
 
-.. _bro-plugin:
+.. _pac2_bro-plugin:
 
 =============
 Bro Interface
 =============
 
 .. contents::
-
 
 BinPAC++ comes with a Bro plugin that adds support for ``*.pac2``
 grammars to Bro. The following overview walks through installation and
@@ -22,11 +21,11 @@ dynamically loaded plugins. To get it, use git::
     > git clone --recursive git://git.bro.org/bro
     > git checkout topic/robin/dynamic-plugins
 
-Now you need to build Bro with the same C++ compiler that you use to
-compile HILTI/BinPAC++ with. If that's, say,
-``/opt/llvm/bin/clang++``, do:: 
+Now you need to build Bro with the same C++ compiler (and C++ standard
+library) that you also use for compiling HILTI/BinPAC++ with. If
+that's, say, ``/opt/llvm/bin/clang++``, do:: 
 
-    > CXX=/opt/llvm/bin/clang++ ./configure && make
+    > CXX="/opt/llvm/bin/clang++ --stdlib=libc++" ./configure && make
 
 Then compile HILTI/BinPAC++, pointing it to your Bro clone::
 
@@ -55,8 +54,8 @@ analyzer as standard ``*.pac2`` code; and defining the analyzer's
 interface to Bro, including the events it will generate, in a separate
 ``*.evt`` file. We look at the two separately in the following, using
 a simple analyzer for parsing SSH banners as our running example. We
-then show to tell Bro where to find the BinPAC++ plugin and its
-analyzers.
+then show to run Bro so that it loads the BinPAC++ plugin along with
+any analyzers.
 
 BinPAC++ Grammar
 ----------------
@@ -73,11 +72,28 @@ time. If you add ``print`` statements, they will generate the
 corresponding output as Bro processes input, which can be helpful for
 debugging.
 
-By default, for now Bro searches for grammars only inside the source
-tree at ``hilti2/bro/pac2/``. It automatically pulls in all the
-``*.pac2`` files it finds there. In addition, one can set the
-environment variable ``BRO_PAC2_PATH`` to a colon-separated list of
-further directories to search.
+Analyzer Interface
+------------------
+
+Next, we define a file ``ssh.evt`` that refers to the grammar to
+define a new Bro analyzer. An ``*.evt`` file has three parts: (1) an
+``grammar`` specification telling Bro which ``*.pac`` file to use; (2)
+an ``analyzer`` definition describing where to hook it into Bro's
+traffic processing; and (3) a series of event definitions specifying
+how to turn what's parsed into the Bro events. Here's an ``ssh.evt``
+to go with our SSH grammar:
+
+.. literalinclude:: /../bro/pac2/ssh.evt
+
+The ``grammar`` line specifies a ``*.pac2`` file to load. The path is
+relative to the location of the ``*.evt`` file; if it's not found
+there, the plugin further searches for grammars inside the source tree
+at ``hilti2/bro/pac2/``, and in any directories specified through the
+environment variable ``BRO_PAC2_PATH`` (using the standard syntax of
+colon-separated paths). The ``grammar`` line is optional, one can
+leave it out if the ``*.pac2`` grammars get loaded otherwise (e.g.,
+via the command line; see below). One can also specify multiple
+``grammar`` entries.
 
 .. note::
 
@@ -89,31 +105,16 @@ further directories to search.
     back to the source directory ``hilti2/bro/pac2/`` so that one can
     edit files there and they will be pulled in directly.
 
-Analyzer Interface
-------------------
-
-Next, we define a file ``ssh.evt`` that refers to the grammar to
-define a new Bro analyzer. Searches for ``*.evt`` files at the same
-places as ``*.pac2`` grammars, and likewise pulls in all it finds
-there.
-
-An ``*.evt`` file has two parts, an analyzer definition describing
-where to hook it into Bro's traffic processing a series of event
-definitions specifying how to turn what's parsed into the Bro events:
-
-.. literalinclude:: /../bro/pac2/ssh.evt
-
-
 The ``analyzer`` block starts with giving the new analyzer a name
-(``pac2::SSH``). The namespace isn't mandatory, but we use it
-differentiate BinPAC++ analyzers from Bro's standard analyzer. The
+(``pac2::SSH``). The namespace isn't mandatory, but we use it to
+differentiate BinPAC++ analyzers from Bro's standard analyzers. The
 name corresponds to how we'll refer to the new analyzer in Bro. For
 example, just like there's an ``analyzer::ANALYZER_SSH`` enum for the
 standard SSH analyzer, there'll now be an
 ``analyzer::ANALYZER_PAC2_SSH``. (As you can see there's a bit of name
-normalization, use ``bro -NN`` so the final name.). ``over TCP``
-declares this to be an TCP application-layer analyzer (nothing else is
-supported yet).
+normalization going on, use ``bro -NN`` to see the final name.).
+``over TCP`` declares this to be an TCP application-layer analyzer
+(nothing else is supported yet).
 
 Next comes set of of properties for the analyzer, separated by commas
 (order is not important):
@@ -121,26 +122,27 @@ Next comes set of of properties for the analyzer, separated by commas
     - ``parse with <unit>`` links the new analyzer with the BinPAC++
       grammar: ``<unit>`` is the fully-qualified name of the unit we
       want to use as the top-level entry point for parsing. When
-      specified as here, the unit will be used for both originator-
-      and responder-side traffic. One case use different ones for each
-      side by specifying ``parse originator with <orig-unit>`` and
-      ``parse responder with <resp-unit>``, respectively.
+      specified the way we do here, the unit will be used for both
+      originator- and responder-side traffic. One can use different
+      units for each side by specifying ``parse originator with
+      <orig-unit>`` and ``parse responder with <resp-unit>``,
+      respectively.
 
     - ``port <port>`` defines the well-known port for the analyzer;
       this translates into registering the port with Bro's analyzer
-      framework at runtime. This is optional, as usual analyzers can
+      framework at runtime. This is optional; as usual analyzers can
       also be activated via DPD signatures or even manually from
-      script-land. One can also give multiple ``port`` specifications
-      (but separately).
+      script-land. One can give multiple ``port`` specifications (but
+      separately).
 
     - ``replaces <analyzer>`` tells Bro that when this analyzer is
-      activateed, it's replacing one of the built-in analyzers, giving
-      by its name (again see ``bro -NN`` to get the names of all
-      built-in analyzers). This has two effects: First, the built-in
-      one will be completely disabled at startup, and second in
-      script-land Bro will use the name of the original analyzer in
-      place of this one (e.g., so that in ``conn.log`` the service
-      will show up as ``SSH``, not ``PAC2_SSH``).
+      activateed, it's replacing one of the built-in analyzers, given
+      by its name (see again ``bro -NN`` for the names of all built-in
+      analyzers). This has two effects: First, the built-in one will
+      be completely disabled at startup, and second in script-land Bro
+      will use the name of the original analyzer in place of this one
+      (e.g., so that in ``conn.log`` the service will show up as
+      ``SSH``, not ``PAC2_SSH``).
 
 Events are defined by lines of the form ``<hook> -> event
 <name>(<parameters>)``. Let's break it down:
@@ -152,35 +154,37 @@ Events are defined by lines of the form ``<hook> -> event
       the example above, ``on SSH::Banner`` will trigger an event
       whenever an instance of the ``SSH::Banner`` unit has been fully
       parsed. One can also refer to individual unit fields and
-      variables (e.g., ``on SSH::Banner::version``), and the unit-wide
+      variables (e.g., ``on SSH::Banner::version``). The unit-wide
       unit hooks work as well (e.g., ``on SSH::Banner::%init``).
 
     - ``<name>`` corresponds directly to the name of the event as
       visible in Bro. As you can see, one can (and should) use
       namespaces.
 
-    - The ``<parameters>`` define the event's parameters, both their
-      types and their values at the same time. Each parameter is a
-      complete BinPAC++ expression (except some "magic" ones starting
-      with ``$``, see below). The type of the BinPAC++ expressions
-      determines the Bro type of the event parameter, with an internal
-      mapping defining how a BinPAC++ type translates into a Bro type
-      (e.g., a ``bytes`` objects translates into a Bro ``string``; see
-      :ref:`pac2_bro-type-mapping` for the details). At runtime, when an
-      event is raised, the expression is evaluated to determine the
-      value passes to handlers. That evaluation takes place in a hook
-      context corresponding to what ``<hook>`` triggers on, and it has
-      access to the same scope as a manually written hook. For
-      example, with the ``on SSH::Banner`` event, ``self`` refers to
-      the unit instance and ``self.version`` to its ``version`` item.
-      Or if you wanted, e.g., an upper-case version of the software
-      identification, you could use ``self.software.upper()``.
+    - The ``<parameters>`` define the event's parameters, specifying
+      both their values and (implicitly) their types at the same time.
+      Each parameter is a complete BinPAC++ expression (except for
+      some "magic" ones starting with ``$``, see below). The type of
+      each BinPAC++ expression determines the Bro type of the
+      corresponding event parameter, with an internal mapping defining
+      how each BinPAC++ type translates into a Bro type (e.g., a
+      ``bytes`` objects translates into a Bro ``string``; see
+      :ref:`pac2_bro-type-mapping` for the details). At runtime, when
+      an event is raised, the expression is evaluated to determine the
+      value passed to event's handlers. That evaluation takes place in
+      a hook context corresponding to what ``<hook>`` triggers on, and
+      it has access to the same scope as a manually written hook would
+      have. For example, with the ``on SSH::Banner`` event, ``self``
+      refers to a ``SSH::Banner`` unit instance and ``self.version``
+      to its ``version`` item. If, for example, you wanted an
+      upper-case version of the software identification, you could use
+      ``self.software.upper()``.
 
-      In addition to that, two "magic" parameters provide access to
-      internal Bro state:
+      In addition to expression parameters, there are two "magic"
+      parameters that provide access to internal Bro state:
 
         - ``$conn`` references the current connection that's being
-          passed, and it translates into a ``connection`` record
+          parsed, and it translates into a ``connection`` record
           parameter for the corresponding Bro event.
 
         - ``$is_orig`` turns into a boolean value indicating whether
@@ -202,36 +206,56 @@ can now write an event handler:
 Note how the ``ssh::banner`` definition from ``ssh.evt`` maps into the
 event's parameter signature.
 
-To check that Bro indeed finds the new analyzer, check the ``bro -NN``
-output::
+Before we can use it, we need to tell Bro where to find the BinPAC++
+plugin. For that, we set the environment variable ``BRO_PLUGINS`` to
+the plugin's build directory::
 
-    # bro -NN
+    export BRO_PLUGINS=/path/to/binpacpp/hilti2/build/bro
+
+.. note::
+
+    If you get the path to the plugin wrong, or forget to set it at
+    all, you'll get some misleading error messages below as Bro will
+    try to parse ``ssh.evt`` file as a Bro script.
+
+Now we can run Bro with the new analyzer by giving it the ``ssh.evt``
+on the command line. If not an absolute path, Bro will search for the
+the file first in the current directory first, and then---just as
+described above for ``*.pac2`` files---in ``hilti2/bro/pac2/`` and any
+directories specified by ``BRO_PAC2_PATH``.
+
+Let's first just check that Bro indeeds loads the analyzer correctly.
+``bro -NN`` will tell us::
+
+    # bro -NN ssh.evt
     [...]
     Plugin: Bro::Hilti - Dynamically compiled HILTI/BinPAC++ functionality (dynamic, version 1)
-        [...]
         [Analyzer] pac2_SSH (ANALYZER_PAC2_SSH, enabled)
         [Event] ssh::banner
         [...]
     [...]
 
-We see Bro has found the BinPac++ plugin, and that one now provides a
-new ``pac2_SSH`` analyzer with one event ``ssh_banner``. Let's try it
-with a trace containing a single SSH connection::
+We see that Bro has found the BinPac++ plugin. The plugin indeed
+provides our analyzer ``pac2_SSH``, which generates one event
+``ssh_banner``.
 
-    # bro -r ssh-single-conn.trace ssh-banner.bro
+Let's now try processing a trace containing a single SSH connection,
+making sure to give Bro our event handler ``ssh-banner.bro`` as well::
+
+    # bro -r ssh-single-conn.trace ssh.evt ssh-banner.bro
     SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp], F, 1.99, OpenSSH_3.9p1
     SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp], T, 2.0, OpenSSH_3.8.1p1
 
 HILTI/BinPAC++ Options
 ----------------------
 
-Bro's BinPAC++ comes with a number of options defined in
+Bro's BinPAC++ plugin comes with a number of options defined in
 ``hilti2/bro/scripts/bro/hilti/base/main.bro``. These include:
 
 ``debug: bool`` (default: false)
     If true, compiles all BinPAC++/HILTI code in debug mode, meaning
-    that the :ref:`pac2_debugging` will be
-    available (including the ``HILTI_DEBUG`` environemnt variable).
+    that :ref:`pac2_debugging` will be available (including the
+    ``HILTI_DEBUG`` environment variable).
 
 ``dump_debug: bool`` (default: false)
     Dumps debug information about the compiled analyzers to the
@@ -245,19 +269,18 @@ Bro's BinPAC++ comes with a number of options defined in
 ``use_cache: bool`` (default: true)
     Enables caching of compiled BinPAC++/HILTI code. If on, you will
     notice that the first time you start Bro with a new (or modified)
-    analyzer, it takes signficantly longer that on subsequent
-    executions. That's because the first needs to do all the leg-work
-    of going from BinPAC++ to native code in the background. It then
-    however caches the resulting code on disk and reuses it next time
-    directly.
+    analyzer, it takes longer than on subsequent invocations. That's
+    because the first one needs to do all the leg-work of going from
+    BinPAC++ to native code. It then however caches the resulting code
+    on disk and reuses it next time directly.
 
     Normally you want this on, however currently the cache does not
     always pick up on changes made to ``*.pac2`` or ``*.evt`` files
-    (or Bro itself, or the BinPAC++ plugin) during execution. If you
-    notice that a change doesn't seem to take effect, try removing the
-    cache directory (``.cache``) or simply disable it altogether.
+    (or Bro itself, or the BinPAC++ plugin). If you notice that a
+    change doesn't seem to take effect, try removing the cache
+    directory (``.cache``) or simply disable it altogether.
 
-See the script itself for the complete list.
+See the script itself for the complete list of all options.
 
 .. _pac2_bro-type-mapping:
 
@@ -265,7 +288,7 @@ Type Mapping
 ------------
 
 The following table summarizes how BinPAC++ types get mapped into Bro
-types. (Types not listed are not yet implemented.)
+types. Types not listed are not yet implemented.
 
 ===========    ==========
 BinPAC++       Bro

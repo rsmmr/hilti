@@ -1,4 +1,6 @@
 
+grammar ssh.pac2;
+
 analyzer pac2::SSH over TCP:
     parse with SSH::Banner,
     port 22/tcp,
