@@ -1,0 +1,37 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void other() {
+}
+
+void run() {
+    local tuple<caddr,caddr> t
+    local caddr a
+    local caddr b
+    local caddr c
+    local bool X
+
+    t = caddr.function run
+    a = tuple.index t 1
+
+    t = caddr.function other
+    b = tuple.index t 1
+
+    X = equal a a
+    call Hilti::print (X)
+
+    X = equal a b
+    call Hilti::print (X)
+
+    X = equal a Null
+    call Hilti::print (X)
+
+    X = equal c Null
+    call Hilti::print (X)
+}

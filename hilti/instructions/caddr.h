@@ -26,3 +26,15 @@ iBegin(caddr, Function, "caddr.function")
 
 iEnd
 
+iBegin(caddr, Equal, "equal")
+    iTarget(optype::boolean)
+    iOp1(optype::caddr, true);
+    iOp2(optype::caddr, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Returns true if *op1* is equal to *op2*.
+    )")
+iEnd

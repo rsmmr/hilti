@@ -6,7 +6,6 @@
 using namespace hilti;
 using namespace codegen;
 
-
 void StatementBuilder::visit(statement::instruction::caddr::Function* i)
 {
     auto op1 = ast::as<expression::Function>(i->op1());
@@ -40,6 +39,16 @@ void StatementBuilder::visit(statement::instruction::caddr::Function* i)
 
     CodeGen::value_list vals = { v1, v2 };
     auto result = cg()->llvmValueStruct(vals);
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::caddr::Equal* i)
+{
+    auto op1 = cg()->llvmValue(i->op1());
+    auto op2 = cg()->llvmValue(i->op2());
+
+    auto result = builder()->CreateICmpEQ(op1, op2);
 
     cg()->llvmStore(i, result);
 }
