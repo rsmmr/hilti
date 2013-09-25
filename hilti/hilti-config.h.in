@@ -103,8 +103,13 @@ struct Configuration {
         "m",
         "pthread",
 #endif
+
 #if ${HAVE_PAPI}
-        "papi"
+        "papi",
+#endif
+
+#if ${HAVE_PERFTOOLS}
+        "tcmalloc",
 #endif
     };
 
