@@ -15,7 +15,7 @@ ENDIF(APPLE)
 
 # These are used below in set_target_properties.
 set(c_debug_flags                "-DDEBUG -O0")
-set(c_release_flags              "-O2")
+set(c_release_flags              "-O3")
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
@@ -133,8 +133,8 @@ add_custom_command(
 add_custom_target(build_asm
                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libhilti-rt-native.a)
 
-add_library(hilti-rt-dbg       STATIC ${SRCS} ${autogen}/type-info.o)
-add_library(hilti-rt           STATIC ${SRCS} ${autogen}/type-info.o)
+add_library(hilti-rt-dbg       STATIC ${SRCS} ${autogen}/type-info.o ${OPTLIBS})
+add_library(hilti-rt           STATIC ${SRCS} ${autogen}/type-info.o ${OPTLIBS})
 
 add_dependencies(hilti-rt-dbg      generate_jrx_parser build_asm hiltic-nojit)
 add_dependencies(hilti-rt          generate_jrx_parser build_asm hiltic-nojit)

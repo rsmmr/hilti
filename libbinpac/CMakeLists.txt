@@ -17,7 +17,7 @@ ENDIF(APPLE)
 
 # These are used below in set_target_properties.
 set(c_debug_flags   "-DDEBUG -O0")
-set(c_release_flags "-O2")
+set(c_release_flags "-O3")
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
