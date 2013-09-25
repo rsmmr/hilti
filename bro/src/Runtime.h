@@ -40,9 +40,14 @@ void* libbro_h2b_double(double d, hlt_exception** excpt, hlt_execution_context* 
 // Converts a HILTI double value into a Bro Val.
 void* libbro_h2b_bool(int8_t d, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Returns the handler for an event given by name. If there's no such event,
+// or it doesn't have any handler implementations, returns a sentinel value
+// that libbro_raise_event knows to ignore.
+void* libbro_get_event_handler(hlt_bytes* name, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Raises a given Bro events. The arguments are given as a tuple of Bro Val
 // instances. The function takes ownership of those instances.
-void libbro_raise_event(hlt_bytes* name, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx);
+void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // XXX
 void bro_file_begin(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);

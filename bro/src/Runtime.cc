@@ -35,6 +35,7 @@ extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[] =
 	{ "libbro_h2b_address", (void*)&libbro_h2b_address},
 	{ "libbro_h2b_double", (void*)&libbro_h2b_double},
 	{ "libbro_h2b_string", (void*)&libbro_h2b_string},
+	{ "libbro_get_event_handler", (void*)&libbro_get_event_handler },
 	{ "libbro_raise_event", (void*)&libbro_raise_event },
 	{ "bro_file_begin", (void*)bro_file_begin },
 	{ "bro_file_set_size", (void*)bro_file_set_size },
@@ -116,7 +117,9 @@ void* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_conte
 	return v;
 	}
 
-void libbro_raise_event(hlt_bytes* name, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+static EventHandler no_handler("SENTINEL_libbro_raise_event");
+
+void* libbro_get_event_handler(hlt_bytes* name, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	hlt_bytes_size len = hlt_bytes_len(name, excpt, ctx);
 	char evname[len + 1];
@@ -125,13 +128,19 @@ void libbro_raise_event(hlt_bytes* name, const hlt_type_info* type, const void* 
 
 	EventHandlerPtr ev = event_registry->Lookup(evname);
 
-	if ( ! ev.Ptr() )
-		// No handler.
+	return ev && ev.Ptr() ? ev.Ptr() : &no_handler;
+	}
+
+void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	EventHandler* ev = (EventHandler*) hdl;
+
+	if ( ev == &no_handler )
 		return;
 
 	int16_t* offsets = (int16_t *)type->aux;
 
-	val_list* vals = new val_list;
+	val_list* vals = new val_list(type->num_params);
 
 	for ( int i = 0; i < type->num_params; i++ )
 		{
@@ -139,9 +148,8 @@ void libbro_raise_event(hlt_bytes* name, const hlt_type_info* type, const void* 
 		vals->append(broval);
 		}
 
-	mgr.QueueEvent(ev, vals);
+	mgr.QueueEvent(EventHandlerPtr(ev), vals);
 	}
-}
 
 // User-visible Bro::* functions.
 
@@ -297,3 +305,4 @@ void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t e
 	GC_DTOR(end, hlt_iterator_bytes);
 	}
 
+}

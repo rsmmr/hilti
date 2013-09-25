@@ -1864,9 +1864,33 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 		vals.push_back(val);
 		}
 
+	auto handler = mbuilder->addGlobal(util::fmt("__bro_handler_%s", ev->name),
+					     ::hilti::builder::type::byName("LibBro::BroEventHandler"));
+
+	auto cond = mbuilder->addTmp("no_handler", ::hilti::builder::boolean::type());
+	mbuilder->builder()->addInstruction(cond,
+					    ::hilti::instruction::operator_::Equal,
+					    handler,
+					    ::hilti::builder::caddr::create());
+
+
+	auto blocks = mbuilder->builder()->addIf(cond);
+	auto block_true = std::get<0>(blocks);
+	auto block_cont = std::get<1>(blocks);
+
+	mbuilder->pushBuilder(block_true);
+	mbuilder->builder()->addInstruction(handler,
+					    ::hilti::instruction::flow::CallResult,
+					    ::hilti::builder::id::create("LibBro::get_event_handler"),
+					    ::hilti::builder::tuple::create({ ::hilti::builder::bytes::create(ev->name) }));
+	mbuilder->builder()->addInstruction(::hilti::instruction::flow::Jump, block_cont->block());
+	mbuilder->popBuilder(block_true);
+
+	mbuilder->pushBuilder(block_cont);
+
 	mbuilder->builder()->addInstruction(::hilti::instruction::flow::CallVoid,
 					    ::hilti::builder::id::create("LibBro::raise_event"),
-					    ::hilti::builder::tuple::create({ ::hilti::builder::bytes::create(ev->name),
+					    ::hilti::builder::tuple::create({ handler,
 					    ::hilti::builder::tuple::create(vals) } ));
 
 	mbuilder->builder()->addInstruction(::hilti::instruction::profiler::Stop,

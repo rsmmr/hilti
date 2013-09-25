@@ -3,6 +3,7 @@ module LibBro
 
 type BroVal = caddr
 type Cookie = caddr
+type BroEventHandler = caddr
 
 declare "C-HILTI" BroVal cookie_to_conn_val(Cookie cookie)
 declare "C-HILTI" BroVal cookie_to_is_orig(Cookie cookie)
@@ -13,7 +14,8 @@ declare "C-HILTI" BroVal h2b_double(double val)
 declare "C-HILTI" BroVal h2b_address(addr val)
 declare "C-HILTI" BroVal h2b_string(string val)
 declare "C-HILTI" BroVal h2b_bool(bool b)
-declare "C-HILTI" void   raise_event(ref<bytes> name, tuple<*> vals)
+declare "C-HILTI" BroEventHandler get_event_handler(ref<bytes> name)
+declare "C-HILTI" void raise_event(BroEventHandler hdl, tuple<*> vals)
 
 export cookie_to_conn_val
 export h2b_bytes
