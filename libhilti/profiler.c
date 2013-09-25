@@ -483,11 +483,11 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
 #ifdef HAVE_PAPI
         long_long cnts[PAPI_NUM_EVENTS];
         read_papi(cnts);
-        p->cycles = hlt_hton64(cnts[0]);
-        p->cache = hlt_hton64(cnts[1]);
+        p->cycles = cnts[0];
+        p->cache = cnts[1];
 #else
-        p->cycles = hlt_hton64(0);
-        p->cache = hlt_hton64(0);
+        p->cycles = 0;
+        p->cache = 0;
 #endif
 
         p->level = 1;
