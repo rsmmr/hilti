@@ -5,6 +5,7 @@
 
 #include "Runtime.h"
 #include "LocalReporter.h"
+#include "RuntimeInterface.h"
 #undef DBG_LOG
 
 #include "Plugin.h"
@@ -13,8 +14,8 @@
 #include "Event.h"
 #include "Rule.h"
 #include "file_analysis/Manager.h"
+#include "Cookie.h"
 
-#include "Pac2Analyzer.h"
 #undef List
 
 #include <hilti/context.h>
@@ -28,6 +29,7 @@ namespace hilti {
 // them.
 extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[] = {
 	{ "libbro_cookie_to_conn_val", (void*)&libbro_cookie_to_conn_val },
+	{ "libbro_cookie_to_file_val", (void*)&libbro_cookie_to_file_val },
 	{ "libbro_cookie_to_is_orig", (void*)&libbro_cookie_to_is_orig },
 	{ "libbro_h2b_bytes", (void*)&libbro_h2b_bytes},
 	{ "libbro_h2b_integer_signed", (void*)&libbro_h2b_integer_signed},
@@ -35,6 +37,8 @@ extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[] =
 	{ "libbro_h2b_address", (void*)&libbro_h2b_address},
 	{ "libbro_h2b_double", (void*)&libbro_h2b_double},
 	{ "libbro_h2b_string", (void*)&libbro_h2b_string},
+	{ "libbro_h2b_time", (void*)&libbro_h2b_time},
+	{ "libbro_h2b_enum", (void*)&libbro_h2b_enum},
 	{ "libbro_get_event_handler", (void*)&libbro_get_event_handler },
 	{ "libbro_raise_event", (void*)&libbro_raise_event },
 	{ "bro_file_begin", (void*)bro_file_begin },
@@ -53,17 +57,45 @@ extern "C"  {
 
 // Internal LibBro::* functions.
 
-void* libbro_cookie_to_conn_val(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+static bro::hilti::pac2_cookie::Protocol* get_protocol_cookie(void* cookie, const char *tag)
 	{
 	assert(cookie);
-	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
+	auto c = ((bro::hilti::Pac2Cookie *)cookie);
+
+	if ( c->type != bro::hilti::Pac2Cookie::PROTOCOL )
+		bro::hilti::reporter::fatal_error(util::fmt("BinPAC++ error: %s cannot be used outside of protocol analysis", tag));
+
+	return &c->protocol_cookie;
+	}
+
+static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *tag)
+	{
+	assert(cookie);
+	auto c = ((bro::hilti::Pac2Cookie *)cookie);
+
+	if ( c->type != bro::hilti::Pac2Cookie::FILE )
+		bro::hilti::reporter::fatal_error(util::fmt("BinPAC++ error: %s cannot be used outside of file analysis", tag));
+
+	return &c->file_cookie;
+	}
+
+void* libbro_cookie_to_conn_val(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto c = get_protocol_cookie(cookie, "$conn");
 	return c->analyzer->Conn()->BuildConnVal();
+	}
+
+void* libbro_cookie_to_file_val(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto c = get_file_cookie(cookie, "$conn");
+	auto f = c->analyzer->GetFile()->GetVal();
+	Ref(f);
+	return f;
 	}
 
 void* libbro_cookie_to_is_orig(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	assert(cookie);
-	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
+	auto c = get_protocol_cookie(cookie, "$is_orig");
 	return new Val(c->is_orig, TYPE_BOOL);
 	}
 
@@ -117,6 +149,22 @@ void* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_conte
 	return v;
 	}
 
+void* libbro_h2b_time(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new Val(hlt_time_to_timestamp(t), TYPE_TIME);
+	}
+
+void* libbro_h2b_enum(const hlt_type_info* type, void* obj, uint64_t type_idx, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	hlt_enum e = *((hlt_enum *) obj);
+
+	BroType* t = lib_bro_get_indexed_type(type_idx);
+	EnumType* et = static_cast<EnumType *>(t);
+
+	return hlt_enum_has_val(e)
+		? new EnumVal(hlt_enum_value(e, excpt, ctx), et) : new EnumVal(lib_bro_enum_undef_val, et);
+	}
+
 static EventHandler no_handler("SENTINEL_libbro_raise_event");
 
 void* libbro_get_event_handler(hlt_bytes* name, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -160,15 +208,13 @@ void bro_file_begin(void* cookie, hlt_exception** excpt, hlt_execution_context* 
 
 void bro_file_set_size(uint64_t size, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	assert(cookie);
-	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
+	auto c = get_protocol_cookie(cookie, "file_set_size()");
 	file_mgr->SetSize(size, c->tag, c->analyzer->Conn(), c->is_orig);
 	}
 
 void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	assert(cookie);
-	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
+	auto c = get_protocol_cookie(cookie, "file_data_in()");
 
 	hlt_bytes_block block;
 	hlt_iterator_bytes start = hlt_bytes_begin(data, excpt, ctx);
@@ -196,8 +242,7 @@ void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_
 
 void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	assert(cookie);
-	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
+	auto c = get_protocol_cookie(cookie, "file_data_in_at_offset()");
 
 	hlt_bytes_block block;
 	hlt_iterator_bytes start = hlt_bytes_begin(data, excpt, ctx);
@@ -228,29 +273,25 @@ void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie, 
 
 void bro_file_gap(uint64_t offset, uint64_t len, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	assert(cookie);
-	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
+	auto c = get_protocol_cookie(cookie, "file_gap()");
 	file_mgr->Gap(offset, len, c->tag, c->analyzer->Conn(), c->is_orig);
 	}
 
 void bro_file_end(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	assert(cookie);
-	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
+	auto c = get_protocol_cookie(cookie, "file_end()");
 	file_mgr->EndOfFile(c->tag, c->analyzer->Conn(), c->is_orig);
 	}
 
 void bro_dpd_confirm(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	assert(cookie);
-	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
+	auto c = get_protocol_cookie(cookie, "dpd_confirm()");
 	c->analyzer->ProtocolConfirmation(c->tag);
 	}
 
 void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t eol, int8_t clear, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	assert(cookie);
-	auto c = (bro::hilti::Pac2_Analyzer::Cookie*)cookie;
+	auto c = get_protocol_cookie(cookie, "rule_match()");
 
 	Rule::PatternType bro_type = Rule::TYPES;
 

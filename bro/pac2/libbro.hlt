@@ -2,11 +2,12 @@
 module LibBro
 
 type BroVal = caddr
-type Cookie = caddr
+type Pac2Cookie = caddr
 type BroEventHandler = caddr
 
-declare "C-HILTI" BroVal cookie_to_conn_val(Cookie cookie)
-declare "C-HILTI" BroVal cookie_to_is_orig(Cookie cookie)
+declare "C-HILTI" BroVal cookie_to_conn_val(Pac2Cookie cookie)
+declare "C-HILTI" BroVal cookie_to_file_val(Pac2Cookie cookie)
+declare "C-HILTI" BroVal cookie_to_is_orig(Pac2Cookie cookie)
 declare "C-HILTI" BroVal h2b_bytes(ref<bytes> val)
 declare "C-HILTI" BroVal h2b_integer_signed(int<64> val)
 declare "C-HILTI" BroVal h2b_integer_unsigned(int<64> val)
@@ -14,6 +15,8 @@ declare "C-HILTI" BroVal h2b_double(double val)
 declare "C-HILTI" BroVal h2b_address(addr val)
 declare "C-HILTI" BroVal h2b_string(string val)
 declare "C-HILTI" BroVal h2b_bool(bool b)
+declare "C-HILTI" BroVal h2b_enum(any e, int<64> type_idx)
+declare "C-HILTI" BroVal h2b_time(time b)
 declare "C-HILTI" BroEventHandler get_event_handler(ref<bytes> name)
 declare "C-HILTI" void raise_event(BroEventHandler hdl, tuple<*> vals)
 

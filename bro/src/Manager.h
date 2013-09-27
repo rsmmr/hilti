@@ -35,6 +35,9 @@
 #include <istream>
 #include <functional>
 
+#include <analyzer/Analyzer.h>
+#include <file_analysis/Analyzer.h>
+
 #include "util/file-cache.h"
 
 class BroType;
@@ -78,6 +81,7 @@ namespace hilti {
 
 struct Pac2EventInfo;
 struct Pac2AnalyzerInfo;
+struct Pac2FileAnalyzerInfo;
 struct Pac2ModuleInfo;
 struct Pac2ExpressionAccessor;
 
@@ -155,9 +159,15 @@ public:
 
 	/**
 	 * Returns the BinPAC++ name for a given analyzer. Returns an error
-	 * string if the string doesn't correspond to a BinPAC++ analyzer.
+	 * string if the tag doesn't correspond to a BinPAC++ analyzer.
 	 */
 	std::string AnalyzerName(const analyzer::Tag& tag);
+
+	/**
+	 * Returns the BinPAC++ name for a given file analyzer. Returns an
+	 * error string if the tag doesn't correspond to a BinPAC++ analyzer.
+	 */
+	std::string FileAnalyzerName(const file_analysis::Tag& tag);
 
 	/**
 	 * Returns the BinPAC++ parser object for an analyzer.
@@ -172,6 +182,17 @@ public:
 	 * pointer, make sure to cctor it.
 	 */
 	struct __binpac_parser* ParserForAnalyzer(const analyzer::Tag& tag, bool is_orig);
+
+	/**
+	 * Returns the BinPAC++ parser object for a file analyzer.
+	 *
+	 * analyer: The requested file analyzer.
+	 *
+	 * Returns: The parser, or null if we don't have one for this tag.
+	 * Note that this is a HILTI ref'cnted object. When storing the
+	 * pointer, make sure to cctor it.
+	 */
+	struct __binpac_parser* ParserForFileAnalyzer(const file_analysis::Tag& tag);
 
 	/**
 	 * Returns the analyzer tag that should be passed to script-land when
@@ -223,19 +244,19 @@ protected:
 	bool SearchFiles(const char*ext, std::function<bool (std::istream& in, const std::string& path)> const & callback);
 #endif
 
-    /**
-     * Searches a file along the manager's library paths.
-     *
-     * file: The name of the file to search for. This can be an absolute or
-     * relative path.
-     *
-     * relative_to: If given, the method chdirs to this directory before
-     * starting to search *file*. It will chdir back to the original location
-     * before return.
-     *
-     * Returns: The full absolute path to the file, or an empty string if not found.
-     */
-    std::string SearchFile(const std::string& file, const std::string& relative_to = "") const;
+	/**
+	 * Searches a file along the manager's library paths.
+	 *
+	 * file: The name of the file to search for. This can be an absolute or
+	 * relative path.
+	 *
+	 * relative_to: If given, the method chdirs to this directory before
+	 * starting to search *file*. It will chdir back to the original location
+	 * before return.
+	 *
+	 * Returns: The full absolute path to the file, or an empty string if not found.
+	 */
+	std::string SearchFile(const std::string& file, const std::string& relative_to = "") const;
 
 	/**
 	 * Loads one *.pac2 file.
@@ -266,14 +287,24 @@ protected:
 	shared_ptr<Pac2EventInfo> ParsePac2EventSpec(const std::string& chunk);
 
 	/**
-	 * Parses a single analyzer specification.
+	 * Parses and registers a single analyzer specification.
 	 *
 	 * chunk: The semicolon-separated specification; may contain newlines, which will be ignored.
 	 *
-	 * @return Returns the new event instance if parsing was sucessful;
-	 * passes ownership. Null if there was an error.
+	 * @return Returns the analyzer info with parsed values filled, or
+	 * null if an error occurred.
 	 */
 	shared_ptr<Pac2AnalyzerInfo> ParsePac2AnalyzerSpec(const std::string& chunk);
+
+	/**
+	 * Parses and registers a single file analyzer specification.
+	 *
+	 * chunk: The semicolon-separated specification; may contain newlines, which will be ignored.
+	 *
+	 * @return Returns the analyzer info with parsed values filled, or
+	 * null if an error occurred.
+	 */
+	shared_ptr<Pac2FileAnalyzerInfo> ParsePac2FileAnalyzerSpec(const std::string& chunk);
 
 	/**
 	 * Registers a Bro event for a BinPAC++ event.
@@ -284,11 +315,28 @@ protected:
 	void RegisterBroEvent(shared_ptr<Pac2EventInfo> ev);
 
 	/**
+	 * XXXX
+	 */
+	void BuildBroEventSignature(shared_ptr<Pac2EventInfo> ev);
+
+	/**
+	 * XXX
+	 */
+	bool PopulateEvent(shared_ptr<Pac2EventInfo> ev);
+
+	/**
 	 * Registers a Bro analyzer defined in an analyzer specification.
 	 *
 	 * a: The analyzer to register.
 	 */
 	void RegisterBroAnalyzer(shared_ptr<Pac2AnalyzerInfo> a);
+
+	/**
+	 * Registers a Bro analyzer defined in an analyzer specification.
+	 *
+	 * a: The analyzer to register.
+	 */
+	void RegisterBroFileAnalyzer(shared_ptr<Pac2FileAnalyzerInfo> a);
 
 	/**
 	 * Creates the BinPAC++ hook for an event.
@@ -357,6 +405,8 @@ protected:
 	llvm::Module* CheckCacheForLinkedModule();
 
 private:
+    void InitMembers();
+
 	bool pre_scripts_init_run;
 	bool post_scripts_init_run;
 

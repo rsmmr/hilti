@@ -42,6 +42,11 @@ extern void __error(const char* msg)
 	::reporter->Error("%s", msg);
 	}
 
+extern void __fatal_error(const char* msg)
+	{
+	::reporter->FatalError("%s", msg);
+	}
+
 extern void __internal_error(const char* msg)
 	{
 	::reporter->InternalError("%s", msg);
@@ -49,7 +54,10 @@ extern void __internal_error(const char* msg)
 
 extern void __weird(Connection* conn, const char* msg)
 	{
-	::reporter->Weird(conn, msg);
+	if ( conn )
+		::reporter->Weird(conn, msg);
+	else
+		::reporter->Weird(msg);
 	}
 
 }

@@ -13,6 +13,11 @@ typedef struct {
     const char* name;
 } Label;
 
+int64_t hlt_enum_value(hlt_enum e, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return e.value;
+}
+
 hlt_enum hlt_enum_unset(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_enum unset = { HLT_ENUM_UNDEF, 0 };

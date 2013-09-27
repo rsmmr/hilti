@@ -10,13 +10,19 @@ extern "C" {
 
 #include <libhilti/libhilti.h>
 
-// Returns the ConnVal corresponding to the connection currently being
-// analyzed. The cookie is a pointer to a Pac2Analyzer::Cookie instance.
+// Returns a ref'ed \c connection value corresponding to the connection
+// currently being analyzed. The cookie is a pointer to a
+// Pac2::Cookie instance.
 void* libbro_cookie_to_conn_val(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Returns a ref'ed \c fa_file value corresponding to the file currently
+// being analyzed. The cookie is a pointer to a Pac2::Cookie
+// instance.
+void* libbro_cookie_to_file_val(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Returns a boolean value corresponding whether we're currently parsing the
 // originator side of a connection. The cookie is a pointer to a
-// Pac2Analyzer::Cookie instance.
+// Pac2::Cookie instance.
 void* libbro_cookie_to_is_orig(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Converts a HILTI bytes value into a Bro StringVal.
@@ -37,8 +43,14 @@ void* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_conte
 // Converts a HILTI double value into a Bro Val.
 void* libbro_h2b_double(double d, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Converts a HILTI enum value into a Bro EnumType.
+void* libbro_h2b_enum(const hlt_type_info* type, void* obj, uint64_t type_idx, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Converts a HILTI double value into a Bro Val.
 void* libbro_h2b_bool(int8_t d, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Converts a HILTI time value into a Bro Val.
+void* libbro_h2b_time(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Returns the handler for an event given by name. If there's no such event,
 // or it doesn't have any handler implementations, returns a sentinel value
@@ -72,6 +84,7 @@ void bro_dpd_confirm(void* cookie, hlt_exception** excpt, hlt_execution_context*
 
 // XXX
 void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t eol, int8_t clear, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
 }
 
 #endif

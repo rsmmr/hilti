@@ -22,11 +22,13 @@ using std::shared_ptr;
 
 Pac2_Analyzer::Pac2_Analyzer(analyzer::Analyzer* analyzer)
 	{
-	orig.cookie.analyzer = analyzer;
-	orig.cookie.is_orig = true;
+	orig.cookie.type = Pac2Cookie::PROTOCOL;
+	orig.cookie.protocol_cookie.analyzer = analyzer;
+	orig.cookie.protocol_cookie.is_orig = true;
 
-	resp.cookie.analyzer = analyzer;
-	resp.cookie.is_orig = false;
+	resp.cookie.type = Pac2Cookie::PROTOCOL;
+	resp.cookie.protocol_cookie.analyzer = analyzer;
+	resp.cookie.protocol_cookie.is_orig = false;
 	}
 
 Pac2_Analyzer::~Pac2_Analyzer()
@@ -43,8 +45,8 @@ void Pac2_Analyzer::Init()
 	resp.data = 0;
 	resp.resume = 0;
 
-	orig.cookie.tag = HiltiPlugin.Mgr()->TagForAnalyzer(orig.cookie.analyzer->GetAnalyzerTag());
-	resp.cookie.tag = orig.cookie.tag;
+	orig.cookie.protocol_cookie.tag = HiltiPlugin.Mgr()->TagForAnalyzer(orig.cookie.protocol_cookie.analyzer->GetAnalyzerTag());
+	resp.cookie.protocol_cookie.tag = orig.cookie.protocol_cookie.tag;
 	}
 
 void Pac2_Analyzer::Done()
@@ -92,18 +94,18 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 	if ( endp->parser && ! endp->data )
 		{
 		if ( len )
-			debug_msg(endp->cookie.analyzer, "further data ignored", len, data, is_orig);
+			debug_msg(endp->cookie.protocol_cookie.analyzer, "further data ignored", len, data, is_orig);
 
 		return 0;
 		}
 
 	if ( ! endp->parser )
 		{
-		endp->parser = HiltiPlugin.Mgr()->ParserForAnalyzer(endp->cookie.analyzer->GetAnalyzerTag(), is_orig);
+		endp->parser = HiltiPlugin.Mgr()->ParserForAnalyzer(endp->cookie.protocol_cookie.analyzer->GetAnalyzerTag(), is_orig);
 
 		if ( ! endp->parser )
 			{
-			debug_msg(endp->cookie.analyzer, "no unit specificed for parsing", 0, 0, is_orig);
+			debug_msg(endp->cookie.protocol_cookie.analyzer, "no unit specificed for parsing", 0, 0, is_orig);
 			return 1;
 			}
 
@@ -117,7 +119,7 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 	if ( ! endp->data )
 		{
 		// First chunk.
-		debug_msg(endp->cookie.analyzer, "initial chunk", len, data, is_orig);
+		debug_msg(endp->cookie.protocol_cookie.analyzer, "initial chunk", len, data, is_orig);
 
 		endp->data = hlt_bytes_new_from_data_copy((const int8_t*)data, len, &excpt, ctx);
 
@@ -131,7 +133,7 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 	else
 		{
 		// Resume parsing.
-		debug_msg(endp->cookie.analyzer, "resuming with chunk", len, data, is_orig);
+		debug_msg(endp->cookie.protocol_cookie.analyzer, "resuming with chunk", len, data, is_orig);
 
 		assert(endp->data && endp->resume);
 
@@ -150,7 +152,7 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 		{
 		if ( hlt_exception_is_yield(excpt) )
 			{
-			debug_msg(endp->cookie.analyzer, "parsing yielded", 0, 0, is_orig);
+			debug_msg(endp->cookie.protocol_cookie.analyzer, "parsing yielded", 0, 0, is_orig);
 			endp->resume = excpt;
 			excpt = 0;
 			result = -1;
@@ -201,8 +203,8 @@ void Pac2_Analyzer::ParseError(const string& msg, bool is_orig)
 	{
 	Endpoint* endp = is_orig ? &orig : &resp;
 	string s = "parse error: " + msg;
-	debug_msg(endp->cookie.analyzer, s.c_str(), 0, 0, is_orig);
-	reporter::weird(endp->cookie.analyzer->Conn(), s);
+	debug_msg(endp->cookie.protocol_cookie.analyzer, s.c_str(), 0, 0, is_orig);
+	reporter::weird(endp->cookie.protocol_cookie.analyzer->Conn(), s);
 	}
 
 analyzer::Analyzer* Pac2_TCP_Analyzer::InstantiateAnalyzer(Connection* conn)

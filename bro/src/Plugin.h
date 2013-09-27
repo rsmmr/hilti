@@ -4,6 +4,7 @@
 
 #include <plugin/Plugin.h>
 #include <analyzer/Tag.h>
+#include <file_analysis/Tag.h>
 #include <net_util.h>
 
 namespace bro { namespace hilti  {
@@ -23,6 +24,7 @@ public:
 	bro::hilti::Manager* Mgr() const;
 
 	analyzer::Tag AddAnalyzer(const std::string& name, TransportProto proto, analyzer::Tag::subtype_t stype);
+	file_analysis::Tag AddFileAnalyzer(const std::string& name, file_analysis::Tag::subtype_t stype);
 
 	void AddEvent(const std::string& name);
 

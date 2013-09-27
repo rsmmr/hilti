@@ -38,21 +38,40 @@ public:
 	 */
 	BroType* Convert(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype = nullptr);
 
-private:
+	/**
+	 * XXX
+	 */
+	uint64_t TypeIndex(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype = nullptr);
+
+protected:
 	void visit(::hilti::type::Address* b) override;
 	void visit(::hilti::type::Bool* b) override;
 	void visit(::hilti::type::Bytes* b) override;
 	void visit(::hilti::type::Double* d) override;
+	void visit(::hilti::type::Enum* e) override;
 	void visit(::hilti::type::Integer* i) override;
 	void visit(::hilti::type::String* s) override;
+	void visit(::hilti::type::Time* t) override;
 	void visit(::hilti::type::Reference* b) override;
+
+private:
+	string CacheIndex(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype);
+	BroType* LookupCachedType(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype);
+	void CacheType(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype, BroType* bro_type);
+
+	// Caches dynamic types and their indices within the runtime's table.
+	std::map<string, std::pair<BroType*, std::uint64_t>> type_cache;
 };
 
 // Converts from HILTI values to Bro values.
 class ValueConverter : ast::Visitor<::hilti::AstInfo, bool, shared_ptr<::hilti::Expression>, shared_ptr<::hilti::Expression>>
 {
 public:
-	ValueConverter(shared_ptr<::hilti::builder::ModuleBuilder> mbuilder);
+	/**
+	 * XXX
+	 */
+	ValueConverter(shared_ptr<::hilti::builder::ModuleBuilder> mbuilder,
+		       shared_ptr<TypeConverter> type_converter);
 
 	/**
 	 * Generates HILTI code to convert a HILTI value into a Bro Val.
@@ -87,11 +106,14 @@ private:
 	void visit(::hilti::type::Bool* b) override;
 	void visit(::hilti::type::Bytes* b) override;
 	void visit(::hilti::type::Double* d) override;
+	void visit(::hilti::type::Enum* e) override;
 	void visit(::hilti::type::Integer* i) override;
 	void visit(::hilti::type::String* s) override;
+	void visit(::hilti::type::Time* t) override;
 	void visit(::hilti::type::Reference* b) override;
 
 	shared_ptr<::hilti::builder::ModuleBuilder> mbuilder;
+	shared_ptr<TypeConverter> type_converter;
 	shared_ptr<::binpac::Type> _arg3 = nullptr;
 };
 

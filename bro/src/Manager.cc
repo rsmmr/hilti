@@ -42,6 +42,7 @@ extern "C" {
 #include "Manager.h"
 #include "Pac2AST.h"
 #include "Pac2Analyzer.h"
+#include "Pac2FileAnalyzer.h"
 #include "Converter.h"
 #include "LocalReporter.h"
 #include "Runtime.h"
@@ -76,7 +77,7 @@ struct Port {
 	operator string() const	{ return ::util::fmt("%u/%s", port, transportToString(proto)); }
 	};
 
-// Description of a BinPAC++ analyzer.
+// Description of a BinPAC++ protocol analyzer.
 struct bro::hilti::Pac2AnalyzerInfo {
 	string location;				// Location where the analyzer was defined.
 	string name;					// Name of the analyzer.
@@ -91,6 +92,17 @@ struct bro::hilti::Pac2AnalyzerInfo {
 	shared_ptr<Pac2AST::UnitInfo> unit_resp;	// The type of the unit to parse the originator side.
 	binpac_parser* parser_orig;                     // The parser for the originator side (coming out of JIT).
 	binpac_parser* parser_resp;                     // The parser for the responder side (coming out of JIT).
+};
+
+// Description of a BinPAC++ file analyzer.
+struct bro::hilti::Pac2FileAnalyzerInfo {
+	string location;				// Location where the analyzer was defined.
+	string name;					// Name of the analyzer.
+	file_analysis::Tag tag;				// file_analysis::Tag for this analyzer.
+	std::list<string> mime_types;			// The mime_types associated with the analyzer.
+	string unit_name;				// The fully-qualified name of the unit type to parse with.
+	shared_ptr<Pac2AST::UnitInfo> unit;		// The type of the unit to parse the originator side.
+	binpac_parser* parser;				// The parser coming out of JIT.
 };
 
 // XXX
@@ -156,13 +168,15 @@ struct bro::hilti::Pac2EventInfo
 // Implementation of the Manager class attributes.
 struct Manager::PIMPL
 	{
-	typedef std::list<shared_ptr<Pac2ModuleInfo>>     pac2_module_list;
-	typedef std::list<shared_ptr<Pac2EventInfo>>      pac2_event_list;
-	typedef std::list<shared_ptr<Pac2AnalyzerInfo>>   pac2_analyzer_list;
-	typedef std::vector<shared_ptr<Pac2AnalyzerInfo>> pac2_analyzer_vector;
-	typedef std::list<shared_ptr<::hilti::Module>>    hilti_module_list;
-	typedef std::list<llvm::Module*>                  llvm_module_list;
-	typedef std::set<std::string>                     path_set;
+	typedef std::list<shared_ptr<Pac2ModuleInfo>>         pac2_module_list;
+	typedef std::list<shared_ptr<Pac2EventInfo>>          pac2_event_list;
+	typedef std::list<shared_ptr<Pac2AnalyzerInfo>>       pac2_analyzer_list;
+	typedef std::list<shared_ptr<Pac2FileAnalyzerInfo>>   pac2_file_analyzer_list;
+	typedef std::vector<shared_ptr<Pac2AnalyzerInfo>>     pac2_analyzer_vector;
+	typedef std::vector<shared_ptr<Pac2FileAnalyzerInfo>> pac2_file_analyzer_vector;
+	typedef std::list<shared_ptr<::hilti::Module>>        hilti_module_list;
+	typedef std::list<llvm::Module*>                      llvm_module_list;
+	typedef std::set<std::string>                         path_set;
 
 	::hilti::Options hilti_options;
 	::binpac::Options pac2_options;
@@ -185,6 +199,8 @@ struct Manager::PIMPL
 	pac2_event_list  pac2_events;			// All events found in the *.evt files.
 	pac2_analyzer_list pac2_analyzers;		// All analyzers found in the *.evt files.
 	pac2_analyzer_vector pac2_analyzers_by_subtype;	// All analyzers indexed by their analyzer::Tag subtype.
+	pac2_file_analyzer_list pac2_file_analyzers;			// All file analyzers found in the *.evt files.
+	pac2_file_analyzer_vector pac2_file_analyzers_by_subtype;	// All file analyzers indexed by their file_analysis::Tag subtype.
 	path_set evt_files;                             // All loaded *.evt files.
 	path_set pac2_files;                            // All loaded *.pac2 files.
 
@@ -208,6 +224,9 @@ Manager::Manager()
 	pre_scripts_init_run = false;
 	post_scripts_init_run = false;
 
+	pimpl->type_converter = std::make_shared<TypeConverter>();
+	pimpl->pac2_ast = new Pac2AST;
+
 	char* dir = getenv("BRO_PAC2_PATH");
 	if ( dir )
 		AddLibraryPath(dir);
@@ -228,18 +247,43 @@ void Manager::AddLibraryPath(const char* dirs)
 		pimpl->import_paths.push_back(dir);
 	}
 
+void Manager::InitMembers()
+	{
+	}
+
 bool Manager::InitPreScripts()
 	{
+	PLUGIN_DBG_LOG(HiltiPlugin, "Beginning pre-script initialization");
+
 	assert(! pre_scripts_init_run);
 	assert(! post_scripts_init_run);
 
+	::hilti::init();
+	::binpac::init();
+
 	pre_scripts_init_run = true;
+
+	for ( auto dir : pimpl->import_paths )
+		{
+		pimpl->hilti_options.libdirs_hlt.push_back(dir);
+		pimpl->pac2_options.libdirs_hlt.push_back(dir);
+		pimpl->pac2_options.libdirs_pac2.push_back(dir);
+		}
+
+	pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
+	pimpl->hilti_context = pimpl->pac2_context->hiltiContext();
+
+	pimpl->libbro_path = pimpl->hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
+
+	PLUGIN_DBG_LOG(HiltiPlugin, "Done with pre-script initialization");
 
 	return true;
 	}
 
 bool Manager::InitPostScripts()
 	{
+	PLUGIN_DBG_LOG(HiltiPlugin, "Beginning post-script initialization");
+
 	assert(pre_scripts_init_run);
 	assert(! post_scripts_init_run);
 
@@ -248,14 +292,12 @@ bool Manager::InitPostScripts()
 	for ( auto t : ::util::strsplit(BifConst::Hilti::cg_debug->CheckString(), ":") )
 		cg_debug.insert(t);
 
-	pimpl->pac2_ast = new Pac2AST;
 	pimpl->compile_all = BifConst::Hilti::compile_all;
 	pimpl->profile = BifConst::Hilti::profile;
 	pimpl->dump_debug = BifConst::Hilti::dump_debug;
 	pimpl->dump_code = BifConst::Hilti::dump_code;
 	pimpl->dump_code_pre_finalize = BifConst::Hilti::dump_code_pre_finalize;
 	pimpl->dump_code_all = BifConst::Hilti::dump_code_all;
-	pimpl->type_converter = std::make_shared<TypeConverter>();
 	pimpl->save_pac2 = BifConst::Hilti::save_pac2;
 	pimpl->save_hilti = BifConst::Hilti::save_hilti;
 	pimpl->save_llvm = BifConst::Hilti::save_llvm;
@@ -297,10 +339,9 @@ bool Manager::InitPostScripts()
 			}
 		}
 
-	::hilti::init();
-	::binpac::init();
-
 	post_scripts_init_run = true;
+
+	PLUGIN_DBG_LOG(HiltiPlugin, "Done with post-script initialization");
 
 	return true;
 	}
@@ -311,24 +352,6 @@ bool Manager::FinishLoading()
 	assert(post_scripts_init_run);
 
 	pre_scripts_init_run = true;
-
-	for ( auto dir : pimpl->import_paths )
-		{
-		pimpl->hilti_options.libdirs_hlt.push_back(dir);
-		pimpl->pac2_options.libdirs_hlt.push_back(dir);
-		pimpl->pac2_options.libdirs_pac2.push_back(dir);
-		}
-
-	pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
-	pimpl->hilti_context = pimpl->pac2_context->hiltiContext();
-
-	pimpl->libbro_path = pimpl->hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
-
-        for ( auto i = pimpl->pac2_files.begin(); i != pimpl->pac2_files.end(); i++ )
-		{
-		if ( ! LoadPac2Module(*i) )
-			return false;
-		}
 
 	return true;
 	}
@@ -350,7 +373,7 @@ bool Manager::LoadFile(const std::string& file)
 			return true;
 
 		pimpl->pac2_files.insert(path);
-		return true;
+		return LoadPac2Module(path);
 		}
 
 	if ( path.size() > 4 && path.substr(path.size() - 4) == ".evt" )
@@ -455,65 +478,71 @@ done:
 	return result;
 	}
 
+bool Manager::PopulateEvent(shared_ptr<Pac2EventInfo> ev)
+	{
+	// If we find the path directly, it's a unit type; then add a "%done"
+	// to form the hook name.
+	auto uinfo = pimpl->pac2_ast->LookupUnit(ev->path);
+
+	string hook;
+	string hook_local;
+	string unit;
+
+	if ( uinfo )
+		{
+		hook += ev->path + "::%done";
+		hook_local = "%done";
+		unit = ev->path;
+		}
+
+	else
+		{
+		// Strip the last element of the path, the remainder must
+		// refer to a unit.
+		auto p = ::util::strsplit(ev->path, "::");
+		if ( p.size() )
+			{
+			hook_local = p.back();
+			p.pop_back();
+			unit = ::util::strjoin(p, "::");
+			uinfo = pimpl->pac2_ast->LookupUnit(unit);
+			hook = ev->path;
+			}
+		}
+
+	if ( ! uinfo )
+		{
+		reporter::error(::util::fmt("unknown unit type in %s", hook));
+		return 0;
+		}
+
+	uinfo->minfo->dependencies.insert(ev->file);
+
+	ev->hook = hook;
+	ev->hook_local = hook_local;
+	ev->unit = unit;
+	ev->unit_type = uinfo->unit_type;
+	ev->unit_module = uinfo->unit_type->firstParent<::binpac::Module>();
+	ev->minfo = uinfo->minfo;
+
+	assert(ev->unit_module);
+
+	if ( ! CreateExpressionAccessors(ev) )
+		return false;
+
+	BuildBroEventSignature(ev);
+	return true;
+	}
+
 bool Manager::Compile()
 	{
+	PLUGIN_DBG_LOG(HiltiPlugin, "Beginning compilation");
+
 	assert(pre_scripts_init_run);
 	assert(post_scripts_init_run);
 
 	for ( auto ev : pimpl->pac2_events )
-		{
-		// If we find the path directly, it's a unit type; then add a "%done"
-		// to form the hook name.
-		auto uinfo = pimpl->pac2_ast->LookupUnit(ev->path);
-
-		string hook;
-		string hook_local;
-		string unit;
-
-		if ( uinfo )
-			{
-			hook += ev->path + "::%done";
-			hook_local = "%done";
-			unit = ev->path;
-			}
-
-		else
-			{
-			// Strip the last element of the path, the remainder must
-			// refer to a unit.
-			auto p = ::util::strsplit(ev->path, "::");
-			if ( p.size() )
-				{
-				hook_local = p.back();
-				p.pop_back();
-				unit = ::util::strjoin(p, "::");
-				uinfo = pimpl->pac2_ast->LookupUnit(unit);
-				hook = ev->path;
-				}
-			}
-
-		if ( ! uinfo )
-			{
-			reporter::error(::util::fmt("unknown unit type in %s", hook));
-			return 0;
-			}
-
-		uinfo->minfo->dependencies.insert(ev->file);
-
-		ev->hook = hook;
-		ev->hook_local = hook_local;
-		ev->unit = unit;
-		ev->unit_type = uinfo->unit_type;
-		ev->unit_module = uinfo->unit_type->firstParent<::binpac::Module>();
-		ev->minfo = uinfo->minfo;
-
-		assert(ev->unit_module);
-
-		if ( ! CreateExpressionAccessors(ev) )
-			return 0;
-
 		RegisterBroEvent(ev);
-		}
 
 	for ( auto a : pimpl->pac2_analyzers )
 		{
@@ -541,6 +570,23 @@ bool Manager::Compile()
 
 		for ( auto p : a->ports )
 			analyzer_mgr->RegisterAnalyzerForPort(a->tag, p.proto, p.port);
+		}
+
+	for ( auto a : pimpl->pac2_file_analyzers )
+		{
+		if ( a->unit_name.size() )
+			{
+			a->unit = pimpl->pac2_ast->LookupUnit(a->unit_name);
+
+			if ( ! a->unit )
+				{
+				reporter::error(::util::fmt("unknown unit type %s with file analyzer %s", a->unit_name, a->name));
+				return false;
+				}
+			}
+
+		for ( auto mt : a->mime_types )
+			file_mgr->RegisterAnalyzerForMIMEType(a->tag, mt);
 		}
 
 	// See if we can short-cut this all by reusing our cache.
@@ -770,7 +816,9 @@ bool Manager::Compile()
 
 	pimpl->hilti_context->updateCache(CacheKeyForLinkedModule(), llvm_module);
 
-	return RunJIT(llvm_module);
+	auto result = RunJIT(llvm_module);
+	PLUGIN_DBG_LOG(HiltiPlugin, "Done with compilation");
+	return result;
 	}
 
 bool Manager::RunJIT(llvm::Module* llvm_module)
@@ -904,7 +952,7 @@ bool Manager::LoadPac2Module(const string& path)
 		return false;
 		}
 
-	PLUGIN_DBG_LOG(HiltiPlugin, "Loading units from %s", path.c_str());
+	PLUGIN_DBG_LOG(HiltiPlugin, "Loading grammar from from %s", path.c_str());
 
 	// ctx->enableDebug(dbg_scanner, dbg_parser, dbg_scopes, dbg_grammars);
 
@@ -933,7 +981,7 @@ bool Manager::LoadPac2Module(const string& path)
 	minfo->hilti_module = minfo->hilti_mbuilder->module();
 	minfo->hilti_mbuilder->importModule("Hilti");
 	minfo->hilti_mbuilder->importModule("LibBro");
-	minfo->value_converter = std::make_shared<ValueConverter>(minfo->hilti_mbuilder);
+	minfo->value_converter = std::make_shared<ValueConverter>(minfo->hilti_mbuilder, pimpl->type_converter);
 
 	minfo->key.scope = "bc";
 	minfo->key.name = name;
@@ -1210,6 +1258,7 @@ bool Manager::LoadPac2Events(const string& path)
 
 	int lineno = 0;
 	string chunk;
+	PIMPL::pac2_event_list new_events;
 
 	while ( ! in.eof() )
 		{
@@ -1244,7 +1293,7 @@ bool Manager::LoadPac2Events(const string& path)
 
 		chunk = ::util::strtrim(chunk);
 
-		if ( looking_at(chunk, 0, "analyzer") )
+		if ( looking_at(chunk, 0, "protocol") )
 			{
 			auto a = ParsePac2AnalyzerSpec(chunk);
 
@@ -1256,6 +1305,19 @@ bool Manager::LoadPac2Events(const string& path)
 			PLUGIN_DBG_LOG(HiltiPlugin, "Finished processing analyzer definition for %s", a->name.c_str());
 			}
 
+
+		else if ( looking_at(chunk, 0, "file") )
+			{
+			auto a = ParsePac2FileAnalyzerSpec(chunk);
+
+			if ( ! a )
+				goto error;
+
+			pimpl->pac2_file_analyzers.push_back(a);
+			RegisterBroFileAnalyzer(a);
+			PLUGIN_DBG_LOG(HiltiPlugin, "Finished processing file analyzer definition for %s", a->name.c_str());
+			}
+
 		else if ( looking_at(chunk, 0, "on") )
 			{
 			auto ev = ParsePac2EventSpec(chunk);
@@ -1265,9 +1327,11 @@ bool Manager::LoadPac2Events(const string& path)
 
 			ev->file = path;
 
-			PLUGIN_DBG_LOG(HiltiPlugin, "Finished processing event definition for %s", ev->name.c_str());
+			new_events.push_back(ev);
 			pimpl->pac2_events.push_back(ev);
 			HiltiPlugin.AddEvent(ev->name);
+
+			PLUGIN_DBG_LOG(HiltiPlugin, "Finished processing event definition for %s", ev->name.c_str());
 			}
 
 		else if ( looking_at(chunk, 0, "grammar") )
@@ -1298,14 +1362,12 @@ bool Manager::LoadPac2Events(const string& path)
 
 			pac2 = SearchFile(pac2, dirname);
 
-			PLUGIN_DBG_LOG(HiltiPlugin, "Loading Bro file %s", pac2.c_str());
-
 			if ( ! HiltiPlugin.LoadBroFile(pac2.c_str()) )
 				goto error;
 			}
 
 		else
-			reporter::error("expected 'grammar', 'analyzer', or 'on'");
+			reporter::error("expected 'grammar', '{file,protocol} analyzer', or 'on'");
 
 		chunk = "";
 
@@ -1324,6 +1386,10 @@ error:
 		return false;
 		}
 
+
+	for ( auto ev : new_events )
+		PopulateEvent(ev);
+
 	return true;
 	}
 
@@ -1335,6 +1401,9 @@ shared_ptr<Pac2AnalyzerInfo> Manager::ParsePac2AnalyzerSpec(const string& chunk)
 	a->parser_resp = 0;
 
 	size_t i = 0;
+
+	if ( ! eat_token(chunk, &i, "protocol") )
+		return 0;
 
 	if ( ! eat_token(chunk, &i, "analyzer") )
 		return 0;
@@ -1474,6 +1543,79 @@ shared_ptr<Pac2AnalyzerInfo> Manager::ParsePac2AnalyzerSpec(const string& chunk)
 				return 0;
 			}
 
+		else
+				{
+				reporter::error("unexpect token");
+				return 0;
+				}
+
+		if ( looking_at(chunk, i, ";") )
+			break; // All done.
+
+		if ( ! eat_token(chunk, &i, ",") )
+			return 0;
+		}
+
+	return a;
+	}
+
+shared_ptr<Pac2FileAnalyzerInfo> Manager::ParsePac2FileAnalyzerSpec(const string& chunk)
+	{
+	auto a = std::make_shared<Pac2FileAnalyzerInfo>();
+	a->location = reporter::current_location();
+	a->parser = 0;
+
+	size_t i = 0;
+
+	if ( ! eat_token(chunk, &i, "file") )
+		return 0;
+
+	if ( ! eat_token(chunk, &i, "analyzer") )
+		return 0;
+
+	if ( ! extract_id(chunk, &i, &a->name) )
+		return 0;
+
+	a->name = ::util::strreplace(a->name, "::", "_");
+
+	if ( ! eat_token(chunk, &i, ":") )
+		return 0;
+
+	while ( true )
+		{
+		if ( looking_at(chunk, i, "parse") )
+			{
+			eat_token(chunk, &i, "parse");
+
+			if ( ! eat_token(chunk, &i, "with") )
+				return 0;
+
+			string unit;
+
+			if ( ! extract_id(chunk, &i, &unit) )
+				return 0;
+
+			a->unit_name = unit;
+			}
+
+		else if ( looking_at(chunk, i, "mime-type") )
+			{
+			eat_token(chunk, &i, "mime-type");
+
+			string mtype;
+
+			if ( ! extract_path(chunk, &i, &mtype) )
+				return 0;
+
+			a->mime_types.push_back(mtype);
+			}
+
+		else
+			{
+			reporter::error("unexpect token");
+			return 0;
+			}
+
 		if ( looking_at(chunk, i, ";") )
 			break; // All done.
 
@@ -1574,7 +1716,14 @@ void Manager::RegisterBroAnalyzer(shared_ptr<Pac2AnalyzerInfo> a)
 	a->tag = HiltiPlugin.AddAnalyzer(a->name, a->proto, stype);
 	}
 
-void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
+void Manager::RegisterBroFileAnalyzer(shared_ptr<Pac2FileAnalyzerInfo> a)
+	{
+	file_analysis::Tag::subtype_t stype = pimpl->pac2_file_analyzers_by_subtype.size();
+	pimpl->pac2_file_analyzers_by_subtype.push_back(a);
+	a->tag = HiltiPlugin.AddFileAnalyzer(a->name, stype);
+	}
+
+void Manager::BuildBroEventSignature(shared_ptr<Pac2EventInfo> ev)
 	{
 	type_decl_list* types = new type_decl_list();
 
@@ -1584,9 +1733,16 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 
 		if ( e->expr == "$conn" )
 			{
-			t = connection_type;
+			t = internal_type("connection");
 			Ref(t);
 			types->append(new TypeDecl(t, strdup("c")));
+			}
+
+		else if ( e->expr == "$file" )
+			{
+			t = internal_type("fa_file");
+			Ref(t);
+			types->append(new TypeDecl(t, strdup("f")));
 			}
 
 		else if ( e->expr == "$is_orig" )
@@ -1602,6 +1758,11 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 
 	auto ftype = new FuncType(new RecordType(types), 0, FUNC_FLAVOR_EVENT);
 	ev->bro_event_type = ftype;
+	}
+
+void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
+	{
+	assert(ev->bro_event_type);
 
 	EventHandlerPtr handler = event_registry->Lookup(ev->name.c_str());
 
@@ -1617,12 +1778,12 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 		if ( id )
 			id->SetExport();
 
-		if ( handler->FType() && ! same_type(ftype, handler->FType()) )
+		if ( handler->FType() && ! same_type(ev->bro_event_type, handler->FType()) )
 			{
 			ODesc have;
 			ODesc want;
 			handler->FType()->Describe(&have);
-			ftype->Describe(&want);
+			ev->bro_event_type->Describe(&want);
 
 			auto l = handler->FType()->GetLocationInfo();
 			reporter::__push_location(l->filename, l->first_line);
@@ -1709,7 +1870,7 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
 
 		else
 			{
-			if ( e != "$conn" && e != "$is_orig" )
+			if ( e != "$conn" && e != "$is_orig" && e != "$file" )
 				{
 				reporter::error(::util::fmt("unsupported parameters %s", e));
 				return false;
@@ -1815,7 +1976,7 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 
 	::hilti::builder::function::parameter_list args = {
 		::hilti::builder::function::parameter("self", ::hilti::builder::reference::type(::hilti::builder::type::byName(ev->unit)), false, nullptr),
-		::hilti::builder::function::parameter("cookie", ::hilti::builder::type::byName("LibBro::Cookie"), false, nullptr)
+		::hilti::builder::function::parameter("cookie", ::hilti::builder::type::byName("LibBro::Pac2Cookie"), false, nullptr)
 		};
 
 	auto mbuilder = ev->minfo->hilti_mbuilder;
@@ -1837,6 +1998,14 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 			mbuilder->builder()->addInstruction(val,
 							    ::hilti::instruction::flow::CallResult,
 							    ::hilti::builder::id::create("LibBro::cookie_to_conn_val"),
+							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
+			}
+
+		else if ( e->expr == "$file" )
+			{
+			mbuilder->builder()->addInstruction(val,
+							    ::hilti::instruction::flow::CallResult,
+							    ::hilti::builder::id::create("LibBro::cookie_to_file_val"),
 							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
 			}
 
@@ -1921,8 +2090,8 @@ void Manager::ExtractParsers(hlt_list* parsers)
 		hlt_free(name);
 
 		hlt_iterator_list j = i;
-                i = hlt_iterator_list_incr(i, &excpt, ctx);
-                GC_DTOR(j, hlt_iterator_list);
+		i = hlt_iterator_list_incr(i, &excpt, ctx);
+		GC_DTOR(j, hlt_iterator_list);
 		}
 
 	GC_DTOR(i, hlt_iterator_list);
@@ -1953,6 +2122,20 @@ void Manager::ExtractParsers(hlt_list* parsers)
 				}
 		}
 
+	for ( auto a : pimpl->pac2_file_analyzers )
+		{
+		if ( a->unit_name.empty() )
+			continue;
+
+		auto i = parser_map.find(a->unit_name);
+
+		if ( i != parser_map.end() )
+			{
+			a->parser = i->second;
+			GC_CCTOR(a->parser, hlt_Parser);
+			}
+		}
+
 	for ( auto p : parser_map )
 		{
 		GC_DTOR(p.second, hlt_Parser);
@@ -1964,12 +2147,22 @@ string Manager::AnalyzerName(const analyzer::Tag& tag)
 	return pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->name;
 	}
 
+string Manager::FileAnalyzerName(const file_analysis::Tag& tag)
+	{
+	return pimpl->pac2_file_analyzers_by_subtype[tag.Subtype()]->name;
+	}
+
 struct __binpac_parser* Manager::ParserForAnalyzer(const analyzer::Tag& tag, bool is_orig)
 	{
 	if ( is_orig )
 		return pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->parser_orig;
 	else
 		return pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->parser_resp;
+	}
+
+struct __binpac_parser* Manager::ParserForFileAnalyzer(const file_analysis::Tag& tag)
+	{
+	return pimpl->pac2_file_analyzers_by_subtype[tag.Subtype()]->parser;
 	}
 
 analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
@@ -1992,8 +2185,7 @@ void Manager::DumpDebug()
 		}
 
 	std::cerr << std::endl;
-
-	std::cerr << "  Analyzers" << std::endl;
+	std::cerr << "  Protocol Analyzers" << std::endl;
 
 	string location;				// Location where the analyzer was defined.
 	string name;					// Name of the analyzer.
@@ -2049,6 +2241,33 @@ void Manager::DumpDebug()
 		std::cerr << std::endl;
 		}
 
+	std::cerr << std::endl;
+	std::cerr << "  File Analyzers" << std::endl;
+
+	for ( auto i = pimpl->pac2_file_analyzers.begin(); i != pimpl->pac2_file_analyzers.end(); i++ )
+		{
+		auto a = *i;
+
+		std::cerr << "    " << a->name << " [" << "subtype " << a->tag.Subtype() << "] [" << a->location << "]" << std::endl;
+		std::cerr << "        MIME types : " << (a->mime_types.size() ? ::util::strjoin(a->mime_types, ", ") : "none") << std::endl;
+		std::cerr << "        Parser     : " << (a->unit ? a->unit->unit_type->id()->pathAsString() : "none" ) << " ";
+
+		string desc = "not compiled";
+
+		if ( a->parser )
+			{
+			hlt_exception* excpt = 0;
+			auto s = hlt_string_to_native(a->parser->description, &excpt, hlt_global_execution_context());
+			desc = ::util::fmt("compiled; unit description: \"%s\"", s);
+			hlt_free(s);
+			}
+
+		std::cerr << "[" << desc << "]" << std::endl;
+
+		std::cerr << std::endl;
+		}
+
+	std::cerr << std::endl;
 	std::cerr << "  Units" << std::endl;
 
 	for ( Pac2AST::unit_map::const_iterator i = pimpl->pac2_ast->Units().begin(); i != pimpl->pac2_ast->Units().end(); i++ )
@@ -2058,7 +2277,6 @@ void Manager::DumpDebug()
 		}
 
 	std::cerr << std::endl;
-
 	std::cerr << "  Events" << std::endl;
 
 	for ( PIMPL::pac2_event_list::iterator i = pimpl->pac2_events.begin(); i != pimpl->pac2_events.end(); i++ )

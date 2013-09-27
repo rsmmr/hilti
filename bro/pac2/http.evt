@@ -1,7 +1,7 @@
 
 grammar ./http.pac2;
 
-analyzer pac2::HTTP over TCP:
+protocol analyzer pac2::HTTP over TCP:
     parse originator with HTTP::Requests,
     parse responder with HTTP::Replies,
     port 80/tcp,

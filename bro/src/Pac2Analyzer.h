@@ -5,6 +5,8 @@
 #include <analyzer/protocol/tcp/TCP.h>
 #include <analyzer/protocol/udp/UDP.h>
 
+#include "Cookie.h"
+
 struct __binpac_parser;
 struct __hlt_bytes;
 struct __hlt_exception;
@@ -30,12 +32,6 @@ public:
 
 	void FlipRoles();
 
-	struct Cookie {
-		analyzer::Analyzer* analyzer;
-		analyzer::Tag tag;
-		bool is_orig;
-	};
-
 protected:
 	virtual void ParseError(const string& msg, bool is_orig);
 
@@ -44,7 +40,7 @@ private:
 		__binpac_parser* parser;
 		__hlt_bytes* data;
 		__hlt_exception* resume;
-		Cookie cookie;
+		Pac2Cookie cookie;
 		};
 
 	Endpoint orig;

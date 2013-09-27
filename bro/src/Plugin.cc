@@ -2,6 +2,7 @@
 
 #include "Plugin.h"
 #include "Pac2Analyzer.h"
+#include "Pac2FileAnalyzer.h"
 #include "Manager.h"
 #include "LocalReporter.h"
 #include "analyzer/Component.h"
@@ -67,7 +68,7 @@ void plugin::Bro_Hilti::Plugin::Done()
 
 bool plugin::Bro_Hilti::Plugin::LoadFile(const char* file)
 	{
-    return _manager->LoadFile(file);
+	return _manager->LoadFile(file);
 	}
 
 analyzer::Tag plugin::Bro_Hilti::Plugin::AddAnalyzer(const string& name, TransportProto proto, analyzer::Tag::subtype_t stype)
@@ -94,7 +95,14 @@ analyzer::Tag plugin::Bro_Hilti::Plugin::AddAnalyzer(const string& name, Transpo
 	components.push_back(c);
 #endif
 
-    AddComponent(c);
+	AddComponent(c);
+	return c->Tag();
+	}
+
+file_analysis::Tag plugin::Bro_Hilti::Plugin::AddFileAnalyzer(const string& name, file_analysis::Tag::subtype_t stype)
+	{
+	auto c = new file_analysis::Component(name.c_str(), Pac2_FileAnalyzer::InstantiateAnalyzer, stype);
+	AddComponent(c);
 	return c->Tag();
 	}
 
