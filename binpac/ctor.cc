@@ -34,6 +34,11 @@ const string& Bytes::value() const
     return _value;
 }
 
+int Bytes::length() const
+{
+    return _value.size();
+}
+
 shared_ptr<Type> Bytes::type() const
 {
     return std::make_shared<type::Bytes>(location());

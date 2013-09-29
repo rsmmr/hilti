@@ -109,7 +109,7 @@ int main(int argc, char** argv)
             break;
 
          case 'n':
-            options.verify = true;
+            options.verify = false;
             break;
 
          case 'W':

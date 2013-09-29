@@ -2123,7 +2123,7 @@ void ParserBuilder::visit(constant::Integer* i)
     }
 
     // We parse the field normally according to its type, and then compare
-    // the value against the constant we expec.t
+    // the value against the constant we expect.
     shared_ptr<hilti::Expression> value;
     processOne(field->type(), &value, field);
 
@@ -2172,6 +2172,55 @@ void ParserBuilder::visit(constant::Time* t)
 
 void ParserBuilder::visit(ctor::Bytes* b)
 {
+    auto field = arg1();
+    assert(field);
+
+    cg()->builder()->addComment(util::fmt("Bytes constant: %s", field->id()->name()));
+
+    if ( state()->mode == ParserState::LAHEAD_REPARSE ) {
+        auto value = cg()->hiltiExpression(std::make_shared<expression::Ctor>(b->sharedPtr<ctor::Bytes>()));
+        setResult(value);
+        return;
+    }
+
+    shared_ptr<hilti::Expression> ocur = nullptr;
+
+    if ( state()->mode == ParserState::TRY ) {
+        ocur = cg()->builder()->addTmp("ocur-bytes", _hiltiTypeIteratorBytes());
+        cg()->builder()->addInstruction(ocur, hilti::instruction::operator_::Assign, state()->cur);
+    }
+
+    // We parse the field as fixed bytes and then compare the value against
+    // the constant we expect.
+    auto length = hilti::builder::integer::create(b->length());
+    auto length_op = cg()->builder()->addTmp("unpack_len", hilti::builder::integer::type(64)); // This will be adapted by _hiltiCheckChunk().
+    cg()->builder()->addInstruction(length_op, hilti::instruction::operator_::Assign, length);
+
+    auto op1 = state()->cur;
+    auto op2 = hilti::builder::id::create("Hilti::Packed::BytesFixed");
+    auto value = hiltiUnpack(std::make_shared<binpac::type::Bytes>(), op1, op2, length_op, [&] () { _hiltiCheckChunk(field, length_op); });
+
+    auto expr = std::make_shared<expression::Ctor>(b->sharedPtr<ctor::Bytes>());
+    auto mismatch = cg()->builder()->addTmp("mismatch", hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(mismatch, hilti::instruction::operator_::Unequal, value, cg()->hiltiExpression(expr));
+
+    auto branches = cg()->builder()->addIf(mismatch);
+    auto error = std::get<0>(branches);
+    auto cont = std::get<1>(branches);
+
+    cg()->moduleBuilder()->pushBuilder(error);
+
+    if ( state()->mode == ParserState::TRY )
+        cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Assign, ocur);
+
+    else
+        _hiltiParseError(util::fmt("bytes constant expected (%s)", b->render()));
+
+    cg()->moduleBuilder()->popBuilder(error);
+
+    cg()->moduleBuilder()->pushBuilder(cont);
+
+    setResult(value);
 }
 
 void ParserBuilder::visit(ctor::RegExp* r)

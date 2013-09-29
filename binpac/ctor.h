@@ -57,6 +57,9 @@ public:
     /// Returns the initialization value.
     const string& value() const;
 
+    /// Returns the number of bytes represented by the constant.
+    int length() const;
+
     /// Returns the type of the constructed object.
     shared_ptr<Type> type() const override;
 
