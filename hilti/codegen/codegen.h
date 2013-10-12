@@ -1048,6 +1048,12 @@ public:
    /// Returns: The callable, which can be executed with llvmCallableRun().
    llvm::Value* llvmCallableBind(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true);
 
+   /// Creates a new callable insance and binds the execution of a hook to
+   /// it.
+   ///
+   /// Returns: The callable, which can be executed with llvmCallableRun().
+   llvm::Value* llvmCallableBind(shared_ptr<Hook> hook, const expr_list args);
+
    /// Executes a previously bound callable.
    ///
    /// cty: The type of the callable.
@@ -2160,9 +2166,12 @@ private:
    // string.
    llvm::Value* llvmCurrentLocation(const string& addl="");
 
+   // Helper that implements the llvmCallableBind() methods.
+   llvm::Value* llvmDoCallableBind(llvm::Value* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true);
+
    // Helpers for llvmCallableBind() that builds the hlt.callable.func
    // object.
-   llvm::Value* llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name);
+   llvm::Value* llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name);
 
    // Helper for calling hlt_string_from_data().
    llvm::Value* llvmStringFromData(const string& s);

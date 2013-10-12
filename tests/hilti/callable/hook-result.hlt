@@ -1,0 +1,35 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+hook string my_hook() &priority=3 {
+    call Hilti::print("1st hook function.")
+}
+
+hook string my_hook() &priority=2 {
+    call Hilti::print("2nd hook function.")
+    hook.stop "2nd had stopped"
+}
+
+hook string my_hook() &priority=1 {
+    call Hilti::print("3rd hook function.")
+}
+
+void run() {
+    local ref<callable<string>> c
+    local string result
+
+    c = new callable<string> my_hook ()
+
+    call Hilti::print("-- Starting.")
+    result = call c
+    call Hilti::print("-- Done. Result is:")
+    call Hilti::print(result)
+
+    return.void
+}

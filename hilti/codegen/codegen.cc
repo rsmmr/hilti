@@ -2605,7 +2605,17 @@ void CodeGen::llvmFiberYield(llvm::Value* fiber, shared_ptr<Type> blockable_ty, 
     llvmCallC("hlt_fiber_yield", args2, false, false);
 }
 
+llvm::Value* CodeGen::llvmCallableBind(shared_ptr<Hook> hook, const expr_list args)
+{
+    return llvmDoCallableBind(nullptr, hook, hook->type(), args, true);
+}
+
 llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
+{
+    return llvmDoCallableBind(llvm_func_val, nullptr, ftype, args, excpt_check);
+}
+
+llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
 {
     auto llvm_func = llvm::cast<llvm::Function>(llvm_func_val);
     auto rtype = ftype->result()->type();
@@ -2625,13 +2635,13 @@ llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<ty
     for ( auto a : args )
         stypes.push_back(llvmType(a->type()));
 
-    auto name = llvm_func->getName().str();
+    auto name = llvm_func ? llvm_func->getName().str() : hook->id()->name();
     auto sty = llvm::cast<llvm::StructType>(llvmTypeStruct(::string(".callable.args") + name, stypes));
 
     // Now fill a new callable object with its values.
     llvm::Value* c = llvmObjectNew(callable_type, sty);
     llvm::Value* s = builder()->CreateLoad(c);
-    auto func_val = llvmCallableMakeFuncs(llvm_func, ftype, excpt_check, sty, name);
+    auto func_val = llvmCallableMakeFuncs(llvm_func, hook, ftype, excpt_check, sty, name);
     func_val = builder()->CreateBitCast(func_val, stypes[1]); // FIXME: Not sure why we need this cast.
     s = llvmInsertValue(s, func_val, 1);
 
@@ -2645,7 +2655,7 @@ llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<ty
     return builder()->CreateBitCast(c, llvmTypePtr(cty));
 }
 
-llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name)
+llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name)
 {
     llvm::Value* cached = lookupCachedValue("callable-func", name);
 
@@ -2656,9 +2666,11 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     auto cty = llvm::cast<llvm::StructType>(llvmLibType("hlt.callable"));
     auto arg_start = cty->getNumElements();
 
+    auto llvm_rtype = hook ? llvmType(rtype) : llvm_func->getReturnType();
+
     // Build the internal function that will later call the target.
     CodeGen::parameter_list params = { std::make_pair("callable", builder::reference::type(builder::callable::type(rtype))) };
-    auto llvm_call_func = llvmAddFunction(string(".callable.run") + name, llvm_func->getReturnType(), params, true, type::function::HILTI);
+    auto llvm_call_func = llvmAddFunction(string(".callable.run") + name, llvm_rtype, params, true, type::function::HILTI);
 
     pushFunction(llvm_call_func);
 
@@ -2674,7 +2686,16 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
         ++i;
     }
 
-    auto result = llvmCall(llvm_func, ftype, nargs, excpt_check);
+    auto result = hook && ! rtype->equal(builder::void_::type())
+        ? llvmAddTmp("hook.rval", llvm_rtype, nullptr, true) : nullptr;
+
+    if ( result ) {
+        llvmDoCall(llvm_func, hook, ftype, nargs, result, excpt_check);
+        result = builder()->CreateLoad(result);
+    }
+
+    else
+        result = llvmDoCall(llvm_func, hook, ftype, nargs, nullptr, excpt_check);
 
     // Don't call llvmReturn() here as it would create the normal function
     // return code and reref the result, which return.result will have
