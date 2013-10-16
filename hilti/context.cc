@@ -756,7 +756,7 @@ void* CompilerContext::nativeFunction(llvm::Module* module, llvm::ExecutionEngin
     return func;
 }
 
-void CompilerContext::installFunctionTable(const FunctionMapping* ftable)
+void CompilerContext::installJITFunctionTable(const FunctionMapping* ftable)
 {
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Installing custom function table ...") << std::endl;
@@ -765,6 +765,14 @@ void CompilerContext::installFunctionTable(const FunctionMapping* ftable)
         _jit = new jit::JIT(this);
 
     _jit->installFunctionTable(ftable);
+}
+
+void* CompilerContext::lookupJITFunctionInTable(const std::string& name)
+{
+    if ( ! _jit )
+        return nullptr;
+
+    return _jit->lookupFunctionInTable(name);
 }
 
 shared_ptr<util::cache::FileCache> CompilerContext::fileCache() const

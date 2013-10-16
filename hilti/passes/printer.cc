@@ -420,6 +420,9 @@ void Printer::visit(declaration::Function* f)
 
     bool has_impl = static_cast<bool>(func->body());
 
+    for ( auto c : f->comments() )
+        p << "# " << c << endl;
+
     if ( func->initFunction() )
         p << "init ";
 
@@ -799,7 +802,11 @@ void Printer::visit(type::Callable* t)
         return;
 
     Printer& p = *this;
-    p << "callable";
+
+    if ( t->argType() )
+        p << "callable<" << t->argType() << ">";
+    else
+        p << "callable<*>";
 }
 
 void Printer::visit(type::Channel* t)

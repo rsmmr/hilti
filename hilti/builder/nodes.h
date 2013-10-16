@@ -728,6 +728,26 @@ inline shared_ptr<hilti::function::Result> result(shared_ptr<Type> type, bool co
     return std::make_shared<hilti::function::Result>(type, constant, l);
 }
 
+/// Instantiates an type::Function type.
+///
+/// result: The parameter representing the return value. Can be null for a
+/// void function.
+///
+/// params: The parameters to the functions.
+///
+/// cc: The function's calling convention.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Function> type(shared_ptr<hilti::function::Result> result = nullptr,
+					      const hilti::function::parameter_list& params = hilti::function::parameter_list(),
+					      hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
+					      const Location& l=Location::None)
+{
+    return std::make_shared<hilti::type::Function>(result, params, cc, l);
+}
+
 }
 
 namespace hook {
@@ -823,6 +843,23 @@ inline attribute_list attributes()
 inline hook_attribute attribute(const ::string& name, int64_t val)
 {
     return std::make_pair(name, val);
+}
+
+/// Instantiates an type::Hook type.
+///
+/// result: The parameter representing the return value. Can be null for a
+/// void function.
+///
+/// params: The parameters to the functions.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Function> type(shared_ptr<hilti::function::Result> result = nullptr,
+					      const hilti::function::parameter_list& params = hilti::function::parameter_list(),
+					      const Location& l=Location::None)
+{
+    return std::make_shared<hilti::type::Hook>(result, params, l);
 }
 
 }

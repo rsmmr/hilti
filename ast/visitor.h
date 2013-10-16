@@ -255,6 +255,23 @@ public:
        _result = result;
     }
 
+    /// Clears the result back to bein unset.
+    void clearResult() {
+       _result_set = false;
+       _result = Result();
+    }
+
+    /// Returns true if the result has been set.
+    bool hasResult() const {
+        return _result_set;
+    }
+
+    /// Returns the current result. The value is undefined if the result has
+    /// not yet been set.
+    Result result() const {
+        return _result_set ? _result : Result();
+    }
+
     /// Recurse to another node. Must only be called by a visit method during
     /// traversal.
     void call(shared_ptr<NodeBase> node) {

@@ -2789,6 +2789,7 @@ llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Valu
     // Can't use the safer llvmCreateCall() here because we have casted a
     // generic pointer into oru function pointer.
     auto result = builder()->CreateCall(func, args);
+    result->setCallingConv(llvm::CallingConv::Fast);
 
     llvmBuildInstructionCleanup();
 

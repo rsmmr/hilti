@@ -42,6 +42,9 @@ public:
    /// Destructor.
    ~ModuleBuilder();
 
+   /// Returns the compiler context that the module is part of.
+   shared_ptr<CompilerContext> compilerContext() const;
+
    /// Imports another module into the current's namespace.
    ///
    /// module: The name of the module to import.
@@ -91,6 +94,11 @@ public:
    /// finalize(), this remains in an unresolved state.
    shared_ptr<hilti::Module> module() const;
 
+   /// Saves the module's HILTI source code into a file. This can be called
+   /// at any time, even before finalizing, and will reflect the module's
+   /// current state.
+   void saveHiltiCode(const std::string& path) const;
+
    /// Returns the current scope. This can be the global scope, a function
    /// scope, or a block scope, depending on the current state.
    shared_ptr<hilti::Scope> scope() const;
@@ -121,15 +129,18 @@ public:
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::declaration::Function> pushFunction(shared_ptr<hilti::Function> func, bool no_body = false);
 
-   /// Adds a function declaration to the module, without beginning to build the function.
+   /// Adds a function declaration to the module, without beginning to build
+   /// the function. If the function is already declared, the existing
+   /// declaration is returned.
    ///
    /// func: The function to declare.
    ///
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::declaration::Function> declareFunction(shared_ptr<hilti::Function> func);
 
-   /// Adds a function declaration to the module, without beginning to build the function.
-   ///
+   /// Adds a function declaration to the module, without beginning to build
+   /// the function. If the function is already declared, the existing
+   /// declaration is returned.
    ///
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::declaration::Function> declareFunction(shared_ptr<ID> id,
@@ -138,8 +149,27 @@ public:
                                                            hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
                                                            const Location& l=Location::None);
 
-   /// Adds a function declaration to the module, without beginning to build the function.
+   /// Adds a function declaration to the module, without beginning to build
+   /// the function. If the function is already declared, the existing
+   /// declaration is returned.
    ///
+   /// Returns: An expression referencing the function.
+   shared_ptr<hilti::declaration::Function> declareFunction(shared_ptr<ID> id,
+							    std::shared_ptr<hilti::type::Function> type,
+							    const Location& l=Location::None);
+
+   /// Adds a function declaration to the module, without beginning to build
+   /// the function. If the function is already declared, the existing
+   /// declaration is returned.
+   ///
+   /// Returns: An expression referencing the function.
+   shared_ptr<hilti::declaration::Function> declareFunction(const std::string& id,
+							    std::shared_ptr<hilti::type::Function> type,
+							    const Location& l=Location::None);
+
+   /// Adds a function declaration to the module, without beginning to build
+   /// the function. If the function is already declared, the existing
+   /// declaration is returned.
    ///
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::declaration::Function> declareFunction(const std::string& id,
@@ -163,6 +193,14 @@ public:
                                                        shared_ptr<hilti::function::Result> result = nullptr,
                                                        const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                        const Location& l=Location::None);
+
+   /// Adds a hook declaration to the module, without beginning to build the
+   /// hook.
+   ///
+   /// Returns: An expression referencing the hook.
+   shared_ptr<hilti::declaration::Function> declareHook(shared_ptr<ID> id,
+							std::shared_ptr<hilti::type::Hook> type,
+							const Location& l=Location::None);
 
    /// Adds a hook declaration to the module, without beginning to build the hook.
    ///
@@ -198,6 +236,50 @@ public:
                                                   shared_ptr<hilti::function::Result> result = nullptr,
                                                   const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                   hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
+                                                  shared_ptr<Type> scope = nullptr,
+                                                  bool no_body = false,
+                                                  const Location& l=Location::None);
+
+   /// Pushes a HILTI function onto the stack of functions currently being
+   /// built. function() will now return this function. The method then
+   /// begins building the function's body and creates an initial block
+   /// builder. builder() will now return that.
+   ///
+   /// id: The name of the function.
+   ///
+   /// ftype: The function's type.
+   ///
+   /// scope: The function's scheduling scope.
+   ///
+   /// no_body: If true, don't push a body.
+   ///
+   /// l: Location associated with the type.
+   ///
+   /// Returns: An expression referencing the function.
+   shared_ptr<hilti::declaration::Function> pushFunction(shared_ptr<ID> id,
+						  std::shared_ptr<hilti::type::Function> ftype,
+                                                  shared_ptr<Type> scope = nullptr,
+                                                  bool no_body = false,
+                                                  const Location& l=Location::None);
+
+   /// Pushes a HILTI function onto the stack of functions currently being
+   /// built. function() will now return this function. The method then
+   /// begins building the function's body and creates an initial block
+   /// builder. builder() will now return that.
+   ///
+   /// name: The name of the function.
+   ///
+   /// ftype: The function's type.
+   ///
+   /// scope: The function's scheduling scope.
+   ///
+   /// no_body: If true, don't push a body.
+   ///
+   /// l: Location associated with the type.
+   ///
+   /// Returns: An expression referencing the function.
+   shared_ptr<hilti::declaration::Function> pushFunction(const std::string& name,
+						  std::shared_ptr<hilti::type::Function> ftype,
                                                   shared_ptr<Type> scope = nullptr,
                                                   bool no_body = false,
                                                   const Location& l=Location::None);
@@ -260,6 +342,32 @@ public:
    shared_ptr<hilti::declaration::Function> pushHook(shared_ptr<ID> id,
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
+                                              shared_ptr<Type> scope = nullptr,
+                                              const hilti::hook::attribute_list& attrs = hilti::hook::attribute_list(),
+                                              bool no_body = false,
+                                              const Location& l=Location::None);
+
+   /// Pushes a HILTI hook onto the stack of functions currently being built.
+   /// Note that hooks and functions are internally kept on the same stack
+   /// (as a hook is just a special form of a function). function() will now
+   /// return this hook. The method then begins building the hook's body and
+   /// creates an initial block builder. builder() will now return that.
+   ///
+   /// id: The name of the hook.
+   ///
+   /// htype: The hooks' type.
+   ///
+   /// scope: The hook's scheduling scope.
+   ///
+   /// attrs: The hook attributes (i.e., priority and group).
+   ///
+   /// no_body: If true, don't push a body.
+   ///
+   /// l: Location associated with the type.
+   ///
+   /// Returns: An expression referencing the hook.
+   shared_ptr<hilti::declaration::Function> pushHook(shared_ptr<ID> id,
+					      std::shared_ptr<hilti::type::Hook> type,
                                               shared_ptr<Type> scope = nullptr,
                                               const hilti::hook::attribute_list& attrs = hilti::hook::attribute_list(),
                                               bool no_body = false,

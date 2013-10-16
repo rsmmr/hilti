@@ -54,6 +54,14 @@ public:
     /// be null pointers to mark the end of the array.
     void installFunctionTable(const FunctionMapping* ftable);
 
+    /// Looks up a function installed in the function table.
+    ///
+    /// name: The name of the function.
+    ///
+    /// Returns: A pointer to the function, or null if there's no function
+    /// under that name.
+    void* lookupFunctionInTable(const std::string& name);
+
 private:
     CompilerContext* _ctx;
     MemoryManager* _mm;

@@ -29,6 +29,7 @@ public:
     MemoryManager(llvm::JITMemoryManager *mm);
 
     void installFunctionTable(const JIT::FunctionMapping* functions);
+    void* lookupFunctionInTable(const std::string& name);
 
     // This is one method we override with our own version.
     void* getPointerToNamedFunction(const std::string &Name, bool AbortOnFailure = true) override;
@@ -72,6 +73,19 @@ hilti::jit::MemoryManager::MemoryManager(llvm::JITMemoryManager *mm)
 void MemoryManager::installFunctionTable(const JIT::FunctionMapping* functions)
 {
     _functions = functions;
+}
+
+void* MemoryManager::lookupFunctionInTable(const std::string& name)
+{
+    if ( ! _functions )
+        return nullptr;
+
+    for ( int i = 0; _functions[i].name; i++ ) {
+        if ( name == _functions[i].name )
+            return _functions[i].func;
+    }
+
+    return nullptr;
 }
 
 void* MemoryManager::getPointerToNamedFunction(const std::string& name, bool abort_on_failure)
@@ -246,3 +260,9 @@ void JIT::installFunctionTable(const FunctionMapping* mappings)
 {
     _mm->installFunctionTable(mappings);
 }
+
+void* JIT::lookupFunctionInTable(const std::string& name)
+{
+    return _mm->lookupFunctionInTable(name);
+}
+
