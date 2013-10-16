@@ -311,7 +311,12 @@ void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location
 
 void* hlt_stack_alloc(size_t size)
 {
+#ifndef DARWIN
     void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+#else
+    void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+#endif
+
 
     if ( stack == MAP_FAILED ) {
         fprintf(stderr, "mmap failed: %s\n", strerror(errno));
