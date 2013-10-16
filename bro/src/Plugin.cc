@@ -6,12 +6,14 @@
 #include "Manager.h"
 #include "LocalReporter.h"
 #include "analyzer/Component.h"
+#include "Event.h"
 
 plugin::Bro_Hilti::Plugin HiltiPlugin;
 
 using namespace bro::hilti;
 
 plugin::Bro_Hilti::Plugin::Plugin()
+	: ::plugin::InterpreterPlugin(100)
 	{
 	_manager = new bro::hilti::Manager();
 	}
@@ -28,8 +30,6 @@ bro::hilti::Manager* plugin::Bro_Hilti::Plugin::Mgr() const
 
 void plugin::Bro_Hilti::Plugin::InitPreScript()
 	{
-	plugin::Plugin::InitPreScript();
-
 	SetName("Bro::Hilti");
 	SetDynamicPlugin(true);
 	SetFileExtensions("pac2:evt");
@@ -109,4 +109,29 @@ file_analysis::Tag plugin::Bro_Hilti::Plugin::AddFileAnalyzer(const string& name
 void plugin::Bro_Hilti::Plugin::AddEvent(const string& name)
 	{
 	AddBifItem(name.c_str(), plugin::BifItem::EVENT);
+	}
+
+Val* plugin::Bro_Hilti::Plugin::CallFunction(const Func* func, val_list* args)
+	{
+	if ( string(func->Name()) == string("bro_init") )
+		return new Val(0, TYPE_ANY);
+
+	return 0;
+	}
+
+bool plugin::Bro_Hilti::Plugin::QueueEvent(Event* event)
+	{
+	if ( ! _manager->RuntimeRaiseEvent(event) )
+		Unref(event);
+
+	// We always say we handled it.
+	return true;
+	}
+
+void plugin::Bro_Hilti::Plugin::UpdateNetworkTime(double network_time)
+	{
+	}
+
+void plugin::Bro_Hilti::Plugin::DrainEvents()
+	{
 	}

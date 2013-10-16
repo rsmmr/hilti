@@ -31,7 +31,6 @@ extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[] =
 	{ "libbro_cookie_to_conn_val", (void*)&libbro_cookie_to_conn_val },
 	{ "libbro_cookie_to_file_val", (void*)&libbro_cookie_to_file_val },
 	{ "libbro_cookie_to_is_orig", (void*)&libbro_cookie_to_is_orig },
-	{ "libbro_h2b_bytes", (void*)&libbro_h2b_bytes},
 	{ "libbro_h2b_integer_signed", (void*)&libbro_h2b_integer_signed},
 	{ "libbro_h2b_integer_unsigned", (void*)&libbro_h2b_integer_unsigned},
 	{ "libbro_h2b_address", (void*)&libbro_h2b_address},
@@ -39,14 +38,23 @@ extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[] =
 	{ "libbro_h2b_string", (void*)&libbro_h2b_string},
 	{ "libbro_h2b_time", (void*)&libbro_h2b_time},
 	{ "libbro_h2b_enum", (void*)&libbro_h2b_enum},
+	{ "libbro_h2b_bytes", (void*)&libbro_h2b_bytes},
+
+	{ "libbro_b2h_string", (void*)&libbro_b2h_string},
+
 	{ "libbro_get_event_handler", (void*)&libbro_get_event_handler },
 	{ "libbro_raise_event", (void*)&libbro_raise_event },
+	{ "libbro_call_bif_void", (void*)&libbro_call_bif_void },
+	{ "libbro_call_bif_result", (void*)&libbro_call_bif_result },
+
 	{ "bro_file_begin", (void*)bro_file_begin },
 	{ "bro_file_set_size", (void*)bro_file_set_size },
 	{ "bro_file_data_in", (void*)bro_file_data_in },
 	{ "bro_file_gap", (void*)bro_file_gap },
 	{ "bro_file_end", (void*)bro_file_end },
 	{ "bro_rule_match", (void*)bro_rule_match },
+
+	{ "hilti_is_compiled", (void*)bif_hilti_is_compiled },
 	{ 0, 0 } // End marker.
 };
 
@@ -99,12 +107,12 @@ void* libbro_cookie_to_is_orig(void* cookie, hlt_exception** excpt, hlt_executio
 	return new Val(c->is_orig, TYPE_BOOL);
 	}
 
-void* libbro_h2b_bytes(hlt_bytes* value, hlt_exception** excpt, hlt_execution_context* ctx)
+void* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	int len = hlt_bytes_len(value, excpt, ctx);
-	char data[len];
-	hlt_bytes_to_raw_buffer(value, (int8_t*)data, len, excpt, ctx);
-	return new StringVal(len, data); // copies data.
+	const char* str = hlt_string_to_native(s, excpt, ctx);
+	Val* v = new StringVal(str); // copies data.
+	hlt_free((void *)str);
+	return v;
 	}
 
 void* libbro_h2b_integer_signed(int64_t i, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -141,12 +149,20 @@ void* libbro_h2b_bool(int8_t b, hlt_exception** excpt, hlt_execution_context* ct
 	return new Val(b, TYPE_BOOL);
 	}
 
-void* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
+void* libbro_h2b_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	const char* str = hlt_string_to_native(s, excpt, ctx);
-	Val* v = new StringVal(str); // copies data.
-	hlt_free((void *)str);
-	return v;
+	int len = hlt_bytes_len(b, excpt, ctx);
+	char data[len];
+	hlt_bytes_to_raw_buffer(b, (int8_t*)data, len, excpt, ctx);
+	return new StringVal(len, data); // copies data.
+	}
+
+hlt_bytes* libbro_b2h_string(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	const BroString* s = val->AsString();
+	hlt_bytes* result = hlt_bytes_new_from_data_copy((const int8_t*)s->Bytes(), s->Len(), excpt, ctx);
+	Unref(val);
+	return result;
 	}
 
 void* libbro_h2b_time(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -197,6 +213,42 @@ void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple,
 		}
 
 	mgr.QueueEvent(EventHandlerPtr(ev), vals);
+	}
+
+::Val* libbro_call_bif_result(hlt_bytes* name, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	hlt_bytes_size len = hlt_bytes_len(name, excpt, ctx);
+	char fname[len + 1];
+	hlt_bytes_to_raw_buffer(name, (int8_t*)fname, len, excpt, ctx);
+	fname[len] = '\0';
+
+	::ID* fid = global_scope()->Lookup(fname);
+
+	if ( ! fid )
+		bro::hilti::reporter::internal_error(::util::fmt("unknown bif '%s' called in libbro_call_bif_result", string(fname)));
+
+	assert(fid->ID_Val());
+	auto func = fid->ID_Val()->AsFunc();
+	assert(func->GetKind() == ::Func::BUILTIN_FUNC);
+
+	int16_t* offsets = (int16_t *)type->aux;
+
+	val_list* vals = new val_list;
+
+	for ( int i = 0; i < type->num_params; i++ )
+		{
+		Val* broval = *((Val**)(((char*)tuple) + offsets[i]));
+		vals->append(broval);
+		}
+
+	auto result = func->Call(vals);
+	return result;
+	}
+
+void libbro_call_bif_void(hlt_bytes* name, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto result = libbro_call_bif_result(name, type, tuple, excpt, ctx);
+	Unref(result);
 	}
 
 // User-visible Bro::* functions.
@@ -344,6 +396,14 @@ void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t e
 
 	GC_DTOR(start, hlt_iterator_bytes);
 	GC_DTOR(end, hlt_iterator_bytes);
+	}
+
+// Bif functions. If a classic bif with the same name exists, the implementation
+// here will override that one (you must ensure that types match!)
+
+int8_t bif_hilti_is_compiled(hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return 1;
 	}
 
 }

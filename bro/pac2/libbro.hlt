@@ -17,8 +17,13 @@ declare "C-HILTI" BroVal h2b_string(string val)
 declare "C-HILTI" BroVal h2b_bool(bool b)
 declare "C-HILTI" BroVal h2b_enum(any e, int<64> type_idx)
 declare "C-HILTI" BroVal h2b_time(time b)
+
+declare "C-HILTI" ref<bytes> b2h_string(BroVal val)
+
 declare "C-HILTI" BroEventHandler get_event_handler(ref<bytes> name)
-declare "C-HILTI" void raise_event(BroEventHandler hdl, tuple<*> vals)
+declare "C-HILTI" void            raise_event(BroEventHandler hdl, tuple<*> vals)
+declare "C-HILTI" void            call_bif_void(ref<bytes> name, tuple<*> vals)
+declare "C-HILTI" BroVal          call_bif_result(ref<bytes> name, tuple<*> vals)
 
 export cookie_to_conn_val
 export h2b_bytes

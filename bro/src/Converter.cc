@@ -51,8 +51,8 @@ void TypeConverter::CacheType(std::shared_ptr<::hilti::Type> type, std::shared_p
 	type_cache.insert(std::make_pair(cache_idx, std::make_pair(bro_type, type_idx)));
 	}
 
-ValueConverter::ValueConverter(shared_ptr<::hilti::builder::ModuleBuilder> arg_mbuilder,
-			       shared_ptr<TypeConverter> arg_type_converter)
+ValueConverter::ValueConverter(::hilti::builder::ModuleBuilder* arg_mbuilder,
+			       TypeConverter* arg_type_converter)
 	{
 	mbuilder = arg_mbuilder;
 	type_converter = arg_type_converter;
@@ -70,14 +70,14 @@ bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value, shared_ptr<:
 	return success;
 	}
 
-shared_ptr<::hilti::builder::BlockBuilder> ValueConverter::Builder() const
-	{
-	return mbuilder->builder();
-	}
-
 shared_ptr<::binpac::Type> ValueConverter::arg3() const
 	{
 	return _arg3;
+	}
+
+shared_ptr<::hilti::builder::BlockBuilder> ValueConverter::Builder() const
+	{
+	return mbuilder->builder();
 	}
 
 void TypeConverter::visit(::hilti::type::Reference* b)
@@ -274,7 +274,6 @@ void ValueConverter::visit(::hilti::type::Double* d)
 	setResult(true);
 	}
 
-
 void ValueConverter::visit(::hilti::type::Enum* e)
 	{
 	auto val = arg1();
@@ -309,4 +308,4 @@ void ValueConverter::visit(::hilti::type::Time* t)
 	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 				  ::hilti::builder::id::create("LibBro::h2b_time"), args);
 	setResult(true);
-        }
+    }

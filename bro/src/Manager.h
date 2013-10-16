@@ -206,6 +206,19 @@ public:
 	 */
 	analyzer::Tag TagForAnalyzer(const analyzer::Tag& tag);
 
+	/**
+	 * Raises an event that has been compiled into HILTI code during
+	 * runtime. This must be called only during runtime after all event
+	 * handlers have been compiled and the JIT setup (i.e., after \a
+	 * Compile()).
+	 *
+	 * @param event The event to raise.
+	 *
+	 * @return True if successfull, i.e., the event exists. In that case,
+	 * the event will have taken ownership of the \a event.
+	 */
+	bool RuntimeRaiseEvent(Event* event);
+
 	/** Dumps a summary all BinPAC++/HILTI analyzers/events/code to standard error.
 	 */
 	void DumpDebug();
@@ -323,6 +336,11 @@ protected:
 	 * XXX
 	 */
 	bool PopulateEvent(shared_ptr<Pac2EventInfo> ev);
+
+	/**
+	 * XXX
+	 */
+	bool CompileBroScripts();
 
 	/**
 	 * Registers a Bro analyzer defined in an analyzer specification.

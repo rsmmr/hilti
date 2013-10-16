@@ -189,7 +189,6 @@ add_library (hilti STATIC
     codegen/field-builder.cc
     codegen/instructions/bool.cc
     codegen/instructions/bytes.cc
-    codegen/instructions/flow.cc
     codegen/instructions/misc.cc
     codegen/instructions/integer.cc
     codegen/instructions/operators.cc

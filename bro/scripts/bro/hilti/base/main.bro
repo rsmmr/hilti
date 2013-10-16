@@ -45,6 +45,9 @@ export {
 
 	## Use on-disk cache for compiled modules.
 	const use_cache = T &redef;
+
+	## Activate the Bro script compiler.
+	const compile_scripts = F &redef;
 }
 
 

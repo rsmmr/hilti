@@ -1,1 +1,13 @@
 
+module Hilti;
+
+## Returns true if Bro is running with compiled script code; 
+## false if the class script interpreter is in charge.
+function is_compiled%(%): bool
+	%{
+	// We return false here unconditioanlly here as this
+	// code will run only in interpreter mode. When
+	// compiled, the runtime will override this with
+	// a function always returning true.
+	return new Val(0, TYPE_BOOL);
+	%}

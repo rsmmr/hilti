@@ -16,7 +16,7 @@ class Manager;
 
 namespace plugin { namespace Bro_Hilti {
 
-class Plugin : public plugin::Plugin {
+class Plugin : public plugin::InterpreterPlugin {
 public:
 	Plugin();
 	virtual ~Plugin();
@@ -27,6 +27,11 @@ public:
 	file_analysis::Tag AddFileAnalyzer(const std::string& name, file_analysis::Tag::subtype_t stype);
 
 	void AddEvent(const std::string& name);
+
+	Val* CallFunction(const Func* func, val_list* args) override;
+	bool QueueEvent(Event* event) override;
+	void UpdateNetworkTime(double network_time) override;
+	void DrainEvents() override;
 
 protected:
 	// Overridden from Bro's Plugin.

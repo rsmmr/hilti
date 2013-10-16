@@ -27,8 +27,8 @@ public:
 	TypeConverter();
 
 	/**
-	 * Converts a HILTI type into a Bro type. Aborts for unsupported
-	 * types.
+	 * Converts a HILTI type corresponding to a BinPAC++ type into a Bro
+	 * type. Aborts for unsupported types.
 	 *
 	 * @param type The HILTI type to convert.
 	 *
@@ -63,32 +63,29 @@ private:
 	std::map<string, std::pair<BroType*, std::uint64_t>> type_cache;
 };
 
-// Converts from HILTI values to Bro values.
+// Converts from HILTI values to Bro values, and vice vera.
 class ValueConverter : ast::Visitor<::hilti::AstInfo, bool, shared_ptr<::hilti::Expression>, shared_ptr<::hilti::Expression>>
 {
 public:
 	/**
 	 * XXX
 	 */
-	ValueConverter(shared_ptr<::hilti::builder::ModuleBuilder> mbuilder,
-		       shared_ptr<TypeConverter> type_converter);
+	ValueConverter(::hilti::builder::ModuleBuilder* mbuilder,
+		       TypeConverter* type_converter);
 
 	/**
 	 * Generates HILTI code to convert a HILTI value into a Bro Val.
 	 * Aborts for unsupported types.
 	 *
-	 * @param mbuilder The module builder to use; the code will be
-	 * generated at its current building position.
-	 *
 	 * @param value The HILTI value to convert.
 	 *
 	 * @param dst A HILTI expression referencing the location where to store the converted value.
 	 *
-	 * @param btype An optional BinPAC++ type that \a value may correspond to.
+	 * @param btype A BinPAC++ type that \a value may correspond to.
 	 *
 	 * @returns True if the conversion was successul.
 	 */
-	bool Convert(shared_ptr<::hilti::Expression> value, shared_ptr<::hilti::Expression> dst, std::shared_ptr<::binpac::Type> btype = nullptr);
+	bool Convert(shared_ptr<::hilti::Expression> value, shared_ptr<::hilti::Expression> dst, std::shared_ptr<::binpac::Type> btype);
 
 protected:
 	/**
@@ -112,8 +109,9 @@ private:
 	void visit(::hilti::type::Time* t) override;
 	void visit(::hilti::type::Reference* b) override;
 
-	shared_ptr<::hilti::builder::ModuleBuilder> mbuilder;
-	shared_ptr<TypeConverter> type_converter;
+	::hilti::builder::ModuleBuilder* mbuilder;
+	TypeConverter* type_converter;
+
 	shared_ptr<::binpac::Type> _arg3 = nullptr;
 };
 

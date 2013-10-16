@@ -1,4 +1,7 @@
 
+// TODO: This is getting very messy. The Manager needs a refactoring
+// to split out the BinPAC++ part and get rid of the PIMPLing.
+
 #include <memory>
 
 #include <glob.h>
@@ -46,6 +49,7 @@ extern "C" {
 #include "Converter.h"
 #include "LocalReporter.h"
 #include "Runtime.h"
+#include "compiler/Compiler.h"
 
 #include "consts.bif.h"
 #include "events.bif.h"
@@ -182,6 +186,7 @@ struct Manager::PIMPL
 	::binpac::Options pac2_options;
 
 	bool compile_all;	// Compile all event code, even if no handler, set from BifConst::Hilti::compile_all.
+	bool compile_scripts;	// Activate the Bro script compiler.
 	bool dump_debug;	// Output debug summary, set from BifConst::Hilti::dump_debug.
 	bool dump_code;		// Output generated code, set from BifConst::Hilti::dump_code.
 	bool dump_code_all;	// Output all code, set from BifConst::Hilti::dump_code_all.
@@ -194,6 +199,7 @@ struct Manager::PIMPL
 	std::list<string> import_paths;
 	Pac2AST* pac2_ast;
 	string libbro_path;
+	compiler::Compiler *compiler;
 
 	pac2_module_list pac2_modules;			// All loaded modules. Indexed by their paths.
 	pac2_event_list  pac2_events;			// All events found in the *.evt files.
@@ -216,6 +222,12 @@ struct Manager::PIMPL
 	// be used further.
 	hilti_module_list hilti_modules;
 	shared_ptr<TypeConverter> type_converter;
+
+	// The final linked and JITed module.
+	llvm::Module* llvm_linked_module;
+
+	// The execution engine used for JITing llvm_linked_module.
+	llvm::ExecutionEngine* llvm_execution_engine;
 	};
 
 Manager::Manager()
@@ -272,6 +284,7 @@ bool Manager::InitPreScripts()
 
 	pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
 	pimpl->hilti_context = pimpl->pac2_context->hiltiContext();
+	pimpl->compiler = new compiler::Compiler(pimpl->hilti_context);
 
 	pimpl->libbro_path = pimpl->hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
 
@@ -293,6 +306,7 @@ bool Manager::InitPostScripts()
 		cg_debug.insert(t);
 
 	pimpl->compile_all = BifConst::Hilti::compile_all;
+	pimpl->compile_scripts = BifConst::Hilti::compile_scripts;
 	pimpl->profile = BifConst::Hilti::profile;
 	pimpl->dump_debug = BifConst::Hilti::dump_debug;
 	pimpl->dump_code = BifConst::Hilti::dump_code;
@@ -315,6 +329,9 @@ bool Manager::InitPostScripts()
 	pimpl->pac2_options.verify = ! BifConst::Hilti::no_verify;
 	pimpl->pac2_options.cg_debug = cg_debug;
 	pimpl->pac2_options.module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
+
+	pimpl->llvm_linked_module = nullptr;
+	pimpl->llvm_execution_engine = nullptr;
 
 	for ( auto a : pimpl->pac2_analyzers )
 		{
@@ -339,6 +356,9 @@ bool Manager::InitPostScripts()
 			}
 		}
 
+	if ( ! pimpl->compile_scripts )
+		HiltiPlugin.DisableInterpreterPlugin();
+
 	post_scripts_init_run = true;
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Done with post-script initialization");
@@ -352,6 +372,9 @@ bool Manager::FinishLoading()
 	assert(post_scripts_init_run);
 
 	pre_scripts_init_run = true;
+
+	extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[];
+	pimpl->hilti_context->installJITFunctionTable(libbro_function_table);
 
 	return true;
 	}
@@ -540,6 +563,9 @@ bool Manager::Compile()
 
 	assert(pre_scripts_init_run);
 	assert(post_scripts_init_run);
+
+	if ( ! CompileBroScripts() )
+		return false;
 
 	for ( auto ev : pimpl->pac2_events )
 		RegisterBroEvent(ev);
@@ -790,7 +816,6 @@ bool Manager::Compile()
 			}
 		}
 
-
 	// Compile and link all the HILTI modules into LLVM. We use the
 	// BinPAC++ context here to make sure we gets its additional
 	// libraries linked.
@@ -814,11 +839,44 @@ bool Manager::Compile()
 
 	llvm_module->setModuleIdentifier("__bro_linked__");
 
+	pimpl->llvm_linked_module = llvm_module;
 	pimpl->hilti_context->updateCache(CacheKeyForLinkedModule(), llvm_module);
 
 	auto result = RunJIT(llvm_module);
 	PLUGIN_DBG_LOG(HiltiPlugin, "Done with compilation");
 	return result;
+	}
+
+bool Manager::CompileBroScripts()
+	{
+	if ( ! pimpl->compile_scripts )
+		{
+		PLUGIN_DBG_LOG(HiltiPlugin, "Script compilation disabled");
+		return true;
+		}
+
+	PLUGIN_DBG_LOG(HiltiPlugin, "Compiling Bro scripts ...");
+
+	compiler::Compiler::module_list modules = pimpl->compiler->CompileAll();
+
+	for ( auto m : modules )
+		{
+		// TODO: Add caching.
+		pimpl->hilti_modules.push_back(m);
+
+		auto lm = pimpl->hilti_context->compile(m);
+
+		if ( ! lm )
+			{
+			reporter::error(::util::fmt("compiling script module %s failed", m->id()->name()));
+			return false;
+			}
+
+		pimpl->llvm_modules.push_back(lm);
+		pimpl->hilti_modules.push_back(m);
+		}
+
+	return true;
 	}
 
 bool Manager::RunJIT(llvm::Module* llvm_module)
@@ -835,8 +893,7 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 		return false;
 		}
 
-	extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[];
-	hilti_context->installFunctionTable(libbro_function_table);
+	pimpl->llvm_execution_engine = ee;
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Initializing HILTI runtime");
 
@@ -981,7 +1038,7 @@ bool Manager::LoadPac2Module(const string& path)
 	minfo->hilti_module = minfo->hilti_mbuilder->module();
 	minfo->hilti_mbuilder->importModule("Hilti");
 	minfo->hilti_mbuilder->importModule("LibBro");
-	minfo->value_converter = std::make_shared<ValueConverter>(minfo->hilti_mbuilder, pimpl->type_converter);
+	minfo->value_converter = std::make_shared<ValueConverter>(minfo->hilti_mbuilder.get(), pimpl->type_converter.get());
 
 	minfo->key.scope = "bc";
 	minfo->key.name = name;
@@ -2169,6 +2226,54 @@ analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
 	{
 	analyzer::Tag replaces = pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->replaces_tag;
 	return replaces ? replaces : tag;
+	}
+
+bool Manager::RuntimeRaiseEvent(Event* event)
+	{
+	// TODO: We should probably cache the nativeFunction() lookup here
+	// between calls to speed it up, unless that method itself is already
+	// as fast as we would that get that way.
+
+	assert(pimpl->llvm_linked_module && pimpl->llvm_execution_engine);
+
+	if ( ! event->Handler()->LocalHandler() )
+		{
+		Unref(event);
+		return true;
+		}
+
+	auto name = event->Handler()->Name();
+	auto stub = pimpl->compiler->HiltiStubSymbol(event->Handler()->LocalHandler(), nullptr, true);
+	auto ev = pimpl->hilti_context->nativeFunction(pimpl->llvm_linked_module,
+						       pimpl->llvm_execution_engine,
+						       stub);
+
+	if ( ! ev )
+		{
+		reporter::warning(::util::fmt("unknown HILTI event stub %s", stub));
+		return false;
+		}
+
+	auto args = event->Args();
+	hlt_exception* excpt = 0;
+	hlt_execution_context* ctx = hlt_global_execution_context();
+
+	switch ( args->length() ) {
+	case 0:
+		typedef void (*e0)(hlt_exception** excpt, hlt_execution_context* ctx);
+		(*(e0)ev)(&excpt, ctx);
+		break;
+
+	default:
+		reporter::error(::util::fmt("event %s with %d parameters not yet supported in RuntimeRaiseEvent()", name, args->length()));
+		return false;
+	}
+
+	if ( excpt )
+		reporter::error(::util::fmt("event %s raised exception", name));
+
+	Unref(event);
+	return true;
 	}
 
 void Manager::DumpDebug()

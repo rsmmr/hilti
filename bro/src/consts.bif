@@ -44,3 +44,6 @@ const save_llvm: bool;
 
 ## Use on-disk cache for compiled modules.
 const use_cache: bool;
+
+## Activate the Bro script compiler.
+const compile_scripts: bool;
