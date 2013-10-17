@@ -344,7 +344,7 @@ void StatementBuilder::visit(declaration::Function* f)
         auto cont = cg()->newBuilder("excpt-no");
 
         auto current = cg()->llvmCurrentException();
-        auto is_null = cg()->builder()->CreateIsNull(current);
+        auto is_null = cg()->llvmCreateIsNull(current);
         cg()->llvmCreateCondBr(is_null, cont, excpt);
 
         cg()->pushBuilder(excpt);

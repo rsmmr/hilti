@@ -1385,6 +1385,9 @@ public:
    /// that takes builders instead of blocks.
    llvm::BranchInst* llvmCreateCondBr(llvm::Value* cond, IRBuilder* true_, IRBuilder* false_);
 
+   /// Wrapper method around LLVM's IsNull() that also works correctly for floating point values.
+   llvm::Value* llvmCreateIsNull(llvm::Value *arg, const llvm::Twine &name = "");
+
    /// Wrapper method to create an LLVM \c gep instruction a bit more easily.
    /// There's also a const version of this method.
    ///

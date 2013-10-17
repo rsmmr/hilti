@@ -1814,7 +1814,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
             continue;
         }
 
-        auto is_null = builder()->CreateIsNull(val);
+        auto is_null = llvmCreateIsNull(val);
         llvmCreateCondBr(is_null, cont, dtor);
 
         pushBuilder(dtor);
@@ -2103,7 +2103,7 @@ void CodeGen::llvmCheckCException(llvm::Value* excpt)
         return;
 
     auto eval = builder()->CreateLoad(excpt);
-    auto is_null = builder()->CreateIsNull(eval);
+    auto is_null = llvmCreateIsNull(eval);
     auto cont = newBuilder("no-excpt");
     auto raise = newBuilder("excpt-c");
 
@@ -2132,7 +2132,7 @@ void CodeGen::llvmCheckException()
     llvmBuildInstructionCleanup(false);
 
     auto excpt = llvmCurrentException();
-    auto is_null = builder()->CreateIsNull(excpt);
+    auto is_null = llvmCreateIsNull(excpt);
     auto cont = newBuilder("no-excpt");
     auto abort = newBuilder("excpt-abort");
 
@@ -2187,7 +2187,7 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
     if ( ! known_exception ) {
         catch_ = newBuilder("excpt-catch");
         current = llvmCurrentException();
-        auto is_null = builder()->CreateIsNull(current);
+        auto is_null = llvmCreateIsNull(current);
         llvmCreateCondBr(is_null, cont, catch_);
         pushBuilder(catch_);
     }
@@ -2299,6 +2299,14 @@ llvm::BranchInst* CodeGen::llvmCreateCondBr(llvm::Value* cond, IRBuilder* true_,
     return builder()->CreateCondBr(cond, true_->GetInsertBlock(), false_->GetInsertBlock());
 }
 
+llvm::Value* CodeGen::llvmCreateIsNull(llvm::Value *arg, const llvm::Twine &name)
+{
+    if ( arg->getType()->isFloatingPointTy() )
+        return builder()->CreateFCmpOEQ(arg, llvm::Constant::getNullValue(arg->getType()), name);
+
+    else
+        return builder()->CreateIsNull(arg);
+}
 
 llvm::Value* CodeGen::llvmInsertValue(llvm::Value* aggr, llvm::Value* val, unsigned int idx)
 {
@@ -2557,7 +2565,7 @@ llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
     value_list cargs { fiber };
     auto result = llvmCallC("hlt_fiber_start", { fiber }, false, false);
 
-    auto is_null = builder()->CreateIsNull(result);
+    auto is_null = llvmCreateIsNull(result);
     auto done = newBuilder("done");
     auto yield = newBuilder("yielded");
 

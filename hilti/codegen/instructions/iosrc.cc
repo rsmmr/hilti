@@ -35,7 +35,7 @@ static llvm::Value* _makeIterator(CodeGen* cg, llvm::Value* src, llvm::Value* el
 static llvm::Value* _checkExhausted(CodeGen* cg, statement::Instruction* i, llvm::Value* src, llvm::Value* result, bool make_iters)
 {
     auto data = cg->llvmExtractValue(result, 1);
-    auto exhausted = cg->builder()->CreateIsNull(data);
+    auto exhausted = cg->llvmCreateIsNull(data);
 
     auto builder_exhausted = cg->newBuilder("excpt");
     auto builder_not_exhausted = cg->newBuilder("no-excpt");
