@@ -27,7 +27,7 @@ export type Test = unit {
 
 grammar conv;
 
-analyzer Conv over TCP:
+protocol analyzer Conv over TCP:
     parse originator with Conv::Test,
     port 22/tcp;
 
