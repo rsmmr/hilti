@@ -1655,7 +1655,7 @@ inline shared_ptr<hilti::expression::Ctor> create(const re_pattern& pattern, con
 /// l: Location associated with the type.
 ///
 /// Returns: The type node.
-inline shared_ptr<hilti::type::RegExp> type(const attribute_list& attrs, const Location& l=Location::None) {
+inline shared_ptr<hilti::type::RegExp> type(const attribute_list& attrs = attribute_list(), const Location& l=Location::None) {
     return std::make_shared<hilti::type::RegExp>(attrs, l);
 }
 

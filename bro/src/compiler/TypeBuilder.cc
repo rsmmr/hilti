@@ -1,5 +1,6 @@
 
 #include <Type.h>
+#include <module_util.h>
 #undef List
 
 #include <hilti/builder/nodes.h>
@@ -73,64 +74,35 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 	{
 	switch ( type->Tag() ) {
 	case TYPE_ADDR:
-		{
-		Error("no support yet for compiling base type TYPE_ADDR", type);
-		return nullptr;
-		}
+		return ::hilti::builder::address::type();
 
 	case TYPE_BOOL:
 		return ::hilti::builder::boolean::type();
 
 	case TYPE_COUNT:
-		{
-		Error("no support yet for compiling base type TYPE_COUNT", type);
-		return nullptr;
-		}
-
 	case TYPE_COUNTER:
-		{
-		Error("no support yet for compiling base type TYPE_COUNTER", type);
-		return nullptr;
-		}
+		return ::hilti::builder::integer::type(64);
 
 	case TYPE_DOUBLE:
-		{
-		Error("no support yet for compiling base type TYPE_DOUBLE", type);
-		return nullptr;
-		}
+		return ::hilti::builder::double_::type();
 
 	case TYPE_INT:
-		{
-		Error("no support yet for compiling base type TYPE_INT", type);
-		return nullptr;
-		}
+		return ::hilti::builder::integer::type(64);
 
 	case TYPE_INTERVAL:
-		{
-		Error("no support yet for compiling base type TYPE_INTERVAL", type);
-		return nullptr;
-		}
+		return ::hilti::builder::interval::type();
 
 	case TYPE_PATTERN:
-		{
-		Error("no support yet for compiling base type TYPE_PATTERN", type);
-		return nullptr;
-		}
+		return ::hilti::builder::regexp::type();
 
 	case TYPE_PORT:
-		{
-		Error("no support yet for compiling base type TYPE_PORT", type);
-		return nullptr;
-		}
+		return ::hilti::builder::port::type();
 
 	case TYPE_STRING:
 		return ::hilti::builder::reference::type(::hilti::builder::bytes::type());
 
 	case TYPE_TIME:
-		{
-		Error("no support yet for compiling base type TYPE_TIME", type);
-		return nullptr;
-		}
+		return ::hilti::builder::time::type();
 
 	default:
 		Error("TypeBuilder: cannot be reached", type);
@@ -142,14 +114,28 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::EnumType* type)
 	{
-	Error("no support yet for compiling EnumType", type);
-	return nullptr;
+	::hilti::builder::enum_::label_list labels;
+
+	for ( auto i : type->Names() )
+		{
+		auto name = i.first;
+		auto val = i.second;
+
+		auto module = ::extract_module_name(name.c_str());
+		auto local = ::extract_var_name(name.c_str());
+
+		auto hn = ::util::fmt("%s_%s", module, local);
+		auto id = ::hilti::builder::id::node(hn);
+
+		labels.push_back(std::make_pair(id, val));
+		}
+
+	return ::hilti::builder::enum_::type(labels);
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FileType* type)
 	{
-	Error("no support yet for compiling FileType", type);
-	return nullptr;
+	return ::hilti::builder::file::type();
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
@@ -195,26 +181,56 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::OpaqueType* type)
 	{
-	Error("no support yet for compiling OpaqueType", type);
-	return nullptr;
+	return ::hilti::builder::caddr::type();
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 	{
-	Error("no support yet for compiling RecordType", type);
-	return nullptr;
+	::hilti::builder::struct_::field_list fields;
+
+	for ( int i = 0; i < type->NumFields(); i++ )
+		{
+		auto bdef = type->FieldDefault(i);
+
+		auto name = type->FieldName(i);
+		auto htype = HiltiType(type->FieldType(i));
+		auto def = bdef ? HiltiValue(bdef) : nullptr;
+		auto hf = ::hilti::builder::struct_::field(name, htype, def);
+
+		fields.push_back(hf);
+		}
+
+	return ::hilti::builder::struct_::type(fields);
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::SubNetType* type)
 	{
-	Error("no support yet for compiling SubNetType", type);
-	return nullptr;
+	return ::hilti::builder::network::type();
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TableType* type)
 	{
-	Error("no support yet for compiling TableType", type);
-	return nullptr;
+	std::shared_ptr<::hilti::Type> idx;
+
+	auto itypes = type->IndexTypes();
+
+	if ( itypes->length() == 1 )
+		idx = HiltiType((*itypes)[0]);
+	else
+		{
+		::hilti::builder::type_list types;
+
+		loop_over_list(*itypes, i)
+			types.push_back(HiltiType((*itypes)[i]));
+
+		idx = ::hilti::builder::tuple::type(types);
+		}
+
+	if ( type->IsSet() )
+		return ::hilti::builder::set::type(idx);
+
+	auto vtype = HiltiType(type->YieldType());
+	return ::hilti::builder::map::type(idx, vtype);
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TypeList* type)
@@ -231,6 +247,6 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TypeType* type)
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::VectorType* type)
 	{
-	Error("no support yet for compiling VectorType", type);
-	return nullptr;
+	auto etype = HiltiType(type->YieldType());
+	return ::hilti::builder::vector::type(etype);
 	}

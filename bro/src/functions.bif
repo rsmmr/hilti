@@ -11,3 +11,7 @@ function is_compiled%(%): bool
 	// a function always returning true.
 	return new Val(0, TYPE_BOOL);
 	%}
+
+# The following functions are only for testing purposes. They are overwritten
+# by the HILTI runtime; there bodies here will never be called.
+function test_type_string%(s: string%): string %{ return 0; %}
