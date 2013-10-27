@@ -12,8 +12,13 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Bitcode/ReaderWriter.h>
 
+#ifndef HAVE_LLVM_33
+#include <llvm/ExecutionEngine/JITMemoryManager.h>
+#endif
+
 #include "jit.h"
 #include "../options.h"
+#include "../codegen/common.h"
 
 extern void* __hlt_internal_global_globals;
 
@@ -34,8 +39,10 @@ public:
     // This is one method we override with our own version.
     void* getPointerToNamedFunction(const std::string &Name, bool AbortOnFailure = true) override;
 
+#ifdef HAVE_LLVM_33
     // Proxy methods.
     void AllocateGOT() override { _mm->AllocateGOT(); }
+    uint8_t *getGOTBase() const override { return _mm->getGOTBase(); };
     size_t GetDefaultCodeSlabSize() override { return _mm->GetDefaultCodeSlabSize(); }
     size_t GetDefaultDataSlabSize() override { return _mm->GetDefaultDataSlabSize(); }
     size_t GetDefaultStubSlabSize() override { return _mm->GetDefaultStubSlabSize(); }
@@ -48,17 +55,31 @@ public:
     uint8_t *allocateCodeSection(uintptr_t Size, unsigned Alignment, unsigned SectionID) override { return _mm->allocateCodeSection(Size, Alignment, SectionID); }
     uint8_t *allocateDataSection(uintptr_t Size, unsigned Alignment, unsigned SectionID, bool IsReadOnly) override { return _mm->allocateDataSection(Size, Alignment, SectionID, IsReadOnly); }
     bool applyPermissions(std::string *ErrMsg) override { return _mm->applyPermissions(ErrMsg); }
-    uint8_t *getGOTBase() const { return _mm->getGOTBase(); }
+    uint8_t* startExceptionTable(const llvm::Function* F, uintptr_t &ActualSize) override { return _mm->startExceptionTable(F, ActualSize); }
+    void endExceptionTable(const llvm::Function *F, uint8_t *TableStart, uint8_t *TableEnd, uint8_t* FrameRegister) override { _mm->endExceptionTable(F, TableStart, TableEnd, FrameRegister); }
+    void deallocateExceptionTable(void *ET) override { _mm->deallocateExceptionTable(ET); }
+    uint8_t *startFunctionBody(const llvm::Function *F, uintptr_t &ActualSize) override { return _mm->startFunctionBody(F, ActualSize); }
+    void endFunctionBody(const llvm::Function *F, uint8_t *FunctionStart, uint8_t *FunctionEnd) override { _mm->endFunctionBody(F, FunctionStart, FunctionEnd); }
     void deallocateFunctionBody(void *Body) override { _mm->deallocateFunctionBody(Body); }
     void setMemoryWritable() override { _mm->setMemoryWritable(); }
     void setMemoryExecutable() override { _mm->setMemoryExecutable(); }
     void setPoisonMemory(bool poison) override { _mm->setPoisonMemory(poison); }
-
+#else
+    void AllocateGOT() override { _mm->AllocateGOT(); }
+    uint8_t *getGOTBase() const override { return _mm->getGOTBase(); };
     uint8_t *startFunctionBody(const llvm::Function *F, uintptr_t &ActualSize) override { return _mm->startFunctionBody(F, ActualSize); }
+    uint8_t *allocateStub(const llvm::GlobalValue* F, unsigned StubSize, unsigned Alignment) override { return _mm->allocateStub(F, StubSize, Alignment); }
     void endFunctionBody(const llvm::Function *F, uint8_t *FunctionStart, uint8_t *FunctionEnd) override { _mm->endFunctionBody(F, FunctionStart, FunctionEnd); }
-    uint8_t* startExceptionTable(const llvm::Function* F, uintptr_t &ActualSize) override { return _mm->startExceptionTable(F, ActualSize); }
-    void endExceptionTable(const llvm::Function *F, uint8_t *TableStart, uint8_t *TableEnd, uint8_t* FrameRegister) override { _mm->endExceptionTable(F, TableStart, TableEnd, FrameRegister); }
-    void deallocateExceptionTable(void *ET) override { _mm->deallocateExceptionTable(ET); }
+    uint8_t *allocateSpace(intptr_t Size, unsigned Alignment) override { return _mm->allocateSpace(Size, Alignment); }
+    uint8_t *allocateGlobal(uintptr_t Size, unsigned Alignment) override { return _mm->allocateGlobal(Size, Alignment); }
+    void deallocateFunctionBody(void *Body) override { _mm->deallocateFunctionBody(Body); }
+    uint8_t *allocateCodeSection(uintptr_t Size, unsigned Alignment, unsigned SectionID, llvm::StringRef SectionName) override { return _mm->allocateCodeSection(Size, Alignment, SectionID, SectionName); }
+    uint8_t *allocateDataSection(uintptr_t Size, unsigned Alignment, unsigned SectionID, llvm::StringRef SectionName, bool IsReadOnly) override { return _mm->allocateDataSection(Size, Alignment, SectionID, SectionName, IsReadOnly); }
+    void setMemoryWritable() override { _mm->setMemoryWritable(); }
+    void setMemoryExecutable() override { _mm->setMemoryExecutable(); }
+    void setPoisonMemory(bool poison) override { _mm->setPoisonMemory(poison); }
+    bool finalizeMemory(std::string *ErrMsg = 0) override { return _mm->finalizeMemory(ErrMsg); };
+#endif
 
 private:
     llvm::JITMemoryManager* _mm;
@@ -216,7 +237,9 @@ llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
     builder.setMCPU(llvm::sys::getHostCPUName());
 
     llvm::TargetOptions Options;
+#ifdef HAVE_LLVM_33
     Options.JITExceptionHandling = false;
+#endif
     Options.JITEmitDebugInfo = true;
     Options.JITEmitDebugInfoToDisk = false;
     Options.UseSoftFloat = false;
@@ -241,12 +264,17 @@ llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
 
 void* JIT::nativeFunction(llvm::ExecutionEngine* ee, llvm::Module* module, const string& function)
 {
+
+#ifdef HAVE_LLVM_33
     auto func = module->getFunction(function);
 
     if ( ! func )
         return 0;
 
     auto fp = ee->getPointerToFunction(func);
+#else
+    auto fp = (void *)ee->getFunctionAddress(function);
+#endif
 
     if ( ! fp ) {
         error(util::fmt("jit: cannt get pointer to function %s in module %s", function, module->getModuleIdentifier()));

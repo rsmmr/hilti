@@ -62,7 +62,7 @@ llvm::Value* Loader::llvmValueAddress(shared_ptr<Expression> expr)
     bool success = processOne(expr, &result);
     assert(success);
 
-    return result.is_ptr ? result.value : false;
+    return result.is_ptr ? result.value : nullptr;
 }
 
 llvm::Value* Loader::llvmValue(shared_ptr<Constant> constant, bool cctor)

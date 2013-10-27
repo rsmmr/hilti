@@ -822,7 +822,7 @@ bool Manager::Compile()
 	//
 	PLUGIN_DBG_LOG(HiltiPlugin, "Compiling & linking all HILTI code into a single LLVM module");
 
-	llvm_module = pimpl->pac2_context->linkModules("__bro_linked__", pimpl->llvm_modules, false);
+	llvm_module = pimpl->pac2_context->linkModules("__bro_linked__", pimpl->llvm_modules);
 
 	if ( ! llvm_module )
 		{

@@ -270,7 +270,7 @@ static binpac_parser* findParser(const char* name)
 
     GC_DTOR(i, hlt_iterator_list);
     GC_DTOR(end, hlt_iterator_list);
-    GC_DTOR(parsers, hlt_iterator_list);
+    GC_DTOR(parsers, hlt_list);
     GC_DTOR(hname, hlt_string);
 
     check_exception(excpt);

@@ -46,7 +46,9 @@ bool Optimizer::optimize(llvm::Module* module, bool is_linked)
     }
 
     llvm::TargetOptions to; // Note, this has tons of options. We use the defaults mostly.
+#ifdef HAVE_LLVM_33
     to.JITExceptionHandling = false;
+#endif
     to.JITEmitDebugInfo = true;
     to.JITEmitDebugInfoToDisk = true;
 
@@ -61,7 +63,12 @@ bool Optimizer::optimize(llvm::Module* module, bool is_linked)
     builder.SizeLevel = 0;
     builder.DisableUnitAtATime = false;
     builder.DisableUnrollLoops = false;
+#ifdef HAVE_LLVM_33
     builder.DisableSimplifyLibCalls = false;
+#else
+    builder.LoopVectorize = (builder.OptLevel > 1 && builder.SizeLevel < 2);
+    builder.SLPVectorize = true;
+#endif
 
     builder.populateFunctionPassManager(fpasses);
     builder.populateModulePassManager(passes);

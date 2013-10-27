@@ -2,6 +2,16 @@
 #ifndef HILTI_CODEGEN_COMMON_H
 #define HILTI_CODEGEN_COMMON_H
 
+#include <llvm/Config/llvm-config.h>
+
+#if (LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR == 3)
+#define HAVE_LLVM_33
+#elif (LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR == 4)
+#define HAVE_LLVM_34
+#else
+#error LLVM version not supported.
+#endif
+
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Metadata.h>
 #include <llvm/IR/Module.h>
@@ -18,7 +28,6 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/FormattedStream.h>
 #include <llvm/Support/raw_os_ostream.h>
-#include <llvm/Support/PathV1.h>
 #include <llvm/Support/Host.h>
 #include <llvm/ADT/Triple.h>
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
@@ -32,6 +41,12 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/system_error.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
+
+#ifdef HAVE_LLVM_33
+#include <llvm/Support/PathV1.h>
+#else
+#include <llvm/Support/Path.h>
+#endif
 
 #include "../common.h"
 
