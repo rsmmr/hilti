@@ -1,7 +1,0 @@
-module HiltiTesting
-
-import Hilti
-import LibBro
-
-block.end
-

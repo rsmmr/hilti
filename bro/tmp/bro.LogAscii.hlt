@@ -1,7 +1,0 @@
-module LogAscii
-
-import Hilti
-import LibBro
-
-block.end
-

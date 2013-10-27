@@ -1,7 +1,0 @@
-module Log
-
-import Hilti
-import LibBro
-
-block.end
-

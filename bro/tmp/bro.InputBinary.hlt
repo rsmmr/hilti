@@ -1,7 +1,0 @@
-module InputBinary
-
-import Hilti
-import LibBro
-
-block.end
-

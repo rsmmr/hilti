@@ -1,7 +1,0 @@
-module NFS3
-
-import Hilti
-import LibBro
-
-block.end
-

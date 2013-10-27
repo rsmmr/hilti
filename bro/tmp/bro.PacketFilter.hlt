@@ -1,7 +1,0 @@
-module PacketFilter
-
-import Hilti
-import LibBro
-
-block.end
-

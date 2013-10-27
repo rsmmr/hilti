@@ -1,7 +1,0 @@
-module InputAscii
-
-import Hilti
-import LibBro
-
-block.end
-

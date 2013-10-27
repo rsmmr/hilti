@@ -1,7 +1,0 @@
-module Reporter
-
-import Hilti
-import LibBro
-
-block.end
-

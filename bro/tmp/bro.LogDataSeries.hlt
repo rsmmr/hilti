@@ -1,7 +1,0 @@
-module LogDataSeries
-
-import Hilti
-import LibBro
-
-block.end
-
