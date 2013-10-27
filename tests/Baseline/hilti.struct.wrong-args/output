@@ -5,7 +5,8 @@ wrong-args.hlt:23-24: error, operands do not match instruction new
     new: A -> int<64>
   expected one of:
     new: bytes -> ref<bytes>
-    new: callable, <function>, tuple<*> -> ref<callable>
+    new: callable<*>, <function>, tuple<*> -> ref<callable<*>>
+    new: callable<*>, <function><hook>, tuple<*> -> ref<callable<*>>
     new: channel<*>, [ int<64> ] -> ref<channel<*>>
     new: classifier<*> -> ref<classifier<*>>
     new: exception -> ref<exception>
