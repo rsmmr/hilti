@@ -559,8 +559,41 @@ public:
 
    /// Returns true if there is already a global declaration under a given id.
    ///
-   /// id: The name to rest.
-   bool declared(shared_ptr<hilti::ID> id);
+   /// id: The name to test for.
+   bool declared(shared_ptr<hilti::ID> id) const;
+
+   /// Returns true if there is already a global declaration under a given id.
+   ///
+   /// id: The name of the ID to test for.
+   bool declared(std::string& id) const;
+
+   /// Add a declaration for a global variable to the module, without
+   /// defining the global itself. This can be only used for IDs external to
+   /// the module (i.e., qualified with a different module name). If the
+   /// declaration already exists, that one is returned.
+   ///
+   /// id: The name of the ID to be declared, which must be an external one.
+   ///
+   /// type: The type of the ID.
+   ///
+   /// l: An associated location.
+   ///
+   /// Returns: An expressing referencing the declared global.
+   shared_ptr<hilti::expression::Variable>  declareGlobal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, const Location& l = Location::None);
+
+   /// Add a declaration for a global variable to the module, without
+   /// defining the global itself. This can be only used for IDs external to
+   /// the module (i.e., qualified with a different module name). If the
+   /// declaration already exists, that one is returned.
+   ///
+   /// id: The name of the ID to be declared, which must be an external one.
+   ///
+   /// type: The type of the ID.
+   ///
+   /// l: An associated location.
+   ///
+   /// Returns: An expressing referencing the declared global.
+   shared_ptr<hilti::expression::Variable> declareGlobal(const std::string& name, shared_ptr<Type> type, const Location& l = Location::None);
 
    /// Adds a global variable to the module.
    ///

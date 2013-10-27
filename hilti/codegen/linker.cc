@@ -1,60 +1,102 @@
 
+// TODO: The linker code is getting pretty messing. This needs cleanup/refactoring.
+
 #include "linker.h"
 #include "util.h"
 #include "codegen.h"
 #include "../options.h"
 #include "../context.h"
 
-// TODO: THis needs cleanup.
-
 using namespace hilti;
 using namespace codegen;
 
 // LLVM pass that replaces all calls to @hlt.globals.base.<Module> with code
 // computing base address for the module's globals.
-class GlobalsBasePass : public llvm::BasicBlockPass
+class GlobalsPass : public llvm::BasicBlockPass
 {
 public:
-   GlobalsBasePass() : llvm::BasicBlockPass(ID) {}
+   GlobalsPass(ast::Logger* logger) : llvm::BasicBlockPass(ID), logger(logger) {}
 
-   // Maps @hlt.globals.base.<Module> functions to the base index in the joint globals struct.
-   typedef std::map<llvm::Value *, llvm::Value *> transform_map;
-   transform_map tmap;
+   // Maps a module string to the GEP index for the the module's global
+   // inside the joint struct.
+   typedef std::map<std::string, std::pair<size_t, llvm::Type*>> globals_base_map;
+   globals_base_map globals_base;
+
+   // Maps a qualified global name to the GEP index inside the module's global struct.
+   typedef std::map<std::string, size_t> globals_index_map;
+   globals_index_map globals_index;
+
+   ast::Logger* logger;
+
    llvm::Type* globals_type;
    llvm::Type* execution_context_type;
 
    // Records which function we have already instrumented with code to
-   // calculate the start of our globals, inluding the value to reference it.
-   typedef std::map<llvm::Function*, llvm::Value *> function_set;
-   function_set functions;
+   // calculate the starts of the joined globals, inluding the value to
+   // reference it.
+   typedef std::map<llvm::Function*, llvm::Value *> function_map;
+   function_map functions;
+
 
    bool runOnBasicBlock(llvm::BasicBlock &bb) override;
 
-   const char* getPassName() const override { return "hilti::codegen::GlobalsBasePass"; }
+   void debug();
+
+   const char* getPassName() const override { return "hilti::codegen::GlobalsPass"; }
 
    static char ID;
 
 };
 
-char GlobalsBasePass::ID = 0;
+char GlobalsPass::ID = 0;
 
-bool GlobalsBasePass::runOnBasicBlock(llvm::BasicBlock &bb)
+void GlobalsPass::debug()
+{
+    logger->debug(1, ::util::fmt("final mapping of globals"));
+
+    logger->debugPushIndent();
+
+    for ( auto m : globals_base ) {
+        logger->debug(1, ::util::fmt("  module %s at global index %lu of type %s", m.first, m.second.first, m.second.second));
+
+        logger->debugPushIndent();
+
+        for ( auto g : globals_index ) {
+            auto i = ::util::strsplit(g.first, "::");
+
+            if ( i.front() != ::util::strtolower(m.first) )
+                continue;
+
+            logger->debug(1, ::util::fmt("    %s at module index %lu", g.first, g.second));
+        }
+
+        logger->debugPopIndent();
+    }
+
+    logger->debugPopIndent();
+
+}
+
+bool GlobalsPass::runOnBasicBlock(llvm::BasicBlock &bb)
 {
     llvm::LLVMContext& ctx = llvm::getGlobalContext();
 
+    std::set<std::string> modules;
+
     // We can't replace the instruction while we're iterating over the block
     // so first identify and then replace afterwards.
-    std::list<std::pair<llvm::CallInst *, llvm::Value *>> replace;
+    std::list<std::tuple<llvm::Instruction *, std::string, std::string>> replace;
 
-    for ( auto i = bb.begin(); i != bb.end(); ++i ) {
-        auto call = llvm::dyn_cast<llvm::CallInst>(i);
-        if ( ! call )
+    for ( auto ins = bb.begin(); ins != bb.end(); ++ins ) {
+        auto md = ins->getMetadata("global-access");
+
+        if ( ! md )
             continue;
 
-        auto j = tmap.find(call->getCalledFunction());
+        auto module = llvm::cast<llvm::MDString>(md->getOperand(0))->getString();
+        auto global = llvm::cast<llvm::MDString>(md->getOperand(1))->getString();
 
-        if ( j != tmap.end() )
-            replace.push_back(std::make_pair(call, j->second));
+        replace.push_back(std::make_tuple(ins, module, global));
     }
 
     if ( ! replace.size() )
@@ -69,6 +111,9 @@ bool GlobalsBasePass::runOnBasicBlock(llvm::BasicBlock &bb)
         base_addr = f->second;
 
     else {
+        // Compute the base address for the joint globals struct inside the
+        // execution context.
+
         // Get the execution context argument.
         llvm::Value* ectx = nullptr;
 
@@ -77,7 +122,7 @@ bool GlobalsBasePass::runOnBasicBlock(llvm::BasicBlock &bb)
                 ectx = a;
 
         if ( ! ectx )
-            throw InternalError("function accessing global does not have an execution context parameter");
+            logger->internalError("function accessing global does not have an execution context parameter");
 
         // Add instructions at the beginning of the function that give us the
         // address of the global variables inside the execution context.
@@ -98,20 +143,53 @@ bool GlobalsBasePass::runOnBasicBlock(llvm::BasicBlock &bb)
         instrs.push_front(i1);
         instrs.push_front(i0);
 
-        functions.insert(std::make_pair(func, i2));
         base_addr = i2;
+        functions.insert(std::make_pair(func, base_addr));
     }
 
-    // Now replace the fake calls with the actual address calculation.
     for ( auto i : replace ) {
-        auto zero = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), 0);
+        auto ins = std::get<0>(i);
+        auto module = ::util::strtolower(std::get<1>(i));
+        auto global = std::get<2>(i);
 
-        std::vector<llvm::Value*> indices;
-        indices.push_back(zero);
-        indices.push_back(i.second);
+        // std::cerr << module << " / " << global << std::endl;
+
+        // Generate an instruction that computes address of the desired
+        // global by traversing the joint data structure appropiately.
+
+        auto t = globals_base.find(module);
+
+        if ( t == globals_base.end() ) {
+            logger->error(::util::fmt("reference to global '%s' in unknown module '%s'", global, std::get<1>(i)));
+            continue;
+        }
+
+        auto gidx = (*t).second.first;
+        auto gtype = (*t).second.second;
+
+        auto id = ::util::fmt("%s::%s", module, global);
+        auto m = globals_index.find(id);
+
+        if ( m == globals_index.end() ) {
+            logger->error(::util::fmt("reference to unknown global '%s::%s'", std::get<1>(i), global));
+            continue;
+        }
+
+        auto zero = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), 0);
+        auto idx1 = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), gidx);
+        auto idx2 = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), m->second);
+
+        std::vector<llvm::Value*> indices = { zero, idx1, idx2 };
         auto gep = llvm::GetElementPtrInst::Create(base_addr, indices, "");
 
-        llvm::ReplaceInstWithInst(i.first, gep);
+        // Finally replace the original instruction.
+
+        // std::cerr << "replacing ";
+        // ins->dump();
+        // std::cerr << "with      ";
+        // gep->dump();
+
+        llvm::ReplaceInstWithInst(ins, gep);
     }
 
     return true;
@@ -207,6 +285,9 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
 
         makeHooks(module_names, linker.getModule());
     }
+
+    if ( errors() > 0 )
+        return nullptr;
 
     return linker.getModule();
 }
@@ -451,29 +532,20 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
     joinFunctions(dst, symbols::FunctionGlobalsInit, symbols::MetaGlobalsInit, ftype, module_names, module);
     joinFunctions(dst, symbols::FunctionGlobalsDtor, symbols::MetaGlobalsDtor, ftype, module_names, module);
 
-    // Create the joint globals type and determine its size.
+    // Create the joint globals type and determine its size, and record the indices for the individual modules.
 
     std::vector<llvm::Type*> globals;
-    GlobalsBasePass::transform_map tmap;
+    GlobalsPass::globals_base_map globals_base;
 
     for ( auto name : module_names ) {
-        // Add module's globals to the joint type and keep track of the index in there.
+        // Add module's globals to the joint type and keep track of the GEP index in there.
         auto type = module->getTypeByName(symbols::TypeGlobals + string(".") + name);
-        auto base_func = module->getFunction(symbols::FuncGlobalsBase + string(".") + name);
 
         if ( ! type )
             continue;
 
-        if ( ! base_func ) {
-            debug(1, ::util::fmt("no globals.base function defined for module %s", name.c_str()));
-            continue;
-        }
-
-        if ( type && base_func ) {
-            auto idx = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), globals.size());
-            tmap.insert(std::make_pair(base_func, idx));
-            globals.push_back(type);
-        }
+        globals_base.insert(std::make_pair(::util::strtolower(name), std::make_pair(globals.size(), type)));
+        globals.push_back(type);
     }
 
     // Create the joint globals type.
@@ -491,11 +563,30 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
     auto builder = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "", gfunc));
     builder->CreateRet(size);
 
-    // Now run a pass over all the modules replacing the
-    // @hlt.globals.base.<Module>() calls.
-    auto pass = new GlobalsBasePass();
-    pass->tmap = tmap;
+    // Create a map of all global IDs to the GEP index inside their individual global structs.
+    GlobalsPass::globals_index_map globals_index;
+
+    for ( auto name : module_names ) {
+        auto md = module->getNamedMetadata(symbols::MetaGlobals + string(".") + name);
+
+        if ( ! md )
+            continue;
+
+        for ( int i = 0; i < md->getNumOperands(); i++ ) {
+            auto node = llvm::cast<llvm::MDNode>(md->getOperand(i));
+            auto global = llvm::cast<llvm::MDString>(node->getOperand(0))->getString().str();
+            auto id = ::util::fmt("%s::%s", ::util::strtolower(name), global);
+            globals_index.insert(std::make_pair(id, i));
+        }
+    }
+
+    // Now run a pass over all the modules replacing the dummy accesses to globals with
+    // the actual version.
+    auto pass = new GlobalsPass(this);
+    pass->globals_base = globals_base;
+    pass->globals_index = globals_index;
     pass->globals_type = ty_globals;
+    pass->debug();
 
     auto md = Linker::moduleMeta(module, std::make_shared<hilti::ID>(module_names.front()));
     assert(md);

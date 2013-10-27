@@ -38,6 +38,7 @@ namespace symbols {
 
     // Names of globals examined by custom linker pass.
     static const char* MetaModule       = "hlt.module";
+    static const char* MetaGlobals      = "hlt.globals";
     static const char* MetaModuleName   = "hlt.module.id";
     static const char* MetaModuleInit   = "hlt.modules.init";
     static const char* MetaGlobalsInit  = "hlt.globals.init";

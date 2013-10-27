@@ -1,0 +1,27 @@
+#
+# @TEST-EXEC: hilti-build %INPUT other.hlt -o a.out
+# @TEST-EXEC: ./a.out >output
+# @TEST-EXEC: btest-diff output
+#
+
+module Main
+
+import Hilti
+
+global int<64> Ours = 42
+
+declare global string Other::test
+
+void run() {
+    call Hilti::print (Other::test)
+    call Hilti::print (Ours)
+}
+
+# @TEST-START-FILE other.hlt
+
+module Other
+
+global string test = "Test"
+
+# @TEST-END-FILE
+

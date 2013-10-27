@@ -145,6 +145,7 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<
         decl = std::make_shared<declaration::Function>(function, function->location());
 
     _module->body()->addDeclaration(decl);
+    _addDecl(function->id(), function->type(), "function", &_globals, decl);
 
     if ( ! no_body )
         pushBody();
@@ -164,6 +165,7 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(shared_p
 
     auto decl = std::make_shared<declaration::Function>(func, func->location());
     _module->body()->addDeclaration(decl);
+    _addDecl(func->id(), func->type(), "function", &_globals, decl);
     return decl;
 }
 
@@ -219,6 +221,7 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(shared_ptr<h
 {
     auto decl = std::make_shared<declaration::Hook>(hook, hook->location());
     _module->body()->addDeclaration(decl);
+    _addDecl(hook->id(), hook->type(), "hook", &_globals, decl);
     return decl;
 }
 
@@ -540,11 +543,16 @@ shared_ptr<hilti::Expression> ModuleBuilder::block() const
     return builder()->block();
 }
 
-bool ModuleBuilder::declared(shared_ptr<hilti::ID> id)
+bool ModuleBuilder::declared(shared_ptr<hilti::ID> id) const
 {
     id = _normalizeID(id);
     auto d = _globals.find(id->pathAsString(_module->id()));
     return d != _globals.end();
+}
+
+bool ModuleBuilder::declared(std::string& name) const
+{
+    return declared(std::make_shared<hilti::ID>(name));
 }
 
 shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
@@ -566,6 +574,38 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(shared_ptr<ID> 
 shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
 {
     return addGlobal(std::make_shared<ID>(id, l), type, init, force_unique, l);
+}
+
+shared_ptr<hilti::expression::Variable> ModuleBuilder::declareGlobal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, const Location& l)
+{
+    if ( id->scope().empty() ) {
+        error("declared globals must be external", id);
+        return nullptr;
+    }
+
+    id = _normalizeID(id);
+
+    shared_ptr<hilti::declaration::Variable> decl;
+
+    auto d = _globals.find(id->pathAsString(_module->id()));
+
+    if ( d != _globals.end() )
+        decl = ast::checkedCast<declaration::Variable>((*d).second.declaration);
+
+    else {
+        auto var = std::make_shared<variable::Global>(id, type, nullptr, l);
+        decl = std::make_shared<declaration::Variable>(id, var, l);
+        decl->setLinkage(Declaration::IMPORTED);
+        _module->body()->addDeclaration(decl);
+        _addDecl(id, type, "global", &_globals, decl);
+    }
+
+    return std::make_shared<hilti::expression::Variable>(decl->variable(), l);
+}
+
+shared_ptr<hilti::expression::Variable> ModuleBuilder::declareGlobal(const std::string& id, shared_ptr<Type> type, const Location& l)
+{
+    return declareGlobal(::std::make_shared<ID>(id, l), type, l);
 }
 
 shared_ptr<hilti::Expression> ModuleBuilder::addConstant(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)

@@ -227,6 +227,13 @@ inline std::list<shared_ptr<typename AstInfo::scope_value>> Scope<AstInfo>::find
     if ( begin == end )
         return std::list<Value>();
 
+   // Ignore the initial component if it's our own scope.
+   if ( id() && ::util::strtolower(*begin) == ::util::strtolower(id()->name()) )
+       ++begin;
+
+    if ( begin == end )
+        return std::list<Value>();
+
    // See if it directly references a value.
     auto second = begin;
 

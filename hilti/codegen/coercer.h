@@ -40,6 +40,7 @@ protected:
    void visit(type::Integer* t) override;
    void visit(type::Tuple* t) override;
    void visit(type::Reference* t) override;
+   void visit(type::CAddr* t) override;
 };
 
 

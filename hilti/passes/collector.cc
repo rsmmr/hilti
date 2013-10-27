@@ -11,9 +11,10 @@ using namespace passes;
 
 void Collector::visit(declaration::Variable* v)
 {
-    if ( ! in<Function>() ) {
+    auto var = v->variable();
+
+    if ( ast::isA<variable::Global>(var) && v->linkage() != Declaration::IMPORTED ) {
         // A global.
-        auto var = v->variable();
         _globals.push_back(var);
         debug(1, string("global: ") + var->id()->name());
     }

@@ -122,3 +122,15 @@ void Coercer::visit(type::Address* t)
         return;
     }
 }
+
+void Coercer::visit(type::CAddr* c)
+{
+    setResult(false);
+
+    auto dst_b = ast::as<type::Bool>(arg1());
+
+    if ( dst_b ) {
+        setResult(true);
+        return;
+    }
+}

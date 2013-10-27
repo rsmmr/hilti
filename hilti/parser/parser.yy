@@ -214,6 +214,11 @@ global_decl   : global
 
 global        : GLOBAL type scoped_id eol          { driver.moduleBuilder()->addGlobal($3, $2, nullptr, false, loc(@$)); }
               | GLOBAL type scoped_id '=' expr eol { driver.moduleBuilder()->addGlobal($3, $2, $5, false, loc(@$)); }
+              | DECLARE GLOBAL type scoped_id eol  { if ( ! $4->scope().empty() )
+                                                         driver.moduleBuilder()->declareGlobal($4, $3, loc(@$));
+                                                     else
+                                                         error(@$, "declared global must be external to module");
+                                                   }
               ;
 
 const_        : CONST type local_id '=' expr eol  { driver.moduleBuilder()->addConstant($3, $2, $5, false, loc(@$)); }

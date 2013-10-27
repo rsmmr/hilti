@@ -379,11 +379,15 @@ void Printer::visit(declaration::Variable* v)
 {
     Printer& p = *this;
 
+    bool external = (v->linkage() == Declaration::IMPORTED);
     const char* tag = ast::as<variable::Local>(v->variable()) ? "local" : "global";
+
+    if ( external )
+        p << "declare ";
 
     p << tag << " " << v->variable()->type() << " " << v->id();
 
-    if ( v->variable()->init() ) {
+    if ( v->variable()->init() && ! external ) {
         p << " = ";
         p << v->variable()->init();
     }

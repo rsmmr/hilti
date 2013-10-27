@@ -81,7 +81,7 @@ ctor::Set::Set(shared_ptr<Type> etype, const element_list& elems, const Location
 
 ctor::Set::Set(bool cctor, shared_ptr<Type> stype, const element_list& elems, const Location& l)
 {
-    assert(etype);
+    assert(stype);
 
     _elems = elems;
     _type = ast::checkedCast<type::Set>(stype);
@@ -122,8 +122,7 @@ ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_lis
 
 ctor::Map::Map(shared_ptr<Type> mtype, const element_list& elems, const Location& l)
 {
-    assert(ktype);
-    assert(vtype);
+    assert(mtype);
 
     _elems = elems;
     _type = ast::checkedCast<type::Map>(mtype);

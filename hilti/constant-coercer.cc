@@ -117,3 +117,16 @@ void ConstantCoercer::visit(constant::Address* i)
     }
 }
 
+void ConstantCoercer::visit(constant::CAddr* t)
+{
+    setResult(nullptr);
+
+    auto dst_bool = ast::as<type::Bool>(arg1());
+
+    if ( dst_bool ) {
+        // The only possible constant is null, and that's false.
+        auto c = new constant::Bool(false, t->location());
+        setResult(shared_ptr<Constant>(c));
+    }
+}
+

@@ -148,3 +148,20 @@ void codegen::Coercer::visit(type::Reference* r)
 
     assert(false);
 }
+
+void codegen::Coercer::visit(type::CAddr* r)
+{
+    auto val = arg1();
+    auto dst = arg2();
+
+    auto dst_bool = ast::as<type::Bool>(dst);
+
+    if ( dst_bool ) {
+        auto non_null = cg()->builder()->CreateICmpNE(val, cg()->llvmConstNull(val->getType()));
+        setResult(non_null);
+        return;
+    }
+
+    assert(false);
+}
+

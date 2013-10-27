@@ -249,13 +249,24 @@ llvm::Value* CodeGen::llvmGlobal(shared_ptr<Variable> var)
 
 llvm::Value* CodeGen::llvmGlobal(Variable* var)
 {
-    auto i = _globals.find(var);
-    if ( i == _globals.end() )
-        internalError(::util::fmt("undefined global %s", var->id()->name().c_str()));
+    auto scope = var->id()->scope();
 
-    auto idx = i->second;
-    auto base = llvmCreateCall(_globals_base_func);
-    return llvmGEP(base, llvmGEPIdx(0), idx);
+    if ( scope.empty() )
+        scope = _hilti_module->id()->name();
+
+    // The linker will replace th=is code with the actual global value.
+
+    llvm::Value* dummy = builder()->CreateAlloca(llvmTypePtr(llvmType(var->type())));
+    auto ins = builder()->CreateLoad(dummy);
+
+    auto mdscope = llvm::MDString::get(llvmContext(), scope);
+    auto mdglobal = llvm::MDString::get(llvmContext(), var->id()->local());
+
+    std::vector<llvm::Value*> vals = { mdscope, mdglobal };
+    auto md = llvm::MDNode::get(llvmContext(), vals);
+    llvm::cast<llvm::Instruction>(ins)->setMetadata("global-access", md);
+
+    return ins;
 }
 
 
@@ -711,6 +722,18 @@ void CodeGen::createLinkerData()
     md->addOperand(util::llvmMdFromValue(llvmContext(), id));
     md->addOperand(util::llvmMdFromValue(llvmContext(), file));
     md->addOperand(util::llvmMdFromValue(llvmContext(), ctxtype));
+
+    // Add the line up of our globals.
+
+    name = string(symbols::MetaGlobals) + "." + _module->getModuleIdentifier();
+    md  = _module->getOrInsertNamedMetadata(name);
+
+    // Iterate through the collector globals here to guarantee same order as
+    // in our global struct.
+    for ( auto g : _collector->globals() ) {
+        auto n = llvm::MDString::get(llvmContext(), g->id()->name());
+        md->addOperand(util::llvmMdFromValue(llvmContext(), n));
+    }
 
     // Add the MD function arrays that the linker will merge.
 
@@ -1456,6 +1479,8 @@ llvm::Function* CodeGen::llvmFunction(shared_ptr<Function> func, bool force_new)
         return llvmAddFunction(func, false, type::function::C);
 
     bool is_hook = ast::isA<Hook>(func);
+    bool has_impl = static_cast<bool>(func->body());
+
     bool internal = true;
 
     if ( func->module()->exported(func->id()) )
@@ -1465,6 +1490,9 @@ llvm::Function* CodeGen::llvmFunction(shared_ptr<Function> func, bool force_new)
         internal = false;
 
     if ( is_hook )
+        internal = false;
+
+    if ( ! has_impl )
         internal = false;
 
     string prefix;
@@ -2625,7 +2653,7 @@ llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<ty
 
 llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
 {
-    auto llvm_func = llvm::cast<llvm::Function>(llvm_func_val);
+    auto llvm_func = llvm_func_val ? llvm::cast<llvm::Function>(llvm_func_val) : nullptr;
     auto rtype = ftype->result()->type();
     auto callable_type = std::make_shared<type::Callable>(rtype);
 

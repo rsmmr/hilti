@@ -133,7 +133,7 @@ void ScopeBuilder::visit(declaration::Variable* v)
 
     auto var = v->variable()->sharedPtr<Variable>();
     auto expr = std::make_shared<expression::Variable>(var, var->location());
-    scope->insert(v->id(), expr);
+    scope->insert(v->id(), expr, true);
 }
 
 void ScopeBuilder::visit(declaration::Type* t)
