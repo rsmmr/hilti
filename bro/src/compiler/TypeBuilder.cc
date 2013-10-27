@@ -200,7 +200,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 		fields.push_back(hf);
 		}
 
-	return ::hilti::builder::struct_::type(fields);
+	return ::hilti::builder::reference::type(::hilti::builder::struct_::type(fields));
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::SubNetType* type)
@@ -227,10 +227,10 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TableType* type)
 		}
 
 	if ( type->IsSet() )
-		return ::hilti::builder::set::type(idx);
+		return ::hilti::builder::reference::type(::hilti::builder::set::type(idx));
 
 	auto vtype = HiltiType(type->YieldType());
-	return ::hilti::builder::map::type(idx, vtype);
+	return ::hilti::builder::reference::type(::hilti::builder::map::type(idx, vtype));
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TypeList* type)
@@ -248,5 +248,5 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TypeType* type)
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::VectorType* type)
 	{
 	auto etype = HiltiType(type->YieldType());
-	return ::hilti::builder::vector::type(etype);
+	return ::hilti::builder::reference::type(::hilti::builder::vector::type(etype));
 	}

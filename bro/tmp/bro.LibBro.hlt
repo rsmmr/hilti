@@ -1,0 +1,94 @@
+module LibBro
+
+export cookie_to_conn_val
+export cookie_to_file_val
+export cookie_to_is_orig
+export h2b_bytes
+export h2b_integer_signed
+export h2b_integer_unsigned
+export h2b_double
+export h2b_address
+export h2b_count
+export h2b_string
+export h2b_bool
+export h2b_enum
+export h2b_time
+export b2h_string
+export b2h_count
+export b2h_bool
+export get_event_handler
+export raise_event
+export call_bif_void
+export call_bif_result
+export bro_table_type_new
+export bro_table_iterate
+export bro_table_new
+export bro_table_insert
+export bro_list_type_new
+export bro_list_type_append
+export bro_base_type
+export cookie_to_conn_val
+export h2b_bytes
+export raise_event
+
+type BroVal = caddr
+type BroType = caddr
+type Pac2Cookie = caddr
+type BroEventHandler = caddr
+declare "C-HILTI" BroVal cookie_to_conn_val(Pac2Cookie cookie)
+
+declare "C-HILTI" BroVal cookie_to_file_val(Pac2Cookie cookie)
+
+declare "C-HILTI" BroVal cookie_to_is_orig(Pac2Cookie cookie)
+
+declare "C-HILTI" BroVal h2b_bytes(ref<bytes> val)
+
+declare "C-HILTI" BroVal h2b_integer_signed(int<64> val)
+
+declare "C-HILTI" BroVal h2b_integer_unsigned(int<64> val)
+
+declare "C-HILTI" BroVal h2b_double(double val)
+
+declare "C-HILTI" BroVal h2b_address(addr val)
+
+declare "C-HILTI" BroVal h2b_count(int<64> val)
+
+declare "C-HILTI" BroVal h2b_string(string val)
+
+declare "C-HILTI" BroVal h2b_bool(bool b)
+
+declare "C-HILTI" BroVal h2b_enum(any e, int<64> type_idx)
+
+declare "C-HILTI" BroVal h2b_time(time b)
+
+declare "C-HILTI" ref<bytes> b2h_string(BroVal val)
+
+declare "C-HILTI" int<64> b2h_count(BroVal val)
+
+declare "C-HILTI" bool b2h_bool(BroVal val)
+
+declare "C-HILTI" BroEventHandler get_event_handler(ref<bytes> name)
+
+declare "C-HILTI" void raise_event(BroEventHandler hdl, tuple<*> vals)
+
+declare "C-HILTI" void call_bif_void(ref<bytes> name, tuple<*> vals)
+
+declare "C-HILTI" BroVal call_bif_result(ref<bytes> name, tuple<*> vals)
+
+declare "C-HILTI" BroType bro_table_type_new(BroType key, BroType value)
+
+declare "C-HILTI" tuple<caddr, BroVal, BroVal> bro_table_iterate(BroVal tbl, caddr cookie)
+
+declare "C-HILTI" BroVal bro_table_new(BroType btype)
+
+declare "C-HILTI" void bro_table_insert(BroVal tbl, BroVal k, BroVal v)
+
+declare "C-HILTI" BroType bro_list_type_new(BroType pure_type)
+
+declare "C-HILTI" void bro_list_type_append(BroType t, BroType ntype)
+
+declare "C-HILTI" BroType bro_base_type(int<64> tag)
+
+
+block.end
+

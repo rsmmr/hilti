@@ -48,7 +48,6 @@ extern "C" {
 #include "Pac2FileAnalyzer.h"
 #include "Converter.h"
 #include "LocalReporter.h"
-#include "Runtime.h"
 #include "compiler/Compiler.h"
 
 #include "consts.bif.h"
@@ -372,9 +371,6 @@ bool Manager::FinishLoading()
 	assert(post_scripts_init_run);
 
 	pre_scripts_init_run = true;
-
-	extern const ::hilti::CompilerContext::FunctionMapping libbro_function_table[];
-	pimpl->hilti_context->installJITFunctionTable(libbro_function_table);
 
 	return true;
 	}
@@ -2090,7 +2086,8 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 		vals.push_back(val);
 		}
 
-	auto handler = mbuilder->addGlobal(util::fmt("__bro_handler_%s", ev->name),
+	auto canon_name = ::util::strreplace(ev->name, "::", "_");
+	auto handler = mbuilder->addGlobal(util::fmt("__bro_handler_%s", canon_name),
 					     ::hilti::builder::type::byName("LibBro::BroEventHandler"));
 
 	auto cond = mbuilder->addTmp("no_handler", ::hilti::builder::boolean::type());

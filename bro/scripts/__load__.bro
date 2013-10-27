@@ -5,5 +5,7 @@
 # (For scripts that should only be loaded when the user explicitly @loads  the
 # plugin, use scripts/<plugin-namespace>/<plugin-name>/__load__.bro instead).
 
+@load bif
 @load bro/hilti/base
+
 

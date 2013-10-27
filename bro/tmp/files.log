@@ -1,0 +1,10 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	files
+#open	2013-10-03-19-16-39
+#fields	ts	fuid	tx_hosts	rx_hosts	conn_uids	source	depth	analyzers	mime_type	filename	duration	local_orig	is_orig	seen_bytes	total_bytes	missing_bytes	overflow_bytes	timedout	parent_fuid	md5	sha1	sha256	extracted
+#types	time	string	table[addr]	table[addr]	table[string]	string	count	table[string]	string	string	interval	bool	bool	count	count	count	count	bool	string	string	string	string	string
+1380302759.311529	7aNwGytV9k4	192.150.187.12	192.150.187.50	UWkUyAuUGXf	HTTP	0	PAC2_GZIP	application/x-gzip	-	0.000000	-	F	47	47	0	0	F	-	-	-	-	-
+#close	2013-10-03-19-16-39

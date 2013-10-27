@@ -92,9 +92,22 @@ public:
 	 *
 	 * @param func The function to compile.
 	 *
-	 * @return The declaration.
+	 * @return An expression referencing the declared function.
 	 */
-	shared_ptr<::hilti::declaration::Function> DeclareFunction(const ::Func* func);
+	shared_ptr<::hilti::Expression> DeclareFunction(const Func* func);
+
+	/**
+	 * Declares the prototype for single built-in function given just by name and type.
+	 *
+	 * If the declaration already exists, that one is returned.
+	 *
+	 * @param name The function's ID.
+	 *
+	 * @param type The function's type.
+	 *
+	 * @return An expression referencing the declared function.
+	 */
+	shared_ptr<::hilti::Expression> DeclareBuiltInFunction(const string& name, const ::BroType* type);
 
 protected:
 	friend class ModuleBuilderCallback;
@@ -150,9 +163,9 @@ protected:
 	 * @param func The func to compile. The function type's flavor must
 	 * be \c FUNC_FLAVOR_FUNCTION.
 	 *
-	 * @return The declaration.
+	 * @return An expression referencing the declared function.
 	 */
-	shared_ptr<::hilti::declaration::Function> DeclareScriptFunction(const ::BroFunc* func);
+	shared_ptr<::hilti::Expression> DeclareScriptFunction(const ::BroFunc* func);
 
 	/**
 	 * Declares the prorotype for an event.
@@ -162,9 +175,9 @@ protected:
 	 * @param event The event to compile. The function type's flavor must
 	 * be \c FUNC_FLAVOR_EVENT.
 	 *
-	 * @return The declaration.
+	 * @return An expression referencing the declared function.
 	 */
-	shared_ptr<::hilti::declaration::Function> DeclareEvent(const ::BroFunc* event);
+	shared_ptr<::hilti::Expression> DeclareEvent(const ::BroFunc* event);
 
 	/**
 	 * Declares the prorotype for a hook.
@@ -174,9 +187,9 @@ protected:
 	 * @param hook The hook to compile. The function type's flavor must
 	 * be \c FUNC_FLAVOR_HOOK.
 	 *
-	 * @return The declaration.
+	 * @return An expression referencing the declared function.
 	 */
-	shared_ptr<::hilti::declaration::Function> DeclareHook(const ::BroFunc* event);
+	shared_ptr<::hilti::Expression> DeclareHook(const ::BroFunc* event);
 
 	/**
 	 * Declares the prorotype for a built-in function.
@@ -185,9 +198,9 @@ protected:
 	 *
 	 * @param func The func to compile.
 	 *
-	 * @return The declaration.
+	 * @return An expression referencing the declared function.
 	 */
-	shared_ptr<::hilti::declaration::Function> DeclareBuiltinFunction(const ::BuiltinFunc* bif);
+	shared_ptr<::hilti::Expression> DeclareBuiltinFunction(const ::BuiltinFunc* bif);
 
 private:
 	string ns;

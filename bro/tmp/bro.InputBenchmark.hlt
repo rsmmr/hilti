@@ -1,0 +1,7 @@
+module InputBenchmark
+
+import Hilti
+import LibBro
+
+block.end
+

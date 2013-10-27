@@ -1,5 +1,6 @@
 
 #include <Val.h>
+#include <RE.h>
 #undef List
 
 #include <hilti/hilti.h>
@@ -78,22 +79,11 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* v
 		return ::hilti::builder::boolean::create(val->AsBool());
 
 	case TYPE_COUNT:
-		{
-		Error("no support yet for compiling Val of type TYPE_COUNT", val);
-		return nullptr;
-		}
-
 	case TYPE_COUNTER:
-		{
-		Error("no support yet for compiling Val of type TYPE_COUNTER", val);
-		return nullptr;
-		}
+		return ::hilti::builder::integer::create(val->AsCount());
 
 	case TYPE_DOUBLE:
-		{
-		Error("no support yet for compiling Val of type TYPE_DOUBLE", val);
-		return nullptr;
-		}
+		return ::hilti::builder::double_::create(val->AsDouble());
 
 	case TYPE_FILE:
 		{
@@ -103,28 +93,18 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* v
 
 	case TYPE_FUNC:
 		{
-		auto func = val->AsFunc();
-		ModuleBuilder()->DeclareFunction(func);
-		return ::hilti::builder::id::create(HiltiSymbol(func));
+		auto func = DeclareFunction(val->AsFunc());
+		return func;
 		}
 
 	case TYPE_INT:
-		{
-		Error("no support yet for compiling Val of type TYPE_INT", val);
-		return nullptr;
-		}
+		return ::hilti::builder::integer::create(val->AsInt());
 
 	case TYPE_INTERVAL:
-		{
-		Error("no support yet for compiling Val of type TYPE_INTERVAL", val);
-		return nullptr;
-		}
+		return ::hilti::builder::interval::create(val->AsInterval());
 
 	case TYPE_TIME:
-		{
-		Error("no support yet for compiling Val of type TYPE_TIME", val);
-		return nullptr;
-		}
+		return ::hilti::builder::time::create(val->AsTime());
 
 	case TYPE_TYPE:
 		{
@@ -142,20 +122,25 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* v
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::AddrVal* val)
 	{
-	Error("no support yet for compiling AddrVal", val);
-	return nullptr;
+	return ::hilti::builder::address::create(val->AsAddr().AsString());
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::EnumVal* val)
 	{
-	Error("no support yet for compiling EnumVal", val);
-	return nullptr;
-	}
+	auto etype = HiltiType(val->Type());
+	auto label = val->Type()->AsEnumType()->Lookup(val->AsEnum());
+        auto id = ::hilti::builder::id::node(label);
+	return ::hilti::builder::enum_::create(id, etype);
+        }
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::ListVal* val)
 	{
-	Error("no support yet for compiling ListVal", val);
-	return nullptr;
+	::hilti::builder::tuple::element_list elems;
+
+	for ( int i = 0; i < val->Length(); i++ )
+		elems.push_back(HiltiValue(val->Index(i)));
+
+	return ::hilti::builder::tuple::create(elems);
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::OpaqueVal* val)
@@ -166,20 +151,52 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::OpaqueVal* va
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PatternVal* val)
 	{
-	Error("no support yet for compiling PatternVal", val);
-	return nullptr;
+	// TODO: We don't convert the regexp dialect yet.
+	return ::hilti::builder::address::create(val->AsPattern()->PatternText());
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PortVal* val)
 	{
-	Error("no support yet for compiling PortVal", val);
-	return nullptr;
+        ::hilti::constant::PortVal::Proto proto;
+
+	switch ( val->PortType() ) {
+	case ::TRANSPORT_TCP:
+		proto = ::hilti::constant::PortVal::TCP;
+		break;
+
+	case ::TRANSPORT_UDP:
+		proto = ::hilti::constant::PortVal::UDP;
+		break;
+
+
+	case ::TRANSPORT_ICMP:
+		Error("no support yet for compiling PortVals of ICMP type", val);
+		break;
+
+	default:
+		InternalError("unexpected port type in ValueBuilder::Compile");
+	}
+
+	return ::hilti::builder::port::create(val->Port(), proto);
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::RecordVal* val)
 	{
-	Error("no support yet for compiling RecordVal", val);
-	return nullptr;
+	auto type = val->Type()->AsRecordType();
+
+	::hilti::builder::struct_::element_list elems;
+
+	for ( int i = 0; i < type->NumFields(); i++ )
+		{
+		auto f = val->Lookup(i);
+
+		if ( f )
+			elems.push_back(HiltiValue(f));
+		else
+			elems.push_back(::hilti::builder::unset::create());
+		}
+
+	return ::hilti::builder::struct_::create(elems);
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::StringVal* val)
@@ -191,18 +208,83 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::StringVal* va
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::SubNetVal* val)
 	{
-	Error("no support yet for compiling SubNetVal", val);
-	return nullptr;
+	return ::hilti::builder::network::create(val->AsSubNet().AsString());
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val)
 	{
-	Error("no support yet for compiling TableVal", val);
-	return nullptr;
+	if ( val->Type()->IsSet() )
+		{
+		::hilti::builder::set::element_list elems;
+
+		auto tbl = val->AsTable();
+
+		HashKey* h;
+		TableEntryVal* v;
+
+		IterCookie* c = tbl->InitForIteration();
+
+		while ( (v = tbl->NextEntry(h, c)) )
+			{
+			shared_ptr<::hilti::Expression> hk;
+
+			auto lk = val->RecoverIndex(h);
+			if ( lk->Length() == 1 )
+				hk = HiltiValue(lk->Index(0));
+			else
+				hk = HiltiValue(lk);
+
+			elems.push_back(hk);
+
+			delete h;
+			}
+
+		auto htype = HiltiType(val->Type());
+		auto stype = ::ast::checkedCast<::hilti::type::Reference>(htype);
+		return ::hilti::builder::set::create(true, stype->argType(), elems);
+		}
+
+	else
+		{
+		::hilti::builder::map::element_list elems;
+
+		auto tbl = val->AsTable();
+
+		HashKey* h;
+		TableEntryVal* v;
+
+		IterCookie* c = tbl->InitForIteration();
+
+		while ( (v = tbl->NextEntry(h, c)) )
+			{
+			shared_ptr<::hilti::Expression> hk;
+
+			auto lk = val->RecoverIndex(h);
+			if ( lk->Length() == 1 )
+				hk = HiltiValue(lk->Index(0));
+			else
+				hk = HiltiValue(lk);
+
+			auto hv = HiltiValue(v->Value());
+			auto e = ::hilti::builder::map::element(hk, hv);
+			elems.push_back(e);
+
+			delete h;
+			}
+
+		auto htype = HiltiType(val->Type());
+		auto mtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
+		return ::hilti::builder::map::create(mtype->argType(), elems);
+		}
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::VectorVal* val)
 	{
-	Error("no support yet for compiling VectorVal", val);
-	return nullptr;
+	::hilti::builder::vector::element_list elems;
+
+	for ( int i = 0; i < val->Size(); i++ )
+		elems.push_back(HiltiValue(val->Lookup(i)));
+
+	auto vt = HiltiType(val->Type());
+	return ::hilti::builder::vector::create(vt, elems);
 	}

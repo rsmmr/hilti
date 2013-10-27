@@ -21,9 +21,19 @@ BuilderBase::BuilderBase(class ModuleBuilder* arg_mbuilder)
 	mbuilder = arg_mbuilder;
 	}
 
-class ModuleBuilder* BuilderBase::ModuleBuilder()
+std::shared_ptr<::hilti::builder::BlockBuilder> BuilderBase::Builder() const
 	{
-	return mbuilder;
+	return mbuilder->Compiler()->Builder();
+	}
+
+::hilti::builder::ModuleBuilder* BuilderBase::ModuleBuilder()
+	{
+	return mbuilder->Compiler()->ModuleBuilder();
+	}
+
+::hilti::builder::ModuleBuilder* BuilderBase::GlueModuleBuilder() const
+	{
+	return mbuilder->Compiler()->GlueModuleBuilder();
 	}
 
 void BuilderBase::Error(const std::string& msg, const BroObj* obj)
@@ -45,6 +55,11 @@ void BuilderBase::InternalError(const std::string& msg, const BroObj* obj)
 	auto s = msg + ::util::fmt(" [%s]", Location(obj));
 	DBG_LOG_COMPILER("internal builder error: %s", s.c_str());
 	reporter::internal_error(s);
+	}
+
+class Compiler* BuilderBase::Compiler() const
+	{
+	return mbuilder->Compiler();
 	}
 
 class ExpressionBuilder* BuilderBase::ExpressionBuilder() const
@@ -87,6 +102,10 @@ std::string BuilderBase::HiltiSymbol(const ::ID* id)
 	return mbuilder->Compiler()->HiltiSymbol(id, mbuilder->module());
 	}
 
+std::string BuilderBase::HiltiODescSymbol(const ::BroObj* obj)
+	{
+	return mbuilder->Compiler()->HiltiODescSymbol(obj);
+	}
 
 std::shared_ptr<::hilti::Type> BuilderBase::HiltiType(const ::BroType* type)
 	{
@@ -98,24 +117,24 @@ std::shared_ptr<::hilti::Expression> BuilderBase::HiltiValue(const ::Val* val)
 	return mbuilder->ValueBuilder()->Compile(val);
 	}
 
-std::shared_ptr<::hilti::builder::BlockBuilder> BuilderBase::Builder() const
-	{
-	return mbuilder->builder();
-	}
-
 std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr)
 	{
 	return mbuilder->ExpressionBuilder()->Compile(expr);
 	}
 
-shared_ptr<::hilti::Expression> BuilderBase::RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, ::BroType* type)
+shared_ptr<::hilti::Expression> BuilderBase::RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, const ::BroType* type)
 	{
 	return mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, type);
 	}
 
-shared_ptr<::hilti::Expression> BuilderBase::RuntimeValToHilti(shared_ptr<::hilti::Expression> val, ::BroType* type)
+shared_ptr<::hilti::Expression> BuilderBase::RuntimeValToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type)
 	{
 	return mbuilder->ConversionBuilder()->ConvertBroToHilti(val, type);
+	}
+
+shared_ptr<::hilti::Expression> BuilderBase::DeclareFunction(const ::Func* func)
+	{
+	return mbuilder->DeclareFunction(func);
 	}
 
 std::string BuilderBase::Location(const ::BroObj *obj)

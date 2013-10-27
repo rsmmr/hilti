@@ -15,3 +15,23 @@ function is_compiled%(%): bool
 # The following functions are only for testing purposes. They are overwritten
 # by the HILTI runtime; there bodies here will never be called.
 function test_type_string%(s: string%): string %{ return 0; %}
+
+function test_type_table%(v: string_array%): string_array
+	%{
+	// TableVal* a = new TableVal(string_array);
+	// Val* ind = new Val(1, TYPE_COUNT);
+	// a->Assign(ind, new StringVal("Foo at 1"));
+	// Unref(ind);
+	// return a;
+	Ref(v);
+	return v;
+	%}
+
+function test_type_table2%(%): string_array
+	%{
+	TableVal* a = new TableVal(string_array);
+	Val* ind = new Val(1, TYPE_COUNT);
+	a->Assign(ind, new StringVal("Foo at 1"));
+	Unref(ind);
+	return a;
+	%}

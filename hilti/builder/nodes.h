@@ -985,7 +985,7 @@ namespace port {
 
 /// Instantiates an AST expression node representing an Port constant.
 ///
-/// port: The port in dotted-quad (v4) or hex (v6) form.
+/// port: A string of the form "<port>/<proto>".
 ///
 /// l: Location associated with the type.
 ///
@@ -993,6 +993,23 @@ namespace port {
 inline shared_ptr<hilti::expression::Constant> create(const std::string& port, const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Port>(port, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing an Port constant.
+///
+/// port: The port number.
+///
+/// proto: The ports protocol.
+///
+/// l: Location associated with the expression.
+///
+/// Throws: ConstantParseError if the \a port isn't parseable.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(int port, constant::PortVal::Proto proto, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Port>(port, proto, l);
     return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
@@ -1408,6 +1425,24 @@ inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> etype, const 
     return std::make_shared<hilti::expression::Ctor>(c, l);
 }
 
+/// Instantiates an AST expression node representing a set ctor.
+///
+/// dummy: Dummy flag that differentiates this function from the one giving 
+/// the element type. The value is ignored.
+///
+/// stype: The type of the set, which must be \a type::Set.
+///
+/// elems: The list of elements.
+///
+/// l: Location associated with the instance.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Ctor> create(bool dummy, shared_ptr<Type> stype, const element_list& elems, const Location& l=Location::None)
+{
+    auto c = std::make_shared<ctor::Set>(true, stype, elems, l);
+    return std::make_shared<hilti::expression::Ctor>(c, l);
+}
+
 /// Instantiates a type::Set type.
 ///
 /// etype: The type of the elements.
@@ -1495,6 +1530,21 @@ typedef ctor::Map::element_list element_list;
 inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l=Location::None)
 {
     auto c = std::make_shared<ctor::Map>(ktype, vtype, elems, l);
+    return std::make_shared<hilti::expression::Ctor>(c, l);
+}
+
+/// Instantiates an AST expression node representing a map ctor.
+///
+/// mtype: The type of the map, which must be \a type::Map.
+///
+/// elems: The list of elements.
+///
+/// l: Location associated with the instance.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> mtype, const element_list& elems, const Location& l=Location::None)
+{
+    auto c = std::make_shared<ctor::Map>(mtype, elems, l);
     return std::make_shared<hilti::expression::Ctor>(c, l);
 }
 
@@ -1711,29 +1761,21 @@ inline shared_ptr<hilti::type::MatchTokenState> type(const Location& l=Location:
 
 namespace struct_ {
 
-#if 0
-// Turns out we don't have a struct ctor but coerce tuples into structs ... Need to decide whether we want to keep it that way.
-
-typedef ctor::quct::element_list element_list;
+typedef hilti::type::Struct::field_list field_list;
+typedef tuple::element_list element_list;
 
 /// Instantiates an AST expression node representing a struct ctor.
 ///
-/// elems: The elements to initialize the struct with.
+/// elems: The elements to initialize the struct with. To leave a field
+/// unset, you an expression of type \a Unset.
 ///
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(const element_list& elems, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> create(const element_list& elems, const Location& l=Location::None)
 {
-    auto c = std::make_shared<ctor::Struct>(elems, l);
-    return std::make_shared<hilti::expression::Ctor>(c, l);
+    return tuple::create(elems, l);
 }
-
-typedef hilti::ctor::struct_::field_list field_list;
-
-#endif
-
-typedef hilti::type::Struct::field_list field_list;
 
 /// Instantiates a type::Struct type.
 ///

@@ -138,6 +138,18 @@ public:
    /// l: An associated location.
    Set(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None);
 
+   /// Constructor.
+   ///
+   /// dummy: Dummy flag that differentiates this ctor from the one giving
+   /// the element type. The value is ignored.
+   ///
+   /// stype: The type of the set, which must be \a type::Set.
+   ///
+   /// elems: The elements for the instance being constructed.
+   ///
+   /// l: An associated location.
+   Set(bool dummy, shared_ptr<Type> stype, const element_list& elems, const Location& l=Location::None);
+
    /// Returns the initialization value.
    const element_list& elements() const { return _elems; }
 
@@ -172,6 +184,15 @@ public:
    ///
    /// l: An associated location.
    Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l=Location::None);
+
+   /// Constructor.
+   ///
+   /// mtype: The type of the map, which must be \a type::Map.
+   ///
+   /// elems: The elements for the instance being constructed.
+   ///
+   /// l: An associated location.
+   Map(shared_ptr<Type> mtype, const element_list& elems, const Location& l=Location::None);
 
    /// Returns the initialization value.
    const element_list& elements() const { return _elems; }

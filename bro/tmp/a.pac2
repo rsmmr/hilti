@@ -1,0 +1,14 @@
+module Conv;
+
+export type Test = unit {
+    a: bytes &length=5;
+    b: int<16>;
+    c: uint<16>;
+    d: bytes &length=1 &convert=3.14;
+    e: bytes &length=1 &convert=1.2.3.4;
+    f: bytes &length=1 &convert=[2001:0db8::1428:57ab];
+    g: bytes &length=1 &convert=True;
+    h: bytes &length=1 &convert="MyString";
+
+    on %done { print self; }
+};

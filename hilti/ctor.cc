@@ -79,6 +79,20 @@ ctor::Set::Set(shared_ptr<Type> etype, const element_list& elems, const Location
     addChild(_type);
 }
 
+ctor::Set::Set(bool cctor, shared_ptr<Type> stype, const element_list& elems, const Location& l)
+{
+    assert(etype);
+
+    _elems = elems;
+    _type = ast::checkedCast<type::Set>(stype);
+    _type = std::make_shared<type::Reference>(_type);
+
+    for ( auto e : _elems )
+        addChild(e);
+
+    addChild(_type);
+}
+
 std::list<shared_ptr<hilti::Expression>> ctor::Set::flatten()
 {
     std::list<shared_ptr<hilti::Expression>> l;
@@ -96,6 +110,23 @@ ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_lis
 
     _elems = elems;
     _type = std::make_shared<type::Map>(ktype, vtype, l);
+    _type = std::make_shared<type::Reference>(_type);
+
+    for ( auto e : _elems ) {
+        addChild(e.first);
+        addChild(e.second);
+    }
+
+    addChild(_type);
+}
+
+ctor::Map::Map(shared_ptr<Type> mtype, const element_list& elems, const Location& l)
+{
+    assert(ktype);
+    assert(vtype);
+
+    _elems = elems;
+    _type = ast::checkedCast<type::Map>(mtype);
     _type = std::make_shared<type::Reference>(_type);
 
     for ( auto e : _elems ) {

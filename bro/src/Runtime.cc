@@ -1,12 +1,12 @@
 //
 // Runtime functions supporting the generated HILTI/BinPAC++ code.
 //
-// These function all assume "HILTI-C" linkage.
-
-#include "Runtime.h"
-#include "LocalReporter.h"
-#include "RuntimeInterface.h"
-#undef DBG_LOG
+// These function all assume "HILTI-C" linkage. Note that they must all be
+// 'extern "C"' here.
+//
+// All functions with names of the form <module>_<func>_bif will be
+// automatically mapped to BiFs <module>::<func>. You must also declare them
+// in scripts/bif (excluding the _bif postfix).
 
 #include "Plugin.h"
 #include "Conn.h"
@@ -15,6 +15,14 @@
 #include "Rule.h"
 #include "file_analysis/Manager.h"
 #include "Cookie.h"
+#undef DBG_LOG
+
+extern "C" {
+#include <libhilti/libhilti.h>
+}
+
+#include "LocalReporter.h"
+#include "RuntimeInterface.h"
 
 #undef List
 
@@ -109,20 +117,17 @@ void* libbro_h2b_bool(int8_t b, hlt_exception** excpt, hlt_execution_context* ct
 	return new Val(b, TYPE_BOOL);
 	}
 
+void* libbro_h2b_count(uint64_t v, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new Val(v, TYPE_COUNT);
+	}
+
 void* libbro_h2b_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	int len = hlt_bytes_len(b, excpt, ctx);
 	char data[len];
 	hlt_bytes_to_raw_buffer(b, (int8_t*)data, len, excpt, ctx);
 	return new StringVal(len, data); // copies data.
-	}
-
-hlt_bytes* libbro_b2h_string(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
-	{
-	const BroString* s = val->AsString();
-	hlt_bytes* result = hlt_bytes_new_from_data_copy((const int8_t*)s->Bytes(), s->Len(), excpt, ctx);
-	Unref(val);
-	return result;
 	}
 
 void* libbro_h2b_time(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -139,6 +144,24 @@ void* libbro_h2b_enum(const hlt_type_info* type, void* obj, uint64_t type_idx, h
 
 	return hlt_enum_has_val(e)
 		? new EnumVal(hlt_enum_value(e, excpt, ctx), et) : new EnumVal(lib_bro_enum_undef_val, et);
+	}
+
+hlt_bytes* libbro_b2h_string(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	const BroString* s = val->AsString();
+	hlt_bytes* result = hlt_bytes_new_from_data_copy((const int8_t*)s->Bytes(), s->Len(), excpt, ctx);
+	Unref(val);
+	return result;
+	}
+
+uint64_t libbro_b2h_count(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return val->AsCount();
+	}
+
+uint8_t libbro_b2h_bool(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return val->AsBool();
 	}
 
 static EventHandler no_handler("SENTINEL_libbro_raise_event");
@@ -209,6 +232,68 @@ void libbro_call_bif_void(hlt_bytes* name, const hlt_type_info* type, const void
 	{
 	auto result = libbro_call_bif_result(name, type, tuple, excpt, ctx);
 	Unref(result);
+	}
+
+struct bro_table_iterate_result {
+	::IterCookie* cookie;
+	::Val* kval;
+	::Val* vval;
+};
+
+bro_table_iterate_result libbro_bro_table_iterate(::TableVal* val, ::IterCookie* cookie)
+	{
+	auto tbl = val->AsTable();
+
+	HashKey* h;
+	TableEntryVal* v;
+
+	if ( ! cookie )
+		cookie = tbl->InitForIteration();
+
+	if ( ! (v = tbl->NextEntry(h, cookie)) )
+		return { 0, 0, 0 };
+
+	::Val* kval = 0;
+
+	auto k = val->RecoverIndex(h);
+	if ( k->Length() == 1 )
+		kval = k->Index(0);
+	else
+		kval = k;
+
+	delete h;
+
+	return { cookie, kval, v->Value() };
+	}
+
+::BroType* libbro_bro_base_type(uint64_t tag)
+	{
+	return ::base_type((TypeTag)(tag));
+	}
+
+::TableType* libbro_bro_table_type_new(::BroType* key, ::BroType* value, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new ::TableType(key->AsTypeList(), value);
+	}
+
+::TableVal* libbro_bro_table_new(::TableType* type, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new ::TableVal(type);
+	}
+
+void libbro_bro_table_insert(::TableVal* val, ::Val* k, ::Val* v, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	val->Assign(k, v);
+	}
+
+::TypeList* libbro_bro_list_type_new(::BroType* pure_type, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new ::TypeList(pure_type);
+	}
+
+void libbro_bro_list_type_append(::TypeList* t, ::BroType* ntype, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	t->Append(ntype);
 	}
 
 // User-visible Bro::* functions.
@@ -357,22 +442,4 @@ void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t e
 	GC_DTOR(start, hlt_iterator_bytes);
 	GC_DTOR(end, hlt_iterator_bytes);
 	}
-
-// Bif functions. If a classic bif with the same name exists, the implementation
-// here will override that one (you must ensure that types match!)
-
-int8_t bif_hilti_is_compiled(hlt_exception** excpt, hlt_execution_context* ctx)
-	{
-	return 1;
-	}
-
-// These are for testing purposes only.
-hlt_bytes* bif_hilti_test_type_string(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
-	{
-	GC_CCTOR(b, hlt_bytes);
-	return b;
-	}
 }
-
-#include "RuntimeMapping.cc"
-

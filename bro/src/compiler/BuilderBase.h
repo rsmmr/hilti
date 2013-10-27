@@ -20,8 +20,13 @@ namespace hilti {
 	class Type;
 	class Expression;
 
+	namespace declaration {
+		class Function;
+	}
+
 	namespace builder {
 		class BlockBuilder;
+		class ModuleBuilder;
 	}
 }
 
@@ -56,9 +61,27 @@ class ModuleBuilder;
 class BuilderBase  {
 public:
 	/**
-	 * Returns the module builder in use, as passed to the constructor.
+	 * Returns the module builder currently in use.
+	 *
+	 * This is a short-cut to using the compiler's corresponding method.
 	 */
-	class ModuleBuilder* ModuleBuilder();
+	::hilti::builder::ModuleBuilder* ModuleBuilder();
+
+	/**
+	 * Returns the current block builder.
+	 *
+	 * This is a short-cut to using the compiler's corresponding method.
+	 *
+	 * @return The block builder.
+	 */
+	std::shared_ptr<::hilti::builder::BlockBuilder> Builder() const;
+
+	/**
+	 * Returns the module builder for the glue code module.
+	 *
+	 * This is a short-cut to using the compiler's corresponding method.
+	 */
+	::hilti::builder::ModuleBuilder* GlueModuleBuilder() const;
 
 	/**
 	 * Throws a \a BuilderException, terminating the current compilation.
@@ -80,6 +103,12 @@ public:
 	 * msg: The error message to log.
 	 */
 	void InternalError(const std::string& msg, const BroObj* obj = 0);
+
+	/**
+	 * Returns the compiler in use. This forwards to the corresponding
+	 * method of the ModuleBuilder.
+	 */
+	class Compiler* Compiler() const;
 
 	/**
 	 * Returns the expression builder to use. This forwards to the
@@ -142,6 +171,18 @@ public:
 	std::string HiltiSymbol(const ::ID* id);
 
 	/**
+	 * Renders a \a BroObj via its \c Describe() method and turns the
+	 * result into a valid HILTI identifier string.
+	 *
+	 * This is a short-cut to using the compiler's corresponding method.
+	 *
+	 * @param obj The object to describe.
+	 *
+	 * @return A string with a valid HILTI identifier.
+	 */
+	std::string HiltiODescSymbol(const ::BroObj* obj);
+
+	/**
 	 * Converts a Bro type into its HILTI equivalent. This is a short-cut
 	 * to using the type builder's corresponding Compile() method.
 	 *
@@ -182,7 +223,7 @@ public:
 	 *
 	 * @return An expression referencing the converted value.
 	 */
-	shared_ptr<::hilti::Expression> RuntimeValToHilti(shared_ptr<::hilti::Expression> val, ::BroType* type);
+	std::shared_ptr<::hilti::Expression> RuntimeValToHilti(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
 
 	/**
 	 * Conerts a HILTI expression into a Bro \a Val dynamically at
@@ -196,20 +237,26 @@ public:
 	 * @return An expression referencing the converted value, which
 	 * correspond to a pointer to a Bro Val.
 	 */
-	shared_ptr<::hilti::Expression> RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, ::BroType* type);
+	std::shared_ptr<::hilti::Expression> RuntimeHiltiToVal(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
+
+	/**
+	 * Declares the prototype for single function. This branches out into
+	 * the other Declare*() methods for the various function flavors.
+	 * 
+	 * If the declaration already exists, that one is returned.
+	 *
+	 * The method forwards to ModuleBuilder::DeclareFunction.
+	 *
+	 * @param func The function to compile.
+	 *
+	 * @return An expression referencing the declared function.
+	 */
+	std::shared_ptr<::hilti::Expression> DeclareFunction(const ::Func* func);
 
 	/**
 	 * Returns a string with location information for a BroObj.
 	 */
 	std::string Location(const ::BroObj *obj);
-
-	/**
-	 * Returns the current block builder. This is a short-cut to calling
-	 * the corresponding module builder method.
-	 *
-	 * @return The block builder.
-	 */
-	std::shared_ptr<::hilti::builder::BlockBuilder> Builder() const;
 
 protected:
 	/**

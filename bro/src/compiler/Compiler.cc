@@ -1,9 +1,12 @@
 
+#include <dlfcn.h>
+
 #include <Traverse.h>
 #include <Scope.h>
 #include <Dict.h>
 #include <Hash.h>
 #include <Func.h>
+#include <Obj.h>
 #undef List
 
 #include <util/util.h>
@@ -12,24 +15,79 @@
 #include "ModuleBuilder.h"
 #include "../LocalReporter.h"
 
+namespace BifConst { namespace Hilti {  extern int save_hilti;  }  }
+
 using namespace bro::hilti::compiler;
+
+// Walk the Bro AST to normalize nodes in preparation for compiling into
+// HILTI.
+class NormalizerCallBack : public ::TraversalCallback {
+public:
+	NormalizerCallBack(Compiler* compiler) : compiler(compiler) {};
+	TraversalCode PreID(const ::ID* id);
+private:
+	Compiler* compiler;
+};
+
+TraversalCode NormalizerCallBack::PreID(const ::ID* id)
+	{
+	if ( (! id->ID_Val()) && id->Type()->Tag() == TYPE_FUNC && compiler->HaveHiltiBif(id->Name()) )
+		{
+		// A HILTI-only built-in function won't have a value. Fake one.
+		auto non_const_id = const_cast<::ID *>(id);
+		auto fval = new ::Val(new ::BuiltinFunc(0, id->Name(), true));
+		non_const_id->SetVal(fval);
+		}
+
+	return TC_CONTINUE;
+	}
 
 Compiler::Compiler(shared_ptr<::hilti::CompilerContext> arg_hilti_context)
 	{
 	hilti_context = arg_hilti_context;
+
+	auto glue_id = ::hilti::builder::id::node("BroGlue");
+	glue_module_builder = std::make_shared<::hilti::builder::ModuleBuilder>(hilti_context, glue_id);
 	}
 
 Compiler::~Compiler()
 	{
 	}
 
+std::shared_ptr<::hilti::builder::BlockBuilder> Compiler::Builder() const
+	{
+	return mbuilders.back()->builder();
+	}
+
+::hilti::builder::ModuleBuilder* Compiler::ModuleBuilder()
+	{
+	return mbuilders.back();
+	}
+
+void Compiler::pushModuleBuilder(::hilti::builder::ModuleBuilder* mbuilder)
+	{
+	mbuilders.push_back(mbuilder);
+	}
+
+void Compiler::popModuleBuilder()
+	{
+	assert(mbuilders.size() > 0);
+	mbuilders.pop_back();
+	}
+
 Compiler::module_list Compiler::CompileAll()
 	{
+	NormalizerCallBack cb(this);
+	traverse_all(&cb);
+
 	Compiler::module_list modules;
 
 	for ( auto ns : GetNamespaces() )
 		{
-		auto mbuilder = new ModuleBuilder(this, hilti_context, ns);
+		auto mbuilder = new class ModuleBuilder(this, hilti_context, ns);
+
+		pushModuleBuilder(mbuilder);
+
 		auto module = mbuilder->Compile();
 
 		if ( ! module )
@@ -37,10 +95,26 @@ Compiler::module_list Compiler::CompileAll()
 
 		modules.push_back(module);
 
+		popModuleBuilder();
+
 		delete mbuilder;
 		}
 
+	if ( BifConst::Hilti::save_hilti )
+		glue_module_builder->saveHiltiCode(::util::fmt("bro.%s.hlt", glue_module_builder->module()->id()->name()));
+
+	glue_module_builder->importModule("Hilti");
+	glue_module_builder->importModule("LibBro");
+
+	auto glue = glue_module_builder->finalize();
+	modules.push_back(glue);
+
 	return modules;
+	}
+
+::hilti::builder::ModuleBuilder* Compiler::GlueModuleBuilder() const
+	{
+	return glue_module_builder.get();
 	}
 
 std::list<string> Compiler::GetNamespaces() const
@@ -65,7 +139,7 @@ std::list<string> Compiler::GetNamespaces() const
 
 string Compiler::HiltiSymbol(const ::Func* func, shared_ptr<::hilti::Module> module, bool include_module)
 	{
-	return normalizeSymbol(func->Name(), "", "", module, include_module);
+	return normalizeSymbol(func->Name(), "", "", module ? module->id()->name() : "", include_module);
 #if 0
 	if ( func->GetKind() == Func::BUILTIN_FUNC )
 		return func->Name();
@@ -93,7 +167,7 @@ string Compiler::HiltiSymbol(const ::Func* func, shared_ptr<::hilti::Module> mod
 
 std::string Compiler::HiltiStubSymbol(const ::Func* func, shared_ptr<::hilti::Module> module, bool include_module)
 	{
-	return normalizeSymbol(func->Name(), "", "stub", module, include_module);
+	return normalizeSymbol(func->Name(), "", "stub", module ? module->id()->name() : "", include_module);
 
 #if 0
 	auto name = func->Name();
@@ -115,10 +189,15 @@ std::string Compiler::HiltiStubSymbol(const ::Func* func, shared_ptr<::hilti::Mo
 
 string Compiler::HiltiSymbol(const ::ID* id, shared_ptr<::hilti::Module> module)
 	{
-	return normalizeSymbol(id->Name(), "", "", module);
+	return normalizeSymbol(id->Name(), "", "", module ? module->id()->name() : "");
 	}
 
-std::string Compiler::normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, shared_ptr<::hilti::Module> module, bool include_module)
+string Compiler::HiltiSymbol(const std::string& id, const std::string& module, bool include_module)
+	{
+	return normalizeSymbol(id, "", "", module, include_module);
+	}
+
+std::string Compiler::normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool include_module)
 	{
 	auto id = ::hilti::builder::id::node(sym);
 
@@ -130,7 +209,7 @@ std::string Compiler::normalizeSymbol(const std::string sym, const std::string p
 	if ( postfix.size() )
 		local = ::util::fmt("%s_%s", local, postfix);
 
-	if ( module && ::util::strtolower(id->scope()) == ::util::strtolower(module->id()->name()) )
+	if ( module.size() && ::util::strtolower(id->scope()) == ::util::strtolower(module) )
 		return local;
 
 	if ( id->scope().size() && ! include_module )
@@ -149,3 +228,35 @@ std::string Compiler::normalizeSymbol(const std::string sym, const std::string p
 	return local;
 	}
 
+std::string Compiler::HiltiODescSymbol(const ::BroObj* obj)
+	{
+	::ODesc d;
+	obj->Describe(&d);
+
+	std::string sym = d.Description();
+
+	for ( auto p = sym.begin(); p != sym.end(); ++p )
+		{
+		if ( ! isalnum(*p) )
+			*p = '_';
+		}
+
+	while ( sym.find("__") != std::string::npos )
+		sym = ::util::strreplace(sym, "__", "_");
+
+	return sym;
+	}
+
+bool Compiler::HaveHiltiBif(const std::string& name, std::string* hilti_name)
+	{
+	auto bif_symbol = ::util::fmt("%s_bif", HiltiSymbol(name, "", true));
+
+	// See if we have a statically compiled bif function available.
+	if ( ! dlsym(RTLD_DEFAULT, bif_symbol.c_str()) )
+		return false;
+
+	if ( hilti_name )
+		*hilti_name = name + "_bif";
+
+	return true;
+	}

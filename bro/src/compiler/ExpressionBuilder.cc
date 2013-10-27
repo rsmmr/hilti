@@ -288,6 +288,7 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NameExpr* exp
 	if ( id->IsGlobal() )
 		{
                 auto val = id->ID_Val();
+		assert(val);
 
 		if ( id->IsConst() )
 			return HiltiValue(val);

@@ -312,6 +312,8 @@ void ModuleBuilder::CompileEvent(const BroFunc* event)
 	Builder()->addInstruction(::hilti::instruction::flow::CallCallableVoid, c);
 
 	popFunction();
+
+	// compilerContext()->print(module(), std::cerr);
 	}
 
 void ModuleBuilder::CompileHook(const BroFunc* hook)
@@ -328,7 +330,7 @@ void ModuleBuilder::CompileFunctionBody(const ::Func* func, void* vbody)
 	StatementBuilder()->Compile(body->stmts);
 	}
 
-shared_ptr<::hilti::declaration::Function> ModuleBuilder::DeclareFunction(const Func* func)
+shared_ptr<::hilti::Expression> ModuleBuilder::DeclareFunction(const Func* func)
 	{
 	if ( func->GetKind() == Func::BUILTIN_FUNC )
 		return DeclareBuiltinFunction(static_cast<const BuiltinFunc*>(func));
@@ -352,81 +354,107 @@ shared_ptr<::hilti::declaration::Function> ModuleBuilder::DeclareFunction(const 
 	reporter::internal_error("cannot be reached");
 	}
 
-shared_ptr<::hilti::declaration::Function> ModuleBuilder::DeclareScriptFunction(const ::BroFunc* func)
+shared_ptr<::hilti::Expression> ModuleBuilder::DeclareScriptFunction(const ::BroFunc* func)
 	{
 	Error("ModuleBuilder::DeclareScriptFunction not yet implemented");
 	return nullptr;
 	}
 
-shared_ptr<::hilti::declaration::Function> ModuleBuilder::DeclareEvent(const ::BroFunc* event)
+shared_ptr<::hilti::Expression> ModuleBuilder::DeclareEvent(const ::BroFunc* event)
 	{
 	auto name = Compiler()->HiltiSymbol(event, module());
 	auto type = HiltiType(event->FType());
 
-	return declareHook(::hilti::builder::id::node(name), ast::checkedCast<::hilti::type::Hook>(type));
+	declareHook(::hilti::builder::id::node(name), ast::checkedCast<::hilti::type::Hook>(type));
+	return ::hilti::builder::id::create(name);
 	}
 
-shared_ptr<::hilti::declaration::Function> ModuleBuilder::DeclareHook(const ::BroFunc* event)
+shared_ptr<::hilti::Expression> ModuleBuilder::DeclareHook(const ::BroFunc* event)
 	{
 	Error("ModuleBuilder::DeclareHook not yet implemented");
 	return nullptr;
 	}
 
-shared_ptr<::hilti::declaration::Function> ModuleBuilder::DeclareBuiltinFunction(const ::BuiltinFunc* bif)
+shared_ptr<::hilti::Expression> ModuleBuilder::DeclareBuiltinFunction(const ::BuiltinFunc* bif)
 	{
-	auto symbol = HiltiSymbol(bif);
 	auto ftype = ::ast::checkedCast<::hilti::type::Function>(HiltiType(bif->FType()));
 
-	auto s = HiltiSymbol(bif, true);
+	auto symbol = HiltiSymbol(bif);
+	std::string bif_symbol;
 
-	// See if we have a bif in our runtime that implements this. If so,
-	// just declare the prototype.
-	if ( compilerContext()->lookupJITFunctionInTable(s) )
+	// See if we have a statically compiled bif function available.
+	if ( Compiler()->HaveHiltiBif(bif->Name(), &bif_symbol) )
 		{
 		ftype->setCallingConvention(::hilti::type::function::HILTI_C);
-		return declareFunction(symbol, ftype);
+		declareFunction(bif_symbol, ftype);
+		return ::hilti::builder::id::create(bif_symbol);
 		}
 
-	// Build stub function under that name calls Bro's bif
+	// We shouldn't arrive here for a HILTI-level BiF.
+	if ( ! bif->TheFunc() )
+		fatalError(::util::fmt("Function %s declared but not implemented (bif symbol %s)", bif->Name(), bif_symbol));
+
+	// Add a stub function into the glue code that calls Bro's bif
 	// implementation.
-	auto stub = pushFunction(symbol, ftype);
 
-	RecordType* args = bif->FType()->Args();
+	symbol = ::util::strreplace(symbol, "::", "_");
 
-	::hilti::builder::tuple::element_list func_args;
+	auto ns = GlueModuleBuilder()->module()->id()->name();
+	auto qualified_symbol = ::util::fmt("%s::%s", ns, symbol);
 
-	for ( int i = 0; i < args->NumFields(); i++ )
+	if ( declared(symbol) )
+		// We already did all the work earlier.
+		return ::hilti::builder::id::create(symbol);
+
+	auto glue_mbuilder = Compiler()->GlueModuleBuilder();
+
+	if ( ! glue_mbuilder->declared(symbol) )
 		{
-		auto arg = ::hilti::builder::id::create(args->FieldName(i));
-		auto btype = args->FieldType(i);
-		auto val = RuntimeHiltiToVal(arg, btype);
-		func_args.push_back(val);
+		Compiler()->pushModuleBuilder(glue_mbuilder);
+
+		auto stub = glue_mbuilder->pushFunction(symbol, ftype);
+		glue_mbuilder->exportID(stub->id());
+
+		RecordType* args = bif->FType()->Args();
+
+		::hilti::builder::tuple::element_list func_args;
+
+		for ( int i = 0; i < args->NumFields(); i++ )
+			{
+			auto arg = ::hilti::builder::id::create(args->FieldName(i));
+			auto btype = args->FieldType(i);
+			auto val = RuntimeHiltiToVal(arg, btype);
+			func_args.push_back(val);
+			}
+
+		auto f = ::hilti::builder::bytes::create(bif->Name());
+		auto t = ::hilti::builder::tuple::create(func_args);
+		auto ca = ::hilti::builder::tuple::create({ f, t });
+
+		auto ytype = bif->FType()->YieldType();
+
+		if ( ytype && ytype->Tag() != TYPE_VOID && ytype->Tag() != TYPE_ANY )
+			{
+			auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+			auto rval = glue_mbuilder->addTmp("rval", vtype);
+
+			Builder()->addInstruction(rval, ::hilti::instruction::flow::CallResult,
+						  ::hilti::builder::id::create("LibBro::call_bif_result"), ca);
+
+			auto result = RuntimeValToHilti(rval, ytype);
+			Builder()->addInstruction(::hilti::instruction::flow::ReturnResult, result);
+			}
+
+		else
+			Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+						  ::hilti::builder::id::create("LibBro::call_bif_void"), ca);
+
+		glue_mbuilder->popFunction();
+
+		Compiler()->popModuleBuilder();
 		}
 
-	auto f = ::hilti::builder::bytes::create(bif->Name());
-	auto t = ::hilti::builder::tuple::create(func_args);
-	auto ca = ::hilti::builder::tuple::create({ f, t });
-
-	auto ytype = bif->FType()->YieldType();
-
-	if ( ytype && ytype->Tag() != TYPE_VOID && ytype->Tag() != TYPE_ANY )
-		{
-		auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
-		auto rval = addTmp("rval", vtype);
-
-		Builder()->addInstruction(rval, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::call_bif_result"), ca);
-
-		auto result = RuntimeValToHilti(rval, ytype);
-		Builder()->addInstruction(::hilti::instruction::flow::ReturnResult, result);
-		}
-
-	else
-		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
-					  ::hilti::builder::id::create("LibBro::call_bif_void"), ca);
-
-	popFunction();
-
-	return stub;
+	declareFunction(qualified_symbol, ftype);
+	return ::hilti::builder::id::create(qualified_symbol);
 	}
 
