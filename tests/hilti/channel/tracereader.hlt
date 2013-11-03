@@ -1,0 +1,101 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out 2>&1 | sort >output
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+
+void run() {
+
+	local iterator<list<string>> curr_ev_it
+	local iterator<list<string>> last_ev_it
+	local bool list_ended
+	local string curr_ev
+	local int<64> cmd_count = 1
+	local string debugMsg
+
+	# BUILD TEST EVENT LIST:
+
+	# First, create test events...
+	local string msg0 = "FLOWBYTE"
+ 	local string msg1 = "FLOWBYTES 1344968890.636548 INPUT NewPacket Ti7NgmKX3Tl 60 6"
+ 	local string msg2 = "FLOWBYTES 1344968890.636636 INPUT NewPacket Ti7NgmKX3Tl 52 6"
+ 	local string msg3 = "FLOWBYTES 1344968890.637282 INPUT NewPacket Ti7NgmKX3Tl 163 6"
+ 	local string msg4 = "FLOWBYTES 1344968890.640952 INPUT NewPacket Ti7NgmKX3Tl 52 6"
+ 	local string msg5 = "FLOWBYTES 1344968890.669201 INPUT NewPacket Ti7NgmKX3Tl 1470 6"
+ 	local string msg6 = "FLOWBYTES 1344968890.669249 INPUT NewPacket Ti7NgmKX3Tl 52 6"
+ 	local string msg7 = "FLOWBYTES 1344968890.669345 INPUT NewPacket Ti7NgmKX3Tl 1470 6"
+ 	local string msg8 = "FLOWBYTES 1344968890.669365 INPUT NewPacket Ti7NgmKX3Tl 52 6"
+ 	local string msg9 = "FLOWBYTES 1344968890.669389 INPUT NewPacket Ti7NgmKX3Tl 1470 6"
+
+	# Then, generate the list
+	local ref<list<string>> event_list
+	event_list = new list<string>
+	list.push_back event_list msg0
+ 	list.push_back event_list msg1
+ 	list.push_back event_list msg2
+ 	list.push_back event_list msg3
+ 	list.push_back event_list msg4
+ 	list.push_back event_list msg5
+ 	list.push_back event_list msg6
+ 	list.push_back event_list msg7
+ 	list.push_back event_list msg8
+ 	list.push_back event_list msg9
+
+	local ref<channel<string>> thread_channel
+	thread_channel = new channel<string>
+	thread.schedule processEvent(thread_channel, 1) 1
+
+	curr_ev_it = begin event_list
+	last_ev_it = end event_list
+
+@event_loop:
+		list_ended = equal curr_ev_it last_ev_it
+		if.else list_ended @exit_event_loop @continue_event_loop
+@continue_event_loop:
+		curr_ev = deref curr_ev_it
+		channel.write thread_channel curr_ev
+
+		debugMsg = call Hilti::fmt("%d. Written command: %s", (cmd_count, curr_ev))
+		call Hilti::print(debugMsg)
+
+		curr_ev_it = incr curr_ev_it
+		cmd_count = incr cmd_count
+		jump @event_loop
+
+@exit_event_loop:
+		channel.write thread_channel "-1"
+		debugMsg = call Hilti::fmt("%d. Written command: %s", (cmd_count, "-1"))
+		call Hilti::print(debugMsg)
+
+	call Hilti::wait_for_threads()
+	call Hilti::print("Wait terminated. Exiting...")
+	return.void
+}
+
+
+void processEvent(ref<channel<string>> thread_channel, int<64> id) {
+
+	local string curr_ev
+	local bool is_equal
+	local string exitMsg
+
+	local string debugMsg
+
+	debugMsg = call Hilti::fmt("Thread %d started!", (id))
+	call Hilti::print(debugMsg)
+@main_loop:
+	curr_ev = channel.read thread_channel
+	debugMsg = call Hilti::fmt("Read command: %s", (curr_ev))
+	call Hilti::print(debugMsg)
+
+	is_equal = equal curr_ev "-1"
+	if.else is_equal @exit_thread @main_loop
+@exit_thread:
+		exitMsg = call Hilti::fmt("Thread %d: exiting...", (id))
+		call Hilti::print(exitMsg)
+		return.void
+}

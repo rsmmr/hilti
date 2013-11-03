@@ -35,7 +35,6 @@ static void _readFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* res
     auto etype = ast::checkedCast<type::Channel>(rtype->argType())->argType();
     auto casted = cg->builder()->CreateBitCast(result, cg->llvmTypePtr(cg->llvmType(etype)));
     result = cg->builder()->CreateLoad(casted);
-    result = cg->llvmCoerceTo(result, etype, i->target()->type());
     cg->llvmStore(i, result);
 }
 

@@ -1,6 +1,8 @@
 ///
 /// HILTI's threading support, including the run-time scheduler.
 ///
+/// TODO: - Scheduling something to VID zero, i.e., the main thread, doesn't
+/// work yet.
 
 #define _POSIX_SOURCE
 #define _POSIX_C_SOURCE 199309
@@ -256,6 +258,9 @@ static void _add_to_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockabl
 // Returns the execution context to use for a given virtual thread ID.
 static hlt_execution_context* _worker_get_ctx(hlt_worker_thread* thread, hlt_vthread_id vid)
 {
+    if ( vid == 0 )
+        return hlt_global_execution_context();
+
     hlt_vthread_id max = thread->max_vid;
 
     if ( max < vid ) {

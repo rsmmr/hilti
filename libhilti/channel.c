@@ -49,8 +49,15 @@ struct __hlt_channel {
     pthread_cond_t full_cv;         /* Condition variable for a full channel. */
 };
 
+static void* _hlt_channel_read_item(hlt_channel* ch);
+
 void hlt_channel_dtor(hlt_type_info* ti, hlt_channel* c)
 {
+    while ( c->size ) {
+        void* item = _hlt_channel_read_item(c);
+        GC_DTOR_GENERIC(item, c->type);
+    }
+
     hlt_channel_chunk* rc = c->rc;
 
     while ( rc ) {
@@ -59,6 +66,10 @@ void hlt_channel_dtor(hlt_type_info* ti, hlt_channel* c)
         hlt_free(rc);
         rc = next;
     }
+
+    pthread_mutex_destroy(&c->mutex);
+    pthread_cond_destroy(&c->empty_cv);
+    pthread_cond_destroy(&c->full_cv);
 }
 
 static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -123,20 +134,14 @@ static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_excep
     }
 
     memcpy(ch->tail, data, ch->type->size);
+    GC_CCTOR_GENERIC(ch->tail, ch->type);
+
     ++ch->wc->wcnt;
 
     ch->tail += ch->type->size;
     ++ch->size;
 
     return 0;
-}
-
-void _hlt_channel_finalizer(void* ch_ptr)
-{
-    hlt_channel* ch = ch_ptr;
-    pthread_mutex_destroy(&ch->mutex);
-    pthread_cond_destroy(&ch->empty_cv);
-    pthread_cond_destroy(&ch->full_cv);
 }
 
 hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt, hlt_execution_context* ctx)
