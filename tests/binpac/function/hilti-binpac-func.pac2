@@ -1,6 +1,6 @@
 #
 # @TEST-EXEC:  hilti-build -t -d %INPUT testhilti.hlt -o a.out
-# @TEST-EXEC:  ./a.out >output
+# @TEST-EXEC:  ./a.out | sed 's/0x0/(nil)/' >output
 # @TEST-EXEC:  btest-diff output
 #
 

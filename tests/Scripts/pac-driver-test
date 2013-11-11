@@ -91,13 +91,13 @@ while [ "$1" != "" ]; do
 done
 
 if [ "$debug" == "1" ]; then
-    build_opts="$build_opts -d"
+    build_opts="-d $build_opts"
 else
-    build_opts="$build_opts -O"
+    build_opts="-O $build_opts"
 fi
 
 if [ "$incr" != "" ]; then
-    runtime_opts="$runtime_opts -i $incr"
+    runtime_opts="-i $incr $runtime_opts"
 fi
 
 #stdin=.pac-driver-test.stdin.$$.tmp

@@ -193,6 +193,11 @@ InstructionRegistry::instr_list InstructionRegistry::byName(const string& name) 
         matches.push_back(instr);
     }
 
+    // Make the order well-defined.
+    matches.sort([] (shared_ptr<Instruction> i1, shared_ptr<Instruction> i2) {
+        return string(*i1) < string(*i2);
+    });
+
     return matches;
 }
 

@@ -471,6 +471,7 @@ Integer::Integer(int width, bool sign, const Location& l) : PacType(l)
 Integer::Integer(const Location& l) : PacType(l)
 {
     _width = 0;
+    _signed = true; // Not relevant but make sure it's initialized.
     setWildcard(true);
 }
 
