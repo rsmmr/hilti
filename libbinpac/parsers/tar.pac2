@@ -1,0 +1,59 @@
+module Tar;
+
+type FileType = enum {
+    REG, LNK, SYM, CHR, BLK, DIR, FIFO, RESERVED
+};
+
+type Header = unit {
+    name : bytes &length=100;
+    mode : bytes &length=7;
+     : uint8(0x0);
+    uid : bytes &length=7;
+     : uint8(0x0);
+    gid : bytes &length=7;
+     : uint8(0x0);
+    size : bytes &length=11 &convert=$$.to_uint(8);
+     : uint8(0x0);
+    # Fixme - convert to time, once possible
+    mktime : bytes &length=11 &convert=$$.to_uint(8);
+     : uint8(0x0);
+    chksum : bytes &length=6 &convert=$$.to_uint(8);
+     : b"\x00 ";
+    typeflag : bytes &length=1;
+    linkname : bytes &length=100;
+    magic : bytes &length=6;
+     : bytes &length=249;
+
+    # todo - we can parse extension headers depending on the magic value
+
+    var filetype : FileType;
+    var filelen : uint64 = 0;
+    switch ( self.typeflag ) {
+        b"\x00", b"0" -> : b""  { self.filetype = FileType::REG; self.filelen = self.size; }
+        b"1" -> : b"" { self.filetype = FileType::LNK; }
+        b"2" -> : b"" { self.filetype = FileType::SYM; }
+        b"3" -> : b"" { self.filetype = FileType::CHR; }
+        b"4" -> : b"" { self.filetype = FileType::BLK; }
+        b"5" -> : b"" { self.filetype = FileType::DIR; }
+        b"6" -> : b"" { self.filetype = FileType::FIFO; }
+        b"7" -> : b"" { self.filetype = FileType::RESERVED; }
+        * -> : b"" { self.filetype = FileType::REG; self.filelen = self.size; }
+    };
+
+    on %done { 
+       self.name = self.name.split1(b"\x00")[0];
+       self.linkname = self.linkname.split1(b"\x00")[0];
+    }
+};
+
+type File = unit {
+    header: Header;
+    data : bytes &length=self.header.filelen &transient;
+    padding : bytes &length=(512-(self.header.filelen mod 512)) mod 512 &transient;
+};
+
+export type TarFile = unit {
+    Files : list<File>;
+     : uint8(0x0);
+     : bytes &length=511 &transient;
+};
