@@ -254,6 +254,21 @@ llvm::Value* CodeGen::llvmGlobal(Variable* var)
     if ( scope.empty() )
         scope = _hilti_module->id()->name();
 
+    // Hack to get true globals. This is for testing/evaluation only. They
+    // won't work across module boundaries.
+    if ( ast::checkedCast<variable::Global>(var)->isTrueGlobal() ) {
+
+        auto glob = lookupCachedValue("true-global", var->id()->name());
+
+        if ( ! glob ) {
+            auto t = llvmType(var->type());
+            glob = llvmAddGlobal(var->id()->name(), llvmConstNull(t));
+            cacheValue("true-global", var->id()->name(), glob);
+        }
+
+        return glob;
+    }
+
     // The linker will replace th=is code with the actual global value.
 
     llvm::Value* dummy = builder()->CreateAlloca(llvmTypePtr(llvmType(var->type())));

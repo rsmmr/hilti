@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global string __TRUE_GLOBAL_foo = "hurz"
+
+void  run() {
+    call Hilti::print (__TRUE_GLOBAL_foo, True)
+    __TRUE_GLOBAL_foo = "nix"
+    call Hilti::print (__TRUE_GLOBAL_foo, True)
+}
+

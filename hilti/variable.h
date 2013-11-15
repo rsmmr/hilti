@@ -46,6 +46,12 @@ public:
    Global(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const Location& l=Location::None)
        : hilti::Variable(id, type, init, l), ast::variable::mixin::Global<AstInfo>(this) {}
 
+   /// Returns true if this global is a true global across all threads. HILTI
+   /// doesn't normally have those and this is a hack for testing/evaluation
+   /// purposes only. We currently just base this just off the name:
+   /// variables starting with __TRUE_GLOBAL_ return true.
+   bool isTrueGlobal() const { return ::util::startsWith(id()->name(), "__TRUE_GLOBAL_"); }
+
    ACCEPT_VISITOR(hilti::Variable);
 };
 
