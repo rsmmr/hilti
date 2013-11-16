@@ -1,0 +1,21 @@
+#
+# @TEST-EXEC:  echo 1234567890 | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  echo 2234567890 | pac-driver-test %INPUT >>output
+# @TEST-EXEC:  echo 3234567890 | pac-driver-test %INPUT >>output
+# @TEST-EXEC:  echo 4234567890 | pac-driver-test %INPUT >>output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+
+       a: bytes &length=1;
+
+       switch ( self.a ) {
+           b"1"       ->  : void { print "1"; }
+           b"2", b"3" ->  : void { print "2 or 3; }
+           *          ->  : void { print "something else; }
+           };
+
+};
