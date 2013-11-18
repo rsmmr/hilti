@@ -42,32 +42,7 @@ static void _move_tmp_parsers()
     free(_tmp_parsers);
 }
 
-void binpac_init()
-{
-    if ( _initialized )
-        return;
-
-    hlt_exception* excpt = 0;
-    hlt_execution_context* ctx = hlt_global_execution_context();
-
-    _initialized = 1;
-
-    __binpac_globals_init();
-
-    atexit(binpac_done);
-
-    _move_tmp_parsers();
-}
-
-void __binpac_init_from_state(__binpac_globals* state)
-{
-    _done = 1; // Don't clean up.
-
-    __binpac_globals_set(state);
-    _move_tmp_parsers();
-}
-
-void binpac_done()
+void __binpac_done()
 {
     if ( _done )
         return;
@@ -80,9 +55,29 @@ void binpac_done()
     if ( excpt )
         hlt_exception_print_uncaught(excpt, ctx);
 
-    int64_t size = hlt_list_size(__binpac_globals_get()->parsers, &excpt, ctx);
-
     __binpac_globals_done();
+}
+
+void binpac_init()
+{
+    if ( _initialized )
+        return;
+
+    _initialized = 1;
+
+    __binpac_globals_init();
+
+    atexit(__binpac_done);
+
+    _move_tmp_parsers();
+}
+
+void __binpac_init_from_state(__binpac_globals* state)
+{
+    _done = 1; // Don't clean up.
+
+    __binpac_globals_set(state);
+    _move_tmp_parsers();
 }
 
 hlt_list* binpac_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
@@ -142,6 +137,6 @@ void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* c
 
 void binpac_debug_print_ptr(hlt_string tag, const hlt_type_info* type, void** ptr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    const char* s = hlt_string_to_native(tag, excpt, ctx);
+    assert(false);
 }
 
