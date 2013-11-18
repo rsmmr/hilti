@@ -63,27 +63,46 @@ struct in_addr hlt_addr_to_in4(hlt_addr addr, hlt_exception** excpt, hlt_executi
 {
     if ( ! is_v4(addr) ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0);
-		struct in_addr sa;
+        struct in_addr sa;
         return sa;
     }
 
     unsigned long a = (unsigned long)addr.a2;
     struct in_addr sa = { hlt_hton32(a) };
-	return sa;
+    return sa;
 }
 
 struct in6_addr hlt_addr_to_in6(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-	struct in6_addr sa;
+    struct in6_addr sa;
 
-	uint64_t a = hlt_hton64(addr.a1);
-	memcpy(&sa, &a, 8);
+    uint64_t a = hlt_hton64(addr.a1);
+    memcpy(&sa, &a, 8);
 
-	a = hlt_hton64(addr.a2);
-	memcpy(((char*)&sa) + 8, &a, 8);
+    a = hlt_hton64(addr.a2);
+    memcpy(((char*)&sa) + 8, &a, 8);
 
-	return sa;
+    return sa;
 }
+
+hlt_addr hlt_addr_from_in4(struct in_addr in, hlt_exception** excpt, hlt_execution_context* ctx)
+    {
+    hlt_addr addr = { 0, 0 };
+    addr.a2 = hlt_ntoh32(in.s_addr);
+    return addr;
+    }
+
+hlt_addr hlt_addr_from_in6(struct in6_addr in, hlt_exception** excpt, hlt_execution_context* ctx)
+    {
+    uint64_t a1;
+    memcpy(&a1, &in, 8);
+
+    uint64_t a2;
+    memcpy(&a2, ((char*)&in) + 8, 8);
+
+    hlt_addr a = { hlt_ntoh64(a1), hlt_ntoh64(a1) };
+    return a;
+    }
 
 hlt_addr hlt_addr_from_asciiz(const char* s, hlt_exception** excpt, hlt_execution_context* ctx)
 {

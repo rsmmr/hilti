@@ -146,8 +146,6 @@ int __libhilti_main(int argc, char **argv)
         GC_DTOR(excpt, hlt_exception);
     }
 
-    hlt_done();
-
 #ifdef DEBUG
     _check_leaks(argv[0]);
 #endif

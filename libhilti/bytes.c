@@ -406,6 +406,7 @@ hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exce
         return hlt_bytes_begin(b, excpt, ctx);
     }
 
+    assert(i.cur);
     hlt_iterator_bytes p = hlt_bytes_find_byte(b, *i.cur, excpt, ctx);
 
     GC_DTOR(i, hlt_iterator_bytes);

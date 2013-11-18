@@ -26,6 +26,21 @@ static void __hlt_init_common()
     }
 }
 
+void __hlt_done()
+{
+    if ( ! _init_called )
+        return;
+
+    if ( _done_called )
+        return;
+
+    _done_called = 1;
+
+    hlt_exception* excpt = 0;
+
+    __hlt_global_state_done();
+}
+
 void hlt_init()
 {
     if ( _init_called )
@@ -39,7 +54,7 @@ void hlt_init()
     hlt_execution_context* ctx = hlt_global_execution_context();
     __hlt_modules_init(ctx);
 
-    atexit(hlt_done);
+    atexit(__hlt_done);
 }
 
 void __hlt_init_from_state(__hlt_global_state* state)
@@ -59,19 +74,4 @@ void __hlt_init_from_state(__hlt_global_state* state)
 
     _init_called = 1;
     _done_called = 1; // Don't clean up.
-}
-
-void hlt_done()
-{
-    if ( ! _init_called )
-        return;
-
-    if ( _done_called )
-        return;
-
-    _done_called = 1;
-
-    hlt_exception* excpt = 0;
-
-    __hlt_global_state_done();
 }
