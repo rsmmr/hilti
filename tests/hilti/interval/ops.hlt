@@ -65,5 +65,11 @@ void run() {
     call Hilti::print(i)
     i = interval.mul i 2
     call Hilti::print(i)
+
+    call Hilti::print("")
+
+    i = interval.from_double 12.5
+    call Hilti::print(i)
+
 }
 

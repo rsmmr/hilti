@@ -28,7 +28,6 @@ int main()
 
     fprintf(stderr, "Done in C and the result is %d\n", result);
 
-    hlt_done();
     return 0;
 }
 

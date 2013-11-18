@@ -7,7 +7,7 @@ candidate operators:
     bytes.begin()
     bytes.end()
     bytes.lower()
-    bytes.match(regexp,[ uint<*> ])
+    bytes.match(regexp,[ int<*> ])
     bytes.split1([ bytes ])
     bytes.split([ bytes ])
     bytes.startswith(bytes)
@@ -34,6 +34,6 @@ candidate operators:
     unit.offset()
     unit.set_position(iterator<bytes>)
     vector<*>.push_back(any)
-    vector<*>.reserve(uint<*>)
+    vector<*>.reserve(int<*>)
  [pass::binpac::OperatorResolver]
 method-call-mismatch.pac2: Aborting due to input error.

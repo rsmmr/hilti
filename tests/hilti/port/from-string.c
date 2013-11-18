@@ -35,7 +35,5 @@ int main()
 
     GC_DTOR(excpt, hlt_exception);
 
-    hlt_done();
-
     return 0;
 }
