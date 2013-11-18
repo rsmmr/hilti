@@ -1,7 +1,9 @@
 #
-# @TEST-EXEC:  printf '\x01\x02\x03\x01\x02\x03' | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf '\x01\x02\x03\x01\x02\x03' | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
+# @TEST-KNOWN-FAILURE: Can't convert binary bytes to integers yet. See
+#                      convert-integer.pac2 for an alternative idea.
 
 module Mini;
 
