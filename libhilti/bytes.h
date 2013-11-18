@@ -134,7 +134,10 @@ extern int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_except
 ///
 /// Raises: ValueError - If the two objects are the same, or *b* has been
 /// frozen.
-extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+extern hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Appends a sequence of raw bytes in memory to a bytes object. After
 /// appending, the memory by the raw bytes must not be modified or freed as

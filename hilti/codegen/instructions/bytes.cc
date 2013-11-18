@@ -21,6 +21,15 @@ void StatementBuilder::visit(statement::instruction::bytes::Append* i)
     cg()->llvmCall("hlt::bytes_append", args);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::Concat* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_concat", args);
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::bytes::Cmp* i)
 {
     CodeGen::expr_list args;

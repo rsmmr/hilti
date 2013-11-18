@@ -37,6 +37,12 @@ iBeginH(bytes, Append, "bytes.append")
     iOp2(optype::refBytes, true);
 iEndH
 
+iBeginH(bytes, Concat, "bytes.concat")
+    iTarget(optype::refBytes)
+    iOp1(optype::refBytes, true);
+    iOp2(optype::refBytes, true);
+iEndH
+
 iBeginH(bytes, Cmp, "bytes.cmp")
     iTarget(optype::int8)
     iOp1(optype::refBytes, true);
