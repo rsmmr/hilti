@@ -120,6 +120,27 @@ void* MemoryManager::getPointerToNamedFunction(const std::string& name, bool abo
         }
     }
 
+    // Make sure the runtime uses the same memory functions/state as the main process.
+
+    if ( name == "malloc" )
+        return (void*)&malloc;
+
+    if ( name == "free" )
+        return (void*)&free;
+
+    if ( name == "calloc" )
+        return (void*)&calloc;
+
+    if ( name == "realloc" )
+        return (void*)&realloc;
+
+    if ( name == "strdup" )
+        return (void*)&strdup;
+
+    // TODO: Can we get rid of the whole hlt_init_from_state() by similarly
+    // mapping the relevant functions here? Maybe not, because internally
+    // libhilti will still call its own versions.
+
     return _mm->getPointerToNamedFunction(name, abort_on_failure);
 }
 
@@ -227,7 +248,11 @@ llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
     llvm::EngineBuilder builder(module);
     builder.setEngineKind(llvm::EngineKind::JIT);
     builder.setUseMCJIT(true);
+#ifdef HAVE_LLVM_33
     builder.setJITMemoryManager(_mm);
+#else
+    builder.setMCJITMemoryManager(_mm);
+#endif
     builder.setErrorStr(&errormsg);
     builder.setOptLevel(opt_level);
     builder.setAllocateGVsWithCode(false);

@@ -818,6 +818,14 @@ public:
    /// Returns: The casted constant.
    llvm::Constant* llvmCastConst(llvm::Constant* c, llvm::Type* t);
 
+   // Reinterprets an existing value as representing a different type.
+   // Returns the value with that new type.
+   //
+   // val: The value to reinterpret.
+   //
+   // ntype: The type to interpret the value as.
+   llvm::Value* llvmReinterpret(llvm::Value* val, llvm::Type* ntype);
+
    /// Returns a constant representing a GetElementPtr index. This is just a
    /// shortcut to creating the constant "manually.
    ///

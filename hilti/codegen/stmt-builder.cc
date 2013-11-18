@@ -293,8 +293,6 @@ void StatementBuilder::visit(declaration::Function* f)
         // No implementation, nothing to do here.
         return;
 
-    assert(ftype->callingConvention() == type::function::HILTI || ftype->callingConvention() == type::function::HOOK);
-
     auto llvm_func = cg()->llvmFunction(func, (hook_decl != nullptr));
 
     cg()->pushFunction(llvm_func);

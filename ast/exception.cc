@@ -13,5 +13,5 @@ const char* Exception::what() const throw() {
 
     what += "]";
 
-    return what.c_str();
+    return strdup(what.c_str());
 }

@@ -67,6 +67,18 @@ iBegin(time, AsDouble, "time.as_double")
 
 iEnd
 
+iBegin(time, FromDouble, "time.from_double")
+    iTarget(optype::time)
+    iOp1(optype::double_, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Converts the double *op1* into a time value, interpreting it as seconds since the epoch.
+    )")
+iEnd
+
 iBegin(time, AsInt, "time.as_int")
     iTarget(optype::int64)
     iOp1(optype::time, true)

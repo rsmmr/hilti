@@ -382,12 +382,18 @@ llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
     auto name = param->id()->name();
     auto func = function();
 
+    llvm::Value* val = nullptr;
+
     for ( auto arg = func->arg_begin(); arg != func->arg_end(); arg++ ) {
         if ( arg->getName() == name ) {
             if ( arg->hasByValAttr() )
-                return builder()->CreateLoad(arg);
+                val = builder()->CreateLoad(arg);
             else
-                return arg;
+                val = arg;
+
+            // Reinterpret to account for potential ABI mangling.
+            auto ltype = llvmType(param->type());
+            return llvmReinterpret(val, ltype);
         }
     }
 
@@ -1090,6 +1096,17 @@ llvm::Constant* CodeGen::llvmCastConst(llvm::Constant* c, llvm::Type* t)
     return llvm::ConstantExpr::getBitCast(c, t);
 }
 
+llvm::Value* CodeGen::llvmReinterpret(llvm::Value* val, llvm::Type* ntype)
+{
+    if ( val->getType() == ntype )
+        return val;
+
+    auto tmp = llvmCreateAlloca(val->getType());
+    llvmCreateStore(val, tmp);
+    auto casted = builder()->CreateBitCast(tmp, llvmTypePtr(ntype));
+    return builder()->CreateLoad(casted);
+}
+
 llvm::Value* CodeGen::llvmStringFromData(const string& str)
 {
     std::vector<llvm::Constant*> vec_data;
@@ -1628,6 +1645,16 @@ void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result, bool resul
         state->exit_block = llvm::BasicBlock::Create(llvmContext(), ".exit", function());
 
     if ( result ) {
+        if ( state->function->hasStructRetAttr() ) {
+            auto func_rtype = state->function->arg_begin()->getType()->getPointerElementType();
+            result = llvmReinterpret(result, func_rtype);
+        }
+
+        else {
+            auto func_rtype = state->function->getReturnType();
+            result = llvmReinterpret(result, func_rtype);
+        }
+
         state->exits.push_back(std::make_pair(block(), result));
 
         if ( rtype && ! result_cctored )
@@ -1665,17 +1692,17 @@ void CodeGen::llvmBuildExitBlock()
 
     auto exit_builder = newBuilder(state->exit_block);
 
+    pushBuilder(exit_builder);
+
     llvm::PHINode* phi = nullptr;
 
     if ( state->exits.size() ) {
         auto rtype = state->exits.front().second->getType();
-        phi = exit_builder->CreatePHI(rtype, state->exits.size());
+        phi = builder()->CreatePHI(rtype, state->exits.size());
 
         for ( auto e : state->exits )
             phi->addIncoming(e.second, e.first);
     }
-
-    pushBuilder(exit_builder);
 
     llvmBuildFunctionCleanup();
 
@@ -1700,14 +1727,19 @@ void CodeGen::llvmBuildExitBlock()
     }
 
     if ( phi ) {
+
         if ( state->function->hasStructRetAttr() ) {
             // Need to store in argument.
-            builder()->CreateStore(phi, state->function->arg_begin());
+            auto rt = state->function->arg_begin()->getType()->getPointerElementType();
+            auto result = llvmReinterpret(phi, rt);
+            builder()->CreateStore(result, state->function->arg_begin());
             builder()->CreateRetVoid();
         }
 
-        else
-            builder()->CreateRet(phi);
+        else {
+            auto result = llvmReinterpret(phi, state->function->getReturnType());
+            builder()->CreateRet(result);
+        }
     }
 
     else
@@ -2441,7 +2473,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     name = util::mangle(func->id()->name() + "_resume", true, func->module()->id(), "", false);
 
     parameter_list fparams = { std::make_pair("yield_excpt", builder::reference::type(builder::exception::typeAny())) };
-    llvm_func = llvmAddFunction(name, llvm_func->getReturnType(), fparams, false, type::function::HILTI_C, false);
+    llvm_func = llvmAddFunction(name, llvmType(rtype), fparams, false, type::function::HILTI_C, false);
     rf2 = llvm_func;
 
     pushFunction(llvm_func);
@@ -2450,6 +2482,10 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     llvmClearException();
 
     auto yield_excpt = llvm_func->arg_begin();
+
+    if ( llvm_func->hasStructRetAttr() )
+        ++yield_excpt;
+
     auto fiber = llvmExceptionFiber(yield_excpt);
     fiber = builder()->CreateBitCast(fiber, llvmTypePtr(llvmLibType("hlt.fiber")));
 
@@ -2464,7 +2500,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     // Copy exception over.
     ctx_excpt = llvmCurrentException();
-    llvmGCAssign(++llvm_func->arg_begin(), ctx_excpt, builder::reference::type(builder::exception::typeAny()), false, false);
+    llvmGCAssign(++yield_excpt, ctx_excpt, builder::reference::type(builder::exception::typeAny()), false, false);
 
     if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
@@ -2502,6 +2538,7 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
 
     for ( int i = 0; i < args.size(); ++i ) {
         auto val = llvmValue(args[i]);
+        val = llvmReinterpret(val, stypes[i]);
         sval = llvmInsertValue(sval, val, i);
     }
 

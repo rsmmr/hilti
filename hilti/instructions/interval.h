@@ -63,6 +63,18 @@ iBegin(interval, AsDouble, "interval.as_double")
 
 iEnd
 
+iBegin(interval, FromDouble, "interval.from_double")
+    iTarget(optype::interval)
+    iOp1(optype::double_, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Converts the double *op1* into a interval value, interpreting it as representing seconds.
+    )")
+iEnd
+
 iBegin(interval, AsInt, "interval.as_int")
     iTarget(optype::int64)
     iOp1(optype::interval, true)

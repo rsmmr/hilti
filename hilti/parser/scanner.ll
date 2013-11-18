@@ -1,7 +1,10 @@
 
 %{
-// Disable: scanner.ll:41:1: warning: expression result unused [-Wunused-value]
 #pragma clang diagnostic ignored "-Wunused-value"
+
+#if ( __clang_major__ == 3 && __clang_minor__ >= 4 )
+#pragma clang diagnostic ignored "-Wdeprecated-register"
+#endif
 
 #include <string>
 
