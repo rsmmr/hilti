@@ -1,4 +1,4 @@
-
+					
 #include <Traverse.h>
 #include <Func.h>
 #undef List
@@ -323,10 +323,20 @@ void ModuleBuilder::CompileHook(const BroFunc* hook)
 
 void ModuleBuilder::CompileFunctionBody(const ::Func* func, void* vbody)
 	{
+	auto vars = func->GetScope()->Vars();
+
+	HashKey* h;
+	::ID* id;
+
+	IterCookie* c = vars->InitForIteration();
+
+	while ( (id = vars->NextEntry(h, c)) )
+		{
+		Builder()->addLocal(HiltiSymbol(id), HiltiType(id->Type()));
+		delete h;
+		}
+
 	auto body = reinterpret_cast<::Func::Body*>(vbody);
-
-	// TODO: Create local variables.
-
 	StatementBuilder()->Compile(body->stmts);
 	}
 

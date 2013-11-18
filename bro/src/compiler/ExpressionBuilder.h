@@ -5,7 +5,12 @@
 #ifndef BRO_PLUGIN_HILTI_COMPILER_EXPRESSION_BUILDER_H
 #define BRO_PLUGIN_HILTI_COMPILER_EXPRESSION_BUILDER_H
 
+#include <Type.h>
+
 #include "BuilderBase.h"
+
+class UnaryExpr;
+class BinaryExpr;
 
 class AddExpr;
 class AddToExpr;
@@ -48,7 +53,10 @@ class EqExpr;
 class RelExpr;
 class InExpr;
 
-namespace hilti { class Expression; }
+namespace hilti {
+	class Expression;
+	class Instruction;
+}
 
 namespace bro {
 namespace hilti {
@@ -111,6 +119,26 @@ protected:
 	std::shared_ptr<::hilti::Expression> Compile(const ::TimesExpr* expr);
 	std::shared_ptr<::hilti::Expression> Compile(const ::VectorCoerceExpr* expr);
 	std::shared_ptr<::hilti::Expression> Compile(const ::VectorConstructorExpr* expr);
+
+private:
+	typedef std::function<void (const ::UnaryExpr* expr,
+				    shared_ptr<::hilti::Expression> dst,
+				    shared_ptr<::hilti::Expression> op)>
+		unary_op_func;
+
+	typedef std::function<void (const ::BinaryExpr* expr,
+				    shared_ptr<::hilti::Expression> dst,
+				    shared_ptr<::hilti::Expression> op1,
+				    shared_ptr<::hilti::Expression> op2)>
+		binary_op_func;
+
+	bool CompileOperator(const ::UnaryExpr* expr,  shared_ptr<::hilti::Expression> dst, ::TypeTag op, shared_ptr<::hilti::Instruction> ins);
+	bool CompileOperator(const ::UnaryExpr* expr,  shared_ptr<::hilti::Expression> dst, ::TypeTag op, unary_op_func func);
+	bool CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, shared_ptr<::hilti::Instruction> ins);
+	bool CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, binary_op_func func);
+
+	void UnsupportedExpression(const ::UnaryExpr* expr);
+	void UnsupportedExpression(const ::BinaryExpr* expr);
 };
 
 }

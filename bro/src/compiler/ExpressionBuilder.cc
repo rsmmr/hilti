@@ -9,6 +9,17 @@
 
 using namespace bro::hilti::compiler;
 
+#define UNARY_OP_FUNC \
+	[&] (const ::UnaryExpr* expr, \
+	     shared_ptr<::hilti::Expression> dst, \
+	     shared_ptr<::hilti::Expression> op) \
+
+#define BINARY_OP_FUNC \
+	[&] (const ::BinaryExpr* expr, \
+	     shared_ptr<::hilti::Expression> dst, \
+	     shared_ptr<::hilti::Expression> op1, \
+	     shared_ptr<::hilti::Expression> op2) \
+
 ExpressionBuilder::ExpressionBuilder(class ModuleBuilder* mbuilder)
 	: BuilderBase(mbuilder)
 	{
@@ -148,11 +159,83 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr)
 	return nullptr;
 	}
 
+void ExpressionBuilder::UnsupportedExpression(const ::UnaryExpr* expr)
+	{
+	Error(::util::fmt("unary %s not supported for operand of type %s",
+			  ::expr_name(expr->Tag()),
+			  ::type_name(expr->Op()->Type()->Tag())),
+	     expr);
+	}
+
+void ExpressionBuilder::UnsupportedExpression(const ::BinaryExpr* expr)
+	{
+	Error(::util::fmt("binary %s not supported for operands of types %s and %s",
+			  ::expr_name(expr->Tag()),
+			  ::type_name(expr->Op1()->Type()->Tag()),
+			  ::type_name(expr->Op2()->Type()->Tag())),
+	     expr);
+	}
+
+bool ExpressionBuilder::CompileOperator(const ::UnaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op, shared_ptr<::hilti::Instruction> ins)
+	{
+	if ( expr->Op()->Type()->Tag() != op )
+		return false;
+
+	auto hop = HiltiExpression(expr->Op());
+	Builder()->addInstruction(dst, ins, hop);
+	return true;
+	}
+
+bool ExpressionBuilder::CompileOperator(const ::UnaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op, unary_op_func func)
+	{
+	if ( expr->Op()->Type()->Tag() != op )
+		return false;
+
+	auto hop = HiltiExpression(expr->Op());
+	func(expr, dst, hop);
+	return true;
+	}
+
+bool ExpressionBuilder::CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, shared_ptr<::hilti::Instruction> ins)
+	{
+	if ( expr->Op1()->Type()->Tag() != op1 || expr->Op2()->Type()->Tag() != op2 )
+		return false;
+
+	auto hop1 = HiltiExpression(expr->Op1());
+	auto hop2 = HiltiExpression(expr->Op2());
+
+	Builder()->addInstruction(dst, ins, hop1, hop2);
+	return true;
+	}
+
+bool ExpressionBuilder::CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, binary_op_func func)
+	{
+	if ( expr->Op1()->Type()->Tag() != op1 || expr->Op2()->Type()->Tag() != op2 )
+		return false;
+
+	auto hop1 = HiltiExpression(expr->Op1());
+	auto hop2 = HiltiExpression(expr->Op2());
+
+	func(expr, dst, hop1, hop2);
+	return true;
+	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AddExpr* expr)
 	{
-	Error("no support yet for compiling AddExpr", expr);
-	return 0;
+	auto result = Builder()->addTmp("add", HiltiType(expr->Type()));
+	auto ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_TIME, ::TYPE_INTERVAL, ::hilti::instruction::time::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_INTERVAL, ::TYPE_INTERVAL, ::hilti::instruction::interval::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_STRING, ::TYPE_STRING, ::hilti::instruction::bytes::Concat);
+
+	if ( ! ok )
+		UnsupportedExpression(expr);
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AddToExpr* expr)
@@ -169,7 +252,27 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ArithCoerceEx
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AssignExpr* expr)
 	{
-	Error("no support yet for compiling AssignExpr", expr);
+	const ::Expr* lhs = expr->Op1();
+
+	if ( lhs->Tag() == EXPR_REF )
+		lhs = dynamic_cast<const ::RefExpr*>(lhs)->Op();
+
+	auto rhs = HiltiExpression(expr->Op2());
+
+	switch ( lhs->Tag() ) {
+	case EXPR_NAME:
+		{
+		auto nexpr = lhs->AsNameExpr();
+		auto id = nexpr->Id();
+		auto dst = ::hilti::builder::id::create(HiltiSymbol(id));
+		Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, rhs);
+		return dst;
+		}
+
+	default:
+		Error(::util::fmt("AssignExpr: no support for lhs of type %s yet", ::expr_name(lhs->Tag())), expr);
+	}
+
 	return 0;
 	}
 
@@ -305,35 +408,35 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NameExpr* exp
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NegExpr* expr)
 	{
-	auto type = expr->Type();
+	auto result = Builder()->addTmp("neg", HiltiType(expr->Type()));
+	bool ok = false;
 
-	auto result = Builder()->addTmp("neg", HiltiType(type));
-
-        switch ( type->Tag() ) {
-	case TYPE_DOUBLE:
-		Builder()->addInstruction(result,
-					  ::hilti::instruction::double_::Sub,
-					  ::hilti::builder::double_::create(0),
-					  HiltiExpression(expr->Op()));
-		break;
-
-	case TYPE_INTERVAL:
-		Builder()->addInstruction(result,
-					  ::hilti::instruction::interval::Sub,
-					  ::hilti::builder::interval::create((uint64_t)0),
-					  HiltiExpression(expr->Op()));
-		break;
-
-	case TYPE_INT:
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, UNARY_OP_FUNC
+		{
 		Builder()->addInstruction(result,
 					  ::hilti::instruction::integer::Sub,
 					  ::hilti::builder::integer::create(0),
-					  HiltiExpression(expr->Op()));
-		break;
+					  op);
+		});
 
-	default:
-	Error(::util::fmt("no support for compiling NotExpr for type %s", type_name(type->Tag())), expr);
-	}
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, UNARY_OP_FUNC
+		{
+		Builder()->addInstruction(result,
+					  ::hilti::instruction::integer::Sub,
+					  ::hilti::builder::integer::create(0),
+					  op);
+		});
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, UNARY_OP_FUNC
+		{
+		Builder()->addInstruction(result,
+					  ::hilti::instruction::double_::Sub,
+					  ::hilti::builder::double_::create(0),
+					  op);
+		});
+
+	if ( ! ok )
+		UnsupportedExpression(expr);
 
 	return result;
 	}
