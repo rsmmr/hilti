@@ -125,6 +125,11 @@ protected:
 	std::shared_ptr<::hilti::Expression> CreateBroType(const ::TableType* type);
 	std::shared_ptr<::hilti::Expression> CreateBroType(const ::TypeType* type);
 	std::shared_ptr<::hilti::Expression> CreateBroType(const ::VectorType* type);
+
+private:
+	std::shared_ptr<::hilti::Expression> BroInternalInt(std::shared_ptr<::hilti::Expression> val);
+	std::shared_ptr<::hilti::Expression> BroInternalDouble(std::shared_ptr<::hilti::Expression> val);
+
 };
 
 }

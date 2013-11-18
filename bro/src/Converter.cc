@@ -276,17 +276,17 @@ void ValueConverter::visit(::hilti::type::Double* d)
 
 void ValueConverter::visit(::hilti::type::Enum* e)
 	{
-	auto val = arg1();
+        auto val = arg1();
 	auto dst = arg2();
 	auto btype = arg3();
 
-	auto type_idx = type_converter->TypeIndex(val->type(), btype);
+        auto type_idx = type_converter->TypeIndex(val->type(), btype);
         auto type_idx_hlt = ::hilti::builder::integer::create(type_idx);
         auto args = ::hilti::builder::tuple::create( { val, type_idx_hlt } );
 	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 				  ::hilti::builder::id::create("LibBro::h2b_enum"), args);
 	setResult(true);
-        }
+	}
 
 void ValueConverter::visit(::hilti::type::String* s)
 	{

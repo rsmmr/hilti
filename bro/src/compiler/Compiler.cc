@@ -88,12 +88,19 @@ Compiler::module_list Compiler::CompileAll()
 
 		pushModuleBuilder(mbuilder);
 
-		auto module = mbuilder->Compile();
+        try {
+            auto module = mbuilder->Compile();
 
-		if ( ! module )
-			return Compiler::module_list();
+            if ( ! module )
+                return Compiler::module_list();
 
-		modules.push_back(module);
+            modules.push_back(module);
+        }
+
+        catch ( std::exception& e ) {
+            std::cerr << "Uncaught exception: " << e.what() << std::endl;
+            abort();
+        }
 
 		popModuleBuilder();
 

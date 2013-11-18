@@ -55,13 +55,13 @@ static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *
 	return &c->file_cookie;
 	}
 
-void* libbro_cookie_to_conn_val(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_cookie_to_conn_val(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto c = get_protocol_cookie(cookie, "$conn");
 	return c->analyzer->Conn()->BuildConnVal();
 	}
 
-void* libbro_cookie_to_file_val(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_cookie_to_file_val(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto c = get_file_cookie(cookie, "$conn");
 	auto f = c->analyzer->GetFile()->GetVal();
@@ -69,13 +69,13 @@ void* libbro_cookie_to_file_val(void* cookie, hlt_exception** excpt, hlt_executi
 	return f;
 	}
 
-void* libbro_cookie_to_is_orig(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_cookie_to_is_orig(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto c = get_protocol_cookie(cookie, "$is_orig");
 	return new Val(c->is_orig, TYPE_BOOL);
 	}
 
-void* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	const char* str = hlt_string_to_native(s, excpt, ctx);
 	Val* v = new StringVal(str); // copies data.
@@ -83,17 +83,17 @@ void* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_conte
 	return v;
 	}
 
-void* libbro_h2b_integer_signed(int64_t i, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_integer_signed(int64_t i, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new Val(i, TYPE_INT);
 	}
 
-void* libbro_h2b_integer_unsigned(uint64_t i, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_integer_unsigned(uint64_t i, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new Val(i, TYPE_COUNT);
 	}
 
-void* libbro_h2b_address(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_address(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
         if ( hlt_addr_is_v6(addr, excpt, ctx) )
 		{
@@ -107,22 +107,22 @@ void* libbro_h2b_address(hlt_addr addr, hlt_exception** excpt, hlt_execution_con
 		}
 	}
 
-void* libbro_h2b_double(double d, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_double(double d, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new Val(d, TYPE_DOUBLE);
 	}
 
-void* libbro_h2b_bool(int8_t b, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_bool(int8_t b, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new Val(b, TYPE_BOOL);
 	}
 
-void* libbro_h2b_count(uint64_t v, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_count(uint64_t v, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new Val(v, TYPE_COUNT);
 	}
 
-void* libbro_h2b_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	int len = hlt_bytes_len(b, excpt, ctx);
 	char data[len];
@@ -130,12 +130,12 @@ void* libbro_h2b_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_contex
 	return new StringVal(len, data); // copies data.
 	}
 
-void* libbro_h2b_time(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_time(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new Val(hlt_time_to_timestamp(t), TYPE_TIME);
 	}
 
-void* libbro_h2b_enum(const hlt_type_info* type, void* obj, uint64_t type_idx, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_h2b_enum(const hlt_type_info* type, void* obj, uint64_t type_idx, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	hlt_enum e = *((hlt_enum *) obj);
 
@@ -144,6 +144,57 @@ void* libbro_h2b_enum(const hlt_type_info* type, void* obj, uint64_t type_idx, h
 
 	return hlt_enum_has_val(e)
 		? new EnumVal(hlt_enum_value(e, excpt, ctx), et) : new EnumVal(lib_bro_enum_undef_val, et);
+	}
+
+::Val* libbro_h2b_enum_type(const hlt_type_info* type, void* obj, ::EnumType* etype, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	hlt_enum e = *((hlt_enum *) obj);
+
+	return hlt_enum_has_val(e)
+		? new EnumVal(hlt_enum_value(e, excpt, ctx), etype) : new EnumVal(lib_bro_enum_undef_val, etype);
+	}
+
+::Val* libbro_h2b_network(hlt_net n, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	uint8_t len = hlt_net_length(n, excpt, ctx);
+
+        if ( hlt_net_is_v6(n, excpt, ctx) )
+		{
+		struct in6_addr in6 = hlt_net_to_in6(n, excpt, ctx);
+		return new SubNetVal(IPPrefix(in6, len));
+		}
+	else
+		{
+		struct in_addr in4 = hlt_net_to_in4(n, excpt, ctx);
+		return new SubNetVal(IPPrefix(in4, len - 96));
+		}
+	}
+
+::Val* libbro_h2b_interval(hlt_interval i, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto nsecs = hlt_interval_nsecs(i, excpt, ctx);
+	return new ::IntervalVal(nsecs / 1e9, 1);
+	}
+
+::Val* libbro_h2b_regexp(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	bro::hilti::reporter::internal_error("libbro_h2b_regexp() not implemented");
+	return nullptr;
+	}
+
+::Val* libbro_h2b_port(hlt_port p, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	switch ( p.proto ) {
+	case HLT_PORT_TCP:
+		return new ::PortVal(p.port, ::TRANSPORT_TCP);
+
+	case HLT_PORT_UDP:
+		return new ::PortVal(p.port, ::TRANSPORT_UDP);
+
+	default:
+		bro::hilti::reporter::internal_error("unknown protocol in libbro_h2b_port");
+		return nullptr;
+	}
 	}
 
 hlt_bytes* libbro_b2h_string(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -162,6 +213,81 @@ uint64_t libbro_b2h_count(Val *val, hlt_exception** excpt, hlt_execution_context
 uint8_t libbro_b2h_bool(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return val->AsBool();
+	}
+
+hlt_addr libbro_b2h_address(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto addr = val->AsAddr();
+
+	switch ( addr.GetFamily() ) {
+	case ::IPv4:
+		{
+		struct in_addr in;
+		addr.CopyIPv4(&in);
+		return hlt_addr_from_in4(in, excpt, ctx);
+		}
+
+	case ::IPv6:
+		{
+		struct in6_addr in;
+		addr.CopyIPv6(&in);
+		return hlt_addr_from_in6(in, excpt, ctx);
+		}
+
+	default:
+		bro::hilti::reporter::internal_error("unknown addr type in libbro_b2h_address()");
+		return hlt_addr();
+	}
+	}
+
+hlt_net libbro_b2h_subnet(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto net = val->AsSubNet();
+
+	switch ( net.Prefix().GetFamily() ) {
+	case ::IPv4:
+		{
+		struct in_addr in;
+		net.Prefix().CopyIPv4(&in);
+		return hlt_net_from_in4(in, net.Length() + 96, excpt, ctx);
+		}
+
+	case ::IPv6:
+		{
+		struct in6_addr in;
+		net.Prefix().CopyIPv6(&in);
+		return hlt_net_from_in6(in, net.Length(), excpt, ctx);
+		}
+
+	default:
+		bro::hilti::reporter::internal_error("unknown net type in libbro_b2h_address()");
+		return hlt_net();
+	}
+	}
+
+
+hlt_port libbro_b2h_port(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto port = val->AsPortVal();
+
+	switch ( port->PortType() ) {
+			
+	case ::TRANSPORT_TCP:
+		return { (uint16_t)port->Port(), HLT_PORT_TCP };
+
+	case ::TRANSPORT_UDP:
+		return { (uint16_t)port->Port(), HLT_PORT_UDP };
+
+	default:
+		bro::hilti::reporter::internal_error("unknown prot in libbro_b2h_port()");
+		return hlt_port();
+	}
+	}
+
+hlt_regexp* libbro_b2h_pattern(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	bro::hilti::reporter::internal_error("libbro_b2h_pattern() not implemented");
+	return 0;
 	}
 
 static EventHandler no_handler("SENTINEL_libbro_raise_event");
@@ -234,6 +360,16 @@ void libbro_call_bif_void(hlt_bytes* name, const hlt_type_info* type, const void
 	Unref(result);
 	}
 
+int64_t libbro_bro_internal_int(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return val->InternalInt();
+	}
+
+double libbro_bro_internal_double(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return val->InternalDouble();
+	}
+
 struct bro_table_iterate_result {
 	::IterCookie* cookie;
 	::Val* kval;
@@ -286,6 +422,21 @@ void libbro_bro_table_insert(::TableVal* val, ::Val* k, ::Val* v, hlt_exception*
 	val->Assign(k, v);
 	}
 
+::ListVal* libbro_bro_list_new(hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new ListVal(::TYPE_ANY);
+	}
+
+void libbro_bro_list_append(::ListVal* lval, ::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	lval->Append(val);
+	}
+
+::Val* libbro_bro_list_index(::ListVal* lval, uint64_t idx)
+	{
+	return lval->Index(idx);
+	}
+
 ::TypeList* libbro_bro_list_type_new(::BroType* pure_type, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new ::TypeList(pure_type);
@@ -294,6 +445,133 @@ void libbro_bro_table_insert(::TableVal* val, ::Val* k, ::Val* v, hlt_exception*
 void libbro_bro_list_type_append(::TypeList* t, ::BroType* ntype, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	t->Append(ntype);
+	}
+
+::RecordVal* libbro_bro_record_new(::RecordType* rtype, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new RecordVal(rtype);
+	}
+
+void libbro_bro_record_assign(::RecordVal* rval, uint64_t idx, ::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	if ( ! val )
+			return;
+
+	rval->Assign(idx, val);
+	}
+
+::Val* libbro_bro_record_index(::RecordVal* rval, uint64_t idx)
+	{
+	return rval->Lookup(idx);
+	}
+
+::RecordType* libbro_bro_record_type_new(hlt_list* fields, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto decls = new type_decl_list;
+
+	hlt_iterator_list i = hlt_list_begin(fields, excpt, ctx);
+	hlt_iterator_list end = hlt_list_end(fields, excpt, ctx);
+
+	while ( ! hlt_iterator_list_eq(i, end, excpt, ctx) )
+		{
+		auto td = *(::TypeDecl**) hlt_iterator_list_deref(i, excpt, ctx);
+		decls->append(td);
+
+		hlt_iterator_list j = i;
+		i = hlt_iterator_list_incr(i, excpt, ctx);
+		GC_DTOR(j, hlt_iterator_list);
+		}
+
+	GC_DTOR(i, hlt_iterator_list);
+	GC_DTOR(end, hlt_iterator_list);
+
+	return new RecordType(decls);
+	}
+
+::TypeDecl* libbro_bro_record_typedecl_new(hlt_string fname, ::BroType* ftype, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto n = hlt_string_to_native(fname, excpt, ctx);
+	return new TypeDecl(ftype, n, 0, true);
+	}
+
+::VectorVal* libbro_bro_vector_new(::VectorType* vtype, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new VectorVal(vtype);
+	}
+
+void libbro_bro_vector_append(::VectorVal* vval, ::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	vval->Assign(vval->Size(), val);
+	}
+
+::VectorType* libbro_bro_vector_type_new(::BroType* ytype, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new VectorType(ytype);
+	}
+
+struct bro_vector_iterate_result {
+	::IterCookie* cookie;
+	::Val* val;
+};
+
+bro_vector_iterate_result libbro_bro_vector_iterate(::VectorVal* val, ::IterCookie* cookie)
+	{
+	intptr_t idx = (intptr_t) cookie;
+
+	if ( ! idx )
+		idx = 1;
+
+	if ( (idx - 1) >= val->Size() )
+		return { 0, 0 };
+
+	auto v = val->Lookup(idx - 1);
+
+	if ( v )
+		Ref(v);
+
+	return { (::IterCookie *) (idx + 1), v };
+	}
+
+::SubNetType* libbro_bro_subnet_type_new(hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new SubNetType();
+	}
+
+::EnumType* libbro_bro_enum_type_new(hlt_string module, hlt_string name, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto n = hlt_string_to_native(name, excpt, ctx);
+	auto m = hlt_string_to_native(module, excpt, ctx);
+
+	auto id = lookup_ID(n, m);
+
+	if ( id )
+		{
+		auto t = id->AsType();
+		assert(t);
+		Ref(t);
+		hlt_free(n);
+		hlt_free(m);
+		return t->AsEnumType();
+		}
+
+	auto etype = new EnumType(n);
+	hlt_free(n);
+	hlt_free(m);
+	return etype;
+	}
+
+void libbro_bro_enum_type_add_name(::EnumType* etype, hlt_string module, hlt_string name, uint64_t val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto n = hlt_string_to_native(name, excpt, ctx);
+	auto m = hlt_string_to_native(module, excpt, ctx);
+
+	auto id = ::lookup_ID(n, m);
+
+	if ( ! id )
+		etype->AddName(m, n, val);
+
+	hlt_free(n);
+	hlt_free(m);
 	}
 
 // User-visible Bro::* functions.
@@ -442,4 +720,6 @@ void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t e
 	GC_DTOR(start, hlt_iterator_bytes);
 	GC_DTOR(end, hlt_iterator_bytes);
 	}
+
 }
+

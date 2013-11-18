@@ -868,6 +868,13 @@ bool Manager::CompileBroScripts()
 			return false;
 			}
 
+		if ( pimpl->save_llvm )
+			{
+			ofstream out(::util::fmt("bro.%s.ll", m->id()->name()));
+			pimpl->hilti_context->printBitcode(lm, out);
+			out.close();
+			}
+
 		pimpl->llvm_modules.push_back(lm);
 		pimpl->hilti_modules.push_back(m);
 		}

@@ -124,7 +124,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::EnumType* type)
 		auto module = ::extract_module_name(name.c_str());
 		auto local = ::extract_var_name(name.c_str());
 
-		auto hn = ::util::fmt("%s_%s", module, local);
+		auto hn = ::util::fmt("%s", local);
 		auto id = ::hilti::builder::id::node(hn);
 
 		labels.push_back(std::make_pair(id, val));
@@ -200,7 +200,8 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 		fields.push_back(hf);
 		}
 
-	return ::hilti::builder::reference::type(::hilti::builder::struct_::type(fields));
+	auto stype = ::hilti::builder::struct_::type(fields);
+	return ::hilti::builder::reference::type(stype);
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::SubNetType* type)

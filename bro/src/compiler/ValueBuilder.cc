@@ -87,7 +87,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* v
 
 	case TYPE_FILE:
 		{
-		Error("no support yet for compiling Val of type TYPE_FUNC", val);
+		Error("no support yet for compiling Val of type TYPE_FILE", val);
 		return nullptr;
 		}
 

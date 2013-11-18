@@ -1,1 +1,15 @@
-{ 1: Foo at 1 }
+True
+-42
+42
+3.140000
+2013-11-16T06:00:09.000000000Z
+42.000000s
+Foo
+tcp
+80/tcp
+1.2.3.4
+2.3.4.0/27
+{ 1: foo, 2: bar }
+{ ccc, aaa, bbb }
+[0: aaa, 1: bbb, 2: ccc]
+<orig_h=1.2.3.4, orig_p=1024/tcp, resp_h=2.3.4.5, resp_p=8080/tcp>
