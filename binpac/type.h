@@ -326,7 +326,7 @@ public:
 };
 
 /// A type representing a non-existing return value.
-class Void : public binpac::Type
+class Void : public binpac::Type, public trait::Parseable
 {
 public:
     /// Constructor.

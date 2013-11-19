@@ -5,7 +5,6 @@
 # @TEST-EXEC:  echo 4234567890 | pac-driver-test %INPUT >>output
 # @TEST-EXEC:  btest-diff output
 #
-# @TEST-KNOWN-FAILURE: Parsing of void not yet supported.
 
 module Mini;
 
@@ -15,8 +14,8 @@ export type test = unit {
 
        switch ( self.a ) {
            b"1"       ->  : void { print "1"; }
-           b"2", b"3" ->  : void { print "2 or 3; }
-           *          ->  : void { print "something else; }
+           b"2", b"3" ->  : void { print "2 or 3"; }
+           *          ->  : void { print "something else"; }
            };
 
 };

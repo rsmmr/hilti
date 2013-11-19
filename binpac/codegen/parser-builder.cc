@@ -732,6 +732,9 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         if ( ! f->type() )
             continue;
 
+        if ( ast::isA<type::Void>(f->type()) )
+            continue;
+
         auto name = f->id()->name();
 
         if ( have.find(name) != have.end() )
@@ -1009,6 +1012,9 @@ void ParserBuilder::_startingProduction(shared_ptr<Production> p, shared_ptr<typ
     if ( ! (field && storingValues()) )
         return;
 
+    if ( ast::isA<type::Void>(field->type()) )
+        return;
+
     // Initalize the struct field with the HILTI default value if not already
     // set.
     auto not_set = builder()->addTmp("not_set", hilti::builder::boolean::type(), nullptr, true);
@@ -1042,7 +1048,7 @@ void ParserBuilder::_finishedProduction(shared_ptr<Production> p)
 
 void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value)
 {
-    if ( field ) {
+    if ( field && ! ast::isA<type::Void>(field->type()) ) {
 
         auto name = field->id()->name();
 
@@ -2981,6 +2987,11 @@ void ParserBuilder::visit(type::Time* t)
 
 void ParserBuilder::visit(type::Unit* u)
 {
+}
+
+void ParserBuilder::visit(type::Void* v)
+{
+    setResult(0);
 }
 
 void ParserBuilder::visit(type::unit::Item* i)
