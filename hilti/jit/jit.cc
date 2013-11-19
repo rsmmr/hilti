@@ -111,6 +111,9 @@ void* MemoryManager::lookupFunctionInTable(const std::string& name)
 
 void* MemoryManager::getPointerToNamedFunction(const std::string& name, bool abort_on_failure)
 {
+    // TODO: I don't think this is actually used anymore, and with LLVM 3.4
+    // not even called it seems. Remove.
+
     if ( _functions ) {
         for ( int i = 0; _functions[i].name; i++ ) {
             if ( name == _functions[i].name ) {
@@ -119,27 +122,6 @@ void* MemoryManager::getPointerToNamedFunction(const std::string& name, bool abo
             }
         }
     }
-
-    // Make sure the runtime uses the same memory functions/state as the main process.
-
-    if ( name == "malloc" )
-        return (void*)&malloc;
-
-    if ( name == "free" )
-        return (void*)&free;
-
-    if ( name == "calloc" )
-        return (void*)&calloc;
-
-    if ( name == "realloc" )
-        return (void*)&realloc;
-
-    if ( name == "strdup" )
-        return (void*)&strdup;
-
-    // TODO: Can we get rid of the whole hlt_init_from_state() by similarly
-    // mapping the relevant functions here? Maybe not, because internally
-    // libhilti will still call its own versions.
 
     return _mm->getPointerToNamedFunction(name, abort_on_failure);
 }

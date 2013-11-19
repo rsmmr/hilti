@@ -27,6 +27,7 @@ __attribute__ ((weak)) void __hlt_globals_dtor(struct __hlt_execution_context* c
 
 __attribute__ ((weak)) int64_t __hlt_globals_size()
 {
+    // fprintf(stderr, "X4 %p %p %p\n", _functions->__hlt_globals_size, &_functions, _functions);
     return _functions  && _functions->__hlt_globals_size ? (*_functions->__hlt_globals_size)() : 0;
 }
 

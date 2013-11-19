@@ -146,7 +146,7 @@ public:
     llvm::Module* linkModules(string output, std::list<llvm::Module*> modules,
                               std::list<string> libs,
                               path_list bcas = path_list(), path_list dylds = path_list(),
-                              bool add_stdlibs = true, bool add_sharedlibs = true);
+                              bool add_stdlibs = true, bool add_sharedlibs = false);
 
     /// Links a set of compiled BinPAC++ modules into a single LLVM module.
     /// All modules produced by compileModule() must be linked (and all

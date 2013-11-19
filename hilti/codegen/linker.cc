@@ -567,6 +567,15 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
     auto addr = llvm::ConstantExpr::getGetElementPtr(null, one);
     auto size = llvm::ConstantExpr::getPtrToInt(addr, llvm::Type::getIntNTy(ctx, 64));
 
+    // If a global_sizes() function already exists with weak linkage, replace
+    // it.
+    if ( auto old_func = dst->getFunction(symbols::FunctionGlobalsSize) ) {
+        if ( old_func->hasWeakLinkage() )
+            old_func->removeFromParent();
+        else
+            fatalError(::util::fmt("function %s already exists", symbols::FunctionGlobalsSize));
+    }
+
     auto gftype = llvm::FunctionType::get(llvm::Type::getIntNTy(ctx, 64), false);
     auto gfunc = llvm::Function::Create(gftype, llvm::Function::ExternalLinkage, symbols::FunctionGlobalsSize, dst);
     gfunc->setCallingConv(llvm::CallingConv::C);
