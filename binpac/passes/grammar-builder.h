@@ -48,6 +48,7 @@ private:
     std::ostream& _debug_out;
     int _in_decl;
     int _unit_counter = 1;
+    int _case_counter = 1;
     std::map<string, int> _counters;
 
     typedef std::map<shared_ptr<Node>, shared_ptr<Production>> production_map;

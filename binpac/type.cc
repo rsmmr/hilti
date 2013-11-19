@@ -1303,7 +1303,7 @@ shared_ptr<binpac::Type> unit::item::field::container::Vector::type()
     return unit::Item::type();
 }
 
-unit::item::field::switch_::Case::Case(const expression_list& exprs, shared_ptr<Item> item, const Location& l) : Node(l)
+unit::item::field::switch_::Case::Case(const expression_list& exprs, shared_ptr<type::unit::item::Field> item, const Location& l) : Node(l)
 {
     for ( auto e : exprs )
         _exprs.push_back(e);
@@ -1311,8 +1311,23 @@ unit::item::field::switch_::Case::Case(const expression_list& exprs, shared_ptr<
     for ( auto e : _exprs )
         addChild(e);
 
-    _item = item;
-    addChild(_item);
+    _items.push_back(item);
+    addChild(_items.front());
+}
+
+unit::item::field::switch_::Case::Case(const expression_list& exprs, const unit_field_list& items, const Location& l) : Node(l)
+{
+    for ( auto e : exprs )
+        _exprs.push_back(e);
+
+    for ( auto e : _exprs )
+        addChild(e);
+
+    for ( auto i : items )
+        _items.push_back(i);
+
+    for ( auto i : _items )
+        addChild(i);
 }
 
 bool unit::item::field::switch_::Case::default_() const
@@ -1330,9 +1345,14 @@ expression_list unit::item::field::switch_::Case::expressions() const
     return exprs;
 }
 
-shared_ptr<unit::Item> unit::item::field::switch_::Case::item() const
+unit_field_list unit::item::field::switch_::Case::items() const
 {
-    return _item;
+    unit_field_list items;
+
+    for ( auto i : _items )
+        items.push_back(i);
+
+    return items;
 }
 
 unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, const hook_list& hooks, const Location& l)
@@ -1348,7 +1368,8 @@ unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& 
         addChild(c);
 
     for ( auto c : _cases )
-        c->item()->scope()->setParent(scope());
+        for ( auto i : c->items() )
+            i->scope()->setParent(scope());
 }
 
 shared_ptr<Expression> unit::item::field::Switch::expression() const
@@ -1457,9 +1478,9 @@ static void _flatten(shared_ptr<type::unit::Item> i, unit_item_list* dst)
     auto switch_ = ast::tryCast<type::unit::item::field::Switch>(i);
 
     if ( switch_ ) {
-        for ( auto c : switch_->cases() ) {
-            _flatten(c->item(), dst);
-        }
+        for ( auto c : switch_->cases() )
+            for ( auto i : c->items() )
+                _flatten(i, dst);
 
         // return;
     }

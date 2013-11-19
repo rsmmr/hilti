@@ -41,6 +41,7 @@ namespace binpac {
     typedef std::list<shared_ptr<Type>> type_list;
     typedef std::list<shared_ptr<Hook>> hook_list;
     typedef std::list<shared_ptr<type::unit::Item>> unit_item_list;
+    typedef std::list<shared_ptr<type::unit::item::Field>> unit_field_list;
     typedef std::list<shared_ptr<type::function::Parameter>> parameter_list;
     typedef std::list<string> string_list;
     typedef std::list<string> path_list;

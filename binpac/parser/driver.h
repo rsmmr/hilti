@@ -66,6 +66,7 @@ struct yystype_binpac {
     binpac::type_list types;
     binpac::hook_list hooks;
     binpac::unit_item_list unit_items;
+    binpac::unit_field_list unit_fields;
     binpac::type::unit::item::field::Switch::case_list switch_cases;
     binpac::type::Integer::bits_list bits;
     binpac::ctor::RegExp::pattern_list re_patterns;

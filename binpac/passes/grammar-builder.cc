@@ -161,11 +161,11 @@ void GrammarBuilder::visit(type::unit::item::field::Switch* s)
 
     for ( auto c : s->cases() ) {
         if ( c->default_() ) {
-            default_ = compileOne(c->item());
+            default_ = compileOne(c);
             continue;
         }
 
-        auto pcase = std::make_pair(c->expressions(), compileOne(c->item()));
+        auto pcase = std::make_pair(c->expressions(), compileOne(c));
         cases.push_back(pcase);
     }
 
@@ -211,6 +211,15 @@ void GrammarBuilder::visit(type::unit::item::field::switch_::Case* c)
 {
     if ( ! _in_decl )
         return;
+
+    auto prods = Production::production_list();
+
+    for ( auto i : c->items() )
+        prods.push_back(compileOne(i));
+
+    auto name = util::fmt("case%d", _case_counter++);
+    auto seq = std::make_shared<production::Sequence>(name, prods, nullptr, c->location());
+    setResult(seq);
 }
 
 void GrammarBuilder::visit(type::unit::item::field::container::List* l)

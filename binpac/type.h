@@ -1503,7 +1503,16 @@ public:
     /// item: The item implementing the case.
     ///
     /// l: Location associated with the case.
-    Case(const expression_list& exprs, shared_ptr<Item> item, const Location& l=Location::None);
+    Case(const expression_list& exprs, shared_ptr<type::unit::item::Field> item, const Location& l=Location::None);
+
+    /// Constructor.
+    ///
+    /// exprs: Expression associated with the case. Empty to mark the default case.
+    ///
+    /// item: A set of items implementing the case.
+    ///
+    /// l: Location associated with the case.
+    Case(const expression_list& exprs, const unit_field_list& items, const Location& l=Location::None);
 
     /// Returns the case's expression.
     expression_list expressions() const;
@@ -1511,14 +1520,14 @@ public:
     /// Returns true if this is the default case.
     bool default_() const;
 
-    /// Returns the case's implementation item.
-    shared_ptr<Item> item() const;
+    /// Returns the case's implementation items.
+    unit_field_list items() const;
 
     ACCEPT_VISITOR_ROOT();
 
 private:
     std::list<node_ptr<Expression>> _exprs;
-    node_ptr<Item> _item;
+    std::list<node_ptr<type::unit::item::Field>> _items;
 };
 
 }
