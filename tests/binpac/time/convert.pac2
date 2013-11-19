@@ -1,0 +1,27 @@
+#
+# @TEST-EXEC:  printf 1384839809 | pac-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: time only supports static integer or double numbers
+#
+
+module Mini;
+
+import BinPAC;
+
+global testtime_uint: uint64 = 1384839809;
+global testtime: time = time(testtime_uint);
+
+global testtime_int: int64 = 1384839809;
+global testtime2: time = time(testtime_int);
+
+print testtime;
+print testtime2;
+
+export type test = unit {
+	ts : bytes &length=10 &convert=time($$.to_uint());
+
+	on %done {
+		print self;
+	}
+};
