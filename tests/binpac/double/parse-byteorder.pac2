@@ -11,7 +11,7 @@ import BinPAC;
 
 export type test = unit {
 	f1: double &byteorder=BinPAC::ByteOrder::Big;
-	f1: double &byteorder=BinPAC::ByteOrder::Little;
+	f2: double &byteorder=BinPAC::ByteOrder::Little;
 
 	on %done {
 		print self;
