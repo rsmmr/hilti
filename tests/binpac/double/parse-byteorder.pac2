@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf '\x40\x09\x21\xfb\x54\x44\x2d\x18\x18\x2d\x44\x54\xfb\x21\x09\x40' | pac-driver-test %INPUT >output
+# @TEST-EXEC:  printf '\x18\x2d\x44\x54\xfb\x21\x09\x40\x40\x09\x21\xfb\x54\x44\x2d\x18' | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
 # @TEST-KNOWN-FAILURE: byteorder attribute not supported for double
