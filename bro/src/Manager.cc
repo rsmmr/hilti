@@ -148,9 +148,10 @@ struct bro::hilti::Pac2EventInfo
 	typedef std::list<shared_ptr<Pac2ExpressionAccessor>> accessor_list;
 
 	// Information parsed directly from the *.evt file.
-	string file;            // The path of the *.evt file we parsed this from.
+	string file;		// The path of the *.evt file we parsed this from.
 	string name;		// The name of the event.
 	string path;		// The hook path as specified in the evt file.
+	string condition;	// Condition that must be true for the event to trigger.
 	std::list<string> exprs;	// The argument expressions.
 	string hook;		// The name of the hook triggering the event.
 	string location;	// Location string where event is defined.
@@ -1695,6 +1696,7 @@ shared_ptr<Pac2EventInfo> Manager::ParsePac2EventSpec(const string& chunk)
 	string path;
 	string name;
 	string expr;
+	string cond;
 
 	size_t i = 0;
 
@@ -1703,6 +1705,20 @@ shared_ptr<Pac2EventInfo> Manager::ParsePac2EventSpec(const string& chunk)
 
 	if ( ! extract_id(chunk, &i, &path) )
 		return 0;
+
+	if ( looking_at(chunk, i, "if") )
+		{
+		eat_token(chunk, &i, "if");
+
+		if ( ! eat_token(chunk, &i, "(") )
+			return 0;
+
+		if ( ! extract_expr(chunk, &i, &cond) )
+			return 0;
+
+		if ( ! eat_token(chunk, &i, ")") )
+			return 0;
+		}
 
 	if ( ! eat_token(chunk, &i, "->") )
 		return 0;
@@ -1757,6 +1773,7 @@ shared_ptr<Pac2EventInfo> Manager::ParsePac2EventSpec(const string& chunk)
 	ev->name = name;
 	ev->path = path;
 	ev->exprs = exprs;
+	ev->condition = cond;
 	ev->location = reporter::current_location();
 
 	// These are set later.
@@ -1880,6 +1897,29 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 
 	ev->minfo->pac2_module->import(ev->unit_module->id());
 
+	auto body = std::make_shared<::binpac::statement::Block>(ev->minfo->pac2_module->body()->scope());
+
+	// If the event comes with a condition, evaluate that first.
+	if ( ev->condition.size() )
+		{
+		auto cond = pimpl->pac2_context->parseExpression(ev->condition);
+
+		if ( ! cond )
+			{
+			reporter::error(::util::fmt("error parsing conditional expression '%s'", ev->condition));
+			return false;
+			}
+
+		::binpac::expression_list args = { cond };
+		auto not_ = std::make_shared<::binpac::expression::UnresolvedOperator>(::binpac::operator_::Not, args);
+		auto return_ = std::make_shared<::binpac::statement::Return>(nullptr);
+		auto if_ = std::make_shared<::binpac::statement::IfElse>(not_, return_);
+
+		body->addStatement(if_);
+		}
+
+	// Raise the event.
+
 	::binpac::expression_list args_tuple = { id_expr("self") };
 	auto args = std::make_shared<::binpac::expression::Constant>(std::make_shared<::binpac::constant::Tuple>(args_tuple));
 
@@ -1887,7 +1927,6 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 	::binpac::expression_list op_args = { id_expr(raise_name), args };
 	auto call = std::make_shared<::binpac::expression::UnresolvedOperator>(::binpac::operator_::Call, op_args);
 	auto stmt = std::make_shared<::binpac::statement::Expression>(call);
-	auto body = std::make_shared<::binpac::statement::Block>(ev->minfo->pac2_module->body()->scope());
 
 	body->addStatement(stmt);
 
