@@ -19,6 +19,7 @@ shared_ptr<hilti::Type> TypeBuilder::Compile(const ::BroType* type)
 	{
 	switch ( type->Tag() ) {
 	case TYPE_ADDR:
+	case TYPE_ANY:
 	case TYPE_BOOL:
 	case TYPE_COUNT:
 	case TYPE_COUNTER:
@@ -76,6 +77,9 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 	case TYPE_ADDR:
 		return ::hilti::builder::address::type();
 
+	case TYPE_ANY:
+		return ::hilti::builder::caddr::type();
+
 	case TYPE_BOOL:
 		return ::hilti::builder::boolean::type();
 
@@ -114,6 +118,12 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::EnumType* type)
 	{
+	auto idx = type->GetTypeID() ? string(type->GetTypeID())
+				     : ::util::fmt("enum_%p", type);
+
+	if ( auto t = ModuleBuilder()->lookupNode("enum-type", idx) )
+		return ast::checkedCast<::hilti::Type>(t);
+
 	::hilti::builder::enum_::label_list labels;
 
 	for ( auto i : type->Names() )
@@ -130,12 +140,15 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::EnumType* type)
 		labels.push_back(std::make_pair(id, val));
 		}
 
-	return ::hilti::builder::enum_::type(labels);
+	auto etype = ::hilti::builder::enum_::type(labels);
+	ModuleBuilder()->cacheNode("enum-type", idx, etype);
+	ModuleBuilder()->addType(idx, etype);
+	return etype;
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FileType* type)
 	{
-	return ::hilti::builder::file::type();
+	return ::hilti::builder::reference::type(::hilti::builder::file::type());
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
@@ -186,6 +199,12 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::OpaqueType* type)
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 	{
+	auto idx = type->GetTypeID() ? string(type->GetTypeID())
+				     : ::util::fmt("struct_%p", type);
+
+	if ( auto t = ModuleBuilder()->lookupNode("struct-type", idx) )
+		return ast::checkedCast<::hilti::Type>(t);
+
 	::hilti::builder::struct_::field_list fields;
 
 	for ( int i = 0; i < type->NumFields(); i++ )
@@ -201,7 +220,11 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 		}
 
 	auto stype = ::hilti::builder::struct_::type(fields);
-	return ::hilti::builder::reference::type(stype);
+	auto rtype = ::hilti::builder::reference::type(stype);
+
+	ModuleBuilder()->cacheNode("struct-type", idx, rtype);
+	ModuleBuilder()->addType(idx, stype);
+	return rtype;
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::SubNetType* type)

@@ -388,19 +388,14 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NameExpr* exp
 	{
 	auto id = expr->Id();
 
-	if ( id->IsGlobal() )
+	if ( id->IsGlobal() && (id->IsConst() || id->Type()->Tag() == TYPE_FUNC) )
 		{
-                auto val = id->ID_Val();
+		// TODO: This is technically not correct for global
+		// functions; they aren't constants. If somebody reassigs a
+		// global function this will not account for that.
+		auto val = id->ID_Val();
 		assert(val);
-
-		if ( id->IsConst() )
-			return HiltiValue(val);
-
-		// TODO: This is technically not correct as global functions
-		// aren't constants. If somebody reassigs a global function
-		// this will not account for that.
-		if ( val->Type()->Tag() == TYPE_FUNC )
-			return HiltiValue(val);
+		return HiltiValue(val);
 		}
 
 	return ::hilti::builder::id::create(HiltiSymbol(id));

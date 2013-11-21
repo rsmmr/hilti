@@ -1,4 +1,4 @@
-					
+
 #include <Traverse.h>
 #include <Func.h>
 #undef List
@@ -31,6 +31,7 @@ public:
 	bool Traverse();
 
 	std::list<const Func *> Functions(const string& ns);
+	std::list<const ::ID *> Globals(const string& ns);
 
 protected:
 	TraversalCode PreID(const ::ID* id) override;
@@ -78,6 +79,44 @@ std::list<const Func *> ModuleBuilderCallback::Functions(const string& ns)
 	});
 
 	return functions;
+	}
+
+std::list<const ::ID *> ModuleBuilderCallback::Globals(const string& ns)
+	{
+	std::list<const ::ID *> globals;
+	std::set<const ::ID *>  sglobals;
+
+	if ( ns != "GLOBAL" )
+		// FIXME: Remove once we can compile all globals.
+		return globals;
+
+	auto n = namespaces.find(ns);
+
+	if ( n == namespaces.end() )
+		return globals;
+
+	for ( auto id : *(*n).second )
+		{
+		if ( ! id->IsGlobal() )
+			continue;
+
+		if ( id->HasVal() && id->ID_Val()->Type()->Tag() == TYPE_FUNC )
+			continue;
+
+		if ( id->AsType() )
+			continue;
+
+		sglobals.insert(id);
+		}
+
+	for ( auto id : sglobals )
+		globals.push_back(id);
+
+	globals.sort([](const ::ID* a, const ::ID* b) -> bool {
+		return strcmp(a->Name(), b->Name()) < 0;
+	});
+
+	return globals;
 	}
 
 TraversalCode ModuleBuilderCallback::PreID(const ::ID* id)
@@ -134,6 +173,12 @@ shared_ptr<::hilti::Module> ModuleBuilder::Compile()
 
 	try
 		{
+		for ( auto id : callback->Globals(ns) )
+			{
+			auto init = id->HasVal() ? HiltiValue(id->ID_Val()) : nullptr;
+			addGlobal(HiltiSymbol(id), HiltiType(id->Type()), init);
+			}
+
 		for ( auto f : callback->Functions(ns) )
 			CompileFunction(f);
 		}
@@ -366,8 +411,16 @@ shared_ptr<::hilti::Expression> ModuleBuilder::DeclareFunction(const Func* func)
 
 shared_ptr<::hilti::Expression> ModuleBuilder::DeclareScriptFunction(const ::BroFunc* func)
 	{
-	Error("ModuleBuilder::DeclareScriptFunction not yet implemented");
-	return nullptr;
+	auto name = Compiler()->HiltiSymbol(func, module());
+
+	// We can have multiple "anonymous-function"s.
+	if ( string(func->Name()) == "anonymous-function" )
+		name += ::util::fmt("_%p", func);
+
+	auto type = HiltiType(func->FType());
+
+	declareFunction(::hilti::builder::id::node(name), ast::checkedCast<::hilti::type::Function>(type));
+	return ::hilti::builder::id::create(name);
 	}
 
 shared_ptr<::hilti::Expression> ModuleBuilder::DeclareEvent(const ::BroFunc* event)

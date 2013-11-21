@@ -48,7 +48,7 @@ shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val)
 
 	case TYPE_PORT:
 		return Compile(static_cast<const ::PortVal*>(val));
-
+ 
 	case TYPE_RECORD:
 		return Compile(static_cast<const ::RecordVal*>(val));
 
@@ -129,7 +129,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::EnumVal* val)
 	{
 	auto etype = HiltiType(val->Type());
 	auto label = val->Type()->AsEnumType()->Lookup(val->AsEnum());
-        auto id = ::hilti::builder::id::node(label);
+        auto id = ::hilti::builder::id::node(::extract_var_name(label));
 	return ::hilti::builder::enum_::create(id, etype);
         }
 
@@ -240,8 +240,9 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 			}
 
 		auto htype = HiltiType(val->Type());
-		auto stype = ::ast::checkedCast<::hilti::type::Reference>(htype);
-		return ::hilti::builder::set::create(true, stype->argType(), elems);
+		auto rtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
+		auto stype = ::ast::checkedCast<::hilti::type::Set>(rtype->argType());
+		return ::hilti::builder::set::create(stype->argType(), elems);
 		}
 
 	else
@@ -273,8 +274,9 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 			}
 
 		auto htype = HiltiType(val->Type());
-		auto mtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
-		return ::hilti::builder::map::create(mtype->argType(), elems);
+		auto rtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
+		auto mtype = ::ast::checkedCast<::hilti::type::Map>(rtype->argType());
+		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), elems);
 		}
 	}
 
