@@ -228,6 +228,7 @@ protected:
    void visit(type::Enum* t) override;
    void visit(type::Exception* t) override;
    void visit(type::File* t) override;
+   void visit(type::Function* t) override;
    void visit(type::IOSource* t) override;
    void visit(type::Integer* t) override;
    void visit(type::Interval* t) override;

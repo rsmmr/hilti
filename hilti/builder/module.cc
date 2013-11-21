@@ -654,6 +654,7 @@ shared_ptr<hilti::expression::Type> ModuleBuilder::addType(shared_ptr<hilti::ID>
         _addDecl(id, type, "type", &_globals, decl);
     }
 
+    type->setID(id);
     return std::make_shared<hilti::expression::Type>(decl->type(), l);
 }
 

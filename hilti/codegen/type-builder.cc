@@ -746,6 +746,16 @@ void TypeBuilder::visit(type::File* t)
     setResult(ti);
 }
 
+void TypeBuilder::visit(type::Function* t)
+{
+    auto ftype = cg()->llvmFunctionType(t->sharedPtr<type::Function>());
+
+    TypeInfo* ti = new TypeInfo(t);
+    ti->id = HLT_TYPE_FUNCTION;
+    ti->init_val = cg()->llvmConstNull(cg()->llvmTypePtr(ftype));
+    setResult(ti);
+}
+
 void TypeBuilder::visit(type::IOSource* t)
 {
     TypeInfo* ti = new TypeInfo(t);

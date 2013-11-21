@@ -139,18 +139,18 @@ type::trait::Parameterized::parameter_list type::TypedValueType::parameters() co
 }
 
 type::Function::Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l)
-    : hilti::Type(l), ast::type::mixin::Function<AstInfo>(this, result, args)
+    : ValueType(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
     _cc = cc;
     _plusone = true;
 }
 
 type::Function::Function(const Location& l)
-    : hilti::Type(l),
+    : ValueType(l),
     ast::type::mixin::Function<AstInfo>(this, std::make_shared<function::Result>(std::make_shared<Void>(), false, l), parameter_list())
 {
     setWildcard(true);
-    _cc = function::CallingConvention::DEFAULT; // Doesn't matter.
+    _cc = function::CallingConvention::HILTI;
 }
 
 type::function::Parameter::Parameter(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value, Location l)

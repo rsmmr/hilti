@@ -1306,40 +1306,54 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Value* init, bool reu
     return llvmAddTmp(name, init->getType(), init, reuse);
 }
 
-llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, parameter_list params, bool internal, type::function::CallingConvention cc, bool skip_ctx)
+llvm::FunctionType* CodeGen::llvmFunctionType(shared_ptr<type::Function> ftype)
 {
-    auto llvm_linkage = internal ? llvm::Function::InternalLinkage : llvm::Function::ExternalLinkage;
-    auto llvm_cc = llvm::CallingConv::Fast;
-    auto orig_rtype = rtype;
+    auto t = llvmAdaptFunctionArgs(ftype);
+    return abi()->createFunctionType(t.first, t.second, ftype->callingConvention());
+}
 
+llvm::CallingConv::ID CodeGen::llvmCallingConvention(type::function::CallingConvention cc)
+{
     // Determine the function's LLVM calling convention.
     switch ( cc ) {
      case type::function::HILTI:
      case type::function::HOOK:
-        llvm_cc = llvm::CallingConv::Fast;
-        break;
+        return llvm::CallingConv::Fast;
 
      case type::function::HILTI_C:
-        llvm_cc = llvm::CallingConv::C;
-        break;
+        return llvm::CallingConv::C;
 
      case type::function::C:
-        llvm_cc = llvm::CallingConv::C;
-        break;
+        return llvm::CallingConv::C;
 
      default:
-        internalError("unknown calling convention in llvmAddFunction");
+        internalError("unknown calling convention in llvmCallingConvention");
     }
 
-    // See if we know that function already.
-    auto func = _module->getFunction(name);
+    // Can't be reached.
+    assert(false);
+    return llvm::CallingConv::Fast;
+}
 
-    if ( func ) {
-        // Already created. But make sure cc and linkage are right.
-        func->setCallingConv(llvm_cc);
-        func->setLinkage(llvm_linkage);
-        return func;
-    }
+std::pair<llvm::Type*, std::vector<std::pair<string, llvm::Type*>>>
+CodeGen::llvmAdaptFunctionArgs(shared_ptr<type::Function> ftype)
+{
+    parameter_list params;
+
+    for ( auto p : ftype->parameters() )
+        params.push_back(make_pair(p->id()->name(), p->type()));
+
+    auto rtype = llvmType(ftype->result()->type());
+    auto cc = ftype->callingConvention();
+
+    return llvmAdaptFunctionArgs(rtype, params, cc, false);
+}
+
+std::pair<llvm::Type*, std::vector<std::pair<string, llvm::Type*>>>
+CodeGen::llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::function::CallingConvention cc, bool skip_ctx)
+{
+    auto llvm_cc = llvmCallingConvention(cc);
+    auto orig_rtype = rtype;
 
     std::vector<std::pair<string, llvm::Type*>> llvm_args;
 
@@ -1438,7 +1452,27 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
         internalError("unknown calling convention in llvmAddFunction");
     }
 
-    func = abi()->createFunction(name, rtype, llvm_args, llvm_linkage, _module, cc);
+    return std::make_tuple(rtype, llvm_args);
+}
+
+llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, parameter_list params, bool internal, type::function::CallingConvention cc, bool skip_ctx)
+{
+    auto llvm_linkage = internal ? llvm::Function::InternalLinkage : llvm::Function::ExternalLinkage;
+    auto llvm_cc = llvmCallingConvention(cc);
+
+    // See if we know that function already.
+    auto func = _module->getFunction(name);
+
+    if ( func ) {
+        // Already created. But make sure cc and linkage are right.
+        func->setCallingConv(llvm_cc);
+        func->setLinkage(llvm_linkage);
+        return func;
+    }
+
+    auto t = llvmAdaptFunctionArgs(rtype, params, cc, skip_ctx);
+
+    func = abi()->createFunction(name, t.first, t.second, llvm_linkage, _module, cc);
     func->setCallingConv(llvm_cc);
 
     return func;
@@ -3006,15 +3040,14 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
 
     // Apply calling convention.
     auto orig_args = llvm_args;
-    auto func = llvm::cast<llvm::Function>(llvm_func);
-    auto rtype = func->getReturnType();
 
     if ( cleanup_precall && _functions.back()->dtors_after_call ) {
         llvmBuildInstructionCleanup();
         _functions.back()->dtors_after_call = false;
     }
 
-    auto result = abi()->createCall(func, llvm_args, cc);
+    auto t = llvmAdaptFunctionArgs(ftype);
+    auto result = abi()->createCall(llvm_func, llvm_args, t.first, t.second, ftype->callingConvention());
 
     if ( ! cleanup_precall && _functions.back()->dtors_after_call ) {
         llvmBuildInstructionCleanup();

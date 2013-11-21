@@ -24,8 +24,11 @@ public:
    /// XXX
    virtual llvm::Function* createFunction(const string& name, llvm::Type* rtype, const arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc) = 0;
 
+   // XXX
+   virtual llvm::FunctionType* createFunctionType(llvm::Type* rtype, const ABI::arg_list& args, type::function::CallingConvention cc) = 0;
+
    /// XXX
-   virtual llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args, type::function::CallingConvention cc) = 0;
+   virtual llvm::Value* createCall(llvm::Value *callee, std::vector<llvm::Value *> args, llvm::Type* rtype, const arg_list& targs, type::function::CallingConvention cc) = 0;
 
    /// XXX
    CodeGen* cg() const { return _cg; }
@@ -48,7 +51,7 @@ protected:
    ABI() {}
 
    typedef std::vector<llvm::Type*> argument_type_list;
-   ffi_cif* getCIF(const string& name, llvm::Type* rtype, const ABI::argument_type_list& args);
+   ffi_cif* getCIF(llvm::Type* rtype, const ABI::argument_type_list& args);
 
    llvm::Type* mapToIntType(llvm::StructType* stype);
 
@@ -72,7 +75,8 @@ public:
    X86_64(Flavor flavor) { _flavor = flavor; }
 
    llvm::Function* createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc) override;
-   llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args, type::function::CallingConvention cc) override;
+   llvm::FunctionType* createFunctionType(llvm::Type* rtype, const arg_list& args, type::function::CallingConvention cc) override;
+   llvm::Value* createCall(llvm::Value *callee, std::vector<llvm::Value *> args, llvm::Type* rtype, const arg_list& targs, type::function::CallingConvention cc) override;
 
    string dataLayout() const override;
 
@@ -84,8 +88,11 @@ private:
        std::vector<llvm::Type*> arg_types; // Final ABI type of argument (not yet a pointer if passed in mem).
    };
 
-   ClassifiedArguments classifyArguments(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc);
+   ClassifiedArguments classifyArguments(const string& name, llvm::Type* rtype, const ABI::arg_list& args, type::function::CallingConvention cc);
    ClassifiedArguments classifyArguments(const string& name); // The other variant must have been called for the same name already.
+
+   std::tuple<llvm::FunctionType*, ClassifiedArguments, std::vector<string>, std::vector<int>, int>
+       createFunctionTypeInternal(llvm::Type* rtype, const ABI::arg_list& args, type::function::CallingConvention cc, const string& name);
 
    Flavor _flavor;
 

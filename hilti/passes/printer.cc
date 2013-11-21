@@ -506,7 +506,28 @@ void Printer::visit(type::function::Result* r)
 void Printer::visit(type::Function * t)
 {
     Printer& p = *this;
-    p << "<function>";
+
+    switch ( t->callingConvention() ) {
+     case type::function::HILTI_C:
+        p << "\"C-HILTI\" ";
+        break;
+
+     case type::function::C:
+        p << "\"C\" ";
+        break;
+
+     case type::function::HILTI:
+     case type::function::HOOK:
+        // Default.
+        break;
+
+     default:
+        internalError("unknown calling convention");
+    }
+
+    p << "function(";
+    printList(t->parameters(), ", ");
+    p << ") -> " << t->result();
 }
 
 void Printer::visit(type::Hook* t)

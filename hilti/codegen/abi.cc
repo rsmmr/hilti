@@ -119,7 +119,7 @@ static ffi_type* _llvmToCif(CodeGen* cg, llvm::Type* type)
     return 0;
 }
 
-ffi_cif* ABI::getCIF(const string& name, llvm::Type* rtype, const argument_type_list& args)
+ffi_cif* ABI::getCIF(llvm::Type* rtype, const argument_type_list& args)
 {
     assert(rtype);
 
@@ -157,7 +157,7 @@ ffi_cif* ABI::getCIF(const string& name, llvm::Type* rtype, const argument_type_
 // are passed in registers and which aren't, but we don't do the register
 // assignment ourselves but hope that LLVM takes care of that correctly and
 // in alignment with what the FFI code would do ...
-abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
+abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& name, llvm::Type* rtype, const ABI::arg_list& args, type::function::CallingConvention cc)
 {
     ClassifiedArguments cargs;
 
@@ -166,7 +166,7 @@ abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& na
     for ( auto a : args )
         arg_types.push_back(a.second);
 
-    auto cif = getCIF(name, rtype, arg_types);
+    auto cif = getCIF(rtype, arg_types);
     auto ffi_avn = cif->nargs;
     auto ffi_arg_types = cif->arg_types;
 
@@ -230,7 +230,9 @@ abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& na
         cargs.arg_types.push_back(new_llvm_type);
     }
 
-    _classified_arguments.insert(std::make_pair(name, cargs));
+    if ( name.size() )
+        _classified_arguments.insert(std::make_pair(name, cargs));
+
     return cargs;
 }
 
@@ -260,11 +262,18 @@ llvm::Type* ABI::mapToIntType(llvm::StructType* stype)
     return rtype;
 }
 
+llvm::FunctionType* abi::X86_64::createFunctionType(llvm::Type* rtype, const ABI::arg_list& args, type::function::CallingConvention cc)
+{
+    auto t = createFunctionTypeInternal(rtype, args, cc, "");
+    return std::get<0>(t);
+}
+
 /// FIXME: We currently just generally pass structures in memory for HILTI
 /// calling convention. For HILTI_C cc we leave them untouched.
-llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
+std::tuple<llvm::FunctionType*, abi::X86_64::ClassifiedArguments, std::vector<string>, std::vector<int>, int>
+abi::X86_64::createFunctionTypeInternal(llvm::Type* rtype, const ABI::arg_list& args, type::function::CallingConvention cc, const string& name)
 {
-    auto cargs = classifyArguments(name, rtype, args, linkage, module, cc);
+    auto cargs = classifyArguments(name, rtype, args, cc);
 
     std::vector<llvm::Type*> ntypes;
     std::vector<string> nnames;
@@ -312,6 +321,18 @@ llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtyp
     }
 
     auto ftype = llvm::FunctionType::get(rtype, ntypes, false);
+    return std::make_tuple(ftype, cargs, nnames, byvals, arg_base);
+}
+
+llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
+{
+    auto t = createFunctionTypeInternal(rtype, args, cc, name);
+    auto ftype = std::get<0>(t);
+    auto cargs = std::get<1>(t);
+    auto nnames = std::get<2>(t);
+    auto byvals = std::get<3>(t);
+    auto arg_base = std::get<4>(t);
+
     auto func = llvm::Function::Create(ftype, linkage, name, module);
 
     if ( cargs.return_in_mem ) {
@@ -331,9 +352,9 @@ llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtyp
     return func;
 }
 
-llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::Value *> args, type::function::CallingConvention cc)
+llvm::Value* abi::X86_64::createCall(llvm::Value *callee, std::vector<llvm::Value *> args, llvm::Type* rtype, const arg_list& targs, type::function::CallingConvention cc)
 {
-    auto cargs = classifyArguments(callee->getName());
+    auto cargs = classifyArguments("", rtype, targs, cc);
 
     std::vector<llvm::Value*> nargs;
 
@@ -372,7 +393,11 @@ llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::V
         }
     }
 
-    llvm::Value* result = cg()->llvmCreateCall(callee, nargs);
+    auto ci = cg()->llvmCreateCall(callee, nargs);
+    auto llvm_cc = cg()->llvmCallingConvention(cc);
+    ci->setCallingConv(llvm_cc);
+
+    llvm::Value* result = ci;
 
     if ( cargs.return_in_mem )
         result = cg()->builder()->CreateLoad(agg_ret);

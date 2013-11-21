@@ -656,6 +656,21 @@ public:
    /// Returns: The corresponding LLVM type.
    llvm::Type* llvmType(shared_ptr<hilti::Type> type);
 
+   /// Returns the LLVM type for a function. This includes doing all the ABI
+   /// alignments.
+   ///
+   /// ftype: The function type.
+   ///
+   /// Returns: The final LLVM type.
+   llvm::FunctionType* llvmFunctionType(shared_ptr<type::Function> ftype);
+
+   /// Returns the LLVM calling convention corresponding to a HILTI one.
+   ///
+   /// cc: The HILTI convention.
+   ///
+   /// Returns: The LLVM calling convention.
+   llvm::CallingConv::ID llvmCallingConvention(type::function::CallingConvention cc);
+
    /// Returns the LLVM initialization value for a HILTI type.
    ///
    /// This methods uses the TypeBuilder to do its work.
@@ -2191,6 +2206,14 @@ private:
    // An internal version of llvmInstruction that looks up the instruction by
    // name.
    void llvmInstruction(shared_ptr<Expression> target, const string& mnemo, shared_ptr<Expression> op1, shared_ptr<Expression> op2, shared_ptr<Expression> op3, const Location& l=Location::None);
+
+   // Helper factoring out joint code for for llvmAddFunction() and llvmFunctionType().
+   std::pair<llvm::Type*, std::vector<std::pair<string, llvm::Type*>>>
+       llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::function::CallingConvention cc, bool skip_ctx);
+
+   // Helper factoring out joint code for for llvmAddFunction() and llvmFunctionType().
+   std::pair<llvm::Type*, std::vector<std::pair<string, llvm::Type*>>>
+        llvmAdaptFunctionArgs(shared_ptr<type::Function> ftype);
 
    friend class util::IRInserter;
    const string& nextComment() const { // Used by the util::IRInserter.

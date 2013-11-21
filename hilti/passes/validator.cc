@@ -271,7 +271,13 @@ static void _checkCallScope(Validator* v, statement::Instruction* s)
     auto op1 = ast::as<expression::Function>(s->op1());
 
     if ( ! op1 ) {
-        v->error(s, "1st operand must reference a function");
+        if ( ! ast::isA<type::Function>(s->op1()->type()) )
+             v->error(s, "1st operand must reference a function");
+
+        // A non-constant function value. The function that this evaluates to
+        // must not have a scope, which we check where we take the value.
+        //
+        // TODO: Right now, we don't check that actually.
         return;
     }
 

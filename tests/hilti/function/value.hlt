@@ -1,0 +1,33 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Make sure empty functions works.
+
+module Main
+
+import Hilti
+
+void foo(int<32> a) {
+    call Hilti::print (a)
+}
+
+int<32> foo2(int<32> a) {
+    a = int.add a 2
+    return.result a
+}
+
+void run() {
+    local int<32> a
+    local function(int<32> a) -> void    XXX
+    local function(int<32> a) -> int<32> YYY
+
+    XXX = foo
+    call XXX (42)
+
+    YYY = foo2
+    a = call YYY(42)
+    call Hilti::print (a)
+}
+
