@@ -14,7 +14,7 @@ export type test = unit {
        switch ( self.a ) {
            b"1" -> b1: bytes &length=4;
            b"2" -> b2: bytes &length=4;
-           } if ( a == b"1" );
+           } if ( self.a == b"1" );
 
        c: bytes &length=5
            {
