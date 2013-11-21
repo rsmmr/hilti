@@ -1,0 +1,5 @@
+app, zdf/_definst_
+flashVer, MAC 11,9,900,152
+swfUrl, http://www.zdf.de/ZDFmediathek/flash/data/swf/LimelightStreamingPlugin.swf
+tcUrl, rtmp://zdf.fc.llnwd.net:1935/zdf/_definst_
+pageUrl, http://www.zdf.de/ZDFmediathek#/beitrag/video/1766278/Drecksstadt-New-York

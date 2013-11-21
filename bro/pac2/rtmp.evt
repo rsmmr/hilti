@@ -1,0 +1,10 @@
+
+grammar ./rtmp.pac2;
+
+protocol analyzer pac2::RTMP over TCP:
+  parse originator with RTMP::Requests,
+  parse responder with RTMP::Replies,
+  port 1935/tcp;
+
+on RTMP::amf_object_entry if ( self.value.type_raw == b"\x02" ) -> event rtmp::object_string($conn, self.key.value, self.value.amf_string.value);
+
