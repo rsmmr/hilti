@@ -166,12 +166,21 @@ void StatementBuilder::visit(statement::instruction::bytes::Unfreeze* i)
     cg()->llvmCall("hlt::bytes_freeze", args);
 }
 
-void StatementBuilder::visit(statement::instruction::bytes::ToInt* i)
+void StatementBuilder::visit(statement::instruction::bytes::ToIntFromAscii* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
     auto result = cg()->llvmCall("hlt::bytes_to_int", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::ToIntFromBinary* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_to_int_binary", args);
     cg()->llvmStore(i, result);
 }
 

@@ -183,11 +183,20 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(ToInt) {
+    iValidateCC(ToIntFromAscii) {
     }
 
-    iDocCC(ToInt, R"(
+    iDocCC(ToIntFromAscii, R"(
         Converts a bytes object *op1* into an integer, relative to given base *op2*.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(ToIntFromBinary) {
+    }
+
+    iDocCC(ToIntFromBinary, R"(
+        Converts a bytes object *op1* into an integer, assuming it's encoded in a binary represention with byte order *op2*.
     )")
 iEndCC
 

@@ -36,6 +36,7 @@
 #include "types.h"
 #include "vector.h"
 #include "rtti.h"
+#include "int.h"
 
 typedef int64_t hlt_bytes_size;     ///< Size of a ~~hlt_bytes instance, and also used for offsets.
 typedef struct __hlt_bytes hlt_bytes; ///< Type for representing a HILTI ~~bytes object.
@@ -469,6 +470,9 @@ extern void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_ite
 
 /// XXX
 int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+int64_t hlt_bytes_to_int_binary(hlt_bytes* data, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
 extern hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);

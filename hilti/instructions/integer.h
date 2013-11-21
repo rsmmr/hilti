@@ -596,3 +596,45 @@ iBegin(integer, Ugt, "int.ugt")
      )")
 
 iEnd
+
+iBegin(integer, ToHost, "int.to_host")
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::enum_, true)
+
+    iValidate {
+        canCoerceTo(op1, target);
+    }
+
+    iDoc(R"(
+        Converts *op1* from byte order *op2* into host byte order.
+     )")
+iEnd
+
+iBegin(integer, FromHost, "int.from_host")
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::enum_, true)
+
+    iValidate {
+        canCoerceTo(op1, target);
+    }
+
+    iDoc(R"(
+        Converts *op1* from host byte order to byte order *op2*.
+     )")
+iEnd     
+
+iBegin(integer, Flip, "int.flip")
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+
+    iValidate {
+        canCoerceTo(op1, target);
+    }
+
+    iDoc(R"(
+       Reverses the bytes of *op1*.
+     )")
+
+iEnd

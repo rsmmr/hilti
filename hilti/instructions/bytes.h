@@ -111,10 +111,16 @@ iBeginH(bytes, Unfreeze, "bytes.unfreeze")
     iOp1(optype::refBytes, false);
 iEndH
 
-iBeginH(bytes, ToInt, "bytes.to_int")
+iBeginH(bytes, ToIntFromAscii, "bytes.to_int")
     iTarget(optype::int64);
     iOp1(optype::refBytes, true);
     iOp2(optype::int64, true);
+iEndH
+
+iBeginH(bytes, ToIntFromBinary, "bytes.to_int")
+    iTarget(optype::int64);
+    iOp1(optype::refBytes, true);
+    iOp2(optype::enum_, true);
 iEndH
 
 iBeginH(bytes, Lower, "bytes.lower")

@@ -20,6 +20,8 @@
 #include "globals.h"
 #include "hutil.h"
 #include "threading.h"
+#include "int.h"
+#include "autogen/hilti-hlt.h"
 
 typedef struct {
     __hlt_gchdr __gchdr; // Header for memory management.
@@ -1299,6 +1301,34 @@ int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_
     GC_DTOR(end, hlt_iterator_bytes);
 
     return negate ? -value : value;
+}
+
+int64_t hlt_bytes_to_int_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    size_t len = hlt_bytes_len(b, excpt, ctx);
+
+    if ( len > 8 ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        return 0;
+    }
+
+    hlt_iterator_bytes cur = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
+
+    int64_t i = 0;
+
+    while ( ! hlt_iterator_bytes_eq(cur, end, excpt, ctx) ) {
+        int8_t ch = __hlt_bytes_extract_one(&cur, end, excpt, ctx);
+        i = (i << 8) | ch;
+        }
+
+    GC_DTOR(cur, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+
+    if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
+        i = hlt_int_flip(i, len, excpt, ctx);
+
+    return i;
 }
 
 hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)

@@ -81,6 +81,11 @@ extern uint32_t hlt_ntoh32(uint32_t v);
 /// v: The value to convert.
 extern uint16_t hlt_ntoh16(uint16_t v);
 
+/// Revers the bytes of a 64-bit value.
+///
+/// v: The value to convert.
+extern uint64_t hlt_flip64(uint64_t v);
+
 /// Calculates a hash value for a sequence of bytes.
 ///
 /// s: The bytes.

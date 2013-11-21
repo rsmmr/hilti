@@ -78,7 +78,7 @@ size_t hlt_util_memory_usage()
     return (r.ru_maxrss * 1024);
 }
 
-static inline uint64_t _flip(uint64_t v)
+uint64_t hlt_flip64(uint64_t v)
 {
     union {
         uint64_t ui64;
@@ -99,7 +99,7 @@ static inline uint64_t _flip(uint64_t v)
 uint64_t hlt_hton64(uint64_t v)
 {
 #if ! __BIG_ENDIAN__
-    return _flip(v);
+    return hlt_flip64(v);
 #else
     return v;
 #endif
@@ -118,7 +118,7 @@ uint16_t hlt_hton16(uint16_t v)
 uint64_t hlt_ntoh64(uint64_t v)
 {
 #if ! __BIG_ENDIAN__
-    return _flip(v);
+    return hlt_flip64(v);
 #else
     return v;
 #endif

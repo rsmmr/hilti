@@ -105,6 +105,7 @@ declare "C-HILTI" bool bytes_match_at(iterator<bytes> pos, ref<bytes> b)
 declare "C-HILTI" ref<bytes> bytes_copy(ref<bytes> b)
 declare "C-HILTI" void bytes_trim(ref<bytes> b, iterator<bytes> pos)
 declare "C-HILTI" int<64> bytes_to_int(ref<bytes> b, int<64> base)
+declare "C-HILTI" int<64> bytes_to_int_binary(ref<bytes> b, Hilti::ByteOrder order)
 declare "C-HILTI" ref<bytes> bytes_upper(ref<bytes> b)
 declare "C-HILTI" ref<bytes> bytes_lower(ref<bytes> b)
 declare "C-HILTI" ref<bytes> bytes_strip(ref<bytes> b)
@@ -135,6 +136,9 @@ declare "C-HILTI" void tuple_cctor(tuple<*> t)
 ###
 #
 declare "C-HILTI" int<64> int_pow(int<64> base, int<64> exp)
+declare "C-HILTI" int<64> int_to_host(int<64> v, Hilti::ByteOrder order, int<64> n)
+declare "C-HILTI" int<64> int_from_host(int<64> v, Hilti::ByteOrder order, int<64> n)
+declare "C-HILTI" int<64> int_flip(int<64> v, int<64> n)
 
 declare "C-HILTI" int<64> hton64(int<64> v)
 declare "C-HILTI" int<32> hton32(int<32> v)
