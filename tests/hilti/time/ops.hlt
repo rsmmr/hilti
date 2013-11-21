@@ -61,5 +61,8 @@ void run() {
     call Hilti::print(b)
 
     call Hilti::print("")
+
+    t = time.from_double 1384316936.0
+    call Hilti::print(t)
 }
 

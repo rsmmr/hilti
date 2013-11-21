@@ -177,6 +177,7 @@ protected:
     void visit(type::Set* s) override;
     void visit(type::Time* t) override;
     void visit(type::Unit* u) override;
+    void visit(type::Void* v) override;
     void visit(type::unit::Item* i) override;
     void visit(type::unit::item::Field* f) override;
     void visit(type::unit::item::field::Constant* c) override;

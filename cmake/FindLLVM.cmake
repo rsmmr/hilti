@@ -6,6 +6,7 @@
 # [Robin] Removed llvm-gcc/g++ stuff.
 # [Robin] General cleanup, and renamed some of the output variables.
 # [Robin] Added LLVM_TRIPLE.
+# [Robin] Added COMPILER_RT_LIB_DIR.
 #
 # NOTE: This is a modified version of the module originally found in the OpenGTL project
 # at www.opengtl.org
@@ -26,6 +27,10 @@
 # LLVM_CLANGXX_EXEC Path of the clang++ executable.
 #
 # LLVM_TRIPLE       Triple used to configure LLVM.
+#
+# COMPILER_RT_LIB_DIR Directory where the compiler-rt runtime
+#                     libraries are installed; empty if not found.
+
 #
 # [Disabled for now. -Robin] LLVM_LIBS_JIT : ldflags needed to link against a LLVM JIT
 # [Disabled for now. -Robin] LLVM_LIBS_JIT_OBJECTS : objects you need to add to your source when using LLVM JIT
@@ -89,6 +94,7 @@ else ()
   exec_program(${LLVM_CONFIG_EXEC} ARGS --ldflags    OUTPUT_VARIABLE LLVM_LDFLAGS )
 
   exec_program(${LLVM_CONFIG_EXEC} ARGS --host-target OUTPUT_VARIABLE LLVM_TRIPLE)
+  exec_program(${LLVM_CONFIG_EXEC} ARGS --prefix      OUTPUT_VARIABLE LLVM_PREFIX)
 
   # llvm-config includes stuff we don't want.
   set(cflags_to_remove "-fno-exceptions" "-O." "-fomit-frame-pointer" "-stdlib=libc\\+\\+" "-D_DEBUG")
@@ -105,5 +111,19 @@ else ()
 
   # FIND_LLVM_LIBS( ${LLVM_CONFIG_EXEC} "jit native" LLVM_LIBS_JIT LLVM_LIBS_JIT_OBJECTS )
   # STRING(REPLACE " -lLLVMCore -lLLVMSupport -lLLVMSystem" "" LLVM_LIBS_JIT ${LLVM_LIBS_JIT_RAW})
+
+  # Determine path to compiler-rt runtime libraries.
+  exec_program(${LLVM_CLANG_EXEC} ARGS --version OUTPUT_VARIABLE CLANG_VERSION)
+  string(REGEX MATCH "[0-9]+\\.[0-9]" CLANG_VERSION "${CLANG_VERSION}")
+  exec_program("uname -s" OUTPUT_VARIABLE os)
+  string(TOLOWER "${os}" os)
+  set(COMPILER_RT_LIB_DIR ${LLVM_PREFIX}/lib/clang/${CLANG_VERSION}/lib/${os})
+
+  if ( EXISTS "${COMPILER_RT_LIB_DIR}" )
+      MESSAGE("compiler-rt runtime directory: ${COMPILER_RT_LIB_DIR}")
+  else ()
+      MESSAGE("cannot find compiler-rt runtime directory (tried ${COMPILER_RT_LIB_DIR})")
+      set(COMPILER_RT_LIB_DIR)
+  endif ()
 
 endif ()

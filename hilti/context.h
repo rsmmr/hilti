@@ -206,7 +206,7 @@ public:
                               path_list bcas = {},
                               path_list dylds = {},
                               bool add_stdlibs = true,
-                              bool add_sharedlibs = true);
+                              bool add_sharedlibs = false);
 
     /// JITs an LLVM module retuned by linkModules(). This also optimizes the
     /// code according to the current set of options.

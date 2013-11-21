@@ -47,10 +47,6 @@ typedef struct __binpac_parser {
 /// runtime.
 extern void binpac_init();
 
-/// Terminate the binpac runtime. If not called explicitly, it will be
-/// automatically run at termination.
-extern void binpac_done();
-
 /// Returns a list of all BinPAC generated parsers available.
 ///
 /// Returns: List of binpac_parser* instances - The available parsers.

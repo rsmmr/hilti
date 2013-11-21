@@ -271,6 +271,7 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
         // then link in; if we added it to the module directly, names
         // wouldn't be unified correctly. Starting with LLVM 3.4, we can add
         // it to the composite module directly.
+
 #ifdef HAVE_LLVM_33
         auto target_module = new ::llvm::Module("__linker_stuff", llvm::getGlobalContext());
 #else
@@ -326,6 +327,15 @@ void Linker::joinFunctions(llvm::Module* dst, const char* new_func, const char* 
 
     if ( ! md )
         return;
+
+    // If a function under that name already exists with weak linkage,
+    // replace it.
+    if ( auto old_func = dst->getFunction(new_func) ) {
+        if ( old_func->hasWeakLinkage() )
+            old_func->removeFromParent();
+        else
+            fatalError(::util::fmt("function %s already exists", new_func));
+    }
 
 #if 0
     if ( ! md ) {
@@ -556,6 +566,15 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
     auto one = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), 1);
     auto addr = llvm::ConstantExpr::getGetElementPtr(null, one);
     auto size = llvm::ConstantExpr::getPtrToInt(addr, llvm::Type::getIntNTy(ctx, 64));
+
+    // If a global_sizes() function already exists with weak linkage, replace
+    // it.
+    if ( auto old_func = dst->getFunction(symbols::FunctionGlobalsSize) ) {
+        if ( old_func->hasWeakLinkage() )
+            old_func->removeFromParent();
+        else
+            fatalError(::util::fmt("function %s already exists", symbols::FunctionGlobalsSize));
+    }
 
     auto gftype = llvm::FunctionType::get(llvm::Type::getIntNTy(ctx, 64), false);
     auto gfunc = llvm::Function::Create(gftype, llvm::Function::ExternalLinkage, symbols::FunctionGlobalsSize, dst);

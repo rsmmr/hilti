@@ -1,7 +1,7 @@
 
 module Hilti;
 
-## Returns true if Bro is running with compiled script code; 
+## Returns true if Bro is running with compiled script code;
 ## false if the class script interpreter is in charge.
 function is_compiled%(%): bool
 	%{
@@ -12,26 +12,102 @@ function is_compiled%(%): bool
 	return new Val(0, TYPE_BOOL);
 	%}
 
-# The following functions are only for testing purposes. They are overwritten
-# by the HILTI runtime; there bodies here will never be called.
-function test_type_string%(s: string%): string %{ return 0; %}
+module HiltiTest;
 
-function test_type_table%(v: string_array%): string_array
+# The following functions are only for testing purposes.
+
+function type_bool%(v: bool%): bool
+    %{
+    return new Val(v, TYPE_BOOL);
+    %}
+
+function type_int%(v: int%): int
+    %{
+    return new Val(v, TYPE_INT);
+    %}
+
+function type_count%(v: count%): count
+    %{
+    return new Val(v, TYPE_COUNT);
+    %}
+
+function type_double%(v: double%): double
+    %{
+    return new Val(v, TYPE_DOUBLE);
+    %}
+
+function type_time%(v: time%): time
+    %{
+    return new Val(v, TYPE_TIME);
+    %}
+
+function type_interval%(v: interval%): interval
+    %{
+    return new IntervalVal(v, 1.0);
+    %}
+
+function type_string%(v: string%): string
+    %{
+    Ref(v);
+    return v;
+    %}
+
+function type_pattern%(v: pattern%): pattern
+    %{
+    return new PatternVal(v);
+    %}
+
+function type_file%(v: file%): file
+    %{
+    return new Val(v);
+    %}
+
+function type_enum%(v: transport_proto%): transport_proto
+    %{
+    Ref(v);
+    return v;
+    %}
+
+function type_port%(v: port%): port
+    %{
+    Ref(v);
+    return v;
+    %}
+
+function type_addr%(v: addr%): addr
+    %{
+    Ref(v);
+    return v;
+    %}
+
+function type_subnet%(v: subnet%): subnet
+    %{
+    Ref(v);
+    return v;
+    %}
+
+function type_table%(v: string_array%): string_array
 	%{
-	// TableVal* a = new TableVal(string_array);
-	// Val* ind = new Val(1, TYPE_COUNT);
-	// a->Assign(ind, new StringVal("Foo at 1"));
-	// Unref(ind);
-	// return a;
 	Ref(v);
-	return v;
+    return v;
 	%}
 
-function test_type_table2%(%): string_array
+function type_set%(v: string_set%): string_set
 	%{
-	TableVal* a = new TableVal(string_array);
-	Val* ind = new Val(1, TYPE_COUNT);
-	a->Assign(ind, new StringVal("Foo at 1"));
-	Unref(ind);
-	return a;
+	Ref(v);
+    return v;
 	%}
+
+function type_record%(v: conn_id%): conn_id
+	%{
+	Ref(v);
+    return v;
+	%}
+
+function type_vector%(v: string_vec%): string_vec
+	%{
+	Ref(v);
+    return v;
+	%}
+
+                

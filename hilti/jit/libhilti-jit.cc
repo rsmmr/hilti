@@ -40,6 +40,9 @@ extern "C" {
 //   http://llvm.org/docs/doxygen/html/classllvm_1_1ExecutionEngine.html#a805704b52a327cc6b37aebf9cba14169
 //
 // Update: Tried it, but doesn't seem to work.
+//
+// Update: We might however be able to replace this by mapping functions in
+// MemoryManager::getPointerToNamedFunction in hilti/jit/jit.cc.
 
 static struct __hlt_linker_functions _funcs;
 
@@ -48,10 +51,6 @@ void hlt_init_jit(std::shared_ptr<hilti::CompilerContext> ctx, llvm::Module* mod
     auto f = ctx->nativeFunction(module, ee, "__hlt_init_from_state");
     auto hlt_init_from_state = (void (*)(__hlt_global_state*))f;
     assert(hlt_init_from_state);
-
-    f = ctx->nativeFunction(module, ee, "hlt_config_set");
-    auto hlt_config_set = (void (*)(const hlt_config*))f;
-    assert(hlt_config_set);
 
     f = ctx->nativeFunction(module, ee, "__hlt_modules_init");
     auto modules_init = (void (*)(__hlt_execution_context*))f;

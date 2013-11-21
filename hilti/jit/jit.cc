@@ -111,6 +111,9 @@ void* MemoryManager::lookupFunctionInTable(const std::string& name)
 
 void* MemoryManager::getPointerToNamedFunction(const std::string& name, bool abort_on_failure)
 {
+    // TODO: I don't think this is actually used anymore, and with LLVM 3.4
+    // not even called it seems. Remove.
+
     if ( _functions ) {
         for ( int i = 0; _functions[i].name; i++ ) {
             if ( name == _functions[i].name ) {
@@ -227,7 +230,11 @@ llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
     llvm::EngineBuilder builder(module);
     builder.setEngineKind(llvm::EngineKind::JIT);
     builder.setUseMCJIT(true);
+#ifdef HAVE_LLVM_33
     builder.setJITMemoryManager(_mm);
+#else
+    builder.setMCJITMemoryManager(_mm);
+#endif
     builder.setErrorStr(&errormsg);
     builder.setOptLevel(opt_level);
     builder.setAllocateGVsWithCode(false);

@@ -29,7 +29,5 @@ int main()
     GC_DTOR(s, hlt_string);
     GC_DTOR(t, hlt_string);
 
-    hlt_done();
-
     return 0;
 }

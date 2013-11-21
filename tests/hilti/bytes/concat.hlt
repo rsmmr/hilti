@@ -1,0 +1,24 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+
+    b = bytes.concat b"123" b"456"
+    call Hilti::print (b)
+
+    b = bytes.concat b"" b"456"
+    call Hilti::print (b)
+
+    b = bytes.concat b"123" b""
+    call Hilti::print (b)
+
+    b = bytes.concat b"" b""
+    call Hilti::print (b)
+}

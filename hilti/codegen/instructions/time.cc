@@ -36,6 +36,16 @@ void StatementBuilder::visit(statement::instruction::time::AsDouble* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::time::FromDouble* i)
+{
+    auto op1 = cg()->llvmValue(i->op1());
+
+    auto val = cg()->builder()->CreateFMul(op1, cg()->llvmConstDouble(1e9));
+    auto result = cg()->builder()->CreateFPToUI(val, cg()->llvmTypeInt(64));
+
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::time::AsInt* i)
 {
     auto op1 = cg()->llvmValue(i->op1());

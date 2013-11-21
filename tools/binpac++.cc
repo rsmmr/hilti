@@ -229,7 +229,7 @@ int main(int argc, char** argv)
         auto linked_module = ctx->linkModules(input, mods,
                                               std::list<string>(),
                                               path_list(), path_list(),
-                                              false, add_stdlibs);
+                                              add_stdlibs);
 
         if ( ! linked_module ) {
             error(input, "Aborting due to link error.");

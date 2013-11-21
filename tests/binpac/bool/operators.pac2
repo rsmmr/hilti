@@ -2,6 +2,8 @@
 #
 # @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1     
 # @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: == and != are not supported for bool yet
 
 module Test;
 
@@ -33,6 +35,11 @@ print True || False;
 print True || True;
 print False || False;
 
+print b1 == b2;
+print b1 == b3;
+print b3 == b4;
 
-
+print b1 != b2;
+print b1 != b3;
+print b3 != b4;
 

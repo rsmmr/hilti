@@ -378,6 +378,13 @@ void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hl
     __hlt_bytes_append_raw(b, raw, len, excpt, ctx, 0);
 }
 
+hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes* s = hlt_bytes_copy(b1, excpt, ctx);
+    hlt_bytes_append(s, b2, excpt, ctx);
+    return s;
+}
+
 static hlt_iterator_bytes GenericEndPos = { 0, 0 };
 
 hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -406,6 +413,7 @@ hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exce
         return hlt_bytes_begin(b, excpt, ctx);
     }
 
+    assert(i.cur);
     hlt_iterator_bytes p = hlt_bytes_find_byte(b, *i.cur, excpt, ctx);
 
     GC_DTOR(i, hlt_iterator_bytes);

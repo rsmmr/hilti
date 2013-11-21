@@ -27,6 +27,16 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
+    iValidateCC(Concat) {
+    }
+
+    iDocCC(Concat, R"(
+        Concatentates *op2* to *op1*, returning a new bytes object.
+    )")
+
+iEndCC
+
+iBeginCC(bytes)
     iValidateCC(Cmp) {
     }
 

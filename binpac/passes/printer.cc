@@ -1247,7 +1247,21 @@ void Printer::visit(type::unit::item::field::switch_::Case* c)
         p << "*";
 
     p << " -> ";
-    p << c->item();
+
+    auto items = c->items();
+
+    if ( items.size() ) {
+        p << " {\n";
+        pushIndent();
+    }
+
+    for ( auto i : items )
+        p << i;
+
+    if ( items.size() ) {
+        popIndent();
+        p << "}\n";
+    }
 }
 
 void Printer::visit(variable::Global* g)

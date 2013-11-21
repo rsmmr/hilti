@@ -1,0 +1,15 @@
+#
+# @TEST-EXEC:  printf '\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05' | pac-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: Can't convert binary bytes to integers yet. See
+#                      parse-uint-bytes.pac2 for an alternative idea.
+
+module Mini;
+
+export type test = unit {
+       a: bytes &length=5 &convert=$$.as_int(BinPAC::ByteOrder::Little);
+       a: bytes &length=5 &convert=$$.as_int(BinPAC::ByteOrder::Network);
+       a: bytes &length=5 &convert=$$.as_uint(BinPAC::ByteOrder::Little);
+       a: bytes &length=5 &convert=$$.as_uint(BinPAC::ByteOrder::Network);
+};

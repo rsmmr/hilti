@@ -62,6 +62,20 @@ extern struct in_addr hlt_addr_to_in4(hlt_addr addr, hlt_exception** excpt, hlt_
 /// ctx: & 
 extern struct in6_addr hlt_addr_to_in6(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Converts a IPv4 \c in_addr into an address.
+///
+/// in: The value to convert.
+///
+/// excpt: &
+extern hlt_addr hlt_addr_from_in4(struct in_addr in, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Converts a IPv6 \c in6_addr into an address.
+///
+/// in: The value to convert.
+///
+/// excpt: &
+extern hlt_addr hlt_addr_from_in6(struct in6_addr in, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Converts an ASCIIZ string into an address. The string can be either an
 /// IPv4 or IPv6 address in their standard ASCII representations.
 ///

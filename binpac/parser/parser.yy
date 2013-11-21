@@ -195,6 +195,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <unit_item>        unit_item unit_prop unit_global_hook unit_var unit_switch
 %type <unit_items>       unit_items opt_unit_items
 %type <unit_field>       unit_field unit_field_in_container
+%type <unit_fields>      unit_fields
 %type <linkage>          opt_linkage
 %type <attribute>        type_attr property
 %type <attributes>       opt_type_attrs
@@ -524,6 +525,8 @@ unit_field    : opt_unit_field_name atomic_type opt_unit_vector_len opt_type_att
 unit_field_in_container :
               local_id opt_field_args          { $$ = std::make_shared<type::unit::item::field::Unknown>(nullptr, $1, nullptr, hook_list(), attribute_list(), $2, expression_list(), loc(@$)); }
 
+unit_fields   : unit_field unit_fields         { $$ = $2; $$.push_front($1); }
+              | unit_field                     { $$ = unit_field_list(); $$.push_back($1); }
 
 unit_switch   : SWITCH '(' expr ')' '{' unit_switch_cases '}' ';'
                                                  { $$ = std::make_shared<type::unit::item::field::Switch>($3, $6, hook_list(), loc(@$)); }
@@ -534,7 +537,9 @@ unit_switch_cases
               | unit_switch_case                 { $$ = type::unit::item::field::Switch::case_list(); $$.push_back($1); }
 
 unit_switch_case
-              : exprs ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>($1, $3, loc(@$)); }
+              : exprs ARROW '{' unit_fields '}'  { $$ = std::make_shared<type::unit::item::field::switch_::Case>($1, $4, loc(@$)); }
+              | '*'   ARROW '{' unit_fields '}'  { $$ = std::make_shared<type::unit::item::field::switch_::Case>(expression_list(), $4, loc(@$)); }
+              | exprs ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>($1, $3, loc(@$)); }
               | '*'   ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>(expression_list(), $3, loc(@$)); }
 
 opt_type_attrs: type_attr opt_type_attrs         { $$ = $2; $$.push_front($1); }

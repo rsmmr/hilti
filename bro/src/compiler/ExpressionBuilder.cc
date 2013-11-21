@@ -9,6 +9,17 @@
 
 using namespace bro::hilti::compiler;
 
+#define UNARY_OP_FUNC \
+	[&] (const ::UnaryExpr* expr, \
+	     shared_ptr<::hilti::Expression> dst, \
+	     shared_ptr<::hilti::Expression> op) \
+
+#define BINARY_OP_FUNC \
+	[&] (const ::BinaryExpr* expr, \
+	     shared_ptr<::hilti::Expression> dst, \
+	     shared_ptr<::hilti::Expression> op1, \
+	     shared_ptr<::hilti::Expression> op2) \
+
 ExpressionBuilder::ExpressionBuilder(class ModuleBuilder* mbuilder)
 	: BuilderBase(mbuilder)
 	{
@@ -148,11 +159,83 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr)
 	return nullptr;
 	}
 
+void ExpressionBuilder::UnsupportedExpression(const ::UnaryExpr* expr)
+	{
+	Error(::util::fmt("unary %s not supported for operand of type %s",
+			  ::expr_name(expr->Tag()),
+			  ::type_name(expr->Op()->Type()->Tag())),
+	     expr);
+	}
+
+void ExpressionBuilder::UnsupportedExpression(const ::BinaryExpr* expr)
+	{
+	Error(::util::fmt("binary %s not supported for operands of types %s and %s",
+			  ::expr_name(expr->Tag()),
+			  ::type_name(expr->Op1()->Type()->Tag()),
+			  ::type_name(expr->Op2()->Type()->Tag())),
+	     expr);
+	}
+
+bool ExpressionBuilder::CompileOperator(const ::UnaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op, shared_ptr<::hilti::Instruction> ins)
+	{
+	if ( expr->Op()->Type()->Tag() != op )
+		return false;
+
+	auto hop = HiltiExpression(expr->Op());
+	Builder()->addInstruction(dst, ins, hop);
+	return true;
+	}
+
+bool ExpressionBuilder::CompileOperator(const ::UnaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op, unary_op_func func)
+	{
+	if ( expr->Op()->Type()->Tag() != op )
+		return false;
+
+	auto hop = HiltiExpression(expr->Op());
+	func(expr, dst, hop);
+	return true;
+	}
+
+bool ExpressionBuilder::CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, shared_ptr<::hilti::Instruction> ins)
+	{
+	if ( expr->Op1()->Type()->Tag() != op1 || expr->Op2()->Type()->Tag() != op2 )
+		return false;
+
+	auto hop1 = HiltiExpression(expr->Op1());
+	auto hop2 = HiltiExpression(expr->Op2());
+
+	Builder()->addInstruction(dst, ins, hop1, hop2);
+	return true;
+	}
+
+bool ExpressionBuilder::CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, binary_op_func func)
+	{
+	if ( expr->Op1()->Type()->Tag() != op1 || expr->Op2()->Type()->Tag() != op2 )
+		return false;
+
+	auto hop1 = HiltiExpression(expr->Op1());
+	auto hop2 = HiltiExpression(expr->Op2());
+
+	func(expr, dst, hop1, hop2);
+	return true;
+	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AddExpr* expr)
 	{
-	Error("no support yet for compiling AddExpr", expr);
-	return 0;
+	auto result = Builder()->addTmp("add", HiltiType(expr->Type()));
+	auto ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_TIME, ::TYPE_INTERVAL, ::hilti::instruction::time::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_INTERVAL, ::TYPE_INTERVAL, ::hilti::instruction::interval::Add);
+	ok = ok || CompileOperator(expr, result, ::TYPE_STRING, ::TYPE_STRING, ::hilti::instruction::bytes::Concat);
+
+	if ( ! ok )
+		UnsupportedExpression(expr);
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AddToExpr* expr)
@@ -169,7 +252,27 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ArithCoerceEx
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AssignExpr* expr)
 	{
-	Error("no support yet for compiling AssignExpr", expr);
+	const ::Expr* lhs = expr->Op1();
+
+	if ( lhs->Tag() == EXPR_REF )
+		lhs = dynamic_cast<const ::RefExpr*>(lhs)->Op();
+
+	auto rhs = HiltiExpression(expr->Op2());
+
+	switch ( lhs->Tag() ) {
+	case EXPR_NAME:
+		{
+		auto nexpr = lhs->AsNameExpr();
+		auto id = nexpr->Id();
+		auto dst = ::hilti::builder::id::create(HiltiSymbol(id));
+		Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, rhs);
+		return dst;
+		}
+
+	default:
+		Error(::util::fmt("AssignExpr: no support for lhs of type %s yet", ::expr_name(lhs->Tag())), expr);
+	}
+
 	return 0;
 	}
 
@@ -305,8 +408,37 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NameExpr* exp
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NegExpr* expr)
 	{
-	Error("no support yet for compiling NegExpr", expr);
-	return 0;
+	auto result = Builder()->addTmp("neg", HiltiType(expr->Type()));
+	bool ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, UNARY_OP_FUNC
+		{
+		Builder()->addInstruction(result,
+					  ::hilti::instruction::integer::Sub,
+					  ::hilti::builder::integer::create(0),
+					  op);
+		});
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, UNARY_OP_FUNC
+		{
+		Builder()->addInstruction(result,
+					  ::hilti::instruction::integer::Sub,
+					  ::hilti::builder::integer::create(0),
+					  op);
+		});
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, UNARY_OP_FUNC
+		{
+		Builder()->addInstruction(result,
+					  ::hilti::instruction::double_::Sub,
+					  ::hilti::builder::double_::create(0),
+					  op);
+		});
+
+	if ( ! ok )
+		UnsupportedExpression(expr);
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NotExpr* expr)
@@ -329,8 +461,32 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RecordCoerceE
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RecordConstructorExpr* expr)
 	{
-	Error("no support yet for compiling RecordConstructorExpr", expr);
-	return 0;
+	const expr_list& exprs = expr->Op()->AsListExpr()->Exprs();
+
+	auto rtype = expr->Eval(0)->Type()->AsRecordType();
+
+	std::vector<std::shared_ptr<::hilti::Expression>> fields;
+
+	for ( int i = 0; i < rtype->NumFields(); i++ )
+		fields.push_back(::hilti::builder::unset::create());
+
+	loop_over_list(exprs, i)
+		{
+		assert(exprs[i]->Tag() == EXPR_FIELD_ASSIGN);
+		FieldAssignExpr* field = (FieldAssignExpr*) exprs[i];
+
+		int offset = rtype->FieldOffset(field->FieldName());
+		assert(offset >= 0);
+
+		fields[offset] = HiltiExpression(field->Op());
+		}
+
+	::hilti::builder::struct_::element_list elems;
+
+	for ( auto f : fields )
+		elems.push_back(f);
+
+	return ::hilti::builder::struct_::create(elems);
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RefExpr* expr)
@@ -353,8 +509,32 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ScheduleExpr*
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SetConstructorExpr* expr)
 	{
-	Error("no support yet for compiling SetConstructorExpr", expr);
-	return 0;
+	const expr_list& exprs = expr->Op()->AsListExpr()->Exprs();
+
+	auto ttype = expr->Eval(0)->Type()->AsTableType();
+
+	std::shared_ptr<::hilti::Type> ktype;
+
+	auto itypes = ttype->IndexTypes();
+
+	if ( itypes->length() == 1 )
+		ktype = HiltiType((*itypes)[0]);
+	else
+		{
+		::hilti::builder::type_list types;
+
+		loop_over_list(*itypes, i)
+			types.push_back(HiltiType((*itypes)[i]));
+
+		ktype = ::hilti::builder::tuple::type(types);
+		}
+
+	::hilti::builder::set::element_list elems;
+
+	loop_over_list(exprs, i)
+		elems.push_back(HiltiExpression(exprs[i]));
+
+	return ::hilti::builder::set::create(ktype, elems);
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SizeExpr* expr)
@@ -377,8 +557,45 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableCoerceEx
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableConstructorExpr* expr)
 	{
-	Error("no support yet for compiling TableConstructorExpr", expr);
-	return 0;
+	const expr_list& exprs = expr->Op()->AsListExpr()->Exprs();
+
+	auto ttype = expr->Eval(0)->Type()->AsTableType();
+	auto vtype = HiltiType(ttype->YieldType());
+
+	std::shared_ptr<::hilti::Type> ktype;
+
+	auto itypes = ttype->IndexTypes();
+
+	if ( itypes->length() == 1 )
+		ktype = HiltiType((*itypes)[0]);
+	else
+		{
+		::hilti::builder::type_list types;
+
+		loop_over_list(*itypes, i)
+			types.push_back(HiltiType((*itypes)[i]));
+
+		ktype = ::hilti::builder::tuple::type(types);
+		}
+
+	::hilti::builder::map::element_list elems;
+
+	loop_over_list(exprs, i)
+		{
+		auto e = exprs[i]->AsAssignExpr();
+		auto v = HiltiExpression(e->Op2());
+
+		std::shared_ptr<::hilti::Expression> k;
+
+		if ( itypes->length() == 1 )
+			k = HiltiExpression(e->Op1()->AsListExpr()->Exprs()[0]);
+		else
+			k = HiltiExpression(e->Op1());
+
+		elems.push_back(std::make_pair(k, v));
+		}
+
+	return ::hilti::builder::map::create(ktype, vtype, elems);
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TimesExpr* expr)
@@ -395,8 +612,17 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorCoerceE
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorConstructorExpr* expr)
 	{
-	Error("no support yet for compiling VectorConstructorExpr", expr);
-	return 0;
+	const expr_list& exprs = expr->Op()->AsListExpr()->Exprs();
+
+	auto vtype = expr->Eval(0)->Type()->AsVectorType();
+	auto ytype = HiltiType(vtype->YieldType());
+
+	::hilti::builder::vector::element_list elems;
+
+	loop_over_list(exprs, i)
+		elems.push_back(HiltiExpression(exprs[i]));
+
+	return ::hilti::builder::vector::create(ytype, elems);
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::IncrExpr* expr)

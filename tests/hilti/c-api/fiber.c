@@ -62,8 +62,6 @@ int main(int argc, char** argv)
         assert(0); // Cannot be reached.
     }
 
-    hlt_done();
-
     return 0;
 }
 

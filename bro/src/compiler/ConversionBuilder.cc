@@ -1,4 +1,3 @@
-
 #include <Type.h>
 #undef List
 
@@ -112,154 +111,24 @@ shared_ptr<::hilti::Expression> ConversionBuilder::ConvertHiltiToBro(shared_ptr<
 	return nullptr;
 	}
 
-std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type)
+std::shared_ptr<::hilti::Expression> ConversionBuilder::BroInternalInt(std::shared_ptr<::hilti::Expression> val)
 	{
-	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
-
-	auto dst = Builder()->addTmp("b2h", HiltiType(type));
-
-	switch ( type->Tag() ) {
-	case TYPE_ADDR:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_address"), args);
-		return dst;
-		}
-
-	case TYPE_BOOL:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_bool"), args);
-		return dst;
-		}
-
-	case TYPE_COUNT:
-	case TYPE_COUNTER:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_count"), args);
-		return dst;
-		}
-
-	case TYPE_DOUBLE:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_double"), args);
-		return dst;
-		}
-
-	case TYPE_FILE:
-		{
-		Error("ConversionBuilder/B2H: no support yet for converting Val of type TYPE_FILE");
-		return nullptr;
-		}
-
-	case TYPE_FUNC:
-		{
-		Error("ConversionBuilder/B2H: no support yet for converting Val of type TYPE_FUNC");
-		return nullptr;
-		}
-
-	case TYPE_INT:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_integer"), args);
-		return dst;
-		}
-
-	case TYPE_INTERVAL:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_interval"), args);
-		return dst;
-		}
-
-	case TYPE_PATTERN:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_pattern"), args);
-		return dst;
-		}
-
-	case TYPE_PORT:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_port"), args);
-		return dst;
-		}
-
-	case TYPE_STRING:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_string"), args);
-		return dst;
-		}
-
-	case TYPE_TIME:
-		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_time"), args);
-		return dst;
-		}
-
-	case TYPE_TYPE:
-		{
-		Error("ConversionBuilder/B2H: no support yet for converting Val of type TYPE_TYPE");
-		return nullptr;
-		}
-
-	default:
-		Error("ConversionBuilder/B2H: cannot be reached");
+	auto i = Builder()->addTmp("i", ::hilti::builder::integer::type(64));
+	Builder()->addInstruction(i,
+				  ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::bro_internal_int"),
+				  ::hilti::builder::tuple::create( { val } ));
+	return i;
 	}
 
-	// Cannot be reached.
-	return nullptr;
-	}
-
-std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::EnumType* type)
+std::shared_ptr<::hilti::Expression> ConversionBuilder::BroInternalDouble(std::shared_ptr<::hilti::Expression> val)
 	{
-	Error("ConversionBuilder/B2H: no support yet for converting EnumVal");
-	return nullptr;
-	}
-
-std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::TypeList* type)
-	{
-	Error("ConversionBuilder/B2H: no support yet for converting ListVal");
-	return nullptr;
-	}
-
-std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::OpaqueType* type)
-	{
-	Error("ConversionBuilder/B2H: no support yet for converting OpaqueVal");
-	return nullptr;
-	}
-
-std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::RecordType* type)
-	{
-	Error("ConversionBuilder/B2H: no support yet for converting RecordVal");
-	return nullptr;
-	}
-
-std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::SubNetType* type)
-	{
-	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
-	auto dst = Builder()->addTmp("b2h", HiltiType(type));
-
-	auto args = ::hilti::builder::tuple::create( { val } );
-	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-				  ::hilti::builder::id::create("LibBro::b2h_subnet"), args);
-
-	return dst;
+	auto d = Builder()->addTmp("d", ::hilti::builder::double_::type());
+	Builder()->addInstruction(d,
+				  ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::bro_internal_double"),
+				  ::hilti::builder::tuple::create( { val } ));
+	return d;
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildConversionFunction(const char* tag,
@@ -341,73 +210,401 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildCreateBroType(const
 					 : ::hilti::builder::id::create(tname);
 	}
 
+std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type)
+	{
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+	auto dst = Builder()->addTmp("b2h", HiltiType(type));
+
+	switch ( type->Tag() ) {
+	case TYPE_ADDR:
+		{
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::b2h_address"), args);
+		return dst;
+		}
+
+	case TYPE_BOOL:
+		{
+		Builder()->addInstruction(dst,
+					  ::hilti::instruction::Misc::Select,
+					  BroInternalInt(val),
+					  ::hilti::builder::boolean::create(true),
+					  ::hilti::builder::boolean::create(false));
+		return dst;
+		}
+
+	case TYPE_COUNT:
+	case TYPE_COUNTER:
+		return BroInternalInt(val);
+
+	case TYPE_DOUBLE:
+		return BroInternalDouble(val);
+
+	case TYPE_FILE:
+		{
+		Error("ConversionBuilder/B2H: no support yet for converting Val of type TYPE_FILE");
+		return nullptr;
+		}
+
+	case TYPE_FUNC:
+		{
+		Error("ConversionBuilder/B2H: no support yet for converting Val of type TYPE_FUNC");
+		return nullptr;
+		}
+
+	case TYPE_INT:
+		return BroInternalInt(val);
+
+	case TYPE_INTERVAL:
+		{
+		Builder()->addInstruction(dst,
+					  ::hilti::instruction::interval::FromDouble,
+					  BroInternalDouble(val));
+		return dst;
+		}
+
+	case TYPE_PATTERN:
+		{
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::b2h_pattern"), args);
+		return dst;
+		}
+
+	case TYPE_PORT:
+		{
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::b2h_port"), args);
+		return dst;
+		}
+
+	case TYPE_STRING:
+		{
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::b2h_string"), args);
+		return dst;
+		}
+
+	case TYPE_TIME:
+		{
+		Builder()->addInstruction(dst,
+					  ::hilti::instruction::time::FromDouble,
+					  BroInternalDouble(val));
+		return dst;
+		}
+
+	case TYPE_TYPE:
+		{
+		Error("ConversionBuilder/B2H: no support yet for converting Val of type TYPE_TYPE");
+		return nullptr;
+		}
+
+	default:
+		Error("ConversionBuilder/B2H: cannot be reached");
+	}
+
+	// Cannot be reached.
+	return nullptr;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::EnumType* type)
+	{
+	auto dst = Builder()->addTmp("b2h", HiltiType(type));
+
+	Builder()->addInstruction(dst,
+				  ::hilti::instruction::enum_::FromInt,
+				  BroInternalInt(val));
+	return dst;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::TypeList* type)
+	{
+	::hilti::builder::tuple::element_list elems;
+
+	auto types = type->Types();
+
+	for ( int i = 0; i < types->length(); i++ )
+		{
+		auto hidx = ::hilti::builder::integer::create(i);
+		auto tmp = Builder()->addTmp("elem", HiltiType((*types)[i]));
+
+		Builder()->addInstruction(tmp,
+					::hilti::instruction::flow::CallResult,
+					::hilti::builder::id::create("LibBro::bro_list_index"),
+					  ::hilti::builder::tuple::create({ val, hidx }));
+
+		elems.push_back(tmp);
+		}
+
+	auto dst = Builder()->addTmp("b2h", HiltiType(type));
+
+	Builder()->addInstruction(dst,
+				  ::hilti::instruction::operator_::Assign,
+				  ::hilti::builder::tuple::create(elems));
+
+	return dst;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::OpaqueType* type)
+	{
+	Error("ConversionBuilder/B2H: no support yet for converting OpaqueVal");
+	return nullptr;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::RecordType* type)
+	{
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+
+	auto t = HiltiType(type);
+	auto rtype = ast::checkedCast<type::Reference>(t);
+	auto stype = ast::checkedCast<type::Struct>(rtype->argType());
+
+	auto dst = Builder()->addTmp("b2h", t);
+
+	Builder()->addInstruction(dst,
+				  ::hilti::instruction::struct_::New,
+				  ::hilti::builder::type::create(stype));
+
+	::hilti::builder::tuple::element_list elems;
+
+	for ( int i = 0; i < type->NumFields(); i++ )
+		{
+		auto hidx = ::hilti::builder::integer::create(i);
+
+		auto tmp = Builder()->addTmp("field", vtype);
+
+		Builder()->addInstruction(tmp,
+					  ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::bro_record_index"),
+					  ::hilti::builder::tuple::create({ val, hidx }));
+
+		auto b = Builder()->addIf(tmp);
+		auto is_set = std::get<0>(b);
+		auto cont = std::get<1>(b);
+
+		ModuleBuilder()->pushBuilder(is_set);
+
+		Builder()->addInstruction(::hilti::instruction::struct_::Set,
+					  dst,
+					  ::hilti::builder::string::create(type->FieldName(i)),
+					  BroToHilti(tmp, type->FieldType(i)));
+
+		Builder()->addInstruction(::hilti::instruction::flow::Jump,
+					  cont->block());
+
+		ModuleBuilder()->popBuilder(is_set);
+
+		ModuleBuilder()->pushBuilder(cont);
+		}
+
+	return dst;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::SubNetType* type)
+	{
+	auto dst = Builder()->addTmp("b2h", HiltiType(type));
+
+	auto args = ::hilti::builder::tuple::create( { val } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::b2h_subnet"), args);
+
+	return dst;
+	}
+
 std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::TableType* type)
 	{
 	// TODO: Check that we get Bro's reference counting right.
 
 	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
 
-	return BuildConversionFunction("b2h", val, vtype, HiltiType(type), type,
-		[&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+	if ( type->IsSet() )
 		{
-		auto mbuilder = ModuleBuilder();
+		return BuildConversionFunction("b2h", val, vtype, HiltiType(type), type,
+					       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+			{
+			auto mbuilder = ModuleBuilder();
 
-		auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
-		auto mtype = ast::checkedCast<type::Map>(rtype->argType());
-		auto expr_mtype = ::hilti::builder::type::create(mtype);
-		auto expr_ktype = ::hilti::builder::type::create(mtype->keyType());
-		auto expr_vtype = ::hilti::builder::type::create(mtype->valueType());
+			auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
+			auto stype = ast::checkedCast<type::Set>(rtype->argType());
+			auto expr_stype = ::hilti::builder::type::create(stype);
+			auto expr_ktype = ::hilti::builder::type::create(stype->elementType());
 
-		Builder()->addInstruction(dst, ::hilti::instruction::map::New, expr_mtype);
+			Builder()->addInstruction(dst, ::hilti::instruction::set::New, expr_stype);
 
-		auto loop = mbuilder->pushBuilder("loop");
+			auto loop = mbuilder->pushBuilder("loop");
 
-		auto cookie = Builder()->addTmp("cookie", ::hilti::builder::caddr::type());
-		auto kval = Builder()->addTmp("k", vtype);
-		auto vval = Builder()->addTmp("v", vtype);
+			auto cookie = Builder()->addTmp("cookie", ::hilti::builder::caddr::type());
+			auto kval = Builder()->addTmp("k", vtype);
 
-		auto ttype = ::hilti::builder::tuple::type({ ::hilti::builder::caddr::type(), vtype, vtype });
-		auto t = Builder()->addTmp("t", ttype);
+			auto ttype = ::hilti::builder::tuple::type({ ::hilti::builder::caddr::type(), vtype, vtype });
+			auto t = Builder()->addTmp("t", ttype);
 
-		Builder()->addInstruction(t,
-					::hilti::instruction::flow::CallResult,
-					::hilti::builder::id::create("LibBro::bro_table_iterate"),
-					::hilti::builder::tuple::create({ val, cookie }));
+			Builder()->addInstruction(t,
+						  ::hilti::instruction::flow::CallResult,
+						  ::hilti::builder::id::create("LibBro::bro_table_iterate"),
+						  ::hilti::builder::tuple::create({ val, cookie }));
 
-		Builder()->addInstruction(cookie, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(0));
-		Builder()->addInstruction(kval, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(1));
-		Builder()->addInstruction(vval, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(2));
+			Builder()->addInstruction(cookie, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(0));
+			Builder()->addInstruction(kval, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(1));
 
-		auto blocks = Builder()->addIf(kval);
-		auto cont = std::get<0>(blocks);
-		auto done = std::get<1>(blocks);
+			auto blocks = Builder()->addIf(kval);
+			auto cont = std::get<0>(blocks);
+			auto done = std::get<1>(blocks);
 
-		mbuilder->popBuilder(loop);
+			mbuilder->popBuilder(loop);
 
-		mbuilder->pushBuilder(cont);
+			mbuilder->pushBuilder(cont);
 
-		auto itypes = type->AsTableType()->Indices();
-		const ::BroType* index_type = itypes;
+			auto itypes = type->AsTableType()->Indices();
+			const ::BroType* index_type = itypes;
 
-		if ( itypes->Types()->length() == 1 )
-			index_type = (*itypes->Types())[0];
+			if ( itypes->Types()->length() == 1 )
+				index_type = (*itypes->Types())[0];
 
-		auto k = RuntimeValToHilti(kval, index_type);
-		auto v = RuntimeValToHilti(vval, type->AsTableType()->YieldType());
+			auto k = RuntimeValToHilti(kval, index_type);
 
-		Builder()->addInstruction(::hilti::instruction::map::Insert, dst, k, v);
-		Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
+			Builder()->addInstruction(::hilti::instruction::set::Insert, dst, k);
+			Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
 
-		mbuilder->popBuilder(cont);
+			mbuilder->popBuilder(cont);
 
-		mbuilder->pushBuilder(done);
-		});
+			mbuilder->pushBuilder(done);
+			});
+		}
+
+	else // A table, not a set.
+		{
+		return BuildConversionFunction("b2h", val, vtype, HiltiType(type), type,
+					       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+			{
+			auto mbuilder = ModuleBuilder();
+
+			auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
+			auto mtype = ast::checkedCast<type::Map>(rtype->argType());
+			auto expr_mtype = ::hilti::builder::type::create(mtype);
+			auto expr_ktype = ::hilti::builder::type::create(mtype->keyType());
+			auto expr_vtype = ::hilti::builder::type::create(mtype->valueType());
+
+			Builder()->addInstruction(dst, ::hilti::instruction::map::New, expr_mtype);
+
+			auto loop = mbuilder->pushBuilder("loop");
+
+			auto cookie = Builder()->addTmp("cookie", ::hilti::builder::caddr::type());
+			auto kval = Builder()->addTmp("k", vtype);
+			auto vval = Builder()->addTmp("v", vtype);
+
+			auto ttype = ::hilti::builder::tuple::type({ ::hilti::builder::caddr::type(), vtype, vtype });
+			auto t = Builder()->addTmp("t", ttype);
+
+			Builder()->addInstruction(t,
+						  ::hilti::instruction::flow::CallResult,
+						  ::hilti::builder::id::create("LibBro::bro_table_iterate"),
+						  ::hilti::builder::tuple::create({ val, cookie }));
+
+			Builder()->addInstruction(cookie, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(0));
+			Builder()->addInstruction(kval, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(1));
+			Builder()->addInstruction(vval, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(2));
+
+			auto blocks = Builder()->addIf(kval);
+			auto cont = std::get<0>(blocks);
+			auto done = std::get<1>(blocks);
+
+			mbuilder->popBuilder(loop);
+
+			mbuilder->pushBuilder(cont);
+
+			auto itypes = type->AsTableType()->Indices();
+			const ::BroType* index_type = itypes;
+
+			if ( itypes->Types()->length() == 1 )
+				index_type = (*itypes->Types())[0];
+
+			auto k = RuntimeValToHilti(kval, index_type);
+			auto v = RuntimeValToHilti(vval, type->AsTableType()->YieldType());
+
+			Builder()->addInstruction(::hilti::instruction::map::Insert, dst, k, v);
+			Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
+
+			mbuilder->popBuilder(cont);
+
+			mbuilder->pushBuilder(done);
+			});
+		}
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::hilti::Expression> val, const ::VectorType* type)
 	{
-	Error("ConversionBuilder/B2H: no support yet for converting VectorVal");
-	return nullptr;
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+
+	return BuildConversionFunction("b2h", val, vtype, HiltiType(type), type,
+				       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+		{
+		auto mbuilder = ModuleBuilder();
+
+		auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
+		auto vectype = ast::checkedCast<type::Vector>(rtype->argType());
+		auto expr_vectype = ::hilti::builder::type::create(vectype);
+
+		Builder()->addInstruction(dst, ::hilti::instruction::vector::New, expr_vectype);
+
+		auto finished = mbuilder->newBuilder("finished");
+		auto loop = mbuilder->pushBuilder("loop");
+
+		auto cookie = Builder()->addTmp("cookie", ::hilti::builder::caddr::type());
+		auto eval = Builder()->addTmp("e", vtype);
+
+		auto ttype = ::hilti::builder::tuple::type({ ::hilti::builder::caddr::type(), vtype });
+		auto t = Builder()->addTmp("t", ttype);
+
+		Builder()->addInstruction(t,
+					  ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::bro_vector_iterate"),
+					  ::hilti::builder::tuple::create({ val, cookie }));
+
+		Builder()->addInstruction(cookie, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(0));
+
+		auto next = mbuilder->newBuilder("next");
+
+		Builder()->addInstruction(::hilti::instruction::flow::IfElse,
+					    cookie,
+					    next->block(),
+					    finished->block()
+					    );
+
+		mbuilder->popBuilder(loop);
+
+		mbuilder->pushBuilder(next);
+
+		Builder()->addInstruction(eval, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(1));
+
+		auto blocks = Builder()->addIfElse(eval);
+		auto have = std::get<0>(blocks);
+		auto have_not = std::get<1>(blocks);
+		auto done = std::get<2>(blocks);
+
+		mbuilder->popBuilder(next);
+
+		mbuilder->pushBuilder(have);
+
+		auto e = RuntimeValToHilti(eval, type->YieldType());
+		Builder()->addInstruction(::hilti::instruction::vector::PushBack, dst, e);
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
+
+		mbuilder->popBuilder(have);
+
+		mbuilder->pushBuilder(have_not);
+
+		e = builder::expression::default_(HiltiType(type->YieldType()));
+		Builder()->addInstruction(::hilti::instruction::vector::PushBack, dst, e);
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
+
+		mbuilder->popBuilder(have_not);
+
+		mbuilder->pushBuilder(finished);
+		});
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::BroType* type)
@@ -418,34 +615,35 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 	switch ( type->Tag() ) {
 	case TYPE_ADDR:
 		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_BOOL");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_address"), args);
+		return dst;
 		}
 
 	case TYPE_BOOL:
 		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_BOOL");
-		return nullptr;
-		}
-
-	case TYPE_COUNT:
-		{
 		auto args = ::hilti::builder::tuple::create( { val } );
 		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::h2b_count"), args);
+					  ::hilti::builder::id::create("LibBro::h2b_bool"), args);
 		return dst;
 		}
 
+	case TYPE_COUNT:
 	case TYPE_COUNTER:
 		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_COUNTER");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_integer_unsigned"), args);
+		return dst;
 		}
 
 	case TYPE_DOUBLE:
 		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_DOUBLE");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_double"), args);
+		return dst;
 		}
 
 	case TYPE_FILE:
@@ -462,26 +660,34 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 
 	case TYPE_INT:
 		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_INT");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_integer_signed"), args);
+		return dst;
 		}
 
 	case TYPE_INTERVAL:
 		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_INTERVAL");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_interval"), args);
+		return dst;
 		}
 
 	case TYPE_PATTERN:
 		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_PATTERN");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_regexp"), args);
+		return dst;
 		}
 
 	case TYPE_PORT:
 		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_PORT");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_port"), args);
+		return dst;
 		}
 
 	case TYPE_STRING:
@@ -494,8 +700,10 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 
 	case TYPE_TIME:
 		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_TIME");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_time"), args);
+		return dst;
 		}
 
 	case TYPE_TYPE:
@@ -514,14 +722,44 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::EnumType* type)
 	{
-	Error("ConversionBuilder/H2B: no support yet for converting EnumVal");
-	return nullptr;
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+	auto dst = Builder()->addTmp("val", vtype);
+	auto etype = CreateBroType(type);
+
+        auto args = ::hilti::builder::tuple::create( { val, etype } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::h2b_enum_type"), args);
+	return dst;
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::TypeList* type)
 	{
-	Error("ConversionBuilder/H2B: no support yet for converting ListVal");
-	return nullptr;
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+	auto dst = Builder()->addTmp("val", vtype);
+
+	auto args = ::hilti::builder::tuple::create( {} );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::bro_list_new"), args);
+
+	auto types = type->Types();
+
+	for ( int i = 0; i < types->length(); i++ )
+		{
+		auto hidx = ::hilti::builder::integer::create(i);
+		auto tmp = Builder()->addTmp("elem", HiltiType((*types)[i]));
+
+		Builder()->addInstruction(tmp,
+					  ::hilti::instruction::tuple::Index,
+					  hidx);
+
+		Builder()->addInstruction(tmp,
+					::hilti::instruction::flow::CallResult,
+					::hilti::builder::id::create("LibBro::bro_list_append"),
+					  ::hilti::builder::tuple::create({ val, tmp }));
+
+		}
+
+	return dst;
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::OpaqueType* type)
@@ -532,89 +770,246 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::RecordType* type)
 	{
-	Error("ConversionBuilder/H2B: no support yet for converting RecordVal");
-	return nullptr;
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+	auto dst = Builder()->addTmp("val", vtype);
+
+	auto rtype = CreateBroType(type);
+	auto args = ::hilti::builder::tuple::create( { rtype } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::bro_record_new"), args);
+
+	for ( int i = 0; i < type->NumFields(); i++ )
+		{
+		auto hidx = ::hilti::builder::integer::create(i);
+		auto field = ::hilti::builder::string::create(type->FieldName(i));
+
+		auto is_set = Builder()->addTmp("is_set", ::hilti::builder::boolean::type());
+
+		Builder()->addInstruction(is_set,
+					  ::hilti::instruction::struct_::IsSet,
+					  val,
+					  field);
+
+		auto b = Builder()->addIf(is_set);
+		auto bis_set = std::get<0>(b);
+		auto bcont = std::get<1>(b);
+
+		ModuleBuilder()->pushBuilder(bis_set);
+
+		auto tmp = Builder()->addTmp("field", HiltiType(type->FieldType(i)));
+
+		Builder()->addInstruction(tmp,
+					  ::hilti::instruction::struct_::Get,
+					  val,
+					  field);
+
+		auto tmp_h2b = RuntimeHiltiToVal(tmp, type->FieldType(i));
+
+		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+					  ::hilti::builder::id::create("LibBro::bro_record_assign"),
+					  ::hilti::builder::tuple::create({ dst, hidx, tmp_h2b }));
+
+		ModuleBuilder()->popBuilder(bis_set);
+
+		ModuleBuilder()->pushBuilder(bcont);
+		}
+
+	return dst;
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::SubNetType* type)
 	{
-	Error("ConversionBuilder/H2B: no support yet for converting SubNetVal");
-	return nullptr;
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+	auto dst = Builder()->addTmp("val", vtype);
+
+	auto args = ::hilti::builder::tuple::create( { val } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::h2b_network"), args);
+	return dst;
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::TableType* type)
 	{
 	// TODO: Check that we get Bro's reference counting right.
-	//
+
 	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
 
-	return BuildConversionFunction("h2b", val, HiltiType(type), vtype, type,
-		[&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+	if ( type->IsSet() )
 		{
-		auto mbuilder = ModuleBuilder();
-		auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
-		auto mtype = ast::checkedCast<type::Map>(rtype->argType());
+		return BuildConversionFunction("h2b", val, HiltiType(type), vtype, type,
+					       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+			{
+			auto mbuilder = ModuleBuilder();
+			auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
+			auto stype = ast::checkedCast<type::Set>(rtype->argType());
 
-		auto cur = mbuilder->addTmp("cur", mtype->iterType());
-		auto end = mbuilder->addTmp("end", mtype->iterType());
-		auto t = mbuilder->addTmp("t", mtype->elementType());
-		auto is_end = mbuilder->addTmp("is_end", ::hilti::builder::boolean::type());
+			auto cur = mbuilder->addTmp("cur", stype->iterType());
+			auto end = mbuilder->addTmp("end", stype->iterType());
+			auto k = mbuilder->addTmp("k", stype->elementType());
+			auto is_end = mbuilder->addTmp("is_end", ::hilti::builder::boolean::type());
 
-		Builder()->addInstruction(dst,
-					  ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::bro_table_new"),
-					  ::hilti::builder::tuple::create({ CreateBroType(type) }));
+			Builder()->addInstruction(dst,
+						  ::hilti::instruction::flow::CallResult,
+						  ::hilti::builder::id::create("LibBro::bro_table_new"),
+						  ::hilti::builder::tuple::create({ CreateBroType(type) }));
 
-		Builder()->addInstruction(cur, ::hilti::instruction::operator_::Begin, val);
-		Builder()->addInstruction(end, ::hilti::instruction::operator_::End, val);
+			Builder()->addInstruction(cur, ::hilti::instruction::operator_::Begin, val);
+			Builder()->addInstruction(end, ::hilti::instruction::operator_::End, val);
 
-		auto loop = mbuilder->pushBuilder("loop");
+			auto loop = mbuilder->pushBuilder("loop");
 
-		Builder()->addInstruction(is_end, ::hilti::instruction::operator_::Equal, cur, end);
+			Builder()->addInstruction(is_end, ::hilti::instruction::operator_::Equal, cur, end);
 
-		auto blocks = Builder()->addIf(is_end);
-		auto done = std::get<0>(blocks);
-		auto cont = std::get<1>(blocks);
+			auto blocks = Builder()->addIf(is_end);
+			auto done = std::get<0>(blocks);
+			auto cont = std::get<1>(blocks);
 
-		mbuilder->popBuilder(loop);
+			mbuilder->popBuilder(loop);
 
-		mbuilder->pushBuilder(cont);
+			mbuilder->pushBuilder(cont);
 
-		Builder()->addInstruction(t, ::hilti::instruction::operator_::Deref, cur);
+			Builder()->addInstruction(k, ::hilti::instruction::operator_::Deref, cur);
 
-		auto k = mbuilder->addTmp("k", mtype->keyType());
-		auto v = mbuilder->addTmp("v", mtype->valueType());
+			auto itypes = type->AsTableType()->Indices();
+			const ::BroType* index_type = itypes;
 
-		Builder()->addInstruction(k, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(0));
-		Builder()->addInstruction(v, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(1));
+			if ( itypes->Types()->length() == 1 )
+				index_type = (*itypes->Types())[0];
 
-		auto itypes = type->AsTableType()->Indices();
-		const ::BroType* index_type = itypes;
+			auto kval = RuntimeHiltiToVal(k, index_type);
 
-		if ( itypes->Types()->length() == 1 )
-			index_type = (*itypes->Types())[0];
+			auto null = ::hilti::builder::caddr::create();
 
-		auto kval = RuntimeHiltiToVal(k, index_type);
-		auto vval = RuntimeHiltiToVal(v, type->AsTableType()->YieldType());
+			Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+						  ::hilti::builder::id::create("LibBro::bro_table_insert"),
+						  ::hilti::builder::tuple::create({ dst, kval, null }));
 
-		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
-					  ::hilti::builder::id::create("LibBro::bro_table_insert"),
-					  ::hilti::builder::tuple::create({ dst, kval, vval }));
+			Builder()->addInstruction(cur, ::hilti::instruction::operator_::Incr, cur);
 
-		Builder()->addInstruction(cur, ::hilti::instruction::operator_::Incr, cur);
+			Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
 
-		Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
+			mbuilder->popBuilder(cont);
 
-		mbuilder->popBuilder(cont);
+			mbuilder->pushBuilder(done);
+			});
+		}
 
-		mbuilder->pushBuilder(done);
-		});
+	else // A table, not a set.
+		{
+		return BuildConversionFunction("h2b", val, HiltiType(type), vtype, type,
+					       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+			{
+			auto mbuilder = ModuleBuilder();
+			auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
+			auto mtype = ast::checkedCast<type::Map>(rtype->argType());
+
+			auto cur = mbuilder->addTmp("cur", mtype->iterType());
+			auto end = mbuilder->addTmp("end", mtype->iterType());
+			auto t = mbuilder->addTmp("t", mtype->elementType());
+			auto is_end = mbuilder->addTmp("is_end", ::hilti::builder::boolean::type());
+
+			Builder()->addInstruction(dst,
+						  ::hilti::instruction::flow::CallResult,
+						  ::hilti::builder::id::create("LibBro::bro_table_new"),
+						  ::hilti::builder::tuple::create({ CreateBroType(type) }));
+
+			Builder()->addInstruction(cur, ::hilti::instruction::operator_::Begin, val);
+			Builder()->addInstruction(end, ::hilti::instruction::operator_::End, val);
+
+			auto loop = mbuilder->pushBuilder("loop");
+
+			Builder()->addInstruction(is_end, ::hilti::instruction::operator_::Equal, cur, end);
+
+			auto blocks = Builder()->addIf(is_end);
+			auto done = std::get<0>(blocks);
+			auto cont = std::get<1>(blocks);
+
+			mbuilder->popBuilder(loop);
+
+			mbuilder->pushBuilder(cont);
+
+			Builder()->addInstruction(t, ::hilti::instruction::operator_::Deref, cur);
+
+			auto k = mbuilder->addTmp("k", mtype->keyType());
+			auto v = mbuilder->addTmp("v", mtype->valueType());
+
+			Builder()->addInstruction(k, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(0));
+			Builder()->addInstruction(v, ::hilti::instruction::tuple::Index, t, ::hilti::builder::integer::create(1));
+
+			auto itypes = type->AsTableType()->Indices();
+			const ::BroType* index_type = itypes;
+
+			if ( itypes->Types()->length() == 1 )
+				index_type = (*itypes->Types())[0];
+
+			auto kval = RuntimeHiltiToVal(k, index_type);
+			auto vval = RuntimeHiltiToVal(v, type->AsTableType()->YieldType());
+
+			Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+						  ::hilti::builder::id::create("LibBro::bro_table_insert"),
+						  ::hilti::builder::tuple::create({ dst, kval, vval }));
+
+			Builder()->addInstruction(cur, ::hilti::instruction::operator_::Incr, cur);
+
+			Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
+
+			mbuilder->popBuilder(cont);
+
+			mbuilder->pushBuilder(done);
+			});
+		}
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::VectorType* type)
 	{
-	Error("ConversionBuilder/H2B: no support yet for converting VectorVal");
-	return nullptr;
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+	auto dst = Builder()->addTmp("val", vtype);
+
+	auto mbuilder = ModuleBuilder();
+	auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
+	auto vectype = ast::checkedCast<type::Vector>(rtype->argType());
+
+	auto cur = mbuilder->addTmp("cur", vectype->iterType());
+	auto end = mbuilder->addTmp("end", vectype->iterType());
+	auto e = mbuilder->addTmp("e", vectype->elementType());
+	auto is_end = mbuilder->addTmp("is_end", ::hilti::builder::boolean::type());
+
+	Builder()->addInstruction(dst,
+				  ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::bro_vector_new"),
+				  ::hilti::builder::tuple::create({ CreateBroType(type) }));
+
+	Builder()->addInstruction(cur, ::hilti::instruction::operator_::Begin, val);
+	Builder()->addInstruction(end, ::hilti::instruction::operator_::End, val);
+
+	auto loop = mbuilder->pushBuilder("loop");
+
+	Builder()->addInstruction(is_end, ::hilti::instruction::operator_::Equal, cur, end);
+
+	auto blocks = Builder()->addIf(is_end);
+	auto done = std::get<0>(blocks);
+	auto cont = std::get<1>(blocks);
+
+	mbuilder->popBuilder(loop);
+
+	mbuilder->pushBuilder(cont);
+
+	Builder()->addInstruction(e, ::hilti::instruction::operator_::Deref, cur);
+
+	auto eval = RuntimeHiltiToVal(e, type->YieldType());
+
+	Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+				  ::hilti::builder::id::create("LibBro::bro_vector_append"),
+				  ::hilti::builder::tuple::create({ dst, eval }));
+
+	Builder()->addInstruction(cur, ::hilti::instruction::operator_::Incr, cur);
+
+	Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
+
+	mbuilder->popBuilder(cont);
+
+	mbuilder->pushBuilder(done);
+	return dst;
 	}
 
 shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::BroType* type)
@@ -634,6 +1029,7 @@ shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::BroType
 	case TYPE_STRING:
 	case TYPE_TIME:
 	case TYPE_TYPE:
+	case TYPE_VOID:
 		return CreateBroTypeBase(static_cast<const ::BroType*>(type));
 
 	case TYPE_ENUM:
@@ -680,8 +1076,27 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroTypeBase(const 
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::EnumType* type)
 	{
-	Error("ConversionBuilder/CBT: no support yet for converting EnumType");
-	return nullptr;
+	return BuildCreateBroType("enum", type,
+		[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
+		{
+		auto name = ::hilti::builder::string::create(type->AsEnumType()->Name());
+		auto module = ::hilti::builder::string::create(ModuleBuilder()->module()->id()->name());
+
+		Builder()->addInstruction(dst,
+					  ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::bro_enum_type_new"),
+					  ::hilti::builder::tuple::create({ module, name }));
+
+		for ( auto n : type->AsEnumType()->Names() )
+			{
+			auto name = ::hilti::builder::string::create(n.first);
+			auto val = ::hilti::builder::integer::create(n.second);
+
+			Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+						  ::hilti::builder::id::create("LibBro::bro_enum_type_add_name"),
+						  ::hilti::builder::tuple::create({ dst, module, name, val }));
+			}
+		});
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::TypeList* type)
@@ -717,33 +1132,103 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::Op
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::RecordType* type)
 	{
-	Error("ConversionBuilder/CBT: no support yet for converting RecordType");
-	return nullptr;
+	return BuildCreateBroType("record", type,
+		[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
+		{
+		auto rtype = type->AsRecordType();
+		auto dtype = ::hilti::builder::type::byName("LibBro::BroTypeDecl");
+		auto ltype = ::hilti::builder::list::type(dtype);
+		auto rltype = ::hilti::builder::reference::type(ltype);
+
+		auto fields = Builder()->addTmp("fields", rltype);
+		auto field = Builder()->addTmp("field", dtype);
+
+		Builder()->addInstruction(fields,
+					  ::hilti::instruction::list::New,
+					  ::hilti::builder::type::create(ltype));
+
+		for ( int i = 0; i < rtype->NumFields(); i++ )
+			{
+			auto fname = ::hilti::builder::string::create(rtype->FieldName(i));
+			auto ftype = CreateBroType(rtype->FieldType(i));
+
+			Builder()->addInstruction(field,
+						  ::hilti::instruction::flow::CallResult,
+						  ::hilti::builder::id::create("LibBro::bro_record_typedecl_new"),
+						  ::hilti::builder::tuple::create({ fname, ftype }));
+
+			Builder()->addInstruction(::hilti::instruction::list::PushBack,
+						  fields,
+						  field);
+			}
+
+		Builder()->addInstruction(dst,
+					  ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::bro_record_type_new"),
+					  ::hilti::builder::tuple::create({ fields }));
+
+		});
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::SubNetType* type)
 	{
-	Error("ConversionBuilder/CBT: no support yet for converting SubNetType");
-	return nullptr;
+	auto dst = Builder()->addTmp("btype", ::hilti::builder::type::byName("LibBro::BroType"));
+
+	Builder()->addInstruction(dst,
+				  ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::bro_subnet_type_new"),
+				  ::hilti::builder::tuple::create({}));
+
+	return dst;
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::TableType* type)
 	{
-	return BuildCreateBroType("table", type,
-		[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
+	if ( type->IsSet() )
 		{
-		auto k = CreateBroType(type->AsTableType()->Indices());
-		auto v = CreateBroType(type->AsTableType()->YieldType());
+		return BuildCreateBroType("set", type,
+			[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
+			{
+			auto ttype = type->AsTableType();
 
-		Builder()->addInstruction(dst,
-					  ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::bro_table_type_new"),
-					  ::hilti::builder::tuple::create({ k, v }));
-		});
+			auto k = CreateBroType(ttype->Indices());
+            auto null = ::hilti::builder::caddr::create();
+
+			Builder()->addInstruction(dst,
+						  ::hilti::instruction::flow::CallResult,
+						  ::hilti::builder::id::create("LibBro::bro_table_type_new"),
+                          ::hilti::builder::tuple::create({ k, null }));
+			});
+		}
+
+	else
+		{
+		return BuildCreateBroType("table", type,
+			[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
+			{
+			auto ttype = type->AsTableType();
+
+			auto k = CreateBroType(ttype->Indices());
+			auto v = CreateBroType(ttype->YieldType());
+
+			Builder()->addInstruction(dst,
+						  ::hilti::instruction::flow::CallResult,
+						  ::hilti::builder::id::create("LibBro::bro_table_type_new"),
+						  ::hilti::builder::tuple::create({ k, v }));
+			});
+		}
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::VectorType* type)
 	{
-	Error("ConversionBuilder/CBT: no support yet for converting VectorType");
-	return nullptr;
+	return BuildCreateBroType("vector", type,
+		[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
+		{
+		auto ytype = CreateBroType(type->AsVectorType()->YieldType());
+
+		Builder()->addInstruction(dst,
+					  ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::bro_vector_type_new"),
+					  ::hilti::builder::tuple::create({ ytype }));
+		});
 	}

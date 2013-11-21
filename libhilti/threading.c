@@ -674,7 +674,9 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, hlt_config_get()->thread_stack_size);
 
-    for ( int i = 0 ; i < mgr->num_workers; i++ ) {
+    int i;
+
+    for ( i = 0 ; i < mgr->num_workers; i++ ) {
         hlt_worker_thread* thread = hlt_malloc(sizeof(hlt_worker_thread));
         thread->mgr = mgr;
         // We must not give a size limit for the queue here as otherwise the
@@ -692,6 +694,12 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
         thread->name = name;
 
         mgr->workers[i] = thread;
+    }
+
+    // Do this loop separately so that all thread data structures are
+    // initialized before any of them starts up.
+    for ( i = 0 ; i < mgr->num_workers; i++ ) {
+        hlt_worker_thread* thread = mgr->workers[i];
 
         if ( pthread_create(&thread->handle, &attr, _worker, (void*) thread) != 0 ) {
             fprintf(stderr, "cannot create worker %d: %s\n", i+1, strerror(errno));

@@ -11,10 +11,6 @@
 /// hlt_init().
 extern void hlt_init();
 
-/// Terminates libhilti. Must be called before program termination.
-/// Afterwards, no further libhilti functionality must be used anymore.
-extern void hlt_done();
-
 /// Internal version of libhilti that initialized the library from an
 /// existign set of global state.
 extern void __hlt_init_from_state(__hlt_global_state* state);

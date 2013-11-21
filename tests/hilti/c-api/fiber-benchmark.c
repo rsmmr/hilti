@@ -73,8 +73,6 @@ int main(int argc, char** argv)
 
     fprintf(stderr, "create/start/return/delete: %.2fs => %.2f rounds/sec\n", delta, rounds / delta);
 
-    //hlt_done();
-
     return 0;
 }
 

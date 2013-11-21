@@ -2,8 +2,18 @@
 # If we compile in debugging mode, we activate clang's debugging capabilities:
 #
 #   - The static analyzer if we find 'ccc-analyzer'
-#   - AddressSanitizer [Disabled for now, produces linker errors; probably need compiler-rt]
 #
+#   - On demand, one of the sanitizers:
+#     -DCLANG_SANITIZE=address  Address sanitizer
+#     -DCLANG_SANITIZE=thread   Thread sanitizer
+#     -DCLANG_SANITIZE=memory   Memory sanitizer (w/ origin tracking enabled)
+#
+#     TODO: Activating the sanitizer doesn't work. The problem is that
+#     it needs the compilter-rt runtime library, and that needs to be
+#     linked first and with "-whole-archive <lib> -no-whole-archive".
+#     Normally clang takes care of that if it gets the -fsanitizer=...
+#     flag, but we're doing the linking ourselves (for JIT at least;
+#     for the static binaries we could pass the option through to clang).
 
 if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
     find_program(ccc_analyzer "ccc-analyzer")
@@ -40,7 +50,16 @@ if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
         message(STATUS "NOTE: Cannot find c++-analyzer in PATH, no static analysis for C++")
     endif()
 
+    ### Enable selected sanitizer.
+    ###
+    ### NOTE: Doesn't work, see above.
 
-    # set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -faddress-sanitizer")
+    if ( "${CLANG_SANITIZE}" STREQUAL "memory" )
+        set(sanaddl "-fsanitize-memory-track-origins")
+    endif ()
 
+   if ( CLANG_SANITIZE )
+       set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS}  -fsanitize=${CLANG_SANITIZE} ${sanaddl}")
+       set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} -fsanitize=${CLANG_SANITIZE} ${sanaddl}")
+   endif ()
 endif ()

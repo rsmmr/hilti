@@ -1,0 +1,31 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+export foo
+
+tuple<int<16>, int<8>> foo(tuple<int<16>, int<8>> n)
+{
+   return.result n
+}
+
+tuple<int<64>, int<64>, int<8>> bar(tuple<int<64>, int<64>, int<8>> n)
+{
+    return.result n
+}
+
+void run()
+{
+    local tuple<int<16>, int<8>> t1 = (256, 42)
+    local tuple<int<64>, int<64>, int<8>> t2 = (12345, 23456, 42)
+    t1 = call foo(t1)
+    t2 = call bar(t2)
+    call Hilti::print(t1)
+    call Hilti::print(t2)
+}
+

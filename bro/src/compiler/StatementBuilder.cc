@@ -141,7 +141,7 @@ void StatementBuilder::Compile(::NextStmt* stmt)
 
 void StatementBuilder::Compile(::NullStmt* stmt)
 	{
-	Error("no support yet for compiling NullStmt", stmt);
+        // This one is easy. :)
 	}
 
 void StatementBuilder::Compile(::PrintStmt* stmt)
@@ -204,10 +204,15 @@ void StatementBuilder::Compile(::StmtList* stmt)
 		{
 		auto s = stmt->Stmts()[i];
 
-		ODesc d;
-		s->Describe(&d);
-		// Builder()->addDebugMsg("bro", d.Description());
-		Builder()->addComment(d.Description());
+		if ( s->Tag() != STMT_LIST )
+			{
+			ODesc d;
+			s->Describe(&d);
+			string cmt = d.Description();
+			cmt = ::util::strreplace(cmt, "\n", " ");
+			Builder()->addComment(cmt);
+			// Builder()->addDebugMsg("bro", cmt);
+			}
 
 		Compile(s);
 		}

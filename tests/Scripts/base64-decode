@@ -1,0 +1,11 @@
+
+os=`uname`
+
+if [ "$os" == "Linux" ]; then
+    base64 -d
+elif [ "$os" == "Darwin" ]; then
+    base64 -D
+else
+    error "$os not supported by `basename $0`"
+    exit 1
+fi

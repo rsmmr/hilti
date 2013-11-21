@@ -1,0 +1,32 @@
+#
+# @TEST-EXEC:  printf '\x00\x01\x02' | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf '\x01\x01\x02' | pac-driver-test %INPUT >>output    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+import BinPAC;
+
+export type test = unit {
+	var byteorder : BinPAC::ByteOrder;
+	
+	chosen_order : uint8;
+
+	switch (self.chosen_order) {
+		0 -> : void { self.byteorder = BinPAC::ByteOrder::Little; }
+		1 -> : void { self.byteorder = BinPAC::ByteOrder::Big; }
+	};
+
+	n : dyn_number(self.byteorder);
+
+	on %done {
+		print self;
+	}
+};
+
+type dyn_number = unit(order: BinPAC::ByteOrder) {
+	%byteorder = order;
+
+	f: uint16;
+};

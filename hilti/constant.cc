@@ -133,7 +133,7 @@ constant::Network::Network(const string& cidr, const Location& l)
 
     _addr = AddressVal(this, cidr.substr(0, i));
 
-    if ( util::atoi_n(cidr.begin() + i, cidr.end(), 10, &_width) != cidr.end() )
+    if ( util::atoi_n(cidr.begin() + i + 1, cidr.end(), 10, &_width) != cidr.end() )
         goto error;
 
     return;
@@ -196,7 +196,7 @@ constant::Bitset::Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Lo
         }
 
         if ( ! found )
-            throw ConstantParseError(this, util::fmt("unknown enum label '%s'", b->pathAsString().c_str()));
+            throw ConstantParseError(this, util::fmt("unknown bitset label '%s'", b->pathAsString().c_str()));
     }
 }
 
