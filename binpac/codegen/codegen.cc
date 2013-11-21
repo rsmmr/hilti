@@ -491,3 +491,30 @@ void CodeGen::hiltiImportType(shared_ptr<ID> id, shared_ptr<Type> t)
 {
     _imported_types.insert(std::make_pair(id->pathAsString(), t));
 }
+
+shared_ptr<hilti::Expression> CodeGen::hiltiByteOrder(shared_ptr<Expression> expr)
+{
+    auto t1 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::ByteOrder::Little"),
+        hilti::builder::id::create(string("Hilti::ByteOrder::Little"))});
+
+    auto t2 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::ByteOrder::Big"),
+        hilti::builder::id::create(string("Hilti::ByteOrder::Big"))});
+
+    auto t3 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::ByteOrder::Network"),
+        hilti::builder::id::create(string("Hilti::ByteOrder::Big"))});
+
+    auto t4 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::ByteOrder::Host"),
+        hilti::builder::id::create(string("Hilti::ByteOrder::Host"))});
+
+    auto tuple = hilti::builder::tuple::create({ t1, t2, t3, t4 });
+    auto result = moduleBuilder()->addTmp("order", hilti::builder::type::byName("Hilti::ByteOrder"));
+    auto op = hiltiExpression(expr);
+
+    builder()->addInstruction(result, hilti::instruction::Misc::SelectValue, op, tuple);
+
+    return result;
+}

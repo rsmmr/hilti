@@ -271,6 +271,13 @@ public:
     /// XXX
     void hiltiImportType(shared_ptr<ID> id, shared_ptr<Type> t);
 
+    /// Converts an expression of type BinPAC::ByteOrder into a HILTI value of type Hilti::ByteOrder.
+    ///
+    /// expr: The expression to convert.
+    ///
+    /// Returns: The equivalent HILTI byte order.
+    shared_ptr<hilti::Expression> hiltiByteOrder(shared_ptr<Expression> expr);
+
 private:
     CompilerContext* _ctx;
     bool _compiling = false;

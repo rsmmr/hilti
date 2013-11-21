@@ -171,12 +171,42 @@ opBegin(bytes::ToUInt : MethodCall)
     }
 opEnd
 
+opBegin(bytes::ToUIntBinary : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_uint")))
+    opCallArg1("byte_order", std::make_shared<type::Enum>())
+
+    opDoc("Interprets the ``bytes`` as representing an binary number encoded with the given byte order, and converts it into an unsigned integer.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Integer>(64, false);
+    }
+opEnd
+
 opBegin(bytes::ToInt : MethodCall)
     opOp1(std::make_shared<type::Bytes>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_int")))
     opCallArg1("base", std::make_shared<type::OptionalArgument>(type::Integer::unsignedInteger(64)))
 
     opDoc("Interprets the ``bytes`` as representing an ASCII-encoded number and converts it into a signed integer, using a base of *base*. If *base* is not given, the default is 10.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Integer>(64, true);
+    }
+opEnd
+
+opBegin(bytes::ToIntBinary : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_int")))
+    opCallArg1("byte_order", std::make_shared<type::Enum>())
+
+    opDoc("Interprets the ``bytes`` as representing an binary number encoded with the given byte order, and converts it into a signed integer.")
 
     opValidate() {
     }

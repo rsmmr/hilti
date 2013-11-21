@@ -4,6 +4,8 @@
 
 module BinPACHilti
 
+import Hilti
+
 type ParseSuccess = exception<string>
 type ParseError = exception<string>
 type UnitAlreadyConnected = exception
