@@ -1,5 +1,7 @@
-# @TEST-EXEC: pac-driver-test %INPUT >output
+# @TEST-EXEC: printf '\x41\x42' | pac-driver-test %INPUT >output
 # @TEST-EXEC: btest-diff output
+#
+# @TEST-KNOWN-FAILURE: there's a problem with comparing enum labels.
 
 module Mini;
 
@@ -16,3 +18,14 @@ if ( ObjectType::DataType != ObjectType::EndOfData ) {
   print "not equal";
 }
 
+export type test = unit {
+  a : uint8 &convert=ObjectType($$);
+  b : uint8 &convert=ObjectType($$);
+
+  on %done {
+    if ( self.a == ObjectType::DataType )
+      print "equal";
+    if ( self.b != ObjectType::DataType )
+      print "not equal";
+  }
+};
