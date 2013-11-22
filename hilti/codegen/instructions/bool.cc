@@ -11,7 +11,10 @@ void StatementBuilder::visit(statement::instruction::boolean::Equal* i)
     auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
     auto op2 = cg()->llvmValue(i->op2(), i->target()->type());
 
-    auto result = builder()->CreateAnd(op1, op2);
+    auto result = builder()->CreateXor(op1, op2);
+
+    // Negate.
+    result = builder()->CreateSelect(result, cg()->llvmConstInt(0, 1), cg()->llvmConstInt(1, 1));
 
     cg()->llvmStore(i, result);
 }
