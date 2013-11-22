@@ -39,11 +39,23 @@ public:
 	/**
 	 * Converts a Bro \a Val into its HILTI equivalent.
 	 *
+	 * @param val The value to compile.
+	 *
+	 * @param target_type The target type that the compiled value should
+	 * have. This acts primarily as a hint in case the expression's type
+	 * isn't unambigious (e.g., with untyped constructors).
+	 *
 	 * @return The converted expression.
 	 */
-	shared_ptr<::hilti::Expression> Compile(const ::Val* val);
+	shared_ptr<::hilti::Expression> Compile(const ::Val* val,
+						shared_ptr<::hilti::Type> target_type = nullptr);
 
 protected:
+	/**
+	 * Returns the target type passed into Compile(), or null if none.
+	 */
+	shared_ptr<::hilti::Type> TargetType() const;
+
 	std::shared_ptr<::hilti::Expression> CompileBaseVal(const ::Val* val);
 	std::shared_ptr<::hilti::Expression> Compile(const ::AddrVal* val);
 	std::shared_ptr<::hilti::Expression> Compile(const ::EnumVal* val);
@@ -56,6 +68,9 @@ protected:
 	std::shared_ptr<::hilti::Expression> Compile(const ::SubNetVal* val);
 	std::shared_ptr<::hilti::Expression> Compile(const ::TableVal* val);
 	std::shared_ptr<::hilti::Expression> Compile(const ::VectorVal* val);
+
+private:
+	std::list<shared_ptr<::hilti::Type>> target_types;
 };
 
 }

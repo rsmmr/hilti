@@ -25,137 +25,187 @@ ExpressionBuilder::ExpressionBuilder(class ModuleBuilder* mbuilder)
 	{
 	}
 
-shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr)
+shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, shared_ptr<::hilti::Type> target_type)
 	{
+	shared_ptr<::hilti::Expression> e = nullptr;
+
+	target_types.push_back(target_type);
+
 	switch ( expr->Tag() ) {
 	case EXPR_ADD:
-		return Compile(static_cast<const ::AddExpr*>(expr));
+		e = Compile(static_cast<const ::AddExpr*>(expr));
+		break;
 
 	case EXPR_ADD_TO:
-		return Compile(static_cast<const ::AddToExpr*>(expr));
+		e = Compile(static_cast<const ::AddToExpr*>(expr));
+		break;
 
 	case EXPR_ARITH_COERCE:
-		return Compile(static_cast<const ::ArithCoerceExpr*>(expr));
+		e = Compile(static_cast<const ::ArithCoerceExpr*>(expr));
+		break;
 
 	case EXPR_ASSIGN:
-		return Compile(static_cast<const ::AssignExpr*>(expr));
+		e = Compile(static_cast<const ::AssignExpr*>(expr));
+		break;
 
 	case EXPR_CALL:
-		return Compile(static_cast<const ::CallExpr*>(expr));
+		e = Compile(static_cast<const ::CallExpr*>(expr));
+		break;
 
 	case EXPR_CLONE:
-		return Compile(static_cast<const ::CloneExpr*>(expr));
+		e = Compile(static_cast<const ::CloneExpr*>(expr));
 
 	case EXPR_COND:
-		return Compile(static_cast<const ::CondExpr*>(expr));
+		e = Compile(static_cast<const ::CondExpr*>(expr));
+		break;
 
 	case EXPR_CONST:
-		return Compile(static_cast<const ::ConstExpr*>(expr));
+		e = Compile(static_cast<const ::ConstExpr*>(expr));
+		break;
 
 	case EXPR_DIVIDE:
-		return Compile(static_cast<const ::DivideExpr*>(expr));
+		e = Compile(static_cast<const ::DivideExpr*>(expr));
+		break;
 
 	case EXPR_EVENT:
-		return Compile(static_cast<const ::EventExpr*>(expr));
+		e = Compile(static_cast<const ::EventExpr*>(expr));
+		break;
 
 	case EXPR_FIELD:
-		return Compile(static_cast<const ::FieldExpr*>(expr));
+		e = Compile(static_cast<const ::FieldExpr*>(expr));
+		break;
 
 	case EXPR_FIELD_ASSIGN:
-		return Compile(static_cast<const ::FieldAssignExpr*>(expr));
+		e = Compile(static_cast<const ::FieldAssignExpr*>(expr));
+		break;
 
 	case EXPR_FLATTEN:
-		return Compile(static_cast<const ::FlattenExpr*>(expr));
+		e = Compile(static_cast<const ::FlattenExpr*>(expr));
+		break;
 
 	case EXPR_HAS_FIELD:
-		return Compile(static_cast<const ::HasFieldExpr*>(expr));
+		e = Compile(static_cast<const ::HasFieldExpr*>(expr));
+		break;
 
 	case EXPR_IN:
-		return Compile(static_cast<const ::InExpr*>(expr));
+		e = Compile(static_cast<const ::InExpr*>(expr));
+		break;
 
 	case EXPR_INDEX:
-		return Compile(static_cast<const ::IndexExpr*>(expr));
+		e = Compile(static_cast<const ::IndexExpr*>(expr));
+		break;
 
 	case EXPR_LIST:
-		return Compile(static_cast<const ::ListExpr*>(expr));
+		e = Compile(static_cast<const ::ListExpr*>(expr));
+		break;
 
 	case EXPR_MOD:
-		return Compile(static_cast<const ::ModExpr*>(expr));
+		e = Compile(static_cast<const ::ModExpr*>(expr));
+		break;
 
 	case EXPR_NAME:
-		return Compile(static_cast<const ::NameExpr*>(expr));
+		e = Compile(static_cast<const ::NameExpr*>(expr));
+		break;
 
 	case EXPR_NEGATE:
-		return Compile(static_cast<const ::NegExpr*>(expr));
+		e = Compile(static_cast<const ::NegExpr*>(expr));
+		break;
 
 	case EXPR_NOT:
-		return Compile(static_cast<const ::NotExpr*>(expr));
+		e = Compile(static_cast<const ::NotExpr*>(expr));
+		break;
 
 	case EXPR_POSITIVE:
-		return Compile(static_cast<const ::PosExpr*>(expr));
+		e = Compile(static_cast<const ::PosExpr*>(expr));
+		break;
 
 	case EXPR_RECORD_COERCE:
-		return Compile(static_cast<const ::RecordCoerceExpr*>(expr));
+		e = Compile(static_cast<const ::RecordCoerceExpr*>(expr));
+		break;
 
 	case EXPR_RECORD_CONSTRUCTOR:
-		return Compile(static_cast<const ::RecordConstructorExpr*>(expr));
+		e = Compile(static_cast<const ::RecordConstructorExpr*>(expr));
+		break;
 
 	case EXPR_REF:
-		return Compile(static_cast<const ::RefExpr*>(expr));
+		e = Compile(static_cast<const ::RefExpr*>(expr));
+		break;
 
 	case EXPR_REMOVE_FROM:
-		return Compile(static_cast<const ::RemoveFromExpr*>(expr));
+		e = Compile(static_cast<const ::RemoveFromExpr*>(expr));
+		break;
 
 	case EXPR_SCHEDULE:
-		return Compile(static_cast<const ::ScheduleExpr*>(expr));
+		e = Compile(static_cast<const ::ScheduleExpr*>(expr));
+		break;
 
 	case EXPR_SET_CONSTRUCTOR:
-		return Compile(static_cast<const ::SetConstructorExpr*>(expr));
+		e = Compile(static_cast<const ::SetConstructorExpr*>(expr));
+		break;
 
 	case EXPR_SIZE:
-		return Compile(static_cast<const ::SizeExpr*>(expr));
+		e = Compile(static_cast<const ::SizeExpr*>(expr));
+		break;
 
 	case EXPR_SUB:
-		return Compile(static_cast<const ::SubExpr*>(expr));
+		e = Compile(static_cast<const ::SubExpr*>(expr));
+		break;
 
 	case EXPR_TABLE_COERCE:
-		return Compile(static_cast<const ::TableCoerceExpr*>(expr));
+		e = Compile(static_cast<const ::TableCoerceExpr*>(expr));
+		break;
 
 	case EXPR_TABLE_CONSTRUCTOR:
-		return Compile(static_cast<const ::TableConstructorExpr*>(expr));
+		e = Compile(static_cast<const ::TableConstructorExpr*>(expr));
+		break;
 
 	case EXPR_TIMES:
-		return Compile(static_cast<const ::TimesExpr*>(expr));
+		e = Compile(static_cast<const ::TimesExpr*>(expr));
+		break;
 
 	case EXPR_VECTOR_COERCE:
-		return Compile(static_cast<const ::VectorCoerceExpr*>(expr));
+		e = Compile(static_cast<const ::VectorCoerceExpr*>(expr));
+		break;
 
 	case EXPR_VECTOR_CONSTRUCTOR:
-		return Compile(static_cast<const ::VectorConstructorExpr*>(expr));
+		e = Compile(static_cast<const ::VectorConstructorExpr*>(expr));
+		break;
 
 	case EXPR_DECR:
 	case EXPR_INCR:
-		return Compile(static_cast<const ::IncrExpr*>(expr));
+		e = Compile(static_cast<const ::IncrExpr*>(expr));
+		break;
 
 	case EXPR_AND:
 	case EXPR_OR:
-		return Compile(static_cast<const ::BoolExpr*>(expr));
+		e = Compile(static_cast<const ::BoolExpr*>(expr));
+		break;
 
 	case EXPR_EQ:
 	case EXPR_NE:
-		return Compile(static_cast<const ::EqExpr*>(expr));
+		e = Compile(static_cast<const ::EqExpr*>(expr));
+		break;
 
 	case EXPR_GE:
 	case EXPR_GT:
 	case EXPR_LE:
 	case EXPR_LT:
-		return Compile(static_cast<const ::RelExpr*>(expr));
+		e = Compile(static_cast<const ::RelExpr*>(expr));
+		break;
 
 	default:
 		Error(::util::fmt("unsupported expression %s", ::expr_name(expr->Tag())));
 	}
 
-	// Cannot be reached.
+	target_types.pop_back();
+	return e;
+	}
+
+shared_ptr<::hilti::Type> ExpressionBuilder::TargetType() const
+	{
+	if ( target_types.size() )
+		return target_types.back();
+
 	return nullptr;
 	}
 
@@ -557,6 +607,19 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableConstruc
 	auto ttype = expr->Eval(0)->Type()->AsTableType();
 	auto vtype = HiltiType(ttype->YieldType());
 
+	if ( ttype->IsUnspecifiedTable() )
+		{
+		auto target = TargetType();
+
+		if ( ! target )
+			{
+			Error("UnspecifiedTable but no target type in ExpressionBuilder::TableCtorExpr", expr);
+			return 0;
+			}
+
+		return ::hilti::builder::expression::default_(target);
+		}
+
 	std::shared_ptr<::hilti::Type> ktype;
 
 	auto itypes = ttype->IndexTypes();
@@ -611,6 +674,19 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorConstru
 
 	auto vtype = expr->Eval(0)->Type()->AsVectorType();
 	auto ytype = HiltiType(vtype->YieldType());
+
+	if ( vtype->IsUnspecifiedVector() )
+		{
+		auto target = TargetType();
+
+		if ( ! target )
+			{
+			Error("UnspecifiedVector but no target type in ExpressionBuilder::VectorCtorExpr", expr);
+			return 0;
+			}
+
+		return ::hilti::builder::expression::default_(target);
+		}
 
 	::hilti::builder::vector::element_list elems;
 

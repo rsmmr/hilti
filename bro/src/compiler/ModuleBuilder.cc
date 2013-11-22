@@ -86,9 +86,11 @@ std::list<const ::ID *> ModuleBuilderCallback::Globals(const string& ns)
 	std::list<const ::ID *> globals;
 	std::set<const ::ID *>  sglobals;
 
+#if 0
 	if ( ns != "GLOBAL" )
 		// FIXME: Remove once we can compile all globals.
 		return globals;
+#endif
 
 	auto n = namespaces.find(ns);
 
@@ -98,6 +100,9 @@ std::list<const ::ID *> ModuleBuilderCallback::Globals(const string& ns)
 	for ( auto id : *(*n).second )
 		{
 		if ( ! id->IsGlobal() )
+			continue;
+
+		if ( id->IsConst() )
 			continue;
 
 		if ( id->HasVal() && id->ID_Val()->Type()->Tag() == TYPE_FUNC )

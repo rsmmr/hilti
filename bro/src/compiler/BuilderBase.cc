@@ -40,7 +40,13 @@ void BuilderBase::Error(const std::string& msg, const BroObj* obj)
 	{
 	auto s = msg + ::util::fmt(" [%s]", Location(obj));
 	DBG_LOG_COMPILER("builder error: %s", s.c_str());
+
+#if 1
+	fprintf(stderr, "%s\n", msg.c_str());
+	abort();
+#else
 	throw BuilderException(s);
+#endif
 	}
 
 void BuilderBase::Warning(const std::string& msg, const BroObj* obj)
@@ -112,14 +118,14 @@ std::shared_ptr<::hilti::Type> BuilderBase::HiltiType(const ::BroType* type)
 	return mbuilder->TypeBuilder()->Compile(type);
 	}
 
-std::shared_ptr<::hilti::Expression> BuilderBase::HiltiValue(const ::Val* val)
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiValue(const ::Val* val, shared_ptr<::hilti::Type> target_type)
 	{
-	return mbuilder->ValueBuilder()->Compile(val);
+	return mbuilder->ValueBuilder()->Compile(val, target_type);
 	}
 
-std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr)
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr, shared_ptr<::hilti::Type> target_type)
 	{
-	return mbuilder->ExpressionBuilder()->Compile(expr);
+	return mbuilder->ExpressionBuilder()->Compile(expr, target_type);
 	}
 
 shared_ptr<::hilti::Expression> BuilderBase::RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, const ::BroType* type)

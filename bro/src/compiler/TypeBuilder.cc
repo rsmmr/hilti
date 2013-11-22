@@ -97,7 +97,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 		return ::hilti::builder::interval::type();
 
 	case TYPE_PATTERN:
-		return ::hilti::builder::regexp::type();
+		return ::hilti::builder::reference::type(::hilti::builder::regexp::type());
 
 	case TYPE_PORT:
 		return ::hilti::builder::port::type();
@@ -170,7 +170,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
 		{
 		auto name = bargs->FieldName(i);
 		auto type = HiltiType(bargs->FieldType(i));
-		auto def = bargs->FieldDefault(i) ? HiltiValue(bargs->FieldDefault(i)) : nullptr;
+		auto def = bargs->FieldDefault(i) ? HiltiValue(bargs->FieldDefault(i), type) : nullptr;
 
 		auto param = ::hilti::builder::function::parameter(name, type, false, def);
 		hargs.push_back(param);
@@ -213,7 +213,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 
 		auto name = type->FieldName(i);
 		auto htype = HiltiType(type->FieldType(i));
-		auto def = bdef ? HiltiValue(bdef) : nullptr;
+		auto def = bdef ? HiltiValue(bdef, htype) : nullptr;
 		auto hf = ::hilti::builder::struct_::field(name, htype, def);
 
 		fields.push_back(hf);

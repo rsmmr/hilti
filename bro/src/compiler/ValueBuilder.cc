@@ -16,8 +16,12 @@ ValueBuilder::ValueBuilder(class ModuleBuilder* mbuilder)
 	{
 	}
 
-shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val)
+shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, shared_ptr<::hilti::Type> arg_target_type)
 	{
+	shared_ptr<::hilti::Expression> e = nullptr;
+
+	target_types.push_back(arg_target_type);
+
 	switch ( val->Type()->Tag() ) {
 	case TYPE_BOOL:
 	case TYPE_COUNT:
@@ -29,46 +33,66 @@ shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val)
 	case TYPE_INTERVAL:
 	case TYPE_TIME:
 	case TYPE_TYPE:
-		return CompileBaseVal(static_cast<const ::Val*>(val));
+		e = CompileBaseVal(static_cast<const ::Val*>(val));
+		break;
 
 	case TYPE_ADDR:
-		return Compile(static_cast<const ::AddrVal*>(val));
+		e = Compile(static_cast<const ::AddrVal*>(val));
+		break;
 
 	case TYPE_ENUM:
-		return Compile(static_cast<const ::EnumVal*>(val));
+		e = Compile(static_cast<const ::EnumVal*>(val));
+		break;
 
 	case TYPE_LIST:
-		return Compile(static_cast<const ::ListVal*>(val));
+		e = Compile(static_cast<const ::ListVal*>(val));
+		break;
 
 	case TYPE_OPAQUE:
-		return Compile(static_cast<const ::OpaqueVal*>(val));
+		e = Compile(static_cast<const ::OpaqueVal*>(val));
+		break;
 
 	case TYPE_PATTERN:
-		return Compile(static_cast<const ::PatternVal*>(val));
+		e = Compile(static_cast<const ::PatternVal*>(val));
+		break;
 
 	case TYPE_PORT:
-		return Compile(static_cast<const ::PortVal*>(val));
- 
+		e = Compile(static_cast<const ::PortVal*>(val));
+		break;
+
 	case TYPE_RECORD:
-		return Compile(static_cast<const ::RecordVal*>(val));
+		e = Compile(static_cast<const ::RecordVal*>(val));
+		break;
 
 	case TYPE_STRING:
-		return Compile(static_cast<const ::StringVal*>(val));
+		e = Compile(static_cast<const ::StringVal*>(val));
+		break;
 
 	case TYPE_SUBNET:
-		return Compile(static_cast<const ::SubNetVal*>(val));
+		e = Compile(static_cast<const ::SubNetVal*>(val));
+		break;
 
 	case TYPE_TABLE:
-		return Compile(static_cast<const ::TableVal*>(val));
+		e = Compile(static_cast<const ::TableVal*>(val));
+		break;
 
 	case TYPE_VECTOR:
-		return Compile(static_cast<const ::VectorVal*>(val));
+		e = Compile(static_cast<const ::VectorVal*>(val));
+		break;
 
 	default:
 		Error(::util::fmt("unsupported value of type %s", ::type_name(val->Type()->Tag())));
 	}
 
-	// Cannot be reached.
+	target_types.pop_back();
+	return e;
+	}
+
+shared_ptr<::hilti::Type> ValueBuilder::TargetType() const
+	{
+	if ( target_types.size() )
+		return target_types.back();
+
 	return nullptr;
 	}
 
@@ -152,7 +176,8 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::OpaqueVal* va
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PatternVal* val)
 	{
 	// TODO: We don't convert the regexp dialect yet.
-	return ::hilti::builder::address::create(val->AsPattern()->PatternText());
+	auto p = ::hilti::builder::regexp::pattern(val->AsPattern()->PatternText(), "");
+	return ::hilti::builder::regexp::create(p);
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PortVal* val)
@@ -191,7 +216,10 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::RecordVal* va
 		auto f = val->Lookup(i);
 
 		if ( f )
-			elems.push_back(HiltiValue(f));
+			{
+			auto ftype = HiltiType(type->FieldType(i));
+			elems.push_back(HiltiValue(f, ftype));
+			}
 		else
 			elems.push_back(::hilti::builder::unset::create());
 		}
@@ -213,6 +241,19 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::SubNetVal* va
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val)
 	{
+	if ( val->Type()->AsTableType()->IsUnspecifiedTable() )
+		{
+		auto target = TargetType();
+
+		if ( ! target )
+			{
+			Error("UnspecifiedTable but no target type in ValueBuilder::TableCtorExpr", val);
+			return 0;
+			}
+
+		return ::hilti::builder::expression::default_(target);
+		}
+
 	if ( val->Type()->IsSet() )
 		{
 		::hilti::builder::set::element_list elems;
@@ -282,11 +323,24 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::VectorVal* val)
 	{
+	if ( val->Type()->AsVectorType()->IsUnspecifiedVector() )
+		{
+		auto target = TargetType();
+
+		if ( ! target )
+			{
+			Error("UnspecifiedVector but no target type in ValueBuilder::VectorCtorExpr", val);
+			return 0;
+			}
+
+		return ::hilti::builder::expression::default_(target);
+		}
+
 	::hilti::builder::vector::element_list elems;
 
 	for ( int i = 0; i < val->Size(); i++ )
 		elems.push_back(HiltiValue(val->Lookup(i)));
 
-	auto vt = HiltiType(val->Type());
+	auto vt = HiltiType(val->Type()->AsVectorType()->YieldType());
 	return ::hilti::builder::vector::create(vt, elems);
 	}

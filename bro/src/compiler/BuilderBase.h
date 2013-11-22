@@ -199,9 +199,14 @@ public:
 	 *
 	 * @param val The Bro value to compile.
 	 *
+	 * @param target_type The target type that the compiled value should
+	 * have. This acts primarily as a hint in case the expression's type
+	 * isn't unambigious (e.g., with untyped constructors).
+	 *
 	 * @return The corresponding HILTI expression.
 	 */
-	std::shared_ptr<::hilti::Expression> HiltiValue(const ::Val* val);
+	std::shared_ptr<::hilti::Expression> HiltiValue(const ::Val* val,
+							shared_ptr<::hilti::Type> target_type = nullptr);
 
 	/**
 	 * Compiles a Bro expression into its HILTI equivalent. This is a
@@ -210,9 +215,15 @@ public:
 	 *
 	 * @param expr The Bro expression to compile.
 	 *
+	 * @param target_type The target type that the compiled expression
+	 * should have. This acts primarily as a hint in case the
+	 * expression's type isn't unambigious (e.g., with untyped
+	 * constructors).
+	 *
 	 * @return The corresponding HILTI expression.
 	 */
-	std::shared_ptr<::hilti::Expression> HiltiExpression(const ::Expr* expr);
+	std::shared_ptr<::hilti::Expression> HiltiExpression(const ::Expr* expr,
+							     shared_ptr<::hilti::Type> target_type = nullptr);
 
 	/**
 	 * Conerts a Bro \a Val into a HILTI expression dynamically at
