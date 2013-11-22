@@ -294,7 +294,7 @@ void Printer::visit(constant::Tuple* t)
 void Printer::visit(ctor::Bytes* b)
 {
     Printer& p = *this;
-    p << "b\"" << util::escapeUTF8(b->value()) << "\"";
+    p << "b\"" << util::escapeBytes(b->value()) << "\"";
 }
 
 void Printer::visit(ctor::List* l)

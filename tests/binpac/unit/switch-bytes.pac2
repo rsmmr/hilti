@@ -1,9 +1,8 @@
 #
-# @TEST-EXEC-FAIL:  printf "\xa1" | binpac++ %INPUT >output 2>&1
-# @TEST-EXEC-FAIL:  printf "\xb5" | binpac++ %INPUT >>output 2>&1
-# @TEST-EXEC:       btest-diff output
+# @TEST-EXEC:  printf "\xa1" | pac-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  printf "\xb5" | pac-driver-test %INPUT >>output 2>&1
+# @TEST-EXEC:  btest-diff output
 #
-# @TEST-KNOWN-FAILURE: fails with error, duplicate case
 
 module Mini;
 
