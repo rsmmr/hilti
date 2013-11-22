@@ -1,7 +1,7 @@
 
 opBegin(enum_::Equal)
-    opOp1(std::make_shared<type::Bool>())
-    opOp2(std::make_shared<type::Bool>())
+    opOp1(std::make_shared<type::Enum>())
+    opOp2(std::make_shared<type::Enum>())
 
     opDoc("Compared two boolean values.")
 
