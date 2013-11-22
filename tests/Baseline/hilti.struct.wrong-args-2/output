@@ -5,8 +5,8 @@ wrong-args.hlt:18-19: error, operands do not match instruction new
     new: string -> ref<A>
   expected one of:
     new: bytes -> ref<bytes>
-    new: callable<*>, <function>, tuple<*> -> ref<callable<*>>
-    new: callable<*>, <function><hook>, tuple<*> -> ref<callable<*>>
+    new: callable<*>, function() -> void, tuple<*> -> ref<callable<*>>
+    new: callable<*>, function() -> void<hook>, tuple<*> -> ref<callable<*>>
     new: channel<*>, [ int<64> ] -> ref<channel<*>>
     new: classifier<*> -> ref<classifier<*>>
     new: exception -> ref<exception>
@@ -18,7 +18,7 @@ wrong-args.hlt:18-19: error, operands do not match instruction new
     new: regexp<> -> ref<regexp<>>
     new: set<*>, [ ref<timer_mgr> ] -> ref<set<*>>
     new: struct { } , [ ref<timer_mgr> ] -> ref<struct { } >
-    new: timer, <function>, tuple<*> -> ref<timer>
+    new: timer, function() -> void, tuple<*> -> ref<timer>
     new: timer_mgr -> ref<timer_mgr>
     new: vector<*>, [ ref<timer_mgr> ] -> ref<vector<*>>
  [pass::hilti::InstructionResolver]
