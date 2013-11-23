@@ -1,0 +1,12 @@
+Total header size:  839
+Number of header objects:  6
+File properties:  <file_id=\xef\xfe\x16\xf05\xe1MC\xa5l\xc2>@?\xe3\xc5, file_size=3281019, creation_date=127737636031090000, data_packets_count=3641, play_duration=5286120000, send_duration=5250240000, preroll=3168, flags=2, minimum_data_packet_size=900, maximum_data_packet_size=900, maximum_bitrate=50000>
+Content information: 
+Title:  C\x00h\x00a\x00r\x00l\x00e\x00y\x00 \x00J\x00u\x00n\x00i\x00o\x00r\x00'\x00s\x00 \x00S\x00c\x00h\x00o\x00o\x00l\x00d\x00a\x00y\x00s\x00\x00\x00
+Author:  C\x00O\x00I\x00 \x00/\x00 \x00T\x00h\x00e\x00 \x00N\x00a\x00t\x00i\x00o\x00n\x00a\x00l\x00 \x00A\x00r\x00c\x00h\x00i\x00v\x00e\x00s\x00\x00\x00
+Description:  \x00\x00
+Copyright:  C\x00r\x00o\x00w\x00n\x00 \x00C\x00o\x00p\x00y\x00r\x00i\x00g\x00h\x00t\x00\x00\x00
+Rating:  (\x00N\x00o\x00n\x00e\x00)\x00\x00\x00
+Properties of stream  1 :  <stream_type_raw=@\x9ei\xf8M[\xcf\x11\xa8\xfd\x00\x80_\D+, error_correction_type_raw=P\xcd\xc3\xbf\x8fa\xcf\x11\x8b\xb2\x00\xaa\x00\xb4\xe2 , time_offset=0, type_specific_length=28, error_correction_data_length=8, flags=1, reserved=1680424, asf_audio_type=<codec_id=353, channels=1, samples_per_seconds=22050, avg_bytes_per_second=2002, block_alignment=595, bps=16, codec_data_size=10>, asf_video_type=(not set), stream_type=ASF_Audio, error_correction_type=ASF_Audio_Spread>
+Properties of stream  2 :  <stream_type_raw=\xc0\xef\x19\xbcM[\xcf\x11\xa8\xfd\x00\x80_\D+, error_correction_type_raw=\x00W\xfb U[\xcf\x11\xa8\xfd\x00\x80_\D+, time_offset=0, type_specific_length=51, error_correction_data_length=0, flags=2, reserved=1680424, asf_audio_type=(not set), asf_video_type=<image_width=352, image_height=288, format_data_length=40>, stream_type=ASF_Video, error_correction_type=ASF_NO_Error_Correction>
+Codec list:  <num_codec_entries=2, codecs=[<codec_type=Audio, codec_name_length=23, codec_name=W\x00i\x00n\x00d\x00o\x00w\x00s\x00 \x00M\x00e\x00d\x00i\x00a\x00 \x00A\x00u\x00d\x00i\x00o\x00 \x00V\x002\x00\x00\x00, codec_description_length=23, codec_description= \x001\x006\x00 \x00k\x00b\x00p\x00s\x00,\x00 \x002\x002\x00 \x00k\x00H\x00z\x00,\x00 \x00m\x00o\x00n\x00o\x00\x00\x00, codec_information_length=2, codec_information=a\x01>, <codec_type=Video, codec_name_length=32, codec_name=M\x00i\x00c\x00r\x00o\x00s\x00o\x00f\x00t\x00 \x00M\x00P\x00E\x00G\x00-\x004\x00 \x00V\x00i\x00d\x00e\x00o\x00 \x00C\x00o\x00d\x00e\x00c\x00 \x00V\x003\x00\x00\x00, codec_description_length=0, codec_description=, codec_information_length=4, codec_information=MP43>]>

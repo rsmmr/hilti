@@ -1,0 +1,229 @@
+module Asf;
+
+type ValueDataType = enum {
+  Unicode = 0x0,
+  ByteArray = 0x1,
+  Bool = 0x2,
+  Uint32 = 0x3,
+  Uint64 = 0x4,
+  Uint16 = 0x2
+};
+
+type asf_extended_content_description_descriptor = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  name_length : uint16;
+  name : bytes &length=self.name_length;
+  data_type : uint16 &convert=ValueDataType($$);
+  data_length : uint16;
+
+  switch ( self.data_type ) {
+    ValueDataType::Unicode, ValueDataType::ByteArray -> string_value : bytes &length=self.data_length;
+    ValueDataType::Uint64 -> uint64_value : uint64;
+    ValueDataType::Bool, ValueDataType::Uint32 -> uint32_value : uint32;
+    ValueDataType::Uint16 -> uint16_value : uint16;
+    # * -> int_value : bytes &length=self.data_length $$.to_uint(BinPAC::ByteOrder::Little); <- replace the preceeding 3 cases with this once $$.to_uint works
+  };
+};
+
+type asf_file_properties = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  file_id : bytes &length=16;
+  file_size : uint64;
+  creation_date : uint64;
+  data_packets_count : uint64;
+  play_duration : uint64;
+  send_duration : uint64;
+  preroll : uint64;
+  flags : bitfield(32) {
+    broadcast : 0;
+    seekable : 1;
+    reserved : 3..31;
+  };
+  minimum_data_packet_size : uint32;
+  maximum_data_packet_size : uint32;
+  maximum_bitrate : uint32;
+};
+
+type asf_extended_content_description = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  descriptors_count : uint16; # no idea why this is big endian
+  descriptors : list<asf_extended_content_description_descriptor> &length=self.descriptors_count;
+};
+
+type codec_list = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  : bytes &length=16; # reserved
+  num_codec_entries: uint32;
+
+  codecs : list<codec_list_entry> &length=self.num_codec_entries;
+};
+
+type CodecTypes = enum {
+  Video = 0x0001,
+  Audio = 0x0002,
+  Unknown = 0xFFFF
+};
+
+type codec_list_entry = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  codec_type: uint16 &convert=CodecTypes($$);
+  codec_name_length: uint16;
+  codec_name: bytes &length=self.codec_name_length * 2;
+  codec_description_length: uint16;
+  codec_description: bytes &length=self.codec_description_length * 2;
+  codec_information_length: uint16;
+  codec_information: bytes &length=self.codec_information_length;
+};
+
+type stream_bitrate_properties = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  num_records: uint16;
+  records: list <bitrate_record> &length=self.num_records;
+};
+
+type bitrate_record = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  flags : bitfield(16) {
+    stream_number: 0..6;
+    reserved: 7..12;
+  };
+  average_bitrate: uint32;
+};
+
+type StreamPropertiesType = enum {
+ASF_Audio, ASF_Video, ASF_Command, ASF_JFIF, ASF_Degradable_JPEG, ASF_File_Transfer, ASF_Binary,
+ASF_Web_Stream_Media_Subtype, ASF_Web_Stream_Format, ASF_NO_Error_Correction, ASF_Audio_Spread, Unknown
+};
+
+type stream_properties = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  stream_type_raw: bytes &length=16;
+  var stream_type: StreamPropertiesType;
+
+  switch ( self.stream_type_raw ) {
+    b"\x40\x9E\x69\xF8\x4D\x5B\xCF\x11\xA8\xFD\x00\x80\x5F\x5C\x44\x2B" -> : void { self.stream_type = StreamPropertiesType::ASF_Audio; }
+    b"\xC0\xEF\x19\xBC\x4D\x5B\xCF\x11\xA8\xFD\x00\x80\x5F\x5C\x44\x2B" -> : void { self.stream_type = StreamPropertiesType::ASF_Video; }
+    b"\xC0\xCF\xDA\x59\xE6\x59\xD0\x11\xA3\xAC\x00\xA0\xC9\x03\x48\xF6" -> : void { self.stream_type = StreamPropertiesType::ASF_Command; }
+    b"\x00\xE1\x1B\xB6\x4E\x5B\xCF\x11\xA8\xFD\x00\x80\x5F\x5C\x44\x2B" -> : void { self.stream_type = StreamPropertiesType::ASF_JFIF; }
+    b"\xE0\x7D\x90\x35\x15\xE4\xCF\x11\xA9\x17\x00\x80\x5F\x5C\x44\x2B" -> : void { self.stream_type = StreamPropertiesType::ASF_Degradable_JPEG; }
+    b"\x2C\x22\xBD\x91\x1C\xF2\x7A\x49\x8B\x6D\x5A\xA8\x6B\xFC\x01\x85" -> : void { self.stream_type = StreamPropertiesType::ASF_File_Transfer; }
+    b"\xE2\x65\xFB\x3A\xEF\x47\xF2\x40\xAC\x2C\x70\xA9\x0D\x71\xD3\x43" -> : void { self.stream_type = StreamPropertiesType::ASF_Binary; }
+    b"\xD4\x57\x62\x77\x27\xC6\xCB\x41\x8F\x81\x7A\xC7\xFF\x1C\x40\xCC" -> : void { self.stream_type = StreamPropertiesType::ASF_Web_Stream_Media_Subtype; }
+    b"\x13\x6B\x1E\xDA\x59\x83\x50\x40\xB3\x98\x38\x8E\x96\x5B\xF0\x0C" -> : void { self.stream_type = StreamPropertiesType::ASF_Web_Stream_Format; }
+    *  -> : void { self.stream_type = StreamPropertiesType::Unknown; }
+  };
+
+  error_correction_type_raw: bytes &length=16;
+  var error_correction_type: StreamPropertiesType;
+
+  switch ( self.error_correction_type_raw ) {
+    b"\x00\x57\xFB\x20\x55\x5B\xCF\x11\xA8\xFD\x00\x80\x5F\x5C\x44\x2B" -> : void { self.error_correction_type = StreamPropertiesType::ASF_NO_Error_Correction; }
+    b"\x50\xCD\xC3\xBF\x8F\x61\xCF\x11\x8B\xB2\x00\xAA\x00\xB4\xE2\x20" -> : void { self.error_correction_type = StreamPropertiesType::ASF_Audio_Spread; }
+    *  -> : void { self.error_correction_type = StreamPropertiesType::Unknown; }
+  };
+  
+  time_offset: uint64;
+  type_specific_length: uint32;
+  error_correction_data_length: uint32;
+  flags : bitfield(16) {
+    stream_number: 0..6;
+    reserved: 7..14;
+    encrypted_content: 15;
+  };
+  reserved : uint32;
+  
+  switch ( self.stream_type ) {
+    StreamPropertiesType::ASF_Audio -> asf_audio_type : asf_audio_type;
+    StreamPropertiesType::ASF_Video -> asf_video_type : asf_video_type;
+    * -> : bytes &length=self.type_specific_length;
+  };
+   : bytes &length=self.error_correction_data_length;
+};
+
+type asf_audio_type = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  codec_id: uint16;
+  channels: uint16;
+  samples_per_seconds: uint32;
+  avg_bytes_per_second: uint32;
+  block_alignment: uint16;
+  bps: uint16;
+  codec_data_size: uint16;
+   : bytes &length=self.codec_data_size;
+};
+
+type asf_video_type = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  image_width: uint32;
+  image_height: uint32;
+   : uint8; #reserved
+  format_data_length: uint16;
+   : bytes &length=self.format_data_length;
+};
+
+type asf_header_extension = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+  
+   : bytes &length=16; #reserved
+   : uint16; #reserved, should be 6
+  data_length: uint32;
+   : bytes &length=self.data_length;
+};
+
+type asf_content_description = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  title_length: uint16;
+  author_length: uint16;
+  copyright_length: uint16;
+  description_length: uint16;
+  rating_length: uint16;
+
+  title: bytes &length=self.title_length;
+  author: bytes &length=self.author_length;
+  copyright: bytes &length=self.copyright_length;
+  description: bytes &length=self.description_length;
+  rating: bytes &length=self.rating_length;
+};
+
+type asf_header_object = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  object_id : bytes &length=16;
+  size: uint64;
+
+  switch ( self.object_id ) {
+    b"@\xa4\xd0\xd2\x07\xe3\xd2\x11\x97\xf0\x00\xa0\xc9^\xa8P" -> asf_extended_content_description : asf_extended_content_description;
+    b"\xa1\xdc\xab\x8cG\xa9\xcf\x11\x8e\xe4\x00\xc0\x0c Se" -> asf_file_properties : asf_file_properties;
+    b"\xb5\x03\xbf_.\xa9\xcf\x11\x8e\xe3\x00\xc0\x0c\x20\x53\x65" -> asf_header_extension : asf_header_extension;
+    b"@R\xd1\x86\x1d1\xd0\x11\xa3\xa4\x00\xa0\xc9\x03H\xf6" -> codec_list : codec_list;
+    b"\x91\x07\xdc\xb7\xb7\xa9\xcf\x11\x8e\xe6\x00\xc0\x0c Se" -> stream_properties : stream_properties;
+    b"\xceu\xf8{\x8dF\xd1\x11\x8d\x82\x00`\x97\xc9\xa2\xb2" -> stream_bitrate_properties : stream_bitrate_properties;
+    b"\x33\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C" -> asf_content_description : asf_content_description;
+    * -> : bytes &length=(self.size - 24); # unknown
+  };
+  
+};
+
+export type AsfFile = unit {
+  %byteorder = BinPAC::ByteOrder::Little;
+
+  # ASF begins with a fixed 128-bit guid. 
+   : b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xAA\x00\x62\xCE\x6C";
+  size : uint64;
+  number_objects : uint32;
+   : b"\x01";
+   : b"\x02";
+
+  listheader : list <asf_header_object> &length=self.number_objects;
+};
