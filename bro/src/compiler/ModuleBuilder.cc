@@ -290,9 +290,11 @@ void ModuleBuilder::CompileEvent(const BroFunc* event)
 
 	for ( auto b : event->GetBodies() )
 		{
+#if 1
 		if ( b.priority != 42 )
 			// FIXME: Hack to select which handlers we want to compile.
 			continue;
+#endif
 
 		// Compile the event body into a hook.
 
@@ -382,7 +384,7 @@ void ModuleBuilder::CompileFunctionBody(const ::Func* func, void* vbody)
 
 	while ( (id = vars->NextEntry(h, c)) )
 		{
-		Builder()->addLocal(HiltiSymbol(id), HiltiType(id->Type()));
+		addLocal(HiltiSymbol(id), HiltiType(id->Type()));
 		delete h;
 		}
 

@@ -16,71 +16,71 @@ StatementBuilder::StatementBuilder(class ModuleBuilder* mbuilder)
 	{
 	}
 
-void StatementBuilder::Compile(Stmt* stmt)
+void StatementBuilder::Compile(const Stmt* stmt)
 	{
 	switch ( stmt->Tag() ) {
 	case STMT_ADD:
-		Compile(static_cast<::AddStmt*>(stmt));
+		Compile(static_cast<const ::AddStmt*>(stmt));
 		break;
 
 	case STMT_BREAK:
-		Compile(static_cast<::BreakStmt*>(stmt));
+		Compile(static_cast<const ::BreakStmt*>(stmt));
 		break;
 
 	case STMT_DELETE:
-		Compile(static_cast<::DelStmt*>(stmt));
+		Compile(static_cast<const ::DelStmt*>(stmt));
 		break;
 
 	case STMT_EVENT:
-		Compile(static_cast<::EventStmt*>(stmt));
+		Compile(static_cast<const ::EventStmt*>(stmt));
 		break;
 
 	case STMT_EXPR:
-		Compile(static_cast<::ExprStmt*>(stmt));
+		Compile(static_cast<const ::ExprStmt*>(stmt));
 		break;
 
 	case STMT_FALLTHROUGH:
-		Compile(static_cast<::FallthroughStmt*>(stmt));
+		Compile(static_cast<const ::FallthroughStmt*>(stmt));
 		break;
 
 	case STMT_FOR:
-		Compile(static_cast<::ForStmt*>(stmt));
+		Compile(static_cast<const ::ForStmt*>(stmt));
 		break;
 
 	case STMT_IF:
-		Compile(static_cast<::IfStmt*>(stmt));
+		Compile(static_cast<const ::IfStmt*>(stmt));
 		break;
 
 	case STMT_INIT:
-		Compile(static_cast<::InitStmt*>(stmt));
+		Compile(static_cast<const ::InitStmt*>(stmt));
 		break;
 
 	case STMT_NEXT:
-		Compile(static_cast<::NextStmt*>(stmt));
+		Compile(static_cast<const ::NextStmt*>(stmt));
 		break;
 
 	case STMT_NULL:
-		Compile(static_cast<::NullStmt*>(stmt));
+		Compile(static_cast<const ::NullStmt*>(stmt));
 		break;
 
 	case STMT_PRINT:
-		Compile(static_cast<::PrintStmt*>(stmt));
+		Compile(static_cast<const ::PrintStmt*>(stmt));
 		break;
 
 	case STMT_RETURN:
-		Compile(static_cast<::ReturnStmt*>(stmt));
+		Compile(static_cast<const ::ReturnStmt*>(stmt));
 		break;
 
 	case STMT_LIST:
-		Compile(static_cast<::StmtList*>(stmt));
+		Compile(static_cast<const ::StmtList*>(stmt));
 		break;
 
 	case STMT_SWITCH:
-		Compile(static_cast<::SwitchStmt*>(stmt));
+		Compile(static_cast<const ::SwitchStmt*>(stmt));
 		break;
 
 	case STMT_WHEN:
-		Compile(static_cast<::WhenStmt*>(stmt));
+		Compile(static_cast<const ::WhenStmt*>(stmt));
 		break;
 
 	default:
@@ -88,63 +88,125 @@ void StatementBuilder::Compile(Stmt* stmt)
 	}
 	}
 
-void StatementBuilder::Compile(::AddStmt* stmt)
+void StatementBuilder::Compile(const ::AddStmt* stmt)
 	{
 	Error("no support yet for compiling AddStmt", stmt);
 	}
 
-void StatementBuilder::Compile(::BreakStmt* stmt)
+void StatementBuilder::Compile(const ::BreakStmt* stmt)
 	{
 	Error("no support yet for compiling BreakStmt", stmt);
 	}
 
-void StatementBuilder::Compile(::DelStmt* stmt)
+void StatementBuilder::Compile(const ::DelStmt* stmt)
 	{
 	Error("no support yet for compiling DelStmt", stmt);
 	}
 
-void StatementBuilder::Compile(::EventStmt* stmt)
+void StatementBuilder::Compile(const ::EventStmt* stmt)
 	{
 	Error("no support yet for compiling EventStmt", stmt);
 	}
 
-void StatementBuilder::Compile(::ExprStmt* stmt)
+void StatementBuilder::Compile(const ::ExprStmt* stmt)
 	{
 	HiltiExpression(stmt->StmtExpr());
 	}
 
-void StatementBuilder::Compile(::FallthroughStmt* stmt)
+void StatementBuilder::Compile(const ::FallthroughStmt* stmt)
 	{
 	Error("no support yet for compiling FallthroughStmt", stmt);
 	}
 
-void StatementBuilder::Compile(::ForStmt* stmt)
+void StatementBuilder::Compile(const ::ForStmt* stmt)
 	{
-	Error("no support yet for compiling ForStmt", stmt);
+	auto type = stmt->LoopExpr()->Type();
+	auto expr = HiltiExpression(stmt->LoopExpr());
+	auto n = ::util::fmt("__i_%p", stmt);
+	auto id = ::hilti::builder::id::node(n);
+	shared_ptr<::hilti::Expression> iter = ::hilti::builder::id::create(n);
+
+	std::shared_ptr<::hilti::ID> n2(nullptr);
+
+	ModuleBuilder()->pushBody(true);
+    ModuleBuilder()->pushBuilder(n2);
+
+	// For maps, HILTI gives us a tuple of key and value during
+	// iteration, while Bro expects only the former; so get that first.
+	//
+	// TODO: It's a pity that we throw away the value here because very
+	// likely the body will have a lookup t[key] to get exactly that. We
+	// could add an optimization pass at the HILTI level that would later
+	// recognize this situation and reuse the value directly, omitting
+	// the unnecssary lookup.
+	if ( type->Tag() == TYPE_TABLE && ! type->AsTableType()->IsSet() )
+		{
+		auto rtype = ::ast::checkedCast<::hilti::type::Reference>(HiltiType(type));
+		auto mtype = ::ast::checkedCast<::hilti::type::Map>(rtype->argType());
+		auto key = Builder()->addTmp("key", mtype->keyType());
+		Builder()->addInstruction(key,
+					  ::hilti::instruction::tuple::Index,
+					  iter,
+					  ::hilti::builder::integer::create(0));
+
+		iter = key;
+		}
+
+	auto vars = stmt->LoopVar();
+	assert(vars->length());
+
+	if ( vars->length() == 1 )
+		{
+		// A single value, just assign to the right local variable.
+		auto dst = ::hilti::builder::id::create(HiltiSymbol((*vars)[0]));
+		Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, iter);
+		}
+
+	else
+		{
+		// A tuple, assign each element to its corresponding variable.
+		loop_over_list(*vars, i)
+			{
+			auto dst = ::hilti::builder::id::create(HiltiSymbol((*vars)[i]));
+			Builder()->addInstruction(dst,
+						  ::hilti::instruction::tuple::Index,
+						  iter,
+						  ::hilti::builder::integer::create(i));
+			}
+		}
+
+	Compile(stmt->LoopBody());
+
+    ModuleBuilder()->popBuilder();
+    auto body = ModuleBuilder()->popBody();
+
+	auto body_stmt = ::ast::checkedCast<statement::Block>(body->block());
+	auto s = ::hilti::builder::loop::foreach(id, expr, body_stmt);
+	Builder()->addInstruction(s);
 	}
 
-void StatementBuilder::Compile(::IfStmt* stmt)
+void StatementBuilder::Compile(const ::IfStmt* stmt)
 	{
 	Error("no support yet for compiling IfStmt", stmt);
 	}
 
-void StatementBuilder::Compile(::InitStmt* stmt)
+void StatementBuilder::Compile(const ::InitStmt* stmt)
 	{
 	// We don't need this, it's for initialized function parameters.
 	// TODO: Is that indeed all it's used for?
 	}
 
-void StatementBuilder::Compile(::NextStmt* stmt)
+void StatementBuilder::Compile(const ::NextStmt* stmt)
 	{
 	Error("no support yet for compiling NextStmt", stmt);
 	}
 
-void StatementBuilder::Compile(::NullStmt* stmt)
+void StatementBuilder::Compile(const ::NullStmt* stmt)
 	{
         // This one is easy. :)
 	}
 
-void StatementBuilder::Compile(::PrintStmt* stmt)
+void StatementBuilder::Compile(const ::PrintStmt* stmt)
 	{
 	auto print = ::hilti::builder::id::create("Hilti::print");
 
@@ -193,12 +255,12 @@ void StatementBuilder::Compile(::PrintStmt* stmt)
 		}
 	}
 
-void StatementBuilder::Compile(::ReturnStmt* stmt)
+void StatementBuilder::Compile(const ::ReturnStmt* stmt)
 	{
 	Error("no support yet for compiling ReturnStmt", stmt);
 	}
 
-void StatementBuilder::Compile(::StmtList* stmt)
+void StatementBuilder::Compile(const ::StmtList* stmt)
 	{
 	loop_over_list(stmt->Stmts(), i)
 		{
@@ -218,12 +280,12 @@ void StatementBuilder::Compile(::StmtList* stmt)
 		}
 	}
 
-void StatementBuilder::Compile(::SwitchStmt* stmt)
+void StatementBuilder::Compile(const ::SwitchStmt* stmt)
 	{
 	Error("no support yet for compiling SwitchStmt", stmt);
 	}
 
-void StatementBuilder::Compile(::WhenStmt* stmt)
+void StatementBuilder::Compile(const ::WhenStmt* stmt)
 	{
 	Error("no support yet for compiling WhenStmt", stmt);
 	}

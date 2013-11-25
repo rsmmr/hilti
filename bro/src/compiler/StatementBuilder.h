@@ -43,25 +43,25 @@ public:
 	 * Compiles a Bro statement into HILTI code, inserting the code at
 	 * the associated module builder's current location.
 	 */
-	void Compile(Stmt* stmt);
+	void Compile(const Stmt* stmt);
 
 protected:
-	void Compile(::AddStmt* stmt);
-	void Compile(::BreakStmt* stmt);
-	void Compile(::DelStmt* stmt);
-	void Compile(::EventStmt* stmt);
-	void Compile(::ExprStmt* stmt);
-	void Compile(::FallthroughStmt* stmt);
-	void Compile(::ForStmt* stmt);
-	void Compile(::IfStmt* stmt);
-	void Compile(::InitStmt* stmt);
-	void Compile(::NextStmt* stmt);
-	void Compile(::NullStmt* stmt);
-	void Compile(::PrintStmt* stmt);
-	void Compile(::ReturnStmt* stmt);
-	void Compile(::StmtList* stmt);
-	void Compile(::SwitchStmt* stmt);
-	void Compile(::WhenStmt* stmt);
+	void Compile(const ::AddStmt* stmt);
+	void Compile(const ::BreakStmt* stmt);
+	void Compile(const ::DelStmt* stmt);
+	void Compile(const ::EventStmt* stmt);
+	void Compile(const ::ExprStmt* stmt);
+	void Compile(const ::FallthroughStmt* stmt);
+	void Compile(const ::ForStmt* stmt);
+	void Compile(const ::IfStmt* stmt);
+	void Compile(const ::InitStmt* stmt);
+	void Compile(const ::NextStmt* stmt);
+	void Compile(const ::NullStmt* stmt);
+	void Compile(const ::PrintStmt* stmt);
+	void Compile(const ::ReturnStmt* stmt);
+	void Compile(const ::StmtList* stmt);
+	void Compile(const ::SwitchStmt* stmt);
+	void Compile(const ::WhenStmt* stmt);
 };
 
 }

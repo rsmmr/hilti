@@ -228,6 +228,21 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _endPass();
 
+    // Rebuilt scopes.
+    _beginPass(module, scope_builder);
+
+    if ( ! scope_builder.run(module) )
+            return false;
+
+    _endPass();
+
+    _beginPass(module, id_resolver);
+
+    if ( ! id_resolver.run(module, false) )
+        return false;
+
+    _endPass();
+
     _beginPass(module, instruction_resolver);
 
     if ( ! instruction_resolver.run(module, false) )

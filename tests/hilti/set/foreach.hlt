@@ -1,0 +1,33 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+
+    local ref<set<int<32>>> l
+    local ref<set<tuple<int<64>, ref<bytes>>>> l2
+    
+    l = set<int<32>>(1,2,3,4,5)
+
+    for ( x in l ) {
+        call Hilti::print (x)
+    }
+
+    call Hilti::print ("", True)
+
+    l2 = set<tuple<int<64>, ref<bytes>>>((1, b"A"), (2, b"B"), (3, b"B"))
+
+    for ( x in l2 ) {
+        call Hilti::print (x)
+    }
+
+    call Hilti::print ("", True)
+
+    return.void
+}
+
