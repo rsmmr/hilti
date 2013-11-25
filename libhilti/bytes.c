@@ -792,17 +792,17 @@ hlt_iterator_bytes hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_
     if ( pos < 0 )
         pos += hlt_bytes_len(b, excpt, ctx);
 
+    if ( pos < 0 )
+        return hlt_bytes_end(b, excpt, ctx);
+
     __hlt_bytes_chunk* c;
-    for ( c = b->head; pos >= (c->end - c->start); c = c->next ) {
-
-        if ( ! c ) {
-            // Position is out range.
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
-            return GenericEndPos;
-        }
-
+    for ( c = b->head; c && pos >= (c->end - c->start); c = c->next ) {
         pos -= (c->end - c->start);
+    }
 
+    if ( ! c ) {
+        // Position is out range, return end().
+        return hlt_bytes_end(b, excpt, ctx);
     }
 
     hlt_iterator_bytes p;
