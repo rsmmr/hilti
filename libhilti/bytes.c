@@ -1082,10 +1082,8 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
 
     const hlt_bytes* b = *((const hlt_bytes**)obj);
 
-    if ( ! b ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! b )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
     char hex[5] = { '\\', 'x', 'X', 'X', '\0' };
     char buffer[256];

@@ -469,10 +469,8 @@ hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t
 {
     const hlt_map* m = *((const hlt_map**)obj);
 
-    if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! m )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
     int8_t first = 1;
 
@@ -744,10 +742,8 @@ hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t
 {
     const hlt_set* m = *((const hlt_set**)obj);
 
-    if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! m )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
     int8_t first = 1;
 

@@ -91,6 +91,9 @@ hlt_string hlt_iosrc_to_string(const hlt_type_info* type, const void* obj, int32
 {
     const hlt_iosrc* src = *((const hlt_iosrc**)obj);
 
+    if ( ! src )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
+
     hlt_string prefix = hlt_string_from_asciiz("<pcap source ", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz(">", excpt, ctx);
 

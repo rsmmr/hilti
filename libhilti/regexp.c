@@ -178,6 +178,9 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
 {
     const hlt_regexp* re = *((const hlt_regexp**)obj);
 
+    if ( ! re )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
+
     if ( ! re->num )
         return hlt_string_from_asciiz("<no pattern>", excpt, ctx);
 

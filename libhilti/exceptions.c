@@ -221,10 +221,8 @@ hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, i
 {
     const hlt_exception* e = *((const hlt_exception**)obj);
 
-    if ( ! e ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! e )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
     // FIXME: This should include the same information as the print()
     // functions.

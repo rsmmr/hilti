@@ -406,6 +406,9 @@ hlt_string hlt_file_to_string(const hlt_type_info* type, const void* obj, int32_
     assert(type->type == HLT_TYPE_FILE);
     hlt_file* file = *((hlt_file **)obj);
 
+    if ( ! file )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
+
     hlt_string prefix = hlt_string_from_asciiz("<file ", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz(">", excpt, ctx);
 
