@@ -1,7 +1,8 @@
 #
-# @TEST-EXEC:  printf '\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05' | pac-driver-test %INPUT >output
+# @TEST-EXEC:  printf '\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\xb4\x92\x04\x00\xb4\x92\x04\x00' | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
+# @TEST-KNOWN-FAILURE: b returns 299775 instead of the correct 299700
 
 module Mini;
 
@@ -10,6 +11,9 @@ export type test = unit {
        sb: bytes &length=5 &convert=$$.to_int(BinPAC::ByteOrder::Network);
        ul: bytes &length=5 &convert=$$.to_uint(BinPAC::ByteOrder::Little);
        ub: bytes &length=5 &convert=$$.to_uint(BinPAC::ByteOrder::Network);
+       
+       a: uint32 &byteorder=BinPAC::ByteOrder::Little;
+       b: bytes &length=4 &convert=$$.to_uint(BinPAC::ByteOrder::Little);
 
        on %done { print self; }
 };
