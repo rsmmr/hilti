@@ -123,6 +123,11 @@ std::shared_ptr<::hilti::Expression> BuilderBase::HiltiValue(const ::Val* val, s
 	return mbuilder->ValueBuilder()->Compile(val, target_type);
 	}
 
+shared_ptr<::hilti::Expression> BuilderBase::HiltiInitValue(const ::BroType* type)
+	{
+	return mbuilder->ValueBuilder()->InitValue(type);
+	}
+
 std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr, shared_ptr<::hilti::Type> target_type)
 	{
 	return mbuilder->ExpressionBuilder()->Compile(expr, target_type);

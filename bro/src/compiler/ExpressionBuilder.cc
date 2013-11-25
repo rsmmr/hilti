@@ -20,9 +20,58 @@ using namespace bro::hilti::compiler;
 	     shared_ptr<::hilti::Expression> op1, \
 	     shared_ptr<::hilti::Expression> op2) \
 
+#define CANNOT_BE_REACHED \
+   	Error("code that cannot be reached has been reached"); \
+	abort();
+
 ExpressionBuilder::ExpressionBuilder(class ModuleBuilder* mbuilder)
 	: BuilderBase(mbuilder)
 	{
+	}
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::BroType* type, const char* where)
+	{
+	Error(::util::fmt("type %s not supported in %s", type_name(type->Tag()), where), type);
+	return nullptr;
+	}
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Expr* expr, const char* where)
+	{
+	Error(::util::fmt("expression %s not supported in %s", expr_name(expr->Tag()), where), expr);
+	return nullptr;
+	}
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::UnaryExpr* expr, const char* where)
+	{
+	Error(::util::fmt("unary expression %s not supported for operand of type %s",
+			  ::expr_name(expr->Tag()),
+			  ::type_name(expr->Op()->Type()->Tag())),
+	     expr);
+
+	return nullptr;
+	}
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::BinaryExpr* expr, const char* where)
+	{
+	Error(::util::fmt("binary expression %s not supported for operands of types %s and %s",
+			  ::expr_name(expr->Tag()),
+			  ::type_name(expr->Op1()->Type()->Tag()),
+			  ::type_name(expr->Op2()->Type()->Tag())),
+	     expr);
+
+	return nullptr;
+	}
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::HiltiIndex(const ::Expr* idx)
+	{
+	assert(idx->Tag() == EXPR_LIST);
+
+	auto lexpr = idx->AsListExpr();
+
+	if ( lexpr->Exprs().length() == 1 )
+		return HiltiExpression(lexpr->Exprs()[0]);
+	else
+		return HiltiExpression(lexpr);
 	}
 
 shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, shared_ptr<::hilti::Type> target_type)
@@ -194,7 +243,7 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, sha
 		break;
 
 	default:
-		Error(::util::fmt("unsupported expression %s", ::expr_name(expr->Tag())));
+		NotSupported(expr, "Compile");
 	}
 
 	target_types.pop_back();
@@ -207,23 +256,6 @@ shared_ptr<::hilti::Type> ExpressionBuilder::TargetType() const
 		return target_types.back();
 
 	return nullptr;
-	}
-
-void ExpressionBuilder::UnsupportedExpression(const ::UnaryExpr* expr)
-	{
-	Error(::util::fmt("unary %s not supported for operand of type %s",
-			  ::expr_name(expr->Tag()),
-			  ::type_name(expr->Op()->Type()->Tag())),
-	     expr);
-	}
-
-void ExpressionBuilder::UnsupportedExpression(const ::BinaryExpr* expr)
-	{
-	Error(::util::fmt("binary %s not supported for operands of types %s and %s",
-			  ::expr_name(expr->Tag()),
-			  ::type_name(expr->Op1()->Type()->Tag()),
-			  ::type_name(expr->Op2()->Type()->Tag())),
-	     expr);
 	}
 
 bool ExpressionBuilder::CompileOperator(const ::UnaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op, shared_ptr<::hilti::Instruction> ins)
@@ -283,15 +315,14 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AddExpr* expr
 	ok = ok || CompileOperator(expr, result, ::TYPE_STRING, ::TYPE_STRING, ::hilti::instruction::bytes::Concat);
 
 	if ( ! ok )
-		UnsupportedExpression(expr);
+		NotSupported(expr, "AddExpr");
 
 	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AddToExpr* expr)
 	{
-	Error("no support yet for compiling AddToExpr", expr);
-	return 0;
+	return NotSupported(expr, "AddToExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ArithCoerceExpr* expr)
@@ -310,29 +341,83 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ArithCoerceEx
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AssignExpr* expr)
 	{
-	const ::Expr* lhs = expr->Op1();
+	return CompileAssign(expr->Op1(), expr->Op2());
+	}
 
-	if ( lhs->Tag() == EXPR_REF )
-		lhs = dynamic_cast<const ::RefExpr*>(lhs)->Op();
-
-	auto rhs = HiltiExpression(expr->Op2());
-
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::Expr* lhs, const ::Expr* rhs)
+	{
 	switch ( lhs->Tag() ) {
 	case EXPR_NAME:
+		return CompileAssign(lhs->AsNameExpr(), rhs);
+
+        case EXPR_REF:
+		return CompileAssign(dynamic_cast<const ::RefExpr *>(lhs), rhs);
+
+	case EXPR_INDEX:
+		return CompileAssign(dynamic_cast<const ::IndexExpr *>(lhs), rhs);
+
+	case EXPR_FIELD:
+		return CompileAssign(dynamic_cast<const ::FieldExpr *>(lhs), rhs);
+
+	case EXPR_LIST:
+		return CompileAssign(lhs->AsListExpr(), rhs);
+
+	default:
+		return NotSupported(lhs, "CompileAssign");
+	}
+
+	CANNOT_BE_REACHED
+	}
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::RefExpr* lhs, const ::Expr* rhs)
+	{
+	return CompileAssign(lhs->Op(), rhs);
+	}
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::NameExpr* lhs, const ::Expr* rhs)
+	{
+	auto dst = ::hilti::builder::id::create(HiltiSymbol(lhs->Id()));
+	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, HiltiExpression(rhs));
+	return dst;
+        }
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::IndexExpr* lhs, const ::Expr* rhs)
+	{
+	switch ( lhs->Op1()->Type()->Tag() ) {
+	case TYPE_TABLE:
 		{
-		auto nexpr = lhs->AsNameExpr();
-		auto id = nexpr->Id();
-		auto dst = ::hilti::builder::id::create(HiltiSymbol(id));
-		Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, rhs);
-		return dst;
+		auto tbl = HiltiExpression(lhs->Op1());
+		auto idx = HiltiIndex(lhs->Op2());
+		auto val = HiltiExpression(rhs);
+		Builder()->addInstruction(::hilti::instruction::map::Insert, tbl, idx, val);
+		return val;
+		}
+
+	case TYPE_VECTOR:
+		{
+		auto vec = HiltiExpression(lhs->Op1());
+		auto idx = HiltiIndex(lhs->Op2());
+		auto val = HiltiExpression(rhs);
+		Builder()->addInstruction(::hilti::instruction::vector::Set, vec, idx, val);
+		return val;
 		}
 
 	default:
-		Error(::util::fmt("AssignExpr: no support for lhs of type %s yet", ::expr_name(lhs->Tag())), expr);
+		return NotSupported(lhs->Type(), "CompileAssign/IndexExpr");
 	}
 
-	return 0;
+	CANNOT_BE_REACHED
 	}
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::FieldExpr* lhs, const ::Expr* rhs)
+	{
+	return NotSupported(lhs, "CompileAssign/FieldExpr");
+        }
+
+std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::ListExpr* lhs, const ::Expr* rhs)
+	{
+	return NotSupported(lhs, "CompileAssign/ListExpr");
+        }
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CallExpr* expr)
 	{
@@ -358,14 +443,12 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CallExpr* exp
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CloneExpr* expr)
 	{
-	Error("no support yet for compiling CloneExpr", expr);
-	return 0;
+	return NotSupported(expr, "CloneExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CondExpr* expr)
 	{
-	Error("no support yet for compiling CondExpr", expr);
-	return 0;
+	return NotSupported(expr, "CondExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ConstExpr* expr)
@@ -375,44 +458,37 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ConstExpr* ex
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::DivideExpr* expr)
 	{
-	Error("no support yet for compiling DivideExpr", expr);
-	return 0;
+	return NotSupported(expr, "DivideExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EventExpr* expr)
 	{
-	Error("no support yet for compiling EventExpr", expr);
-	return 0;
+	return NotSupported(expr, "EventExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::FieldExpr* expr)
 	{
-	Error("no support yet for compiling FieldExpr", expr);
-	return 0;
+	return NotSupported(expr, "FieldExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::FieldAssignExpr* expr)
 	{
-	Error("no support yet for compiling FieldAssignExpr", expr);
-	return 0;
+	return NotSupported(expr, "FieldAssignExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::FlattenExpr* expr)
 	{
-	Error("no support yet for compiling FlattenExpr", expr);
-	return 0;
+	return NotSupported(expr, "FlattenExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::HasFieldExpr* expr)
 	{
-	Error("no support yet for compiling HasFieldExpr", expr);
-	return 0;
+	return NotSupported(expr, "HasFieldExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)
 	{
-	Error("no support yet for compiling InExpr", expr);
-	return 0;
+	return NotSupported(expr, "InExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::IndexExpr* expr)
@@ -425,18 +501,7 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::IndexExpr* ex
 		auto mtype = ty->AsTableType();
 		auto result = Builder()->addTmp("yield", HiltiType(mtype->YieldType()));
 		auto op1 = HiltiExpression(expr->Op1());
-
-		shared_ptr<::hilti::Expression> op2;
-
-		if ( mtype->IndexTypes()->length() == 1 )
-			{
-			auto e = expr->Op2()->AsListExpr()->Exprs()[0];
-			op2 = HiltiExpression(e);
-			}
-
-		else
-			op2 = HiltiExpression(expr->Op2());
-
+                auto op2 = HiltiIndex(expr->Op2());
 		Builder()->addInstruction(result, ::hilti::instruction::map::Get, op1, op2);
 		return result;
 		}
@@ -499,12 +564,10 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::IndexExpr* ex
 		}
 
 	default:
-		Error(::util::fmt("no support for compiling IndexExpr with lhs of type %s", ::type_name(ty->Tag())));
+		return NotSupported(ty, "IndexExpr");
 	}
 
-	// Cannot be reached.
-	assert(false);
-	return nullptr;
+	CANNOT_BE_REACHED
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ListExpr* expr)
@@ -524,8 +587,7 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ListExpr* exp
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ModExpr* expr)
 	{
-	Error("no support yet for compiling ModExpr", expr);
-	return 0;
+	return NotSupported(expr, "ModExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NameExpr* expr)
@@ -575,27 +637,24 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NegExpr* expr
 		});
 
 	if ( ! ok )
-		UnsupportedExpression(expr);
+		NotSupported(expr, "NegExpr");
 
 	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NotExpr* expr)
 	{
-	Error("no support yet for compiling NotExpr", expr);
-	return 0;
+	return NotSupported(expr, "NotExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::PosExpr* expr)
 	{
-	Error("no support yet for compiling PosExpr", expr);
-	return 0;
+	return NotSupported(expr, "PosExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RecordCoerceExpr* expr)
 	{
-	Error("no support yet for compiling RecordCoerceExpr", expr);
-	return 0;
+	return NotSupported(expr, "RecordCoerceExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RecordConstructorExpr* expr)
@@ -630,20 +689,17 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RecordConstru
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RefExpr* expr)
 	{
-	Error("no support yet for compiling RefExpr", expr);
-	return 0;
+	return NotSupported(expr, "RefExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RemoveFromExpr* expr)
 	{
-	Error("no support yet for compiling RemoveFromExpr", expr);
-	return 0;
+	return NotSupported(expr, "RemoveFromExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ScheduleExpr* expr)
 	{
-	Error("no support yet for compiling ScheduleExpr", expr);
-	return 0;
+	return NotSupported(expr, "ScheduleExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SetConstructorExpr* expr)
@@ -678,20 +734,17 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SetConstructo
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SizeExpr* expr)
 	{
-	Error("no support yet for compiling SizeExpr", expr);
-	return 0;
+	return NotSupported(expr, "SizeExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SubExpr* expr)
 	{
-	Error("no support yet for compiling SubExpr", expr);
-	return 0;
+	return NotSupported(expr, "SubExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableCoerceExpr* expr)
 	{
-	Error("no support yet for compiling TableCoerceExpr", expr);
-	return 0;
+	return NotSupported(expr, "TableCoerceExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableConstructorExpr* expr)
@@ -752,14 +805,12 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableConstruc
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TimesExpr* expr)
 	{
-	Error("no support yet for compiling TimesExpr", expr);
-	return 0;
+	return NotSupported(expr, "TimesExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorCoerceExpr* expr)
 	{
-	Error("no support yet for compiling VectorCoerceExpr", expr);
-	return 0;
+	return NotSupported(expr, "VectorCoerceExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorConstructorExpr* expr)
@@ -792,24 +843,20 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorConstru
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::IncrExpr* expr)
 	{
-	Error("no support yet for compiling IncrExpr", expr);
-	return 0;
+	return NotSupported(expr, "IncrExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::BoolExpr* expr)
 	{
-	Error("no support yet for compiling BoolExpr", expr);
-	return 0;
+	return NotSupported(expr, "BoolExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EqExpr* expr)
 	{
-	Error("no support yet for compiling EqExpr", expr);
-	return 0;
+	return NotSupported(expr, "EqExpr");
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RelExpr* expr)
 	{
-	Error("no support yet for compiling RelExpr", expr);
-	return 0;
+	return NotSupported(expr, "RelExpr");
 	}

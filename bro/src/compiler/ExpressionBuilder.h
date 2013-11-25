@@ -93,6 +93,18 @@ protected:
 	 */
 	shared_ptr<::hilti::Type> TargetType() const;
 
+    /**
+     * Turns a Bro expression that's used as a table or vector index into the
+     * corresponding HILTI value. This takes care of treating single-element
+     * ListVals correctly (i.e., by using that element directly).
+     *
+     * @param idx The Bro expression referencing the index value. This must
+     * be a Bro ListExpr.
+     *
+     * @return The HILTI value to be used with map/set/vector instructions.
+     */
+    std::shared_ptr<::hilti::Expression> HiltiIndex(const ::Expr* idx);
+
 	std::shared_ptr<::hilti::Expression> Compile(const ::AddExpr* expr);
 	std::shared_ptr<::hilti::Expression> Compile(const ::AddToExpr* expr);
 	std::shared_ptr<::hilti::Expression> Compile(const ::ArithCoerceExpr* expr);
@@ -133,7 +145,19 @@ protected:
 	std::shared_ptr<::hilti::Expression> Compile(const ::VectorCoerceExpr* expr);
 	std::shared_ptr<::hilti::Expression> Compile(const ::VectorConstructorExpr* expr);
 
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::Expr* lhs, const ::Expr* rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::RefExpr* lhs, const ::Expr* rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::IndexExpr* lhs, const ::Expr* rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::FieldExpr* lhs, const ::Expr* rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::NameExpr* lhs, const ::Expr* rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::ListExpr* lhs, const ::Expr* rhs);
+
 private:
+	std::shared_ptr<::hilti::Expression> NotSupported(const ::BroType* type, const char* where);
+	std::shared_ptr<::hilti::Expression> NotSupported(const ::Expr* expr, const char* where);
+	std::shared_ptr<::hilti::Expression> NotSupported(const ::UnaryExpr* expr, const char* where);
+	std::shared_ptr<::hilti::Expression> NotSupported(const ::BinaryExpr* expr, const char* where);
+
 	typedef std::function<void (const ::UnaryExpr* expr,
 				    shared_ptr<::hilti::Expression> dst,
 				    shared_ptr<::hilti::Expression> op)>
@@ -149,9 +173,6 @@ private:
 	bool CompileOperator(const ::UnaryExpr* expr,  shared_ptr<::hilti::Expression> dst, ::TypeTag op, unary_op_func func);
 	bool CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, shared_ptr<::hilti::Instruction> ins);
 	bool CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, binary_op_func func);
-
-	void UnsupportedExpression(const ::UnaryExpr* expr);
-	void UnsupportedExpression(const ::BinaryExpr* expr);
 
 	std::list<shared_ptr<::hilti::Type>> target_types;
 };

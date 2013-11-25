@@ -50,6 +50,17 @@ public:
 	shared_ptr<::hilti::Expression> Compile(const ::Val* val,
 						shared_ptr<::hilti::Type> target_type = nullptr);
 
+	/**
+	 * Returns the default initialization value for variables of a given
+	 * Bro type.
+	 *
+	 * @param type The Bro type.
+	 *
+	 * @return An HILTI expression to initialize variables with, or null
+	 * for HILTI's default init value.
+	 */
+	shared_ptr<::hilti::Expression> InitValue(const ::BroType* type);
+
 protected:
 	/**
 	 * Returns the target type passed into Compile(), or null if none.

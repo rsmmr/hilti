@@ -86,7 +86,7 @@ std::list<const ::ID *> ModuleBuilderCallback::Globals(const string& ns)
 	std::list<const ::ID *> globals;
 	std::set<const ::ID *>  sglobals;
 
-#if 0
+#if 1
 	if ( ns != "GLOBAL" )
 		// FIXME: Remove once we can compile all globals.
 		return globals;
@@ -180,8 +180,9 @@ shared_ptr<::hilti::Module> ModuleBuilder::Compile()
 		{
 		for ( auto id : callback->Globals(ns) )
 			{
-			auto init = id->HasVal() ? HiltiValue(id->ID_Val()) : nullptr;
-			addGlobal(HiltiSymbol(id), HiltiType(id->Type()), init);
+			auto type = id->Type();
+			auto init = id->HasVal() ? HiltiValue(id->ID_Val()) : HiltiInitValue(type);
+			addGlobal(HiltiSymbol(id), HiltiType(type), init);
 			}
 
 		for ( auto f : callback->Functions(ns) )
@@ -384,7 +385,8 @@ void ModuleBuilder::CompileFunctionBody(const ::Func* func, void* vbody)
 
 	while ( (id = vars->NextEntry(h, c)) )
 		{
-		addLocal(HiltiSymbol(id), HiltiType(id->Type()));
+		auto type = id->Type();
+		addLocal(HiltiSymbol(id), HiltiType(type), HiltiInitValue(type));
 		delete h;
 		}
 

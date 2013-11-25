@@ -16,6 +16,52 @@ ValueBuilder::ValueBuilder(class ModuleBuilder* mbuilder)
 	{
 	}
 
+shared_ptr<::hilti::Expression> ValueBuilder::InitValue(const ::BroType* type)
+	{
+	auto htype = HiltiType(type);
+	auto rtype = ::ast::tryCast<::hilti::type::Reference>(htype);
+
+	switch ( type->Tag() )	{
+	case TYPE_TABLE:
+		{
+		if ( type->IsSet() )
+			{
+			auto stype = ::ast::checkedCast<::hilti::type::Set>(rtype->argType());
+			return ::hilti::builder::set::create(stype->argType(), {});
+			}
+
+		else
+			{
+			auto mtype = ::ast::checkedCast<::hilti::type::Map>(rtype->argType());
+			return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), {});
+			}
+		}
+
+	case TYPE_VECTOR:
+		{
+		auto vtype = ::ast::checkedCast<::hilti::type::Vector>(rtype->argType());
+		return ::hilti::builder::vector::create(vtype->argType(), {});
+		}
+
+	case TYPE_STRING:
+		return nullptr;
+
+	case TYPE_FILE:
+		return nullptr;
+
+	default:
+		// For non-reference types, HILTi's default should be right.
+		if ( ! rtype )
+			return nullptr;
+
+	Error(::util::fmt("ValueBuilder does not define a initialization value for type %s", ::type_name(type->Tag())), type);
+	}
+
+	// Cannot be reached.
+	assert(0);
+	return 0;
+	}
+
 shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, shared_ptr<::hilti::Type> arg_target_type)
 	{
 	shared_ptr<::hilti::Expression> e = nullptr;
