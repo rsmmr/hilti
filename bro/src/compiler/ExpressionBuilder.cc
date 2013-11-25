@@ -296,8 +296,16 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AddToExpr* ex
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ArithCoerceExpr* expr)
 	{
-	Error("no support yet for compiling ArithCoerceExpr", expr);
-	return 0;
+	auto htype = HiltiType(expr->Type());
+	auto hexpr = HiltiExpression(expr->Op());
+
+	if ( hexpr->canCoerceTo(htype) )
+		return hexpr;
+
+	Error(::util::fmt("no support in ArithCoerceExpr for coercion from %s to %s",
+			  ::type_name(expr->Op()->Type()->Tag()), ::type_name(expr->Type()->Tag())), expr);
+
+	return nullptr;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AssignExpr* expr)
@@ -409,8 +417,94 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::IndexExpr* expr)
 	{
-	Error("no support yet for compiling IndexExpr", expr);
-	return 0;
+	auto ty = expr->Op1()->Type();
+
+	switch ( ty->Tag() ) {
+	case TYPE_TABLE:
+		{
+		auto mtype = ty->AsTableType();
+		auto result = Builder()->addTmp("yield", HiltiType(mtype->YieldType()));
+		auto op1 = HiltiExpression(expr->Op1());
+
+		shared_ptr<::hilti::Expression> op2;
+
+		if ( mtype->IndexTypes()->length() == 1 )
+			{
+			auto e = expr->Op2()->AsListExpr()->Exprs()[0];
+			op2 = HiltiExpression(e);
+			}
+
+		else
+			op2 = HiltiExpression(expr->Op2());
+
+		Builder()->addInstruction(result, ::hilti::instruction::map::Get, op1, op2);
+		return result;
+		}
+
+	case TYPE_VECTOR:
+		{
+		// TODO: No support for vector indices yet.
+		auto vtype = ty->AsVectorType();
+		auto result = Builder()->addTmp("yield", HiltiType(vtype->YieldType()));
+		auto op1 = HiltiExpression(expr->Op1());
+		auto op2 = HiltiExpression(expr->Op2());
+
+		auto idx = Builder()->addTmp("idx", ::hilti::builder::integer::type(64));
+
+		Builder()->addInstruction(idx,
+					  ::hilti::instruction::tuple::Index,
+					  op2,
+					  ::hilti::builder::integer::create(0));
+
+		Builder()->addInstruction(result, ::hilti::instruction::vector::Get, op1, idx);
+		return result;
+		}
+
+	case TYPE_STRING:
+		{
+		auto result = Builder()->addTmp("substr", HiltiType(ty));
+		auto op1 = HiltiExpression(expr->Op1());
+		auto op2 = HiltiExpression(expr->Op2());
+
+		auto offset = Builder()->addTmp("offset", ::hilti::builder::integer::type(64));
+		auto i = Builder()->addTmp("i", ::hilti::builder::iterator::typeBytes());
+		auto j = Builder()->addTmp("j", ::hilti::builder::iterator::typeBytes());
+
+		// HILTI handles negative offsets correctly.
+
+		Builder()->addInstruction(offset,
+					  ::hilti::instruction::tuple::Index,
+					  op2,
+					  ::hilti::builder::integer::create(0));
+
+		Builder()->addInstruction(i, ::hilti::instruction::bytes::Offset, op1, offset);
+
+		if ( expr->Op2()->Type()->AsTypeList()->Types()->length() == 1 )
+			Builder()->addInstruction(j, ::hilti::instruction::operator_::Assign, i);
+
+		else
+			{
+			Builder()->addInstruction(offset,
+						  ::hilti::instruction::tuple::Index,
+						  op2,
+						  ::hilti::builder::integer::create(1));
+			Builder()->addInstruction(j, ::hilti::instruction::bytes::Offset, op1, offset);
+			}
+
+		// Bro's end index is including.
+		Builder()->addInstruction(j, ::hilti::instruction::operator_::Incr, j);
+
+		Builder()->addInstruction(result, ::hilti::instruction::bytes::Sub, i, j);
+		return result;
+		}
+
+	default:
+		Error(::util::fmt("no support for compiling IndexExpr with lhs of type %s", ::type_name(ty->Tag())));
+	}
+
+	// Cannot be reached.
+	assert(false);
+	return nullptr;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ListExpr* expr)
