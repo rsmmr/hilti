@@ -187,7 +187,41 @@ void StatementBuilder::Compile(const ::ForStmt* stmt)
 
 void StatementBuilder::Compile(const ::IfStmt* stmt)
 	{
-	Error("no support yet for compiling IfStmt", stmt);
+	auto cond = HiltiExpression(stmt->StmtExpr());
+
+	if ( stmt->FalseBranch() )
+		{
+		auto b = Builder()->addIfElse(cond);
+		auto btrue = std::get<0>(b);
+		auto bfalse = std::get<1>(b);
+		auto bcont = std::get<2>(b);
+
+		ModuleBuilder()->pushBuilder(btrue);
+		Compile(stmt->TrueBranch());
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, bcont->block());
+		ModuleBuilder()->popBuilder(btrue);
+
+		ModuleBuilder()->pushBuilder(bfalse);
+		Compile(stmt->FalseBranch());
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, bcont->block());
+		ModuleBuilder()->popBuilder(bfalse);
+
+		ModuleBuilder()->pushBuilder(bcont);
+		}
+
+	else
+		{
+		auto b = Builder()->addIf(cond);
+		auto btrue = std::get<0>(b);
+		auto bcont = std::get<1>(b);
+
+		ModuleBuilder()->pushBuilder(btrue);
+		Compile(stmt->TrueBranch());
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, bcont->block());
+		ModuleBuilder()->popBuilder(btrue);
+
+		ModuleBuilder()->pushBuilder(bcont);
+		}
 	}
 
 void StatementBuilder::Compile(const ::InitStmt* stmt)
