@@ -38,6 +38,7 @@ public:
 
     // This is one method we override with our own version.
     void* getPointerToNamedFunction(const std::string &Name, bool AbortOnFailure = true) override;
+    uint64_t getSymbolAddress(const std::string &Name) override;
 
 #ifdef HAVE_LLVM_33
     // Proxy methods.
@@ -109,10 +110,15 @@ void* MemoryManager::lookupFunctionInTable(const std::string& name)
     return nullptr;
 }
 
+uint64_t MemoryManager::getSymbolAddress(const std::string &Name)
+{
+    return _mm->getSymbolAddress(Name);
+}
+
 void* MemoryManager::getPointerToNamedFunction(const std::string& name, bool abort_on_failure)
 {
     // TODO: I don't think this is actually used anymore, and with LLVM 3.4
-    // not even called it seems. Remove.
+    // not even called it seems (getSymbolAddress() is instead). Remove.
 
     if ( _functions ) {
         for ( int i = 0; _functions[i].name; i++ ) {
