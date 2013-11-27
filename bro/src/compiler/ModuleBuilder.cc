@@ -250,7 +250,7 @@ string ModuleBuilder::Namespace() const
 void ModuleBuilder::CompileFunction(const Func* func)
 	{
 	// FIXME.
-	if ( string(func->Name()) != "bro_init" && string(func->Name()) != "to_lower" )
+	if ( string(func->Name()) != "bro_init" && string(func->Name()) != "to_lower" && strncmp(func->Name(), "foo", 3) != 0 )
 		return;
 
 	if ( func->GetKind() == Func::BUILTIN_FUNC )
@@ -278,7 +278,26 @@ void ModuleBuilder::CompileFunction(const Func* func)
 
 void ModuleBuilder::CompileScriptFunction(const BroFunc* func)
 	{
+	if ( func->GetBodies().size() == 0 )
+		return;
+
 	DBG_LOG_COMPILER("Compiling script function %s", func->Name());
+
+	auto fname = Compiler()->HiltiSymbol(func, module());
+	auto ftype = HiltiType(func->FType());
+
+	assert(func->GetBodies().size() == 1);
+	auto body = func->GetBodies()[0];
+
+	auto hfunc = pushFunction(::hilti::builder::id::node(fname),
+				 ast::checkedCast<::hilti::type::Function>(ftype),
+				 nullptr);
+
+	hfunc->addComment(func->Name());
+
+	CompileFunctionBody(func, &body);
+
+	popFunction();
 	}
 
 void ModuleBuilder::CompileEvent(const BroFunc* event)
@@ -385,6 +404,11 @@ void ModuleBuilder::CompileFunctionBody(const ::Func* func, void* vbody)
 
 	while ( (id = vars->NextEntry(h, c)) )
 		{
+		// Skip if this is a function parameter. Unfortunately the ID
+		// doesn't carry that information so we have to go through the type.
+		if ( func->FType()->Args()->HasField(id->Name()) )
+			continue;
+
 		auto type = id->Type();
 		addLocal(HiltiSymbol(id), HiltiType(type), HiltiInitValue(type));
 		delete h;
@@ -421,6 +445,12 @@ shared_ptr<::hilti::Expression> ModuleBuilder::DeclareFunction(const Func* func)
 shared_ptr<::hilti::Expression> ModuleBuilder::DeclareScriptFunction(const ::BroFunc* func)
 	{
 	auto name = Compiler()->HiltiSymbol(func, module());
+	auto id = ::hilti::builder::id::create(name);
+
+	// If the function is part of the same module, we'll compile it
+	// separately.
+	if ( ::extract_module_name(func->Name()) == module()->id()->name() )
+		return id;
 
 	// We can have multiple "anonymous-function"s.
 	if ( string(func->Name()) == "anonymous-function" )
@@ -429,7 +459,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::DeclareScriptFunction(const ::Bro
 	auto type = HiltiType(func->FType());
 
 	declareFunction(::hilti::builder::id::node(name), ast::checkedCast<::hilti::type::Function>(type));
-	return ::hilti::builder::id::create(name);
+	return id;
 	}
 
 shared_ptr<::hilti::Expression> ModuleBuilder::DeclareEvent(const ::BroFunc* event)

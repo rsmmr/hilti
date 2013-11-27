@@ -373,7 +373,12 @@ void StatementBuilder::Compile(const ::PrintStmt* stmt)
 
 void StatementBuilder::Compile(const ::ReturnStmt* stmt)
 	{
-	NotSupported(stmt);
+	auto expr = stmt->StmtExpr();
+
+	if ( expr )
+		Builder()->addInstruction(::hilti::instruction::flow::ReturnResult, HiltiExpression(expr));
+	else
+		Builder()->addInstruction(::hilti::instruction::flow::ReturnVoid);
 	}
 
 void StatementBuilder::Compile(const ::StmtList* stmt)
