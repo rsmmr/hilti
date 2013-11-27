@@ -62,18 +62,6 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Bin
 	return nullptr;
 	}
 
-std::shared_ptr<::hilti::Expression> ExpressionBuilder::HiltiIndex(const ::Expr* idx)
-	{
-	assert(idx->Tag() == EXPR_LIST);
-
-	auto lexpr = idx->AsListExpr();
-
-	if ( lexpr->Exprs().length() == 1 )
-		return HiltiExpression(lexpr->Exprs()[0]);
-	else
-		return HiltiExpression(lexpr);
-	}
-
 shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, shared_ptr<::hilti::Type> target_type)
 	{
 	shared_ptr<::hilti::Expression> e = nullptr;
@@ -411,7 +399,11 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::In
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::FieldExpr* lhs, const ::Expr* rhs)
 	{
-	return NotSupported(lhs, "CompileAssign/FieldExpr");
+	auto op1 = HiltiExpression(lhs->Op());
+	auto op2 = HiltiStructField(lhs->FieldName());
+	auto op3 = HiltiExpression(rhs);
+	Builder()->addInstruction(::hilti::instruction::struct_::Set, op1, op2, op3);
+	return op3;
         }
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::ListExpr* lhs, const ::Expr* rhs)
@@ -468,7 +460,14 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EventExpr* ex
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::FieldExpr* expr)
 	{
-	return NotSupported(expr, "FieldExpr");
+	auto rtype = expr->Op()->Type()->AsRecordType();
+	auto result = Builder()->addTmp("field", HiltiType(rtype->FieldType(expr->Field())));
+
+	auto op1 = HiltiExpression(expr->Op());
+	auto op2 = HiltiStructField(expr->FieldName());
+	Builder()->addInstruction(result, ::hilti::instruction::struct_::Get, op1, op2);
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::FieldAssignExpr* expr)
@@ -483,7 +482,11 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::FlattenExpr* 
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::HasFieldExpr* expr)
 	{
-	return NotSupported(expr, "HasFieldExpr");
+	auto result = Builder()->addTmp("has_field", ::hilti::builder::boolean::type());
+	auto op1 = HiltiExpression(expr->Op());
+	auto op2 = HiltiStructField(expr->FieldName());
+	Builder()->addInstruction(result, ::hilti::instruction::struct_::IsSet, op1, op2);
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)

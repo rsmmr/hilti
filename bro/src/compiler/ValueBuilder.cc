@@ -43,6 +43,11 @@ shared_ptr<::hilti::Expression> ValueBuilder::InitValue(const ::BroType* type)
 		return ::hilti::builder::vector::create(vtype->argType(), {});
 		}
 
+	case TYPE_RECORD:
+		{
+		return ::hilti::builder::struct_::create({});
+		}
+
 	case TYPE_STRING:
 		return nullptr;
 

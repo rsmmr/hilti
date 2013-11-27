@@ -46,6 +46,10 @@ public:
 	void Compile(const Stmt* stmt);
 
 protected:
+	void NotSupported(const ::BroType* type, const char* where);
+	void NotSupported(const ::Expr* expr, const char* where);
+	void NotSupported(const ::Stmt* stmt);
+
 	void Compile(const ::AddStmt* stmt);
 	void Compile(const ::BreakStmt* stmt);
 	void Compile(const ::DelStmt* stmt);

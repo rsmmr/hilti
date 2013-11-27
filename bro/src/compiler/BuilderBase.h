@@ -237,6 +237,27 @@ public:
 							     shared_ptr<::hilti::Type> target_type = nullptr);
 
 	/**
+	 * Turns a Bro expression that's used as a table or vector index into the
+	 * corresponding HILTI value. This takes care of treating single-element
+	 * ListVals correctly (i.e., by using that element directly).
+	 *
+	 * @param idx The Bro expression referencing the index value.
+	 *
+	 * @return The HILTI value to be used with map/set/vector instructions.
+	 */
+	std::shared_ptr<::hilti::Expression> HiltiIndex(const ::Expr* idx);
+
+	/**
+	 * Turns a Bro record field name into the corresponding HILTI value
+	 * for use with a \c struct instruction.
+	 *  	 
+	 * @param fname The Bro field name.
+	 *
+	 * @return The HILTI value to be used with \c struct instructions.
+	 */
+	std::shared_ptr<::hilti::Expression> HiltiStructField(const char* fname);
+
+	/**
 	 * Conerts a Bro \a Val into a HILTI expression dynamically at
 	 * runtime.  This is a short-cut to using the conversion builder's
 	 * corresponding Convert() method.

@@ -11,9 +11,28 @@
 
 using namespace bro::hilti::compiler;
 
+#define CANNOT_BE_REACHED \
+   	Error("code that cannot be reached has been reached"); \
+	abort();
+
 StatementBuilder::StatementBuilder(class ModuleBuilder* mbuilder)
 	: BuilderBase(mbuilder)
 	{
+	}
+
+void StatementBuilder::NotSupported(const ::Expr* expr, const char* where)
+	{
+	Error(::util::fmt("expression %s not supported in %s", expr_name(expr->Tag()), where), expr);
+	}
+
+void StatementBuilder::NotSupported(const ::BroType* type, const char* where)
+	{
+	Error(::util::fmt("type %s not supported in %s", type_name(type->Tag()), where), type);
+	}
+
+void StatementBuilder::NotSupported(const ::Stmt* stmt)
+	{
+	Error(::util::fmt("statement %s not supported", stmt_name(stmt->Tag())), stmt);
 	}
 
 void StatementBuilder::Compile(const Stmt* stmt)
@@ -84,28 +103,91 @@ void StatementBuilder::Compile(const Stmt* stmt)
 		break;
 
 	default:
-		Error(::util::fmt("unsupported statement %s", ::stmt_name(stmt->Tag())));
+	        NotSupported(stmt);
 	}
 	}
 
 void StatementBuilder::Compile(const ::AddStmt* stmt)
 	{
-	Error("no support yet for compiling AddStmt", stmt);
+	auto expr = stmt->StmtExpr();
+
+	switch ( expr->Tag() ) {
+	case EXPR_INDEX:
+		{
+		auto iexpr = dynamic_cast<const IndexExpr *>(expr);
+
+		auto val = iexpr->Op1();
+		auto idx = iexpr->Op2();
+
+		if ( val->Type()->Tag() != TYPE_TABLE )
+			NotSupported(val->Type(), "AddStmt/IndexExpr");
+
+		assert(val->Type()->AsTableType()->IsSet());
+
+		auto op1 = HiltiExpression(val);
+		auto op2 = HiltiIndex(idx);
+
+		Builder()->addInstruction(::hilti::instruction::set::Insert, op1, op2);
+		return;
+		}
+
+	default:
+		NotSupported(expr, "AddStmt");
+	}
+
+	CANNOT_BE_REACHED
 	}
 
 void StatementBuilder::Compile(const ::BreakStmt* stmt)
 	{
-	Error("no support yet for compiling BreakStmt", stmt);
+	NotSupported(stmt);
 	}
 
 void StatementBuilder::Compile(const ::DelStmt* stmt)
 	{
-	Error("no support yet for compiling DelStmt", stmt);
+	auto expr = stmt->StmtExpr();
+
+	switch ( expr->Tag() ) {
+	case EXPR_INDEX:
+		{
+		auto iexpr = dynamic_cast<const IndexExpr *>(expr);
+
+		auto val = iexpr->Op1();
+		auto idx = iexpr->Op2();
+
+		if ( val->Type()->Tag() != TYPE_TABLE )
+			NotSupported(val->Type(), "DelStmt/IndexExpr");
+
+		auto op1 = HiltiExpression(val);
+		auto op2 = HiltiIndex(idx);
+
+		if ( val->Type()->AsTableType()->IsSet() )
+			Builder()->addInstruction(::hilti::instruction::set::Remove, op1, op2);
+		else
+			Builder()->addInstruction(::hilti::instruction::map::Remove, op1, op2);
+
+		return;
+		}
+
+	case EXPR_FIELD:
+		{
+		auto fexpr = dynamic_cast<const FieldExpr *>(expr);
+		auto op1 = HiltiExpression(fexpr->Op());
+		auto op2 = HiltiStructField(fexpr->FieldName());
+		Builder()->addInstruction(::hilti::instruction::struct_::Unset, op1, op2);
+		return;
+		}
+
+	default:
+		NotSupported(expr, "DelStmt");
+	}
+
+	CANNOT_BE_REACHED
 	}
 
 void StatementBuilder::Compile(const ::EventStmt* stmt)
 	{
-	Error("no support yet for compiling EventStmt", stmt);
+	NotSupported(stmt);
 	}
 
 void StatementBuilder::Compile(const ::ExprStmt* stmt)
@@ -115,7 +197,7 @@ void StatementBuilder::Compile(const ::ExprStmt* stmt)
 
 void StatementBuilder::Compile(const ::FallthroughStmt* stmt)
 	{
-	Error("no support yet for compiling FallthroughStmt", stmt);
+	NotSupported(stmt);
 	}
 
 void StatementBuilder::Compile(const ::ForStmt* stmt)
@@ -129,7 +211,7 @@ void StatementBuilder::Compile(const ::ForStmt* stmt)
 	std::shared_ptr<::hilti::ID> n2(nullptr);
 
 	ModuleBuilder()->pushBody(true);
-    ModuleBuilder()->pushBuilder(n2);
+	ModuleBuilder()->pushBuilder(n2);
 
 	// For maps, HILTI gives us a tuple of key and value during
 	// iteration, while Bro expects only the former; so get that first.
@@ -232,7 +314,7 @@ void StatementBuilder::Compile(const ::InitStmt* stmt)
 
 void StatementBuilder::Compile(const ::NextStmt* stmt)
 	{
-	Error("no support yet for compiling NextStmt", stmt);
+	NotSupported(stmt);
 	}
 
 void StatementBuilder::Compile(const ::NullStmt* stmt)
@@ -260,7 +342,7 @@ void StatementBuilder::Compile(const ::PrintStmt* stmt)
 		auto bexpr = exprs[i];
 
 		if ( i == 0 && bexpr->Type()->Tag() == TYPE_FILE )
-			Error("Compiling PrintStmt does not yet support output to files");
+			NotSupported(bexpr->Type(), "PrintStmt");
 
 		if ( i > 0 )
 			{
@@ -291,7 +373,7 @@ void StatementBuilder::Compile(const ::PrintStmt* stmt)
 
 void StatementBuilder::Compile(const ::ReturnStmt* stmt)
 	{
-	Error("no support yet for compiling ReturnStmt", stmt);
+	NotSupported(stmt);
 	}
 
 void StatementBuilder::Compile(const ::StmtList* stmt)
@@ -316,10 +398,10 @@ void StatementBuilder::Compile(const ::StmtList* stmt)
 
 void StatementBuilder::Compile(const ::SwitchStmt* stmt)
 	{
-	Error("no support yet for compiling SwitchStmt", stmt);
+	NotSupported(stmt);
 	}
 
 void StatementBuilder::Compile(const ::WhenStmt* stmt)
 	{
-	Error("no support yet for compiling WhenStmt", stmt);
+	NotSupported(stmt);
 	}

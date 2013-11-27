@@ -1,6 +1,7 @@
 
 #include "DebugLogger.h"
 #include "Obj.h"
+#include "Expr.h"
 #undef List
 
 #include <util/util.h>
@@ -131,6 +132,24 @@ shared_ptr<::hilti::Expression> BuilderBase::HiltiInitValue(const ::BroType* typ
 std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr, shared_ptr<::hilti::Type> target_type)
 	{
 	return mbuilder->ExpressionBuilder()->Compile(expr, target_type);
+	}
+
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiIndex(const ::Expr* idx)
+	{
+	if ( idx->Tag() != EXPR_LIST )
+		return HiltiExpression(idx);
+
+	auto lexpr = idx->AsListExpr();
+
+	if ( lexpr->Exprs().length() == 1 )
+		return HiltiExpression(lexpr->Exprs()[0]);
+	else
+		return HiltiExpression(lexpr);
+	}
+
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiStructField(const char* fname)
+	{
+	return ::hilti::builder::string::create(fname);
 	}
 
 shared_ptr<::hilti::Expression> BuilderBase::RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, const ::BroType* type)

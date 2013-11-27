@@ -93,18 +93,6 @@ protected:
 	 */
 	shared_ptr<::hilti::Type> TargetType() const;
 
-    /**
-     * Turns a Bro expression that's used as a table or vector index into the
-     * corresponding HILTI value. This takes care of treating single-element
-     * ListVals correctly (i.e., by using that element directly).
-     *
-     * @param idx The Bro expression referencing the index value. This must
-     * be a Bro ListExpr.
-     *
-     * @return The HILTI value to be used with map/set/vector instructions.
-     */
-    std::shared_ptr<::hilti::Expression> HiltiIndex(const ::Expr* idx);
-
 	std::shared_ptr<::hilti::Expression> Compile(const ::AddExpr* expr);
 	std::shared_ptr<::hilti::Expression> Compile(const ::AddToExpr* expr);
 	std::shared_ptr<::hilti::Expression> Compile(const ::ArithCoerceExpr* expr);
