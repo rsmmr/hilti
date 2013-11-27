@@ -63,9 +63,15 @@ void codegen::Coercer::visit(type::Tuple* t)
     if ( rtype ) {
         auto stype = ast::as<type::Struct>(rtype->argType());
         assert(stype);
-        assert(t->typeList().size() == stype->typeList().size());
 
         auto sval = cg()->llvmStructNew(stype);
+        setResult(sval);
+
+        // If the tuple is empty, we just return the newly created struct.
+        if ( t->typeList().empty() )
+            return;
+
+        assert(t->typeList().size() == stype->typeList().size());
 
         auto idx = 0;
         for ( auto i : ::util::zip2(t->typeList(), stype->typeList()) ) {
@@ -81,7 +87,6 @@ void codegen::Coercer::visit(type::Tuple* t)
             cg()->llvmDtor(v, i.second, false, "Coercer::visit-tuple");
         }
 
-        setResult(sval);
         return;
     }
 

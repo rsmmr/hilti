@@ -68,7 +68,13 @@ void Coercer::visit(type::Tuple* t)
         if ( ! stype )
             return;
 
-        // Coerce to struct is fine if all element coerce.
+        // Coerce to struct is fine if (1) it's an emptuple, or (2) all
+        // element coerce.
+
+        if ( t->typeList().size() == 0 ) {
+	    setResult(true);
+	    return;
+	}
 
         if ( t->typeList().size() != stype->typeList().size() )
             return;
