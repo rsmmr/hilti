@@ -56,6 +56,9 @@ type IOSrcExhausted = exception &libhilti="hlt_exception_iosrc_exhausted"
 # Raised when an I/O source is running out of input.
 type NoThreadContext = exception &libhilti="hlt_exception_no_thread_context"
 
+# Raised on data conversion errors
+type ConversionError = exception &libhilti="hlt_exception_conversion_error"
+
 ## Defines the valid formats for the ref:op:`unpack` operator. 
 type Packed = enum {
     # String

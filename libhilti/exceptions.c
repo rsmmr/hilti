@@ -47,7 +47,7 @@ hlt_exception_type hlt_exception_io_error = { "IOError", &hlt_exception_unspecif
 hlt_exception_type hlt_exception_profiler_mismatch = { "ProfilerMismatch", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_profiler_unknown = { "ProfilerUnknown", &hlt_exception_unspecified, &hlt_type_info_hlt_string };
 hlt_exception_type hlt_exception_no_thread_context = { "NoThreadContext", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_exception_conversion_error = { "ConversionError", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_conversion_error = { "ConversionError", &hlt_exception_unspecified, &hlt_type_info_hlt_string};
 hlt_exception_type hlt_exception_termination = { "Termination", &hlt_exception_unspecified, 0 };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };

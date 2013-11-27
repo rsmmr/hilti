@@ -1,0 +1,68 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Tests of the different UTF decoding functions
+#
+module Main
+
+import Hilti
+
+void run() {
+   local ref<bytes> utf16le
+   local ref<bytes> utf16be
+   local ref<bytes> utf32le
+   local ref<bytes> utf32be
+   local ref<bytes> invalid
+   local ref<bytes> surrogatele 
+   local ref<bytes> surrogatebe
+   local ref<bytes> incompletesurrogate 
+   local string s 
+
+   utf16le = b"\x54\x00\x65\x00\x73\x00\x74\x00\x20\x00\xc6\x30\xb9\x30\xc8\x30\x00\x30\x22\x04\x35\x04\x41\x04\x42\x04"
+   utf16be = b"\x00\x54\x00\x65\x00\x73\x00\x74\x00\x20\x30\xc6\x30\xb9\x30\xc8\x30\x00\x04\x22\x04\x35\x04\x41\x04\x42"
+   utf32le = b"\x54\x00\x00\x00\x65\x00\x00\x00\x73\x00\x00\x00\x74\x00\x00\x00\x20\x00\x00\x00\xc6\x30\x00\x00\xb9\x30\x00\x00\xc8\x30\x00\x00\x00\x30\x00\x00\x22\x04\x00\x00\x35\x04\x00\x00\x41\x04\x00\x00\x42\x04\x00\x00"
+   utf32be = b"\x00\x00\x00\x54\x00\x00\x00\x65\x00\x00\x00\x73\x00\x00\x00\x74\x00\x00\x00\x20\x00\x00\x30\xc6\x00\x00\x30\xb9\x00\x00\x30\xc8\x00\x00\x30\x00\x00\x00\x04\x22\x00\x00\x04\x35\x00\x00\x04\x41\x00\x00\x04\x42"
+   invalid = b"\x10\x00\x00\x54"
+   surrogatele = b"\x3d\xd8\x4a\xdc"
+   surrogatebe = b"\xd8\x3d\xdc\x4a"
+   surrogatebe = b"\xd8\x3d\xdc\x4a"
+   incompletesurrogate = b"\xd8\x3d"
+
+   s = string.decode utf16le "utf16le"
+   call Hilti::print(s)
+   
+   s = string.decode utf16be "utf16be"
+   call Hilti::print(s)
+   
+   s = string.decode utf32le "utf32le"
+   call Hilti::print(s)
+   
+   s = string.decode utf32be "utf32be"
+   call Hilti::print(s)
+     
+   s = string.decode surrogatele "utf16le"
+   call Hilti::print(s)
+
+   s = string.decode surrogatebe "utf16be"
+   call Hilti::print(s)
+
+   try {
+     s = string.decode invalid "utf32be"
+     call Hilti::print(s)
+   }
+   catch ( ref<Hilti::ConversionError> e ) {
+     call Hilti::print ("Caught error", e)
+     call Hilti::print (e)
+   }
+  
+   try {
+     s = string.decode incompletesurrogate "utf16be"
+     call Hilti::print(s)
+   }
+   catch ( ref<Hilti::ConversionError> e2 ) {
+     call Hilti::print ("Caught error", e2)
+     call Hilti::print (e2)
+   }
+
+}

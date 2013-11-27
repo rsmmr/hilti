@@ -78,6 +78,37 @@ size_t hlt_util_memory_usage()
     return (r.ru_maxrss * 1024);
 }
 
+uint16_t hlt_flip16(uint16_t v)
+{
+    union {
+        uint32_t ui16;
+        unsigned char c[2];
+    } x;
+
+    char c;
+
+    x.ui16 = v;
+    c = x.c[0]; x.c[0] = x.c[1]; x.c[1] = c;
+
+    return x.ui16;
+}
+
+uint32_t hlt_flip32(uint32_t v)
+{
+    union {
+        uint32_t ui32;
+        unsigned char c[4];
+    } x;
+
+    char c;
+
+    x.ui32 = v;
+    c = x.c[0]; x.c[0] = x.c[3]; x.c[3] = c;
+    c = x.c[1]; x.c[1] = x.c[2]; x.c[2] = c;
+
+    return x.ui32;
+}
+
 uint64_t hlt_flip64(uint64_t v)
 {
     union {

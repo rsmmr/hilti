@@ -110,6 +110,7 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory_.c int.c
 
     3rdparty/libpqueue/src/pqueue.c
     3rdparty/libtask/context.c
+    3rdparty/convertutf/ConvertUTF.c
 
     ${autogen}/hilti-hlt.h
     ${autogen}/re-parse.c
