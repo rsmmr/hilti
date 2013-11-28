@@ -22,3 +22,6 @@ autogen:
 clean:
 	rm -rf $(BUILDDIR)
 
+install-www: all
+	scp -rp build/html/* www.icir.org:hilti
+
