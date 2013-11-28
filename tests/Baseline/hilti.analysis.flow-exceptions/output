@@ -21,14 +21,14 @@ void run()
       # now-dead: { <none> }
       [0058] exception.__begin_handler @__catch_1 myException
       # pred: { [0058] } succ: { [0060], [0064] }
-      # def: { run%e } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { <none> } live-out: { run%e }
+      # def: { run%e.2 } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { run%e.2 }
       # now-dead: { <none> }
       [0059] e = new myException
       # pred: { [0059] } succ: { [0061], [0064] }
-      # def: { <none> } clear: { <none> } mod: { run%e } read: { <none> }
-      # live-in: { run%e } live-out: { <none> }
-      # now-dead: { run%e }
+      # def: { <none> } clear: { <none> } mod: { run%e.2 } read: { <none> }
+      # live-in: { run%e.2 } live-out: { <none> }
+      # now-dead: { run%e.2 }
       [0060] exception.throw e
       # pred: { [0060] } succ: { [0062], [0064] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
@@ -48,9 +48,9 @@ void run()
   
   @__catch_1:
       # pred: { [0059], [0060], [0061], [0062] } succ: { [0065] }
-      # def: { run%e_2 } clear: { <none> } mod: { <none> } read: { <none> }
+      # def: { run%e_2.2 } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
-      # now-dead: { run%e, run%e_2 }
+      # now-dead: { run%e.2, run%e_2.2 }
       [0064] e_2 = exception.__get_and_clear
       # pred: { [0064] } succ: { [0066] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
