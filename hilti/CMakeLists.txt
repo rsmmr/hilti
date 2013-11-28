@@ -180,6 +180,7 @@ add_library (hilti STATIC
     passes/validator.cc
     passes/cfg.cc
     passes/liveness.cc
+    passes/id-replacer.cc
 
     codegen/abi.cc
     codegen/asm-annotater.cc

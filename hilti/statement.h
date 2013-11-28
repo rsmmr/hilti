@@ -293,6 +293,18 @@ private:
     catch_list _catches;
 };
 
+namespace foreach {
+
+    /// A "magic" block label that can be branched to inside a loop for
+    /// proceeding directly with the next iteration.
+    static const char* IDLoopNext = "@__LOOP_NEXT";
+
+    /// A "magic" block label that can be branched to inside a loop for abort
+    /// the iteration.
+    static const char* IDLoopBreak = "@__LOOP_END";
+
+}
+
 /// A for-each loop iterating over a sequence.
 class ForEach : public Statement
 {

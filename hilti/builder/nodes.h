@@ -1927,6 +1927,24 @@ inline shared_ptr<hilti::statement::ForEach> foreach(shared_ptr<ID> var, shared_
     return std::make_shared<statement::ForEach>(var, seq, body, l);
 }
 
+/// Instantiates a "magic" block label that can be branched to inside a loop
+/// for proceeding directly with the next iteration.
+///
+/// Returns: An expression refering the "magic" block.
+inline shared_ptr<hilti::Expression> next(const Location& l=Location::None)
+{
+    return label::create(hilti::statement::foreach::IDLoopNext);
+}
+
+/// Instantiates a "magic" block label that can be branched to inside a loop
+/// for aborting iteration.
+///
+/// Returns: An expression refering the "magic" block.
+inline shared_ptr<hilti::Expression> break_(const Location& l=Location::None)
+{
+    return label::create(hilti::statement::foreach::IDLoopBreak);
+}
+
 }
 
 }
