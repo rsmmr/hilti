@@ -35,6 +35,28 @@ void StatementBuilder::NotSupported(const ::Stmt* stmt)
 	Error(::util::fmt("statement %s not supported", stmt_name(stmt->Tag())), stmt);
 	}
 
+void StatementBuilder::PushFlowState(FlowState fstate, shared_ptr<::hilti::Expression> dst)
+	{
+	flow_stack.push_back(std::make_pair(fstate, dst));
+	}
+
+void StatementBuilder::PopFlowState()
+	{
+	flow_stack.pop_back();
+	}
+
+shared_ptr<::hilti::Expression> StatementBuilder::CurrentFlowState(FlowState fstate)
+	{
+	for ( flow_state_list::reverse_iterator i = flow_stack.rbegin(); i != flow_stack.rend(); i++ )
+		{
+		if ( (*i).first == fstate )
+			return (*i).second;
+		}
+
+	Error(::util::fmt("No current flow state of type %d available", (int)fstate));
+	CANNOT_BE_REACHED
+	}
+
 void StatementBuilder::Compile(const Stmt* stmt)
 	{
 	switch ( stmt->Tag() ) {
@@ -140,7 +162,8 @@ void StatementBuilder::Compile(const ::AddStmt* stmt)
 
 void StatementBuilder::Compile(const ::BreakStmt* stmt)
 	{
-	NotSupported(stmt);
+	auto target = CurrentFlowState(FLOW_STATE_BREAK);
+	Builder()->addInstruction(::hilti::instruction::flow::Jump, target);
 	}
 
 void StatementBuilder::Compile(const ::DelStmt* stmt)
@@ -257,10 +280,16 @@ void StatementBuilder::Compile(const ::ForStmt* stmt)
 			}
 		}
 
+	PushFlowState(FLOW_STATE_NEXT, ::hilti::builder::loop::next());
+	PushFlowState(FLOW_STATE_BREAK, ::hilti::builder::loop::break_());
+
 	Compile(stmt->LoopBody());
 
-    ModuleBuilder()->popBuilder();
-    auto body = ModuleBuilder()->popBody();
+	PopFlowState();
+	PopFlowState();
+
+	ModuleBuilder()->popBuilder();
+	auto body = ModuleBuilder()->popBody();
 
 	auto body_stmt = ::ast::checkedCast<statement::Block>(body->block());
 	auto s = ::hilti::builder::loop::foreach(id, expr, body_stmt);
@@ -314,7 +343,8 @@ void StatementBuilder::Compile(const ::InitStmt* stmt)
 
 void StatementBuilder::Compile(const ::NextStmt* stmt)
 	{
-	NotSupported(stmt);
+	auto target = CurrentFlowState(FLOW_STATE_NEXT);
+	Builder()->addInstruction(::hilti::instruction::flow::Jump, target);
 	}
 
 void StatementBuilder::Compile(const ::NullStmt* stmt)

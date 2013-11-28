@@ -856,7 +856,24 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::BoolExpr* exp
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EqExpr* expr)
 	{
-	return NotSupported(expr, "EqExpr");
+	auto result = Builder()->addTmp("eq", ::hilti::builder::boolean::type());
+	auto op1 = HiltiExpression(expr->Op1());
+	auto op2 = HiltiExpression(expr->Op2());
+
+	switch ( expr->Tag() ) {
+	case EXPR_EQ:
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Equal, op1, op2);
+		return result;
+
+	case EXPR_NE:
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Unequal, op1, op2);
+		return result;
+
+	default:
+		return NotSupported(expr, "EqExpr");
+	}
+
+	CANNOT_BE_REACHED
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RelExpr* expr)
