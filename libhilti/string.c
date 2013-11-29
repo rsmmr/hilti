@@ -19,6 +19,7 @@
 #include "memory_.h"
 #include "utf8proc.h"
 #include "hutil.h"
+#include "autogen/hilti-hlt.h"
 #include "3rdparty/convertutf/ConvertUTF.h"
 
 void hlt_string_dtor(hlt_type_info* ti, hlt_string* s)
@@ -312,49 +313,35 @@ hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, hlt_exce
 
 enum Charset { ERROR, UTF8, UTF16LE, UTF16BE, UTF32LE, UTF32BE, ASCII };
 
-static enum Charset get_charset(hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
+static enum Charset get_charset(hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_string utf8 = hlt_string_from_asciiz("utf8", excpt, ctx);
-    hlt_string utf16le = hlt_string_from_asciiz("utf16le", excpt, ctx);
-    hlt_string utf16be = hlt_string_from_asciiz("utf16be", excpt, ctx);
-    hlt_string utf32le = hlt_string_from_asciiz("utf32le", excpt, ctx);
-    hlt_string utf32be = hlt_string_from_asciiz("utf32be", excpt, ctx);
-    hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
-
     enum Charset cs = ERROR;
 
-    if ( hlt_string_cmp(charset, utf8, excpt, ctx) == 0 )
+    if ( hlt_enum_equal(charset, Hilti_Charset_UTF8, excpt, ctx) )
         cs = UTF8;
     
-    else if ( hlt_string_cmp(charset, utf16le, excpt, ctx) == 0 )
+    else if ( hlt_enum_equal(charset, Hilti_Charset_UTF16LE, excpt, ctx) )
         cs = UTF16LE;
     
-    else if ( hlt_string_cmp(charset, utf16be, excpt, ctx) == 0 )
+    else if ( hlt_enum_equal(charset, Hilti_Charset_UTF16BE, excpt, ctx) )
         cs = UTF16BE;
     
-    else if ( hlt_string_cmp(charset, utf32le, excpt, ctx) == 0 )
+    else if ( hlt_enum_equal(charset, Hilti_Charset_UTF32LE, excpt, ctx) )
         cs = UTF32LE;
     
-    else if ( hlt_string_cmp(charset, utf32be, excpt, ctx) == 0 )
+    else if ( hlt_enum_equal(charset, Hilti_Charset_UTF32BE, excpt, ctx) )
         cs = UTF32BE;
 
-    else if ( hlt_string_cmp(charset, ascii, excpt, ctx) == 0 )
+    else if ( hlt_enum_equal(charset, Hilti_Charset_ASCII, excpt, ctx) )
         cs = ASCII;
 
     else
         hlt_set_exception(excpt, &hlt_exception_value_error, 0);
 
-    GC_DTOR(utf8, hlt_string);
-    GC_DTOR(utf16le, hlt_string);
-    GC_DTOR(utf16be, hlt_string);
-    GC_DTOR(utf32le, hlt_string);
-    GC_DTOR(utf32be, hlt_string);
-    GC_DTOR(ascii, hlt_string);
-
     return cs;
 }
 
-hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_string_encode(hlt_string s, hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const int8_t* p;
     const int8_t* e;
@@ -378,6 +365,12 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** e
         memcpy(data, s->bytes, s->len);
         hlt_bytes_append_raw(dst, data, s->len, excpt, ctx);
         return dst;
+    } else if ( ch == ASCII ) {
+        // fallthrough
+    } else {
+        hlt_string err = hlt_string_from_asciiz("charset not supported for encode", excpt, ctx);
+        hlt_set_exception(excpt, &hlt_exception_conversion_error, err);
+        return 0;
     }
 
     static const int BUFFER_SIZE = 128;
@@ -427,7 +420,7 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** e
     return dst;
 }
 
-hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_string_decode(hlt_bytes* b, hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     enum Charset ch = get_charset(charset, excpt, ctx);
     if ( ch == ERROR )
@@ -597,9 +590,7 @@ void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** 
 */
 char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
-    hlt_bytes* b = hlt_string_encode(s, ascii, excpt, ctx);
-    GC_DTOR(ascii, hlt_string);
+    hlt_bytes* b = hlt_string_encode(s, Hilti_Charset_ASCII, excpt, ctx);
 
     // Add a null terminator.
     hlt_bytes_append_raw_copy(b, (int8_t*)"\0", 1, excpt, ctx);

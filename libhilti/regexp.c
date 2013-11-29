@@ -5,6 +5,7 @@
 #include "regexp.h"
 #include "string_.h"
 #include "memory_.h"
+#include "autogen/hilti-hlt.h"
 
 struct __hlt_regexp {
     __hlt_gchdr __gchdr; // Header for memory management.
@@ -76,9 +77,7 @@ static inline int _cflags(hlt_regexp_flags flags)
 static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // FIXME: For now, the pattern must contain only ASCII characters.
-    hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
-    hlt_bytes* p = hlt_string_encode(pattern, ascii, excpt, ctx);
-    GC_DTOR(ascii, hlt_string);
+    hlt_bytes* p = hlt_string_encode(pattern, Hilti_Charset_ASCII, excpt, ctx);
     if ( *excpt )
         return;
 

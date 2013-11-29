@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 
+#include "enum.h"
 #include "types.h"
 #include "memory_.h"
 #include "rtti.h"
@@ -123,26 +124,29 @@ extern int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception** excpt
 ///
 /// s: The string to encode.
 ///
-/// charset: The charset to encode in. Currently, only \c utf8 and \c ascii are supported.
+/// charset: The charset to encode in. Currently, only ``Hilti_Charset_UTF8`` and
+/// ``Hilti_Charset_ASCII`` are supported.
 ///
 /// \hlt_c
 ///
 /// Returns: The encoded raw representation.
 ///
 /// \todo: This should supoprt more character sets.
-extern struct __hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx);
+extern struct __hlt_bytes* hlt_string_encode(hlt_string s, hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Decodes the raw representation of a string in a given character set into
 /// a string object.
 ///
 /// raw: The raw representation, encoded in character set \c charset.
 ///
-/// charset: The character set \c raw is encoded in. Currently, only \c utf8 and \c ascii are supported.
+/// charset: The character set \c raw is encoded in. Currently, ``Hilti_Charset_UTF8``,
+/// ``Hilti_Charset_UTF16LE``, ``Hilti_Charset_UTF16BE``, ``Hilti_Charset_UTF32LE``,
+/// ``Hilti_Charset_UTF32BE``, and ``Hilti_Charset_ASCII`` are supported.
 ///
 /// Returns: The decoded string.
 ///
 /// \todo: This should supoprt more character sets.
-extern hlt_string hlt_string_decode(struct __hlt_bytes* raw, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_string_decode(struct __hlt_bytes* raw, hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the empty string.
 ///

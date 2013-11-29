@@ -26,29 +26,28 @@ void run() {
    invalid = b"\x10\x00\x00\x54"
    surrogatele = b"\x3d\xd8\x4a\xdc"
    surrogatebe = b"\xd8\x3d\xdc\x4a"
-   surrogatebe = b"\xd8\x3d\xdc\x4a"
    incompletesurrogate = b"\xd8\x3d"
 
-   s = string.decode utf16le "utf16le"
+   s = string.decode utf16le Hilti::Charset::UTF16LE
    call Hilti::print(s)
    
-   s = string.decode utf16be "utf16be"
+   s = string.decode utf16be Hilti::Charset::UTF16BE
    call Hilti::print(s)
    
-   s = string.decode utf32le "utf32le"
+   s = string.decode utf32le Hilti::Charset::UTF32LE
    call Hilti::print(s)
    
-   s = string.decode utf32be "utf32be"
+   s = string.decode utf32be Hilti::Charset::UTF32BE
    call Hilti::print(s)
      
-   s = string.decode surrogatele "utf16le"
+   s = string.decode surrogatele Hilti::Charset::UTF16LE
    call Hilti::print(s)
 
-   s = string.decode surrogatebe "utf16be"
+   s = string.decode surrogatebe Hilti::Charset::UTF16BE
    call Hilti::print(s)
 
    try {
-     s = string.decode invalid "utf32be"
+     s = string.decode invalid Hilti::Charset::UTF32BE
      call Hilti::print(s)
    }
    catch ( ref<Hilti::ConversionError> e ) {
@@ -57,7 +56,7 @@ void run() {
    }
   
    try {
-     s = string.decode incompletesurrogate "utf16be"
+     s = string.decode incompletesurrogate Hilti::Charset::UTF16BE
      call Hilti::print(s)
    }
    catch ( ref<Hilti::ConversionError> e2 ) {

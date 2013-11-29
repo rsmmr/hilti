@@ -14,8 +14,8 @@ void run() {
     local iterator<bytes> i
     local string s
 
-    b1 = string.encode "012345" "ascii"
-    b2 = string.encode "ABCDEF" "ascii"
+    b1 = string.encode "012345" Hilti::Charset::ASCII
+    b2 = string.encode "ABCDEF" Hilti::Charset::ASCII
     bytes.append b1 b2
 
     call Hilti::print (b1)

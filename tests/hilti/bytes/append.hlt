@@ -13,18 +13,18 @@ void run() {
     local ref<bytes> b2
     local string s
 
-    b1 = string.encode "Hallo" "ascii"
+    b1 = string.encode "Hallo" Hilti::Charset::ASCII
     call Hilti::print (b1)
 
-    b2 = string.encode "T\u00e4\u00e4\u00e4!" "utf8"
+    b2 = string.encode "T\u00e4\u00e4\u00e4!" Hilti::Charset::UTF8
     call Hilti::print (b2)
 
     bytes.append b1 b2
     call Hilti::print (b1)
 
-    s = string.decode b1 "utf8"
+    s = string.decode b1 Hilti::Charset::UTF8
     call Hilti::print (s)
 
-    s = string.decode b1 "ascii"
+    s = string.decode b1 Hilti::Charset::ASCII
     call Hilti::print (s)
 }

@@ -15,7 +15,7 @@ void run() {
     local string s
     local int<32> i
 
-    b1 = string.encode "01234567890" "ascii"
+    b1 = string.encode "01234567890" Hilti::Charset::ASCII
     call Hilti::print (b1)
 
     i1 = bytes.offset b1 2

@@ -27,7 +27,7 @@ struct __hlt_file {
     __hlt_gchdr __gchdr;   // Header for memory management.
     __hlt_file_info* info; // The internal file object.
     hlt_string path;       // The path of the file; keep here as well for threads.
-    hlt_string charset;    // The charset for a text file.
+    hlt_enum charset;    // The charset for a text file.
     hlt_enum type;         // Hilti_FileType_* constant.
     int8_t open;           // 1 if open, 0 if closed.
 };
@@ -47,7 +47,6 @@ typedef struct __hlt_cmd_file {
 void hlt_file_dtor(hlt_type_info* ti, hlt_file* f)
 {
     GC_DTOR(f->path, hlt_string);
-    GC_DTOR(f->charset, hlt_string);
 }
 
 static void fatal_error(const char* msg)
@@ -115,7 +114,7 @@ hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx)
     return file;
 }
 
-void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( file->open ) {
         hlt_string err = hlt_string_from_asciiz("file already open", excpt, ctx);
@@ -162,7 +161,6 @@ init_instance:
     file->open = 1;
 
     GC_CCTOR(file->path, hlt_string);
-    GC_CCTOR(file->charset, hlt_string);
 
     release_lock(s);
 
@@ -193,7 +191,6 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
 
     file->open = 0;
     GC_CLEAR(file->path, hlt_string);
-    GC_CLEAR(file->charset, hlt_string);
 }
 
 void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)

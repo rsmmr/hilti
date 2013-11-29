@@ -44,15 +44,13 @@ static void __add_parser(hlt_bytes* mt, binpac_parser* parser, hlt_exception** e
     hlt_free(cmt);
 
 #ifdef DEBUG
-    hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
-    hlt_string s = hlt_string_decode(mt, ascii, excpt, ctx);
+    hlt_string s = hlt_string_decode(mt, Hilti_Charset_ASCII, excpt, ctx);
 
     char* r1 = hlt_string_to_native(s, excpt, ctx);
     char* r2 = hlt_string_to_native(parser->name, excpt, ctx);
 
     DBG_LOG("binpac-sinks", "MIME type %s registered for parser %s", r1, r2);
 
-    GC_DTOR(ascii, hlt_string);
     GC_DTOR(s, hlt_string);
     hlt_free(r1);
     hlt_free(r2);
@@ -118,14 +116,12 @@ void binpachilti_mime_register_parser(binpac_parser* parser, hlt_exception** exc
     if ( ! (parser->mime_types && parser->new_func) )
          return;
 
-    hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
-
     hlt_iterator_list i = hlt_list_begin(parser->mime_types, excpt, ctx);
     hlt_iterator_list end = hlt_list_end(parser->mime_types, excpt, ctx);
 
     while ( ! (hlt_iterator_list_eq(i, end, excpt, ctx) || *excpt) ) {
         hlt_string mt = *(hlt_string*) hlt_iterator_list_deref(i, excpt, ctx);
-        hlt_bytes* b = hlt_string_encode(mt, ascii, excpt, ctx);
+        hlt_bytes* b = hlt_string_encode(mt, Hilti_Charset_ASCII, excpt, ctx);
         GC_DTOR(mt, hlt_string);
 
         hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
@@ -157,17 +153,14 @@ void binpachilti_mime_register_parser(binpac_parser* parser, hlt_exception** exc
 
     GC_DTOR(i, hlt_iterator_list);
     GC_DTOR(end, hlt_iterator_list);
-    GC_DTOR(ascii, hlt_string);
 }
 
 void binpachilti_sink_connect_mimetype_string(binpac_sink* sink, hlt_string mtype, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
-    hlt_bytes* b = hlt_string_encode(mtype, ascii, excpt, ctx);
+    hlt_bytes* b = hlt_string_encode(mtype, Hilti_Charset_ASCII, excpt, ctx);
 
     binpachilti_sink_connect_mimetype_bytes(sink, b, cookie, excpt, ctx);
 
-    GC_DTOR(ascii, hlt_string);
     GC_DTOR(b, hlt_bytes);
 }
 

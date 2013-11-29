@@ -14,13 +14,13 @@ void run() {
 
     f1 = new file
 
-    file.open f1 "foo.log" (Hilti::FileType::Text, Hilti::FileMode::Create, "utf8")
+    file.open f1 "foo.log" (Hilti::FileType::Text, Hilti::FileMode::Create, Hilti::Charset::UTF8)
     file.write f1 b"\x01\x02\x03\x04"
 
     local ref<file> f2
     f2 = new file
 
-    file.open f2 "foo.log" (Hilti::FileType::Binary, Hilti::FileMode::Create, "utf8")
+    file.open f2 "foo.log" (Hilti::FileType::Binary, Hilti::FileMode::Create, Hilti::Charset::UTF8)
     file.write f2 b"\x01\x02\x03\x04"
 
     return.void

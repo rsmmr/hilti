@@ -40,7 +40,7 @@ void StatementBuilder::visit(statement::instruction::file::Open* i)
         // Use defaults.
         ty = cg()->llvmEnum("Hilti::FileType::Text");
         mode = cg()->llvmEnum("Hilti::FileMode::Create");
-        chr = cg()->llvmString("utf8");
+        chr = cg()->llvmEnum("Hilti::Charset::UTF8");
     }
 
     CodeGen::expr_list args;
@@ -48,7 +48,7 @@ void StatementBuilder::visit(statement::instruction::file::Open* i)
     args.push_back(i->op2());
     args.push_back(builder::codegen::create(cg()->typeByName("Hilti::FileType"), ty, i->location()));
     args.push_back(builder::codegen::create(cg()->typeByName("Hilti::FileMode"), mode, i->location()));
-    args.push_back(builder::codegen::create(builder::string::type(), chr, i->location()));
+    args.push_back(builder::codegen::create(cg()->typeByName("Hilti::Charset"), chr, i->location()));
     cg()->llvmCall("hlt::file_open", args);
 
 }

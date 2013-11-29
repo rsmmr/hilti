@@ -15,7 +15,7 @@ void run() {
     local iterator<bytes> last
     local int<8> i
 
-    b = string.encode "0123456789" "ascii"
+    b = string.encode "0123456789" Hilti::Charset::ASCII
     cur = begin b
     last = end b
 
