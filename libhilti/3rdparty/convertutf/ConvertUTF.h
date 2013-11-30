@@ -52,7 +52,7 @@
 	sourceEnd, targetEnd - respectively pointers to the ends of the
 		two buffers, for overflow checking only.
 
-    These conversion functions take a ConversionFlags argument. When this
+    These conversion functions take a hilti_ConversionFlags argument. When this
     flag is set to strict, both irregular sequences and isolated surrogates
     will cause an error.  When the flag is set to lenient, both irregular
     sequences and isolated surrogates are converted.
@@ -105,43 +105,43 @@ typedef enum {
 	sourceExhausted,	/* partial character in source, but hit end */
 	targetExhausted,	/* insuff. room in target for conversion */
 	sourceIllegal		/* source sequence is illegal/malformed */
-} ConversionResult;
+} hilti_ConversionResult;
 
 typedef enum {
 	strictConversion = 0,
 	lenientConversion
-} ConversionFlags;
+} hilti_ConversionFlags;
 
 /* This is for C++ and does no harm in C */
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-ConversionResult ConvertUTF8toUTF16 (
+hilti_ConversionResult hilti_ConvertUTF8toUTF16 (
 		const UTF8_t** sourceStart, const UTF8_t* sourceEnd, 
-		UTF16_t** targetStart, UTF16_t* targetEnd, ConversionFlags flags);
+		UTF16_t** targetStart, UTF16_t* targetEnd, hilti_ConversionFlags flags);
 
-ConversionResult ConvertUTF16toUTF8 (
+hilti_ConversionResult hilti_ConvertUTF16toUTF8 (
 		const UTF16_t** sourceStart, const UTF16_t* sourceEnd, 
-		UTF8_t** targetStart, UTF8_t* targetEnd, ConversionFlags flags, uint8_t flip);
+		UTF8_t** targetStart, UTF8_t* targetEnd, hilti_ConversionFlags flags, uint8_t flip);
 		
-ConversionResult ConvertUTF8toUTF32 (
+hilti_ConversionResult hilti_ConvertUTF8toUTF32 (
 		const UTF8_t** sourceStart, const UTF8_t* sourceEnd, 
-		UTF32_t** targetStart, UTF32_t* targetEnd, ConversionFlags flags);
+		UTF32_t** targetStart, UTF32_t* targetEnd, hilti_ConversionFlags flags);
 
-ConversionResult ConvertUTF32toUTF8 (
+hilti_ConversionResult hilti_ConvertUTF32toUTF8 (
 		const UTF32_t** sourceStart, const UTF32_t* sourceEnd, 
-		UTF8_t** targetStart, UTF8_t* targetEnd, ConversionFlags flags, uint8_t flip);
+		UTF8_t** targetStart, UTF8_t* targetEnd, hilti_ConversionFlags flags, uint8_t flip);
 		
-ConversionResult ConvertUTF16toUTF32 (
+hilti_ConversionResult hilti_ConvertUTF16toUTF32 (
 		const UTF16_t** sourceStart, const UTF16_t* sourceEnd, 
-		UTF32_t** targetStart, UTF32_t* targetEnd, ConversionFlags flags);
+		UTF32_t** targetStart, UTF32_t* targetEnd, hilti_ConversionFlags flags);
 
-ConversionResult ConvertUTF32toUTF16 (
+hilti_ConversionResult hilti_ConvertUTF32toUTF16 (
 		const UTF32_t** sourceStart, const UTF32_t* sourceEnd, 
-		UTF16_t** targetStart, UTF16_t* targetEnd, ConversionFlags flags);
+		UTF16_t** targetStart, UTF16_t* targetEnd, hilti_ConversionFlags flags);
 
-uint8_t isLegalUTF8Sequence(const UTF8_t *source, const UTF8_t *sourceEnd); // returns 0 or 1
+uint8_t hilti_isLegalUTF8Sequence(const UTF8_t *source, const UTF8_t *sourceEnd); // returns 0 or 1
 
 #ifdef __cplusplus
 }

@@ -9,3 +9,5 @@ Changes from the original version:
 
 - introduce flip-parameter in ConvertUTF16toUTF8 and ConvertUTF32toUTF8
   that tells the function to flip the byte-order
+
+- prefix function names with hilti_ to prevent conflicts with llvm

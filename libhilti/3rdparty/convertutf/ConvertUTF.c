@@ -45,10 +45,10 @@
 #include <stdio.h>
 #endif
 
-static const int halfShift  = 10; /* used for shifting by 10 bits */
+static const int hilti_halfShift  = 10; /* used for shifting by 10 bits */
 
-static const UTF32_t halfBase = 0x0010000UL;
-static const UTF32_t halfMask = 0x3FFUL;
+static const UTF32_t hilti_halfBase = 0x0010000UL;
+static const UTF32_t hilti_halfMask = 0x3FFUL;
 
 #define UNI_SUR_HIGH_START  (UTF32_t)0xD800
 #define UNI_SUR_HIGH_END    (UTF32_t)0xDBFF
@@ -59,10 +59,10 @@ static const UTF32_t halfMask = 0x3FFUL;
 
 /* --------------------------------------------------------------------- */
 
-ConversionResult ConvertUTF32toUTF16 (
+hilti_ConversionResult hilti_ConvertUTF32toUTF16 (
 	const UTF32_t** sourceStart, const UTF32_t* sourceEnd, 
-	UTF16_t** targetStart, UTF16_t* targetEnd, ConversionFlags flags) {
-    ConversionResult result = conversionOK;
+	UTF16_t** targetStart, UTF16_t* targetEnd, hilti_ConversionFlags flags) {
+    hilti_ConversionResult result = conversionOK;
     const UTF32_t* source = *sourceStart;
     UTF16_t* target = *targetStart;
     while (source < sourceEnd) {
@@ -96,9 +96,9 @@ ConversionResult ConvertUTF32toUTF16 (
 		--source; /* Back up source pointer! */
 		result = targetExhausted; break;
 	    }
-	    ch -= halfBase;
-	    *target++ = (UTF16_t)((ch >> halfShift) + UNI_SUR_HIGH_START);
-	    *target++ = (UTF16_t)((ch & halfMask) + UNI_SUR_LOW_START);
+	    ch -= hilti_halfBase;
+	    *target++ = (UTF16_t)((ch >> hilti_halfShift) + UNI_SUR_HIGH_START);
+	    *target++ = (UTF16_t)((ch & hilti_halfMask) + UNI_SUR_LOW_START);
 	}
     }
     *sourceStart = source;
@@ -108,10 +108,10 @@ ConversionResult ConvertUTF32toUTF16 (
 
 /* --------------------------------------------------------------------- */
 
-ConversionResult ConvertUTF16toUTF32 (
+hilti_ConversionResult hilti_ConvertUTF16toUTF32 (
 	const UTF16_t** sourceStart, const UTF16_t* sourceEnd, 
-	UTF32_t** targetStart, UTF32_t* targetEnd, ConversionFlags flags) {
-    ConversionResult result = conversionOK;
+	UTF32_t** targetStart, UTF32_t* targetEnd, hilti_ConversionFlags flags) {
+    hilti_ConversionResult result = conversionOK;
     const UTF16_t* source = *sourceStart;
     UTF32_t* target = *targetStart;
     UTF32_t ch, ch2;
@@ -125,8 +125,8 @@ ConversionResult ConvertUTF16toUTF32 (
 		ch2 = *source;
 		/* If it's a low surrogate, convert to UTF32. */
 		if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
-		    ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
-			+ (ch2 - UNI_SUR_LOW_START) + halfBase;
+		    ch = ((ch - UNI_SUR_HIGH_START) << hilti_halfShift)
+			+ (ch2 - UNI_SUR_LOW_START) + hilti_halfBase;
 		    ++source;
 		} else if (flags == strictConversion) { /* it's an unpaired high surrogate */
 		    --source; /* return to the illegal value itself */
@@ -156,7 +156,7 @@ ConversionResult ConvertUTF16toUTF32 (
     *targetStart = target;
 #ifdef CVTUTF_DEBUG
 if (result == sourceIllegal) {
-    fprintf(stderr, "ConvertUTF16toUTF32 illegal seq 0x%04x,%04x\n", ch, ch2);
+    fprintf(stderr, "hilti_ConvertUTF16toUTF32 illegal seq 0x%04x,%04x\n", ch, ch2);
     fflush(stderr);
 }
 #endif
@@ -206,16 +206,16 @@ static const UTF8_t firstByteMark[7] = { 0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xF
  * Constants have been gathered. Loops & conditionals have been removed as
  * much as possible for efficiency, in favor of drop-through switches.
  * (See "Note A" at the bottom of the file for equivalent code.)
- * If your compiler supports it, the "isLegalUTF8" call can be turned
+ * If your compiler supports it, the "hilti_isLegalUTF8" call can be turned
  * into an inline function.
  */
 
 /* --------------------------------------------------------------------- */
 
-ConversionResult ConvertUTF16toUTF8 (
+hilti_ConversionResult hilti_ConvertUTF16toUTF8 (
 	const UTF16_t** sourceStart, const UTF16_t* sourceEnd, 
-	UTF8_t** targetStart, UTF8_t* targetEnd, ConversionFlags flags, uint8_t flip) {
-    ConversionResult result = conversionOK;
+	UTF8_t** targetStart, UTF8_t* targetEnd, hilti_ConversionFlags flags, uint8_t flip) {
+    hilti_ConversionResult result = conversionOK;
     const UTF16_t* source = *sourceStart;
     UTF8_t* target = *targetStart;
     while (source < sourceEnd) {
@@ -239,8 +239,8 @@ ConversionResult ConvertUTF16toUTF8 (
 
 		/* If it's a low surrogate, convert to UTF32. */
 		if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
-		    ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
-			+ (ch2 - UNI_SUR_LOW_START) + halfBase;
+		    ch = ((ch - UNI_SUR_HIGH_START) << hilti_halfShift)
+			+ (ch2 - UNI_SUR_LOW_START) + hilti_halfBase;
 		    ++source;
 		} else if (flags == strictConversion) { /* it's an unpaired high surrogate */
 		    --source; /* return to the illegal value itself */
@@ -292,7 +292,7 @@ ConversionResult ConvertUTF16toUTF8 (
 /*
  * Utility routine to tell whether a sequence of bytes is legal UTF-8.
  * This must be called with the length pre-determined by the first byte.
- * If not calling this from ConvertUTF8to*, then the length can be set by:
+ * If not calling this from hilti_ConvertUTF8to*, then the length can be set by:
  *  length = trailingBytesForUTF8[*source]+1;
  * and the sequence is illegal right away if there aren't that many bytes
  * available.
@@ -300,7 +300,7 @@ ConversionResult ConvertUTF16toUTF8 (
  * definition of UTF-8 goes up to 4-byte sequences.
  */
 
-static uint8_t isLegalUTF8(const UTF8_t *source, int length) {
+static uint8_t hilti_isLegalUTF8(const UTF8_t *source, int length) {
     UTF8_t a;
     const UTF8_t *srcptr = source+length;
     switch (length) {
@@ -331,20 +331,20 @@ static uint8_t isLegalUTF8(const UTF8_t *source, int length) {
  * Exported function to return whether a UTF-8 sequence is legal or not.
  * This is not used here; it's just exported.
  */
-uint8_t isLegalUTF8Sequence(const UTF8_t *source, const UTF8_t *sourceEnd) {
+uint8_t hilti_isLegalUTF8Sequence(const UTF8_t *source, const UTF8_t *sourceEnd) {
     int length = trailingBytesForUTF8[*source]+1;
     if (source+length > sourceEnd) {
 	return false;
     }
-    return isLegalUTF8(source, length);
+    return hilti_isLegalUTF8(source, length);
 }
 
 /* --------------------------------------------------------------------- */
 
-ConversionResult ConvertUTF8toUTF16 (
+hilti_ConversionResult hilti_ConvertUTF8toUTF16 (
 	const UTF8_t** sourceStart, const UTF8_t* sourceEnd, 
-	UTF16_t** targetStart, UTF16_t* targetEnd, ConversionFlags flags) {
-    ConversionResult result = conversionOK;
+	UTF16_t** targetStart, UTF16_t* targetEnd, hilti_ConversionFlags flags) {
+    hilti_ConversionResult result = conversionOK;
     const UTF8_t* source = *sourceStart;
     UTF16_t* target = *targetStart;
     while (source < sourceEnd) {
@@ -354,7 +354,7 @@ ConversionResult ConvertUTF8toUTF16 (
 	    result = sourceExhausted; break;
 	}
 	/* Do this check whether lenient or strict */
-	if (! isLegalUTF8(source, extraBytesToRead+1)) {
+	if (! hilti_isLegalUTF8(source, extraBytesToRead+1)) {
 	    result = sourceIllegal;
 	    break;
 	}
@@ -402,9 +402,9 @@ ConversionResult ConvertUTF8toUTF16 (
 		source -= (extraBytesToRead+1); /* Back up source pointer! */
 		result = targetExhausted; break;
 	    }
-	    ch -= halfBase;
-	    *target++ = (UTF16_t)((ch >> halfShift) + UNI_SUR_HIGH_START);
-	    *target++ = (UTF16_t)((ch & halfMask) + UNI_SUR_LOW_START);
+	    ch -= hilti_halfBase;
+	    *target++ = (UTF16_t)((ch >> hilti_halfShift) + UNI_SUR_HIGH_START);
+	    *target++ = (UTF16_t)((ch & hilti_halfMask) + UNI_SUR_LOW_START);
 	}
     }
     *sourceStart = source;
@@ -414,10 +414,10 @@ ConversionResult ConvertUTF8toUTF16 (
 
 /* --------------------------------------------------------------------- */
 
-ConversionResult ConvertUTF32toUTF8 (
+hilti_ConversionResult hilti_ConvertUTF32toUTF8 (
 	const UTF32_t** sourceStart, const UTF32_t* sourceEnd, 
-	UTF8_t** targetStart, UTF8_t* targetEnd, ConversionFlags flags, uint8_t flip) {
-    ConversionResult result = conversionOK;
+	UTF8_t** targetStart, UTF8_t* targetEnd, hilti_ConversionFlags flags, uint8_t flip) {
+    hilti_ConversionResult result = conversionOK;
     const UTF32_t* source = *sourceStart;
     UTF8_t* target = *targetStart;
     while (source < sourceEnd) {
@@ -471,10 +471,10 @@ ConversionResult ConvertUTF32toUTF8 (
 
 /* --------------------------------------------------------------------- */
 
-ConversionResult ConvertUTF8toUTF32 (
+hilti_ConversionResult hilti_ConvertUTF8toUTF32 (
 	const UTF8_t** sourceStart, const UTF8_t* sourceEnd, 
-	UTF32_t** targetStart, UTF32_t* targetEnd, ConversionFlags flags) {
-    ConversionResult result = conversionOK;
+	UTF32_t** targetStart, UTF32_t* targetEnd, hilti_ConversionFlags flags) {
+    hilti_ConversionResult result = conversionOK;
     const UTF8_t* source = *sourceStart;
     UTF32_t* target = *targetStart;
     while (source < sourceEnd) {
@@ -484,7 +484,7 @@ ConversionResult ConvertUTF8toUTF32 (
 	    result = sourceExhausted; break;
 	}
 	/* Do this check whether lenient or strict */
-	if (! isLegalUTF8(source, extraBytesToRead+1)) {
+	if (! hilti_isLegalUTF8(source, extraBytesToRead+1)) {
 	    result = sourceIllegal;
 	    break;
 	}

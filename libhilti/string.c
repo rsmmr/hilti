@@ -474,11 +474,11 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_enum charset, hlt_exception** exc
         int8_t** target_start = &target_start_ptr;
         int8_t* target_end = target_start_ptr + buffer_len;
 
-        ConversionResult res;
+        hilti_ConversionResult res;
         if ( ch == UTF16LE || ch == UTF16BE ) 
-            res = ConvertUTF16toUTF8((const UTF16_t**) source_start, (const UTF16_t*) source_end, (UTF8_t**) target_start, (UTF8_t*) target_end, lenientConversion, do_flip);
+            res = hilti_ConvertUTF16toUTF8((const UTF16_t**) source_start, (const UTF16_t*) source_end, (UTF8_t**) target_start, (UTF8_t*) target_end, lenientConversion, do_flip);
         else
-            res = ConvertUTF32toUTF8((const UTF32_t**) source_start, (const UTF32_t*) source_end, (UTF8_t**) target_start, (UTF8_t*) target_end, lenientConversion, do_flip);
+            res = hilti_ConvertUTF32toUTF8((const UTF32_t**) source_start, (const UTF32_t*) source_end, (UTF8_t**) target_start, (UTF8_t*) target_end, lenientConversion, do_flip);
 
         if ( res != conversionOK ) {
             // something went wrong...
