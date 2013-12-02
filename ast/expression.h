@@ -113,6 +113,7 @@ inline shared_ptr<typename AstInfo::expression> ExpressionOverrider<AstInfo>::_c
 
 #ifdef DEBUG
     if ( ! this->object()->canCoerceTo(target) ) {
+        std::cerr << ">> this->object()->render().c_str()" << std::endl;
         std::cerr << util::fmt("cannot coerce expression of type %s to type %s",
                                this->object()->type()->render().c_str(),
                                target->render().c_str()) << std::endl;
