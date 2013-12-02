@@ -23,10 +23,10 @@ export {
 	const compile_all = F &redef;
 
 	## Enable debug mode for code generation.
-	const debug = F &redef;
+	const debug = T &redef;
 
 	## Enable optimization for code generation.
-	const optimize = T &redef;
+	const optimize = F &redef;
 
 	## Profiling level for code generation.
 	const profile = 0 &redef;
