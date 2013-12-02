@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+   local bool cond
+   cond = double.leq 1.42 2.01
+   call Hilti::print (cond)
+
+   cond = double.leq 1.42 1.42
+   call Hilti::print (cond)
+
+   cond = double.leq 1.42 1.00
+   call Hilti::print (cond)
+}
+
+

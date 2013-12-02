@@ -98,11 +98,27 @@ void StatementBuilder::visit(statement::instruction::double_::Gt* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::double_::Geq* i)
+{
+    auto op1 = cg()->llvmValue(i->op1());
+    auto op2 = cg()->llvmValue(i->op2());
+    auto result = cg()->builder()->CreateFCmpOGE(op1, op2);
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::double_::Lt* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
     auto op2 = cg()->llvmValue(i->op2());
     auto result = cg()->builder()->CreateFCmpOLT(op1, op2);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::double_::Leq* i)
+{
+    auto op1 = cg()->llvmValue(i->op1());
+    auto op2 = cg()->llvmValue(i->op2());
+    auto result = cg()->builder()->CreateFCmpOLE(op1, op2);
     cg()->llvmStore(i, result);
 }
 
