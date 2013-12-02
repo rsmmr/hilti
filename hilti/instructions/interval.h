@@ -133,6 +133,36 @@ iBegin(interval, Lt, "interval.lt")
 
 iEnd
 
+iBegin(interval, Geq, "interval.geq")
+    iTarget(optype::boolean)
+    iOp1(optype::interval, true)
+    iOp2(optype::interval, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Returns True if the interval represented by *op1* is larger or the same than that
+        of *op2*.
+    )")
+
+iEnd
+
+iBegin(interval, Leq, "interval.leq")
+    iTarget(optype::boolean)
+    iOp1(optype::interval, true)
+    iOp2(optype::interval, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Returns True if the interval represented by *op1* is shorter or the same than that
+        of *op2*.
+    )")
+
+iEnd
+
 iBegin(interval, Mul, "interval.mul")
     iTarget(optype::interval)
     iOp1(optype::interval, true)

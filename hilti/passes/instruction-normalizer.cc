@@ -99,7 +99,9 @@ void InstructionNormalizer::visit(statement::ForEach* s)
     shared_ptr<type::Reference> r = ast::as<type::Reference>(s->sequence()->type());
     shared_ptr<Type> t = r ? r->argType() : s->sequence()->type();
     auto iterable = ast::as<type::trait::Iterable>(t);
-    assert(iterable);
+
+    if ( ! iterable )
+        internalError(s, ::util::fmt("InstructionNormalizer/ForEach: %s is not iterable", t->render()));
 
     auto parent = s->firstParent<statement::Block>();
     assert(parent);

@@ -71,5 +71,29 @@ void run() {
     i = interval.from_double 12.5
     call Hilti::print(i)
 
+    call Hilti::print("")
+
+    t2 = interval.add t i
+
+    call printInterval(t)
+    call printInterval(t2)
+
+    b = interval.leq t t2
+    call Hilti::print(b)
+    b = interval.leq t2 t
+    call Hilti::print(b)
+    b = interval.leq t t
+    call Hilti::print(b)
+
+    call Hilti::print("")
+
+    t2 = interval.add t i
+    b = interval.geq t t2
+    call Hilti::print(b)
+    b = interval.geq t2 t
+    call Hilti::print(b)
+    b = interval.geq t t
+    call Hilti::print(b)
+
 }
 

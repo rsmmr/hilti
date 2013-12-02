@@ -358,7 +358,6 @@ void Printer::visit(expression::Type* t)
 void Printer::visit(expression::Default* t)
 {
     Printer& p = *this;
-    auto id = t->type()->id();
     p << t->type()->render() << "()";
 }
 

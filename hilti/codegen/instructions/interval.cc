@@ -84,12 +84,30 @@ void StatementBuilder::visit(statement::instruction::interval::Gt* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::interval::Geq* i)
+{
+    auto op1 = cg()->llvmValue(i->op1());
+    auto op2 = cg()->llvmValue(i->op2());
+
+    auto result = builder()->CreateICmpSGE(op1, op2);
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::interval::Lt* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
     auto op2 = cg()->llvmValue(i->op2());
 
     auto result = builder()->CreateICmpSLT(op1, op2);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::interval::Leq* i)
+{
+    auto op1 = cg()->llvmValue(i->op1());
+    auto op2 = cg()->llvmValue(i->op2());
+
+    auto result = builder()->CreateICmpSLE(op1, op2);
     cg()->llvmStore(i, result);
 }
 

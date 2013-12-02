@@ -697,6 +697,27 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::addLocal(const std::strin
     return addLocal(std::make_shared<ID>(id, l), type, init, force_unique, l);
 }
 
+bool ModuleBuilder::hasLocal(const std::string& id)
+{
+    return hasLocal(std::make_shared<ID>(id));
+}
+
+bool ModuleBuilder::hasLocal(shared_ptr<hilti::ID> id)
+{
+    id = _normalizeID(id);
+
+    auto func = _currentFunction();
+
+    for ( auto p : func->function->type()->parameters() ) {
+        if ( *p->id() == *id )
+            return true;
+    }
+
+    auto locals = func->locals;
+    auto d = locals.find(id->pathAsString(_module->id()));
+    return d != locals.end();
+}
+
 shared_ptr<hilti::expression::Variable> ModuleBuilder::addTmp(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool reuse, const Location& l)
 {
     auto local = (_currentFunction()->function != nullptr);

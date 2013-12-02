@@ -16,6 +16,21 @@ using namespace hilti::passes;
 
 CompilerContext::CompilerContext(const Options& options)
 {
+    setOptions(options);
+}
+
+CompilerContext::~CompilerContext()
+{
+    delete _jit;
+}
+
+const Options& CompilerContext::options() const
+{
+    return *_options;
+}
+
+void CompilerContext::setOptions(const Options& options)
+{
     _options = std::shared_ptr<Options>(new Options(options));
 
     if ( options.module_cache.size() ) {
@@ -27,16 +42,6 @@ CompilerContext::CompilerContext(const Options& options)
 
     if ( _options->cgDebugging("visitors") )
         ast::enableDebuggingForAllVisitors();
-}
-
-CompilerContext::~CompilerContext()
-{
-    delete _jit;
-}
-
-const Options& CompilerContext::options() const
-{
-    return *_options;
 }
 
 string CompilerContext::searchModule(shared_ptr<ID> id)

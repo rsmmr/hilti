@@ -35,6 +35,9 @@ public:
     /// Returns the set of options in effect.
     const Options& options() const;
 
+    /// Updates the current set of options.
+    void setOptions(const Options& options);
+
     /// Reads a HILTI module from a file returns the parsed AST. It uses uses
     /// parse() for parsing and, by default, also fully finalizes the module.
     ///
