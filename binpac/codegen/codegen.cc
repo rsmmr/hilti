@@ -518,3 +518,38 @@ shared_ptr<hilti::Expression> CodeGen::hiltiByteOrder(shared_ptr<Expression> exp
 
     return result;
 }
+
+shared_ptr<hilti::Expression> CodeGen::hiltiCharset(shared_ptr<Expression> expr)
+{
+    auto t1 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::Charset::UTF8"),
+        hilti::builder::id::create(string("Hilti::Charset::UTF8"))});
+
+    auto t2 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::Charset::UTF16LE"),
+        hilti::builder::id::create(string("Hilti::Charset::UTF16LE"))});
+
+    auto t3 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::Charset::UTF16BE"),
+        hilti::builder::id::create(string("Hilti::Charset::UTF16BE"))});
+
+    auto t4 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::Charset::UTF32LE"),
+        hilti::builder::id::create(string("Hilti::Charset::UTF32LE"))});
+    
+    auto t5 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::Charset::UTF32BE"),
+        hilti::builder::id::create(string("Hilti::Charset::UTF32BE"))});
+    
+    auto t6 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::Charset::ASCII"),
+        hilti::builder::id::create(string("Hilti::Charset::ASCII"))});
+
+    auto tuple = hilti::builder::tuple::create({ t1, t2, t3, t4, t5, t6 });
+    auto result = moduleBuilder()->addTmp("order", hilti::builder::type::byName("Hilti::Charset"));
+    auto op = hiltiExpression(expr);
+
+    builder()->addInstruction(result, hilti::instruction::Misc::SelectValue, op, tuple);
+
+    return result;
+}

@@ -184,3 +184,14 @@ void CodeBuilder::visit(expression::operator_::bytes::ToUIntBinary* i)
 
     setResult(result);
 }
+
+void CodeBuilder::visit(expression::operator_::bytes::Decode* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto charset = cg()->hiltiCharset(callParameter(i->op3(), 0));
+
+    auto result = cg()->builder()->addTmp("result", hilti::builder::string::type());
+    cg()->builder()->addInstruction(result, hilti::instruction::string::Decode, op1, charset);
+
+    setResult(result);
+}

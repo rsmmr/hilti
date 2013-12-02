@@ -216,6 +216,21 @@ opBegin(bytes::ToIntBinary : MethodCall)
     }
 opEnd
 
+opBegin(bytes::Decode : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("decode")))
+    opCallArg1("charset", std::make_shared<type::Enum>())
+
+    opDoc("Interprets the ``bytes`` as representing an binary string encoded with the given character set, and converts it into a UTF8 string")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::String>();
+    }
+opEnd
+
 opBegin(bytes::Split1 : MethodCall)
     opOp1(std::make_shared<type::Bytes>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("split1")))

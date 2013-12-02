@@ -12,6 +12,12 @@ type ByteOrder = enum { Little = 1, Big = 2, Network = 2, Host = 3 };
 type AddrFamily = enum { IPv4 = 1, IPv6 = 2 };
 # %end-AddrFamily
 
+# These values must match Hilti::Charset.
+# %begin-Charset
+# Known character sets
+type Charset = enum { UTF8 = 1, UTF16LE = 2, UTF16BE = 3, UTF32LE = 4, UTF32BE = 5, ASCII = 6 };
+# %end-Charset
+
 # These values must match those in binpac.hlt. FIXME: We should have
 # just one definition.
 # # %begin-Filter

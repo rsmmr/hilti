@@ -277,6 +277,13 @@ public:
     ///
     /// Returns: The equivalent HILTI byte order.
     shared_ptr<hilti::Expression> hiltiByteOrder(shared_ptr<Expression> expr);
+    
+    /// Converts an expression of type BinPAC::Charset into a HILTI value of type Hilti::Charset.
+    ///
+    /// expr: The expression to convert.
+    ///
+    /// Returns: The equivalent HILTI character set.
+    shared_ptr<hilti::Expression> hiltiCharset(shared_ptr<Expression> expr);
 
 private:
     CompilerContext* _ctx;
