@@ -26,5 +26,12 @@ void run() {
 
      b = equal 2002:0db8::1428:57ab/48 2001:0db8::1428:1234
      call Hilti::print (b)
+
+     # net.contains does exactly the same as equal, just double-check.
+     b = net.contains 192.168.1.0/24 192.168.1.123
+     call Hilti::print (b)
+
+     b = net.contains 192.168.1.0/24 192.168.2.123
+     call Hilti::print (b)
 }
 

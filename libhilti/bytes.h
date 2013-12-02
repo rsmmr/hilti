@@ -176,6 +176,15 @@ extern void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size 
 /// Returns: The position where the byte is found, or ~~hlt_bytes_end if not found.
 extern hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Checks if a another bytes object is subsequence of a bytes object.
+///
+/// b: The bytes object to search.
+/// other: The other bytes to search for.
+/// \hlt_c
+///
+/// Returns: True if *other* was found *b*.
+extern int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Searches for the first occurance of another bytes object in a bytes object.
 ///
 /// b: The bytes object to search.

@@ -136,6 +136,26 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
+    iValidateCC(Contains) {
+    }
+
+    iDocCC(Contains, R"(
+        Returns true if *op1* contains *op2* as a subsequence.
+    )")
+
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(Find) {
+    }
+
+    iDocCC(Find, R"(
+        Returns an iterator representing the first occurence of *op2* in *op1*, or an iterator pointing to the end of *op1* if nowhere.
+    )")
+
+iEndCC
+
+iBeginCC(bytes)
     iValidateCC(Offset) {
     }
 

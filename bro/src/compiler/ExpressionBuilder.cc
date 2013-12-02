@@ -45,7 +45,8 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Una
 	{
 	Error(::util::fmt("unary expression %s not supported for operand of type %s",
 			  ::expr_name(expr->Tag()),
-			  ::type_name(expr->Op()->Type()->Tag())),
+			  ::type_name(expr->Op()->Type()->Tag()),
+              where),
 	     expr);
 
 	return nullptr;
@@ -53,10 +54,11 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Una
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::BinaryExpr* expr, const char* where)
 	{
-	Error(::util::fmt("binary expression %s not supported for operands of types %s and %s",
+	Error(::util::fmt("binary expression %s not supported for operands of types %s and %s in %s",
 			  ::expr_name(expr->Tag()),
 			  ::type_name(expr->Op1()->Type()->Tag()),
-			  ::type_name(expr->Op2()->Type()->Tag())),
+			  ::type_name(expr->Op2()->Type()->Tag()),
+              where),
 	     expr);
 
 	return nullptr;
@@ -737,12 +739,53 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SetConstructo
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SizeExpr* expr)
 	{
-	return NotSupported(expr, "SizeExpr");
+	auto result = Builder()->addTmp("sub", ::hilti::builder::integer::type(64));
+	auto ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_STRING, ::hilti::instruction::bytes::Length);
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_TABLE, UNARY_OP_FUNC
+		{
+		if ( expr->Op()->Type()->AsTableType()->IsSet() )
+			Builder()->addInstruction(result,
+						  ::hilti::instruction::map::Size,
+						  op);
+		else
+			Builder()->addInstruction(result,
+						  ::hilti::instruction::set::Size,
+						  op);
+		});
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_LIST, UNARY_OP_FUNC
+		{
+		int size = expr->Op()->Type()->AsTypeList()->Types()->length();
+
+		Builder()->addInstruction(result,
+					  ::hilti::instruction::operator_::Assign,
+					  ::hilti::builder::integer::create(size));
+		});
+
+	if ( ! ok )
+		NotSupported(expr, "SubExpr");
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SubExpr* expr)
 	{
-	return NotSupported(expr, "SubExpr");
+	auto result = Builder()->addTmp("sub", HiltiType(expr->Type()));
+	auto ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Sub);
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Sub);
+	ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Sub);
+	ok = ok || CompileOperator(expr, result, ::TYPE_TIME, ::TYPE_INTERVAL, ::hilti::instruction::time::Sub);
+	ok = ok || CompileOperator(expr, result, ::TYPE_INTERVAL, ::TYPE_INTERVAL, ::hilti::instruction::interval::Sub);
+
+	if ( ! ok )
+		NotSupported(expr, "SubExpr");
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableCoerceExpr* expr)
@@ -878,5 +921,49 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EqExpr* expr)
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RelExpr* expr)
 	{
-	return NotSupported(expr, "RelExpr");
+	auto result = Builder()->addTmp("eq", ::hilti::builder::boolean::type());
+
+	bool ok = false;
+
+	switch ( expr->Tag() ) {
+	case EXPR_LT:
+		{
+		ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Slt);
+		ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Ult);
+		ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Lt);
+		break;
+		}
+
+	case EXPR_LE:
+		{
+		ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Sleq);
+		ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Uleq);
+		ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Leq);
+		break;
+		}
+
+	case EXPR_GT:
+		{
+		ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Sgt);
+		ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Ugt);
+		ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Gt);
+		break;
+		}
+
+	case EXPR_GE:
+		{
+		ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Sgeq);
+		ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Ugeq);
+		ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Geq);
+		break;
+		}
+
+	default:
+		return NotSupported(expr, "RelExpr");
+	}
+
+	if ( ! ok )
+		NotSupported(expr, "RelExpr");
+
+	return result;
 	}

@@ -83,7 +83,21 @@ iBegin(network, Prefix, "net.prefix")
     iDoc(R"(    
         Returns the network prefix as a masked IP addr.
     )")
+iEnd
+
+iBegin(network, Contains, "net.contains")
+    iTarget(optype::boolean)
+    iOp1(optype::network, true);
+    iOp2(optype::address, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Returns true if the address *op2* is located inside the network prefix *op1*.
+    )")
 
 iEnd
+
 
 

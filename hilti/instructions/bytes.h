@@ -90,6 +90,18 @@ iBeginH(bytes, Length, "bytes.length")
     iOp1(optype::refBytes, true);
 iEndH
 
+iBeginH(bytes, Contains, "bytes.contains")
+    iTarget(optype::boolean);
+    iOp1(optype::refBytes, true);
+    iOp2(optype::refBytes, true);
+iEndH
+
+iBeginH(bytes, Find, "bytes.find")
+    iTarget(optype::iterBytes);
+    iOp1(optype::refBytes, true);
+    iOp2(optype::refBytes, true);
+iEndH
+
 iBeginH(bytes, Offset, "bytes.offset")
     iTarget(optype::iterBytes);
     iOp1(optype::refBytes, true);

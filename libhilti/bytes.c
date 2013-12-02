@@ -107,6 +107,38 @@ static inline int8_t is_empty(const hlt_bytes* b)
     return is_empty_chunk(b->head);
 }
 
+static inline int8_t is_end(hlt_iterator_bytes pos)
+{
+    return pos.chunk == 0 || (!pos.cur) || pos.cur >= pos.chunk->end;
+}
+
+static inline void normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
+{
+    if ( ! pos->chunk )
+        return;
+
+    // If the pos was previously an end position but now new data has been
+    // added, adjust it so that it's pointing to the next byte.
+    if ( (! pos->cur || pos->cur >= pos->chunk->end) && pos->chunk->next ) {
+
+        // The ref cnt must only be adjusted if the HILTI layer will see the
+        // normalized iterator.
+        if ( adj_refcnt ) {
+            GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
+        }
+        else
+            pos->chunk = pos->chunk->next;
+
+        pos->cur = pos->chunk->start;
+    }
+
+}
+
+void __bytes_normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
+{
+    return normalize_pos(pos, adj_refcnt);
+}
+
 // For debugging.
 static void __print_bytes(const char* prefix, const hlt_bytes* b)
 {
@@ -403,6 +435,14 @@ hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception**
     return GenericEndPos;
 }
 
+int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_iterator_bytes i = hlt_bytes_find_bytes(b, other, excpt, ctx);
+    int8_t result = (! is_end(i));
+    GC_DTOR(i, hlt_iterator_bytes);
+    return result;
+}
+
 hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iterator_bytes i = hlt_bytes_begin(other, excpt, ctx);
@@ -438,39 +478,6 @@ hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exce
     GC_DTOR(p, hlt_iterator_bytes);
     return GenericEndPos;
 }
-
-static inline int8_t is_end(hlt_iterator_bytes pos)
-{
-    return pos.chunk == 0 || (!pos.cur) || pos.cur >= pos.chunk->end;
-}
-
-static inline void normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
-{
-    if ( ! pos->chunk )
-        return;
-
-    // If the pos was previously an end position but now new data has been
-    // added, adjust it so that it's pointing to the next byte.
-    if ( (! pos->cur || pos->cur >= pos->chunk->end) && pos->chunk->next ) {
-
-        // The ref cnt must only be adjusted if the HILTI layer will see the
-        // normalized iterator.
-        if ( adj_refcnt ) {
-            GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
-        }
-        else
-            pos->chunk = pos->chunk->next;
-
-        pos->cur = pos->chunk->start;
-    }
-
-}
-
-void __bytes_normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
-{
-    return normalize_pos(pos, adj_refcnt);
-}
-
 
 hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {

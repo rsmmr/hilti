@@ -54,6 +54,26 @@ static llvm::Value* _maskAddr(CodeGen* cg, llvm::Value* addr, llvm::Value* len)
     return addr;
 }
 
+void _createContains(CodeGen* cg, statement::Instruction* i)
+{
+    auto op1 = cg->llvmValue(i->op1());
+    auto op2 = cg->llvmValue(i->op2());
+
+    auto len = cg->llvmExtractValue(op1, 2);
+    auto addr = _maskAddr(cg, op2, len);
+
+    auto v1 = cg->llvmExtractValue(op1, 0);
+    auto v2 = cg->llvmExtractValue(addr, 0);
+    auto cmp1 = cg->builder()->CreateICmpEQ(v1, v2);
+
+    v1 = cg->llvmExtractValue(op1, 1);
+    v2 = cg->llvmExtractValue(addr, 1);
+    auto cmp2 = cg->builder()->CreateICmpEQ(v1, v2);
+
+    auto result = cg->builder()->CreateAnd(cmp1, cmp2);
+    cg->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::network::Equal* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
@@ -78,22 +98,7 @@ void StatementBuilder::visit(statement::instruction::network::Equal* i)
 
 void StatementBuilder::visit(statement::instruction::network::EqualAddr* i)
 {
-    auto op1 = cg()->llvmValue(i->op1());
-    auto op2 = cg()->llvmValue(i->op2());
-
-    auto len = cg()->llvmExtractValue(op1, 2);
-    auto addr = _maskAddr(cg(), op2, len);
-
-    auto v1 = cg()->llvmExtractValue(op1, 0);
-    auto v2 = cg()->llvmExtractValue(addr, 0);
-    auto cmp1 = cg()->builder()->CreateICmpEQ(v1, v2);
-
-    v1 = cg()->llvmExtractValue(op1, 1);
-    v2 = cg()->llvmExtractValue(addr, 1);
-    auto cmp2 = cg()->builder()->CreateICmpEQ(v1, v2);
-
-    auto result = cg()->builder()->CreateAnd(cmp1, cmp2);
-    cg()->llvmStore(i, result);
+	_createContains(cg(), i);
 }
 
 void StatementBuilder::visit(statement::instruction::network::Family* i)
@@ -134,4 +139,10 @@ void StatementBuilder::visit(statement::instruction::network::Prefix* i)
 
     cg()->llvmStore(i, result);
 }
+
+void StatementBuilder::visit(statement::instruction::network::Contains* i)
+{
+	_createContains(cg(), i);
+}
+
 
