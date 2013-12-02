@@ -11,6 +11,11 @@
 
 binpac::CompilerContext::CompilerContext(const Options& options)
 {
+    setOptions(options);
+}
+
+void binpac::CompilerContext::setOptions(const Options& options)
+{
     _options = std::shared_ptr<Options>(new Options(options));
     _hilti_context = std::make_shared<hilti::CompilerContext>(options);
 

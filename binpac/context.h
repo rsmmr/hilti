@@ -31,6 +31,9 @@ public:
     /// Returns the set of options in effect.
     const Options& options() const;
 
+    /// Updates the current set of options.
+    void setOptions(const Options& options);
+
     /// Reads a BinPAC++ source file and returns the parsed AST. The function
     /// searches the file in the paths given and reads it in. It then uses uses
     /// parseStream() for parsing. By default, the module is fully finalized.
