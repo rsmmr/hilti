@@ -43,7 +43,7 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Exp
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::UnaryExpr* expr, const char* where)
 	{
-	Error(::util::fmt("unary expression %s not supported for operand of type %s",
+	Error(::util::fmt("unary expression %s not supported for operand of type %sin %s",
 			  ::expr_name(expr->Tag()),
 			  ::type_name(expr->Op()->Type()->Tag()),
               where),
@@ -452,7 +452,17 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ConstExpr* ex
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::DivideExpr* expr)
 	{
-	return NotSupported(expr, "DivideExpr");
+	auto result = Builder()->addTmp("div", HiltiType(expr->Type()));
+	auto ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Div);
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Div);
+	ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Div);
+
+	if ( ! ok )
+		NotSupported(expr, "DivideExpr");
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EventExpr* expr)
@@ -493,7 +503,46 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::HasFieldExpr*
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)
 	{
-	return NotSupported(expr, "InExpr");
+	auto ty = expr->Op2()->Type();
+
+	auto result = Builder()->addTmp("has", ::hilti::builder::boolean::type());
+
+	switch ( ty->Tag() ) {
+	case TYPE_TABLE:
+		{
+		auto mtype = ty->AsTableType();
+		auto op1 = HiltiExpression(expr->Op2());
+		auto op2 = HiltiIndex(expr->Op1());
+
+		if ( ty->IsSet() )
+			Builder()->addInstruction(result, ::hilti::instruction::set::Exists, op1, op2);
+		else
+			Builder()->addInstruction(result, ::hilti::instruction::map::Exists, op1, op2);
+
+		return result;
+		}
+
+	case TYPE_STRING:
+		{
+		auto op1 = HiltiExpression(expr->Op2());
+		auto op2 = HiltiExpression(expr->Op1());
+		Builder()->addInstruction(result, ::hilti::instruction::bytes::Contains, op1, op2);
+		return result;
+		}
+
+	case TYPE_SUBNET:
+		{
+		auto op1 = HiltiExpression(expr->Op2());
+		auto op2 = HiltiExpression(expr->Op1());
+		Builder()->addInstruction(result, ::hilti::instruction::network::Contains, op1, op2);
+		return result;
+		}
+
+	default:
+		return NotSupported(ty, "InExpr");
+	}
+
+	CANNOT_BE_REACHED
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::IndexExpr* expr)
@@ -592,7 +641,17 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ListExpr* exp
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ModExpr* expr)
 	{
-	return NotSupported(expr, "ModExpr");
+	auto result = Builder()->addTmp("mod", HiltiType(expr->Type()));
+	auto ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Mod);
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Mod);
+	ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Mod);
+
+	if ( ! ok )
+		NotSupported(expr, "ModExpr");
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NameExpr* expr)
@@ -649,7 +708,10 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NegExpr* expr
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NotExpr* expr)
 	{
-	return NotSupported(expr, "NotExpr");
+	auto result = Builder()->addTmp("not", ::hilti::builder::boolean::type());
+	auto op1 = HiltiExpression(expr->Op());
+	Builder()->addInstruction(result, ::hilti::instruction::boolean::Not, op1);
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::PosExpr* expr)
@@ -743,16 +805,17 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SizeExpr* exp
 	auto ok = false;
 
 	ok = ok || CompileOperator(expr, result, ::TYPE_STRING, ::hilti::instruction::bytes::Length);
+	ok = ok || CompileOperator(expr, result, ::TYPE_VECTOR, ::hilti::instruction::vector::Size);
 
 	ok = ok || CompileOperator(expr, result, ::TYPE_TABLE, UNARY_OP_FUNC
 		{
 		if ( expr->Op()->Type()->AsTableType()->IsSet() )
 			Builder()->addInstruction(result,
-						  ::hilti::instruction::map::Size,
+						  ::hilti::instruction::set::Size,
 						  op);
 		else
 			Builder()->addInstruction(result,
-						  ::hilti::instruction::set::Size,
+						  ::hilti::instruction::map::Size,
 						  op);
 		});
 
@@ -851,7 +914,17 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableConstruc
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TimesExpr* expr)
 	{
-	return NotSupported(expr, "TimesExpr");
+	auto result = Builder()->addTmp("mult", HiltiType(expr->Type()));
+	auto ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, ::TYPE_INT, ::hilti::instruction::integer::Mul);
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, ::TYPE_COUNT, ::hilti::instruction::integer::Mul);
+	ok = ok || CompileOperator(expr, result, ::TYPE_DOUBLE, ::TYPE_DOUBLE, ::hilti::instruction::double_::Mul);
+
+	if ( ! ok )
+		NotSupported(expr, "MulExpr");
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorCoerceExpr* expr)
