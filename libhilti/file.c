@@ -193,6 +193,12 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
     GC_CLEAR(file->path, hlt_string);
 }
 
+hlt_string hlt_file_name(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    GC_CCTOR(file->path, hlt_string);
+    return file->path;
+}
+
 void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_string_encode(str, file->charset, excpt, ctx);

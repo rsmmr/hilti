@@ -118,6 +118,13 @@ void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt
 /// excpt: &
 void hlt_file_write_bytes(hlt_file* file, struct __hlt_bytes* bytes, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Returns a file's path.
+///
+/// file: The file.
+///
+/// excpt: &
+hlt_string hlt_file_name(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Internal function called once at startup from the command queue threadto
 // initialize the file management.
 void __hlt_files_init();
