@@ -456,7 +456,7 @@ iBegin(integer, Trunc, "int.trunc")
 
 iEnd
 
-iBegin(integer, Sqeq, "int.sgeq")
+iBegin(integer, Sgeq, "int.sgeq")
     iTarget(optype::boolean)
     iOp1(optype::integer, true)
     iOp2(optype::integer, true)

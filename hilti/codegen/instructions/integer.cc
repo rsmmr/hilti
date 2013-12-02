@@ -358,7 +358,7 @@ void StatementBuilder::visit(statement::instruction::integer::Trunc* i)
     cg()->llvmStore(i, result);
 }
 
-void StatementBuilder::visit(statement::instruction::integer::Sqeq* i)
+void StatementBuilder::visit(statement::instruction::integer::Sgeq* i)
 {
     auto t = coerceTypes(i->op1(), i->op2());
     auto op1 = cg()->llvmValue(i->op1(), t);
