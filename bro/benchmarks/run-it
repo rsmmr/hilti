@@ -1,0 +1,56 @@
+#! /usr/bin/env bash
+
+function abspath
+{
+    (cd "$1" && pwd)
+}
+
+function run_one
+{
+    script=${BENCHMARKS}/$1
+	dir=${BENCHMARKS}/.tmp/$1
+	mkdir -p ${dir}
+	cd ${dir}
+
+    std_stdout=bro-std.stdout.log
+    std_stderr=bro-std.stderr.log
+
+    hlt_stdout=bro-hlt.stdout.log
+    hlt_stderr=bro-hlt.stderr.log
+
+    bro -bQ $script Hilti::compile_scripts=F >${std_stdout} 2>${std_stderr}
+    bro -bQ $script Hilti::compile_scripts=T >${hlt_stdout} 2>${hlt_stderr}
+
+    std_time=`cat ${std_stderr} | grep total-processing | awk '{print $3}'`
+    hlt_time=`cat ${hlt_stderr} | grep total-processing | awk '{print $3}'`
+	perc=`awk "BEGIN { print ${std_time} / ${hlt_time} * 100; }"`
+
+    if cmp ${std_stdout} ${hlt_stdout}; then
+	    output="(same output)"
+	else
+	    output="(WARNING: output differs)"
+	fi
+
+    std_time=`printf "%.2fs" "${std_time}"`
+    hlt_time=`printf "%.2fs" "${hlt_time}"`
+    perc=`printf "%.2f%%"   "${perc}"`
+
+	printf '%15s %12s %12s %14s   %s\n' "`basename ${script}`" "${std_time}" "${hlt_time}" "${perc}" "${output}"
+}
+
+BASE=`dirname $0`/../..
+BASE=`abspath $BASE`
+
+BROBASE=`cat $BASE/build/CMakeCache.txt | grep BRO_DIST: | cut -d = -f 2`
+BROBASE=`abspath $BROBASE`
+
+BENCHMARKS=`dirname $0`
+BENCHMARKS=`abspath $BENCHMARKS`
+
+source $BROBASE/build/bro-path-dev.sh
+
+cd $BENCHMARKS
+
+printf '%15s %12s %12s %14s\n' "Test" "Bro-Std" "Bro-Hilti" "Speed-up"
+
+run_one fibo.bro
