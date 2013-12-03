@@ -1,8 +1,6 @@
 #
 # @TEST-EXEC:  printf '\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\xb4\x92\x04\x00\xb4\x92\x04\x00' | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
-#
-# @TEST-KNOWN-FAILURE: b returns 299775 instead of the correct 299700
 
 module Mini;
 

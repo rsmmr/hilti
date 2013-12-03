@@ -1316,7 +1316,7 @@ int64_t hlt_bytes_to_int_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception
     int64_t i = 0;
 
     while ( ! hlt_iterator_bytes_eq(cur, end, excpt, ctx) ) {
-        int8_t ch = __hlt_bytes_extract_one(&cur, end, excpt, ctx);
+        uint8_t ch = __hlt_bytes_extract_one(&cur, end, excpt, ctx);
         i = (i << 8) | ch;
         }
 
