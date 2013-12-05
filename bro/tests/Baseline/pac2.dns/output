@@ -1,0 +1,3 @@
+[orig_h=192.150.186.169, orig_p=55587/udp, resp_h=192.150.186.8, resp_p=53/udp], .www.heise.de., 1, 1
+[orig_h=192.150.186.169, orig_p=55588/udp, resp_h=192.150.186.8, resp_p=53/udp], .www.google.com., 1, 1
+[orig_h=192.150.186.169, orig_p=55589/udp, resp_h=192.150.186.8, resp_p=53/udp], .www.net.in.tum.de., 1, 1
