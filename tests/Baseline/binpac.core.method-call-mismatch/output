@@ -5,6 +5,7 @@ got operands: (bytes, startswith, (int<64>))
 candidate operators:
     address.family()
     bytes.begin()
+    bytes.decode(enum { )
     bytes.end()
     bytes.lower()
     bytes.match(regexp,[ int<*> ])
