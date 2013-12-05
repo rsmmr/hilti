@@ -78,7 +78,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 		return ::hilti::builder::address::type();
 
 	case TYPE_ANY:
-		return ::hilti::builder::caddr::type();
+		return ::hilti::builder::type::byName("LibBro::BroVal");
 
 	case TYPE_BOOL:
 		return ::hilti::builder::boolean::type();
@@ -151,7 +151,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FileType* type)
 	return ::hilti::builder::reference::type(::hilti::builder::file::type());
 	}
 
-std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
+shared_ptr<::hilti::type::Function> TypeBuilder::FunctionType(const ::FuncType* type)
 	{
 	auto byield = type->YieldType();
 	auto bargs = type->Args();
@@ -169,10 +169,11 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
 	for ( int i = 0; i < bargs->NumFields(); i++ )
 		{
 		auto name = bargs->FieldName(i);
-		auto type = HiltiType(bargs->FieldType(i));
-		auto def = bargs->FieldDefault(i) ? HiltiValue(bargs->FieldDefault(i), type) : nullptr;
+		auto ftype = bargs->FieldType(i);
+		auto htype = HiltiType(ftype);
+		auto def = bargs->FieldDefault(i) ? HiltiValue(bargs->FieldDefault(i), ftype) : nullptr;
 
-		auto param = ::hilti::builder::function::parameter(name, type, false, def);
+		auto param = ::hilti::builder::function::parameter(name, htype, false, def);
 		hargs.push_back(param);
 		}
 
@@ -191,6 +192,13 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
 	InternalError("cannot be reached", type);
 	}
 
+std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
+	{
+	if ( type->Flavor() == ::FUNC_FLAVOR_EVENT )
+		return ::hilti::builder::type::byName("LibBro::BroEventHandler");
+
+	return FunctionType(type);
+	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::OpaqueType* type)
 	{
@@ -212,8 +220,9 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 		auto bdef = type->FieldDefault(i);
 
 		auto name = type->FieldName(i);
-		auto htype = HiltiType(type->FieldType(i));
-		auto def = bdef ? HiltiValue(bdef, htype) : nullptr;
+		auto ftype = type->FieldType(i);
+		auto htype = HiltiType(ftype);
+		auto def = bdef ? HiltiValue(bdef, ftype) : nullptr;
 		auto hf = ::hilti::builder::struct_::field(name, htype, def);
 
 		fields.push_back(hf);

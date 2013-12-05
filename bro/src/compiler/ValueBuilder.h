@@ -48,7 +48,7 @@ public:
 	 * @return The converted expression.
 	 */
 	shared_ptr<::hilti::Expression> Compile(const ::Val* val,
-						shared_ptr<::hilti::Type> target_type = nullptr);
+						::BroType* target_type = nullptr);
 
 	/**
 	 * Returns the default initialization value for variables of a given
@@ -62,10 +62,16 @@ public:
 	shared_ptr<::hilti::Expression> InitValue(const ::BroType* type);
 
 protected:
-	/**
-	 * Returns the target type passed into Compile(), or null if none.
+	/** 
+	 * Returns the target type passed into Compile(). This will abort if
+	 * not target type has been set for the current value.
 	 */
-	shared_ptr<::hilti::Type> TargetType() const;
+	::BroType* TargetType() const;
+
+	/**
+	 * Returns true if a target type has been set for the current value.
+	 */
+	bool HasTargetType() const;
 
 	std::shared_ptr<::hilti::Expression> CompileBaseVal(const ::Val* val);
 	std::shared_ptr<::hilti::Expression> Compile(const ::AddrVal* val);
@@ -81,7 +87,7 @@ protected:
 	std::shared_ptr<::hilti::Expression> Compile(const ::VectorVal* val);
 
 private:
-	std::list<shared_ptr<::hilti::Type>> target_types;
+	std::list<::BroType *> target_types;
 };
 
 }

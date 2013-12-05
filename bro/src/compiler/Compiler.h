@@ -121,6 +121,9 @@ public:
 	 * Returns the internal HILTI-level symbol for a Bro ID.
 	 *
 	 * @param id The ID.
+     *
+     * @param global True if this is a global ID that need potentially needs
+     * to be qualified with a namespace.
 	 *
 	 * @param module: If non-empty, a module name to which the returned
 	 * symbol should be relative. If the function's ID has the same
@@ -130,7 +133,7 @@ public:
 	 * module name and hence reoresent the symbol as visibile at the LLVM
 	 * level after linking.
 	 */
-	std::string HiltiSymbol(const std::string& id, const std::string& module, bool include_module = false);
+	std::string HiltiSymbol(const std::string& id, bool global, const std::string& module, bool include_module = false);
 
 	/**
 	 * Renders a \a BroObj via its \c Describe() method and turns the
@@ -155,7 +158,7 @@ public:
 	bool HaveHiltiBif(const std::string& name, std::string* hilti_name = 0);
 
 private:
-	std::string normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool include_module = false);
+	std::string normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool global, bool include_module = false);
 
 	std::list<std::string> GetNamespaces() const;
 

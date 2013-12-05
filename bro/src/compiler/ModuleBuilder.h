@@ -97,17 +97,64 @@ public:
 	shared_ptr<::hilti::Expression> DeclareFunction(const Func* func);
 
 	/**
-	 * Declares the prototype for single built-in function given just by name and type.
+	 * Declares a global variable. If the declaration already
+	 * exists, that one is returned.
 	 *
-	 * If the declaration already exists, that one is returned.
+	 * @param id The Bro ID to declare a corresponding global for.
 	 *
-	 * @param name The function's ID.
-	 *
-	 * @param type The function's type.
-	 *
-	 * @return An expression referencing the declared function.
+	 * @return An expression referencing the declared global.
 	 */
-	shared_ptr<::hilti::Expression> DeclareBuiltInFunction(const string& name, const ::BroType* type);
+	std::shared_ptr<::hilti::Expression> DeclareGlobal(const ::ID* id);
+
+	/**
+	 * Declares a local variable. If the declaration already
+	 * exists, that one is returned.
+	 *
+	 * @param id The Bro ID to declare a corresponding local for.
+	 *
+	 * @return An expression referencing the declared local.
+	 */
+	std::shared_ptr<::hilti::Expression> DeclareLocal(const ::ID* id);
+
+	/**
+	 * XXX
+	 */
+	const ::Func* CurrentFunction() const;
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallScriptFunction(const ::Expr* func, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallEvent(const ::Expr* func, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallHook(const ::Expr* func, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunction(const ::BuiltinFunc* bif, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunctionHILTI(const ::BuiltinFunc* bif, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunctionLegacy(const ::BuiltinFunc* bif, ListExpr* args);
 
 protected:
 	friend class ModuleBuilderCallback;
@@ -204,6 +251,7 @@ protected:
 
 private:
 	string ns;
+	std::list<const ::Func*> functions;
 
 	class Compiler* compiler;
 	class ExpressionBuilder* expression_builder;

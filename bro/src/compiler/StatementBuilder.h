@@ -22,7 +22,7 @@ class PrintStmt;
 class ReturnStmt;
 class StmtList;
 class SwitchStmt;
-class When;
+class WhenStmt;
 
 namespace bro {
 namespace hilti {

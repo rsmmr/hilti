@@ -67,7 +67,7 @@ shared_ptr<::hilti::Expression> ValueBuilder::InitValue(const ::BroType* type)
 	return 0;
 	}
 
-shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, shared_ptr<::hilti::Type> arg_target_type)
+shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, ::BroType* arg_target_type)
 	{
 	shared_ptr<::hilti::Expression> e = nullptr;
 
@@ -139,12 +139,22 @@ shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, shared_ptr
 	return e;
 	}
 
-shared_ptr<::hilti::Type> ValueBuilder::TargetType() const
+::BroType* ValueBuilder::TargetType() const
 	{
-	if ( target_types.size() )
-		return target_types.back();
+	if ( ! target_types.size() || ! target_types.back() )
+		{
+		Error("ValueBuilder::TargetType() used, but no target type set.");
+		return 0;
+		}
 
-	return nullptr;
+	auto t = target_types.back();
+	assert(t);
+	return t;
+	}
+
+bool ValueBuilder::HasTargetType() const
+	{
+	return target_types.size() && target_types.back();
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* val)
@@ -268,7 +278,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::RecordVal* va
 
 		if ( f )
 			{
-			auto ftype = HiltiType(type->FieldType(i));
+			auto ftype = type->FieldType(i);
 			elems.push_back(HiltiValue(f, ftype));
 			}
 		else
@@ -293,17 +303,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::SubNetVal* va
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val)
 	{
 	if ( val->Type()->AsTableType()->IsUnspecifiedTable() )
-		{
-		auto target = TargetType();
-
-		if ( ! target )
-			{
-			Error("UnspecifiedTable but no target type in ValueBuilder::TableCtorExpr", val);
-			return 0;
-			}
-
-		return ::hilti::builder::expression::default_(target);
-		}
+		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
 
 	if ( val->Type()->IsSet() )
 		{
@@ -375,17 +375,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::VectorVal* val)
 	{
 	if ( val->Type()->AsVectorType()->IsUnspecifiedVector() )
-		{
-		auto target = TargetType();
-
-		if ( ! target )
-			{
-			Error("UnspecifiedVector but no target type in ValueBuilder::VectorCtorExpr", val);
-			return 0;
-			}
-
-		return ::hilti::builder::expression::default_(target);
-		}
+		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
 
 	::hilti::builder::vector::element_list elems;
 

@@ -107,6 +107,11 @@ static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *
 		}
 	}
 
+::Val* libbro_h2b_any(::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return val;
+	}
+
 ::Val* libbro_h2b_double(double d, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new Val(d, TYPE_DOUBLE);
@@ -182,6 +187,16 @@ static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *
 	return nullptr;
 	}
 
+::Val* libbro_h2b_file(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+    auto fname = hlt_file_name(file, excpt, ctx);
+    auto fname_native = hlt_string_to_native(fname, excpt, ctx);
+    auto fval = new ::Val(new BroFile(fname_native, "a+"));
+    hlt_free(fname_native);
+    GC_DTOR(fname, hlt_string);
+    return fval;
+	}
+
 ::Val* libbro_h2b_port(hlt_port p, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	switch ( p.proto ) {
@@ -240,6 +255,11 @@ hlt_addr libbro_b2h_address(Val *val, hlt_exception** excpt, hlt_execution_conte
 	}
 	}
 
+::Val* libbro_b2h_any(::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return val;
+	}
+
 hlt_net libbro_b2h_subnet(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto net = val->AsSubNet();
@@ -271,7 +291,7 @@ hlt_port libbro_b2h_port(Val *val, hlt_exception** excpt, hlt_execution_context*
 	auto port = val->AsPortVal();
 
 	switch ( port->PortType() ) {
-			
+
 	case ::TRANSPORT_TCP:
 		return { (uint16_t)port->Port(), HLT_PORT_TCP };
 
@@ -288,6 +308,16 @@ hlt_regexp* libbro_b2h_pattern(Val *val, hlt_exception** excpt, hlt_execution_co
 	{
 	bro::hilti::reporter::internal_error("libbro_b2h_pattern() not implemented");
 	return 0;
+	}
+
+hlt_file* libbro_b2h_file(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+    auto bfile = val->AsFile();
+    auto hfile = hlt_file_new(excpt, ctx);
+    auto fname = hlt_string_from_asciiz(bfile->Name(), excpt, ctx);
+    hlt_file_open(hfile, fname, Hilti_FileType_Text, Hilti_FileMode_Append, Hilti_Charset_UTF8, excpt, ctx);
+    GC_DTOR(fname, hlt_string);
+    return hfile;
 	}
 
 static EventHandler no_handler("SENTINEL_libbro_raise_event");

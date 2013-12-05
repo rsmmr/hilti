@@ -146,7 +146,7 @@ std::list<string> Compiler::GetNamespaces() const
 
 string Compiler::HiltiSymbol(const ::Func* func, shared_ptr<::hilti::Module> module, bool include_module)
 	{
-	return normalizeSymbol(func->Name(), "", "", module ? module->id()->name() : "", include_module);
+	return normalizeSymbol(func->Name(), "", "", module ? module->id()->name() : "", true, include_module);
 #if 0
 	if ( func->GetKind() == Func::BUILTIN_FUNC )
 		return func->Name();
@@ -174,7 +174,7 @@ string Compiler::HiltiSymbol(const ::Func* func, shared_ptr<::hilti::Module> mod
 
 std::string Compiler::HiltiStubSymbol(const ::Func* func, shared_ptr<::hilti::Module> module, bool include_module)
 	{
-	return normalizeSymbol(func->Name(), "", "stub", module ? module->id()->name() : "", include_module);
+	return normalizeSymbol(func->Name(), "", "stub", module ? module->id()->name() : "", true, include_module);
 
 #if 0
 	auto name = func->Name();
@@ -196,15 +196,15 @@ std::string Compiler::HiltiStubSymbol(const ::Func* func, shared_ptr<::hilti::Mo
 
 string Compiler::HiltiSymbol(const ::ID* id, shared_ptr<::hilti::Module> module)
 	{
-	return normalizeSymbol(id->Name(), "", "", module ? module->id()->name() : "");
+	return normalizeSymbol(id->Name(), "", "", module ? module->id()->name() : "", id->IsGlobal());
 	}
 
-string Compiler::HiltiSymbol(const std::string& id, const std::string& module, bool include_module)
+string Compiler::HiltiSymbol(const std::string& id, bool global, const std::string& module, bool include_module)
 	{
-	return normalizeSymbol(id, "", "", module, include_module);
+	return normalizeSymbol(id, "", "", module, global, include_module);
 	}
 
-std::string Compiler::normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool include_module)
+std::string Compiler::normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool global, bool include_module)
 	{
 	auto id = ::hilti::builder::id::node(sym);
 
@@ -219,7 +219,7 @@ std::string Compiler::normalizeSymbol(const std::string sym, const std::string p
 	if ( module.size() && ::util::strtolower(id->scope()) == ::util::strtolower(module) )
 		return local;
 
-	if ( id->scope().size() && ! include_module )
+	if ( global && id->scope().size() && ! include_module )
 		return ::util::fmt("%s::%s", id->scope(), local);
 
 	if ( include_module )
@@ -256,7 +256,7 @@ std::string Compiler::HiltiODescSymbol(const ::BroObj* obj)
 
 bool Compiler::HaveHiltiBif(const std::string& name, std::string* hilti_name)
 	{
-	auto bif_symbol = ::util::fmt("%s_bif", HiltiSymbol(name, "", true));
+	auto bif_symbol = ::util::fmt("%s_bif", HiltiSymbol(name, true, "", true));
 
 	// See if we have a statically compiled bif function available.
 	if ( ! dlsym(RTLD_DEFAULT, bif_symbol.c_str()) )

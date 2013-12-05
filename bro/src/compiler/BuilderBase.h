@@ -24,6 +24,10 @@ namespace hilti {
 		class Function;
 	}
 
+	namespace type {
+		class Function;
+        }
+
 	namespace builder {
 		class BlockBuilder;
 		class ModuleBuilder;
@@ -88,21 +92,21 @@ public:
 	 *
 	 * msg: The error message to carry upstream with the exception
 	 */
-	void Error(const std::string& msg, const BroObj* obj = 0);
+	void Error(const std::string& msg, const BroObj* obj = 0) const;
 
 	/**
 	 * Logs a warning.
 	 *
 	 * msg: The warning message to log.
 	 */
-	void Warning(const std::string& msg, const BroObj* obj = 0);
+	void Warning(const std::string& msg, const BroObj* obj = 0) const;
 
 	/**
 	 * Reports an internal error and aborts execution.
 	 *
 	 * msg: The error message to log.
 	 */
-	void InternalError(const std::string& msg, const BroObj* obj = 0);
+	void InternalError(const std::string& msg, const BroObj* obj = 0) const;
 
 	/**
 	 * Returns the compiler in use. This forwards to the corresponding
@@ -192,6 +196,18 @@ public:
 	 */
 	std::shared_ptr<::hilti::Type> HiltiType(const ::BroType* type);
 
+    	/**
+	 * Returns the HILTI type for a Bro function. This may be different
+	 * than what Compile() returns: while the Compile() returns how we
+	 * represent a variable of the function's type, this returns the type
+	 * of the function itself.
+	 *
+	 * @param type The Bro function type.
+	 *
+	 * @return The corresponding HILTI type.
+	 */
+	std::shared_ptr<::hilti::type::Function> HiltiFunctionType(const ::FuncType* type);
+
 	/**
 	 * Compiles a Bro value into its HILTI expression equivalent. This is
 	 * a short-cut to using the value builder's corresponding Compile()
@@ -206,7 +222,7 @@ public:
 	 * @return The corresponding HILTI expression.
 	 */
 	std::shared_ptr<::hilti::Expression> HiltiValue(const ::Val* val,
-							shared_ptr<::hilti::Type> target_type = nullptr);
+							::BroType* target_type = nullptr);
 
 	/**
 	 * Returns the default initialization value for variables of a given
@@ -234,7 +250,7 @@ public:
 	 * @return The corresponding HILTI expression.
 	 */
 	std::shared_ptr<::hilti::Expression> HiltiExpression(const ::Expr* expr,
-							     shared_ptr<::hilti::Type> target_type = nullptr);
+							     ::BroType* target_type = nullptr);
 
 	/**
 	 * Turns a Bro expression that's used as a table or vector index into the
@@ -250,7 +266,7 @@ public:
 	/**
 	 * Turns a Bro record field name into the corresponding HILTI value
 	 * for use with a \c struct instruction.
-	 *  	 
+	 *
 	 * @param fname The Bro field name.
 	 *
 	 * @return The HILTI value to be used with \c struct instructions.
@@ -285,7 +301,7 @@ public:
 	/**
 	 * Declares the prototype for single function. This branches out into
 	 * the other Declare*() methods for the various function flavors.
-	 * 
+	 *
 	 * If the declaration already exists, that one is returned.
 	 *
 	 * The method forwards to ModuleBuilder::DeclareFunction.
@@ -297,9 +313,43 @@ public:
 	std::shared_ptr<::hilti::Expression> DeclareFunction(const ::Func* func);
 
 	/**
+	 * Declares a global variable. If the declaration already
+	 * exists, that one is returned.
+	 *
+	 * The method forwards to ModuleBuilder::DeclareGlobal.
+	 *
+	 * @param id The Bro ID to declare a corresponding global for.
+	 *
+	 * @return An expression referencing the declared global.
+	 */
+	std::shared_ptr<::hilti::Expression> DeclareGlobal(const ::ID* id);
+
+	/**
+	 * Declares a local variable. If the declaration already
+	 * exists, that one is returned.
+	 *
+	 * The method forwards to ModuleBuilder::DeclareLocal.
+	 *
+	 * @param id The Bro ID to declare a corresponding local for.
+	 *
+	 * @return An expression referencing the declared local.
+	 */
+	std::shared_ptr<::hilti::Expression> DeclareLocal(const ::ID* id);
+
+	/**
+	 * XXX
+	 */
+	const ::Func* CurrentFunction() const;
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, ListExpr* args);
+
+	/**
 	 * Returns a string with location information for a BroObj.
 	 */
-	std::string Location(const ::BroObj *obj);
+	std::string Location(const ::BroObj *obj) const;
 
 protected:
 	/**

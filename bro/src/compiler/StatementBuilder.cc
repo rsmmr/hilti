@@ -1,5 +1,6 @@
 
 #include <Stmt.h>
+#include <Func.h>
 #undef List
 
 #include <hilti/hilti.h>
@@ -263,8 +264,10 @@ void StatementBuilder::Compile(const ::ForStmt* stmt)
 	if ( vars->length() == 1 )
 		{
 		// A single value, just assign to the right local variable.
-		auto dst = ::hilti::builder::id::create(HiltiSymbol((*vars)[0]));
+		auto id = (*vars)[0];
+		auto dst = ::hilti::builder::id::create(HiltiSymbol(id));
 		Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, iter);
+		DeclareLocal(id);
 		}
 
 	else
@@ -272,11 +275,13 @@ void StatementBuilder::Compile(const ::ForStmt* stmt)
 		// A tuple, assign each element to its corresponding variable.
 		loop_over_list(*vars, i)
 			{
-			auto dst = ::hilti::builder::id::create(HiltiSymbol((*vars)[i]));
+			auto id = (*vars)[i];
+			auto dst = ::hilti::builder::id::create(HiltiSymbol(id));
 			Builder()->addInstruction(dst,
 						  ::hilti::instruction::tuple::Index,
 						  iter,
 						  ::hilti::builder::integer::create(i));
+			DeclareLocal(id);
 			}
 		}
 
@@ -337,8 +342,7 @@ void StatementBuilder::Compile(const ::IfStmt* stmt)
 
 void StatementBuilder::Compile(const ::InitStmt* stmt)
 	{
-	// We don't need this, it's for initialized function parameters.
-	// TODO: Is that indeed all it's used for?
+	// Nothing to do, we add locals on demand as they are referenced.
 	}
 
 void StatementBuilder::Compile(const ::NextStmt* stmt)

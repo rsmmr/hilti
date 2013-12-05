@@ -44,7 +44,7 @@ export {
 	const save_llvm = F &redef;
 
 	## Use on-disk cache for compiled modules.
-	const use_cache = T &redef;
+	const use_cache = F &redef;
 
 	## Activate the Bro script compiler.
 	const compile_scripts = F &redef;

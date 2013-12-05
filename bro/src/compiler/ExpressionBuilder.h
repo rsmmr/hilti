@@ -85,13 +85,20 @@ public:
 	 * @return The compiled expression.
 	 */
 	std::shared_ptr<::hilti::Expression> Compile(const ::Expr* expr,
-						     shared_ptr<::hilti::Type> target_type = nullptr);
+						     ::BroType* target_type = nullptr);
 
 protected:
-	/**
-	 * Returns the target type passed into Compile(), or null if none.
+	/** 
+	 * Returns the target type passed into Compile(). This will abort if
+	 * not target type has been set for the current expression.
 	 */
-	shared_ptr<::hilti::Type> TargetType() const;
+	::BroType* TargetType() const;
+
+	/**
+	 * Returns true if a target type has been set for the current
+	 * expression.
+	 */
+	bool HasTargetType() const;
 
 	std::shared_ptr<::hilti::Expression> Compile(const ::AddExpr* expr);
 	std::shared_ptr<::hilti::Expression> Compile(const ::AddToExpr* expr);
@@ -134,11 +141,14 @@ protected:
 	std::shared_ptr<::hilti::Expression> Compile(const ::VectorConstructorExpr* expr);
 
 	std::shared_ptr<::hilti::Expression> CompileAssign(const ::Expr* lhs, const ::Expr* rhs);
-	std::shared_ptr<::hilti::Expression> CompileAssign(const ::RefExpr* lhs, const ::Expr* rhs);
-	std::shared_ptr<::hilti::Expression> CompileAssign(const ::IndexExpr* lhs, const ::Expr* rhs);
-	std::shared_ptr<::hilti::Expression> CompileAssign(const ::FieldExpr* lhs, const ::Expr* rhs);
-	std::shared_ptr<::hilti::Expression> CompileAssign(const ::NameExpr* lhs, const ::Expr* rhs);
-	std::shared_ptr<::hilti::Expression> CompileAssign(const ::ListExpr* lhs, const ::Expr* rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::Expr* lhs, std::shared_ptr<::hilti::Expression> rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::RefExpr* lhs, std::shared_ptr<::hilti::Expression> rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::IndexExpr* lhs, std::shared_ptr<::hilti::Expression> rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::FieldExpr* lhs, std::shared_ptr<::hilti::Expression> rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::NameExpr* lhs, std::shared_ptr<::hilti::Expression> rhs);
+	std::shared_ptr<::hilti::Expression> CompileAssign(const ::ListExpr* lhs, std::shared_ptr<::hilti::Expression> rhs);
+
+	std::shared_ptr<::hilti::Expression> CompileAddTo(const ::Expr* expr, shared_ptr<::hilti::Expression> val, bool add);
 
 private:
 	std::shared_ptr<::hilti::Expression> NotSupported(const ::BroType* type, const char* where);
@@ -157,12 +167,15 @@ private:
 				    shared_ptr<::hilti::Expression> op2)>
 		binary_op_func;
 
-	bool CompileOperator(const ::UnaryExpr* expr,  shared_ptr<::hilti::Expression> dst, ::TypeTag op, shared_ptr<::hilti::Instruction> ins);
+	bool CompileOperator(const ::Expr* expr,  shared_ptr<::hilti::Expression> dst, ::TypeTag op, shared_ptr<::hilti::Instruction> ins, shared_ptr<::hilti::Expression> addl_op = nullptr);
+	bool CompileOperator(const ::UnaryExpr* expr,  shared_ptr<::hilti::Expression> dst, ::TypeTag op, shared_ptr<::hilti::Instruction> ins, shared_ptr<::hilti::Expression> addl_op = nullptr);
 	bool CompileOperator(const ::UnaryExpr* expr,  shared_ptr<::hilti::Expression> dst, ::TypeTag op, unary_op_func func);
-	bool CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, shared_ptr<::hilti::Instruction> ins);
+	bool CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, shared_ptr<::hilti::Instruction> ins, shared_ptr<::hilti::Expression> addl_op = nullptr);
 	bool CompileOperator(const ::BinaryExpr* expr, shared_ptr<::hilti::Expression> dst, ::TypeTag op1, ::TypeTag op2, binary_op_func func);
 
-	std::list<shared_ptr<::hilti::Type>> target_types;
+	shared_ptr<::hilti::Expression> CompileListExprToRecordTuple(const ::ListExpr* lexpr, const ::RecordType* rtype);
+
+	std::list<::BroType *> target_types;
 };
 
 }

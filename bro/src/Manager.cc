@@ -330,6 +330,9 @@ bool Manager::InitPostScripts()
 	pimpl->pac2_options.cg_debug = cg_debug;
 	pimpl->pac2_options.module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
 
+	pimpl->hilti_context->setOptions(pimpl->hilti_options);
+	pimpl->pac2_context->setOptions(pimpl->pac2_options);
+
 	pimpl->llvm_linked_module = nullptr;
 	pimpl->llvm_execution_engine = nullptr;
 
