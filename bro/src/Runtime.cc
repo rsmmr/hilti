@@ -606,6 +606,12 @@ void libbro_bro_enum_type_add_name(::EnumType* etype, hlt_string module, hlt_str
 
 // User-visible Bro::* functions.
 
+int8_t bro_is_orig(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto c = get_protocol_cookie(cookie, "$conn");
+	return c->is_orig;
+	}
+
 void bro_file_begin(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	// Nothing to do.
