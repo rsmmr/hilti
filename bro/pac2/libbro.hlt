@@ -41,6 +41,7 @@ declare "C-HILTI" BroType  bro_list_type_new(BroType pure_type)
 declare "C-HILTI" void     bro_list_type_append(BroType t, BroType ntype)
 
 declare "C-HILTI" BroType  bro_base_type(int<64> tag)
+declare "C-HILTI" BroType  bro_lookup_type(string id)
 
 declare "C-HILTI" int<64> bro_internal_int(BroVal v)
 declare "C-HILTI" double  bro_internal_double(BroVal v)

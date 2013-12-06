@@ -156,6 +156,11 @@ public:
 	 */
 	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunctionLegacy(const ::BuiltinFunc* bif, ListExpr* args);
 
+	/**
+	 * XXX
+	 */
+	void FinalizeGlueCode();
+
 protected:
 	friend class ModuleBuilderCallback;
 

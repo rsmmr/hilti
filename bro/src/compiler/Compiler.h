@@ -77,8 +77,15 @@ public:
 
 	/**
 	 * Returns the module builder for the glue code module.
+	 *
+	 * TODO: We should move the glue builder over to the manager.
 	 */
 	::hilti::builder::ModuleBuilder* GlueModuleBuilder() const;
+
+	/**
+	 * XXXX
+	 */
+	std::shared_ptr<::hilti::Module> FinalizeGlueBuilder();
 
 	/**
 	 * Returns the internal HILTI-level symbol for a Bro Function.

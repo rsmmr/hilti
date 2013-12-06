@@ -36,6 +36,7 @@ extern "C" {
 #include <binpac/expression.h>
 #include <binpac/statement.h>
 #include <binpac/function.h>
+#include <binpac/scope.h>
 
 // LLVM includes.
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
@@ -49,6 +50,7 @@ extern "C" {
 #include "Converter.h"
 #include "LocalReporter.h"
 #include "compiler/Compiler.h"
+#include "compiler/ModuleBuilder.h"
 
 #include "consts.bif.h"
 #include "events.bif.h"
@@ -125,10 +127,11 @@ struct bro::hilti::Pac2ModuleInfo {
 	shared_ptr<::binpac::CompilerContext> context;	// The context used for the module.
 	shared_ptr<::binpac::Module> module;		// The module itself.
 	shared_ptr<ValueConverter> value_converter;
+	std::list<shared_ptr<::hilti::ID>> dep_types;	// Types we need to import into the HILTI module.
 
 	// The BroFunc_*.hlt module.
 	shared_ptr<::hilti::CompilerContext>         hilti_context;
-	shared_ptr<::hilti::builder::ModuleBuilder>  hilti_mbuilder;
+	shared_ptr<compiler::ModuleBuilder>          hilti_mbuilder;
 	shared_ptr<::hilti::Module>                  hilti_module;
 
 	// The BroHooks_*.pac2 module.
@@ -778,6 +781,9 @@ bool Manager::Compile()
 		if ( m->cached )
 			continue;
 
+		AddHiltiTypesForModule(m);
+		m->hilti_mbuilder->FinalizeGlueCode();
+
 		if ( pimpl->dump_code_pre_finalize )
 			{
 			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.hlt\n", m->hilti_module->id()->name()) << std::endl;
@@ -815,6 +821,12 @@ bool Manager::Compile()
 			out.close();
 			}
 		}
+
+
+	auto glue = pimpl->compiler->FinalizeGlueBuilder();
+
+	if ( ! CompileHiltiModule(glue) )
+		return false;
 
 	// Compile and link all the HILTI modules into LLVM. We use the
 	// BinPAC++ context here to make sure we gets its additional
@@ -861,28 +873,33 @@ bool Manager::CompileBroScripts()
 
 	for ( auto m : modules )
 		{
-		// TODO: Add caching.
-		pimpl->hilti_modules.push_back(m);
-
-		auto lm = pimpl->hilti_context->compile(m);
-
-		if ( ! lm )
-			{
-			reporter::error(::util::fmt("compiling script module %s failed", m->id()->name()));
+		if ( ! CompileHiltiModule(m) )
 			return false;
-			}
-
-		if ( pimpl->save_llvm )
-			{
-			ofstream out(::util::fmt("bro.%s.ll", m->id()->name()));
-			pimpl->hilti_context->printBitcode(lm, out);
-			out.close();
-			}
-
-		pimpl->llvm_modules.push_back(lm);
-		pimpl->hilti_modules.push_back(m);
 		}
 
+	return true;
+	}
+
+bool Manager::CompileHiltiModule(std::shared_ptr<::hilti::Module> m)
+	{
+	// TODO: Add caching.
+	auto lm = pimpl->hilti_context->compile(m);
+
+	if ( ! lm )
+		{
+		reporter::error(::util::fmt("compiling script module %s failed", m->id()->name()));
+		return false;
+		}
+
+	if ( pimpl->save_llvm )
+		{
+		ofstream out(::util::fmt("bro.%s.ll", m->id()->name()));
+		pimpl->hilti_context->printBitcode(lm, out);
+		out.close();
+		}
+
+	pimpl->llvm_modules.push_back(lm);
+	pimpl->hilti_modules.push_back(m);
 	return true;
 	}
 
@@ -1039,9 +1056,10 @@ bool Manager::LoadPac2Module(const string& path)
 	minfo->module = module;
 
 	minfo->pac2_module = std::make_shared<::binpac::Module>(pimpl->pac2_context.get(), std::make_shared<::binpac::ID>(::util::fmt("BroHooks_%s", name)));
+	minfo->pac2_module->import("Bro");
 
 	minfo->hilti_context = std::make_shared<::hilti::CompilerContext>(pimpl->hilti_options);
-	minfo->hilti_mbuilder = std::make_shared<::hilti::builder::ModuleBuilder>(minfo->hilti_context, ::util::fmt("BroFuncs_%s", name));
+	minfo->hilti_mbuilder = std::make_shared<compiler::ModuleBuilder>(pimpl->compiler, minfo->hilti_context, ::util::fmt("BroFuncs_%s", name));
 	minfo->hilti_module = minfo->hilti_mbuilder->module();
 	minfo->hilti_mbuilder->importModule("Hilti");
 	minfo->hilti_mbuilder->importModule("LibBro");
@@ -1807,6 +1825,14 @@ void Manager::BuildBroEventSignature(shared_ptr<Pac2EventInfo> ev)
 	{
 	type_decl_list* types = new type_decl_list();
 
+	EventHandlerPtr handler = event_registry->Lookup(ev->name.c_str());
+
+	ODesc d;
+	if ( handler )
+		handler->FType()->Describe(&d);
+
+	int i = 0;
+
 	for ( auto e : ev->expr_accessors )
 		{
 		BroType* t = nullptr;
@@ -1830,14 +1856,49 @@ void Manager::BuildBroEventSignature(shared_ptr<Pac2EventInfo> ev)
 
 		else
 			{
-			auto p = util::fmt("arg%d", e->nr);
-			BroType* t = pimpl->type_converter->Convert(e->htype, e->btype);
+			string p;
+			BroType* t = 0;
+
+			if ( handler )
+				{
+				p = handler->FType()->Args()->FieldName(i);
+				t = handler->FType()->Args()->FieldType(i);
+				Ref(t);
+				}
+			else
+				{
+				p = util::fmt("arg%d", e->nr);
+				t = pimpl->type_converter->Convert(e->htype, e->btype);
+				}
+
 			types->append(new TypeDecl(t, strdup(p.c_str())));
 			}
+
+		i++;
 		}
 
 	auto ftype = new FuncType(new RecordType(types), 0, FUNC_FLAVOR_EVENT);
 	ev->bro_event_type = ftype;
+	}
+
+static bool records_compatible(::RecordType* rt1, ::RecordType* rt2)
+	{
+	// Cannot use same_type() here as that also compares the field names,
+	// which won't match our dummy names.
+
+	if ( rt1->NumFields() != rt2->NumFields() )
+		return false;
+
+	for ( int i = 0; i < rt1->NumFields(); ++i )
+		{
+		const TypeDecl* td1 = rt1->FieldDecl(i);
+		const TypeDecl* td2 = rt2->FieldDecl(i);
+
+		if ( ! same_type(td1->type, td2->type, 0) )
+			return false;
+		}
+
+	return true;
 	}
 
 void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
@@ -1858,19 +1919,44 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 		if ( id )
 			id->SetExport();
 
-		if ( handler->FType() && ! same_type(ev->bro_event_type, handler->FType()) )
+		if ( handler->FType() )
 			{
-			ODesc have;
-			ODesc want;
-			handler->FType()->Describe(&have);
-			ev->bro_event_type->Describe(&want);
+			// For record arguments, we want to use the one from
+			// the Bro event, rather than ours, which might have
+			// just dummy field names. So we go through and
+			// install mappings as needed. We also use the
+			// opportunity to check if the types match.
+			auto a1 = ev->bro_event_type->AsFuncType()->Args();
+			auto a2 = handler->FType()->Args();
 
-			auto l = handler->FType()->GetLocationInfo();
-			reporter::__push_location(l->filename, l->first_line);
-			reporter::error(::util::fmt("type mismatch for event handler %s: expected %s, but got %s",
-						    ev->name, want.Description(), have.Description()));
-			reporter::pop_location();
-			return;
+			if ( a1->NumFields() != a2->NumFields() )
+				{
+				EventSignatureMismatch(ev->name, ev->bro_event_type->AsFuncType(), handler->FType(), -1);
+				return;
+				}
+
+			for ( int i = 0; i < a1->NumFields(); i++ )
+				{
+				auto t1 = a1->FieldType(i);
+				auto t2 = a2->FieldType(i);
+
+				if ( t1->Tag() == TYPE_RECORD && t2->Tag() == TYPE_RECORD )
+					{
+					if ( ! records_compatible(t1->AsRecordType(), t2->AsRecordType()) )
+						{
+						EventSignatureMismatch(ev->name, t1, t2, i);
+						return;
+						}
+
+					ev->minfo->hilti_mbuilder->MapType(t1, t2);
+					}
+
+				else if ( ! same_type(t1, t2) )
+					{
+					EventSignatureMismatch(ev->name, t1, t2, i);
+					return;
+					}
+				}
 			}
 
 		ev->bro_event_handler = handler;
@@ -1886,6 +1972,30 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 	const char* handled = (ev->bro_event_handler ? "has handler" : "no handlers");
 	PLUGIN_DBG_LOG(HiltiPlugin, "New Bro event '%s: %s' (%s)", ev->name.c_str(), d.Description(), handled);
 #endif
+	}
+
+void Manager::EventSignatureMismatch(const string& name, const ::BroType* have, const ::BroType* want, int arg)
+	{
+	ODesc dhave;
+	ODesc dwant;
+
+	if ( arg < 0 )
+		{
+		dhave.SetShort();
+		dwant.SetShort();
+		}
+
+	have->Describe(&dhave);
+	want->Describe(&dwant);
+
+	auto sarg = (arg >= 0 ? ::util::fmt("argument %d of ", arg) : "");
+
+	auto l = want->GetLocationInfo();
+	reporter::__push_location(l->filename, l->first_line);
+	reporter::error(::util::fmt("type mismatch for %sevent handler %s: expected %s, but got %s",
+				    sarg, name, dwant.Description(), dhave.Description()));
+	reporter::pop_location();
+	return;
 	}
 
 static shared_ptr<::binpac::Expression> id_expr(const string& id)
@@ -1923,7 +2033,17 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 
 	// Raise the event.
 
-	::binpac::expression_list args_tuple = { id_expr("self") };
+	::binpac::expression_list args_tuple;
+
+	for ( auto m : ev->unit_type->scope()->map() )
+		{
+		auto n = (m.first != "$$" ? m.first : "__dollardollar");
+		auto t = ::ast::tryCast<::binpac::expression::ParserState>(m.second->front());
+
+		if ( t )
+			args_tuple.push_back(id_expr(n));
+		}
+
 	auto args = std::make_shared<::binpac::expression::Constant>(std::make_shared<::binpac::constant::Tuple>(args_tuple));
 
 	auto raise_name = ::util::fmt("%s::raise_%s", ev->minfo->hilti_module->id()->name(), ::util::strreplace(ev->name, "::", "_"));
@@ -1937,11 +2057,20 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 	auto hdecl = std::make_shared<::binpac::declaration::Hook>(std::make_shared<::binpac::ID>(ev->hook), hook);
 
 	auto raise_result = std::make_shared<::binpac::type::function::Result>(std::make_shared<::binpac::type::Void>(), true);
-	::binpac::parameter_list raise_params = {
-		std::make_shared<::binpac::type::function::Parameter>(std::make_shared<::binpac::ID>("self"),
-								      std::make_shared<::binpac::type::Unknown>(std::make_shared<::binpac::ID>(ev->unit)),
-								      false, false, nullptr),
-	};
+	::binpac::parameter_list raise_params;
+
+	for ( auto m : ev->unit_type->scope()->map() )
+		{
+		auto n = (m.first != "$$" ? m.first : "__dollardollar");
+		auto t = ::ast::tryCast<::binpac::expression::ParserState>(m.second->front());
+
+		if ( t )
+			{
+			auto id = std::make_shared<::binpac::ID>(n);
+			auto p = std::make_shared<::binpac::type::function::Parameter>(id, t->type(), false, false, nullptr);
+			raise_params.push_back(p);
+			}
+		}
 
 	auto raise_type = std::make_shared<::binpac::type::Function>(raise_result, raise_params, ::binpac::type::function::BINPAC_HILTI);
 	auto raise_func = std::make_shared<::binpac::Function>(std::make_shared<::binpac::ID>(raise_name), raise_type, ev->minfo->pac2_module);
@@ -1992,7 +2121,7 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
 			continue;
 
 		acc->btype = acc->pac2_func ? acc->pac2_func->function()->type()->result()->type() : nullptr;
-		acc->htype = acc->btype ? pimpl->pac2_context->hiltiType(acc->btype) : nullptr;
+		acc->htype = acc->btype ? pimpl->pac2_context->hiltiType(acc->btype, &ev->minfo->dep_types) : nullptr;
 		acc->hlt_func = DeclareHiltiExpressionAccessor(ev, acc->nr, acc->htype);
 		}
 
@@ -2019,13 +2148,23 @@ shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(
 
 	auto unknown = std::make_shared<::binpac::type::Unknown>();
 	auto func_result = std::make_shared<::binpac::type::function::Result>(unknown, true);
-	::binpac::parameter_list func_params = {
-		std::make_shared<::binpac::type::function::Parameter>(std::make_shared<::binpac::ID>("self"),
-								      std::make_shared<::binpac::type::Unknown>(std::make_shared<::binpac::ID>(ev->unit)),
-								      false, false, nullptr),
-	};
 
-	auto ftype = std::make_shared<::binpac::type::Function>(func_result, func_params, ::binpac::type::function::HILTI);
+	::binpac::parameter_list func_params;
+
+	for ( auto m : ev->unit_type->scope()->map() )
+		{
+		auto n = (m.first != "$$" ? m.first : "__dollardollar");
+		auto t = ::ast::tryCast<::binpac::expression::ParserState>(m.second->front());
+
+		if ( t )
+			{
+			auto id = std::make_shared<::binpac::ID>(n);
+			auto p = std::make_shared<::binpac::type::function::Parameter>(id, t->type(), false, false, nullptr);
+			func_params.push_back(p);
+			}
+		}
+
+	auto ftype = std::make_shared<::binpac::type::Function>(func_result, func_params, ::binpac::type::function::BINPAC_HILTI);
 	auto func = std::make_shared<::binpac::Function>(std::make_shared<::binpac::ID>(fname), ftype, ev->minfo->pac2_module, body);
 	auto fdecl = std::make_shared<::binpac::declaration::Function>(func, ::binpac::Declaration::EXPORTED);
 
@@ -2043,14 +2182,45 @@ shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccess
 
 	auto result = ::hilti::builder::function::result(rtype);
 
-	::hilti::builder::function::parameter_list args = {
-		::hilti::builder::function::parameter("self", ::hilti::builder::reference::type(::hilti::builder::type::byName(ev->unit)), false, nullptr),
-		};
+	::hilti::builder::function::parameter_list func_params;
 
-	auto func = ev->minfo->hilti_mbuilder->declareFunction(fname, result, args);
+	for ( auto m : ev->unit_type->scope()->map() )
+		{
+		auto n = (m.first != "$$" ? m.first : "__dollardollar");
+		auto t = ::ast::tryCast<::binpac::expression::ParserState>(m.second->front());
+
+		if ( t )
+			{
+			auto id = ::hilti::builder::id::node(n);
+			auto htype = pimpl->pac2_context->hiltiType(t->type(), &ev->minfo->dep_types);
+			auto p = ::hilti::builder::function::parameter(id, htype, false, nullptr);
+			func_params.push_back(p);
+			}
+		}
+
+	auto cookie = ::hilti::builder::function::parameter("cookie", ::hilti::builder::type::byName("LibBro::Pac2Cookie"), false, nullptr);
+	func_params.push_back(cookie);
+
+	auto func = ev->minfo->hilti_mbuilder->declareFunction(fname, result, func_params);
 	ev->minfo->hilti_mbuilder->exportID(fname);
 
 	return func;
+	}
+
+void Manager::AddHiltiTypesForModule(shared_ptr<Pac2ModuleInfo> minfo)
+	{
+	for ( auto id : minfo->dep_types )
+		{
+		if ( minfo->hilti_mbuilder->declared(id) )
+			return;
+
+		assert(minfo->pac2_hilti_module);
+		auto t = minfo->pac2_hilti_module->body()->scope()->lookup(id, true);
+		assert(t.size() == 1);
+
+		auto type = ast::checkedCast<::hilti::expression::Type>(t.front())->typeValue();
+		minfo->hilti_mbuilder->addType(id, type);
+		}
 	}
 
 void Manager::AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev)
@@ -2076,12 +2246,28 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 
 	auto result = ::hilti::builder::function::result(::hilti::builder::void_::type());
 
-	::hilti::builder::function::parameter_list args = {
-		::hilti::builder::function::parameter("self", ::hilti::builder::reference::type(::hilti::builder::type::byName(ev->unit)), false, nullptr),
-		::hilti::builder::function::parameter("cookie", ::hilti::builder::type::byName("LibBro::Pac2Cookie"), false, nullptr)
-		};
+	::hilti::builder::function::parameter_list args;
+
+	for ( auto m : ev->unit_type->scope()->map() )
+		{
+		auto n = (m.first != "$$" ? m.first : "__dollardollar");
+		auto t = ::ast::tryCast<::binpac::expression::ParserState>(m.second->front());
+
+		if ( t )
+			{
+			auto id = ::hilti::builder::id::node(n);
+			auto htype = pimpl->pac2_context->hiltiType(t->type(), &ev->minfo->dep_types);
+			auto p = ::hilti::builder::function::parameter(id, htype, false, nullptr);
+			args.push_back(p);
+			}
+		}
+
+	auto cookie = ::hilti::builder::function::parameter("cookie", ::hilti::builder::type::byName("LibBro::Pac2Cookie"), false, nullptr);
+	args.push_back(cookie);
 
 	auto mbuilder = ev->minfo->hilti_mbuilder;
+
+	pimpl->compiler->pushModuleBuilder(mbuilder.get());
 
 	auto func = mbuilder->pushFunction(fname, result, args);
 	mbuilder->exportID(fname);
@@ -2090,6 +2276,8 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 					    ::hilti::builder::string::create(string("bro/") + fname));
 
 	::hilti::builder::tuple::element_list vals;
+
+	int i = 0;
 
 	for ( auto e : ev->expr_accessors )
 		{
@@ -2124,15 +2312,29 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 			auto tmp = mbuilder->addTmp("t", e->htype);
 			auto func_id = e->hlt_func ? e->hlt_func->id() : ::hilti::builder::id::node("null-function>");
 
+			auto args = ::hilti::builder::tuple::element_list();
+
+			for ( auto m : ev->unit_type->scope()->map() )
+				{
+				auto n = (m.first != "$$" ? m.first : "__dollardollar");
+				auto t = ::ast::tryCast<::binpac::expression::ParserState>(m.second->front());
+
+				if ( t )
+					args.push_back(::hilti::builder::id::create(n));
+				}
+
+			args.push_back(::hilti::builder::id::create("cookie"));
+
 			mbuilder->builder()->addInstruction(tmp,
 							    ::hilti::instruction::flow::CallResult,
 							    ::hilti::builder::id::create(func_id),
-							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("self") } ));
+							    ::hilti::builder::tuple::create(args));
 
-			ev->minfo->value_converter->Convert(tmp, val, e->btype);
+			ev->minfo->value_converter->Convert(tmp, val, e->btype, ev->bro_event_type->AsFuncType()->Args()->FieldType(i));
 			}
 
 		vals.push_back(val);
+		i++;
 		}
 
 	auto canon_name = ::util::strreplace(ev->name, "::", "_");
@@ -2169,6 +2371,8 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 					    ::hilti::builder::string::create(string("bro/") + fname));
 
 	mbuilder->popFunction();
+
+	// pimpl->compiler->popModuleBuilder();
 
 	ev->hilti_raise = func;
 

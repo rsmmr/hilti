@@ -34,6 +34,8 @@ namespace codegen {
 class CodeGen : public ast::Logger
 {
 public:
+    typedef std::list<shared_ptr<::hilti::ID>> id_list;
+
     /// Constructor.
     CodeGen(CompilerContext* ctx);
     virtual ~CodeGen();
@@ -90,8 +92,11 @@ public:
     ///
     /// type: The type to convert.
     ///
+    /// deps: If given, any types that will need to be imported will be
+    /// added to the list with their qualified IDs.
+    ///
     /// Returns: The HILTI type.
-    shared_ptr<hilti::Type> hiltiType(shared_ptr<Type> type);
+    shared_ptr<hilti::Type> hiltiType(shared_ptr<Type> type, id_list* deps = nullptr);
 
     /// Coerces a HILTI expression of one BinPAC type into another. The
     /// method assumes that the coercion is legel.
@@ -182,7 +187,12 @@ public:
     /// Adds a function to the current module.
     ///
     /// function: The function.
-    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<Function> func);
+    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<Function> func, bool declare_only = false, const string& scope = "");
+
+    /// Adds a function to the current module.
+    ///
+    /// function: An expression referencing the function.
+    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<expression::Function> func, bool declare_only = false);
 
     /// Calls a function.
     ///
@@ -207,7 +217,7 @@ public:
     shared_ptr<hilti::Type> hiltiTypeCookie();
 
     /// Returns the HILTI-level name for a function.
-    shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<binpac::Function> func);
+    shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<binpac::Function> func, const string& scope = "");
 
     /// Returns the HILTI-level name for a function.
     shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<expression::Function> func);

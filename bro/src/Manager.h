@@ -49,6 +49,7 @@ namespace hilti {
 	class CompilerContext;
 	class Expression;
 	class Type;
+	class Module;
 
 	namespace declaration {
 		class Function;
@@ -397,6 +398,11 @@ protected:
 	void AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev);
 
 	/**
+	 * XXX
+	 */
+	void AddHiltiTypesForModule(shared_ptr<Pac2ModuleInfo> minfo);
+
+	/**
 	 * Adds information from BinPAC+s binpac_parsers() list to our
 	 * analyzer data structures.
 	 */
@@ -421,6 +427,16 @@ protected:
 	 * null otherwise.
 	 */
 	llvm::Module* CheckCacheForLinkedModule();
+
+	/**
+	 * XXX
+	 */
+	bool CompileHiltiModule(std::shared_ptr<::hilti::Module> m);
+
+	/**
+	 * XXX
+	 */
+	void EventSignatureMismatch(const string& name, const ::BroType* have, const ::BroType* want, int arg);
 
 private:
     void InitMembers();

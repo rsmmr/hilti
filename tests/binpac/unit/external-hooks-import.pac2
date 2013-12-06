@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  echo 1234567890 | pac-driver-test %INPUT mini.pac2 >output 
+# @TEST-EXEC:  echo 1234567890 | pac-driver-test %INPUT mini.pac2 >output
 # @TEST-EXEC:  btest-diff output
 
 module test;

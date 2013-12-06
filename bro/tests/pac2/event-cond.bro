@@ -36,6 +36,6 @@ on SSH::Banner if ( True ) -> event ssh::banner1($conn, $is_orig, self.version, 
 on SSH::Banner if ( False )-> event ssh::banner2($conn, $is_orig, self.version, self.software);
 on SSH::Banner if ( self.software == b"OpenSSH_3.9p1" )-> event ssh::banner3($conn, $is_orig, self.version, self.software);
 on SSH::Banner if ( self.software != b"OpenSSH_3.9p1" )-> event ssh::banner4($conn, $is_orig, self.version, self.software);
-on SSH::Banner if ( Bro::is_orig() ) -> event ssh::banner1($conn, $is_orig, self.version, self.software);
+# on SSH::Banner if ( Bro::is_orig() ) -> event ssh::banner1($conn, $is_orig, self.version, self.software);
 
 # @TEST-END-FILE

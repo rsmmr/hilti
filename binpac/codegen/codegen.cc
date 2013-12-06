@@ -147,10 +147,10 @@ void CodeGen::hiltiStatement(shared_ptr<Statement> stmt)
     _code_builder->hiltiStatement(stmt);
 }
 
-shared_ptr<hilti::Type> CodeGen::hiltiType(shared_ptr<Type> type)
+shared_ptr<hilti::Type> CodeGen::hiltiType(shared_ptr<Type> type, id_list* deps)
 {
     assert(_compiling);
-    return _type_builder->hiltiType(type);
+    return _type_builder->hiltiType(type, deps);
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiDefault(shared_ptr<Type> type, bool null_on_default, bool can_be_unset)
@@ -254,7 +254,12 @@ void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
    _parser_builder->hiltiDefineHook(id, hook);
 }
 
-shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr<Function> func)
+shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr<expression::Function> func, bool declare_only)
+{
+    return hiltiDefineFunction(func->function(), declare_only, func->scope());
+}
+
+shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr<Function> func, bool declare_only, const string& scope)
 {
 #if 0
     // If it's scoped and we import the module, assume the module declares
@@ -263,7 +268,7 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
         return nullptr;
 #endif
 
-    auto name = hiltiFunctionName(func);
+    auto name = hiltiFunctionName(func, scope);
     auto ftype = func->type();
     auto rtype = ftype->result() ? hiltiType(ftype->result()->type()) : hilti::builder::void_::type();
     auto result = hilti::builder::function::result(rtype);
@@ -313,9 +318,10 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
     }
 
     // TODO: Do we always want to export these?
-    moduleBuilder()->exportID(name);
+    if ( ! declare_only )
+        moduleBuilder()->exportID(name);
 
-    if ( func->body() ) {
+    if ( func->body() && ! declare_only ) {
         auto decl = moduleBuilder()->pushFunction(name, result, params, cc, nullptr, false, func->location());
         hiltiStatement(func->body());
         moduleBuilder()->popFunction();
@@ -326,32 +332,12 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
         return moduleBuilder()->declareFunction(name, result, params, cc, func->location());
 }
 
-shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> func)
+shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> func, const string& scope)
 {
-    if ( func->type()->callingConvention() != type::function::BINPAC ) {
-        auto id = func->id();
-        auto mod = func->firstParent<Module>();
-
-        if ( mod && ! id->isScoped() )
-            return hilti::builder::id::node(::util::fmt("%s::%s", mod->id()->name(), id->name()));
-
-        return hilti::builder::id::node(id->pathAsString());
-    }
-
-    // To make overloaded functions unique, we add a hash of the signature.
-    auto type = func->type()->render();
-    auto name = util::fmt("%s__%s", func->id()->name(), util::uitoa_n(util::hash(type), 64, 4));
-
-    return hilti::builder::id::node(name, func->location());
-}
-
-shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<expression::Function> expr)
-{
-    auto func = expr->function();
     auto id = func->id()->pathAsString();
 
-    if ( ! func->id()->isScoped() && expr->scope().size() )
-        id = util::fmt("%s::%s", expr->scope(), id);
+    if ( ! func->id()->isScoped() && scope.size() )
+        id = util::fmt("%s::%s", scope, id);
 
     if ( func->type()->callingConvention() != type::function::BINPAC )
         return hilti::builder::id::node(id, func->id()->location());
@@ -361,6 +347,11 @@ shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<expression::Function
     auto name = util::fmt("%s__%s", id, util::uitoa_n(util::hash(type), 64, 4));
 
     return hilti::builder::id::node(name, func->location());
+}
+
+shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<expression::Function> expr)
+{
+    return hiltiFunctionName(expr->function(), expr->scope());
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiCall(shared_ptr<expression::Function> func, const expression_list& args, shared_ptr<hilti::Expression> cookie)

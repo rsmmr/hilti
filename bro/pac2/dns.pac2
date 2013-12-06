@@ -21,8 +21,8 @@ export type Message = unit {
 };
 
 type Header = unit {
-    id : uint16;
-       : bitfield(16) {
+    id    : uint16;
+    flags : bitfield(16) {
             qr: 0;
             opcode: 1..3;
             aa: 4;
@@ -121,4 +121,37 @@ type Label = unit(msg: Message, name: Name) {
 
     var adjust: uint<64> = 0;
 };
+
+# Converts a DNS::Message into Bro dns_msg.
+tuple<uint64,
+      uint64,
+      uint64,
+      bool,
+      bool,
+      bool,
+      bool,
+      bool,
+      uint64,
+      uint64,
+      uint64,
+      uint64,
+      uint64>
+bro_dns_msg(msg: Message)
+{
+    return (
+        msg.header.id,
+        msg.header.flags.opcode,
+        msg.header.flags.rcode,
+        msg.header.flags.qr,
+        msg.header.flags.aa,
+        msg.header.flags.tc,
+        msg.header.flags.rd,
+        msg.header.flags.ra,
+        msg.header.flags.z,
+        msg.header.qdcount,
+        msg.header.ancount,
+        msg.header.nscount,
+        msg.header.arcount
+        );
+}
 

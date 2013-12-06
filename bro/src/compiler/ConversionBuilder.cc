@@ -1,4 +1,5 @@
 #include <Type.h>
+#include <Func.h>
 #undef List
 
 #include <hilti/hilti.h>
@@ -178,6 +179,94 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildConversionFunction(
 	return tmp;
 	}
 
+
+void ConversionBuilder::MapType(const ::BroType* from, const ::BroType* to)
+	{
+	if ( from == to )
+		return;
+
+#ifdef DEBUG
+	ODesc d1, d2;
+	d1.SetShort();
+	d2.SetShort();
+	from->Describe(&d1);
+	to->Describe(&d2);
+
+	DBG_LOG_COMPILER("Mapping type %s to %s", d1.Description(), d2.Description());
+#endif
+	mapped_types.insert(std::make_pair(from, to));
+	}
+
+void ConversionBuilder::FinalizeTypes()
+	{
+	for ( auto m : postponed_types )
+		{
+		auto t = m.first;
+		auto tag = m.second.first;
+		auto cb = m.second.second;
+
+#ifdef DEBUG
+		ODesc d;
+		d.SetShort();
+		t->Describe(&d);
+#endif
+
+		auto global = HiltiGlobalForType(tag.c_str(), t);
+
+		auto glue_mbuilder = GlueModuleBuilder();
+		Compiler()->pushModuleBuilder(glue_mbuilder);
+		glue_mbuilder->pushModuleInit();
+
+		auto i = mapped_types.find(t);
+
+		if ( i != mapped_types.end() && (*i).second->GetTypeID() )
+			{
+			auto id = (*i).second->GetTypeID();
+
+			DBG_LOG_COMPILER("Using type ID %s for postponed type %s", id, d.Description());
+
+			auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type");
+			auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(id) } );
+			Builder()->addInstruction(global, ::hilti::instruction::flow::CallResult, f, args);
+			}
+
+
+		else
+			{
+			DBG_LOG_COMPILER("Building code to generate postponed type %s", d.Description());
+			cb(global, t);
+			}
+
+		glue_mbuilder->popFunction();
+		Compiler()->popModuleBuilder();
+		}
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiGlobalForType(const char* tag,
+									   const ::BroType* type)
+	{
+	auto btype = ::hilti::builder::type::byName("LibBro::BroType");
+
+	auto mbuilder = ModuleBuilder();
+	auto glue_mbuilder = GlueModuleBuilder();
+	auto glue_ns = glue_mbuilder->module()->id()->name();
+
+	auto tname = ::util::fmt("%s_%s", tag, HiltiODescSymbol(type));
+	auto qualified_tname = ::util::fmt("%s::%s_%s", glue_ns, tag, HiltiODescSymbol(type));
+
+	if ( ! glue_mbuilder->declared(tname) )
+		{
+		auto global = glue_mbuilder->addGlobal(tname, btype);
+		glue_mbuilder->exportID(tname);
+		}
+
+	if ( ! mbuilder->declared(qualified_tname) )
+		mbuilder->declareGlobal(qualified_tname, btype);
+
+	return mbuilder != glue_mbuilder ? ::hilti::builder::id::create(qualified_tname)
+					 : ::hilti::builder::id::create(tname);
+	}
+
 std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildCreateBroType(const char* tag,
 									   const ::BroType* type,
 									   build_create_type_callback cb)
@@ -210,6 +299,14 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildCreateBroType(const
 
 	return mbuilder != glue_mbuilder ? ::hilti::builder::id::create(qualified_tname)
 					 : ::hilti::builder::id::create(tname);
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::PostponeBuildCreateBroType(const char* tag,
+										   const ::BroType* type,
+										   build_create_type_callback cb)
+	{
+	postponed_types.insert(std::make_pair(type, std::make_pair(string(tag), cb)));
+	return HiltiGlobalForType(tag, type);
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHiltiBaseType(shared_ptr<::hilti::Expression> val, const ::BroType* type)
@@ -783,6 +880,51 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::RecordType* type)
 	{
+	auto etype = val->type();
+
+	if ( ::ast::tryCast<::hilti::type::Struct>(etype) )
+		return HiltiToBroFromStruct(val, type);
+
+	if ( ::ast::tryCast<::hilti::type::Tuple>(etype) )
+		return HiltiToBroFromTuple(val, type);
+
+	Error(::util::fmt("HiltiToBro/RecordType: unsupported value of type %s", etype->render()));
+	return 0;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromTuple(shared_ptr<::hilti::Expression> val, const ::RecordType* type)
+	{
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+	auto dst = Builder()->addTmp("val", vtype);
+
+	auto rtype = CreateBroType(type);
+	auto args = ::hilti::builder::tuple::create( { rtype } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::bro_record_new"), args);
+
+	for ( int i = 0; i < type->NumFields(); i++ )
+		{
+		auto hidx = ::hilti::builder::integer::create(i);
+
+		auto tmp = Builder()->addTmp("field", HiltiType(type->FieldType(i)));
+
+		Builder()->addInstruction(tmp,
+					  ::hilti::instruction::tuple::Index,
+					  val,
+					  hidx);
+
+		auto tmp_h2b = RuntimeHiltiToVal(tmp, type->FieldType(i));
+
+		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+					  ::hilti::builder::id::create("LibBro::bro_record_assign"),
+					  ::hilti::builder::tuple::create({ dst, hidx, tmp_h2b }));
+		}
+
+	return dst;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromStruct(shared_ptr<::hilti::Expression> val, const ::RecordType* type)
+	{
 	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
 	auto dst = Builder()->addTmp("val", vtype);
 
@@ -1146,7 +1288,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::Op
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::RecordType* type)
 	{
-	return BuildCreateBroType("record", type,
+	return PostponeBuildCreateBroType("record", type,
 		[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
 		{
 		auto rtype = type->AsRecordType();

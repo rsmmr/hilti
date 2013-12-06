@@ -6,7 +6,7 @@
 #include "module.h"
 #include "util/file-cache.h"
 
-namespace hilti { class Module; class Type; }
+namespace hilti { class Module; class Type; class ID; }
 namespace hilti { class CompilerContext; }
 namespace llvm  { class Module; }
 
@@ -22,6 +22,8 @@ class Options;
 class CompilerContext : public Logger, public std::enable_shared_from_this<CompilerContext>
 {
 public:
+    typedef std::list<shared_ptr<::hilti::ID>> id_list;
+
     /// Constructor.
     ///
     /// libdirs: List of directories to search for relative paths. The current
@@ -173,8 +175,11 @@ public:
     ///
     /// type: The BinPAC++ type.
     ///
+    /// deps: If given, any types that will need to be imported will be added
+    /// to the list with their qualified IDs.
+    ///
     /// Returns: The corresponding HILTI type.
-    shared_ptr<::hilti::Type> hiltiType(shared_ptr<binpac::Type> type);
+    shared_ptr<::hilti::Type> hiltiType(shared_ptr<binpac::Type> type, id_list* deps = nullptr);
 
     /// Renders an AST back into BinPAC++ source code.
     ///

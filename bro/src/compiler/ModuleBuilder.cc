@@ -146,10 +146,13 @@ TraversalCode ModuleBuilderCallback::PreID(const ::ID* id)
 	return TC_CONTINUE;
 	}
 
+extern ::Stmt* stmts;
+
 ModuleBuilder::ModuleBuilder(class Compiler* arg_compiler, shared_ptr<::hilti::CompilerContext> ctx, const std::string& namespace_)
 	: BuilderBase(this), ::hilti::builder::ModuleBuilder(ctx, namespace_)
 	{
-	if ( ! callback )
+	// TODO: The traversal should move out of here into the Compiler.
+	if ( ! callback && ::stmts )
 		{
 		callback = std::make_shared<ModuleBuilderCallback>();
 		traverse_all(callback.get());
@@ -216,6 +219,8 @@ shared_ptr<::hilti::Module> ModuleBuilder::Compile()
 	//
 	if ( BifConst::Hilti::save_hilti )
 		saveHiltiCode(::util::fmt("bro.%s.hlt", module()->id()->name()));
+
+	FinalizeGlueCode();
 
 	return finalize();
 	}
@@ -693,5 +698,10 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionLegacy(co
 					  ::hilti::builder::id::create("LibBro::call_bif_void"), ca);
 		return nullptr;
 		}
+	}
+
+void ModuleBuilder::FinalizeGlueCode()
+	{
+	conversion_builder->FinalizeTypes();
 	}
 

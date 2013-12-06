@@ -1,13 +1,8 @@
-
 # TODO:
 #
 #   - How to pass Name.labels? Can pass a list right now, and we'd
 #     actually want is a single bytes objects; that will need a
 #	  list.join() method.
-#
-#   - Cannot generate records yet.
-#
-#   - How to differentiate between client- and server-side events?
 
 grammar dns.pac2;
 
@@ -16,4 +11,8 @@ protocol analyzer pac2::SSH over UDP:
     port 53/udp,
     replaces DNS;
 
-on DNS::Question -> event my_dns_request($conn, self.qname.name, self.qtype, self.qclass);
+on DNS::Question -> event my_dns_request($conn,
+                                         DNS::bro_dns_msg(msg),
+                                         self.qname.name,
+		          		                 self.qtype,
+				                         self.qclass);

@@ -223,6 +223,10 @@ void CodeBuilder::visit(expression::Function* f)
 {
     auto id = cg()->hiltiFunctionName(f->sharedPtr<expression::Function>());
     auto result = hilti::builder::id::create(id, f->location());
+
+    if ( f->scope() != current<Module>()->id()->name() )
+        cg()->hiltiDefineFunction(f->sharedPtr<expression::Function>(), true);
+
     setResult(result);
 }
 
@@ -391,7 +395,10 @@ void CodeBuilder::visit(statement::Return* r)
         builder()->addInstruction(hilti::instruction::flow::ReturnVoid);
 
     else {
-        auto val = cg()->hiltiExpression(r->expression());
+        auto func = current<declaration::Function>();
+        assert(func);
+        auto rtype = func->function()->type()->result()->type();
+        auto val = cg()->hiltiExpression(r->expression(), rtype);
         builder()->addInstruction(hilti::instruction::flow::ReturnResult, val);
     }
 }

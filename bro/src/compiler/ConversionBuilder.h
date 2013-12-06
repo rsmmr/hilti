@@ -18,6 +18,8 @@ class TableType;
 class TypeType;
 class VectorType;
 
+class BroType;
+
 namespace hilti {
 	class Expression;
 	class Type;
@@ -77,6 +79,16 @@ public:
 	 */
 	shared_ptr<::hilti::Expression> CreateBroType(const ::BroType* type);
 
+	/**
+	 * XXX
+	 */
+	void MapType(const ::BroType* from, const ::BroType* to);
+
+	/**
+	 * XXX
+	 */
+	void FinalizeTypes();
+
 protected:
 	typedef std::function<void (shared_ptr<::hilti::Expression>,
 				    shared_ptr<::hilti::Expression>,
@@ -95,6 +107,10 @@ protected:
 	std::shared_ptr<::hilti::Expression> BuildCreateBroType(const char* tag,
 								const ::BroType* type,
 								build_create_type_callback cb);
+
+	std::shared_ptr<::hilti::Expression> PostponeBuildCreateBroType(const char* tag,
+									const ::BroType* type,
+									build_create_type_callback cb);
 
 	std::shared_ptr<::hilti::Expression> BroToHiltiBaseType(shared_ptr<::hilti::Expression> val, const ::BroType* type);
 	std::shared_ptr<::hilti::Expression> BroToHilti(shared_ptr<::hilti::Expression> val, const ::EnumType* type);
@@ -129,6 +145,18 @@ protected:
 private:
 	std::shared_ptr<::hilti::Expression> BroInternalInt(std::shared_ptr<::hilti::Expression> val);
 	std::shared_ptr<::hilti::Expression> BroInternalDouble(std::shared_ptr<::hilti::Expression> val);
+
+	std::shared_ptr<::hilti::Expression> HiltiToBroFromStruct(shared_ptr<::hilti::Expression> val, const ::RecordType* type);
+	std::shared_ptr<::hilti::Expression> HiltiToBroFromTuple(shared_ptr<::hilti::Expression> val, const ::RecordType* type);
+
+	std::shared_ptr<::hilti::Expression> HiltiGlobalForType(const char* tag, const ::BroType* type);
+
+
+	typedef std::map<const ::BroType*, const ::BroType*> type_map;
+	typedef std::map<const ::BroType*, std::pair<string, build_create_type_callback>> type_builder_map;
+
+	type_map mapped_types;
+	type_builder_map postponed_types;
 
 };
 

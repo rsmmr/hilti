@@ -30,6 +30,8 @@ struct TypeInfo {
 class TypeBuilder : public CGVisitor<TypeInfo>
 {
 public:
+    typedef std::list<shared_ptr<::hilti::ID>> id_list;
+
     /// Constructor.
     ///
     /// cg: The code generator to use. This may be left null if one just
@@ -42,8 +44,11 @@ public:
     ///
     /// type: The type to convert.
     ///
+    /// deps: If given, any types that will need to be imported will be
+    /// added to the list with their qualified IDs.
+    ///
     /// Returns: The HILTI type, or null if not defined.
-    shared_ptr<hilti::Type> hiltiType(shared_ptr<Type> type);
+    shared_ptr<hilti::Type> hiltiType(shared_ptr<Type> type, id_list* deps = nullptr);
 
     /// Returns the default value for instances of a BinPAC type that aren't
     /// further intiailized.
@@ -114,6 +119,10 @@ protected:
     void visit(type::unit::item::field::AtomicType* t) override;
     void visit(type::unit::item::field::Unit* t) override;
     void visit(type::unit::item::field::switch_::Case* c) override;
+
+private:
+    id_list* _deps;
+
 };
 
 }

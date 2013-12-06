@@ -350,10 +350,10 @@ shared_ptr<hilti::CompilerContext> binpac::CompilerContext::hiltiContext() const
     return _hilti_context;
 }
 
-shared_ptr<hilti::Type> binpac::CompilerContext::hiltiType(shared_ptr<binpac::Type> type)
+shared_ptr<hilti::Type> binpac::CompilerContext::hiltiType(shared_ptr<binpac::Type> type, id_list* deps)
 {
     codegen::TypeBuilder tb(nullptr);
-    return tb.hiltiType(type);
+    return tb.hiltiType(type, deps);
 }
 
 void binpac::CompilerContext::toCacheKey(shared_ptr<Module> module, ::util::cache::FileCache::Key* key)

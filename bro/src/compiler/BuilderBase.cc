@@ -192,6 +192,11 @@ shared_ptr<::hilti::Expression> BuilderBase::HiltiCallFunction(const ::Expr* fun
 	return mbuilder->HiltiCallFunction(func, args);
 	}
 
+void BuilderBase::MapType(const ::BroType* from, const ::BroType* to)
+	{
+	return mbuilder->ConversionBuilder()->MapType(from, to);
+	}
+
 std::string BuilderBase::Location(const ::BroObj *obj) const
 	{
 	if ( ! obj || ! obj->GetLocationInfo()->filename )

@@ -107,16 +107,18 @@ Compiler::module_list Compiler::CompileAll()
 		delete mbuilder;
 		}
 
+	return modules;
+	}
+
+std::shared_ptr<::hilti::Module> Compiler::FinalizeGlueBuilder()
+	{
 	if ( BifConst::Hilti::save_hilti )
 		glue_module_builder->saveHiltiCode(::util::fmt("bro.%s.hlt", glue_module_builder->module()->id()->name()));
 
 	glue_module_builder->importModule("Hilti");
 	glue_module_builder->importModule("LibBro");
 
-	auto glue = glue_module_builder->finalize();
-	modules.push_back(glue);
-
-	return modules;
+	return glue_module_builder->finalize();
 	}
 
 ::hilti::builder::ModuleBuilder* Compiler::GlueModuleBuilder() const

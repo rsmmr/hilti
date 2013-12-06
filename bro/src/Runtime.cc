@@ -432,9 +432,27 @@ bro_table_iterate_result libbro_bro_table_iterate(::TableVal* val, ::IterCookie*
 	return { cookie, kval, v->Value() };
 	}
 
-::BroType* libbro_bro_base_type(uint64_t tag)
+::BroType* libbro_bro_base_type(uint64_t tag, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return ::base_type((TypeTag)(tag));
+	}
+
+::BroType* libbro_bro_lookup_type(hlt_string name, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto n = hlt_string_to_native(name, excpt, ctx);
+	::ID* id = ::global_scope()->Lookup(n);
+	hlt_free(n);
+
+	if ( ! id )
+		bro::hilti::reporter::internal_error(::util::fmt("libbro_lookup_type: unknown type '%s'", n));
+
+	::BroType* t = id->AsType();
+
+	if ( ! t )
+		bro::hilti::reporter::internal_error(::util::fmt("libbro_lookup_type: ID '%s' is not a type", n));
+
+	Ref(t);
+	return t;
 	}
 
 ::TableType* libbro_bro_table_type_new(::BroType* key, ::BroType* value, hlt_exception** excpt, hlt_execution_context* ctx)

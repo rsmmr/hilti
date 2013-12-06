@@ -17,6 +17,9 @@ void Coercer::visit(type::Integer* i)
         setResult(true);
         return;
     }
+
+    // We don't allow integer coercion to larger widths here because we
+    // wouldn't know if they are signed or not.
 }
 
 void Coercer::visit(type::Reference* r)

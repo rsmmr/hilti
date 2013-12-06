@@ -347,6 +347,11 @@ public:
 	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, ListExpr* args);
 
 	/**
+	 * XXXX
+	 */
+	void MapType(const ::BroType* from, const ::BroType* to);
+
+	/**
 	 * Returns a string with location information for a BroObj.
 	 */
 	std::string Location(const ::BroObj *obj) const;
