@@ -634,8 +634,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroBaseType(share
 
 	case TYPE_ANY:
 		{
-        Error("ConversionBuilder::HiltiToBroBaseType: cannot convert TYPE_ANY");
-        return 0;
+		Error("ConversionBuilder::HiltiToBroBaseType: cannot convert TYPE_ANY");
+		return 0;
 		}
 
 	case TYPE_BOOL:
@@ -725,14 +725,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroBaseType(share
 		return dst;
 		}
 
-	case TYPE_TYPE:
-		{
-		Error("ConversionBuilder/H2B: no support yet for converting Val of type TYPE_TYPE");
-		return nullptr;
-		}
-
 	default:
-		Error(::util::fmt("ConversionBuilder/H2B: unsupported type %s", ::type_name(type->Tag())));
+		Error(::util::fmt("ConversionBuilder/H2B: unsupported type %s (%s)", ::type_name(type->Tag()), val->render()));
 	}
 
 	// Cannot be reached.
