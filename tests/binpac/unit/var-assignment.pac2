@@ -1,0 +1,15 @@
+#
+# @TEST-EXEC:  printf '\x01\x00\x00\x03\x04' | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+    a: uint8;
+    b: uint32;
+
+    var c: uint64 = self.a + self.b;
+   
+    on %done { print self.a, self.b, self.c; }
+};
