@@ -440,6 +440,7 @@ shared_ptr<BlockBuilder> ModuleBuilder::pushBuilder(shared_ptr<BlockBuilder> bui
 
     body->builders.push_back(builder);
     builder->setBody(body->stmt);
+
     return builder;
 }
 
@@ -484,6 +485,7 @@ shared_ptr<BlockBuilder> ModuleBuilder::popBuilder(shared_ptr<BlockBuilder> buil
     }
 
     body->builders.erase(i, body->builders.end());
+
     return builder;
 }
 

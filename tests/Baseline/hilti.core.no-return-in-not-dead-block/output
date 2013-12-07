@@ -1,0 +1,5 @@
+
+>>> block.end
+<no location>:: fatal error, function foo may finish without returning a value [codegen]
+no-return-in-not-dead-block.hlt: Aborting due to code generation error.
+error running hiltic, aborting
