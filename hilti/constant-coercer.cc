@@ -130,3 +130,11 @@ void ConstantCoercer::visit(constant::CAddr* t)
     }
 }
 
+void ConstantCoercer::visit(constant::Unset* t)
+{
+    // Coerces into a typed unset, which will eventually codegen to the
+    // type's default value.
+    setResult(std::make_shared<constant::Unset>(arg1()));
+}
+
+

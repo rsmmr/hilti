@@ -41,6 +41,7 @@ protected:
    void visit(type::Tuple* t) override;
    void visit(type::Reference* t) override;
    void visit(type::CAddr* t) override;
+   void visit(type::Unset* t) override;
 };
 
 

@@ -1,0 +1,24 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local string a1
+    local caddr a2
+    local ref<regexp> a3
+
+    a1 = tuple.index (*) 0
+    call Hilti::print(a1)
+
+    a2 = tuple.index (*) 0
+    call Hilti::print(a2)
+
+    a3 = tuple.index (*) 0
+    call Hilti::print(a3)
+}
+

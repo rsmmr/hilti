@@ -143,3 +143,10 @@ void Coercer::visit(type::CAddr* c)
         return;
     }
 }
+
+void Coercer::visit(type::Unset* c)
+{
+    // Generic unsets coerce into any type as the corresponding default
+    // value.
+    setResult(true);
+}

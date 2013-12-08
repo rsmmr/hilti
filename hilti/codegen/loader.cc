@@ -213,8 +213,11 @@ void Loader::visit(constant::Tuple* t)
 
 void Loader::visit(constant::Unset* t)
 {
-    // Just a dummy value.
-    setResult(cg()->llvmConstInt(0, 1), false, false);
+    if ( ast::tryCast<type::Unset>(t->type()) )
+        // Just a dummy value.
+        setResult(cg()->llvmConstInt(0, 1), false, false);
+    else
+        setResult(cg()->llvmInitVal(t->type()), false, false);
 }
 
 void Loader::visit(constant::Reference* r)

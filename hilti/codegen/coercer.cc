@@ -170,3 +170,11 @@ void codegen::Coercer::visit(type::CAddr* r)
     assert(false);
 }
 
+void codegen::Coercer::visit(type::Unset* r)
+{
+    auto dst = arg2();
+
+    assert(! ast::tryCast<type::Unset>(dst));
+    setResult(cg()->llvmInitVal(dst));
+}
+

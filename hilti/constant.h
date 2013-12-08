@@ -120,6 +120,14 @@ public:
    Unset(const Location& l=Location::None)
        : ast::SpecificConstant<AstInfo, Constant, bool>(false, shared_ptr<Type>(new type::Unset()), l) {}
 
+   /// Constructor for an unset of a particular type.
+   ///
+   /// t: The type of the unset value.
+   ///
+   /// l: An associated location.
+   Unset(shared_ptr<Type> t, const Location& l=Location::None)
+       : ast::SpecificConstant<AstInfo, Constant, bool>(false, t, l) {}
+
    ACCEPT_VISITOR(Constant);
 };
 

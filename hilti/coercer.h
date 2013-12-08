@@ -22,6 +22,7 @@ public:
    void visit(type::Iterator* i);
    void visit(type::Tuple* t);
    void visit(type::CAddr* c);
+   void visit(type::Unset* c);
 };
 
 }
