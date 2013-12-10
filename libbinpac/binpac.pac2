@@ -38,3 +38,13 @@ import "HILTI-C" bytes base64_encode(b: bytes);
 # Function for base64 decoding a bytes object.
 import "HILTI-C" bytes base64_decode(b: bytes);
 # %end-base64_decode
+
+# %begin-fmt
+# Formatting function sprintf-style.
+import "HILTI-C" bytes fmt(format: bytes, args: tuple<*>)  &hilti_id=BinPAC::fmt_bytes;
+# %end-fmt
+
+# %begin-fmt
+# Formatting function sprintf-style.
+import "HILTI-C" string fmt(format: string, args: tuple<*>) &hilti_id=BinPAC::fmt_string;
+# %end-fmt

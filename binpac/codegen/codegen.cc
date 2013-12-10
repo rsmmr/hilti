@@ -334,6 +334,9 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
 
 shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> func, const string& scope)
 {
+    if ( func->hiltiFunctionID() )
+        return hiltiID(func->hiltiFunctionID());
+
     auto id = func->id()->pathAsString();
 
     if ( ! func->id()->isScoped() && scope.size() )

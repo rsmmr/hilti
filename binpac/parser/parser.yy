@@ -166,6 +166,8 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         OR
 %token         STOP
 
+%token         ATTR_HILTI_ID
+
 // %type <expression>       expr
 // %type <expressions>      exprs
 //  %type <attributes>       attr_list opt_attr_list
@@ -179,7 +181,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <declarations>     opt_global_decls opt_local_decls
 %type <expression>       expr expr2 opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr opt_unit_vector_len
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
-%type <id>               local_id scoped_id path_id hook_id opt_unit_field_name
+%type <id>               local_id scoped_id path_id hook_id opt_unit_field_name opt_hilti_id
 %type <statement>        stmt block
 %type <statements>       stmts opt_stmts
 %type <type>             base_type type enum_ bitset unit atomic_type container_type bitfield
@@ -313,10 +315,11 @@ func_decl     : opt_linkage opt_cc rtype local_id '(' opt_params ')' block
                                                    $$ = std::make_shared<declaration::Function>(func, $1, loc(@$));
                                                  }
 
-              | IMPORT opt_cc rtype scoped_id '(' opt_params ')' ';'
+              | IMPORT opt_cc rtype scoped_id '(' opt_params ')' opt_hilti_id ';'
                                                  { auto ftype = std::make_shared<type::Function>($3, $6, $2, loc(@$));
                                                    auto func  = std::make_shared<Function>($4, ftype, driver.module(), nullptr, loc(@$));
                                                    $$ = std::make_shared<declaration::Function>(func, Declaration::IMPORTED, loc(@$));
+                                                   if ( $8 ) func->setHiltiFunctionID($8);
                                                  }
               ;
 
@@ -328,6 +331,9 @@ params        : param ',' params                 { $$ = $3; $$.push_front($1); }
 
 opt_params    : params                           { $$ = $1; }
               | /* empty */                      { $$ = parameter_list(); }
+
+opt_hilti_id  : ATTR_HILTI_ID '=' scoped_id      { $$ = $3; }
+              | /* empty */                      { $$ = nullptr; }
 
 param         : opt_param_const opt_param_clear local_id ':' type
                                                  { $$ = std::make_shared<type::function::Parameter>($3, $5, $1, $2, nullptr, loc(@$)); }

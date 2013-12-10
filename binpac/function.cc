@@ -14,6 +14,16 @@ Function::Function(shared_ptr<ID> id, shared_ptr<binpac::type::Function> ftype, 
 {
 }
 
+shared_ptr<ID> Function::hiltiFunctionID() const
+{
+    return _hilti_id;
+}
+
+void Function::setHiltiFunctionID(shared_ptr<ID> id)
+{
+    _hilti_id = id;
+}
+
 Hook::Hook(shared_ptr<binpac::Statement> body,
            int prio, bool debug, bool foreach, const Location& l)
     : Node(l)

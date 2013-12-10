@@ -26,7 +26,17 @@ public:
     /// l: Location associated with the node.
     Function(shared_ptr<ID> id, shared_ptr<binpac::type::Function> ftype, shared_ptr<Module> module, shared_ptr<binpac::Statement> body = nullptr, const Location& l=Location::None);
 
+    /// Associates a HILTI-level name with this function. That name will be
+    /// used instead of the default one during code generation.
+    void setHiltiFunctionID(shared_ptr<ID> id);
+
+    /// Returns the HILTI-level name associated with this function, if any.
+    shared_ptr<ID> hiltiFunctionID() const;
+
     ACCEPT_VISITOR_ROOT();
+
+private:
+    shared_ptr<ID> _hilti_id = nullptr;
 };
 
 /// AST node for a hook. Note that we don't derive this from a function as in

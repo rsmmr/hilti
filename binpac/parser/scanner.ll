@@ -153,6 +153,8 @@ __clear               return token::CLEAR;
 \.\.                  return token::DOTDOT;
 ->                    return token::ARROW;
 
+&hilti_id             return token::ATTR_HILTI_ID;
+
 False                 yylval->bval = 0; return token::CBOOL;
 True                  yylval->bval = 1; return token::CBOOL;
 
@@ -175,7 +177,6 @@ b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strle
 {id}                   yylval->sval = yytext; return token::IDENT;
 {id}(::{id}){1,}(::{property})?       yylval->sval = yytext; return token::SCOPED_IDENT;
 {id}(::{property})?    yylval->sval = yytext; return token::SCOPED_IDENT;
-
 
 
 [][?.,=:;<>(){}/|*/&^%!+-] return (token_type) yytext[0];

@@ -1,0 +1,19 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import BinPAC;
+
+global b: bytes;
+global s: string;
+
+b = BinPAC::fmt (b"bytes:  %s %d %f", ("Foo", 42, 1.2));
+s = BinPAC::fmt ("string: %s %d %f", ("Foo", 42, 1.2));
+
+print b;
+print s;
+
