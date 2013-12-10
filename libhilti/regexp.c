@@ -57,10 +57,15 @@ hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt
 
     int64_t *flags = (int64_t*) &(type->type_params);
 
+    return hlt_regexp_new_flags((hlt_regexp_flags)*flags, excpt, ctx);
+}
+
+hlt_regexp* hlt_regexp_new_flags(hlt_regexp_flags flags, hlt_exception** excpt, hlt_execution_context* ctx)
+{
     hlt_regexp* re = GC_NEW(hlt_regexp);
     re->num = 0;
     re->patterns = 0;
-    re->flags = (hlt_regexp_flags)(*flags);
+    re->flags = flags;
     return re;
 }
 
