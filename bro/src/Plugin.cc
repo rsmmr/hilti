@@ -10,6 +10,8 @@
 
 plugin::Bro_Hilti::Plugin HiltiPlugin;
 
+namespace BifConst { namespace Hilti { extern int compile_scripts; } }
+
 using namespace bro::hilti;
 
 plugin::Bro_Hilti::Plugin::Plugin()
@@ -113,14 +115,17 @@ void plugin::Bro_Hilti::Plugin::AddEvent(const string& name)
 
 Val* plugin::Bro_Hilti::Plugin::CallFunction(const Func* func, val_list* args)
 	{
-	if ( string(func->Name()) == string("bro_init") )
-		return new Val(0, TYPE_ANY);
+	if ( ! BifConst::Hilti::compile_scripts )
+		return nullptr;
 
-	return 0;
+	return _manager->RuntimeCallFunction(func, args);
 	}
 
 bool plugin::Bro_Hilti::Plugin::QueueEvent(Event* event)
 	{
+	if ( ! BifConst::Hilti::compile_scripts )
+		return false;
+
 	if ( ! _manager->RuntimeRaiseEvent(event) )
 		Unref(event);
 

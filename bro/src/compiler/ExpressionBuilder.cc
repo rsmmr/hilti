@@ -487,7 +487,7 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::Li
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CallExpr* expr)
 	{
-	return HiltiCallFunction(expr->Func(), expr->Args());
+	return HiltiCallFunction(expr->Func(), expr->Func()->Type()->AsFuncType(), expr->Args());
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CloneExpr* expr)
@@ -580,9 +580,27 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::HasFieldExpr*
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)
 	{
-	auto ty = expr->Op2()->Type();
-
 	auto result = Builder()->addTmp("has", ::hilti::builder::boolean::type());
+
+	// Patterns are on the LHS.
+	if ( expr->Op1()->Type()->Tag() == TYPE_PATTERN )
+		{
+		auto op1 = HiltiExpression(expr->Op1());
+		auto op2 = HiltiExpression(expr->Op2());
+
+		auto begin = Builder()->addTmp("begin", ::hilti::builder::iterator::typeBytes());
+		Builder()->addInstruction(begin, ::hilti::instruction::operator_::Begin, op2);
+
+		auto pos = Builder()->addTmp("pos", ::hilti::builder::integer::type(32));
+		Builder()->addInstruction(pos, ::hilti::instruction::regexp::FindBytes, op1, begin);
+
+		auto zero = ::hilti::builder::integer::create(0);
+		Builder()->addInstruction(result, ::hilti::instruction::integer::Sgeq, pos, zero);
+
+		return result;
+		}
+
+	auto ty = expr->Op2()->Type();
 
 	switch ( ty->Tag() ) {
 	case TYPE_TABLE:
@@ -747,13 +765,12 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::NameExpr* exp
 		return HiltiValue(val);
 		}
 
-	if ( id->IsGlobal() && id->Type()->Tag() == TYPE_FUNC )
-		DeclareFunction(id->ID_Val()->AsFunc());
+	if ( id->AsType() )
+		return HiltiBroVal(id->Type());
 
-	if ( id->IsGlobal() && ! id->AsType() )
+	if ( id->IsGlobal() )
 		DeclareGlobal(id);
-
-	if ( ! id->IsGlobal() )
+	else
 		DeclareLocal(id);
 
 	return ::hilti::builder::id::create(HiltiSymbol(id));
@@ -1092,7 +1109,31 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::IncrExpr* exp
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::BoolExpr* expr)
 	{
-	return NotSupported(expr, "BoolExpr");
+	auto result = Builder()->addTmp("b", ::hilti::builder::boolean::type());
+
+	bool ok = false;
+
+	switch ( expr->Tag() ) {
+	case EXPR_AND:
+		{
+		ok = ok || CompileOperator(expr, result, ::TYPE_BOOL, ::TYPE_BOOL, ::hilti::instruction::boolean::And);
+		break;
+		}
+
+	case EXPR_OR:
+		{
+		ok = ok || CompileOperator(expr, result, ::TYPE_BOOL, ::TYPE_BOOL, ::hilti::instruction::boolean::Or);
+		break;
+		}
+
+	default:
+		return NotSupported(expr, "BoolExpr");
+	}
+
+	if ( ! ok )
+		NotSupported(expr, "BoolExpr");
+
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EqExpr* expr)
@@ -1100,6 +1141,41 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EqExpr* expr)
 	auto result = Builder()->addTmp("eq", ::hilti::builder::boolean::type());
 	auto op1 = HiltiExpression(expr->Op1());
 	auto op2 = HiltiExpression(expr->Op2());
+
+	if ( expr->Op1()->Type()->Tag() == TYPE_PATTERN )
+		{
+		// Bro canonicalizes these so that the pattern is always in op1.
+
+		auto itype = ::hilti::builder::iterator::typeBytes();
+
+		auto begin = Builder()->addTmp("begin", itype);
+		auto end = Builder()->addTmp("end", ::hilti::builder::iterator::typeBytes());
+		Builder()->addInstruction(begin, ::hilti::instruction::operator_::Begin, op2);
+		Builder()->addInstruction(end, ::hilti::instruction::operator_::End, op2);
+
+		auto ipair = ::hilti::builder::tuple::type({ itype, itype });
+		auto rtype = ::hilti::builder::tuple::type({ ::hilti::builder::integer::type(32), ipair });
+		auto m = Builder()->addTmp("m", rtype);
+		Builder()->addInstruction(m, ::hilti::instruction::regexp::SpanBytes, op1, begin);
+
+		auto zero = ::hilti::builder::integer::create(0);
+		auto one = ::hilti::builder::integer::create(1);
+		auto iters = Builder()->addTmp("iters", ipair);
+		Builder()->addInstruction(iters, ::hilti::instruction::tuple::Index, m, one);
+
+		auto i1 = Builder()->addTmp("i1", itype);
+		auto i2 = Builder()->addTmp("i2", itype);
+		Builder()->addInstruction(i1, ::hilti::instruction::tuple::Index, iters, zero);
+		Builder()->addInstruction(i2, ::hilti::instruction::tuple::Index, iters, one);
+
+		auto b1 = Builder()->addTmp("b1", ::hilti::builder::boolean::type());
+		auto b2 = Builder()->addTmp("b2", ::hilti::builder::boolean::type());
+		Builder()->addInstruction(b1, ::hilti::instruction::operator_::Equal, i1, begin);
+		Builder()->addInstruction(b2, ::hilti::instruction::operator_::Equal, i2, end);
+
+		Builder()->addInstruction(result, ::hilti::instruction::boolean::And, b1, b2);
+		return result;
+		}
 
 	switch ( expr->Tag() ) {
 	case EXPR_EQ:

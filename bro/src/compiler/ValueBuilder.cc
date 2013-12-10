@@ -1,6 +1,7 @@
 
 #include <Val.h>
 #include <RE.h>
+#include <Func.h>
 #undef List
 
 #include <hilti/hilti.h>
@@ -67,11 +68,58 @@ shared_ptr<::hilti::Expression> ValueBuilder::InitValue(const ::BroType* type)
 	return 0;
 	}
 
-shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, ::BroType* arg_target_type)
+shared_ptr<::hilti::Expression> ValueBuilder::TypeVal(const ::BroType* type)
+	{
+	// TODO: Unify with ConversionBuilder. We shouldn't really
+	// look up the type by name each time we need, but precompute
+	// and sotre in a global.
+	if ( ! type->GetTypeID() )
+		{
+		ODesc d;
+		type->Describe(&d);
+		Error(::util::fmt("ValueBuilder: type value without type id (%s)", d.Description()));
+		}
+
+	auto tmp = Builder()->addTmp("ttype", ::hilti::builder::type::byName("LibBro::BroType"));
+	auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type_as_val");
+	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(type->GetTypeID()) } );
+	Builder()->addInstruction(tmp, ::hilti::instruction::flow::CallResult, f, args);
+	return tmp;
+	}
+
+shared_ptr<::hilti::Expression> ValueBuilder::FunctionVal(const ::Func* func)
+	{
+	auto tmp = Builder()->addTmp("func", ::hilti::builder::type::byName("LibBro::BroVal"));
+	auto f = ::hilti::builder::id::create("LibBro::bro_lookup_id_as_val");
+	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(func->Name()) } );
+	Builder()->addInstruction(tmp, ::hilti::instruction::flow::CallResult, f, args);
+	return tmp;
+	}
+
+shared_ptr<::hilti::Expression> ValueBuilder::BroType(const ::BroType* type)
+	{
+	// TODO: Unify with ConversionBuilder. We shouldn't really
+	// look up the type by name each time we need, but precompute
+	// and sotre in a global.
+	if ( ! type->GetTypeID() )
+		{
+		ODesc d;
+		type->Describe(&d);
+		Error(::util::fmt("ValueBuilder: type value without type id (%s)", d.Description()));
+		}
+
+	auto tmp = Builder()->addLocal("ttype", ::hilti::builder::type::byName("LibBro::BroType"));
+	auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type");
+	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(type->GetTypeID()) } );
+	Builder()->addInstruction(tmp, ::hilti::instruction::flow::CallResult, f, args);
+	return tmp;
+	}
+
+shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, ::BroType* target_type)
 	{
 	shared_ptr<::hilti::Expression> e = nullptr;
 
-	target_types.push_back(arg_target_type);
+	target_types.push_back(target_type);
 
 	switch ( val->Type()->Tag() ) {
 	case TYPE_BOOL:
@@ -136,6 +184,11 @@ shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, ::BroType*
 	}
 
 	target_types.pop_back();
+
+	if ( target_type && target_type->Tag() == ::TYPE_ANY )
+		// Need to pass an actual Bro value.
+		e = RuntimeHiltiToVal(e, val->Type());
+
 	return e;
 	}
 
@@ -177,10 +230,8 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* v
 		}
 
 	case TYPE_FUNC:
-		{
-		auto func = DeclareFunction(val->AsFunc());
-		return func;
-		}
+		DeclareFunction(val->AsFunc());
+		return HiltiBroVal(val->AsFunc());
 
 	case TYPE_INT:
 		return ::hilti::builder::integer::create(val->AsInt());
@@ -192,10 +243,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* v
 		return ::hilti::builder::time::create(val->AsTime());
 
 	case TYPE_TYPE:
-		{
-		Error("no support yet for compiling Val of type TYPE_TYPE", val);
-		return nullptr;
-		}
+		return HiltiBroType(val->Type());
 
 	default:
 		Error("ValueBuilder: cannot be reached", val);

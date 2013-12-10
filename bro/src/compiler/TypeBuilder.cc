@@ -30,6 +30,7 @@ shared_ptr<hilti::Type> TypeBuilder::Compile(const ::BroType* type)
 	case TYPE_PORT:
 	case TYPE_STRING:
 	case TYPE_TIME:
+	case TYPE_VOID:
 		return CompileBaseType(static_cast<const ::BroType*>(type));
 
 	case TYPE_ENUM:
@@ -108,6 +109,9 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 	case TYPE_TIME:
 		return ::hilti::builder::time::type();
 
+	case TYPE_VOID:
+		return ::hilti::builder::void_::type();
+
 	default:
 		Error("TypeBuilder: cannot be reached", type);
 	}
@@ -120,6 +124,10 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::EnumType* type)
 	{
 	auto idx = type->GetTypeID() ? string(type->GetTypeID())
 				     : ::util::fmt("enum_%p", type);
+
+	auto sm = ::extract_module_name(idx.c_str());
+	auto sv = ::extract_var_name(idx.c_str());
+	idx = ::util::fmt("%s::%s", sm, sv);
 
 	if ( auto t = ModuleBuilder()->lookupNode("enum-type", idx) )
 		return ast::checkedCast<::hilti::Type>(t);
@@ -194,10 +202,7 @@ shared_ptr<::hilti::type::Function> TypeBuilder::FunctionType(const ::FuncType* 
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
 	{
-	if ( type->Flavor() == ::FUNC_FLAVOR_EVENT )
-		return ::hilti::builder::type::byName("LibBro::BroEventHandler");
-
-	return FunctionType(type);
+	return ::hilti::builder::type::byName("LibBro::BroVal");
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::OpaqueType* type)
@@ -209,6 +214,10 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 	{
 	auto idx = type->GetTypeID() ? string(type->GetTypeID())
 				     : ::util::fmt("struct_%p", type);
+
+	auto sm = ::extract_module_name(idx.c_str());
+	auto sv = ::extract_var_name(idx.c_str());
+	idx = ::util::fmt("%s::%s", sm, sv);
 
 	if ( auto t = ModuleBuilder()->lookupNode("struct-type", idx) )
 		return ast::checkedCast<::hilti::Type>(t);
@@ -274,8 +283,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TypeList* type)
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TypeType* type)
 	{
-	Error("no support yet for compiling TypeType", type);
-	return nullptr;
+	return ::hilti::builder::type::byName("LibBro::BroType");
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::VectorType* type)

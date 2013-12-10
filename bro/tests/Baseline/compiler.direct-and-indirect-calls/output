@@ -1,0 +1,4 @@
+foo1 direct call True
+Result 1
+foo2 indirect call True
+Result 2

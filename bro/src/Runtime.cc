@@ -109,6 +109,7 @@ static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *
 
 ::Val* libbro_h2b_any(::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+	Ref(val);
 	return val;
 	}
 
@@ -138,6 +139,23 @@ static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *
 ::Val* libbro_h2b_time(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	return new Val(hlt_time_to_timestamp(t), TYPE_TIME);
+	}
+
+::Val* libbro_h2b_type(Val* t, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	Ref(t); // TODO: Not sure if we need this.
+	return t;
+	}
+
+::Val* libbro_h2b_function(Val* t, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	Ref(t); // TODO: Not sure if we need this.
+	return t;
+	}
+
+::Val* libbro_h2b_void(hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new Val(0, TYPE_VOID);
 	}
 
 ::Val* libbro_h2b_enum(const hlt_type_info* type, void* obj, uint64_t type_idx, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -183,18 +201,28 @@ static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *
 
 ::Val* libbro_h2b_regexp(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	bro::hilti::reporter::internal_error("libbro_h2b_regexp() not implemented");
-	return nullptr;
+	// TODO: We should cache the matchers here. Bro's regexps are static,
+	// so that should be fine.
+
+	// We cheat a bit by knowing that this call will do the right thingk
+	// in our case of having just one pattern for which the type info
+	// doesn't matter here.
+	auto pattern = hlt_regexp_to_string(nullptr, &re, 0, excpt, ctx);
+	auto cstr = hlt_string_to_native(pattern, excpt, ctx);
+	auto rval = new ::RE_Matcher(cstr);
+	hlt_free(cstr);
+	GC_DTOR(pattern, hlt_string);
+	return new PatternVal(rval);
 	}
 
 ::Val* libbro_h2b_file(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-    auto fname = hlt_file_name(file, excpt, ctx);
-    auto fname_native = hlt_string_to_native(fname, excpt, ctx);
-    auto fval = new ::Val(new BroFile(fname_native, "a+"));
-    hlt_free(fname_native);
-    GC_DTOR(fname, hlt_string);
-    return fval;
+	auto fname = hlt_file_name(file, excpt, ctx);
+	auto fname_native = hlt_string_to_native(fname, excpt, ctx);
+	auto fval = new ::Val(new BroFile(fname_native, "a+"));
+	hlt_free(fname_native);
+	GC_DTOR(fname, hlt_string);
+	return fval;
 	}
 
 ::Val* libbro_h2b_port(hlt_port p, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -216,7 +244,6 @@ hlt_bytes* libbro_b2h_string(Val *val, hlt_exception** excpt, hlt_execution_cont
 	{
 	const BroString* s = val->AsString();
 	hlt_bytes* result = hlt_bytes_new_from_data_copy((const int8_t*)s->Bytes(), s->Len(), excpt, ctx);
-	Unref(val);
 	return result;
 	}
 
@@ -304,20 +331,41 @@ hlt_port libbro_b2h_port(Val *val, hlt_exception** excpt, hlt_execution_context*
 	}
 	}
 
+::Val* libbro_b2h_type(Val* t, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	Ref(t); // TODO: Not sure if we need this.
+	return t;
+	}
+
+::Val* libbro_b2h_function(Val* t, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	Ref(t); // TODO: Not sure if we need this.
+	return t;
+	}
+
 hlt_regexp* libbro_b2h_pattern(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	bro::hilti::reporter::internal_error("libbro_b2h_pattern() not implemented");
-	return 0;
+	// TODO: We should cache compiled regexps. Bro's pattern are static,
+	// so that should be fine.
+	auto pattern = val->AsPattern()->PatternText();
+	auto s = hlt_string_from_asciiz(pattern, excpt, ctx);
+
+	auto re = hlt_regexp_new_flags(HLT_REGEXP_NOSUB, excpt, ctx); // Bro can't do subgroups.
+	hlt_regexp_compile(re, s, excpt, ctx);
+
+	GC_DTOR(s, hlt_string);
+
+	return re;
 	}
 
 hlt_file* libbro_b2h_file(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-    auto bfile = val->AsFile();
-    auto hfile = hlt_file_new(excpt, ctx);
-    auto fname = hlt_string_from_asciiz(bfile->Name(), excpt, ctx);
-    hlt_file_open(hfile, fname, Hilti_FileType_Text, Hilti_FileMode_Append, Hilti_Charset_UTF8, excpt, ctx);
-    GC_DTOR(fname, hlt_string);
-    return hfile;
+	auto bfile = val->AsFile();
+	auto hfile = hlt_file_new(excpt, ctx);
+	auto fname = hlt_string_from_asciiz(bfile->Name(), excpt, ctx);
+	hlt_file_open(hfile, fname, Hilti_FileType_Text, Hilti_FileMode_Append, Hilti_Charset_UTF8, excpt, ctx);
+	GC_DTOR(fname, hlt_string);
+	return hfile;
 	}
 
 static EventHandler no_handler("SENTINEL_libbro_raise_event");
@@ -354,8 +402,9 @@ void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple,
 	mgr.QueueEvent(EventHandlerPtr(ev), vals);
 	}
 
-::Val* libbro_call_bif_result(hlt_bytes* name, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_call_legacy_result(::Val* val, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+#if 0
 	hlt_bytes_size len = hlt_bytes_len(name, excpt, ctx);
 	char fname[len + 1];
 	hlt_bytes_to_raw_buffer(name, (int8_t*)fname, len, excpt, ctx);
@@ -368,7 +417,8 @@ void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple,
 
 	assert(fid->ID_Val());
 	auto func = fid->ID_Val()->AsFunc();
-	assert(func->GetKind() == ::Func::BUILTIN_FUNC);
+#endif
+	auto func = val->AsFunc();
 
 	int16_t* offsets = (int16_t *)type->aux;
 
@@ -381,12 +431,15 @@ void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple,
 		}
 
 	auto result = func->Call(vals);
+
+	delete vals;
+
 	return result;
 	}
 
-void libbro_call_bif_void(hlt_bytes* name, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+void libbro_call_legacy_void(::Val* func, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	auto result = libbro_call_bif_result(name, type, tuple, excpt, ctx);
+	auto result = libbro_call_legacy_result(func, type, tuple, excpt, ctx);
 	Unref(result);
 	}
 
@@ -441,7 +494,6 @@ bro_table_iterate_result libbro_bro_table_iterate(::TableVal* val, ::IterCookie*
 	{
 	auto n = hlt_string_to_native(name, excpt, ctx);
 	::ID* id = ::global_scope()->Lookup(n);
-	hlt_free(n);
 
 	if ( ! id )
 		bro::hilti::reporter::internal_error(::util::fmt("libbro_lookup_type: unknown type '%s'", n));
@@ -451,8 +503,33 @@ bro_table_iterate_result libbro_bro_table_iterate(::TableVal* val, ::IterCookie*
 	if ( ! t )
 		bro::hilti::reporter::internal_error(::util::fmt("libbro_lookup_type: ID '%s' is not a type", n));
 
+	hlt_free(n);
 	Ref(t);
 	return t;
+	}
+
+::Val* libbro_bro_lookup_type_as_val(hlt_string name, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto t = libbro_bro_lookup_type(name, excpt, ctx);
+	return new ::Val(t, true);
+	}
+
+::Val* libbro_bro_lookup_id_as_val(hlt_string name, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto n = hlt_string_to_native(name, excpt, ctx);
+	::ID* id = ::global_scope()->Lookup(n);
+
+	if ( ! id )
+		bro::hilti::reporter::internal_error(::util::fmt("libbro_lookup_id_as_val: unknown ID '%s'", n));
+
+	auto val = id->ID_Val();
+
+	if ( ! val )
+		bro::hilti::reporter::internal_error(::util::fmt("libbro_lookup_id_as_val: ID %s does not have a value", n));
+
+	hlt_free(n);
+	Ref(val);
+	return val;
 	}
 
 ::TableType* libbro_bro_table_type_new(::BroType* key, ::BroType* value, hlt_exception** excpt, hlt_execution_context* ctx)

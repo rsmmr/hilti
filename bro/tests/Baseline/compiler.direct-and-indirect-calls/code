@@ -1,0 +1,7 @@
+    # c = foo1(direct call);
+    __tmp_result = call foo1 (b"direct call")
+    c = assign __tmp_result
+--
+    # c = f(indirect call);
+    __tmp_val = call LibBro::h2b_bytes (b"indirect call")
+    __tmp_rval = call LibBro::call_legacy_result (f, (__tmp_val))

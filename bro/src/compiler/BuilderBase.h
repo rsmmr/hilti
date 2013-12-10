@@ -236,6 +236,36 @@ public:
 	shared_ptr<::hilti::Expression> HiltiInitValue(const ::BroType* type);
 
 	/**
+	 * Returns a HILTI expression with a Bro value refering to a BroType.
+	 *
+	 * @param type The Bro type.
+	 *
+	 * @return An HILTI expression to refer to the type, of type
+	 * LibBro::BroVal.
+	 */
+	shared_ptr<::hilti::Expression> HiltiBroVal(const ::BroType* type);
+
+	/**
+	 * Returns a HILTI expression referencing a BroType.
+	 *
+	 * @param type The Bro type.
+	 *
+	 * @return An HILTI expression to refer to the type, of type LibBro::BroType.
+	 */
+	shared_ptr<::hilti::Expression> HiltiBroType(const ::BroType* type);
+
+	/**
+	 * Returns a HILTI expression with a Bro value refering to a Bro
+	 * Func.
+	 *
+	 * @param type The Bro type.
+	 *
+	 * @return An HILTI expression to refer to the type, of type
+	 * LibBro::BroVal.
+	 */
+	shared_ptr<::hilti::Expression> HiltiBroVal(const ::Func* type);
+
+	/**
 	 * Compiles a Bro expression into its HILTI equivalent. This is a
 	 * short-cut to using the expression's builder's corresponding
 	 * Compile() method.
@@ -344,7 +374,7 @@ public:
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args);
 
 	/**
 	 * XXXX

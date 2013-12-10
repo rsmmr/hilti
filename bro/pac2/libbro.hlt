@@ -4,8 +4,9 @@ module LibBro
 type BroVal = caddr
 type BroType = caddr
 type BroTypeDecl = caddr
-type Pac2Cookie = caddr
 type BroEventHandler = caddr
+
+type Pac2Cookie = caddr
 
 declare "C-HILTI" BroVal cookie_to_conn_val(Pac2Cookie cookie)
 declare "C-HILTI" BroVal cookie_to_file_val(Pac2Cookie cookie)
@@ -22,6 +23,9 @@ declare "C-HILTI" BroVal h2b_bool(bool b)
 declare "C-HILTI" BroVal h2b_enum(any e, int<64> type_idx)
 declare "C-HILTI" BroVal h2b_enum_type(any e, BroType ty)
 declare "C-HILTI" BroVal h2b_time(time b)
+declare "C-HILTI" BroVal h2b_type(BroVal t)
+declare "C-HILTI" BroVal h2b_function(BroVal t)
+declare "C-HILTI" BroVal h2b_void()
 
 declare "C-HILTI" ref<bytes> b2h_string(BroVal val)
 declare "C-HILTI" int<64>    b2h_count(BroVal val)
@@ -29,8 +33,8 @@ declare "C-HILTI" bool       b2h_bool(BroVal val)
 
 declare "C-HILTI" BroEventHandler get_event_handler(ref<bytes> name)
 declare "C-HILTI" void            raise_event(BroEventHandler hdl, tuple<*> vals)
-declare "C-HILTI" void            call_bif_void(ref<bytes> name, tuple<*> vals)
-declare "C-HILTI" BroVal          call_bif_result(ref<bytes> name, tuple<*> vals)
+declare "C-HILTI" void            call_legacy_void(BroVal func, tuple<*> vals)
+declare "C-HILTI" BroVal          call_legacy_result(BroVal func, tuple<*> vals)
 
 declare "C-HILTI" BroType                      bro_table_type_new(BroType key, BroType value)
 declare "C-HILTI" tuple<caddr, BroVal, BroVal> bro_table_iterate(BroVal tbl, caddr cookie)
@@ -42,6 +46,8 @@ declare "C-HILTI" void     bro_list_type_append(BroType t, BroType ntype)
 
 declare "C-HILTI" BroType  bro_base_type(int<64> tag)
 declare "C-HILTI" BroType  bro_lookup_type(string id)
+declare "C-HILTI" BroVal   bro_lookup_id_as_val(string id)
+declare "C-HILTI" BroVal   bro_lookup_type_as_val(string id)
 
 declare "C-HILTI" int<64> bro_internal_int(BroVal v)
 declare "C-HILTI" double  bro_internal_double(BroVal v)
@@ -58,6 +64,8 @@ declare "C-HILTI" BroVal      h2b_interval(interval b)
 declare "C-HILTI" BroVal      h2b_regexp(ref<regexp> re)
 declare "C-HILTI" BroVal      h2b_port(port val)
 declare "C-HILTI" BroVal      h2b_file(ref<file> f)
+declare "C-HILTI" BroVal      b2h_type(BroVal val)
+declare "C-HILTI" BroVal      b2h_function(BroVal val)
 
 declare "C-HILTI" BroVal  bro_record_new(BroType rtype)
 declare "C-HILTI" BroVal  bro_record_index(BroVal rval, int<64> idx)

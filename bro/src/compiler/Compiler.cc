@@ -24,10 +24,48 @@ using namespace bro::hilti::compiler;
 class NormalizerCallBack : public ::TraversalCallback {
 public:
 	NormalizerCallBack(Compiler* compiler) : compiler(compiler) {};
-	TraversalCode PreID(const ::ID* id);
+	TraversalCode PreID(const ::ID* id) override;
+	TraversalCode PreExpr(const ::Expr*) override;
+	TraversalCode PreTypedef(const ::ID*) override;
+
+	void Finalize();
+
 private:
+	void NormalizeFunction(const ::Func* func);
+
 	Compiler* compiler;
+
+	std::map<std::string, ::ID*> new_globals;
 };
+
+void NormalizerCallBack::Finalize()
+	{
+	for ( auto g : new_globals )
+		global_scope()->Insert(g.first.c_str(), g.second);
+	}
+
+void NormalizerCallBack::NormalizeFunction(const ::Func* f)
+	{
+	if ( f->Name() != string("anonymous-function") )
+		return;
+
+	// We mess with Bro's symbol table here: We give anonymous functions
+	// a unique (but deterministic) global name and then register them in
+	// global scope so that the runtime can find them.
+	ODesc d;
+	f->Describe(&d);
+	auto hash = ::util::hash(d.Description());
+	auto nname = ::util::fmt("anonymous_function_%s", ::util::uitoa_n(hash, 64, 5));
+
+	const_cast<::Func *>(f)->SetName(nname.c_str());
+
+	//auto name = ::util::fmt("GLOBAL::%s", nname.c_str());
+	auto id = new ::ID(nname.c_str(), ::SCOPE_GLOBAL, false);
+	id->SetVal(new ::Val(const_cast<::Func *>(f)));
+	id->SetConst();
+
+	new_globals.insert(std::make_pair(nname.c_str(), id));
+	}
 
 TraversalCode NormalizerCallBack::PreID(const ::ID* id)
 	{
@@ -42,6 +80,256 @@ TraversalCode NormalizerCallBack::PreID(const ::ID* id)
 	return TC_CONTINUE;
 	}
 
+TraversalCode NormalizerCallBack::PreExpr(const ::Expr* expr)
+	{
+	if ( expr->Tag() == EXPR_CONST )
+		{
+		auto val = dynamic_cast<const ::ConstExpr *>(expr)->Value();
+		assert(val);
+
+		if ( val->Type()->Tag() == TYPE_FUNC )
+			NormalizeFunction(val->AsFunc());
+		}
+
+	return TC_CONTINUE;
+	}
+
+TraversalCode NormalizerCallBack::PreTypedef(const ::ID* id)
+	{
+	auto t = id->Type();
+
+	if ( t->Tag() == TYPE_RECORD )
+		{
+		// Go through the fields an normalize any function constant
+		// we have have as defaul.t
+		auto rt = t->AsRecordType();
+
+		for ( int i = 0; i < rt->NumFields(); i++ )
+			{
+			if ( rt->FieldType(i)->Tag() == TYPE_FUNC && rt->FieldDefault(i) )
+				NormalizeFunction(rt->FieldDefault(i)->AsFunc());
+			}
+		}
+
+	return TC_CONTINUE;
+	}
+
+// Walk to Bro AST to gather the interesting pieces for us to compile.
+class bro::hilti::compiler::CollectorCallback : public TraversalCallback {
+public:
+	CollectorCallback();
+
+	bool Traverse();
+
+	std::list<const Func *> Functions(const string& ns);
+	std::list<const ::ID *> Globals(const string& ns);
+
+protected:
+	TraversalCode PreFunction(const ::Func*) override;
+	TraversalCode PostFunction(const ::Func*) override;
+	TraversalCode PreStmt(const ::Stmt*) override;
+	TraversalCode PostStmt(const ::Stmt*) override;
+	TraversalCode PreExpr(const ::Expr*) override;
+	TraversalCode PostExpr(const ::Expr*) override;
+	TraversalCode PreID(const ::ID*) override;
+	TraversalCode PostID(const ::ID*) override;
+	TraversalCode PreTypedef(const ::ID*) override;
+	TraversalCode PostTypedef(const ::ID*) override;
+	TraversalCode PreDecl(const ::ID*) override;
+	TraversalCode PostDecl(const ::ID*) override;
+
+private:
+	typedef std::set<const ::Func *> function_set;
+	typedef std::list<const ::Func *> function_list;
+	typedef std::list<const ::ID *> id_list;
+	typedef std::map<string, std::shared_ptr<id_list>> ns_map;
+	typedef std::set<string> name_set;
+	ns_map namespaces;
+	name_set used_ids;
+	int level;
+};
+
+CollectorCallback::CollectorCallback()
+	{
+	level = 0;
+	}
+
+std::list<const ::Func *> CollectorCallback::Functions(const string& ns)
+	{
+	function_list functions;
+	function_set sfunctions;
+
+	auto n = namespaces.find(ns);
+
+	if ( n == namespaces.end() )
+		return functions;
+
+	for ( auto id : *(*n).second )
+		{
+		if ( ! id->ID_Val() )
+			continue;
+
+		if ( id->ID_Val()->Type()->Tag() == TYPE_FUNC )
+			{
+			auto func = id->ID_Val()->AsFunc();
+
+			if ( func->Flavor() == ::FUNC_FLAVOR_FUNCTION &&
+			     used_ids.find(id->Name()) == used_ids.end() &&
+			     ! ::util::startsWith(id->Name(), "anonymous_function") )
+				continue;
+
+			if ( ! func->HasBodies() )
+				continue;
+
+			assert(func);
+			sfunctions.insert(func);
+			}
+		}
+
+	for ( auto f : sfunctions )
+		functions.push_back(f);
+
+	functions.sort([](const Func* a, const Func* b) -> bool {
+		return strcmp(a->Name(), b->Name()) < 0;
+	});
+
+	return functions;
+	}
+
+std::list<const ::ID *> CollectorCallback::Globals(const string& ns)
+	{
+	std::list<const ::ID *> globals;
+	std::set<const ::ID *>  sglobals;
+
+#if LIMIT_COMPILED_SYMBOLS
+	if ( ns != "GLOBAL" && ns != "Log" )
+		// FIXME: Remove once we can compile all globals.
+		return globals;
+#endif
+
+	auto n = namespaces.find(ns);
+
+	if ( n == namespaces.end() )
+		return globals;
+
+	for ( auto id : *(*n).second )
+		{
+		if ( ! id->IsGlobal() )
+			continue;
+
+		if ( id->IsConst() )
+			continue;
+
+		if ( id->HasVal() && id->ID_Val()->Type()->Tag() == TYPE_FUNC )
+			continue;
+
+		if ( id->AsType() )
+			continue;
+
+		if ( used_ids.find(id->Name()) == used_ids.end() )
+			continue;
+
+		sglobals.insert(id);
+		}
+
+	for ( auto id : sglobals )
+		globals.push_back(id);
+
+	globals.sort([](const ::ID* a, const ::ID* b) -> bool {
+		return strcmp(a->Name(), b->Name()) < 0;
+	});
+
+	return globals;
+	}
+
+TraversalCode CollectorCallback::PreID(const ::ID* id)
+	{
+	if ( ! id->IsGlobal() )
+		{
+		++level;
+		return TC_CONTINUE;
+		}
+
+	auto n = namespaces.find(id->ModuleName());
+
+	if ( n == namespaces.end() )
+		n = namespaces.insert(std::make_pair(id->ModuleName(), std::make_shared<id_list>())).first;
+
+	n->second->push_back(id);
+
+	if ( level > 0 )
+		used_ids.insert(id->Name());
+
+	++level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PostID(const ::ID*)
+	{
+	--level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PreFunction(const ::Func*)
+	{
+	++level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PostFunction(const ::Func*)
+	{
+	--level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PreStmt(const ::Stmt*)
+	{
+	++level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PostStmt(const ::Stmt*)
+	{
+	--level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PreExpr(const ::Expr*)
+	{
+	++level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PostExpr(const ::Expr*)
+	{
+	--level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PreTypedef(const ::ID*)
+	{
+	++level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PostTypedef(const ::ID*)
+	{
+	--level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PreDecl(const ::ID*)
+	{
+	++level;
+	return TC_CONTINUE;
+	}
+
+TraversalCode CollectorCallback::PostDecl(const ::ID*)
+	{
+	--level;
+	return TC_CONTINUE;
+	}
+
 Compiler::Compiler(shared_ptr<::hilti::CompilerContext> arg_hilti_context)
 	{
 	hilti_context = arg_hilti_context;
@@ -52,6 +340,16 @@ Compiler::Compiler(shared_ptr<::hilti::CompilerContext> arg_hilti_context)
 
 Compiler::~Compiler()
 	{
+	}
+
+std::list<const Func *> Compiler::Functions(const string& ns)
+	{
+	return collector_callback->Functions(ns);
+	}
+
+std::list<const ::ID *> Compiler::Globals(const string& ns)
+	{
+	return collector_callback->Globals(ns);
 	}
 
 std::shared_ptr<::hilti::builder::BlockBuilder> Compiler::Builder() const
@@ -75,10 +373,20 @@ void Compiler::popModuleBuilder()
 	mbuilders.pop_back();
 	}
 
+extern ::Stmt* stmts;
+
 Compiler::module_list Compiler::CompileAll()
 	{
-	NormalizerCallBack cb(this);
-	traverse_all(&cb);
+	collector_callback = std::make_shared<CollectorCallback>();
+
+	if ( ::stmts )
+		{
+		NormalizerCallBack cb(this);
+		traverse_all(&cb);
+		cb.Finalize();
+
+		traverse_all(collector_callback.get());
+		}
 
 	Compiler::module_list modules;
 
@@ -88,19 +396,21 @@ Compiler::module_list Compiler::CompileAll()
 
 		pushModuleBuilder(mbuilder);
 
-        try {
-            auto module = mbuilder->Compile();
+		try
+			{
+			auto module = mbuilder->Compile();
 
-            if ( ! module )
-                return Compiler::module_list();
+			if ( ! module )
+				return Compiler::module_list();
 
-            modules.push_back(module);
-        }
+			modules.push_back(module);
+			}
 
-        catch ( std::exception& e ) {
-            std::cerr << "Uncaught exception: " << e.what() << std::endl;
-            abort();
-        }
+		catch ( std::exception& e )
+			{
+			std::cerr << "Uncaught exception: " << e.what() << std::endl;
+			abort();
+			}
 
 		popModuleBuilder();
 

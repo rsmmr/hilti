@@ -18,7 +18,6 @@ namespace hilti {
 namespace compiler {
 
 class Compiler;
-class ModuleBuilderCallback;
 
 class ModuleBuilder : public BuilderBase, public ::hilti::builder::ModuleBuilder {
 public:
@@ -124,37 +123,47 @@ public:
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, const ::FuncType* ftype, ListExpr* args);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallScriptFunction(const ::Expr* func, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallFunctionViaBro(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallEvent(const ::Expr* func, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallScriptFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallHook(const ::Expr* func, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallEventHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunction(const ::BuiltinFunc* bif, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallHookHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunctionHILTI(const ::BuiltinFunc* bif, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunctionLegacy(const ::BuiltinFunc* bif, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallEventLegacy(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallHookLegacy(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallFunctionLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args);
 
 	/**
 	 * XXX
@@ -162,8 +171,6 @@ public:
 	void FinalizeGlueCode();
 
 protected:
-	friend class ModuleBuilderCallback;
-
 	/**
 	 * Compiles a single function. This branches out into the other
 	 * Compile*() methods for the various function flavors.
@@ -177,7 +184,7 @@ protected:
 	 *
 	 * @param func The func to compile. The function type's flavor must
 	 * be \c FUNC_FLAVOR_FUNCTION. */
-	void CompileScriptFunction(const ::BroFunc* func);
+	void CompileScriptFunction(const ::BroFunc* func, bool exported);
 
 	/**
 	 * Compiles all the bodies for an event.
@@ -185,7 +192,7 @@ protected:
 	 * @param event The event to compile. The function type's flavor must
 	 * be \c FUNC_FLAVOR_EVENT.
 	 */
-	void CompileEvent(const ::BroFunc* event);
+	void CompileEvent(const ::BroFunc* event, bool exported);
 
 	/**
 	 * Compiles all the bodies for a hook.
@@ -193,7 +200,7 @@ protected:
 	 * @param hook The hook to compile. The function type's flavor must
 	 * be \c FUNC_FLAVOR_HOOK.
 	 */
-	void CompileHook(const ::BroFunc* event);
+	void CompileHook(const ::BroFunc* event, bool exported);
 
 	/**
 	 * Compiles a function body. The function itself must have already
@@ -254,6 +261,16 @@ protected:
 	 */
 	shared_ptr<::hilti::Expression> DeclareBuiltinFunction(const ::BuiltinFunc* bif);
 
+	/**
+	 * XXX
+	 */
+	typedef std::function<void (ModuleBuilder*,
+				    shared_ptr<::hilti::Expression> rval,
+				    shared_ptr<::hilti::Expression>)>
+		create_stub_callback;
+
+	void CreateFunctionStub(const BroFunc* func, create_stub_callback cb);
+
 private:
 	string ns;
 	std::list<const ::Func*> functions;
@@ -264,8 +281,6 @@ private:
 	class TypeBuilder* type_builder;
 	class ValueBuilder* value_builder;
 	class ConversionBuilder* conversion_builder;
-
-	static std::shared_ptr<ModuleBuilderCallback> callback;
 };
 
 }

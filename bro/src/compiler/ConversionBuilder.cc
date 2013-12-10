@@ -83,6 +83,7 @@ shared_ptr<::hilti::Expression> ConversionBuilder::ConvertHiltiToBro(shared_ptr<
 	case TYPE_STRING:
 	case TYPE_TIME:
 	case TYPE_TYPE:
+	case TYPE_VOID:
 		return HiltiToBroBaseType(val, static_cast<const ::BroType*>(type));
 
 	case TYPE_ENUM:
@@ -107,7 +108,7 @@ shared_ptr<::hilti::Expression> ConversionBuilder::ConvertHiltiToBro(shared_ptr<
 		return HiltiToBro(val, static_cast<const ::VectorType*>(type));
 
 	default:
-		Error(::util::fmt("ConversionBuilder/B2H: unsupported value of type %s", ::type_name(type->Tag())));
+		Error(::util::fmt("ConversionBuilder/H2B: unsupported value of type %s", ::type_name(type->Tag())));
 	}
 
 	// Cannot be reached.
@@ -199,6 +200,10 @@ void ConversionBuilder::MapType(const ::BroType* from, const ::BroType* to)
 
 void ConversionBuilder::FinalizeTypes()
 	{
+	// TODO: We should unify this code with the
+	// ValueBuilder/ConversionBuilder to treat types vals in a single
+	// way.
+
 	for ( auto m : postponed_types )
 		{
 		auto t = m.first;
@@ -358,8 +363,10 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHiltiBaseType(share
 
 	case TYPE_FUNC:
 		{
-		Error("ConversionBuilder/B2H: no support yet for converting Val of type TYPE_FUNC");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::b2h_function"), args);
+		return dst;
 		}
 
 	case TYPE_INT:
@@ -407,8 +414,10 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHiltiBaseType(share
 
 	case TYPE_TYPE:
 		{
-		Error("ConversionBuilder/B2H: no support yet for converting Val of type TYPE_TYPE");
-		return nullptr;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::b2h_type"), args);
+		return dst;
 		}
 
 	default:
@@ -731,8 +740,10 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroBaseType(share
 
 	case TYPE_ANY:
 		{
-		Error("ConversionBuilder::HiltiToBroBaseType: cannot convert TYPE_ANY");
-		return 0;
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_any"), args);
+		return dst;
 		}
 
 	case TYPE_BOOL:
@@ -770,8 +781,10 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroBaseType(share
 
 	case TYPE_FUNC:
 		{
-		// FIXME.
-		return ::hilti::builder::expression::default_(vtype);
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_function"), args);
+		return dst;
 		}
 
 	case TYPE_INT:
@@ -819,6 +832,22 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroBaseType(share
 		auto args = ::hilti::builder::tuple::create( { val } );
 		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 					  ::hilti::builder::id::create("LibBro::h2b_time"), args);
+		return dst;
+		}
+
+	case TYPE_TYPE:
+		{
+		auto args = ::hilti::builder::tuple::create( { val } );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_type"), args);
+		return dst;
+		}
+
+	case TYPE_VOID:
+		{
+		auto args = ::hilti::builder::tuple::create( {} );
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::h2b_void"), args);
 		return dst;
 		}
 
@@ -880,16 +909,11 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::hilti::Expression> val, const ::RecordType* type)
 	{
-	auto etype = val->type();
-
-	if ( ::ast::tryCast<::hilti::type::Struct>(etype) )
-		return HiltiToBroFromStruct(val, type);
-
-	if ( ::ast::tryCast<::hilti::type::Tuple>(etype) )
+	if ( ::ast::tryCast<::hilti::type::Tuple>(val->type()) )
 		return HiltiToBroFromTuple(val, type);
 
-	Error(::util::fmt("HiltiToBro/RecordType: unsupported value of type %s", etype->render()));
-	return 0;
+	// Note, val may have a type of Unknown here, which we assume to eventually resolve into a struct type.
+	return HiltiToBroFromStruct(val, type);
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromTuple(shared_ptr<::hilti::Expression> val, const ::RecordType* type)
@@ -963,6 +987,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromStruct(sha
 		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
 					  ::hilti::builder::id::create("LibBro::bro_record_assign"),
 					  ::hilti::builder::tuple::create({ dst, hidx, tmp_h2b }));
+
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, bcont->block());
 
 		ModuleBuilder()->popBuilder(bis_set);
 

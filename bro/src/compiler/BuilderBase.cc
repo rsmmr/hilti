@@ -43,7 +43,7 @@ void BuilderBase::Error(const std::string& msg, const BroObj* obj) const
 	DBG_LOG_COMPILER("builder error: %s", s.c_str());
 
 #if 1
-	fprintf(stderr, "%s\n", msg.c_str());
+	fprintf(stderr, ">> %s\n", msg.c_str());
 	abort();
 #else
 	throw BuilderException(s);
@@ -134,6 +134,21 @@ shared_ptr<::hilti::Expression> BuilderBase::HiltiInitValue(const ::BroType* typ
 	return mbuilder->ValueBuilder()->InitValue(type);
 	}
 
+shared_ptr<::hilti::Expression> BuilderBase::HiltiBroVal(const ::BroType* type)
+	{
+	return mbuilder->ValueBuilder()->TypeVal(type);
+	}
+
+shared_ptr<::hilti::Expression> BuilderBase::HiltiBroVal(const ::Func* func)
+	{
+	return mbuilder->ValueBuilder()->FunctionVal(func);
+	}
+
+shared_ptr<::hilti::Expression> BuilderBase::HiltiBroType(const ::BroType* type)
+	{
+	return mbuilder->ValueBuilder()->BroType(type);
+	}
+
 std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr, ::BroType* target_type)
 	{
 	return mbuilder->ExpressionBuilder()->Compile(expr, target_type);
@@ -187,9 +202,9 @@ const ::Func* BuilderBase::CurrentFunction() const
 	return mbuilder->CurrentFunction();
 	}
 
-shared_ptr<::hilti::Expression> BuilderBase::HiltiCallFunction(const ::Expr* func, ListExpr* args)
+shared_ptr<::hilti::Expression> BuilderBase::HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args)
 	{
-	return mbuilder->HiltiCallFunction(func, args);
+	return mbuilder->HiltiCallFunction(func, ftype, args);
 	}
 
 void BuilderBase::MapType(const ::BroType* from, const ::BroType* to)

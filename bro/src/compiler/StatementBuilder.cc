@@ -211,7 +211,8 @@ void StatementBuilder::Compile(const ::DelStmt* stmt)
 
 void StatementBuilder::Compile(const ::EventStmt* stmt)
 	{
-	NotSupported(stmt);
+	auto ev = dynamic_cast<const ::EventExpr *>(stmt->StmtExpr());
+	HiltiCallFunction(ev, ev->Handler()->FType(), ev->Args());
 	}
 
 void StatementBuilder::Compile(const ::ExprStmt* stmt)
@@ -410,7 +411,11 @@ void StatementBuilder::Compile(const ::ReturnStmt* stmt)
 	auto expr = stmt->StmtExpr();
 
 	if ( expr )
-		Builder()->addInstruction(::hilti::instruction::flow::ReturnResult, HiltiExpression(expr));
+		{
+		auto hexpr = HiltiExpression(expr);
+		Builder()->addInstruction(::hilti::instruction::flow::ReturnResult, hexpr);
+		}
+
 	else
 		Builder()->addInstruction(::hilti::instruction::flow::ReturnVoid);
 	}

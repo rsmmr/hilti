@@ -24,140 +24,15 @@
 //    - no global symbols defined outside of the global namespace.
 //
 // This is for testing as long as we can't compile everything yet.
-#define LIMIT_COMPILED_SYMBOLS 1
+#define LIMIT_COMPILED_SYMBOLS 0
 
 namespace BifConst { namespace Hilti {  extern int save_hilti;  }  }
 
 using namespace bro::hilti::compiler;
 
-std::shared_ptr<ModuleBuilderCallback> ModuleBuilder::callback;
-
-class bro::hilti::compiler::ModuleBuilderCallback : public TraversalCallback {
-public:
-	ModuleBuilderCallback();
-
-	bool Traverse();
-
-	std::list<const Func *> Functions(const string& ns);
-	std::list<const ::ID *> Globals(const string& ns);
-
-protected:
-	TraversalCode PreID(const ::ID* id) override;
-
-private:
-	typedef std::set<const Func *> function_set;
-	typedef std::list<const Func *> function_list;
-	typedef std::list<const ::ID *> id_list;
-	typedef std::map<string, std::shared_ptr<id_list>> ns_map;
-	ns_map namespaces;
-};
-
-ModuleBuilderCallback::ModuleBuilderCallback()
-	{
-	}
-
-std::list<const Func *> ModuleBuilderCallback::Functions(const string& ns)
-	{
-	function_list functions;
-	function_set sfunctions;
-
-	auto n = namespaces.find(ns);
-
-	if ( n == namespaces.end() )
-		return functions;
-
-	for ( auto id : *(*n).second )
-		{
-		if ( ! id->ID_Val() )
-			continue;
-
-		if ( id->ID_Val()->Type()->Tag() == TYPE_FUNC )
-			{
-			auto func = id->ID_Val()->AsFunc();
-			assert(func);
-			sfunctions.insert(func);
-			}
-		}
-
-	for ( auto f : sfunctions )
-		functions.push_back(f);
-
-	functions.sort([](const Func* a, const Func* b) -> bool {
-		return strcmp(a->Name(), b->Name()) < 0;
-	});
-
-	return functions;
-	}
-
-std::list<const ::ID *> ModuleBuilderCallback::Globals(const string& ns)
-	{
-	std::list<const ::ID *> globals;
-	std::set<const ::ID *>  sglobals;
-
-#if LIMIT_COMPILED_SYMBOLS
-	if ( ns != "GLOBAL" )
-		// FIXME: Remove once we can compile all globals.
-		return globals;
-#endif
-
-	auto n = namespaces.find(ns);
-
-	if ( n == namespaces.end() )
-		return globals;
-
-	for ( auto id : *(*n).second )
-		{
-		if ( ! id->IsGlobal() )
-			continue;
-
-		if ( id->IsConst() )
-			continue;
-
-		if ( id->HasVal() && id->ID_Val()->Type()->Tag() == TYPE_FUNC )
-			continue;
-
-		if ( id->AsType() )
-			continue;
-
-		sglobals.insert(id);
-		}
-
-	for ( auto id : sglobals )
-		globals.push_back(id);
-
-	globals.sort([](const ::ID* a, const ::ID* b) -> bool {
-		return strcmp(a->Name(), b->Name()) < 0;
-	});
-
-	return globals;
-	}
-
-TraversalCode ModuleBuilderCallback::PreID(const ::ID* id)
-	{
-	if ( ! id->IsGlobal() )
-		return TC_CONTINUE;
-
-	auto n = namespaces.find(id->ModuleName());
-
-	if ( n == namespaces.end() )
-		n = namespaces.insert(std::make_pair(id->ModuleName(), std::make_shared<id_list>())).first;
-
-	n->second->push_back(id);
-	return TC_CONTINUE;
-	}
-
-extern ::Stmt* stmts;
-
 ModuleBuilder::ModuleBuilder(class Compiler* arg_compiler, shared_ptr<::hilti::CompilerContext> ctx, const std::string& namespace_)
 	: BuilderBase(this), ::hilti::builder::ModuleBuilder(ctx, namespace_)
 	{
-	// TODO: The traversal should move out of here into the Compiler.
-	if ( ! callback && ::stmts )
-		{
-		callback = std::make_shared<ModuleBuilderCallback>();
-		traverse_all(callback.get());
-		}
-
 	ns = namespace_;
 	compiler = arg_compiler;
 	expression_builder = new class ExpressionBuilder(this);
@@ -189,14 +64,14 @@ shared_ptr<::hilti::Module> ModuleBuilder::Compile()
 
 	try
 		{
-		for ( auto id : callback->Globals(ns) )
+		for ( auto id : Compiler()->Globals(ns) )
 			{
 			auto type = id->Type();
-			auto init = id->HasVal() ? HiltiValue(id->ID_Val()) : HiltiInitValue(type);
+			auto init = id->HasVal() && type->Tag() != TYPE_FUNC ? HiltiValue(id->ID_Val()) : HiltiInitValue(type);
 			addGlobal(HiltiSymbol(id), HiltiType(type), init);
 			}
 
-		for ( auto f : callback->Functions(ns) )
+		for ( auto f : Compiler()->Functions(ns) )
 			CompileFunction(f);
 		}
 
@@ -263,9 +138,15 @@ string ModuleBuilder::Namespace() const
 void ModuleBuilder::CompileFunction(const Func* func)
 	{
 #if LIMIT_COMPILED_SYMBOLS
-	if ( string(func->Name()) != "bro_init" && string(func->Name()) != "to_lower" && strncmp(func->Name(), "foo", 3) != 0 )
+	if ( string(func->Name()) != "bro_init" && string(func->Name()) != "to_lower" && strncmp(func->Name(), "foo", 3) != 0
+             && strncmp(::extract_module_name(func->Name()).c_str(), "Log", 3) != 0 )
 		return;
 #endif
+
+	auto id = ::global_scope()->Lookup(func->Name());
+	assert(id);
+
+	bool exported = id->IsExport();
 
 	if ( func->GetKind() == Func::BUILTIN_FUNC )
 		// We build wrappers in DeclareFunction().
@@ -277,15 +158,15 @@ void ModuleBuilder::CompileFunction(const Func* func)
 
 	switch ( bfunc->FType()->Flavor() ) {
 		case FUNC_FLAVOR_FUNCTION:
-			CompileScriptFunction(bfunc);
+			CompileScriptFunction(bfunc, exported);
 			break;
 
 		case FUNC_FLAVOR_EVENT:
-			CompileEvent(bfunc);
+			CompileEvent(bfunc, exported);
 			break;
 
 		case FUNC_FLAVOR_HOOK:
-			CompileHook(bfunc);
+			CompileHook(bfunc, exported);
 			break;
 
 		default:
@@ -295,31 +176,115 @@ void ModuleBuilder::CompileFunction(const Func* func)
 	functions.pop_back();
 	}
 
-void ModuleBuilder::CompileScriptFunction(const BroFunc* func)
+void ModuleBuilder::CreateFunctionStub(const BroFunc* func, create_stub_callback cb)
+	{
+	// We create stub function here that convers arguments and then
+	// forward to the actual callee. The stub is externally visible and
+	// provides the entry point for Bro's core using the Plugin's
+	// Runtime*() methods. Stubs use HILTI-C calling convention.
+
+	auto rtype = ::hilti::builder::type::byName("LibBro::BroVal");
+	auto func_name = Compiler()->HiltiSymbol(func, module());
+	auto stub_name = Compiler()->HiltiStubSymbol(func, module(), false);
+	auto stub_result = ::hilti::builder::function::result(rtype);
+	auto stub_args = ::hilti::builder::function::parameter_list();
+
+	RecordType* args = func->FType()->Args();
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+
+	for ( int i = 0; i < args->NumFields(); i++ )
+		{
+		auto name = ::hilti::builder::id::node(::util::fmt("arg%d", i+1));
+		auto arg = ::hilti::builder::function::parameter(name, vtype, false, nullptr);
+		stub_args.push_back(arg);
+		}
+
+	exportID(stub_name);
+
+	auto stub = pushFunction(stub_name, stub_result, stub_args, ::hilti::type::function::HILTI_C);
+
+	::hilti::builder::tuple::element_list call_args;
+
+	for ( int i = 0; i < args->NumFields(); i++ )
+		{
+		auto arg = ::hilti::builder::id::create(::util::fmt("arg%d", i+1));
+		auto btype = args->FieldType(i);
+		auto harg = RuntimeValToHilti(arg, btype);
+		call_args.push_back(harg);
+		}
+
+	shared_ptr<::hilti::Expression> rval = addTmp("rval", vtype);
+	cb(this, rval, ::hilti::builder::tuple::create(call_args));
+
+	Builder()->addInstruction(::hilti::instruction::flow::ReturnResult, rval);
+	popFunction();
+	}
+
+void ModuleBuilder::CompileScriptFunction(const BroFunc* func, bool exported)
 	{
 	if ( func->GetBodies().size() == 0 )
 		return;
 
 	DBG_LOG_COMPILER("Compiling script function %s", func->Name());
 
-	auto fname = Compiler()->HiltiSymbol(func, module());
+	auto func_name = Compiler()->HiltiSymbol(func, module());
 	auto ftype = HiltiFunctionType(func->FType());
 
 	assert(func->GetBodies().size() == 1);
 	auto body = func->GetBodies()[0];
 
-	auto hfunc = pushFunction(::hilti::builder::id::node(fname),
-				 ast::checkedCast<::hilti::type::Function>(ftype),
-				 nullptr);
+	auto id = ::hilti::builder::id::node(func_name);
+	auto hfunc = pushFunction(id,
+				  ast::checkedCast<::hilti::type::Function>(ftype),
+				  nullptr);
 
 	hfunc->addComment(func->Name());
 
 	CompileFunctionBody(func, &body);
 
 	popFunction();
+
+
+	// We need to always export it due to how Bro puts most event
+	// handlers into global space, and thus they may end up in a
+	// different compilation unit but still call non-exported functions.
+	//
+	// if ( exported )
+	exportID(id);
+
+	CreateFunctionStub(func, [&](ModuleBuilder* mbuilder, shared_ptr<::hilti::Expression> rval, shared_ptr<::hilti::Expression> args)
+			   {
+			   auto ytype = func->FType()->YieldType();
+
+			   if ( ytype->Tag() != ::TYPE_VOID )
+				   {
+				   shared_ptr<::hilti::Expression> result = mbuilder->addTmp("result", ftype->result()->type());
+
+				   mbuilder->Builder()->addInstruction(result,
+								       ::hilti::instruction::flow::CallResult,
+								       ::hilti::builder::id::create(func_name),
+								       args);
+
+				   auto nval = RuntimeHiltiToVal(result, ytype);
+				   Builder()->addInstruction(rval,
+							     ::hilti::instruction::operator_::Assign,
+							     nval);
+				   }
+
+			   else
+				   {
+				   mbuilder->Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+								       ::hilti::builder::id::create(func_name),
+								       args);
+
+				   Builder()->addInstruction(rval, ::hilti::instruction::flow::CallResult,
+							     ::hilti::builder::id::create("LibBro::h2b_void"),
+							     ::hilti::builder::tuple::create({}));
+				   }
+			   });
 	}
 
-void ModuleBuilder::CompileEvent(const BroFunc* event)
+void ModuleBuilder::CompileEvent(const BroFunc* event, bool exported)
 	{
 	DBG_LOG_COMPILER("Compiling event function %s", event->Name());
 
@@ -357,61 +322,36 @@ void ModuleBuilder::CompileEvent(const BroFunc* event)
 	if ( event->GetBodies().empty() )
 		DeclareEvent(event);
 
-	// Create the stub function that takes Bro Vals and returns a
-	// callable to execute the hook.
-
-	auto stub_result = ::hilti::builder::function::result(::hilti::builder::void_::type());
-	auto stub_args = ::hilti::builder::function::parameter_list();
-
-	RecordType* args = event->FType()->Args();
-	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
-
-	for ( int i = 0; i < args->NumFields(); i++ )
-		{
-		auto name = ::hilti::builder::id::node(::util::fmt("arg%d", i+1));
-		auto arg = ::hilti::builder::function::parameter(name, vtype, false, nullptr);
-		stub_args.push_back(arg);
-		}
-
-	exportID(stub_name);
-	auto stub = pushFunction(stub_name, stub_result, stub_args, ::hilti::type::function::HILTI_C);
-
-	::hilti::builder::tuple::element_list hook_args;
-
-	for ( int i = 0; i < args->NumFields(); i++ )
-		{
-		auto arg = ::hilti::builder::id::create(::util::fmt("arg%d", i+1));
-		auto btype = args->FieldType(i);
-		auto harg = RuntimeValToHilti(arg, btype);
-		hook_args.push_back(harg);
-		}
-
-	auto tc = ::hilti::builder::callable::type(::hilti::builder::void_::type());
-	auto rtc = ::hilti::builder::reference::type(tc);
-	auto c = addTmp("c", rtc);
-	auto t = ::hilti::builder::tuple::create(hook_args);
+	CreateFunctionStub(event, [&](ModuleBuilder* mbuilder, shared_ptr<::hilti::Expression> rval, shared_ptr<::hilti::Expression> args)
+			   {
+			   auto tc = ::hilti::builder::callable::type(::hilti::builder::void_::type());
+			   auto rtc = ::hilti::builder::reference::type(tc);
+			   auto c = addTmp("c", rtc);
 
 #if 0
-	Builder()->addInstruction(::hilti::instruction::hook::Run,
-				  ::hilti::builder::id::create(hook_name),
-				  t);
+			   Builder()->addInstruction(::hilti::instruction::hook::Run,
+						     ::hilti::builder::id::create(hook_name),
+						     args);
 #else
-	Builder()->addInstruction(c,
-				  ::hilti::instruction::callable::NewHook,
-				  ::hilti::builder::type::create(tc),
-				  ::hilti::builder::id::create(hook_name),
-				  t);
+			   Builder()->addInstruction(c,
+						     ::hilti::instruction::callable::NewHook,
+						     ::hilti::builder::type::create(tc),
+						     ::hilti::builder::id::create(hook_name),
+						     args);
 #endif
 
-	// TODO: We this should queue the callable, not directl run it.
-	Builder()->addInstruction(::hilti::instruction::flow::CallCallableVoid, c);
+			   // TODO: This should queue the callable, not directl run it.
+			   Builder()->addInstruction(::hilti::instruction::flow::CallCallableVoid, c);
 
-	popFunction();
+			   // Clear return value, we don't have any.
+			   Builder()->addInstruction(rval,
+						     ::hilti::instruction::operator_::Assign,
+						     ::hilti::builder::expression::default_(rval->type()));
 
-	// compilerContext()->print(module(), std::cerr);
+			   });
 	}
 
-void ModuleBuilder::CompileHook(const BroFunc* hook)
+void ModuleBuilder::CompileHook(const BroFunc* hook, bool exported)
 	{
 	DBG_LOG_COMPILER("Compiling hook function %s", hook->Name());
 	}
@@ -430,12 +370,6 @@ void ModuleBuilder::CompileFunctionBody(const ::Func* func, void* vbody)
 
 shared_ptr<::hilti::Expression> ModuleBuilder::DeclareFunction(const Func* func)
 	{
-	if ( func->GetKind() == Func::BUILTIN_FUNC )
-		{
-		Error("No implementation of DeclareFunction for BiFs; use CallFunction() to call it.", func);
-		return 0;
-		}
-
 	auto bfunc = static_cast<const BroFunc*>(func);
 
 	switch ( bfunc->FType()->Flavor() ) {
@@ -458,21 +392,16 @@ shared_ptr<::hilti::Expression> ModuleBuilder::DeclareFunction(const Func* func)
 shared_ptr<::hilti::Expression> ModuleBuilder::DeclareScriptFunction(const ::BroFunc* func)
 	{
 	auto name = Compiler()->HiltiSymbol(func, module());
-	bool anon = (string(func->Name()) == "anonymous-function");
 
 	// If the function is part of the same module, we'll compile it
 	// separately.
-	if ( ::extract_module_name(func->Name()) == module()->id()->name() && ! anon )
+	if ( ::extract_module_name(func->Name()) == module()->id()->name() )
 		{
 #if LIMIT_COMPILED_SYMBOLS
-	if ( ! (string(func->Name()) != "bro_init" && string(func->Name()) != "to_lower" && strncmp(func->Name(), "foo", 3) != 0) )
+	if ( string(func->Name()) != "bro_init" && string(func->Name()) != "to_lower" )
 #endif
 		return ::hilti::builder::id::create(name);
 		}
-
-	// We can have multiple "anonymous-function"s.
-	if ( anon )
-		name += ::util::fmt("_%p", func);
 
 	auto id = ::hilti::builder::id::create(name);
 	auto type = HiltiFunctionType(func->FType());
@@ -488,10 +417,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::DeclareEvent(const ::BroFunc* eve
 
 	declareHook(::hilti::builder::id::node(name), ast::checkedCast<::hilti::type::Hook>(type));
 
-	auto handler = ::util::fmt("__bro_handler_%s", name);
-	auto bro_handler = addGlobal(handler, ::hilti::builder::type::byName("LibBro::BroEventHandler"));
-
-	return ::hilti::builder::id::create(handler);
+	return ::hilti::builder::id::create(name);
 	}
 
 shared_ptr<::hilti::Expression> ModuleBuilder::DeclareHook(const ::BroFunc* event)
@@ -526,7 +452,7 @@ std::shared_ptr<::hilti::Expression> ModuleBuilder::DeclareLocal(const ::ID* id)
 	if ( ! hasLocal(symbol) )
 		{
 		auto type = id->Type();
-		auto init_val = id->HasVal() ? HiltiValue(id->ID_Val()) : HiltiInitValue(type);
+		auto init_val = id->HasVal() && type->Tag() != TYPE_FUNC ? HiltiValue(id->ID_Val()) : HiltiInitValue(type);
 		addLocal(symbol, HiltiType(type), init_val);
 		}
 
@@ -538,32 +464,84 @@ const ::Func* ModuleBuilder::CurrentFunction() const
 	return functions.size() ? functions.back() : nullptr;
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* func, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* func, const ::FuncType* ftype, ListExpr* args)
 	{
+	// If the expression references a callee by name, we call it directly
+	// and purely inside HILTI. If not, we go through the Bro core.
+
+	::Func* bro_func = nullptr;
+
 	if ( func->Tag() == EXPR_NAME )
 		{
 		auto id = func->AsNameExpr()->Id();
+		assert(id->Type()->Tag() == TYPE_FUNC);
 
-		if ( id->Type()->Tag() == TYPE_FUNC )
-			{
-			auto f = id->ID_Val()->AsFunc();
-
-			if ( f->GetKind() == Func::BUILTIN_FUNC )
-				return HiltiCallBuiltinFunction(static_cast<const BuiltinFunc*>(f), args);
-			}
+		if ( id->HasVal() )
+			bro_func = id->ID_Val()->AsFunc();
 		}
 
-	auto ftype = func->Type()->AsFuncType();
+	if ( func->Tag() == EXPR_EVENT )
+		{
+		auto ee = dynamic_cast<const ::EventExpr *>(func);
+
+		// Just a double-check ... Bro actually doesn't support this, so nor do we.
+		if ( ! ::global_scope()->Lookup(ee->Name()) )
+			{
+			Error(::util::fmt("event %s is not a global ID (indirect event operands aren't supported by Bro)", ee->Name()), func);
+			return nullptr;
+			}
+
+		bro_func = ee->Handler()->LocalHandler();
+
+		if ( ! bro_func )
+			// No handler, just jump out directly.
+			return nullptr;
+
+		}
+
+	if ( ! bro_func )
+		// Cannot handle it ourselves, pass on to Bro.
+		return HiltiCallFunctionViaBro(HiltiExpression(func), ftype, args);
+
+	auto hargs = HiltiExpression(args, ftype->ArgTypes());
+
+	if ( bro_func->GetKind() == Func::BUILTIN_FUNC )
+		{
+		if ( Compiler()->HaveHiltiBif(bro_func->Name()) )
+			return HiltiCallBuiltinFunctionHilti(static_cast<const BuiltinFunc*>(bro_func), hargs);
+		else
+			return HiltiCallFunctionViaBro(HiltiExpression(func), ftype, args);
+		}
 
 	switch ( ftype->Flavor() ) {
 		case FUNC_FLAVOR_FUNCTION:
-			return HiltiCallScriptFunction(func, args);
+			return HiltiCallScriptFunctionHilti(bro_func, hargs);
 
 		case FUNC_FLAVOR_EVENT:
-			return HiltiCallEvent(func, args);
+			return HiltiCallEventHilti(bro_func, hargs);
 
 		case FUNC_FLAVOR_HOOK:
-			return HiltiCallHook(func, args);
+			return HiltiCallHookHilti(bro_func, hargs);
+
+		default:
+			Error("unknown function flavor in CallFunction", func);
+	}
+
+	Error("cannot be reached in HiltiCallFunction", func);
+	return nullptr;
+	}
+
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionViaBro(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args)
+	{
+	switch ( ftype->Flavor() ) {
+		case FUNC_FLAVOR_FUNCTION:
+			return HiltiCallFunctionLegacy(func, ftype, args);
+
+		case FUNC_FLAVOR_EVENT:
+			return HiltiCallEventLegacy(func, ftype, args);
+
+		case FUNC_FLAVOR_HOOK:
+			return HiltiCallHookLegacy(func, ftype, args);
 
 		default:
 			reporter::internal_error("unknown function flavor in CallFunction");
@@ -572,98 +550,105 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* f
 	reporter::internal_error("cannot be reached");
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallScriptFunction(const ::Expr* func, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallScriptFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
 	{
-	auto ftype = func->Type()->AsFuncType();
+	auto ftype = func->FType();
 	auto ytype = ftype->YieldType();
+	assert(ytype);
 
-	auto hfunc = HiltiExpression(func);
-	auto hargs = HiltiExpression(args, ftype->ArgTypes());
+	auto hfunc = DeclareFunction(func);
 
-	if ( ytype && ytype->Tag() != TYPE_VOID && ytype->Tag() != TYPE_ANY )
+	if ( ytype->Tag() != TYPE_VOID )
 		{
-		auto result = Builder()->addTmp("result", HiltiType(ftype->YieldType()));
-		Builder()->addInstruction(result, ::hilti::instruction::flow::CallResult, hfunc, hargs);
+		auto result = Builder()->addTmp("result", HiltiType(ytype));
+		Builder()->addInstruction(result, ::hilti::instruction::flow::CallResult, hfunc, args);
 		return result;
 		}
 
 	else
 		{
-		Builder()->addInstruction(::hilti::instruction::flow::CallVoid, hfunc, hargs);
+		Builder()->addInstruction(::hilti::instruction::flow::CallVoid, hfunc, args);
 		return nullptr;
 		}
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEvent(const ::Expr* func, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEventHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
 	{
-	Error("CallEvent not yet implemented");
+	auto hfunc = DeclareFunction(func);
+
+	auto tc = ::hilti::builder::callable::type(::hilti::builder::void_::type());
+	auto rtc = ::hilti::builder::reference::type(tc);
+	auto c = addTmp("c", rtc);
+
+	Builder()->addInstruction(c,
+				  ::hilti::instruction::callable::NewHook,
+				  ::hilti::builder::type::create(tc),
+				  hfunc,
+				  args);
+
+	// TODO: This should queue the callable, not directl run it.
+	Builder()->addInstruction(::hilti::instruction::flow::CallCallableVoid, c);
+
+	return nullptr;
+	}
+
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
+	{
+	Error("CallHookHilti not yet implemented");
 	return 0;
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHook(const ::Expr* func, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
 	{
-	Error("CallHook not yet implemented");
-	return 0;
-	}
-
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunction(const ::BuiltinFunc* bif, ListExpr* args)
-	{
-	std::string bif_symbol;
-	auto symbol = HiltiSymbol(bif);
-
-	// See if we have a statically compiled bif function available.
-	if ( Compiler()->HaveHiltiBif(bif->Name(), &bif_symbol) )
-		return HiltiCallBuiltinFunctionHILTI(bif, args);
-	else
-		return HiltiCallBuiltinFunctionLegacy(bif, args);
-	}
-
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionHILTI(const ::BuiltinFunc* bif, ListExpr* args)
-	{
-	auto ftype = bif->FType();
+	auto ftype = func->FType();
 	auto ytype = ftype->YieldType();
+	assert(ytype);
 
-	auto hftype = ::ast::checkedCast<::hilti::type::Function>(HiltiType(ftype));
+	auto hftype = HiltiFunctionType(ftype);
 	hftype->setCallingConvention(::hilti::type::function::HILTI_C);
 
 	string bif_symbol;
-	auto have = Compiler()->HaveHiltiBif(bif->Name(), &bif_symbol);
+	auto have = Compiler()->HaveHiltiBif(func->Name(), &bif_symbol);
 	assert(have);
 
 	declareFunction(bif_symbol, hftype);
 
 	auto hfunc = ::hilti::builder::id::create(bif_symbol);
-	auto hargs = HiltiExpression(args, ftype->ArgTypes());
 
-	if ( ytype && ytype->Tag() != TYPE_VOID && ytype->Tag() != TYPE_ANY )
+	if ( ytype->Tag() != TYPE_VOID )
 		{
 		auto result = Builder()->addTmp("bif_result", HiltiType(ytype));
-		Builder()->addInstruction(result, ::hilti::instruction::flow::CallResult, hfunc, hargs);
+		Builder()->addInstruction(result, ::hilti::instruction::flow::CallResult, hfunc, args);
 		return result;
 		}
 
 	else
 		{
-		Builder()->addInstruction(::hilti::instruction::flow::CallVoid, hfunc, hargs);
+		Builder()->addInstruction(::hilti::instruction::flow::CallVoid, hfunc, args);
 		return nullptr;
 		}
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionLegacy(const ::BuiltinFunc* bif, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEventLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args)
 	{
-	if ( ! bif->TheFunc() )
-		{
-		// This should be a HILTI BiF, however then we shouldn't arrive here.
-		auto bif_symbol = HiltiSymbol(bif);
-		fatalError(::util::fmt("Function %s declared but not implemented (bif symbol %s)", bif->Name(), bif_symbol));
-		}
+	Error("CallEventLegacy not yet implemented");
+	return 0;
+	}
 
-	RecordType* fargs = bif->FType()->Args();
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args)
+	{
+	Error("CallHookLegacy not yet implemented");
+	return 0;
+	}
+
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args)
+	{
+	RecordType* fargs = ftype->Args();
 	auto exprs = args->Exprs();
 
 	::hilti::builder::tuple::element_list func_args;
 
-        // This is apparently how a varargs function is defined in Bro ...
+	// This is apparently how a varargs function is defined in Bro ...
 	bool var_args = (fargs->NumFields() == 1 && fargs->FieldType(0)->Tag() == TYPE_ANY);
 
 	loop_over_list(exprs, i)
@@ -674,11 +659,10 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionLegacy(co
 		func_args.push_back(val);
 		}
 
-	auto f = ::hilti::builder::bytes::create(bif->Name());
 	auto t = ::hilti::builder::tuple::create(func_args);
-	auto ca = ::hilti::builder::tuple::create({ f, t });
+	auto ca = ::hilti::builder::tuple::create({ fval, t });
 
-	auto ytype = bif->FType()->YieldType();
+	auto ytype = ftype->YieldType();
 	auto hytype = HiltiType(ytype);
 
 	if ( ytype && ytype->Tag() != TYPE_VOID && ytype->Tag() != TYPE_ANY )
@@ -687,7 +671,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionLegacy(co
 		auto rval = addTmp("rval", vtype);
 
 		Builder()->addInstruction(rval, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::call_bif_result"), ca);
+					  ::hilti::builder::id::create("LibBro::call_legacy_result"), ca);
 
 		return RuntimeValToHilti(rval, ytype);
 		}
@@ -695,10 +679,11 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionLegacy(co
 	else
 		{
 		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
-					  ::hilti::builder::id::create("LibBro::call_bif_void"), ca);
+					  ::hilti::builder::id::create("LibBro::call_legacy_void"), ca);
 		return nullptr;
 		}
 	}
+
 
 void ModuleBuilder::FinalizeGlueCode()
 	{

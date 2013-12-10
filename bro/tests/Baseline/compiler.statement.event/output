@@ -1,0 +1,3 @@
+event foo1a
+event foo1b
+event foo2 with arg test

@@ -61,6 +61,36 @@ public:
 	 */
 	shared_ptr<::hilti::Expression> InitValue(const ::BroType* type);
 
+	/**
+	 * Returns a HILTI expression with a Bro value refering to a BroType.
+	 *
+	 * @param type The Bro type.
+	 *
+	 * @return An HILTI expression to refer to the type, of type
+	 * LibBro::BroVal.
+	 */
+	shared_ptr<::hilti::Expression> TypeVal(const ::BroType* type);
+
+	/**
+	 * Returns a HILTI expression referencing a BroType.
+	 *
+	 * @param type The Bro type.
+	 *
+	 * @return An HILTI expression to refer to the type, of type LibBro::BroType.
+	 */
+	shared_ptr<::hilti::Expression> BroType(const ::BroType* type);
+
+	/**
+	 * Returns a HILTI expression with a Bro value refering to a Bro
+	 * Func.
+	 *
+	 * @param type The Bro type.
+	 *
+	 * @return An HILTI expression to refer to the type, of type
+	 * LibBro::BroVal.
+	 */
+	shared_ptr<::hilti::Expression> FunctionVal(const ::Func* type);
+
 protected:
 	/** 
 	 * Returns the target type passed into Compile(). This will abort if

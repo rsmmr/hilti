@@ -2478,52 +2478,75 @@ analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
 	return replaces ? replaces : tag;
 	}
 
+::Val* Manager::RuntimeCallFunction(const Func* func, val_list* args)
+	{
+	auto symbol = pimpl->compiler->HiltiStubSymbol(func, nullptr, true);
+	return RuntimeCallFunctionInternal(symbol, args);
+	}
+
 bool Manager::RuntimeRaiseEvent(Event* event)
 	{
-	// TODO: We should probably cache the nativeFunction() lookup here
-	// between calls to speed it up, unless that method itself is already
-	// as fast as we would that get that way.
-
-	assert(pimpl->llvm_linked_module && pimpl->llvm_execution_engine);
-
 	if ( ! event->Handler()->LocalHandler() )
 		{
 		Unref(event);
 		return true;
 		}
 
-	auto name = event->Handler()->Name();
-	auto stub = pimpl->compiler->HiltiStubSymbol(event->Handler()->LocalHandler(), nullptr, true);
-	auto ev = pimpl->hilti_context->nativeFunction(pimpl->llvm_linked_module,
-						       pimpl->llvm_execution_engine,
-						       stub);
+	auto symbol = pimpl->compiler->HiltiStubSymbol(event->Handler()->LocalHandler(), nullptr, true);
+	auto result = RuntimeCallFunctionInternal(symbol, event->Args());
 
-	if ( ! ev )
+	Unref(result);
+	Unref(event);
+	return true;
+	}
+
+::Val* Manager::RuntimeCallFunctionInternal(const string& symbol, val_list* args)
+	{
+	// TODO: We should cache the nativeFunction() lookup here between
+	// calls to speed it up, unless that method itself is already as fast
+	// as we would that get that way.
+
+	assert(pimpl->llvm_linked_module && pimpl->llvm_execution_engine);
+
+	auto func = pimpl->hilti_context->nativeFunction(pimpl->llvm_linked_module,
+							 pimpl->llvm_execution_engine,
+							 symbol);
+
+	if ( ! func )
 		{
-		reporter::warning(::util::fmt("unknown HILTI event stub %s", stub));
-		return false;
+		reporter::warning(::util::fmt("unknown HILTI function %s", symbol));
+		return new ::Val(0, ::TYPE_ERROR);
 		}
 
-	auto args = event->Args();
 	hlt_exception* excpt = 0;
 	hlt_execution_context* ctx = hlt_global_execution_context();
+	::Val* result = nullptr;
 
 	switch ( args->length() ) {
 	case 0:
-		typedef void (*e0)(hlt_exception** excpt, hlt_execution_context* ctx);
-		(*(e0)ev)(&excpt, ctx);
+		typedef ::Val* (*e0)(hlt_exception**, hlt_execution_context*);
+		result = (*(e0)func)(&excpt, ctx);
+		break;
+
+	case 1:
+		typedef ::Val* (*e1)(Val*, hlt_exception**, hlt_execution_context*);
+		result = (*(e1)func)((*args)[0], &excpt, ctx);
+		break;
+
+	case 2:
+		typedef ::Val* (*e2)(Val*, Val*, hlt_exception**, hlt_execution_context*);
+		result = (*(e2)func)((*args)[0], (*args)[1], &excpt, ctx);
 		break;
 
 	default:
-		reporter::error(::util::fmt("event %s with %d parameters not yet supported in RuntimeRaiseEvent()", name, args->length()));
-		return false;
+		reporter::error(::util::fmt("function/event %s with %d parameters not yet supported in RuntimeCallFunction()", symbol, args->length()));
+		return new ::Val(0, ::TYPE_ERROR);
 	}
 
 	if ( excpt )
-		reporter::error(::util::fmt("event %s raised exception", name));
+		reporter::error(::util::fmt("event/function %s raised exception", symbol));
 
-	Unref(event);
-	return true;
+	return result;
 	}
 
 void Manager::DumpDebug()

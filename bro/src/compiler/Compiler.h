@@ -28,6 +28,8 @@ namespace hilti {
 
 namespace compiler {
 
+class CollectorCallback;
+
 class Compiler {
 public:
 	typedef std::list<std::shared_ptr<::hilti::Module>> module_list;
@@ -49,6 +51,18 @@ public:
 	 * @return A list of compiled modules.
 	 */
 	module_list CompileAll();
+
+	/**
+	 * Returns all of a Bro namespace's function that need to be
+	 * compiled.
+	 */
+	std::list<const Func *> Functions(const string& ns);
+
+	/**
+	 * Returns all of a Bro namespace's global IDs that need to be
+	 * compiled.
+	 */
+	std::list<const ::ID *> Globals(const string& ns);
 
 	/**
 	 * Returns the module builder currently in use.
@@ -175,6 +189,8 @@ private:
 	module_builder_list mbuilders;
 
 	shared_ptr<::hilti::builder::ModuleBuilder> glue_module_builder;
+
+	std::shared_ptr<CollectorCallback> collector_callback;
 };
 
 }
