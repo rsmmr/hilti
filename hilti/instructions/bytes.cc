@@ -243,7 +243,7 @@ iBeginCC(bytes)
     }
 
     iDocCC(Strip, R"(
-        Removes leading and trailing white-space from the bytes object *op1*.
+        Removes leading and trailing sequences of *op2* from the bytes object *op1*. If *op2* is not given, removes white-space. If *op3* is given, it must be of type ``Hilti::Side`` and indicates which side of *op1* should be stripped. Default is ``Hilti::Side::Both``.
     )")
 iEndCC
 
@@ -275,6 +275,16 @@ iBeginCC(bytes)
         Splits bytes object *op1* at each occurence of separator *op2*, and return a vector with the individual pieces and the separator removes. If the separator is not found, the returned vector will just have *op1* as a single element.  If the separator is not given, or empty, the split will take place a sequences of white space.
     )")
 iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(Join) {
+    }
+
+    iDocCC(Join, R"(
+         Renders each of the elements in list *op1* into bytes object (as if one printed it), and then concatenates them using *op2* as the separator.
+    )")
+iEndCC
+
 
 iBeginCC(iterBytes)
     iValidateCC(Begin) {

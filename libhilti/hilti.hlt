@@ -139,6 +139,7 @@ type IOSrc = enum { PcapLive, PcapOffline }
 type FileMode = enum { Create, Append }
 type FileType = enum { Text, Binary }
 type Charset = enum { UTF8, UTF16LE, UTF16BE, UTF32LE, UTF32BE, ASCII }
+type Side = enum { Left, Right, Both }
 
 type ProfileStyle = enum {
     Standard,    # Record on "update".

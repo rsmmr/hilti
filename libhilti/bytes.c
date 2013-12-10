@@ -1519,7 +1519,7 @@ hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt,
     return v;
 }
 
-hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_bytes* pat, hlt_enum side, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iterator_bytes start;
     hlt_iterator_bytes end;
@@ -1556,3 +1556,8 @@ end_loop2:
     return hlt_bytes_sub(start, end, excpt, ctx);
 }
 
+hlt_bytes* hlt_bytes_join(hlt_list* l, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    const char x[] = "hlt_bytes_join not yet implemented";
+    return hlt_bytes_new_from_data((int8_t*)x, sizeof(x), excpt, ctx);
+}

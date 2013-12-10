@@ -499,7 +499,10 @@ extern hlt_bytes_pair hlt_bytes_split1(hlt_bytes* b, hlt_bytes* sep, hlt_excepti
 extern hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
-extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_bytes* p, hlt_enum, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+extern hlt_bytes* hlt_bytes_join(hlt_list* l, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
 

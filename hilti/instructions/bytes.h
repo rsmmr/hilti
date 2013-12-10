@@ -147,7 +147,9 @@ iEndH
 
 iBeginH(bytes, Strip, "bytes.strip")
     iTarget(optype::refBytes)
-    iOp1(optype::refBytes, true);
+    iOp1(optype::refBytes, false);
+    iOp2(optype::optional(optype::refBytes), true);
+    iOp3(optype::optional(optype::enum_), true);
 iEndH
 
 iBeginH(bytes, StartsWith, "bytes.startswith")
@@ -165,6 +167,12 @@ iEndH
 iBeginH(bytes, Split, "bytes.split")
     iTarget(optype::refVector)
     iOp1(optype::refBytes, true);
+    iOp2(optype::refBytes, true);
+iEndH
+
+iBeginH(bytes, Join, "bytes.join")
+    iTarget(optype::refBytes)
+    iOp1(optype::refList, true);
     iOp2(optype::refBytes, true);
 iEndH
 
