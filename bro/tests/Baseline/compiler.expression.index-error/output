@@ -1,0 +1,2 @@
+A
+error in <params>, line 1: event/function global_bro_init_stub raised exception: IndexError (from /home/robin/work/binpacpp/hilti2/libhilti/map_set.c:194)

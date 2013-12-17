@@ -2544,7 +2544,13 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 	}
 
 	if ( excpt )
-		reporter::error(::util::fmt("event/function %s raised exception", symbol));
+		{
+                hlt_exception* etmp = 0;
+                char* e = hlt_exception_to_asciiz(excpt, &etmp, ctx);
+		reporter::error(::util::fmt("event/function %s raised exception: %s", symbol, e));
+                hlt_free(e);
+		GC_DTOR(excpt, hlt_exception);
+		}
 
 	return result;
 	}
