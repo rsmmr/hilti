@@ -160,7 +160,38 @@ int8_t hlt_exception_is_termination(hlt_exception* excpt)
     return strcmp(excpt->type->name, "Termination") == 0;
 }
 
-static void __exception_print(const char* prefix, hlt_exception* exception, hlt_execution_context* ctx)
+static hlt_string __exception_render(const hlt_exception* e, hlt_execution_context* ctx)
+{
+    hlt_exception* excpt = 0;
+
+    if ( ! e )
+        return hlt_string_from_asciiz("(Null)", &excpt, ctx);
+
+    hlt_string s = hlt_string_from_asciiz(e->type->name, &excpt, ctx);
+
+    if ( e->arg ) {
+        hlt_string arg = hlt_string_from_object(e->type->argtype, e->arg, &excpt, ctx);
+        s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz(" with argument '", &excpt, ctx), &excpt, ctx);
+        s = hlt_string_concat_and_unref(s, arg, &excpt, ctx);
+        s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz("'", &excpt, ctx), &excpt, ctx);
+    }
+
+    if ( e->vid != HLT_VID_MAIN ) {
+	char buffer[128];
+	snprintf(buffer, sizeof(buffer), " in virtual thread %" PRId64, e->vid);
+        s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
+    }
+
+    if ( e->location ) {
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer), " (from %s)", e->location);
+        s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
+    }
+
+    return s;
+}
+
+static void __exception_print(const char* prefix, hlt_exception* e, hlt_execution_context* ctx)
 {
     hlt_exception* excpt = 0;
 
@@ -169,26 +200,14 @@ static void __exception_print(const char* prefix, hlt_exception* exception, hlt_
     hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
 
     flockfile(stderr);
-    fprintf(stderr, "%s%s", prefix, exception->type->name);
 
-    if ( exception->arg ) {
-        hlt_string arg = hlt_string_from_object(exception->type->argtype, exception->arg, &excpt, ctx);
-        fprintf(stderr, " with argument '");
-        hlt_string_print(stderr, arg, 0, &excpt, ctx);
-        fprintf(stderr, "'");
-        GC_DTOR(arg, hlt_string);
-    }
+    hlt_string s = __exception_render(e, ctx);
+    char* c = hlt_string_to_native(s, &excpt, ctx);
 
-//    if ( exception->cont )
-//        fprintf(stderr, ", resumable");
+    fprintf(stderr, "%s%s\n", prefix, c);
 
-    if ( exception->vid != HLT_VID_MAIN )
-        fprintf(stderr, " in virtual thread %" PRId64, exception->vid);
-
-    if ( exception->location )
-        fprintf(stderr, " (from %s)", exception->location);
-
-    fprintf(stderr, "\n");
+    hlt_free(c);
+    GC_DTOR(s, hlt_string);
 
     fflush(stderr);
     funlockfile(stderr);
@@ -220,11 +239,15 @@ void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_executio
 hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_exception* e = *((const hlt_exception**)obj);
-
-    if ( ! e )
-        return hlt_string_from_asciiz("(Null)", excpt, ctx);
-
-    // FIXME: This should include the same information as the print()
-    // functions.
-    return hlt_string_from_asciiz(e->type->name, excpt, ctx);
+    return __exception_render(e, ctx);
 }
+
+char* hlt_exception_to_asciiz(hlt_exception* e, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_string s = __exception_render(e, ctx);
+    char* c = hlt_string_to_native(s, excpt, ctx);
+    GC_DTOR(s, hlt_string);
+    return c;
+}
+
+
