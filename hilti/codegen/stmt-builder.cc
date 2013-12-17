@@ -295,7 +295,7 @@ void StatementBuilder::visit(declaration::Function* f)
 
     auto llvm_func = cg()->llvmFunction(func, (hook_decl != nullptr));
 
-    cg()->pushFunction(llvm_func);
+    cg()->pushFunction(llvm_func, true, false, false, ftype->callingConvention());
 
     cg()->setLeaveFunc(f);
 

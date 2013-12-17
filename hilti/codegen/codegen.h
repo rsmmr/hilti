@@ -162,8 +162,12 @@ public:
    /// current builder() with pushBuilder().
    ///
    /// abort_on_excpt: If true, exceptions in this function will immeidately
-   /// abort execution rather than triggering normal handling. 
-   llvm::Function* pushFunction(llvm::Function* function, bool push_builder=true, bool abort_on_excpt=false, bool is_init_func=false);
+   /// abort execution rather than triggering normal handling.
+   ///
+   /// cc: The function's calling convetion; DEFAULT means "not further
+   /// specified".
+   llvm::Function* pushFunction(llvm::Function* function, bool push_builder=true, bool abort_on_excpt=false,
+                                bool is_init_func=false, type::function::CallingConvention=type::function::DEFAULT);
 
    /// Removes the current LLVM function from the stack of function being
    /// generated. Calls to this function must match with those to
@@ -2307,6 +2311,7 @@ private:
        declaration::Function* leave_func = nullptr;
        handler_list catches;
        std::list<shared_ptr<Expression>> locals_cleared_on_excpt;
+       type::function::CallingConvention cc;
    };
 
    typedef std::list<std::unique_ptr<FunctionState>> function_list;

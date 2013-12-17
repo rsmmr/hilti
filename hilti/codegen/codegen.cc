@@ -406,7 +406,7 @@ void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value, bool 
     _storer->llvmStore(instr->target(), value, true, dtor_first);
 }
 
-llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builder, bool abort_on_excpt, bool is_init_func)
+llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builder, bool abort_on_excpt, bool is_init_func, type::function::CallingConvention cc)
 {
     unique_ptr<FunctionState> state(new FunctionState);
     state->function = function;
@@ -414,6 +414,7 @@ llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builde
     state->abort_on_excpt = abort_on_excpt;
     state->is_init_func = is_init_func;
     state->context = nullptr;
+    state->cc = cc;
     _functions.push_back(std::move(state));
 
     if ( push_builder )
@@ -2109,6 +2110,15 @@ void CodeGen::llvmRaiseException(llvm::Value* excpt, bool dtor)
 void CodeGen::llvmRethrowException()
 {
     auto func = _functions.back()->function;
+
+    // If the function has HILTI-C linkage, transfer the exception over into
+    // the corresponding parameter.
+    if ( _functions.back()->cc == type::function::HILTI_C ) {
+        auto ctx_excpt = llvmCurrentException();
+        auto last_arg = func->arg_end();
+        llvmGCAssign(--(--last_arg), ctx_excpt, builder::reference::type(builder::exception::typeAny()), false);
+        llvmClearException();
+    }
 
     auto rt = func->getReturnType();
 

@@ -1,0 +1,23 @@
+#
+# @TEST-EXEC:  hilti-build -d %DIR/c-hilti-excpt.c %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Foo
+
+import Hilti
+
+export foo
+
+type myException = exception
+
+"C-HILTI" void foo() {
+     call Hilti::print ("A")
+
+     local ref<myException> e
+     e = new myException
+     exception.throw e
+
+     call Hilti::print ("B")
+}
