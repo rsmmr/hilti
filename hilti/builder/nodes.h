@@ -1524,12 +1524,14 @@ typedef ctor::Map::element_list element_list;
 ///
 /// elems: The list of elements.
 ///
+/// def: If given a default value to return for unused indices.
+///
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, shared_ptr<Expression> def = nullptr, const Location& l=Location::None)
 {
-    auto c = std::make_shared<ctor::Map>(ktype, vtype, elems, l);
+    auto c = std::make_shared<ctor::Map>(ktype, vtype, elems, def, l);
     return std::make_shared<hilti::expression::Ctor>(c, l);
 }
 

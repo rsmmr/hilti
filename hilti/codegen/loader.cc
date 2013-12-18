@@ -496,6 +496,12 @@ void Loader::visit(ctor::Map* c)
         cg()->llvmCall("hlt::map_insert", args);
     }
 
+    if ( c->default_() ) {
+        auto def = c->default_()->coerceTo(vtype);
+        args = {mapop, def};
+        cg()->llvmCall("hlt::map_default", args);
+    }
+
     setResult(map, true, false);
 }
 

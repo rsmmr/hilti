@@ -1293,6 +1293,9 @@ void Printer::visit(ctor::Map* c)
     }
 
     p << ")";
+
+    if ( c->default_() )
+        p << " &default=" << c->default_();
 }
 
 void Printer::visit(ctor::Set* c)

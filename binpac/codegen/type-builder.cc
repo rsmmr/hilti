@@ -184,7 +184,7 @@ void TypeBuilder::visit(type::Map* m)
 
     TypeInfo ti;
     ti.hilti_type = hilti::builder::reference::type(hilti::builder::map::type(key, val, m->location()));
-    ti.hilti_default = hilti::builder::map::create(key, val, {}, m->location());
+    ti.hilti_default = hilti::builder::map::create(key, val, {}, nullptr, m->location());
     ti.always_initialize = true;
     setResult(ti);
 }

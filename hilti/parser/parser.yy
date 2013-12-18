@@ -475,7 +475,10 @@ ctor          : CBYTES                           { $$ = builder::bytes::create($
               | LIST   '<' type '>' '(' opt_exprs ')' { $$ = builder::list::create($3, $6, loc(@$)); }
               | SET    '<' type '>' '(' opt_exprs ')' { $$ = builder::set::create($3, $6, loc(@$)); }
               | VECTOR '<' type '>' '(' opt_exprs ')' { $$ = builder::vector::create($3, $6, loc(@$)); }
-              | MAP    '<' type ',' type '>' '(' opt_map_elems ')' { $$ = builder::map::create($3, $5, $8, loc(@$)); }
+              | MAP    '<' type ',' type '>' '(' opt_map_elems ')'
+                                                 { $$ = builder::map::create($3, $5, $8, nullptr, loc(@$)); }
+              | MAP    '<' type ',' type '>' '(' opt_map_elems ')' ATTR_DEFAULT '=' expr
+              									 { $$ = builder::map::create($3, $5, $8, $12, loc(@$)); }
               ;
 
 ctor_regexp   : ctor_regexp '|' re_pattern       { $$ = $1; $$.push_back($3); }
