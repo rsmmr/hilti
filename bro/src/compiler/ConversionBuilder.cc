@@ -500,10 +500,12 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 
 		ModuleBuilder()->pushBuilder(is_set);
 
+		auto val = RuntimeValToHilti(tmp, type->FieldType(i));
+
 		Builder()->addInstruction(::hilti::instruction::struct_::Set,
 					  dst,
 					  ::hilti::builder::string::create(type->FieldName(i)),
-					  RuntimeValToHilti(tmp, type->FieldType(i)));
+					  val);
 
 		Builder()->addInstruction(::hilti::instruction::flow::Jump,
 					  cont->block());
