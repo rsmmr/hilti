@@ -66,7 +66,7 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Bin
 	return nullptr;
 	}
 
-shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, ::BroType* target_type)
+shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, const ::BroType* target_type)
 	{
 	shared_ptr<::hilti::Expression> e = nullptr;
 
@@ -247,7 +247,7 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, ::B
 	return e;
 	}
 
-::BroType* ExpressionBuilder::TargetType() const
+const ::BroType* ExpressionBuilder::TargetType() const
 	{
 	if ( ! target_types.size() || ! target_types.back() )
 		{
@@ -650,7 +650,7 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::IndexExpr* ex
 		auto mtype = ty->AsTableType();
 		auto result = Builder()->addTmp("yield", HiltiType(mtype->YieldType()));
 		auto op1 = HiltiExpression(expr->Op1());
-                auto op2 = HiltiIndex(expr->Op2());
+		auto op2 = HiltiIndex(expr->Op2());
 		Builder()->addInstruction(result, ::hilti::instruction::map::Get, op1, op2);
 		return result;
 		}

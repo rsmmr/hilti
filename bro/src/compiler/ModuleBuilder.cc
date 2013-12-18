@@ -67,7 +67,10 @@ shared_ptr<::hilti::Module> ModuleBuilder::Compile()
 		for ( auto id : Compiler()->Globals(ns) )
 			{
 			auto type = id->Type();
-			auto init = id->HasVal() && type->Tag() != TYPE_FUNC ? HiltiValue(id->ID_Val()) : HiltiInitValue(type);
+			auto init = id->HasVal() && type->Tag() != TYPE_FUNC
+				? HiltiValue(id->ID_Val(), type, true)
+				: HiltiDefaultInitValue(type);
+
 			addGlobal(HiltiSymbol(id), HiltiType(type), init);
 			}
 
@@ -452,8 +455,11 @@ std::shared_ptr<::hilti::Expression> ModuleBuilder::DeclareLocal(const ::ID* id)
 	if ( ! hasLocal(symbol) )
 		{
 		auto type = id->Type();
-		auto init_val = id->HasVal() && type->Tag() != TYPE_FUNC ? HiltiValue(id->ID_Val()) : HiltiInitValue(type);
-		addLocal(symbol, HiltiType(type), init_val);
+		auto init = id->HasVal() && type->Tag() != TYPE_FUNC
+				? HiltiValue(id->ID_Val(), id->Type(), true)
+				: HiltiDefaultInitValue(type);
+
+		addLocal(symbol, HiltiType(type), init);
 		}
 
 	return ::hilti::builder::id::create(symbol);

@@ -13,7 +13,7 @@
 using namespace bro::hilti::compiler;
 
 #define CANNOT_BE_REACHED \
-   	Error("code that cannot be reached has been reached"); \
+	Error("code that cannot be reached has been reached"); \
 	abort();
 
 StatementBuilder::StatementBuilder(class ModuleBuilder* mbuilder)

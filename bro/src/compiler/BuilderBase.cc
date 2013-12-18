@@ -124,14 +124,14 @@ std::shared_ptr<::hilti::type::Function> BuilderBase::HiltiFunctionType(const ::
 	return mbuilder->TypeBuilder()->FunctionType(type);
 	}
 
-std::shared_ptr<::hilti::Expression> BuilderBase::HiltiValue(const ::Val* val, ::BroType* target_type)
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiValue(const ::Val* val, const ::BroType* target_type, bool init)
 	{
-	return mbuilder->ValueBuilder()->Compile(val, target_type);
+	return mbuilder->ValueBuilder()->Compile(val, target_type, init);
 	}
 
-shared_ptr<::hilti::Expression> BuilderBase::HiltiInitValue(const ::BroType* type)
+shared_ptr<::hilti::Expression> BuilderBase::HiltiDefaultInitValue(const ::BroType* type)
 	{
-	return mbuilder->ValueBuilder()->InitValue(type);
+	return mbuilder->ValueBuilder()->DefaultInitValue(type);
 	}
 
 shared_ptr<::hilti::Expression> BuilderBase::HiltiBroVal(const ::BroType* type)
@@ -149,7 +149,7 @@ shared_ptr<::hilti::Expression> BuilderBase::HiltiBroType(const ::BroType* type)
 	return mbuilder->ValueBuilder()->BroType(type);
 	}
 
-std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr, ::BroType* target_type)
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr, const ::BroType* target_type)
 	{
 	return mbuilder->ExpressionBuilder()->Compile(expr, target_type);
 	}

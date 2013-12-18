@@ -204,47 +204,20 @@ void ConversionBuilder::FinalizeTypes()
 	// ValueBuilder/ConversionBuilder to treat types vals in a single
 	// way.
 
-	for ( auto m : postponed_types )
+	auto glue_mbuilder = GlueModuleBuilder();
+
+	Compiler()->pushModuleBuilder(glue_mbuilder);
+	glue_mbuilder->pushModuleInit();
+
+	for ( auto m : mapped_types )
 		{
-		auto t = m.first;
-		auto tag = m.second.first;
-		auto cb = m.second.second;
-
-#ifdef DEBUG
-		ODesc d;
-		d.SetShort();
-		t->Describe(&d);
-#endif
-
-		auto global = HiltiGlobalForType(tag.c_str(), t);
-
-		auto glue_mbuilder = GlueModuleBuilder();
-		Compiler()->pushModuleBuilder(glue_mbuilder);
-		glue_mbuilder->pushModuleInit();
-
-		auto i = mapped_types.find(t);
-
-		if ( i != mapped_types.end() && (*i).second->GetTypeID() )
-			{
-			auto id = (*i).second->GetTypeID();
-
-			DBG_LOG_COMPILER("Using type ID %s for postponed type %s", id, d.Description());
-
-			auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type");
-			auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(id) } );
-			Builder()->addInstruction(global, ::hilti::instruction::flow::CallResult, f, args);
-			}
-
-
-		else
-			{
-			DBG_LOG_COMPILER("Building code to generate postponed type %s", d.Description());
-			cb(global, t);
-			}
-
-		glue_mbuilder->popFunction();
-		Compiler()->popModuleBuilder();
+		auto from = CreateBroType(m.first);
+		auto to = CreateBroType(m.second);
+		Builder()->addInstruction(from, ::hilti::instruction::operator_::Assign, to);
 		}
+
+	glue_mbuilder->popFunction();
+	Compiler()->popModuleBuilder();
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiGlobalForType(const char* tag,
@@ -275,6 +248,24 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiGlobalForType(const
 std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildCreateBroType(const char* tag,
 									   const ::BroType* type,
 									   build_create_type_callback cb)
+	{
+	if ( auto id = type->GetTypeID() )
+		// We don't need to actually build it, can just look it up.
+		return BuildCreateBroTypeInternal(tag, type,
+			[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
+					  {
+					  auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type");
+					  auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(id) } );
+					  Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult, f, args);
+					  });
+	else
+		// Need to build it ourselves.
+		return BuildCreateBroTypeInternal(tag, type, cb);
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildCreateBroTypeInternal(const char* tag,
+										   const ::BroType* type,
+										   build_create_type_callback cb)
 	{
 	auto btype = ::hilti::builder::type::byName("LibBro::BroType");
 
@@ -310,6 +301,10 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::PostponeBuildCreateBroTy
 										   const ::BroType* type,
 										   build_create_type_callback cb)
 	{
+	if ( type->GetTypeID() )
+		// As we can just look these up, we don't need to postpone.
+		return BuildCreateBroType(tag, type, cb);
+
 	postponed_types.insert(std::make_pair(type, std::make_pair(string(tag), cb)));
 	return HiltiGlobalForType(tag, type);
 	}
@@ -1203,7 +1198,6 @@ shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::BroType
 	case TYPE_COUNTER:
 	case TYPE_DOUBLE:
 	case TYPE_FILE:
-	case TYPE_FUNC:
 	case TYPE_INT:
 	case TYPE_INTERVAL:
 	case TYPE_PATTERN:
@@ -1234,6 +1228,9 @@ shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::BroType
 
 	case TYPE_VECTOR:
 		return CreateBroType(static_cast<const ::VectorType*>(type));
+
+	case TYPE_FUNC:
+		return CreateBroType(static_cast<const ::FuncType*>(type));
 
 	default:
 		Error(::util::fmt("ConversionBuilder/CBT: unsupported value of type %s", ::type_name(type->Tag())));
@@ -1314,7 +1311,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::Op
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::RecordType* type)
 	{
-	return PostponeBuildCreateBroType("record", type,
+	return BuildCreateBroType("record", type,
 		[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
 		{
 		auto rtype = type->AsRecordType();
@@ -1374,7 +1371,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::Ta
 			auto ttype = type->AsTableType();
 
 			auto k = CreateBroType(ttype->Indices());
-            auto null = ::hilti::builder::caddr::create();
+			auto null = ::hilti::builder::caddr::create();
 
 			Builder()->addInstruction(dst,
 						  ::hilti::instruction::flow::CallResult,
@@ -1412,5 +1409,22 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::Ve
 					  ::hilti::instruction::flow::CallResult,
 					  ::hilti::builder::id::create("LibBro::bro_vector_type_new"),
 					  ::hilti::builder::tuple::create({ ytype }));
+		});
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::FuncType* type)
+	{
+	return BuildCreateBroType("function", type,
+		[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
+		{
+		auto ftype = type->AsFuncType();
+		auto args = CreateBroType(ftype->Args());
+		auto yield = ftype->YieldType() ? CreateBroType(ftype->YieldType()) : ::hilti::builder::caddr::create();
+		auto flavor = ::hilti::builder::integer::create(ftype->Flavor());
+
+		Builder()->addInstruction(dst,
+					  ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::bro_function_type_new"),
+					  ::hilti::builder::tuple::create({ args, yield, flavor }));
 		});
 	}

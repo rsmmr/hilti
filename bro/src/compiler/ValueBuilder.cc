@@ -17,7 +17,7 @@ ValueBuilder::ValueBuilder(class ModuleBuilder* mbuilder)
 	{
 	}
 
-shared_ptr<::hilti::Expression> ValueBuilder::InitValue(const ::BroType* type)
+shared_ptr<::hilti::Expression> ValueBuilder::DefaultInitValue(const ::BroType* type)
 	{
 	auto htype = HiltiType(type);
 	auto rtype = ::ast::tryCast<::hilti::type::Reference>(htype);
@@ -115,11 +115,12 @@ shared_ptr<::hilti::Expression> ValueBuilder::BroType(const ::BroType* type)
 	return tmp;
 	}
 
-shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, ::BroType* target_type)
+shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, const ::BroType* target_type, bool init)
 	{
 	shared_ptr<::hilti::Expression> e = nullptr;
 
 	target_types.push_back(target_type);
+	is_init = init;
 
 	switch ( val->Type()->Tag() ) {
 	case TYPE_BOOL:
@@ -192,7 +193,7 @@ shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, ::BroType*
 	return e;
 	}
 
-::BroType* ValueBuilder::TargetType() const
+const ::BroType* ValueBuilder::TargetType() const
 	{
 	if ( ! target_types.size() || ! target_types.back() )
 		{
@@ -350,10 +351,42 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::SubNetVal* va
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val)
 	{
-	if ( val->Type()->AsTableType()->IsUnspecifiedTable() )
-		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
+	auto ttype = val->Type()->AsTableType();
 
-	if ( val->Type()->IsSet() )
+	if ( ttype->IsUnspecifiedTable() )
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+
+		if ( tt->IsSet() )
+			{
+			auto stype = ast::checkedCast<::hilti::type::Set>(rt->argType());
+			return ::hilti::builder::set::create(stype->argType(), {});
+			}
+
+		else
+			{
+			auto mtype = ast::checkedCast<::hilti::type::Map>(rt->argType());
+			return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), {});
+			}
+		}
+
+	shared_ptr<::hilti::Expression> def;
+
+	if ( Attr* def_attr = val->FindAttr(ATTR_DEFAULT) )
+		{
+		const ::Expr* expr = def_attr->AttrExpr();
+		const ::BroType* ytype = ttype->YieldType();
+		const ::BroType* dtype = expr->Type();
+
+		if ( dtype->Tag() == TYPE_RECORD && ytype->Tag() == TYPE_RECORD &&
+		     ! ::same_type(dtype, ytype) )
+			Error("no support yet for record_coercion in table &default", val);
+
+		def = HiltiExpression(expr, ytype);
+		}
+
+	if ( ttype->IsSet() )
 		{
 		::hilti::builder::set::element_list elems;
 
@@ -416,14 +449,19 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 		auto htype = HiltiType(val->Type());
 		auto rtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
 		auto mtype = ::ast::checkedCast<::hilti::type::Map>(rtype->argType());
-		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), elems);
+		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), elems, def);
 		}
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::VectorVal* val)
 	{
 	if ( val->Type()->AsVectorType()->IsUnspecifiedVector() )
-		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+		auto vtype = ast::checkedCast<::hilti::type::Vector>(rt->argType());
+		return ::hilti::builder::vector::create(vtype->argType(), {});
+		}
 
 	::hilti::builder::vector::element_list elems;
 

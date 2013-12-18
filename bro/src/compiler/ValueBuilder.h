@@ -45,10 +45,14 @@ public:
 	 * have. This acts primarily as a hint in case the expression's type
 	 * isn't unambigious (e.g., with untyped constructors).
 	 *
+	 * @param init If true, the converted value will be used to
+	 * initialize a variable or struct field. A type may want to change
+	 * what it returns in initialization contexts. 
+	 *
 	 * @return The converted expression.
 	 */
 	shared_ptr<::hilti::Expression> Compile(const ::Val* val,
-						::BroType* target_type = nullptr);
+						const ::BroType* target_type = nullptr, bool init = false);
 
 	/**
 	 * Returns the default initialization value for variables of a given
@@ -59,7 +63,7 @@ public:
 	 * @return An HILTI expression to initialize variables with, or null
 	 * for HILTI's default init value.
 	 */
-	shared_ptr<::hilti::Expression> InitValue(const ::BroType* type);
+	shared_ptr<::hilti::Expression> DefaultInitValue(const ::BroType* type);
 
 	/**
 	 * Returns a HILTI expression with a Bro value refering to a BroType.
@@ -96,12 +100,19 @@ protected:
 	 * Returns the target type passed into Compile(). This will abort if
 	 * not target type has been set for the current value.
 	 */
-	::BroType* TargetType() const;
+	const ::BroType* TargetType() const;
 
 	/**
 	 * Returns true if a target type has been set for the current value.
 	 */
 	bool HasTargetType() const;
+
+	/**
+	 * Returns true if the converted value will be used in an
+	 * initialization context. This reflects the flag passed into
+	 * Compile().
+	 */
+	bool IsInit() const;
 
 	std::shared_ptr<::hilti::Expression> CompileBaseVal(const ::Val* val);
 	std::shared_ptr<::hilti::Expression> Compile(const ::AddrVal* val);
@@ -117,7 +128,8 @@ protected:
 	std::shared_ptr<::hilti::Expression> Compile(const ::VectorVal* val);
 
 private:
-	std::list<::BroType *> target_types;
+	std::list<const ::BroType *> target_types;
+	bool is_init;
 };
 
 }

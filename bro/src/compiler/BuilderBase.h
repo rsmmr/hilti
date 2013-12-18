@@ -219,10 +219,15 @@ public:
 	 * have. This acts primarily as a hint in case the expression's type
 	 * isn't unambigious (e.g., with untyped constructors).
 	 *
+	 * @param init If true, the converted value will be used to
+	 * initialize a variable or struct field. A type may want to change
+	 * what it returns in initialization contexts. 
+	 *
 	 * @return The corresponding HILTI expression.
 	 */
 	std::shared_ptr<::hilti::Expression> HiltiValue(const ::Val* val,
-							::BroType* target_type = nullptr);
+							const ::BroType* target_type = nullptr,
+							bool init = false);
 
 	/**
 	 * Returns the default initialization value for variables of a given
@@ -233,7 +238,7 @@ public:
 	 * @return An HILTI expression to initialize variables with, or null
 	 * for HILTI's default init value.
 	 */
-	shared_ptr<::hilti::Expression> HiltiInitValue(const ::BroType* type);
+	shared_ptr<::hilti::Expression> HiltiDefaultInitValue(const ::BroType* type);
 
 	/**
 	 * Returns a HILTI expression with a Bro value refering to a BroType.
@@ -280,7 +285,7 @@ public:
 	 * @return The corresponding HILTI expression.
 	 */
 	std::shared_ptr<::hilti::Expression> HiltiExpression(const ::Expr* expr,
-							     ::BroType* target_type = nullptr);
+							     const ::BroType* target_type = nullptr);
 
 	/**
 	 * Turns a Bro expression that's used as a table or vector index into the

@@ -141,6 +141,7 @@ protected:
 	std::shared_ptr<::hilti::Expression> CreateBroType(const ::TableType* type);
 	std::shared_ptr<::hilti::Expression> CreateBroType(const ::TypeType* type);
 	std::shared_ptr<::hilti::Expression> CreateBroType(const ::VectorType* type);
+	std::shared_ptr<::hilti::Expression> CreateBroType(const ::FuncType* type);
 
 private:
 	std::shared_ptr<::hilti::Expression> BroInternalInt(std::shared_ptr<::hilti::Expression> val);
@@ -151,13 +152,16 @@ private:
 
 	std::shared_ptr<::hilti::Expression> HiltiGlobalForType(const char* tag, const ::BroType* type);
 
+	std::shared_ptr<::hilti::Expression> BuildCreateBroTypeInternal(const char* tag,
+									const ::BroType* type,
+									build_create_type_callback cb);
 
 	typedef std::map<const ::BroType*, const ::BroType*> type_map;
 	typedef std::map<const ::BroType*, std::pair<string, build_create_type_callback>> type_builder_map;
+	typedef std::list<const ::BroType*> type_builder_list;
 
 	type_map mapped_types;
 	type_builder_map postponed_types;
-
 };
 
 }

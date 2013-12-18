@@ -699,6 +699,11 @@ void libbro_bro_enum_type_add_name(::EnumType* etype, hlt_string module, hlt_str
 	hlt_free(m);
 	}
 
+::FuncType* libbro_bro_function_type_new(::BroType* args, ::BroType* ytype, int64_t flavor, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new FuncType(args->AsRecordType(), ytype, (::function_flavor)flavor);
+	}
+
 // User-visible Bro::* functions.
 
 int8_t bro_is_orig(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)

@@ -85,14 +85,14 @@ public:
 	 * @return The compiled expression.
 	 */
 	std::shared_ptr<::hilti::Expression> Compile(const ::Expr* expr,
-						     ::BroType* target_type = nullptr);
+						     const ::BroType* target_type = nullptr);
 
 protected:
 	/** 
 	 * Returns the target type passed into Compile(). This will abort if
 	 * not target type has been set for the current expression.
 	 */
-	::BroType* TargetType() const;
+	const ::BroType* TargetType() const;
 
 	/**
 	 * Returns true if a target type has been set for the current
@@ -175,7 +175,7 @@ private:
 
 	shared_ptr<::hilti::Expression> CompileListExprToRecordTuple(const ::ListExpr* lexpr, const ::RecordType* rtype);
 
-	std::list<::BroType *> target_types;
+	std::list<const ::BroType *> target_types;
 };
 
 }

@@ -78,6 +78,7 @@ declare "C-HILTI" BroVal               bro_vector_new(BroType vtype)
 declare "C-HILTI" void                 bro_vector_append(BroVal vval, BroVal val)
 declare "C-HILTI" tuple<caddr, BroVal> bro_vector_iterate(BroVal vval, caddr cookie)
 declare "C-HILTI" BroType              bro_vector_type_new(BroType ytype)
+declare "C-HILTI" BroType              bro_function_type_new(BroType args, BroType ytype, int<64> flavor)
 
 declare "C-HILTI" BroVal bro_list_new()
 declare "C-HILTI" void   bro_list_append(BroVal lval, BroVal val)

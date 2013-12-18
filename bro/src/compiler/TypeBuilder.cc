@@ -179,7 +179,7 @@ shared_ptr<::hilti::type::Function> TypeBuilder::FunctionType(const ::FuncType* 
 		auto name = bargs->FieldName(i);
 		auto ftype = bargs->FieldType(i);
 		auto htype = HiltiType(ftype);
-		auto def = bargs->FieldDefault(i) ? HiltiValue(bargs->FieldDefault(i), ftype) : nullptr;
+		auto def = bargs->FieldDefault(i) ? HiltiValue(bargs->FieldDefault(i), ftype, true) : nullptr;
 
 		auto param = ::hilti::builder::function::parameter(name, htype, false, def);
 		hargs.push_back(param);
@@ -231,7 +231,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 		auto name = type->FieldName(i);
 		auto ftype = type->FieldType(i);
 		auto htype = HiltiType(ftype);
-		auto def = bdef ? HiltiValue(bdef, ftype) : nullptr;
+		auto def = bdef ? HiltiValue(bdef, ftype, true) : nullptr;
 		auto hf = ::hilti::builder::struct_::field(name, htype, def);
 
 		fields.push_back(hf);
