@@ -108,3 +108,11 @@ void StatementBuilder::visit(statement::instruction::string::Substr* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::string::Join* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::string_join", args);
+    cg()->llvmStore(i, result);
+}

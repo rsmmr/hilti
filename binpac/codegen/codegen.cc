@@ -530,11 +530,11 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCharset(shared_ptr<Expression> expr)
     auto t4 = hilti::builder::tuple::create({
         hilti::builder::id::create("BinPAC::Charset::UTF32LE"),
         hilti::builder::id::create(string("Hilti::Charset::UTF32LE"))});
-    
+
     auto t5 = hilti::builder::tuple::create({
         hilti::builder::id::create("BinPAC::Charset::UTF32BE"),
         hilti::builder::id::create(string("Hilti::Charset::UTF32BE"))});
-    
+
     auto t6 = hilti::builder::tuple::create({
         hilti::builder::id::create("BinPAC::Charset::ASCII"),
         hilti::builder::id::create(string("Hilti::Charset::ASCII"))});

@@ -243,7 +243,7 @@ iBeginCC(bytes)
     }
 
     iDocCC(Strip, R"(
-        Removes leading and trailing sequences of *op2* from the bytes object *op1*. If *op2* is not given, removes white-space. If *op3* is given, it must be of type ``Hilti::Side`` and indicates which side of *op1* should be stripped. Default is ``Hilti::Side::Both``.
+        Removes leading and trailing sequences of any characters in *op2* from the bytes object *op1*. If *op2* is not given, removes white-space. If *op3* is given, it must be of type ``Hilti::Side`` and indicates which side of *op1* should be stripped. Default is ``Hilti::Side::Both``.
     )")
 iEndCC
 
@@ -281,10 +281,9 @@ iBeginCC(bytes)
     }
 
     iDocCC(Join, R"(
-         Renders each of the elements in list *op1* into bytes object (as if one printed it), and then concatenates them using *op2* as the separator.
+         Renders each of the elements in list *op2* into a bytes object (as if one printed it), and then concatenates them using *op1* as the separator.
     )")
 iEndCC
-
 
 iBeginCC(iterBytes)
     iValidateCC(Begin) {

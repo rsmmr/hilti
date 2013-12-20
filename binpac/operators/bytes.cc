@@ -145,10 +145,13 @@ opEnd
 opBegin(bytes::Strip : MethodCall)
     opOp1(std::make_shared<type::Bytes>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("strip")))
+    opCallArg1("side", std::make_shared<type::OptionalArgument>(std::make_shared<type::Enum>()))
+    opCallArg2("chars", std::make_shared<type::OptionalArgument>(std::make_shared<type::Bytes>()))
 
-    opDoc("Strips off leading and trailing white-space.")
+    opDoc("Strips off leading and/or trailing characters, as indicated by *side* with either if not given. By default it strips off all whitespace; alternatively any characters contained in *chars*.")
 
     opValidate() {
+        // TODO: Check enum type.
     }
 
     opResult() {
@@ -262,5 +265,19 @@ opBegin(bytes::Split : MethodCall)
     }
 opEnd
 
+opBegin(bytes::Join : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("join")))
+    opCallArg1("l", std::make_shared<type::List>())
+
+    opDoc("Renders the elements of *l* into textual form and joins them into a single bytes object using the given one as separator.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Bytes>();
+    }
+opEnd
 
 

@@ -319,16 +319,16 @@ static enum Charset get_charset(hlt_enum charset, hlt_exception** excpt, hlt_exe
 
     if ( hlt_enum_equal(charset, Hilti_Charset_UTF8, excpt, ctx) )
         cs = UTF8;
-    
+
     else if ( hlt_enum_equal(charset, Hilti_Charset_UTF16LE, excpt, ctx) )
         cs = UTF16LE;
-    
+
     else if ( hlt_enum_equal(charset, Hilti_Charset_UTF16BE, excpt, ctx) )
         cs = UTF16BE;
-    
+
     else if ( hlt_enum_equal(charset, Hilti_Charset_UTF32LE, excpt, ctx) )
         cs = UTF32LE;
-    
+
     else if ( hlt_enum_equal(charset, Hilti_Charset_UTF32BE, excpt, ctx) )
         cs = UTF32BE;
 
@@ -458,7 +458,7 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_enum charset, hlt_exception** exc
         // encoding is UTF-16, the worst-case is that the UTF-8 string has double the length of the
         // UTF-16 string (meaning each character is represented in the maximum UTF-8 length of 4 bytes).
         // For UTF-32, the maximum size is the same size as the string;
-    
+
         hlt_bytes_size source_len = hlt_bytes_len(b, excpt, ctx);
         hlt_bytes_size buffer_len = 2*source_len+1;
         if ( ch == UTF32BE || ch == UTF32LE )
@@ -475,7 +475,7 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_enum charset, hlt_exception** exc
         int8_t* target_end = target_start_ptr + buffer_len;
 
         hilti_ConversionResult res;
-        if ( ch == UTF16LE || ch == UTF16BE ) 
+        if ( ch == UTF16LE || ch == UTF16BE )
             res = hilti_ConvertUTF16toUTF8((const UTF16_t**) source_start, (const UTF16_t*) source_end, (UTF8_t**) target_start, (UTF8_t*) target_end, lenientConversion, do_flip);
         else
             res = hilti_ConvertUTF32toUTF8((const UTF32_t**) source_start, (const UTF32_t*) source_end, (UTF8_t**) target_start, (UTF8_t*) target_end, lenientConversion, do_flip);
@@ -483,9 +483,9 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_enum charset, hlt_exception** exc
         if ( res != conversionOK ) {
             // something went wrong...
             hlt_string err;
-            
+
             switch ( res ) {
-                case sourceExhausted: 
+                case sourceExhausted:
                     err = hlt_string_from_asciiz("source string ends with partial character", excpt, ctx);
                     break;
                 case sourceIllegal:
@@ -605,4 +605,38 @@ char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_co
         return 0;
 
     return (char*)raw;
+}
+
+hlt_string hlt_string_join(hlt_string sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    const hlt_type_info* ti = hlt_list_type(l, excpt, ctx);
+    hlt_iterator_list i = hlt_list_begin(l, excpt, ctx);
+    hlt_iterator_list end = hlt_list_end(l, excpt, ctx);
+
+    int first = 1;
+    hlt_string s = 0;
+	hlt_string old;
+
+    while ( ! hlt_iterator_list_eq(i, end, excpt, ctx) ) {
+
+        if ( ! first ) {
+            old = s;
+            s = hlt_string_concat(s, sep, excpt, ctx);
+            GC_DTOR(old, hlt_string);
+        }
+
+        void* obj = hlt_iterator_list_deref(i, excpt, ctx);
+        hlt_string so = hlt_string_from_object(ti, obj, excpt, ctx);
+        s = hlt_string_concat_and_unref(s, so, excpt, ctx);
+
+        GC_DTOR_GENERIC(obj, ti);
+
+        hlt_iterator_list j = i;
+        i = hlt_iterator_list_incr(i, excpt, ctx);
+        GC_DTOR(j, hlt_iterator_list);
+
+        first = 0;
+    }
+
+    return s;
 }

@@ -247,6 +247,10 @@ extern void hlt_string_print_n(FILE* file, hlt_string s, int8_t newline, hlt_str
 /// any character set conversion yet.
 extern char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// XXX
+extern hlt_string hlt_string_join(hlt_string sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
+
+
 /// @}
 
 #endif

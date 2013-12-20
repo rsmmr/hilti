@@ -233,13 +233,15 @@ void StatementBuilder::visit(statement::instruction::bytes::StartsWith* i)
 
 void StatementBuilder::visit(statement::instruction::bytes::Strip* i)
 {
-    auto op2 = i->op2() ? cg()->llvmValue(i->op2()) : cg()->llvmConstNull();
-    auto op3 = i->op3() ? cg()->llvmValue(i->op3()) : cg()->llvmEnum("Hilti::Side::Both");
+    auto tb = builder::reference::type(builder::bytes::type());
+
+    auto op2 = i->op2() ? cg()->llvmValue(i->op2()) : cg()->llvmEnum("Hilti::Side::Both");
+    auto op3 = i->op3() ? cg()->llvmValue(i->op3()) : cg()->llvmConstNull(cg()->llvmType((tb)));
 
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    args.push_back(builder::codegen::create(builder::bytes::type(), op2));
-    args.push_back(builder::codegen::create(cg()->typeByName("Hilti::Side"), op3));
+    args.push_back(builder::codegen::create(cg()->typeByName("Hilti::Side"), op2));
+    args.push_back(builder::codegen::create(tb, op3));
     auto result = cg()->llvmCall("hlt::bytes_strip", args);
     cg()->llvmStore(i, result);
 }
@@ -264,11 +266,9 @@ void StatementBuilder::visit(statement::instruction::bytes::Split* i)
 
 void StatementBuilder::visit(statement::instruction::bytes::Join* i)
 {
-    auto op2 = i->op2() ? cg()->llvmValue(i->op2()) : cg()->llvmConstNull();
-
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    args.push_back(builder::codegen::create(builder::bytes::type(), op2));
+    args.push_back(i->op2());
     auto result = cg()->llvmCall("hlt::bytes_join", args);
     cg()->llvmStore(i, result);
 }

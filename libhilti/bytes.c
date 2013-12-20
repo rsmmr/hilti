@@ -1519,7 +1519,20 @@ hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt,
     return v;
 }
 
-hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_bytes* pat, hlt_enum side, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline int strip_it(int8_t ch, hlt_bytes* pat)
+{
+    if ( ! pat )
+        return isspace(ch);
+
+    for ( __hlt_bytes_chunk* c = pat->head; c; c = c->next ) {
+        if ( memchr(c->start, ch, c->end - c->start) )
+            return 1;
+    }
+
+    return 0;
+}
+
+hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* pat, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iterator_bytes start;
     hlt_iterator_bytes end;
@@ -1527,37 +1540,87 @@ hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_bytes* pat, hlt_enum side, hlt_exce
     __hlt_bytes_chunk* c = 0;
     int8_t* p = 0;
 
-    for ( c = b->head; c; c = c->next ) {
-        for ( p = c->start; p < c->end; p++ ) {
-            if ( ! isspace(*p) )
-                goto end_loop1;
+    if ( hlt_enum_equal(side, Hilti_Side_Left, excpt, ctx) ||
+         hlt_enum_equal(side, Hilti_Side_Both, excpt, ctx) ) {
+
+        for ( c = b->head; c; c = c->next ) {
+            for ( p = c->start; p < c->end; p++ ) {
+                if ( ! strip_it(*p, pat) )
+                    goto end_loop1;
+            }
         }
-    }
 
 end_loop1:
     start.chunk = c;
     start.cur = p;
     normalize_pos(&start, 0);
+    }
 
-    for ( c = b->tail; c; c = c->prev ) {
-        for ( p = c->end - 1; p >= c->start; --p ) {
-            if ( ! isspace(*p) ) {
-                ++p;
-                goto end_loop2;
+    else {
+        start.chunk = b->head;
+        start.cur = b->head ? b->head->start : 0;
+    }
+
+    if ( hlt_enum_equal(side, Hilti_Side_Right, excpt, ctx) ||
+         hlt_enum_equal(side, Hilti_Side_Both, excpt, ctx) ) {
+
+        for ( c = b->tail; c; c = c->prev ) {
+            for ( p = c->end - 1; p >= c->start; --p ) {
+                if ( ! strip_it(*p, pat) ) {
+                    ++p;
+                    goto end_loop2;
+                }
             }
         }
-    }
 
 end_loop2:
     end.chunk = c;
     end.cur = p;
     normalize_pos(&end, 0);
 
+    }
+
+    else
+        end = GenericEndPos;
+
     return hlt_bytes_sub(start, end, excpt, ctx);
 }
 
-hlt_bytes* hlt_bytes_join(hlt_list* l, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    const char x[] = "hlt_bytes_join not yet implemented";
-    return hlt_bytes_new_from_data((int8_t*)x, sizeof(x), excpt, ctx);
+    const hlt_type_info* ti = hlt_list_type(l, excpt, ctx);
+    hlt_iterator_list i = hlt_list_begin(l, excpt, ctx);
+    hlt_iterator_list end = hlt_list_end(l, excpt, ctx);
+
+    int first = 1;
+    hlt_bytes* b = hlt_bytes_new(excpt, ctx);
+	hlt_bytes* tmp;
+
+    while ( ! hlt_iterator_list_eq(i, end, excpt, ctx) ) {
+
+        if ( ! first )
+            hlt_bytes_append(b, sep, excpt, ctx);
+
+        // FIXME: The charset handling isn't really right here. We should
+        // probably change the to_string methods to take a flag indicating
+        // "binary is ok", and then have a hlt_bytes_from_object() function
+        // that just passes that back. Or maybe we even need a separate
+        // to_bytes() function?
+        void* obj = hlt_iterator_list_deref(i, excpt, ctx);
+        hlt_string so = hlt_string_from_object(ti, obj, excpt, ctx);
+        hlt_bytes* bo = hlt_string_encode(so, Hilti_Charset_UTF8, excpt, ctx);
+        hlt_bytes_append(b, bo, excpt, ctx);
+
+        GC_DTOR_GENERIC(obj, ti);
+        GC_DTOR(so, hlt_string);
+        GC_DTOR(bo, hlt_string);
+
+        hlt_iterator_list j = i;
+        i = hlt_iterator_list_incr(i, excpt, ctx);
+        GC_DTOR(j, hlt_iterator_list);
+
+        first = 0;
+    }
+
+    return b;
 }

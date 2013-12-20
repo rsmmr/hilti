@@ -100,8 +100,36 @@ void CodeBuilder::visit(expression::operator_::bytes::Lower* i)
 void CodeBuilder::visit(expression::operator_::bytes::Strip* i)
 {
     auto op1 = cg()->hiltiExpression(i->op1());
+
+    shared_ptr<hilti::Expression> op2 = nullptr;
+
+    auto side = callParameter(i->op3(), 0);
+
+    if ( side ) {
+        auto t1 = hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::Side::Left"),
+            hilti::builder::id::create(string("Hilti::Side::Left"))});
+
+        auto t2 = hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::Side::Right"),
+            hilti::builder::id::create(string("Hilti::Side::Right"))});
+
+        auto t3 = hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::Side::Both"),
+            hilti::builder::id::create(string("Hilti::Side::Both"))});
+
+        op2 = moduleBuilder()->addTmp("side", hilti::builder::type::byName("Hilti::Side"));
+        auto tuple = hilti::builder::tuple::create({ t1, t2, t3 });
+        auto hside = cg()->hiltiExpression(side);
+
+        cg()->builder()->addInstruction(op2, hilti::instruction::Misc::SelectValue, hside, tuple);
+    }
+
+    auto chars = callParameter(i->op3(), 1);
+    auto op3 = chars ? cg()->hiltiExpression(chars) : nullptr;
+
     auto result = cg()->builder()->addTmp("result", hilti::builder::reference::type(hilti::builder::bytes::type()));
-    cg()->builder()->addInstruction(result, hilti::instruction::bytes::Strip, op1);
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::Strip, op1, op2, op3);
     setResult(result);
 }
 
@@ -192,6 +220,17 @@ void CodeBuilder::visit(expression::operator_::bytes::Decode* i)
 
     auto result = cg()->builder()->addTmp("result", hilti::builder::string::type());
     cg()->builder()->addInstruction(result, hilti::instruction::string::Decode, op1, charset);
+
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::bytes::Join* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto op2 = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    auto result = cg()->builder()->addTmp("result", hilti::builder::reference::type(hilti::builder::bytes::type()));
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::Join, op1, op2);
 
     setResult(result);
 }

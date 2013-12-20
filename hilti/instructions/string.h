@@ -161,6 +161,20 @@ iBegin(string, Substr, "string.substr")
         Extracts the substring of length *op3* from *op1* that starts at
         position *op2*.
     )")
-
 iEnd
+
+iBegin(string, Join, "string.join")
+    iTarget(optype::string)
+    iOp1(optype::string, true)
+    iOp2(optype::refList, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+         Renders each of the elements in list *op2* into a string (as if one printed it),
+         and then concatenates them using *op1* as the separator.
+    )")
+iEnd
+
 

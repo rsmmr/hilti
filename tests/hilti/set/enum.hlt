@@ -1,0 +1,28 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type Foo = enum { A, B, C }
+
+void run() {
+    local bool b
+    local ref<set<Foo>> m
+
+    m = new set<Foo>
+
+    set.insert m Foo::A
+    set.insert m Foo::B
+    call Hilti::print(m)
+
+    b = set.exists m Foo::A
+    call Hilti::print (b)
+
+    b = set.exists m Foo::C
+    call Hilti::print (b)
+
+}
