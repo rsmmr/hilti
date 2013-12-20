@@ -13,6 +13,6 @@ protocol analyzer pac2::SSH over UDP:
 
 on DNS::Question -> event my_dns_request($conn,
                                          DNS::bro_dns_msg(msg),
-                                         self.qname.name,
+                                         b".".join(self.qname.labels),
 		          		                 self.qtype,
 				                         self.qclass);

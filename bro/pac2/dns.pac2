@@ -84,8 +84,6 @@ type Name = unit(msg: Message) {
 
     # Parsed labels are collected in this list.
     var labels: list<bytes>;
-
-    var name: bytes = b"";
 };
 
 type Pointer = unit(msg: Message, label: Label) {
@@ -105,7 +103,6 @@ type Label = unit(msg: Message, name: Name) {
     switch ( self.len.compressed ) {
         0 ->    label: bytes &length=self.len {
                     name.labels.push_back(self.label);
-					name.name += b"." + self.label;
                     }
 
         3 ->    ptr: Pointer(msg, self) &parse(self.input()) {
