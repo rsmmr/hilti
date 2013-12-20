@@ -109,6 +109,11 @@ std::string BuilderBase::HiltiSymbol(const ::ID* id)
 	return mbuilder->Compiler()->HiltiSymbol(id, mbuilder->module());
 	}
 
+std::string BuilderBase::HiltiSymbol(const ::BroType* t)
+	{
+	return mbuilder->Compiler()->HiltiSymbol(t);
+	}
+
 std::string BuilderBase::HiltiODescSymbol(const ::BroObj* obj)
 	{
 	return mbuilder->Compiler()->HiltiODescSymbol(obj);

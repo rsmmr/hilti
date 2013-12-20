@@ -175,6 +175,14 @@ public:
 	std::string HiltiSymbol(const ::ID* id);
 
 	/**
+	 * Returns the internal HILTI-level symbol for a Bro type. This will
+	 * always be a globally valid ID.
+	 *
+	 * This is a short-cut to using the compiler's corresponding method.
+	 */
+	std::string HiltiSymbol(const ::BroType* t);
+
+	/**
 	 * Renders a \a BroObj via its \c Describe() method and turns the
 	 * result into a valid HILTI identifier string.
 	 *

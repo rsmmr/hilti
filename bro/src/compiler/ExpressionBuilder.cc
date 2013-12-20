@@ -725,7 +725,7 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ListExpr* exp
 
 	const ::expr_list& exprs = expr->Exprs();
 
-	auto targets = HasTargetType() ? TargetType()->AsTypeList()->Types() : nullptr;
+	auto targets = HasTargetType() && TargetType()->Tag() != TYPE_ANY ? TargetType()->AsTypeList()->Types() : nullptr;
 
 	loop_over_list(exprs, i)
 		{
@@ -901,7 +901,7 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RecordCoerceE
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RecordConstructorExpr* expr)
 	{
-	auto rtype = HasTargetType() ? TargetType() : expr->Type();
+	auto rtype = HasTargetType() && TargetType()->Tag() != TYPE_ANY ? TargetType() : expr->Type();
 	auto tuple = CompileListExprToRecordTuple(expr->Op()->AsListExpr(), rtype->AsRecordType());
 
 	auto rec = ModuleBuilder()->addTmp("rec", HiltiType(rtype));

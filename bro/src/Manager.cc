@@ -2538,6 +2538,21 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		result = (*(e2)func)((*args)[0], (*args)[1], &excpt, ctx);
 		break;
 
+	case 3:
+		typedef ::Val* (*e3)(Val*, Val*, Val*, hlt_exception**, hlt_execution_context*);
+		result = (*(e3)func)((*args)[0], (*args)[1], (*args)[2], &excpt, ctx);
+		break;
+
+	case 4:
+		typedef ::Val* (*e4)(Val*, Val*, Val*, Val*, hlt_exception**, hlt_execution_context*);
+		result = (*(e4)func)((*args)[0], (*args)[1], (*args)[2], (*args)[3], &excpt, ctx);
+		break;
+
+	case 5:
+		typedef ::Val* (*e5)(Val*, Val*, Val*, Val*, Val*, hlt_exception**, hlt_execution_context*);
+		result = (*(e5)func)((*args)[0], (*args)[1], (*args)[2], (*args)[3], (*args)[4], &excpt, ctx);
+		break;
+
 	default:
 		reporter::error(::util::fmt("function/event %s with %d parameters not yet supported in RuntimeCallFunction()", symbol, args->length()));
 		return new ::Val(0, ::TYPE_ERROR);

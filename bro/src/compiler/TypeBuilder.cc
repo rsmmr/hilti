@@ -136,14 +136,11 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::EnumType* type)
 
 	for ( auto i : type->Names() )
 		{
-		auto name = i.first;
+		auto label = i.first;
 		auto val = i.second;
 
-		auto module = ::extract_module_name(name.c_str());
-		auto local = ::extract_var_name(name.c_str());
-
-		auto hn = ::util::fmt("%s", local);
-		auto id = ::hilti::builder::id::node(hn);
+		auto name = ::util::strreplace(label, "::", "_");
+		auto id = ::hilti::builder::id::node(name);
 
 		labels.push_back(std::make_pair(id, val));
 		}

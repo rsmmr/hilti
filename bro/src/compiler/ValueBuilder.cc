@@ -263,7 +263,8 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::EnumVal* val)
 	{
 	auto etype = HiltiType(val->Type());
 	auto label = val->Type()->AsEnumType()->Lookup(val->AsEnum());
-        auto id = ::hilti::builder::id::node(::extract_var_name(label));
+	auto name = ::util::strreplace(label, "::", "_");
+        auto id = ::hilti::builder::id::node(name);
 	return ::hilti::builder::enum_::create(id, etype);
         }
 
@@ -286,7 +287,11 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::OpaqueVal* va
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PatternVal* val)
 	{
 	// TODO: We don't convert the regexp dialect yet.
-	auto p = ::hilti::builder::regexp::pattern(val->AsPattern()->PatternText(), "");
+
+	// The anywhere pattern has the form "^?(.|\n)*(<real-stuff-here>)"
+	auto pt = std::string(val->AsPattern()->AnywherePatternText());
+	auto ps = pt.substr(10, pt.size() - 10 - 1);
+	auto p = ::hilti::builder::regexp::pattern(ps, "");
 	return ::hilti::builder::regexp::create(p);
 	}
 

@@ -659,9 +659,9 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionLegacy(shared_pt
 
 	loop_over_list(exprs, i)
 		{
-		auto arg = HiltiExpression(exprs[i]);
-		// auto btype = var_args ? exprs[i]->Type() : fargs->FieldType(i);
-		auto val = RuntimeHiltiToVal(arg, exprs[i]->Type());
+		auto btype = var_args ? exprs[i]->Type() : fargs->FieldType(i);
+		auto arg = HiltiExpression(exprs[i], btype);
+		auto val = RuntimeHiltiToVal(arg, btype);
 		func_args.push_back(val);
 		}
 

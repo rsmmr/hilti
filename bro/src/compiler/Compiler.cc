@@ -547,6 +547,14 @@ std::string Compiler::normalizeSymbol(const std::string sym, const std::string p
 	return local;
 	}
 
+std::string Compiler::HiltiSymbol(const ::BroType* t)
+	{
+	if ( t->GetTypeID() )
+		return ::util::strreplace(t->GetTypeID(), "::", "_");
+
+	return HiltiODescSymbol(t);
+	}
+
 std::string Compiler::HiltiODescSymbol(const ::BroObj* obj)
 	{
 	::ODesc d;

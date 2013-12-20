@@ -204,12 +204,13 @@ static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *
 	// TODO: We should cache the matchers here. Bro's regexps are static,
 	// so that should be fine.
 
-	// We cheat a bit by knowing that this call will do the right thingk
+	// We cheat a bit by knowing that this call will do the right thing
 	// in our case of having just one pattern for which the type info
 	// doesn't matter here.
 	auto pattern = hlt_regexp_to_string(nullptr, &re, 0, excpt, ctx);
 	auto cstr = hlt_string_to_native(pattern, excpt, ctx);
 	auto rval = new ::RE_Matcher(cstr);
+	rval->Compile();
 	hlt_free(cstr);
 	GC_DTOR(pattern, hlt_string);
 	return new PatternVal(rval);

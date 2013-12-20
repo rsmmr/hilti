@@ -139,12 +139,20 @@ public:
 	std::string HiltiSymbol(const ::ID* id, shared_ptr<::hilti::Module> module);
 
 	/**
+	 * Returns the internal HILTI-level symbol for a Bro type. This will
+	 * always be a globally valid ID.
+	 *
+	 * @param t The type.
+	 */
+	std::string HiltiSymbol(const ::BroType* );
+
+	/**
 	 * Returns the internal HILTI-level symbol for a Bro ID.
 	 *
 	 * @param id The ID.
-     *
-     * @param global True if this is a global ID that need potentially needs
-     * to be qualified with a namespace.
+	 *
+	 * @param global True if this is a global ID that need potentially needs
+	 * to be qualified with a namespace.
 	 *
 	 * @param module: If non-empty, a module name to which the returned
 	 * symbol should be relative. If the function's ID has the same

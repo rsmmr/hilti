@@ -146,8 +146,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildConversionFunction(
 	auto glue_mbuilder = GlueModuleBuilder();
 	auto glue_ns = glue_mbuilder->module()->id()->name();
 
-	auto fname = ::util::fmt("%s_%s", tag, HiltiODescSymbol(type));
-	auto qualified_fname = ::util::fmt("%s::%s_%s", glue_ns, tag, HiltiODescSymbol(type));
+	auto fname = ::util::fmt("%s_%s", tag, HiltiSymbol(type));
+	auto qualified_fname = ::util::fmt("%s::%s_%s", glue_ns, tag, HiltiSymbol(type));
 
 	auto result = ::hilti::builder::function::result(dsttype);
 	auto param = ::hilti::builder::function::parameter("val", valtype, false, nullptr);
@@ -229,8 +229,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiGlobalForType(const
 	auto glue_mbuilder = GlueModuleBuilder();
 	auto glue_ns = glue_mbuilder->module()->id()->name();
 
-	auto tname = ::util::fmt("%s_%s", tag, HiltiODescSymbol(type));
-	auto qualified_tname = ::util::fmt("%s::%s_%s", glue_ns, tag, HiltiODescSymbol(type));
+	auto tname = ::util::fmt("%s_%s", tag, HiltiSymbol(type));
+	auto qualified_tname = ::util::fmt("%s::%s_%s", glue_ns, tag, HiltiSymbol(type));
 
 	if ( ! glue_mbuilder->declared(tname) )
 		{
@@ -273,8 +273,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildCreateBroTypeIntern
 	auto glue_mbuilder = GlueModuleBuilder();
 	auto glue_ns = glue_mbuilder->module()->id()->name();
 
-	auto tname = ::util::fmt("%s_%s", tag, HiltiODescSymbol(type));
-	auto qualified_tname = ::util::fmt("%s::%s_%s", glue_ns, tag, HiltiODescSymbol(type));
+	auto tname = ::util::fmt("%s_%s", tag, HiltiSymbol(type));
+	auto qualified_tname = ::util::fmt("%s::%s_%s", glue_ns, tag, HiltiSymbol(type));
 
 	if ( ! glue_mbuilder->declared(tname) )
 		{
