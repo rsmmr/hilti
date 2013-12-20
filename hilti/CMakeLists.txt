@@ -23,7 +23,7 @@ endif ()
 
 find_package(GooglePerftools)
 
-if (${GOOGLEPERFTOOLS_FOUND} STREQUAL "TRUE" )
+if ("${GOOGLEPERFTOOLS_FOUND}" STREQUAL "TRUE" )
     set(HAVE_PERFTOOLS "1")
 else ()
     set(HAVE_PERFTOOLS "0")

@@ -20,7 +20,7 @@ extern const char* __hlt_make_location(const char* file, int line);
 ///
 /// If you change something here, also adapt ``hlt.gcdhr`` in ``libhilti.ll``.
 typedef struct {
-    uint64_t ref_cnt;  /// The number of references to the object currently retained.
+    int64_t ref_cnt;  /// The number of references to the object currently retained.
 } __hlt_gchdr;
 
 /// Statistics about the current state of memory allocations. Some are only
