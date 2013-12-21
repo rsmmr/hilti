@@ -458,7 +458,16 @@ std::list<string> Compiler::GetNamespaces() const
 
 string Compiler::HiltiSymbol(const ::Func* func, shared_ptr<::hilti::Module> module, bool include_module)
 	{
-	return normalizeSymbol(func->Name(), "", "", module ? module->id()->name() : "", true, include_module);
+	// Sometimes global functions come without their namespace. We can't
+	// use the modutils functions here as they do some magic with GLOBAL
+	// that we don't want.
+	std::string name = func->Name();
+
+	if ( name.rfind("::") == std::string::npos )
+		name = ::util::fmt("%s::%s", ::GLOBAL_MODULE_NAME, name);
+
+	return normalizeSymbol(name, "", "", module ? module->id()->name() : "", true, include_module);
+
 #if 0
 	if ( func->GetKind() == Func::BUILTIN_FUNC )
 		return func->Name();
