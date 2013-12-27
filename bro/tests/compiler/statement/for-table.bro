@@ -29,19 +29,4 @@ event bro_init() &priority = 42
 	for ( i in s3 )
 		print i;
 	print "";
-
-	# 
-        
-	local s4 = vector(1,2,3,4);
-	print s4;
-
-	for ( i in s4 )
-		print i;
-	print "";
-
-	#
-	for ( i in s1 )
-		for ( j in s3 )
-			print i, j;
-	
 	}

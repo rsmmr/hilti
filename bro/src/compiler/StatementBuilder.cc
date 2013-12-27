@@ -228,6 +228,25 @@ void StatementBuilder::Compile(const ::FallthroughStmt* stmt)
 void StatementBuilder::Compile(const ::ForStmt* stmt)
 	{
 	auto type = stmt->LoopExpr()->Type();
+
+	switch ( type->Tag() )
+		{
+		case TYPE_TABLE:
+			CompileForStmtTable(stmt);
+			break;
+
+		case TYPE_VECTOR:
+			CompileForStmtVector(stmt);
+			break;
+
+		default:
+			NotSupported(stmt);
+		}
+	}
+
+void StatementBuilder::CompileForStmtTable(const ::ForStmt* stmt)
+	{
+	auto type = stmt->LoopExpr()->Type()->AsTableType();
 	auto expr = HiltiExpression(stmt->LoopExpr());
 	auto n = ::util::fmt("__i_%p", stmt);
 	auto id = ::hilti::builder::id::node(n);
@@ -246,7 +265,7 @@ void StatementBuilder::Compile(const ::ForStmt* stmt)
 	// could add an optimization pass at the HILTI level that would later
 	// recognize this situation and reuse the value directly, omitting
 	// the unnecssary lookup.
-	if ( type->Tag() == TYPE_TABLE && ! type->AsTableType()->IsSet() )
+	if ( ! type->IsSet() )
 		{
 		auto rtype = ::ast::checkedCast<::hilti::type::Reference>(HiltiType(type));
 		auto mtype = ::ast::checkedCast<::hilti::type::Map>(rtype->argType());
@@ -300,6 +319,60 @@ void StatementBuilder::Compile(const ::ForStmt* stmt)
 	auto body_stmt = ::ast::checkedCast<statement::Block>(body->block());
 	auto s = ::hilti::builder::loop::foreach(id, expr, body_stmt);
 	Builder()->addInstruction(s);
+	}
+
+void StatementBuilder::CompileForStmtVector(const ::ForStmt* stmt)
+	{
+	auto vtype = stmt->LoopExpr()->Type()->AsVectorType();
+	auto vexpr = HiltiExpression(stmt->LoopExpr());
+	auto vars = stmt->LoopVar();
+	assert(vars->length() == 1);
+
+	auto id = new ::ID((*vars)[0]->Name(), ::SCOPE_FUNCTION, false);
+	id->SetType(::base_type(TYPE_COUNT));
+	auto iter = DeclareLocal(id);
+
+	auto size = Builder()->addTmp("vsize", ::hilti::builder::integer::type(64));
+	auto done = Builder()->addTmp("vdone", ::hilti::builder::boolean::type());
+	Builder()->addInstruction(size, ::hilti::instruction::vector::Size, vexpr);
+	Builder()->addInstruction(iter, ::hilti::instruction::operator_::Assign, ::hilti::builder::integer::create(0));
+
+	auto next = ModuleBuilder()->newBuilder("next");
+	auto cond = ModuleBuilder()->newBuilder("cond");
+	Builder()->addInstruction(::hilti::instruction::flow::Jump, cond->block());
+
+	ModuleBuilder()->pushBuilder(cond);
+	Builder()->addInstruction(done, ::hilti::instruction::operator_::Equal, iter, size);
+	auto b = Builder()->addIfElse(done);
+	ModuleBuilder()->popBuilder(cond);
+
+	auto btrue = std::get<0>(b);
+	auto bfalse = std::get<1>(b);
+	auto bcont = std::get<2>(b);
+
+	ModuleBuilder()->pushBuilder(btrue);
+	Builder()->addInstruction(::hilti::instruction::flow::Jump, bcont->block());
+	ModuleBuilder()->popBuilder(btrue);
+
+	ModuleBuilder()->pushBuilder(bfalse);
+
+	PushFlowState(FLOW_STATE_NEXT, next->block());
+	PushFlowState(FLOW_STATE_BREAK, bcont->block());
+	Compile(stmt->LoopBody());
+	PopFlowState();
+	PopFlowState();
+
+	Builder()->addInstruction(::hilti::instruction::flow::Jump, next->block());
+	ModuleBuilder()->popBuilder(bfalse);
+
+	ModuleBuilder()->pushBuilder(next);
+	Builder()->addInstruction(iter, ::hilti::instruction::operator_::Incr, iter);
+	Builder()->addInstruction(::hilti::instruction::flow::Jump, cond->block());
+	ModuleBuilder()->popBuilder(next);
+
+	ModuleBuilder()->pushBuilder(bcont);
+
+	// Leave on stack.
 	}
 
 void StatementBuilder::Compile(const ::IfStmt* stmt)

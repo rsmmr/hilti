@@ -99,6 +99,9 @@ protected:
 	void Compile(const ::SwitchStmt* stmt);
 	void Compile(const ::WhenStmt* stmt);
 
+	void CompileForStmtTable(const ::ForStmt* stmt);
+	void CompileForStmtVector(const ::ForStmt* stmt);
+
 private:
 	flow_state_list flow_stack;
 };
