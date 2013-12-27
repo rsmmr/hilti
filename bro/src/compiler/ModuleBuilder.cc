@@ -539,39 +539,18 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* f
 	// If the expression references a callee by name, we call it directly
 	// and purely inside HILTI. If not, we go through the Bro core.
 
-	::Func* bro_func = nullptr;
+	auto m = BroExprToFunc(func);
 
-	if ( func->Tag() == EXPR_NAME )
-		{
-		auto id = func->AsNameExpr()->Id();
-		assert(id->Type()->Tag() == TYPE_FUNC);
+	bool success = m.first;
+	auto bro_func = m.second;
 
-		if ( id->IsGlobal() && id->HasVal() )
-			bro_func = id->ID_Val()->AsFunc();
-		}
-
-	if ( func->Tag() == EXPR_EVENT )
-		{
-		auto ee = dynamic_cast<const ::EventExpr *>(func);
-
-		// Just a double-check ... Bro actually doesn't support this, so nor do we.
-		if ( ! ::global_scope()->Lookup(ee->Name()) )
-			{
-			Error(::util::fmt("event %s is not a global ID (indirect event operands aren't supported by Bro)", ee->Name()), func);
-			return nullptr;
-			}
-
-		bro_func = ee->Handler()->LocalHandler();
-
-		if ( ! bro_func )
-			// No handler, just jump out directly.
-			return nullptr;
-
-		}
-
-	if ( ! bro_func )
+	if ( ! success )
 		// Cannot handle it ourselves, pass on to Bro.
 		return HiltiCallFunctionViaBro(HiltiExpression(func), ftype, args);
+
+	if ( ! bro_func )
+		// Known, but no implementation.
+		return nullptr;
 
 	auto hargs = HiltiExpression(args, ftype->ArgTypes());
 

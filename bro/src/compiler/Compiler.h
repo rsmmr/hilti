@@ -186,6 +186,21 @@ public:
 	 */
 	bool HaveHiltiBif(const std::string& name, std::string* hilti_name = 0);
 
+	/**
+	 * Attempts to statically determine the Bro function referenced by a
+	 * Bro expression. This may or may not work.
+	 *
+	 * @param func The expression referencing a function
+	 *
+	 * @return A pair \a (success, function). If \a success is true, we
+	 * could infer which Bro function the expression referes to; in that
+	 * case, the function is usually it in the 2nd pair element if
+	 * there's a local implementation (and null instead if not). If \a
+	 * success is false, we couldn't statically determine behind the
+	 * expression; in that case, the 2nd pair element is undefined.
+	 */
+	std::pair<bool, ::Func*> BroExprToFunc(const ::Expr* func);
+
 private:
 	std::string normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool global, bool include_module = false);
 

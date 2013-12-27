@@ -207,6 +207,11 @@ const ::Func* BuilderBase::CurrentFunction() const
 	return mbuilder->CurrentFunction();
 	}
 
+std::pair<bool, ::Func*> BuilderBase::BroExprToFunc(const ::Expr* func)
+	{
+	return mbuilder->Compiler()->BroExprToFunc(func);
+	}
+
 shared_ptr<::hilti::Expression> BuilderBase::HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args)
 	{
 	return mbuilder->HiltiCallFunction(func, ftype, args);

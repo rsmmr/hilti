@@ -2,7 +2,9 @@
 #include <Val.h>
 #include <RE.h>
 #include <Func.h>
+#include "ASTDumper.h"
 #undef List
+
 
 #include <hilti/hilti.h>
 #include <util/util.h>
@@ -376,21 +378,6 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 			}
 		}
 
-	shared_ptr<::hilti::Expression> def;
-
-	if ( Attr* def_attr = val->FindAttr(ATTR_DEFAULT) )
-		{
-		const ::Expr* expr = def_attr->AttrExpr();
-		const ::BroType* ytype = ttype->YieldType();
-		const ::BroType* dtype = expr->Type();
-
-		if ( dtype->Tag() == TYPE_RECORD && ytype->Tag() == TYPE_RECORD &&
-		     ! ::same_type(dtype, ytype) )
-			Error("no support yet for record_coercion in table &default", val);
-
-		def = HiltiExpression(expr, ytype);
-		}
-
 	if ( ttype->IsSet() )
 		{
 		::hilti::builder::set::element_list elems;
@@ -454,6 +441,40 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 		auto htype = HiltiType(val->Type());
 		auto rtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
 		auto mtype = ::ast::checkedCast<::hilti::type::Map>(rtype->argType());
+
+
+		shared_ptr<::hilti::Expression> def;
+
+		if ( Attr* def_attr = val->FindAttr(ATTR_DEFAULT) )
+			{
+			const ::Expr* expr = def_attr->AttrExpr();
+			const ::BroType* ytype = ttype->YieldType();
+			const ::BroType* dtype = expr->Type();
+
+			if ( dtype->Tag() == TYPE_RECORD && ytype->Tag() == TYPE_RECORD &&
+			     ! ::same_type(dtype, ytype) )
+				Error("no support yet for record_coercion in table &default", val);
+
+			if ( dtype->Tag() != TYPE_FUNC )
+				def = HiltiExpression(expr, ytype);
+			else
+				{
+				auto m = BroExprToFunc(expr);
+
+				if ( m.first && m.second )
+					{
+					auto hilti_func = DeclareFunction(m.second);
+					def = ::hilti::builder::callable::create(mtype->valueType(),
+										 { mtype->keyType() },
+										 hilti_func,
+										 {});
+					}
+
+				else
+					Error("no support for non-const table default functions");
+				}
+			}
+
 		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), elems, def);
 		}
 	}
