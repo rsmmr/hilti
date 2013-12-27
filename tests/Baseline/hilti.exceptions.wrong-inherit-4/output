@@ -1,5 +1,5 @@
 
->>> A
+>>> Main::A
 wrong-inherit.hlt:6-6: fatal error, circuluar exception inheritance [pass::hilti::Validator]
 wrong-inherit.hlt: Aborting due to verification error.
 error running hiltic, aborting

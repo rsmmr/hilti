@@ -81,8 +81,8 @@ static void check_exception(hlt_exception* excpt)
             exit(0);
         else {
             GC_DTOR(excpt, hlt_exception);
-            GC_DTOR(request, hlt_Parser);
-            GC_DTOR(reply, hlt_Parser);
+            GC_DTOR(request, hlt_BinPACHilti_Parser);
+            GC_DTOR(reply, hlt_BinPACHilti_Parser);
             exit(1);
         }
     }
@@ -218,7 +218,7 @@ void listParsers()
 
         fputc('\n', stderr);
 
-        GC_DTOR(p, hlt_Parser);
+        GC_DTOR(p, hlt_BinPACHilti_Parser);
 
         hlt_iterator_list i2 = i;
         i = hlt_iterator_list_incr(i, &excpt, ctx);
@@ -260,7 +260,7 @@ static binpac_parser* findParser(const char* name)
             break;
         }
 
-        GC_DTOR(p, hlt_Parser);
+        GC_DTOR(p, hlt_BinPACHilti_Parser);
 
         hlt_iterator_list j = i;
         i = hlt_iterator_list_incr(i, &excpt, ctx);
@@ -635,7 +635,7 @@ int main(int argc, char** argv)
             hlt_iterator_list i = hlt_list_begin(parsers, &excpt, ctx);
             request = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
             assert(request);
-            GC_CCTOR(request, hlt_Parser);
+            GC_CCTOR(request, hlt_BinPACHilti_Parser);
             reply = request;
             GC_DTOR(i, hlt_iterator_list);
             GC_DTOR(parsers, hlt_list);
@@ -677,7 +677,7 @@ int main(int argc, char** argv)
         }
 
         else {
-            GC_CCTOR(request, hlt_Parser);
+            GC_CCTOR(request, hlt_BinPACHilti_Parser);
             reply = request;
         }
     }
@@ -700,8 +700,8 @@ int main(int argc, char** argv)
         GC_DTOR(profiler_tag, hlt_string);
     }
 
-    GC_DTOR(request, hlt_Parser);
-    GC_DTOR(reply, hlt_Parser);
+    GC_DTOR(request, hlt_BinPACHilti_Parser);
+    GC_DTOR(reply, hlt_BinPACHilti_Parser);
 
     exit(0);
 }

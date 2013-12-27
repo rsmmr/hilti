@@ -28,7 +28,6 @@ public:
    void printFlow(Statement* stmt, const string& prefix = "");
 
 protected:
-
    void visit(Module* m) override;
    void visit(ID* id) override;
 

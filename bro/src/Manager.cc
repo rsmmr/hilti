@@ -2413,7 +2413,7 @@ void Manager::ExtractParsers(hlt_list* parsers)
 				if ( i != parser_map.end() )
 						{
 						a->parser_orig = i->second;
-						GC_CCTOR(a->parser_orig, hlt_Parser);
+						GC_CCTOR(a->parser_orig, hlt_BinPACHilti_Parser);
 						}
 				}
 
@@ -2424,7 +2424,7 @@ void Manager::ExtractParsers(hlt_list* parsers)
 				if ( i != parser_map.end() )
 						{
 						a->parser_resp = i->second;
-						GC_CCTOR(a->parser_resp, hlt_Parser);
+						GC_CCTOR(a->parser_resp, hlt_BinPACHilti_Parser);
 						}
 				}
 		}
@@ -2439,13 +2439,13 @@ void Manager::ExtractParsers(hlt_list* parsers)
 		if ( i != parser_map.end() )
 			{
 			a->parser = i->second;
-			GC_CCTOR(a->parser, hlt_Parser);
+			GC_CCTOR(a->parser, hlt_BinPACHilti_Parser);
 			}
 		}
 
 	for ( auto p : parser_map )
 		{
-		GC_DTOR(p.second, hlt_Parser);
+		GC_DTOR(p.second, hlt_BinPACHilti_Parser);
 		}
 	}
 

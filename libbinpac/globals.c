@@ -22,7 +22,7 @@ void __binpac_globals_init()
     hlt_execution_context* ctx = hlt_global_execution_context();
 
     _globals = &_our_globals;
-    _globals->parsers = hlt_list_new(&hlt_type_info_hlt_Parser, 0, &excpt, ctx);
+    _globals->parsers = hlt_list_new(&hlt_type_info_hlt_BinPACHilti_Parser, 0, &excpt, ctx);
     _globals->mime_types = hlt_map_new(&hlt_type_info_hlt_bytes, &hlt_type_info___mime_parser, 0, &excpt, ctx);
     _globals->debugging = 0;
 }

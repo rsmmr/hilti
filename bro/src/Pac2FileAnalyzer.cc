@@ -72,7 +72,7 @@ void Pac2_FileAnalyzer::Done()
 	{
 	file_analysis::Analyzer::Done();
 
-	GC_DTOR(parser, hlt_Parser);
+	GC_DTOR(parser, hlt_BinPACHilti_Parser);
 	GC_DTOR(data, hlt_bytes);
 	GC_DTOR(resume, hlt_exception);
 	}
@@ -104,7 +104,7 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 			return 1;
 			}
 
-		GC_CCTOR(parser, hlt_Parser);
+		GC_CCTOR(parser, hlt_BinPACHilti_Parser);
 		}
 
 	int result = 0;

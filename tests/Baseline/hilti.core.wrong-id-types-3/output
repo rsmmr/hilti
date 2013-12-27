@@ -1,8 +1,8 @@
 
->>> jump foo
+>>> jump Main::foo
 wrong-id-types.hlt:9-10: error, operands do not match instruction jump
   got:
-    jump: foo
+    jump: Main::foo
   expected one of:
     jump: label
  [pass::hilti::InstructionResolver]

@@ -48,7 +48,7 @@ static void __unlink_state(binpac_sink* sink, __parser_state* state)
     GC_CLEAR(state->resume, hlt_exception);
     GC_DTOR_GENERIC(&state->pobj, state->parser->type_info);
     state->pobj = 0;
-    GC_CLEAR(state->parser, hlt_Parser);
+    GC_CLEAR(state->parser, hlt_BinPACHilti_Parser);
     hlt_free(state);
 }
 
@@ -119,7 +119,7 @@ void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* ty
 {
     __parser_state* state = hlt_malloc(sizeof(__parser_state));
     state->parser = parser;
-    GC_CCTOR(state->parser, hlt_Parser);
+    GC_CCTOR(state->parser, hlt_BinPACHilti_Parser);
     state->pobj = *pobj;
     GC_CCTOR_GENERIC(&state->pobj, type);
     state->data = 0;

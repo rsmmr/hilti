@@ -1,5 +1,5 @@
 
->>> e = new myException "hello"
+>>> e = new Main::myException "hello"
 wrong-new.hlt:10-11: error, exception does not take an argument [pass::hilti::Validator]
 wrong-new.hlt: Aborting due to verification error.
 error running hiltic, aborting

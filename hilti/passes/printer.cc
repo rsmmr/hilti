@@ -103,6 +103,7 @@ void Printer::printFlow(Statement* stmt, const string& prefix)
 void Printer::visit(Module* m)
 {
     setPrintOriginalIDs(false);
+
     _module = m;
 
     Printer& p = *this;
@@ -321,6 +322,7 @@ void Printer::visit(expression::Ctor* e)
 void Printer::visit(expression::ID* i)
 {
     Printer& p = *this;
+
     p << scopedID(&p, i, i->id());
 }
 
@@ -606,10 +608,17 @@ void Printer::visit(type::Bool* b)
 
 void Printer::visit(type::Reference* t)
 {
+    Printer& p = *this;
+
+#if 0
+    if ( t->argType()->id() ) {
+        p << "ref<" << t->argType()->render() << ">";
+        return;
+    }
+#endif
+
     if ( printTypeID(this, t) )
         return;
-
-    Printer& p = *this;
 
     enableTypeIDs();
 

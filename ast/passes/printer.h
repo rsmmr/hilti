@@ -49,6 +49,7 @@ public:
     bool _no_indent = false;
     int  _linefeeds = 0;
     int  _print_type_ids = 1;
+    bool _qualify_type_ids = false;
 
     /// Increases indentation level in output by one.
     void pushIndent() { ++_indent; if ( ! _bol ) { *this << "\n"; _bol = true; } }
@@ -109,6 +110,12 @@ public:
     /// XXX
     bool printOriginalIDs() const { return _orginal_ids; }
 
+    /// XXX
+    bool qualifyTypeIDs() const { return _qualify_type_ids; }
+
+    /// XXX
+    bool setQualifyTypeIDs(bool qualify) { return _qualify_type_ids = qualify; }
+
     void printMetaInfo(const MetaInfo* meta) {
         if ( ! meta->size() )
             return;
@@ -167,13 +174,24 @@ string scopedID(Printer<AstInfo>* printer, Expr expr, Id id)
 template<typename AstInfo, typename Ty>
 bool printTypeID(Printer<AstInfo>* printer, Ty* t)
 {
+    typedef typename AstInfo::module Module;
+
     if ( ! printer->_print_type_ids )
         return false;
 
     if ( ! t->id() )
         return false;
 
-    (*printer) << t->id()->pathAsString();
+    auto id = t->id();
+
+    if ( printer->_qualify_type_ids && ! id->isScoped() ) {
+        if ( auto module = id->template firstParent<Module>() ) {
+            (*printer) << util::fmt("%s::%s", module->id()->name(), id->name());
+            return true;
+        }
+    }
+
+    (*printer) << id->pathAsString();
     return true;
 }
 

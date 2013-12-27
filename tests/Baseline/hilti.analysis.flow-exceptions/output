@@ -19,12 +19,12 @@ void run()
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
       # now-dead: { <none> }
-      [0058] exception.__begin_handler @__catch_1 myException
+      [0058] exception.__begin_handler @__catch_1 Main::myException
       # pred: { [0058] } succ: { [0060], [0064] }
       # def: { run%e.2 } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { run%e.2 }
       # now-dead: { <none> }
-      [0059] e = new myException
+      [0059] e = new Main::myException
       # pred: { [0059] } succ: { [0061], [0064] }
       # def: { <none> } clear: { <none> } mod: { run%e.2 } read: { <none> }
       # live-in: { run%e.2 } live-out: { <none> }
