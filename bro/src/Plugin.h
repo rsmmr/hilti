@@ -32,6 +32,8 @@ public:
 	bool QueueEvent(Event* event) override;
 	void UpdateNetworkTime(double network_time) override;
 	void DrainEvents() override;
+	void NewConnection(const ::Connection* c) override;
+	void ConnectionStateRemove(const ::Connection* c) override;
 
 protected:
 	// Overridden from Bro's Plugin.

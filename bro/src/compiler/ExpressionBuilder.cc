@@ -256,6 +256,10 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, con
 		// Need to pass an actual Bro value.
 		e = RuntimeHiltiToVal(e, expr->Type());
 
+	if ( target_type && expr->Type()->Tag() == ::TYPE_ANY )
+		// Need to convert back from Bro value.
+		e = RuntimeValToHilti(e, target_type);
+
 	return e;
 	}
 
@@ -944,7 +948,12 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SetConstructo
 	auto ttype = expr->Type()->AsTableType();
 
 	if ( ttype->IsUnspecifiedTable() )
-		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+		auto stype = ast::checkedCast<::hilti::type::Set>(rt->argType());
+		return ::hilti::builder::set::create(stype->argType(), {});
+		}
 
 	std::shared_ptr<::hilti::Type> ktype;
 
@@ -1025,8 +1034,20 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SubExpr* expr
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableCoerceExpr* expr)
 	{
-	auto t = HiltiType(expr->Type());
-	return ::hilti::builder::expression::default_(t);
+	auto tt = expr->Type()->AsTableType();
+	auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+
+	if ( tt->IsSet() )
+		{
+		auto stype = ast::checkedCast<::hilti::type::Set>(rt->argType());
+		return ::hilti::builder::set::create(stype->argType(), {});
+		}
+
+	else
+		{
+		auto mtype = ast::checkedCast<::hilti::type::Map>(rt->argType());
+		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), {});
+		}
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableConstructorExpr* expr)
@@ -1037,7 +1058,12 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableConstruc
 	auto vtype = HiltiType(ttype->YieldType());
 
 	if ( ttype->IsUnspecifiedTable() )
-		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+		auto mtype = ast::checkedCast<::hilti::type::Map>(rt->argType());
+		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), {});
+		}
 
 	std::shared_ptr<::hilti::Type> ktype;
 
@@ -1106,7 +1132,12 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorConstru
 	auto ytype = HiltiType(vtype->YieldType());
 
 	if ( vtype->IsUnspecifiedVector() )
-		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+		auto vtype = ast::checkedCast<::hilti::type::Vector>(rt->argType());
+		return ::hilti::builder::vector::create(vtype->argType(), {});
+		}
 
 	::hilti::builder::vector::element_list elems;
 

@@ -203,7 +203,10 @@ std::list<const ::Func *> CollectorCallback::Functions(const string& ns)
 				continue;
 
 			if ( ! func->HasBodies() )
+				{
+				DBG_LOG_COMPILER("Skipping event/function %s without bodies", func->Name());
 				continue;
+				}
 
 			assert(func);
 			sfunctions.insert(func);

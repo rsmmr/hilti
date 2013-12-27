@@ -1,4 +1,6 @@
 
+#include "Conn.h"
+#undef List
 
 #include "Plugin.h"
 #include "Pac2Analyzer.h"
@@ -7,6 +9,7 @@
 #include "LocalReporter.h"
 #include "analyzer/Component.h"
 #include "Event.h"
+#include "RuntimeInterface.h"
 
 plugin::Bro_Hilti::Plugin HiltiPlugin;
 
@@ -139,4 +142,16 @@ void plugin::Bro_Hilti::Plugin::UpdateNetworkTime(double network_time)
 
 void plugin::Bro_Hilti::Plugin::DrainEvents()
 	{
+	}
+
+void plugin::Bro_Hilti::Plugin::NewConnection(const ::Connection* c)
+	{
+	}
+
+void plugin::Bro_Hilti::Plugin::ConnectionStateRemove(const ::Connection* c)
+	{
+	::Val* v = c->ConnValIfAvailable();
+
+	if ( v )
+		lib_bro_object_mapping_unregister_bro(v);
 	}

@@ -89,6 +89,12 @@ declare "C-HILTI" void    bro_enum_type_add_name(BroType etype, string module_na
 
 declare "C-HILTI" BroType bro_subnet_type_new()
 
+declare "C-HILTI" void    object_mapping_register(BroVal bobj, any hobj)
+declare "C-HILTI" void    object_mapping_unregister_bro(BroVal obj)
+declare "C-HILTI" void    object_mapping_unregister_hilti(any obj)
+declare "C-HILTI" BroVal  object_mapping_lookup_bro(any obj)
+declare "C-HILTI" any     object_mapping_lookup_hilti(BroVal val)
+
 export cookie_to_conn_val
 export h2b_bytes
 export raise_event

@@ -705,6 +705,58 @@ void libbro_bro_enum_type_add_name(::EnumType* etype, hlt_string module, hlt_str
 	return new FuncType(args->AsRecordType(), ytype, (::function_flavor)flavor);
 	}
 
+typedef std::map<BroObj *, std::pair<const hlt_type_info*, void*> > object_map_b2h;
+static object_map_b2h objects_b2h;
+
+void libbro_object_mapping_register(::BroObj* bobj, hlt_type_info* ti, void** hobj, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	Ref(bobj);
+	GC_CCTOR_GENERIC(hobj, ti);
+	objects_b2h[bobj] = std::make_pair(ti, *hobj);
+	}
+
+void libbro_object_mapping_unregister_bro(::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto m = objects_b2h.find(obj);
+
+	if ( m == objects_b2h.end() )
+		return;
+
+	::BroObj* bobj = m->first;
+	const hlt_type_info* ti = m->second.first;
+	void* hobj = m->second.second;
+
+	objects_b2h.erase(m);
+
+	Unref(bobj);
+        GC_DTOR_GENERIC(&hobj, ti);
+	}
+
+void libbro_object_mapping_unregister_hilti(hlt_type_info* ti, void** hobj, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	assert(false);
+	}
+
+::BroObj* libbro_object_mapping_lookup_bro(hlt_type_info* ti, void** obj, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	assert(false);
+	return 0;
+	}
+
+void* libbro_object_mapping_lookup_hilti(::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto m = objects_b2h.find(obj);
+
+	if ( m == objects_b2h.end() )
+		return 0;
+
+	const hlt_type_info* ti = m->second.first;
+	void* hobj = m->second.second;
+
+	GC_CCTOR_GENERIC(&hobj, ti);
+	return hobj;
+	}
+
 // User-visible Bro::* functions.
 
 int8_t bro_is_orig(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)

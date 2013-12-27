@@ -163,7 +163,7 @@ shared_ptr<::hilti::type::Function> TypeBuilder::FunctionType(const ::FuncType* 
 
 	std::shared_ptr<::hilti::Type> hyield;
 
-	if ( byield && byield->Tag() != TYPE_VOID && byield->Tag() != TYPE_ANY )
+	if ( byield && byield->Tag() != TYPE_VOID )
 		hyield = HiltiType(byield);
 	else
 		hyield = ::hilti::builder::void_::type();

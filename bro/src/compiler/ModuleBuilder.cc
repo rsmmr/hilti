@@ -289,7 +289,7 @@ void ModuleBuilder::CompileScriptFunction(const BroFunc* func, bool exported)
 
 void ModuleBuilder::CompileEvent(const BroFunc* event, bool exported)
 	{
-	DBG_LOG_COMPILER("Compiling event function %s", event->Name());
+	DBG_LOG_COMPILER("Compiling event function %s with %d bodies", event->Name(), event->GetBodies().size());
 
 	auto hook_name = Compiler()->HiltiSymbol(event, module());
 	auto stub_name = Compiler()->HiltiStubSymbol(event, module(), false);
@@ -743,7 +743,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionLegacy(shared_pt
 	auto ytype = ftype->YieldType();
 	auto hytype = HiltiType(ytype);
 
-	if ( ytype && ytype->Tag() != TYPE_VOID && ytype->Tag() != TYPE_ANY )
+	if ( ytype && ytype->Tag() != TYPE_VOID )
 		{
 		auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
 		auto rval = addTmp("rval", vtype);

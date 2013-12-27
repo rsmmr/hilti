@@ -1,5 +1,6 @@
 /**
- *  Code for exchanging information between the compiler and the runtime.
+ * Code for exchanging information between the compiler and the runtime.
+ *
  */
 
 #ifndef BRO_PLUGIN_HILTI_RUNTIME_INTERFACE_H
@@ -10,6 +11,7 @@ extern "C" {
 #include <stdint.h>
 
 struct BroType;
+struct BroObj;
 
 // The numerical value we use for enums' \c Undef value inside the
 // corresponding Bro type definition.
@@ -20,6 +22,10 @@ uint64_t lib_bro_add_indexed_type(BroType* type);
 
 // XXX
 BroType* lib_bro_get_indexed_type(uint64_t idx);
+
+// XXX Forward to libbro_object_mapping_unregister_bro, which has HILTI-C calling convention.
+void lib_bro_object_mapping_unregister_bro(::BroObj* obj);
+
 
 }
 

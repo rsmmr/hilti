@@ -481,7 +481,10 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::VectorVal* val)
 	{
-	if ( val->Type()->AsVectorType()->IsUnspecifiedVector() )
+	auto vtype = val->Type()->AsVectorType();
+	auto ytype = val->Type()->AsVectorType()->YieldType();
+
+	if ( vtype->IsUnspecifiedVector() )
 		{
 		auto tt = TargetType();
 		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
@@ -492,8 +495,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::VectorVal* va
 	::hilti::builder::vector::element_list elems;
 
 	for ( int i = 0; i < val->Size(); i++ )
-		elems.push_back(HiltiValue(val->Lookup(i)));
+		elems.push_back(HiltiValue(val->Lookup(i), ytype));
 
-	auto vt = HiltiType(val->Type()->AsVectorType()->YieldType());
-	return ::hilti::builder::vector::create(vt, elems);
+	return ::hilti::builder::vector::create(HiltiType(ytype), elems);
 	}

@@ -2480,19 +2480,29 @@ analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
 
 ::Val* Manager::RuntimeCallFunction(const Func* func, val_list* args)
 	{
+	if ( ! func->HasBodies() )
+		// For events raised directly, rather than being queued, we
+		// arrive here. Ignore if we don't have a handler.
+		//
+		// TODO: Should these direct events have a separate entry
+		// point in the plugin API?
+		return new Val(0, TYPE_VOID);
+
 	auto symbol = pimpl->compiler->HiltiStubSymbol(func, nullptr, true);
 	return RuntimeCallFunctionInternal(symbol, args);
 	}
 
 bool Manager::RuntimeRaiseEvent(Event* event)
 	{
-	if ( ! event->Handler()->LocalHandler() )
+	auto efunc = event->Handler()->LocalHandler();
+
+	if ( ! (efunc && efunc->HasBodies())  )
 		{
 		Unref(event);
 		return true;
 		}
 
-	auto symbol = pimpl->compiler->HiltiStubSymbol(event->Handler()->LocalHandler(), nullptr, true);
+	auto symbol = pimpl->compiler->HiltiStubSymbol(efunc, nullptr, true);
 	auto result = RuntimeCallFunctionInternal(symbol, event->Args());
 
 	Unref(result);
