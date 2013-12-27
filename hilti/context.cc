@@ -558,6 +558,7 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
 
     _endPass();
 
+#if 0
     if ( options().optimize ) {
         if ( options().cgDebugging("context" ) )
             std::cerr << "Optimizing compiled module ... " << std::endl;
@@ -571,6 +572,7 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
 
         _endPass();
     }
+#endif
 
     return compiled;
 }
