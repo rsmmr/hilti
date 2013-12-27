@@ -236,9 +236,6 @@ int main(int argc, char** argv)
             return 1;
         }
 
-        if ( ! ctx->hiltiContext()->optimize(linked_module, true) )
-            error(input, "Optimization of linked module failed.");
-
         if ( ! ctx->hiltiContext()->printBitcode(linked_module, std::cout) ) {
             error(input, "Aborting due to LLVM problem.");
             return 1;

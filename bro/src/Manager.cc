@@ -319,6 +319,7 @@ bool Manager::InitPostScripts()
 	pimpl->save_hilti = BifConst::Hilti::save_hilti;
 	pimpl->save_llvm = BifConst::Hilti::save_llvm;
 
+	pimpl->hilti_options.jit = true;
 	pimpl->hilti_options.debug = BifConst::Hilti::debug;
 	pimpl->hilti_options.optimize = BifConst::Hilti::optimize;
 	pimpl->hilti_options.profile = BifConst::Hilti::profile;
@@ -326,6 +327,7 @@ bool Manager::InitPostScripts()
 	pimpl->hilti_options.cg_debug = cg_debug;
 	pimpl->hilti_options.module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
 
+	pimpl->pac2_options.jit = true;
 	pimpl->pac2_options.debug = BifConst::Hilti::debug;
 	pimpl->pac2_options.optimize = BifConst::Hilti::optimize;
 	pimpl->pac2_options.profile = BifConst::Hilti::profile;

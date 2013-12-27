@@ -609,6 +609,8 @@ int main(int argc, char** argv)
     if ( ! pac2.size() )
         usage(progname);
 
+    options.jit = true;
+
     if ( ! jitPac2(pac2, options) )
         return 1;
 #else

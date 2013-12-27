@@ -26,6 +26,13 @@ const Options& Optimizer::options() const
 
 bool Optimizer::optimize(llvm::Module* module, bool is_linked)
 {
+#if 0
+    string lerr;
+    llvm::raw_fd_ostream out("optmodule.bc", lerr);
+    llvm::WriteBitcodeToFile(module, out);
+    out.close();
+#endif
+
     // Logic borrowed loosely from LLVM's opt.
 
     llvm::PassManager passes;
@@ -49,8 +56,8 @@ bool Optimizer::optimize(llvm::Module* module, bool is_linked)
 #ifdef HAVE_LLVM_33
     to.JITExceptionHandling = false;
 #endif
-    to.JITEmitDebugInfo = true;
-    to.JITEmitDebugInfoToDisk = true;
+    to.JITEmitDebugInfo = false;
+    to.JITEmitDebugInfoToDisk = false;
 
     auto tm = target->createTargetMachine(triple, llvm::sys::getHostCPUName(), "" /* CPU features */, to, llvm::Reloc::Default, llvm::CodeModel::Default, llvm::CodeGenOpt::Aggressive);
 
@@ -70,12 +77,31 @@ bool Optimizer::optimize(llvm::Module* module, bool is_linked)
     builder.SLPVectorize = true;
 #endif
 
+    // *If* we optimized after compiling modules, we could maybe skip the
+    // following two lines for the linked module. However, we do not (see
+    // comment in CompilerContext::Compile). Doing so would however probably
+    // speed up the link time quite a bit.
+    // if ( ! is_linked ) {
     builder.populateFunctionPassManager(fpasses);
     builder.populateModulePassManager(passes);
+    // }
 
-    if ( is_linked )
-        // TODO: Can we internalize the functions? Maybe we can add a whitelist?
-        builder.populateLTOPassManager(passes, false /* internalize */, true);
+    if ( is_linked ) {
+        // Internalize doesn't work unfortunately because we interface with
+        // the host application.
+        //
+        // Also, if activated in JIT mode, the LLVM IPSCCP pass crashes in
+        // lib/Transforms/Scalar/SCCP.cpp, line 1970 (StoreInst *SI =
+        // cast<StoreInst>(GV->use_back());) when workin on
+        // @_functions = internal unnamed_addr global %struct.__hlt_linker_functions* null, align 8:
+        //
+        // bro: /opt/llvm-git/src/llvm/include/llvm/Support/Casting.h:239:
+        // typename cast_retty<X, Y *>::ret_type llvm::cast(Y *) [X =
+        // llvm::StoreInst, Y = llvm::User]: Assertion `isa<X>(Val) &&
+        // "cast<Ty>() argument of incompatible type!"' failed.
+        bool internalize = false;
+        builder.populateLTOPassManager(passes, internalize, true);
+    }
 
     // Check that the module is well formed on completion of optimization.
     passes.add(llvm::createVerifierPass());

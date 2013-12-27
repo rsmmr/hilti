@@ -558,21 +558,16 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
 
     _endPass();
 
-#if 0
-    if ( options().optimize ) {
-        if ( options().cgDebugging("context" ) )
-            std::cerr << "Optimizing compiled module ... " << std::endl;
-
-        codegen::Optimizer optimizer(this);
-
-        _beginPass(module, optimizer);
-
-        if ( ! optimizer.optimize(compiled, false) )
-            return nullptr;
-
-        _endPass();
-    }
-#endif
+    // We don't optimize the module here. While that could potentially speed
+    // up the final optimization at link time (or not, unknown), it would
+    // also change the instructions the linker is looking for to replace.
+    // Hence we can optimize only after the linker is done with that.
+    //
+    // TODO: There might be ways to get the data stable, such as moving them
+    // into tiny functions and then having the linker replace the function
+    // instead. Not sure if it's worth it, even just doing the LTO passes an
+    // link-time (which we want there, not here, obviously), take most of the
+    // time.
 
     return compiled;
 }
@@ -710,21 +705,13 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
 
     _endPass();
 
-#if 0
-    // It doesn't really make sense to optimize here because the JIT later
-    // will just do it again, and we can skip that because it will apply
-    // further backend-specific optimization as well. We provide a separate
-    // optimize() method instead that does this for when we don't jit.
-    if ( options().optimize ) {
-        if ( ! optimize(linked, true) )
-            return nullptr;
-    }
-#endif
+    if ( ! _optimize(linked, true) )
+        return nullptr;
 
     return linked;
 }
 
-bool CompilerContext::optimize(llvm::Module* module, bool is_linked)
+bool CompilerContext::_optimize(llvm::Module* module, bool is_linked)
 {
     if ( ! options().optimize )
         return true;
@@ -746,6 +733,11 @@ bool CompilerContext::optimize(llvm::Module* module, bool is_linked)
 
 llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module)
 {
+    if ( ! options().jit ) {
+        error("jitModule() called but options.jit not set\n");
+        return nullptr;
+    }
+
     if ( ! _jit )
         _jit = new jit::JIT(this);
 
