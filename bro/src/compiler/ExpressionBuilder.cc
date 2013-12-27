@@ -33,22 +33,31 @@ ExpressionBuilder::ExpressionBuilder(class ModuleBuilder* mbuilder)
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::BroType* type, const char* where)
 	{
-	Error(::util::fmt("type %s not supported in %s", type_name(type->Tag()), where), type);
+	ODesc d;
+	type->Describe(&d);
+
+	Error(::util::fmt("type %s not supported in %s (%s)", type_name(type->Tag()), where, d.Description()), type);
 	return nullptr;
 	}
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Expr* expr, const char* where)
 	{
-	Error(::util::fmt("expression %s not supported in %s", expr_name(expr->Tag()), where), expr);
+	ODesc d;
+	expr->Describe(&d);
+
+	Error(::util::fmt("expression %s not supported in %s (%s)", expr_name(expr->Tag()), where, d.Description()), expr);
 	return nullptr;
 	}
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::UnaryExpr* expr, const char* where)
 	{
-	Error(::util::fmt("unary expression %s not supported for operand of type %s in %s",
+	ODesc d;
+	expr->Describe(&d);
+
+	Error(::util::fmt("unary expression %s not supported for operand of type %s in %s (%s)",
 			  ::expr_name(expr->Tag()),
 			  ::type_name(expr->Op()->Type()->Tag()),
-			  where),
+			  where, d.Description()),
 	      expr);
 
 	return nullptr;
@@ -56,12 +65,15 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Una
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::BinaryExpr* expr, const char* where)
 	{
-	Error(::util::fmt("binary expression %s not supported for operands of types %s and %s in %s",
+	ODesc d;
+	expr->Describe(&d);
+
+	Error(::util::fmt("binary expression %s not supported for operands of types %s and %s in %s (%s)",
 			  ::expr_name(expr->Tag()),
 			  ::type_name(expr->Op1()->Type()->Tag()),
 			  ::type_name(expr->Op2()->Type()->Tag()),
-              where),
-	     expr);
+			  where, d.Description()),
+	      expr);
 
 	return nullptr;
 	}
@@ -1080,7 +1092,10 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TimesExpr* ex
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorCoerceExpr* expr)
 	{
-	return NotSupported(expr, "VectorCoerceExpr");
+	auto vt = expr->Type()->AsVectorType();
+	auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(vt));
+	auto vtype = ast::checkedCast<::hilti::type::Vector>(rt->argType());
+	return ::hilti::builder::vector::create(vtype->argType(), {});
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorConstructorExpr* expr)
