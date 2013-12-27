@@ -172,6 +172,9 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
 
     auto var = ast::checkedCast<expression::Variable>(i->target());
 
+    if ( ast::isA<type::Any>(ftype->result()->type()) )
+        result = cg()->builder()->CreateBitCast(result, cg()->llvmType(i->target()->type()));
+
     if ( (! ast::isA<variable::Local>(var->variable())) ||
         cg()->hiltiModule()->liveness()->liveOut(i->sharedPtr<Statement>(), i->target()) )
         cg()->llvmStore(i->target(), result, false);
