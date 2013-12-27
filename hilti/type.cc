@@ -553,6 +553,14 @@ type::trait::Parameterized::parameter_list type::Struct::parameters() const
 
 bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
 {
+    // Comparing the types by rendering them to avoid infinite recursion
+    // for cycles.
+    return const_cast<type::Struct *>(this)->render() == ty->render();
+
+#if 0
+    // This version has problems when some type IDs come without namespace.
+    // But looks like can just render directly.
+
     auto other = ast::as<type::Struct>(ty);
 
     if ( _fields.size() != other->_fields.size() )
@@ -599,6 +607,7 @@ bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
     }
 
     return true;
+#endif
 }
 
 bool type::Function::_equal(shared_ptr<hilti::Type> o) const
