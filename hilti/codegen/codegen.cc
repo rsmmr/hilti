@@ -2296,6 +2296,8 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
         pushBuilder(catch_);
     }
 
+    llvmDebugPrint("hilti-flow", "exception raised");
+
     llvmBuildInstructionCleanup(false);
 
     for ( auto c : _functions.back()->catches ) {
