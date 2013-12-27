@@ -157,4 +157,5 @@ type CallbackTimer = callable<void>
 # Type for schedule tasks.
 type CallbackSchedule = callable<void>
 
-
+# Type for a map's default function.
+type MapDefaultFunction = callable<any, any>

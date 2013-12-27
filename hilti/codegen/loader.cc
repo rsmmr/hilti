@@ -496,9 +496,13 @@ void Loader::visit(ctor::Map* c)
         cg()->llvmCall("hlt::map_insert", args);
     }
 
-    if ( c->default_() ) {
-        auto def = c->default_()->coerceTo(vtype);
-        args = {mapop, def};
+    if ( auto def = c->default_() ) {
+        auto rtype = ast::tryCast<type::Reference>(def->type());
+
+        if ( ! (rtype && ast::isA<type::Callable>(rtype->argType())) )
+            def = c->default_()->coerceTo(vtype);
+
+        args = { mapop, def };
         cg()->llvmCall("hlt::map_default", args);
     }
 

@@ -1,0 +1,53 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+string foo(ref<bytes> b)
+{
+    local string s
+    call Hilti::print(b)
+    s = call Hilti::fmt("xyz-%s", (b))
+    return.result s
+}
+
+int<64> foo2(int<64> pre, double idx)
+{
+    call Hilti::print(idx)
+    return.result pre
+}
+
+void run() {
+    local int<64> i
+    local string v
+    local ref<map<ref<bytes>, string>> m1
+    local ref<map<double, int<64>>> m2
+    local ref<map<double, int<64>>> m3
+
+    m1 = map<ref<bytes>, string>(b"a": "A", b"b": "B") &default=callable<string, ref<bytes>> (foo, ())
+    call Hilti::print(m1)
+
+    v = map.get m1 b"unknown"
+    call Hilti::print(v)
+
+    ##
+
+    m2 = map<double, int<64>>(10.0: 1, 20.0: 2) &default=callable<int<64>, any> (foo2, (314))
+    call Hilti::print(m2)
+
+    i = map.get m2 1000.0
+    call Hilti::print(i)
+
+    ##
+
+    m3 = map<double, int<64>>(20.0: 2, 30.0: 3)
+    map.default m3 callable<int<64>, any> (foo2, (628))
+    call Hilti::print(m3)
+
+    i = map.get m3 2000.0
+    call Hilti::print(i)
+}

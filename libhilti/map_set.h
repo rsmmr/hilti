@@ -147,6 +147,19 @@ extern void hlt_map_clear(hlt_map* m, hlt_exception** excpt, hlt_execution_conte
 /// excpt: &
 extern void  hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Sets a default callable to execute for computing a result when a key does
+/// not exist. If both a default value and a callalble is set, the former
+/// will take priority.
+///
+/// m: The map.
+///
+/// def_func: A callable acting as the default function. The callable must
+/// accept exactly one parameter of the map's key type and return a value of
+/// the map's value type.
+///
+/// excpt: &
+extern void hlt_map_default_callable(hlt_map* m, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Actives automatic expiration of map entries. Subsequently added entries
 /// will be expired after a timeout expires.
 ///
