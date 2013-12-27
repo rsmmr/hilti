@@ -9,13 +9,13 @@ using namespace codegen;
 
 static llvm::Value* _makeVal(CodeGen* cg, bool undef, bool have_value, uint64_t val)
 {
-    auto flags = cg->llvmConstInt((undef ? HLT_ENUM_UNDEF : 0) + (have_value ? HLT_ENUM_HAS_VAL : 0), 8);
+    auto flags = cg->llvmConstInt((undef ? HLT_ENUM_UNDEF : 0) + (have_value ? HLT_ENUM_HAS_VAL : 0), 64);
     auto llvm_val = cg->llvmConstInt(val, 64);
 
     CodeGen::constant_list elems;
     elems.push_back(flags);
     elems.push_back(llvm_val);
-    return cg->llvmConstStruct(elems);
+    return cg->llvmConstStruct(elems, true);
 }
 
 static llvm::Value* _makeValLLVM(CodeGen* cg, llvm::Value* undef, llvm::Value* has_val, llvm::Value* val)
@@ -23,29 +23,29 @@ static llvm::Value* _makeValLLVM(CodeGen* cg, llvm::Value* undef, llvm::Value* h
     auto undef_set = cg->builder()->CreateICmpNE(undef, cg->llvmConstInt(0, 1));
     auto has_val_set = cg->builder()->CreateICmpNE(has_val, cg->llvmConstInt(0, 1));
 
-    undef = cg->builder()->CreateSelect(undef_set, cg->llvmConstInt(HLT_ENUM_UNDEF, 8), cg->llvmConstInt(0, 8));
-    has_val = cg->builder()->CreateSelect(has_val_set, cg->llvmConstInt(HLT_ENUM_HAS_VAL, 8), cg->llvmConstInt(0, 8));
+    undef = cg->builder()->CreateSelect(undef_set, cg->llvmConstInt(HLT_ENUM_UNDEF, 64), cg->llvmConstInt(0, 64));
+    has_val = cg->builder()->CreateSelect(has_val_set, cg->llvmConstInt(HLT_ENUM_HAS_VAL, 64), cg->llvmConstInt(0, 64));
 
     auto flags = cg->builder()->CreateOr(undef, has_val);
 
     CodeGen::value_list elems;
     elems.push_back(flags);
     elems.push_back(val);
-    return cg->llvmValueStruct(elems);
+    return cg->llvmValueStruct(elems, true);
 }
 
 static llvm::Value* _getUndef(CodeGen* cg, llvm::Value* op)
 {
     auto flags = cg->llvmExtractValue(op, 0);
-    auto bit = cg->builder()->CreateAnd(flags, cg->llvmConstInt(HLT_ENUM_UNDEF, 8));
-    return cg->builder()->CreateICmpNE(bit, cg->llvmConstInt(0, 8));
+    auto bit = cg->builder()->CreateAnd(flags, cg->llvmConstInt(HLT_ENUM_UNDEF, 64));
+    return cg->builder()->CreateICmpNE(bit, cg->llvmConstInt(0, 64));
 }
 
 static llvm::Value* _getHaveVal(CodeGen* cg, llvm::Value* op)
 {
     auto flags = cg->llvmExtractValue(op, 0);
-    auto bit = cg->builder()->CreateAnd(flags, cg->llvmConstInt(HLT_ENUM_HAS_VAL, 8));
-    return cg->builder()->CreateICmpNE(bit, cg->llvmConstInt(0, 8));
+    auto bit = cg->builder()->CreateAnd(flags, cg->llvmConstInt(HLT_ENUM_HAS_VAL, 64));
+    return cg->builder()->CreateICmpNE(bit, cg->llvmConstInt(0, 64));
 }
 
 static llvm::Value* _getVal(CodeGen* cg, llvm::Value* op)

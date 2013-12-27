@@ -330,10 +330,10 @@ void Loader::visit(constant::Enum* c)
     }
 
     CodeGen::constant_list elems;
-    elems.push_back(cg()->llvmConstInt(flags, 8));
+    elems.push_back(cg()->llvmConstInt(flags, 64));
     elems.push_back(cg()->llvmConstInt(i, 64));
 
-    auto val = cg()->llvmConstStruct(elems);
+    auto val = cg()->llvmConstStruct(elems, true);
 
     setResult(val, false, false);
 }

@@ -622,12 +622,12 @@ void TypeBuilder::visit(type::Bitset* t)
 void TypeBuilder::visit(type::Enum* t)
 {
     CodeGen::constant_list default_;
-    default_.push_back(cg()->llvmConstInt(HLT_ENUM_UNDEF, 8));
+    default_.push_back(cg()->llvmConstInt(HLT_ENUM_UNDEF, 64));
     default_.push_back(cg()->llvmConstInt(0, 64));
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_ENUM;
-    ti->init_val = cg()->llvmConstStruct(default_);
+    ti->init_val = cg()->llvmConstStruct(default_, true);
     ti->to_string = "hlt::enum_to_string";
     ti->to_int64 = "hlt::enum_to_int64";
 

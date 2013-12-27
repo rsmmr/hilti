@@ -3259,8 +3259,8 @@ llvm::Value* CodeGen::llvmSwitchEnumConst(llvm::Value* op, const case_list& case
     //
     // FIXME: Copied from enum.cc, should factor out.
     auto flags = llvmExtractValue(op, 0);
-    auto bit = builder()->CreateAnd(flags, llvmConstInt(HLT_ENUM_HAS_VAL, 8));
-    auto have_val = builder()->CreateICmpNE(bit, llvmConstInt(0, 8));
+    auto bit = builder()->CreateAnd(flags, llvmConstInt(HLT_ENUM_HAS_VAL, 64));
+    auto have_val = builder()->CreateICmpNE(bit, llvmConstInt(0, 64));
 
     auto no_val = newBuilder("switch-no-val");
     auto cont = newBuilder("switch-do");

@@ -7,22 +7,19 @@ module Main
 
 import Hilti
 
-type Tag = { A, B, C, D, E }
-global ref<set<Tag>> disabled_analyzers = set<Tag>(A, B, C)
+type Tag = enum { A, B, C, D, E }
+global ref<set<Tag>> X = set<Tag>(Tag::A, Tag::B, Tag::C)
 
 void run() {
 
-    local ref<list<int<32>>> l
     local string s
     local string addl
 
-    l = list<int<32>>(1,2,3,4,5)
-
     call Hilti::print ("A", True)
 
-    for ( x in l ) {
-        for ( y in l ) {
-            s = call Hilti::fmt ("%d %d", (x, y))
+    for ( x in X ) {
+        for ( y in X ) {
+            s = call Hilti::fmt ("%s %s", (x, y))
             call Hilti::print (s)
         }
     }
