@@ -252,6 +252,47 @@ private:
    pattern_list _patterns;
 };
 
+/// AST node for a callable constructor.
+class Callable : public Ctor
+{
+public:
+   // FIXME: This should be shared_ptr, but the parser currently moves exprs
+   // into a list of node_ptr. typedef std::list<shared_ptr<Expression>>
+   // argument_list;
+   typedef std::list<node_ptr<Expression>> argument_list;
+
+   /// Constructor.
+   ///
+   /// rtype: The callable's function result type.
+   ///
+   /// params: The callable's parameter types.
+   ///
+   /// function: Function being bound.
+   ///
+   /// args: The arguments of \a function to bind statically into the
+   /// callable. These must match the function's signature starting from the
+   /// left, but can leave some unbound.
+   ///
+   /// l: An associated location.
+   Callable(shared_ptr<hilti::type::function::Result> result, const type::function::parameter_list& params,
+            shared_ptr<Expression> function, const argument_list& args, const Location& l=Location::None);
+
+   // Returns the function the callable binds to.
+   const shared_ptr<Expression> function() const;
+
+   /// Returns the callables statically bound arguments.
+   std::list<shared_ptr<Expression>> arguments() const;
+
+   /// Returns the type of the constructed callable.
+   shared_ptr<Type> type() const override;
+
+   ACCEPT_VISITOR(Ctor);
+
+private:
+   node_ptr<Type> _type;
+   node_ptr<Expression> _function;
+   std::list<node_ptr<Expression>> _args;
+};
 
 }
 

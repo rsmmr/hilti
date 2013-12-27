@@ -2135,6 +2135,9 @@ public:
    /// arg: The argument for the update.
    void llvmProfilerUpdate(const string& tag, int64_t arg);
 
+   /// XXX
+   void prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call);
+
    /// Returns the name of an LLVM module. This first looks for corresponding
    /// meta-data that the code generator inserts and returns that if found,
    /// and the standard LLVM module name otherwise. The meta data is helpful

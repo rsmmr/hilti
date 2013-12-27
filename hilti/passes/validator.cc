@@ -963,3 +963,6 @@ void Validator::visit(ctor::Vector* c)
 {
 }
 
+void Validator::visit(ctor::Callable* c)
+{
+}

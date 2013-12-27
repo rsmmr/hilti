@@ -545,3 +545,29 @@ void Loader::visit(ctor::RegExp* c)
 
     setResult(regexp, true, false);
 }
+
+void Loader::visit(ctor::Callable* c)
+{
+    auto func = ast::checkedCast<expression::Function>(c->function())->function();
+    auto hook = ast::tryCast<Hook>(func);
+    auto ftype = func->type();
+    auto has_result = (! ast::isA<type::Void>(ftype->result()->type()));
+
+    auto tuple = ::builder::tuple::create(c->arguments());
+
+    CodeGen::expr_list params;
+    cg()->prepareCall(c->function(), tuple, &params, false);
+
+    if ( hook ) {
+        auto llvm_func = cg()->llvmFunctionHookRun(hook);
+        auto htype = ast::checkedCast<type::Hook>(ftype);
+        auto callable = cg()->llvmCallableBind(hook, params);
+        setResult(callable, true, false);
+    }
+
+    else {
+        auto llvm_func = cg()->llvmValue(c->function());
+        auto callable = cg()->llvmCallableBind(llvm_func, ftype, params);
+        setResult(callable, true, false);
+    }
+}

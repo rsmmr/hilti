@@ -1357,3 +1357,21 @@ void Printer::visit(ctor::RegExp* c)
     printList(patterns, " | ");
 }
 
+void Printer::visit(ctor::Callable* c)
+{
+    auto rtype = ast::checkedCast<type::Reference>(c->type());
+    auto ctype = ast::checkedCast<type::Callable>(rtype->argType());
+
+    Printer& p = *this;
+
+    p << "callable<" << ctype->result()->type();
+
+    for ( auto a : ctype->Function::parameters() )
+        p << ", " << a->type();
+
+    p << ">(" << c->function() << ", (";
+    printList(c->arguments(), ", ");
+    p << "))";
+
+}
+

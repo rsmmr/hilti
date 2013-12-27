@@ -4104,3 +4104,8 @@ string CodeGen::llvmGetModuleIdentifier(llvm::Module* module)
 
     return module->getModuleIdentifier();
 }
+
+void CodeGen::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call)
+{
+    return _stmt_builder->prepareCall(func, args, call_params, before_call);
+}

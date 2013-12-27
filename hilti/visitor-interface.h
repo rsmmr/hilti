@@ -125,6 +125,7 @@ namespace ctor {
    class RegExp;
    class Set;
    class Vector;
+   class Callable;
 }
 
 namespace expression {
@@ -304,6 +305,7 @@ public:
    virtual void visit(ctor::RegExp* c) {}
    virtual void visit(ctor::Set* c)    {}
    virtual void visit(ctor::Vector* c) {}
+   virtual void visit(ctor::Callable* c) {}
 
    // Expressions.
    virtual void visit(Expression* e)            {}

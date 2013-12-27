@@ -172,6 +172,7 @@ protected:
    void visit(ctor::RegExp* c) override;
    void visit(ctor::Set* c) override;
    void visit(ctor::Vector* c) override;
+   void visit(ctor::Callable* c) override;
 };
 
 }

@@ -130,6 +130,7 @@ protected:
    virtual void visit(ctor::RegExp* c) override;
    virtual void visit(ctor::Set* c) override;
    virtual void visit(ctor::Vector* c) override;
+   virtual void visit(ctor::Callable* c) override;
 
 private:
    // Cctors/dtors the result as necessary.

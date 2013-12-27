@@ -310,8 +310,8 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | TUPLE '<' type_list '>'          { $$ = builder::tuple::type($3, loc(@$)); }
               | VECTOR '<' type '>'              { $$ = builder::vector::type($3, loc(@$)); }
               | VECTOR '<' '*' '>'               { $$ = builder::vector::typeAny(loc(@$)); }
-              | CALLABLE '<' result '>'          { $$ = builder::callable::type($3, builder::function::parameter_list(), loc(@$)); }
-              | CALLABLE '<' result ',' type_list '>'
+              | CALLABLE '<' type '>'            { $$ = builder::callable::type($3, builder::type_list(), loc(@$)); }
+              | CALLABLE '<' type ',' type_list '>'
                                                  { $$ = builder::callable::type($3, $5, loc(@$)); }
               | CALLABLE '<' '*' '>'             { $$ = builder::callable::typeAny(loc(@$)); }
               | CLASSIFIER '<' type ',' type '>' { $$ = builder::classifier::type($3, $5, loc(@$)); }
@@ -481,6 +481,10 @@ ctor          : CBYTES                           { $$ = builder::bytes::create($
                                                  { $$ = builder::map::create($3, $5, $8, nullptr, loc(@$)); }
               | MAP    '<' type ',' type '>' '(' opt_map_elems ')' ATTR_DEFAULT '=' expr
               									 { $$ = builder::map::create($3, $5, $8, $12, loc(@$)); }
+              | CALLABLE '<' type '>'            '(' expr ',' '(' opt_exprs ')' ')'
+                                                 { $$ = builder::callable::create($3, builder::type_list(), $6, $9, loc(@$)); }
+              | CALLABLE '<' type ',' type_list '>' '(' expr ',' '(' opt_exprs ')' ')'
+                                                 { $$ = builder::callable::create($3, $5, $8, $11, loc(@$)); }
               ;
 
 ctor_regexp   : ctor_regexp '|' re_pattern       { $$ = $1; $$.push_back($3); }
