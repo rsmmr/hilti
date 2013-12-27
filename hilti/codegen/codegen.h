@@ -1088,8 +1088,10 @@ public:
    ///
    /// c: A pointer to the callable.
    ///
+   /// args: The (non-bound) arguments to the callable.
+   ///
    /// Returns: The return value for callables that have, or null for ones without.
-   llvm::Value* llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable);
+   llvm::Value* llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable, const expr_list args);
 
    /// Calls a HILTI function inside a newly created fiber. If the fiber
    /// throws an exception, that will be set in the current context,
@@ -2202,7 +2204,7 @@ private:
 
    // Helpers for llvmCallableBind() that builds the hlt.callable.func
    // object.
-   llvm::Value* llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name);
+   llvm::Value* llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name, const type::function::parameter_list& unbound_args);
 
    // Helper for calling hlt_string_from_data().
    llvm::Value* llvmStringFromData(const string& s);

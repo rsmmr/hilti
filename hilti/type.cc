@@ -1,4 +1,4 @@
-                                        
+
 #include <initializer_list>
 
 #include "expression.h"
@@ -139,18 +139,22 @@ type::trait::Parameterized::parameter_list type::TypedValueType::parameters() co
 }
 
 type::Function::Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l)
-    : ValueType(l), ast::type::mixin::Function<AstInfo>(this, result, args)
+    : HiltiType(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
     _cc = cc;
     _plusone = true;
 }
 
 type::Function::Function(const Location& l)
-    : ValueType(l),
+    : HiltiType(l),
     ast::type::mixin::Function<AstInfo>(this, std::make_shared<function::Result>(std::make_shared<Void>(), false, l), parameter_list())
 {
     setWildcard(true);
     _cc = function::CallingConvention::HILTI;
+}
+
+type::HiltiFunction::~HiltiFunction()
+{
 }
 
 type::function::Parameter::Parameter(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value, Location l)
@@ -245,6 +249,18 @@ type::Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Lo
 {
     _base = base;
     addChild(_base);
+}
+
+type::trait::Parameterized::parameter_list type::Callable::parameters() const
+{
+    type::trait::Parameterized::parameter_list params;
+
+    params.push_back(std::make_shared<trait::parameter::Type>(result()->type()));
+
+    for ( auto p : Function::parameters() )
+        params.push_back(std::make_shared<trait::parameter::Type>(p->type()));
+
+    return params;
 }
 
 shared_ptr<Type> type::Bytes::iterType()

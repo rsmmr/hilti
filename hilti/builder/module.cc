@@ -180,7 +180,7 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<
     if ( ! result )
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
-    auto ftype = std::make_shared<hilti::type::Function>(result, params, cc, l);
+    auto ftype = std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
     auto func = std::make_shared<hilti::Function>(id, ftype, _module, scope, nullptr, l);
     return pushFunction(func, no_body);
 }
@@ -234,7 +234,7 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(shared_p
     if ( ! result )
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
-    auto ftype = std::make_shared<hilti::type::Function>(result, params, cc, l);
+    auto ftype = std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
     auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, nullptr, l);
     return declareFunction(func);
 }

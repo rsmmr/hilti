@@ -1,0 +1,179 @@
+#
+# @TEST-EXEC-FAIL:  hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+int<64> foo(string s1, string s2, double d1, double d2) {
+    return.result 42
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local int<64> result
+
+    c = new callable<int<64>, double, double> foo ("ICSI")
+
+    result = call c (10.0, 20.0)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+int<64> foo(string s1, string s2, double d1, double d2) {
+    return.result 42
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local int<64> result
+
+    c = new callable<int<64>, double, string> foo ("ICSI", "ICIR")
+
+    result = call c (10.0, 20.0)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+int<64> foo(string s1, string s2, double d1, double d2) {
+    return.result 42
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local int<64> result
+
+    c = new callable<int<64>, double, double> foo ("ICSI", 42)
+
+    result = call c (10.0, 20.0)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+int<64> foo(string s1, string s2, double d1, double d2) {
+    return.result 42
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local int<64> result
+
+    c = new callable<string, double, double> foo ("ICSI", "ICIR")
+
+    result = call c (10.0, 20.0)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+string foo(string s1, string s2, double d1, double d2) {
+    return.result "x"
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local int<64> result
+
+    c = new callable<int<64>, double, double> foo ("ICSI", "ICIR")
+
+    result = call c (10.0, 20.0)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+int<64> foo(string s1, string s2, double d1, double d2) {
+    return.result 42
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local int<64> result
+
+    c = new callable<int<64>, double, double> foo ("ICSI", "ICIR")
+
+    result = call c (10.0)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+int<64> foo(string s1, string s2, double d1, double d2) {
+    return.result 42
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local int<64> result
+
+    c = new callable<int<64>, double, double> foo ("ICSI", "ICIR")
+
+    result = call c (10.0, 20.0, "fo")
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+int<64> foo(string s1, string s2, double d1, double d2) {
+    return.result 42
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local int<64> result
+
+    c = new callable<int<64>, double, double> foo ("ICSI", "ICIR")
+
+    result = call c (10.0, "string")
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+int<64> foo(string s1, string s2, double d1, double d2) {
+    return.result 42
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local string result
+
+    c = new callable<int<64>, double, double> foo ("ICSI", "ICIR")
+
+    result = call c (10.0, 20.0)
+}
+
+
+
+
+
+

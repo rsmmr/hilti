@@ -663,7 +663,7 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
     if ( ! result )
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
-    auto ftype = std::make_shared<hilti::type::Function>(result, params, cc, l);
+    auto ftype = std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
     auto func = std::make_shared<Function>(id, ftype, module, scope, body, l);
     return std::make_shared<declaration::Function>(func, l);
 }
@@ -745,7 +745,7 @@ inline shared_ptr<hilti::type::Function> type(shared_ptr<hilti::function::Result
 					      hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
 					      const Location& l=Location::None)
 {
-    return std::make_shared<hilti::type::Function>(result, params, cc, l);
+    return std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
 }
 
 }
@@ -1261,8 +1261,53 @@ namespace callable {
 /// l: Location associated with the type.
 ///
 /// Returns: The type node.
+///
+/// \note This is an old version of the builder function and deprecated.
 inline shared_ptr<hilti::type::Callable> type(shared_ptr<hilti::Type> rtype, const Location& l=Location::None) {
-    return std::make_shared<hilti::type::Callable>(rtype, l);
+    auto result = std::make_shared<hilti::function::Result>(rtype, false);
+    hilti::function::parameter_list params;
+    return std::make_shared<hilti::type::Callable>(result, params, l);
+}
+
+/// Instantiates a type::callable type.
+///
+/// result: The parameter representing the return value.
+///
+/// params: The parameters to the callable.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Function> type(shared_ptr<hilti::function::Result> result,
+					      const hilti::function::parameter_list& params = hilti::function::parameter_list(),
+					      const Location& l=Location::None)
+{
+    return std::make_shared<hilti::type::Callable>(result, params, l);
+}
+
+/// Instantiates a type::callable type.
+///
+/// result: The parameter representing the return value. Can be null for a
+/// void function.
+///
+/// params: The type of the parameters to the callable.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Function> type(shared_ptr<hilti::function::Result> result,
+					      const type_list& params,
+					      const Location& l=Location::None)
+{
+    hilti::function::parameter_list p;
+
+    int i = 0;
+    for ( auto t : params ) {
+        auto id = builder::id::node(::util::fmt("a%d", ++i));
+        p.push_back(std::make_shared<hilti::function::Parameter>(id, t, false, nullptr));
+    }
+
+    return std::make_shared<hilti::type::Callable>(result, p, l);
 }
 
 /// Instantiates a type::Callable wildcard type.

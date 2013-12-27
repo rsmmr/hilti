@@ -104,6 +104,37 @@ void ProtoGen::visit(type::Enum* t)
     }
 }
 
+void ProtoGen::visit(type::Callable* t)
+{
+    auto decl = current<declaration::Type>();
+
+    if ( ! decl )
+        return;
+
+    auto params =  t->parameters();
+    params.pop_front(); // Pop return type.
+
+    std::string p_args;
+
+    for ( auto p : params ) {
+        auto t = dynamic_cast<type::trait::parameter::Type *>(p.get());
+        p_args += mapType(t->type()) + "*, ";
+    }
+
+    auto p_result = "void";
+    auto p_id = ::util::fmt("%s_%s", current<Module>()->id()->name(), decl->id()->name());
+    auto p_addl = "hlt_exception**, hlt_execution_context*";
+
+    p_id = util::mangle(p_id, true, nullptr, "", false);
+
+    if ( _generated.find(p_id) != _generated.end() )
+        return;
+
+    output() << ::util::fmt("typedef %s (*%s)(hlt_callable*, void*, %s%s);", p_result, p_id, p_args, p_addl) << std::endl;
+
+    _generated.insert(p_id);
+}
+
 void ProtoGen::visit(declaration::Function* f)
 {
     auto func = f->function();

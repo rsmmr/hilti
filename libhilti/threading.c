@@ -25,6 +25,7 @@
 #include "context.h"
 #include "globals.h"
 #include "exceptions.h"
+#include "autogen/hilti-hlt.h"
 
 typedef hlt_hash khint_t;
 #include "3rdparty/khash/khash.h"
@@ -290,11 +291,13 @@ static void _worker_fiber_entry(hlt_fiber* fiber, void *callable)
 {
     hlt_execution_context* ctx = hlt_fiber_context(fiber);
     hlt_exception* excpt = 0;
-    hlt_callable_run((hlt_callable *)callable, &excpt, ctx);
+    HLT_CALLABLE_RUN((hlt_callable *)callable, 0, Hilti_CallbackSchedule, &excpt, ctx);
     GC_DTOR(callable, hlt_callable);
 
-    if ( excpt )
+    if ( excpt ) {
         __hlt_thread_mgr_uncaught_exception_in_thread(excpt, ctx);
+        GC_DTOR(excpt, hlt_exception);
+    }
 
     hlt_fiber_return(fiber);
 }

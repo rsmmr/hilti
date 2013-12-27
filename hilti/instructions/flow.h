@@ -32,10 +32,12 @@ iEndH
 iBeginH(flow, CallCallableResult, "call")
     iTarget(optype::any)
     iOp1(optype::refCallable, true)
+    iOp2(optype::optional(optype::tuple), true)
 iEndH
 
 iBeginH(flow, CallCallableVoid, "call")
     iOp1(optype::refCallable, true)
+    iOp2(optype::optional(optype::tuple), true)
 iEndH
 
 iBeginH(flow, Yield, "yield")

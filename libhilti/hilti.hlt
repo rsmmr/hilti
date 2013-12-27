@@ -59,7 +59,7 @@ type NoThreadContext = exception &libhilti="hlt_exception_no_thread_context"
 # Raised on data conversion errors
 type ConversionError = exception &libhilti="hlt_exception_conversion_error"
 
-## Defines the valid formats for the ref:op:`unpack` operator. 
+## Defines the valid formats for the ref:op:`unpack` operator.
 type Packed = enum {
     # String
     ASCIIZ,
@@ -148,7 +148,13 @@ type ProfileStyle = enum {
 
     # Not implemented. Not sure we can easily/efficiently.
     Wall,        # Record after interval of <n> nsecs in wall time.
-    Cycles       # Record after <n> CPU cycles. 
+    Cycles       # Record after <n> CPU cycles.
     }
+
+# Type for timer callbacks.
+type CallbackTimer = callable<void>
+
+# Type for schedule tasks.
+type CallbackSchedule = callable<void>
 
 

@@ -1,0 +1,46 @@
+#
+# @TEST-EXEC:  hilti-build -P %INPUT
+# @TEST-EXEC:  hilti-build -d %DIR/callable.c %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output
+# @TEST-EXEC:  btest-diff output
+#
+# Testing calls from C.
+
+module Foo
+
+import Hilti
+
+void foo_void(string s, double d) {
+    local string x
+    x = call Hilti::fmt ("%s/%s", (s, d))
+    call Hilti::print ("HILTI: ", False)
+    call Hilti::print (x)
+    }
+
+
+ref<callable<void>> create_void() {
+    local ref<callable<void>> c
+    c = new callable<void> foo_void ("ICSI", 10.0)
+    return.result c
+}
+
+string foo_result(string s, double d, ref<bytes> b, int<64> i) {
+    local string x
+    x = call Hilti::fmt ("%s/%s/%s/%s", (s, d, b, i))
+    call Hilti::print ("HILTI: ", False)
+    call Hilti::print (x)
+    return.result x
+    }
+
+ref<callable<string, ref<bytes>, int<64>>> create_result() {
+    local ref<callable<string, ref<bytes>, int<64>>> c
+    c = new callable<string, ref<bytes>, int<64>> foo_result ("ICSI", 10.0)
+    return.result c
+}
+
+export create_void
+export create_result
+
+# These generate the prototype to use with HLT_CALLABLE_RUN().
+type MyCallableVoid = callable<void>
+type MyCallableResult = callable<string, ref<bytes>, int<64>>

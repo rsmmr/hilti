@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "vector.h"
 #include "map_set.h"
+#include "autogen/hilti-hlt.h"
 
 #include "3rdparty/libpqueue/src/pqueue.h"
 
@@ -70,7 +71,7 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
 
     switch (timer->type) {
       case HLT_TIMER_FUNCTION:
-        hlt_callable_run(timer->cookie.function, excpt, ctx);
+        HLT_CALLABLE_RUN(timer->cookie.function, 0, Hilti_CallbackTimer, excpt, ctx);
         break;
 
       case HLT_TIMER_LIST:

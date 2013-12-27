@@ -310,7 +310,9 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | TUPLE '<' type_list '>'          { $$ = builder::tuple::type($3, loc(@$)); }
               | VECTOR '<' type '>'              { $$ = builder::vector::type($3, loc(@$)); }
               | VECTOR '<' '*' '>'               { $$ = builder::vector::typeAny(loc(@$)); }
-              | CALLABLE '<' type '>'            { $$ = builder::callable::type($3, loc(@$)); }
+              | CALLABLE '<' result '>'          { $$ = builder::callable::type($3, builder::function::parameter_list(), loc(@$)); }
+              | CALLABLE '<' result ',' type_list '>'
+                                                 { $$ = builder::callable::type($3, $5, loc(@$)); }
               | CALLABLE '<' '*' '>'             { $$ = builder::callable::typeAny(loc(@$)); }
               | CLASSIFIER '<' type ',' type '>' { $$ = builder::classifier::type($3, $5, loc(@$)); }
               | CLASSIFIER '<' '*' '>'           { $$ = builder::classifier::typeAny(loc(@$)); }

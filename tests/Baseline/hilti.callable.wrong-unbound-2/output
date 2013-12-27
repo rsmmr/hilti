@@ -1,0 +1,5 @@
+
+>>> c = new callable<int<64>,double a1, string a2> foo ("ICSI", "ICIR")
+wrong-unbound.hlt:14-16: error, types string and double do not match [pass::hilti::Validator]
+wrong-unbound.hlt: Aborting due to verification error.
+error running hiltic, aborting

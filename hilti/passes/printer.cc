@@ -502,7 +502,7 @@ void Printer::visit(type::function::Result* r)
     p << r->type();
 }
 
-void Printer::visit(type::Function * t)
+void Printer::visit(type::HiltiFunction * t)
 {
     Printer& p = *this;
 
@@ -513,6 +513,10 @@ void Printer::visit(type::Function * t)
 
      case type::function::C:
         p << "\"C\" ";
+        break;
+
+     case type::function::CALLABLE:
+        p << "\"CALLABLE\" ";
         break;
 
      case type::function::HILTI:
@@ -827,10 +831,19 @@ void Printer::visit(type::Callable* t)
 
     Printer& p = *this;
 
-    if ( t->argType() )
-        p << "callable<" << t->argType() << ">";
-    else
+    if ( t->wildcard() ) {
         p << "callable<*>";
+        return;
+    }
+
+    p << "callable<" << t->result();
+
+    if ( t->Function::parameters().size() ) {
+        p << ",";
+        printList(t->Function::parameters(), ", ");
+    }
+
+    p << ">";
 }
 
 void Printer::visit(type::Channel* t)

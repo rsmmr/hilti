@@ -80,20 +80,17 @@ iBegin(operator_, Assign, "assign")
     iOp1(optype::any, true)
 
     iValidate {
-        auto ty_target = as<type::ValueType>(target->type());
-        auto ty_op1 = as<type::ValueType>(op1->type());
-
-        if ( ! ty_target ) {
+        if ( ! type::hasTrait<type::trait::ValueType>(target->type()) ) {
             error(target, "target must be a value type");
             return;
         }
 
-        if ( ! ty_op1 ) {
+        if ( ! type::hasTrait<type::trait::ValueType>(op1->type()) ) {
             error(op1, "operand must be a value type");
             return;
         }
 
-        if ( ! op1->canCoerceTo(ty_target) )
+        if ( ! op1->canCoerceTo(target->type()) )
             error(op1, "operand not compatible with target");
     }
 

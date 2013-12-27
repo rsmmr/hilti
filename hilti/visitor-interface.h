@@ -34,6 +34,7 @@ namespace type {
    class Exception;
    class File;
    class Function;
+   class HiltiFunction;
    class Hook;
    class IOSource;
    class Integer;
@@ -226,6 +227,7 @@ public:
    virtual void visit(type::Exception* t)   {}
    virtual void visit(type::File* t)        {}
    virtual void visit(type::Function* t)    {}
+   virtual void visit(type::HiltiFunction* t) {}
    virtual void visit(type::Hook* t)        {}
    virtual void visit(type::IOSource* t)    {}
    virtual void visit(type::Integer* i)     {}

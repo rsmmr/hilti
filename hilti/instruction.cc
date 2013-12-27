@@ -349,8 +349,14 @@ bool Instruction::isConstant(shared_ptr<Expression> op) const
     return false;
 }
 
-bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_ptr<Expression> args) const
+bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_ptr<Expression> args, bool allow_unbound) const
 {
+    if ( ! args ) {
+        constant::Tuple::element_list empty;
+        auto t = std::make_shared<constant::Tuple>(empty);
+        args = std::make_shared<expression::Constant>(t);
+    }
+
     if ( ! args->isConstant() ) {
         // Currently, we don't support non-constasnt tuples, though is in principle, that should work.
         error(args, "deficiency: can only call with constant tuple argument currently");
@@ -387,6 +393,9 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
         return false;
     }
 
+    if ( allow_unbound )
+        return true;
+
     // Remaining ones must have defaults.
     while ( p != proto.end() ) {
         if ( ! (*p)->default_() ) {
@@ -402,19 +411,20 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
 
 bool Instruction::checkCallResult(shared_ptr<Type> rtype, shared_ptr<Type> ty) const
 {
-    bool is_void = ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype);
+    bool func_is_void = ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype);
+    bool ty_is_void = (! ty) || ast::isA<type::Void>(ty);
 
-    if ( ty && is_void ) {
+    if ( func_is_void && ! ty_is_void ) {
         error(nullptr, "function does not return a value");
         return false;
     }
 
-    if ( ! ty && ! is_void ) {
+    if ( ty_is_void && ! func_is_void ) {
         error(nullptr, "function value not used");
         return false;
     }
 
-    if ( ! ty )
+    if ( ty_is_void )
         return true;
 
     if ( Coercer().canCoerceTo(ty, rtype) )
@@ -430,19 +440,20 @@ bool Instruction::checkCallResult(shared_ptr<Type> rtype, shared_ptr<Type> ty) c
 
 bool Instruction::checkCallResult(shared_ptr<Type> rtype, shared_ptr<Expression> op) const
 {
-    bool is_void = ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype);
+    bool func_is_void = ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype);
+    bool ty_is_void = (! op) || ast::isA<type::Void>(op->type());
 
-    if ( op && is_void ) {
+    if ( func_is_void && ! ty_is_void ) {
         error(nullptr, "function does not return a value");
         return false;
     }
 
-    if ( ! op && ! is_void ) {
+    if ( ty_is_void && ! func_is_void ) {
         error(nullptr, "function value not used");
         return false;
     }
 
-    if ( ! op )
+    if ( ty_is_void )
         return true;
 
     if ( op->canCoerceTo(rtype) )

@@ -1319,6 +1319,7 @@ llvm::CallingConv::ID CodeGen::llvmCallingConvention(type::function::CallingConv
     switch ( cc ) {
      case type::function::HILTI:
      case type::function::HOOK:
+     case type::function::CALLABLE:
         return llvm::CallingConv::Fast;
 
      case type::function::HILTI_C:
@@ -1361,6 +1362,7 @@ CodeGen::llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::f
     // Adapt the return type according to calling convention.
     switch ( cc ) {
      case type::function::HILTI:
+     case type::function::CALLABLE:
         break;
 
      case type::function::HOOK:
@@ -1385,7 +1387,8 @@ CodeGen::llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::f
 
         switch ( cc ) {
          case type::function::HILTI:
-         case type::function::HOOK: {
+         case type::function::HOOK:
+         case type::function::CALLABLE: {
              auto arg_llvm_type = llvmType(p.second);
              llvm_args.push_back(make_pair(p.first, arg_llvm_type));
              break;
@@ -1427,6 +1430,7 @@ CodeGen::llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::f
     // Add additional parameters our calling convention may need.
     switch ( cc ) {
      case type::function::HILTI:
+     case type::function::CALLABLE:
         llvm_args.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext())));
         break;
 
@@ -2737,14 +2741,17 @@ llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<ty
 llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
 {
     auto llvm_func = llvm_func_val ? llvm::cast<llvm::Function>(llvm_func_val) : nullptr;
-    auto rtype = ftype->result()->type();
-    auto callable_type = std::make_shared<type::Callable>(rtype);
+    auto result = ftype->result();
 
-    // Create the struct. It starts like any callable and then comes our
-    // additional stuff.
+    type::function::parameter_list unbound_args;
+
+    auto params = ftype->parameters();
+    auto p = params.rbegin();
+
+    for ( int i = 0; i < params.size() - args.size(); i++ )
+        unbound_args.push_front(*p++);
+
     auto cty = llvm::cast<llvm::StructType>(llvmLibType("hlt.callable"));
-
-    auto arg_start = cty->getNumElements();
 
     CodeGen::type_list stypes;
 
@@ -2758,11 +2765,14 @@ llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<
     auto sty = llvm::cast<llvm::StructType>(llvmTypeStruct(::string(".callable.args") + name, stypes));
 
     // Now fill a new callable object with its values.
+    auto callable_type = std::make_shared<type::Callable>(result, unbound_args);
     llvm::Value* c = llvmObjectNew(callable_type, sty);
     llvm::Value* s = builder()->CreateLoad(c);
-    auto func_val = llvmCallableMakeFuncs(llvm_func, hook, ftype, excpt_check, sty, name);
+    auto func_val = llvmCallableMakeFuncs(llvm_func, hook, ftype, excpt_check, sty, name, unbound_args);
     func_val = builder()->CreateBitCast(func_val, stypes[1]); // FIXME: Not sure why we need this cast.
     s = llvmInsertValue(s, func_val, 1);
+
+    auto arg_start = cty->getNumElements();
 
     for ( int i = 0; i < args.size(); ++i ) {
         auto val = llvmValue(args[i]);
@@ -2774,7 +2784,7 @@ llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<
     return builder()->CreateBitCast(c, llvmTypePtr(cty));
 }
 
-llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name)
+llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name, const type::function::parameter_list& unbound_args)
 {
     llvm::Value* cached = lookupCachedValue("callable-func", name);
 
@@ -2782,6 +2792,7 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
         return cached;
 
     auto rtype = ftype->result()->type();
+    auto is_void = rtype->equal(builder::void_::type());
     auto cty = llvm::cast<llvm::StructType>(llvmLibType("hlt.callable"));
     auto arg_start = cty->getNumElements();
 
@@ -2789,21 +2800,35 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
 
     // Build the internal function that will later call the target.
     CodeGen::parameter_list params = { std::make_pair("callable", builder::reference::type(builder::callable::type(rtype))) };
+
+    int cnt = 0;
+    for ( auto t : unbound_args ) {
+        auto id = ::util::fmt("__ub%d", ++cnt);
+        params.push_back(std::make_pair(id, t->type()));
+    }
+
     auto llvm_call_func = llvmAddFunction(string(".callable.run") + name, llvm_rtype, params, true, type::function::HILTI);
 
     pushFunction(llvm_call_func);
 
+    llvmDebugPrint("hilti-flow", ::util::fmt("entering callable's run function for %s", name));
+
     auto callable = builder()->CreateBitCast(llvm_call_func->arg_begin(), llvmTypePtr(sty));
     callable = builder()->CreateLoad(callable);
 
+    auto fparams = ftype->parameters();
+    auto targ = fparams.begin();
     expr_list nargs;
 
-    int i = 0;
-    for ( auto a : ftype->parameters() ) {
+    for ( auto i = 0; i < fparams.size() - unbound_args.size(); i++ ) {
         auto val = llvmExtractValue(callable, arg_start + i);
-        nargs.push_back(builder::codegen::create(a->type(), val));
-        ++i;
+        nargs.push_back(builder::codegen::create((*targ++)->type(), val));
     }
+
+    auto farg = llvm_call_func->arg_begin();
+
+    for ( auto t : unbound_args )
+        nargs.push_back(builder::codegen::create(t->type(), ++farg));
 
     auto result = hook && ! rtype->equal(builder::void_::type())
         ? llvmAddTmp("hook.rval", llvm_rtype, nullptr, true) : nullptr;
@@ -2816,6 +2841,8 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     else
         result = llvmDoCall(llvm_func, hook, ftype, nargs, nullptr, excpt_check);
 
+    llvmDebugPrint("hilti-flow", ::util::fmt("leaving callable's run function for %s", name));
+
     // Don't call llvmReturn() here as it would create the normal function
     // return code and reref the result, which return.result will have
     // already done.
@@ -2826,27 +2853,68 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
 
     popFunction();
 
-    // If we have a return value, do variant that will discard it. This is for calling from C.
-    llvm::Constant* llvm_call_func_no_return = nullptr;
+    // Create a separate version to call from C code. If the signature gets
+    // changed here, the protogen code needs to adapt as well.
 
-    if ( rtype->equal(builder::void_::type()) )
-        llvm_call_func_no_return = llvm_call_func;
+    llvm_parameter_list cparams;
 
-    else {
-        auto func_no_return = llvmAddFunction(string(".callable.run.no.result") + name, llvmTypeVoid(), params, true, type::function::HILTI);
+    cparams.push_back(std::make_pair("callable", llvmTypePtr(llvmLibType("hlt.callable"))));
+    cparams.push_back(std::make_pair("target", llvmTypePtr()));
 
-        pushFunction(func_no_return);
-
-        std::vector<llvm::Value*> fargs;
-        for ( auto a = func_no_return->arg_begin(); a != func_no_return->arg_end(); ++a )
-            fargs.push_back(a);
-
-        llvmCreateCall(llvm_call_func, fargs);
-        llvmReturn();
-        popFunction();
-
-        llvm_call_func_no_return = func_no_return;
+    cnt = 0;
+    for ( auto t : unbound_args ) {
+        auto id = ::util::fmt("__ub%d", ++cnt);
+        // We pass them all by pointer here so that we can deal with any parameters.
+        cparams.push_back(std::make_pair(id, llvmTypePtr(llvmType(t->type()))));
     }
+
+    // Plus standard HILTI-C paramters.
+    cparams.push_back(std::make_pair(symbols::ArgException, llvmTypePtr(llvmTypeExceptionPtr())));
+    cparams.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext())));
+
+    auto llvm_call_func_c = llvmAddFunction(string(".callable.run.c") + name,
+                                            llvmType(builder::void_::type()), cparams, true, true);
+
+    pushFunction(llvm_call_func_c);
+
+    llvmDebugPrint("hilti-flow", ::util::fmt("entering callable's C wrapper for %s", name));
+
+    llvmClearException();
+
+    std::vector<llvm::Value*> fargs;
+    auto a = llvm_call_func_c->arg_begin();
+
+    auto arg_callable = a++;
+    auto arg_target = a++;
+
+    fargs.push_back(arg_callable);
+
+    for ( int i = 0; i < unbound_args.size(); i++ ) {
+        auto deref = builder()->CreateLoad(a++);
+        fargs.push_back(deref);
+    }
+
+    auto arg_expt = a++;
+    auto arg_ctx = a++;
+
+    fargs.push_back(arg_ctx);
+
+    auto c_result = llvmCreateCall(llvm_call_func, fargs);
+
+    if ( ! is_void ) {
+        // Transfer result over.
+        auto casted = builder()->CreateBitCast(arg_target, llvmTypePtr(llvm_rtype));
+        llvmGCAssign(casted, c_result, rtype, true, false);
+    }
+
+    // Transfer exception over.
+    auto ctx_excpt = llvmCurrentException();
+    llvmGCAssign(arg_expt, ctx_excpt, builder::reference::type(builder::exception::typeAny()), false);
+    llvmClearException();
+
+    llvmDebugPrint("hilti-flow", ::util::fmt("leaving callable's C wrapper for %s", name));
+    builder()->CreateRetVoid();
+    popFunction();
 
     // Build the internal function that will later dtor all the arguments in the struct.
 
@@ -2862,11 +2930,11 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
         callable = builder()->CreateBitCast(dtor->arg_begin(), llvmTypePtr(sty));
         callable = builder()->CreateLoad(callable);
 
-        int i = 0;
-        for ( auto a : ftype->parameters() ) {
+        auto targ = fparams.begin();
+
+        for ( auto i = 0; i < fparams.size() - unbound_args.size(); i++ ) {
             auto val = llvmExtractValue(callable, arg_start + i);
-            llvmDtor(val, a->type(), false, "callable.run.dtor");
-            ++i;
+            llvmDtor(val, (*targ++)->type(), false, "callable.run.dtor");
         }
 
         llvmReturn();
@@ -2882,7 +2950,7 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     auto ctyfunc = llvm::cast<llvm::StructType>(llvmLibType("hlt.callable.func"));
     auto ctyfuncval = llvmConstNull(ctyfunc);
     ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm::ConstantExpr::getBitCast(llvm_call_func, llvmTypePtr()), 0);
-    ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm::ConstantExpr::getBitCast(llvm_call_func_no_return, llvmTypePtr()), 1);
+    ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm::ConstantExpr::getBitCast(llvm_call_func_c, llvmTypePtr()), 1);
     ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm_dtor_func, 2);
 
     auto ctyfuncglob = llvmAddConst("callable.func" + name, ctyfuncval);
@@ -2890,16 +2958,24 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     return cacheValue("callable-func", name, ctyfuncglob);
 }
 
-llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable)
+llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable, const expr_list unbound_args)
 {
-    value_list args = { callable, llvmExecutionContext() };
+    value_list args = { callable };
+    std::vector<llvm::Type*> types = { callable->getType() };
 
-    std::vector<llvm::Type*> types;
+    auto params = cty->Function::parameters();
+    auto p = params.begin();
 
-    for ( auto a : args )
-        types.push_back(a->getType());
+    for ( auto a : unbound_args ) {
+        auto v = llvmValue(a, (*p++)->type());
+        args.push_back(v);
+        types.push_back(v->getType());
+    }
 
-    auto ftype = llvm::FunctionType::get(llvmType(cty->argType()), types, false);
+    args.push_back(llvmExecutionContext());
+    types.push_back(llvmTypePtr(llvmTypeExecutionContext()));
+
+    auto ftype = llvm::FunctionType::get(llvmType(cty->result()->type()), types, false);
     auto funcobj = llvmExtractValue(builder()->CreateLoad(callable), 1);
     funcobj = builder()->CreateBitCast(funcobj, llvmTypePtr(llvmLibType("hlt.callable.func")));  // FIXME: Not sure why we need this cast.
     auto func = llvmExtractValue(builder()->CreateLoad(funcobj), 0);
@@ -2914,7 +2990,7 @@ llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Valu
 
     llvmCheckException();
 
-    if ( cty->argType()->equal(shared_ptr<Type>(new type::Void())) )
+    if ( cty->result()->type()->equal(shared_ptr<Type>(new type::Void())) )
         return nullptr;
 
     return result;
@@ -2945,6 +3021,9 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
      case type::function::C:
         // Don't mess with arguments.
         break;
+
+     case type::function::CALLABLE:
+        internalError("llvmDoCall doesn't do callables (yet?)");
 
      default:
         internalError("unknown calling convention in llvmCall");
@@ -3191,7 +3270,7 @@ void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, co
 
 void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone, bool dtor_first)
 {
-    assert(ast::isA<type::ValueType>(type));
+    assert(type::hasTrait<type::trait::ValueType>(type));
 
     if ( dtor_first )
         llvmDtor(dst, type, true, "gc-assign");
@@ -3204,7 +3283,7 @@ void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> 
 
 void CodeGen::llvmGCClear(llvm::Value* addr, shared_ptr<Type> type, const string& tag)
 {
-    assert(ast::isA<type::ValueType>(type));
+    assert(type::hasTrait<type::trait::ValueType>(type));
     auto init_val = typeInfo(type)->init_val;
     llvmDtor(addr, type, true, string("gc-clear/") + tag);
     llvmCreateStore(init_val, addr);
