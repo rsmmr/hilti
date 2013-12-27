@@ -3331,6 +3331,20 @@ void CodeGen::llvmDebugPopIndent()
     llvmCallC("__hlt_debug_pop_indent", args, false, false);
 }
 
+void CodeGen::llvmDebugPrintString(const string& str)
+{
+    auto s = llvmConstAsciizPtr(str);
+    value_list args = { s, llvmExecutionContext() };
+    llvmCallC(llvmLibFunction("__hlt_debug_print_str"), args, false);
+}
+
+void CodeGen::llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr)
+{
+    auto s = llvmConstAsciizPtr(prefix);
+    auto p = builder()->CreateBitCast(ptr, llvmTypePtr());
+    value_list args = { s, p, llvmExecutionContext() };
+    llvmCallC(llvmLibFunction("__hlt_debug_print_ptr"), args, false);
+}
 
 llvm::Value* CodeGen::llvmSwitchEnumConst(llvm::Value* op, const case_list& cases, bool result, const Location& l)
 {

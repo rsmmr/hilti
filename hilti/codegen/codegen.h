@@ -1592,6 +1592,12 @@ public:
    /// Decreases the indentation level for debugging output.
    void llvmDebugPopIndent();
 
+   /// Prints a string to stderr at runtime.
+   void llvmDebugPrintString(const string& str);
+
+   /// Prints a pointer to stderr at runtime, prefixed with an additional string.
+   void llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr);
+
    /// A case for llvmSwitch().
    struct SwitchCase {
        // FIXME: We should be able to use just a nromal function pointer here

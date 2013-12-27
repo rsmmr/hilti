@@ -213,7 +213,8 @@ void __hlt_debug_print_ptr(const char* s, void* ptr, hlt_execution_context* ctx)
     for ( int i = ctx->debug_indent * 4; i; --i )
         fputc(' ', stderr);
 
-    fprintf(stderr, "%s %p\n", s, ptr);
+    void* glb = &ctx->globals;
+    fprintf(stderr, "%s %p (ctx: %p globals: %p)\n", s, ptr, ctx, glb);
 }
 
 void __hlt_debug_push_indent(hlt_execution_context* ctx)

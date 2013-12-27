@@ -328,9 +328,11 @@ void Linker::joinFunctions(llvm::Module* dst, const char* new_func, const char* 
     if ( ! md )
         return;
 
+    auto old_func = dst->getFunction(new_func);
+
     // If a function under that name already exists with weak linkage,
     // replace it.
-    if ( auto old_func = dst->getFunction(new_func) ) {
+    if ( old_func ) {
         if ( old_func->hasWeakLinkage() )
             old_func->removeFromParent();
         else
@@ -365,6 +367,9 @@ void Linker::joinFunctions(llvm::Module* dst, const char* new_func, const char* 
             nfunc = llvm::Function::Create(ftype, llvm::Function::ExternalLinkage, new_func, dst);
             nfunc->setCallingConv(llvm::CallingConv::C);
             builder = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "", nfunc));
+
+            if ( old_func )
+                old_func->replaceAllUsesWith(nfunc);
         }
 
         std::vector<llvm::Value*> params;
@@ -569,7 +574,9 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
 
     // If a global_sizes() function already exists with weak linkage, replace
     // it.
-    if ( auto old_func = dst->getFunction(symbols::FunctionGlobalsSize) ) {
+    auto old_func = dst->getFunction(symbols::FunctionGlobalsSize);
+
+    if ( old_func ) {
         if ( old_func->hasWeakLinkage() )
             old_func->removeFromParent();
         else
@@ -581,6 +588,9 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
     gfunc->setCallingConv(llvm::CallingConv::C);
     auto builder = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "", gfunc));
     builder->CreateRet(size);
+
+    if ( old_func )
+        old_func->replaceAllUsesWith(gfunc);
 
     // Create a map of all global IDs to the GEP index inside their individual global structs.
     GlobalsPass::globals_index_map globals_index;

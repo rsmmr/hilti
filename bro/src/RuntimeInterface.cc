@@ -1,7 +1,6 @@
 
 #include <vector>
 #include <assert.h>
-#include <libhilti/libhilti.h>
 
 extern "C"  {
 #include <libhilti/libhilti.h>

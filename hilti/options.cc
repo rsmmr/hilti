@@ -27,7 +27,7 @@ bool Options::cgDebugging(const string& label) const
 
 Options::string_set Options::cgDebugLabels() const
 {
-    return { "codegen", "linker", "parser", "scanner", "scopes", "context", "dump-ast", "print-ast", "visitors", "cache" };
+    return { "codegen", "linker", "parser", "scanner", "scopes", "context", "dump-ast", "print-ast", "visitors", "cache", "time" };
 }
 
 Options::string_set Options::optimizationLabels() const

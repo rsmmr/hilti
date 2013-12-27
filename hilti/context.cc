@@ -194,7 +194,7 @@ void CompilerContext::_endPass()
         auto indent = string(_passes.size(), ' ');
 
         if ( cg_passes || delta >= 0.1 )
-            std::cerr << util::fmt("(%2.2fs) %shilti::%s [module \"%s\"]%s",
+            std::cerr << util::fmt("(%2.2fs) %shilti::%s [module \"%s\"]",
                                    delta, indent, pass.name, pass.module) << std::endl;
     }
 
