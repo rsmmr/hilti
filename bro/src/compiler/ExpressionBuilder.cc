@@ -1111,29 +1111,56 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::BoolExpr* exp
 	{
 	auto result = Builder()->addTmp("b", ::hilti::builder::boolean::type());
 
-	bool ok = false;
+	auto op1 = HiltiExpression(expr->Op1(), expr->Type());
+	auto b = Builder()->addIfElse(op1);
+	auto true_ = std::get<0>(b);
+	auto false_ = std::get<1>(b);
+	auto cont = std::get<2>(b);
 
 	switch ( expr->Tag() ) {
 	case EXPR_AND:
 		{
-		ok = ok || CompileOperator(expr, result, ::TYPE_BOOL, ::TYPE_BOOL, ::hilti::instruction::boolean::And);
-		break;
+		ModuleBuilder()->pushBuilder(true_);
+		auto op2 = HiltiExpression(expr->Op2(), expr->Type());
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, op2);
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, cont->block());
+		ModuleBuilder()->popBuilder(true_);
+
+		ModuleBuilder()->pushBuilder(false_);
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, ::hilti::builder::boolean::create(false));
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, cont->block());
+		ModuleBuilder()->popBuilder(false_);
+
+		ModuleBuilder()->pushBuilder(cont);
+		// Leave on stack.
+
+		return result;
 		}
 
 	case EXPR_OR:
 		{
-		ok = ok || CompileOperator(expr, result, ::TYPE_BOOL, ::TYPE_BOOL, ::hilti::instruction::boolean::Or);
-		break;
+		ModuleBuilder()->pushBuilder(true_);
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, ::hilti::builder::boolean::create(true));
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, cont->block());
+		ModuleBuilder()->popBuilder(true_);
+
+		ModuleBuilder()->pushBuilder(false_);
+		auto op2 = HiltiExpression(expr->Op2(), expr->Type());
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, op2);
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, cont->block());
+		ModuleBuilder()->popBuilder(false_);
+
+		ModuleBuilder()->pushBuilder(cont);
+		// Leave on stack.
+
+		return result;
 		}
 
 	default:
 		return NotSupported(expr, "BoolExpr");
 	}
 
-	if ( ! ok )
-		NotSupported(expr, "BoolExpr");
-
-	return result;
+	CANNOT_BE_REACHED
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EqExpr* expr)
