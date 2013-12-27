@@ -228,7 +228,8 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 		auto name = type->FieldName(i);
 		auto ftype = type->FieldType(i);
 		auto htype = HiltiType(ftype);
-		auto def = bdef ? HiltiValue(bdef, ftype, true) : nullptr;
+		auto optional = type->FieldDecl(i)->FindAttr(ATTR_OPTIONAL);
+		auto def = bdef ? HiltiValue(bdef, ftype, true) : (optional ? nullptr: HiltiDefaultInitValue(ftype));
 		auto hf = ::hilti::builder::struct_::field(name, htype, def);
 
 		fields.push_back(hf);
