@@ -187,7 +187,11 @@ shared_ptr<::hilti::type::Function> TypeBuilder::FunctionType(const ::FuncType* 
 		return ::hilti::builder::function::type(hresult, hargs);
 
 	case FUNC_FLAVOR_EVENT:
+		return ::hilti::builder::hook::type(hresult, hargs);
+
 	case FUNC_FLAVOR_HOOK:
+		hyield = ::hilti::builder::boolean::type();
+		hresult = ::hilti::builder::function::result(hyield, false);
 		return ::hilti::builder::hook::type(hresult, hargs);
 
 	default:

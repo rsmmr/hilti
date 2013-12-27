@@ -334,10 +334,9 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHiltiBaseType(share
 	case TYPE_BOOL:
 		{
 		Builder()->addInstruction(dst,
-					  ::hilti::instruction::Misc::Select,
+					  ::hilti::instruction::operator_::Unequal,
 					  BroInternalInt(val),
-					  ::hilti::builder::boolean::create(true),
-					  ::hilti::builder::boolean::create(false));
+					  ::hilti::builder::integer::create(0));
 		return dst;
 		}
 

@@ -354,9 +354,69 @@ void ModuleBuilder::CompileEvent(const BroFunc* event, bool exported)
 			   });
 	}
 
-void ModuleBuilder::CompileHook(const BroFunc* hook, bool exported)
+void ModuleBuilder::CompileHook(const BroFunc* brohook, bool exported)
 	{
-	DBG_LOG_COMPILER("Compiling hook function %s", hook->Name());
+	DBG_LOG_COMPILER("Compiling hook function %s", brohook->Name());
+
+	auto hook_name = Compiler()->HiltiSymbol(brohook, module());
+	auto stub_name = Compiler()->HiltiStubSymbol(brohook, module(), false);
+	auto type = HiltiFunctionType(brohook->FType());
+
+	for ( auto b : brohook->GetBodies() )
+		{
+		auto attrs = ::hilti::builder::hook::attributes();
+
+		if ( b.priority )
+			attrs.push_back(::hilti::builder::hook::hook_attribute("&priority", b.priority));
+
+		auto hook = pushHook(::hilti::builder::id::node(hook_name),
+			 ast::checkedCast<::hilti::type::Hook>(type),
+			 nullptr, attrs);
+
+		hook->addComment(Location(brohook));
+
+		auto stop = newBuilder("stop_hook");
+		auto return_ = newBuilder("return_from_hook");
+
+		statement_builder->PushFlowState(StatementBuilder::FLOW_STATE_BREAK, stop->block());
+		statement_builder->PushFlowState(StatementBuilder::FLOW_STATE_RETURN, return_->block());
+		CompileFunctionBody(brohook, &b);
+		statement_builder->PopFlowState();
+		statement_builder->PopFlowState();
+
+		Builder()->addInstruction(::hilti::instruction::flow::ReturnVoid);
+
+		pushBuilder(return_);
+		Builder()->addInstruction(::hilti::instruction::flow::ReturnVoid);
+		popBuilder(return_);
+
+		pushBuilder(stop);
+		auto false_ = ::hilti::builder::boolean::create(false);
+		Builder()->addInstruction(::hilti::instruction::hook::Stop, false_);
+		popBuilder(stop);
+
+		popHook();
+		}
+
+	// If there's no body, make sure the hook is declared.
+	if ( brohook->GetBodies().empty() )
+		DeclareHook(brohook);
+
+	CreateFunctionStub(brohook, [&](ModuleBuilder* mbuilder, shared_ptr<::hilti::Expression> rval, shared_ptr<::hilti::Expression> args)
+			   {
+			   auto true_ = ::hilti::builder::boolean::create(true);
+			   auto btype = ::hilti::builder::boolean::type();
+			   shared_ptr<::hilti::Expression> result = mbuilder->addTmp("result", btype, true_);
+
+			   Builder()->addInstruction(result, ::hilti::instruction::hook::Run,
+						     ::hilti::builder::id::create(hook_name),
+						     args);
+
+			   auto nval = RuntimeHiltiToVal(result, ::base_type(::TYPE_BOOL));
+			   Builder()->addInstruction(rval,
+						     ::hilti::instruction::operator_::Assign,
+						     nval);
+			   });
 	}
 
 void ModuleBuilder::CompileFunctionBody(const ::Func* func, void* vbody)
@@ -423,10 +483,14 @@ shared_ptr<::hilti::Expression> ModuleBuilder::DeclareEvent(const ::BroFunc* eve
 	return ::hilti::builder::id::create(name);
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::DeclareHook(const ::BroFunc* event)
+shared_ptr<::hilti::Expression> ModuleBuilder::DeclareHook(const ::BroFunc* hook)
 	{
-	Error("ModuleBuilder::DeclareHook not yet implemented");
-	return nullptr;
+	auto name = Compiler()->HiltiSymbol(hook, module());
+	auto type = HiltiFunctionType(hook->FType());
+
+	declareHook(::hilti::builder::id::node(name), ast::checkedCast<::hilti::type::Hook>(type));
+
+	return ::hilti::builder::id::create(name);
 	}
 
 std::shared_ptr<::hilti::Expression> ModuleBuilder::DeclareGlobal(const ::ID* id)
@@ -482,7 +546,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* f
 		auto id = func->AsNameExpr()->Id();
 		assert(id->Type()->Tag() == TYPE_FUNC);
 
-		if ( id->HasVal() )
+		if ( id->IsGlobal() && id->HasVal() )
 			bro_func = id->ID_Val()->AsFunc();
 		}
 
@@ -600,8 +664,11 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEventHilti(const ::Func*
 
 shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
 	{
-	Error("CallHookHilti not yet implemented");
-	return 0;
+	auto true_ = ::hilti::builder::boolean::create(true);
+	auto result = Builder()->addTmp("result", ::hilti::builder::boolean::type(), true_);
+	auto hfunc = DeclareFunction(func);
+	Builder()->addInstruction(result, ::hilti::instruction::hook::Run, hfunc, args);
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
@@ -643,8 +710,34 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEventLegacy(shared_ptr<:
 
 shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args)
 	{
-	Error("CallHookLegacy not yet implemented");
-	return 0;
+	RecordType* fargs = ftype->Args();
+	auto exprs = args->Exprs();
+
+	::hilti::builder::tuple::element_list func_args;
+
+	// This is apparently how a varargs function is defined in Bro ...
+	//
+	// TODO: Not tested for hooks ...
+	bool var_args = (fargs->NumFields() == 1 && fargs->FieldType(0)->Tag() == TYPE_ANY);
+
+	loop_over_list(exprs, i)
+		{
+		auto btype = var_args ? exprs[i]->Type() : fargs->FieldType(i);
+		auto arg = HiltiExpression(exprs[i], btype);
+		auto val = RuntimeHiltiToVal(arg, btype);
+		func_args.push_back(val);
+		}
+
+	auto t = ::hilti::builder::tuple::create(func_args);
+	auto ca = ::hilti::builder::tuple::create({ fval, t });
+
+	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
+	auto rval = addTmp("rval", vtype);
+
+	Builder()->addInstruction(rval, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::call_legacy_result"), ca);
+
+	return RuntimeValToHilti(rval, ::base_type(TYPE_BOOL));
 	}
 
 shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args)

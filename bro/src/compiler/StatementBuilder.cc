@@ -46,13 +46,16 @@ void StatementBuilder::PopFlowState()
 	flow_stack.pop_back();
 	}
 
-shared_ptr<::hilti::Expression> StatementBuilder::CurrentFlowState(FlowState fstate)
+shared_ptr<::hilti::Expression> StatementBuilder::CurrentFlowState(FlowState fstate, bool optional)
 	{
 	for ( flow_state_list::reverse_iterator i = flow_stack.rbegin(); i != flow_stack.rend(); i++ )
 		{
 		if ( (*i).first == fstate )
 			return (*i).second;
 		}
+
+	if ( optional )
+		return nullptr;
 
 	Error(::util::fmt("No current flow state of type %d available", (int)fstate));
 	CANNOT_BE_REACHED
@@ -481,6 +484,11 @@ void StatementBuilder::Compile(const ::PrintStmt* stmt)
 
 void StatementBuilder::Compile(const ::ReturnStmt* stmt)
 	{
+	auto return_handler = CurrentFlowState(FLOW_STATE_RETURN, true);
+
+	if ( return_handler )
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, return_handler);
+
 	auto expr = stmt->StmtExpr();
 
 	if ( expr )
