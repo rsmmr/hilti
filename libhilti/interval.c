@@ -43,3 +43,12 @@ uint64_t hlt_interval_nsecs(hlt_interval t, hlt_exception** excpt, hlt_execution
     return t;
 }
 
+hlt_interval hlt_interval_from_timestamp(double ts)
+{
+    return (hlt_interval)(ts * 1e9);
+}
+
+double hlt_interval_to_timestamp(hlt_interval t)
+{
+    return t / 1e9;
+}
