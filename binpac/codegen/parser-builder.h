@@ -250,6 +250,9 @@ private:
     // Prints the upcoming input bytes to binpac-verbose.
     void _hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur);
 
+    // Helper producing the "binpac" debugging output for a bitfield.
+    void _hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type);
+
     // Executes a hook. \a self is the self parameter to pass to the hook. \a
     // id is the full path to the hooked element, including the module. \a
     // foreach must be true if this is a \c forach hook. \a dolllardollar is

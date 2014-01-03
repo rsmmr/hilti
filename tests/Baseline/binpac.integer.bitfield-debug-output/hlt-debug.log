@@ -1,0 +1,5 @@
+00000001 [binpac/main-thread]           test
+00000002 [binpac/main-thread]             a = 10
+00000003 [binpac/main-thread]             b = 63
+00000004 [binpac/main-thread]               x1 = 15
+00000005 [binpac/main-thread]               x2 = A (3)

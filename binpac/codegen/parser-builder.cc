@@ -1072,8 +1072,14 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
                                             hilti::builder::string::create(name));
         }
 
-        if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type()))
+        if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type())) {
             cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", name), value);
+
+            if ( auto bf = ast::tryCast<type::Integer>(field->type()) ){
+                if ( bf->bits().size() )
+                    _hiltiDebugBitfield(value, bf);
+            }
+        }
     }
 
     if ( p && p->pgMeta()->for_each ) {
@@ -1163,6 +1169,30 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
     if ( cg()->options().debug > 0 )
         cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (lit-mode: %s; frozen: %s; trimming %d)",
                                      hilti::builder::string::create(tag), next, mode, frozen, state()->trim);
+}
+
+void ParserBuilder::_hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type)
+{
+    shared_ptr<hilti::Expression> i = cg()->builder()->addTmp("bits", cg()->hiltiType(type));
+
+    cg()->builder()->debugPushIndent();
+
+    for ( auto b : type->bits() ) {
+        cg()->builder()->addInstruction(i,
+                                        hilti::instruction::integer::Mask,
+                                        value,
+                                        hilti::builder::integer::create(b->lower()),
+                                        hilti::builder::integer::create(b->upper()));
+
+        auto j = cg()->hiltiApplyAttributesToValue(i, b->attributes());
+
+        if ( bits == j )
+            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", b->id()->name()), bits);
+        else
+            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s (%%s)", b->id()->name()), j, bits);
+    }
+
+    cg()->builder()->debugPopIndent();
 }
 
 std::pair<bool, string> ParserBuilder::_hookName(const string& path)
