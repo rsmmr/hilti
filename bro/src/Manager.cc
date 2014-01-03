@@ -2051,7 +2051,7 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 
 	auto args = std::make_shared<::binpac::expression::Constant>(std::make_shared<::binpac::constant::Tuple>(args_tuple));
 
-	auto raise_name = ::util::fmt("%s::raise_%s", ev->minfo->hilti_mbuilder->module()->id()->name(), ::util::strreplace(ev->name, "::", "_"));
+	auto raise_name = ::util::fmt("%s::raise_%s_%p", ev->minfo->hilti_mbuilder->module()->id()->name(), ::util::strreplace(ev->name, "::", "_"), ev);
 	::binpac::expression_list op_args = { id_expr(raise_name), args };
 	auto call = std::make_shared<::binpac::expression::UnresolvedOperator>(::binpac::operator_::Call, op_args);
 	auto stmt = std::make_shared<::binpac::statement::Expression>(call);
@@ -2135,7 +2135,7 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
 
 shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(shared_ptr<Pac2EventInfo> ev, int nr, const string& expr)
 	{
-	auto fname = ::util::fmt("accessor_%s_arg%d", ::util::strreplace(ev->name, "::", "_"), nr);
+	auto fname = ::util::fmt("accessor_%s_arg%d_%p", ::util::strreplace(ev->name, "::", "_"), nr, ev);
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Defining BinPAC++ function %s for parameter %d of event %s", fname.c_str(), nr, ev->name.c_str());
 
@@ -2181,7 +2181,7 @@ shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(
 
 shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccessor(shared_ptr<Pac2EventInfo> ev, int nr, shared_ptr<::hilti::Type> rtype)
 	{
-	auto fname = ::util::fmt("%s::accessor_%s_arg%d", ev->minfo->pac2_module->id()->name(), ::util::strreplace(ev->name, "::", "_"), nr);
+	auto fname = ::util::fmt("%s::accessor_%s_arg%d_%p", ev->minfo->pac2_module->id()->name(), ::util::strreplace(ev->name, "::", "_"), nr, ev);
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Declaring HILTI function %s for parameter %d of event %s", fname.c_str(), nr, ev->name.c_str());
 
@@ -2245,7 +2245,7 @@ void Manager::AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev)
 
 bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 	{
-	string fname = ::util::fmt("raise_%s", ::util::strreplace(ev->name, "::", "_"));
+	string fname = ::util::fmt("raise_%s_%p", ::util::strreplace(ev->name, "::", "_"), ev);
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Adding HILTI function %s for event %s", fname.c_str(), ev->name.c_str());
 
