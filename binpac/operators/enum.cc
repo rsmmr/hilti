@@ -29,3 +29,17 @@ opBegin(enum_::Call)
         return ast::checkedCast<type::TypeType>(op1()->type())->typeType();
     }
 opEnd
+
+opBegin(enum_::CastInteger : Cast)
+    opOp1(std::make_shared<type::Enum>())
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Integer>()))
+
+    opDoc("Casts an enum into an integer, returning a value that is consistent and unique among all labels of the enum's type.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Integer>();
+    }
+opEnd

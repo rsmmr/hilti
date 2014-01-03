@@ -44,6 +44,14 @@ void CodeBuilder::visit(expression::operator_::integer::CastTime* i)
     setResult(result);
 }
 
+void CodeBuilder::visit(expression::operator_::integer::CastInterval* i)
+{
+    auto result = builder()->addTmp("i", hilti::builder::interval::type());
+    auto op1 = cg()->hiltiExpression(i->op1());
+    cg()->builder()->addInstruction(result, hilti::instruction::integer::AsInterval, op1);
+    setResult(result);
+}
+
 void CodeBuilder::visit(expression::operator_::integer::CoerceBool* i)
 {
     auto result = builder()->addTmp("notnull", hilti::builder::boolean::type());
