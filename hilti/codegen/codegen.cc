@@ -1230,11 +1230,15 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
     auto llvm_type = llvmType(type);
 
     bool init_in_entry_block = false;
+    bool init_is_init_val = false;
 
     if ( ! init ) {
         init_in_entry_block = true;
         init = typeInfo(type)->init_val;
+        init_is_init_val = true;
     }
+
+    assert(init);
 
     llvm::BasicBlock& block(function()->getEntryBlock());
 
@@ -1243,21 +1247,22 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
     auto local = builder->CreateAlloca(llvm_type, 0, name);
     builder->CreateStore(typeInfo(type)->init_val, local);
 
-    if ( init ) {
-        if ( init_in_entry_block )
-            pushBuilder(builder);
-
-        llvmGCClear(local, type, "add-local");
+    if ( init_in_entry_block ) {
+        pushBuilder(builder);
         llvmCreateStore(init, local);
+        popBuilder();
+    }
 
-        if ( init_in_entry_block )
-            popBuilder();
+    else {
+        llvmGCClear(local, type, "add-local");
+
+        if ( ! init_is_init_val )
+            llvmCreateStore(init, local);
     }
 
     _functions.back()->locals.insert(make_pair(name, std::make_pair(local, type)));
 
     delete builder;
-
     return local;
 }
 
