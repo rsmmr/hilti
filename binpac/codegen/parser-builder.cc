@@ -1122,10 +1122,8 @@ void ParserBuilder::_hiltiDebugVerbose(const string& msg)
 
 void ParserBuilder::_hiltiDebugShowToken(const string& tag, shared_ptr<hilti::Expression> token)
 {
-    if ( cg()->options().debug == 0 )
-        return;
-
-    cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is %s", hilti::builder::string::create(tag), token);
+    if ( cg()->options().debug > 0 )
+        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is %s", hilti::builder::string::create(tag), token);
 }
 
 void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur)
@@ -1162,8 +1160,9 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
 
     cg()->builder()->addInstruction(frozen, hilti::instruction::bytes::IsFrozenIterBytes, cur);
 
-    cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (lit-mode: %s; frozen: %s; trimming %d)",
-                                 hilti::builder::string::create(tag), next, mode, frozen, state()->trim);
+    if ( cg()->options().debug > 0 )
+        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (lit-mode: %s; frozen: %s; trimming %d)",
+                                     hilti::builder::string::create(tag), next, mode, frozen, state()->trim);
 }
 
 std::pair<bool, string> ParserBuilder::_hookName(const string& path)
@@ -1570,7 +1569,6 @@ void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod, const std::l
 
     if ( cg()->options().debug > 0 )
         cg()->builder()->addDebugMsg("binpac-verbose", "- new look-ahead is %s", state()->lahead);
-
 }
 
 shared_ptr<hilti::Expression> ParserBuilder::_hiltiMatchTokenInit(const string& name, const std::list<shared_ptr<production::Terminal>>& terms)

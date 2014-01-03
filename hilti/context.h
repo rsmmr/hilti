@@ -27,7 +27,7 @@ class CompilerContext : public ast::Logger, public std::enable_shared_from_this<
 {
 public:
     /// Constructor.
-    CompilerContext(const Options& options);
+    CompilerContext(std::shared_ptr<Options> options);
 
     /// Destructor.
     ~CompilerContext();
@@ -36,7 +36,7 @@ public:
     const Options& options() const;
 
     /// Updates the current set of options.
-    void setOptions(const Options& options);
+    void setOptions(std::shared_ptr<Options> options);
 
     /// Reads a HILTI module from a file returns the parsed AST. It uses uses
     /// parse() for parsing and, by default, also fully finalizes the module.

@@ -79,7 +79,7 @@ void error(const string& file, const string& msg)
 
 int main(int argc, char** argv)
 {
-    binpac::Options options;
+    shared_ptr<binpac::Options> options = std::make_shared<binpac::Options>();
 
     while ( true ) {
         int c = getopt_long(argc, argv, "AcdD:o:nOPWlspI:vh", long_options, 0);
@@ -97,11 +97,11 @@ int main(int argc, char** argv)
             break;
 
          case 'd':
-            options.debug = true;
+            options->debug = true;
             break;
 
          case 'D':
-            options.cg_debug.insert(optarg);
+            options->cg_debug.insert(optarg);
             break;
 
          case 'o':
@@ -109,12 +109,12 @@ int main(int argc, char** argv)
             break;
 
          case 'n':
-            options.verify = false;
+            options->verify = false;
             break;
 
          case 'W':
             output_binpac = true;
-            options.verify = false;
+            options->verify = false;
             break;
 
          case 'p':
@@ -134,11 +134,11 @@ int main(int argc, char** argv)
             break;
 
          case 'O':
-            options.optimize = true;
+            options->optimize = true;
             break;
 
          case 'I':
-            options.libdirs_pac2.push_back(optarg);
+            options->libdirs_pac2.push_back(optarg);
             break;
 
          case 'v':
@@ -174,7 +174,6 @@ int main(int argc, char** argv)
     binpac::init();
 
     auto ctx = std::make_shared<binpac::CompilerContext>(options);
-
     auto module = ctx->load(input);
 
     if ( ! module ) {

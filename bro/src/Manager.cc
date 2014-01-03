@@ -185,8 +185,8 @@ struct Manager::PIMPL
 	typedef std::list<llvm::Module*>                      llvm_module_list;
 	typedef std::set<std::string>                         path_set;
 
-	::hilti::Options hilti_options;
-	::binpac::Options pac2_options;
+    std::shared_ptr<::hilti::Options> hilti_options = nullptr;
+    std::shared_ptr<::binpac::Options> pac2_options = nullptr;
 
 	bool compile_all;	// Compile all event code, even if no handler, set from BifConst::Hilti::compile_all.
 	bool compile_scripts;	// Activate the Bro script compiler.
@@ -279,11 +279,14 @@ bool Manager::InitPreScripts()
 
 	pre_scripts_init_run = true;
 
+	pimpl->hilti_options = std::make_shared<::hilti::Options>();
+	pimpl->pac2_options = std::make_shared<::binpac::Options>();
+
 	for ( auto dir : pimpl->import_paths )
 		{
-		pimpl->hilti_options.libdirs_hlt.push_back(dir);
-		pimpl->pac2_options.libdirs_hlt.push_back(dir);
-		pimpl->pac2_options.libdirs_pac2.push_back(dir);
+		pimpl->hilti_options->libdirs_hlt.push_back(dir);
+		pimpl->pac2_options->libdirs_hlt.push_back(dir);
+		pimpl->pac2_options->libdirs_pac2.push_back(dir);
 		}
 
 	pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
@@ -321,24 +324,21 @@ bool Manager::InitPostScripts()
 	pimpl->save_llvm = BifConst::Hilti::save_llvm;
 	pimpl->pac2_to_compiler = BifConst::Hilti::pac2_to_compiler;
 
-	pimpl->hilti_options.jit = true;
-	pimpl->hilti_options.debug = BifConst::Hilti::debug;
-	pimpl->hilti_options.optimize = BifConst::Hilti::optimize;
-	pimpl->hilti_options.profile = BifConst::Hilti::profile;
-	pimpl->hilti_options.verify = ! BifConst::Hilti::no_verify;
-	pimpl->hilti_options.cg_debug = cg_debug;
-	pimpl->hilti_options.module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
+	pimpl->hilti_options->jit = true;
+	pimpl->hilti_options->debug = BifConst::Hilti::debug;
+	pimpl->hilti_options->optimize = BifConst::Hilti::optimize;
+	pimpl->hilti_options->profile = BifConst::Hilti::profile;
+	pimpl->hilti_options->verify = ! BifConst::Hilti::no_verify;
+	pimpl->hilti_options->cg_debug = cg_debug;
+	pimpl->hilti_options->module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
 
-	pimpl->pac2_options.jit = true;
-	pimpl->pac2_options.debug = BifConst::Hilti::debug;
-	pimpl->pac2_options.optimize = BifConst::Hilti::optimize;
-	pimpl->pac2_options.profile = BifConst::Hilti::profile;
-	pimpl->pac2_options.verify = ! BifConst::Hilti::no_verify;
-	pimpl->pac2_options.cg_debug = cg_debug;
-	pimpl->pac2_options.module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
-
-	pimpl->hilti_context->setOptions(pimpl->hilti_options);
-	pimpl->pac2_context->setOptions(pimpl->pac2_options);
+	pimpl->pac2_options->jit = true;
+	pimpl->pac2_options->debug = BifConst::Hilti::debug;
+	pimpl->pac2_options->optimize = BifConst::Hilti::optimize;
+	pimpl->pac2_options->profile = BifConst::Hilti::profile;
+	pimpl->pac2_options->verify = ! BifConst::Hilti::no_verify;
+	pimpl->pac2_options->cg_debug = cg_debug;
+	pimpl->pac2_options->module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
 
 	pimpl->llvm_linked_module = nullptr;
 	pimpl->llvm_execution_engine = nullptr;
@@ -1444,7 +1444,7 @@ bool Manager::LoadPac2Events(const string& path)
 			if ( j != string::npos )
 				{
 				dirname = path.substr(0, j);
-				pimpl->pac2_options.libdirs_pac2.push_front(dirname);
+				pimpl->pac2_options->libdirs_pac2.push_front(dirname);
 				}
 
 			pac2 = SearchFile(pac2, dirname);

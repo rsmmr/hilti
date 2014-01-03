@@ -14,7 +14,7 @@
 using namespace hilti;
 using namespace hilti::passes;
 
-CompilerContext::CompilerContext(const Options& options)
+CompilerContext::CompilerContext(std::shared_ptr<Options> options)
 {
     setOptions(options);
 }
@@ -29,19 +29,28 @@ const Options& CompilerContext::options() const
     return *_options;
 }
 
-void CompilerContext::setOptions(const Options& options)
+void CompilerContext::setOptions(std::shared_ptr<Options> options)
 {
-    _options = std::shared_ptr<Options>(new Options(options));
+    _options = options;
 
-    if ( options.module_cache.size() ) {
-        if ( options.cgDebugging("cache") )
-            std::cerr << "Enabling module cache in " << options.module_cache << std::endl;
+    if ( options->module_cache.size() ) {
+        if ( options->cgDebugging("cache") )
+            std::cerr << "Enabling module cache in " << options->module_cache << std::endl;
 
-        _cache = std::make_shared<::util::cache::FileCache>(options.module_cache);
+        _cache = std::make_shared<::util::cache::FileCache>(options->module_cache);
+    }
+
+    else {
+        if ( options->cgDebugging("cache") )
+            std::cerr << "Disabled module cache" << std::endl;
+
+        _cache = nullptr;
     }
 
     if ( _options->cgDebugging("visitors") )
-        ast::enableDebuggingForAllVisitors();
+        ast::enableDebuggingForAllVisitors(true);
+    else
+        ast::enableDebuggingForAllVisitors(false);
 }
 
 string CompilerContext::searchModule(shared_ptr<ID> id)

@@ -36,8 +36,6 @@ extern "C" {
     #include <libbinpac++.h>
 }
 
-typedef binpac::Options Options;
-
 #else
 
 extern "C" {
@@ -449,7 +447,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
 
 // C++ code for JIT version.
 
-bool jitPac2(const std::list<string>& pac2, const binpac::Options& options)
+bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> options)
 {
     hilti::init();
     binpac::init();
@@ -511,7 +509,12 @@ int main(int argc, char** argv)
 
     const char* progname = argv[0];
 
-    ::Options options;
+#ifdef PAC_DRIVER_JIT
+    auto options = std::make_shared<binpac::Options>();
+#else
+    ::Options _options;
+    ::Options* options = &_options;
+#endif
 
     char ch;
     while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgC")) != -1) {
@@ -527,7 +530,7 @@ int main(int argc, char** argv)
             break;
 
           case 'd':
-            options.debug = true;
+            options->debug = true;
             break;
 
           case 'g':
@@ -539,7 +542,7 @@ int main(int argc, char** argv)
             break;
 
           case 'P':
-            ++options.profile;
+            ++options->profile;
             break;
 
           case 'l':
@@ -548,15 +551,15 @@ int main(int argc, char** argv)
 
 #ifdef PAC_DRIVER_JIT
          case 'D':
-            options.cg_debug.insert(optarg);
+            options->cg_debug.insert(optarg);
             break;
 
          case 'O':
-            options.optimize = true;
+            options->optimize = true;
             break;
 
          case 'C':
-            options.module_cache = ".cache";
+            options->module_cache = ".cache";
             break;
 #endif
 
@@ -572,7 +575,7 @@ int main(int argc, char** argv)
 
     hlt_config cfg = *hlt_config_get();
 
-    if ( options.profile ) {
+    if ( options->profile ) {
         fprintf(stderr, "Enabling profiling ...\n");
         cfg.profiling = 1;
     }
@@ -588,7 +591,7 @@ int main(int argc, char** argv)
     if ( ! pac2.size() )
         usage(progname);
 
-    options.jit = true;
+    options->jit = true;
 
     if ( ! jitPac2(pac2, options) )
         return 1;
@@ -665,7 +668,7 @@ int main(int argc, char** argv)
 
     assert(request && reply);
 
-    if ( options.profile ) {
+    if ( options->profile ) {
         hlt_exception* excpt = 0;
         hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
         hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt, hlt_global_execution_context());
@@ -674,7 +677,7 @@ int main(int argc, char** argv)
 
     parseSingleInput(request, chunk_size);
 
-    if ( options.profile ) {
+    if ( options->profile ) {
         hlt_exception* excpt = 0;
         hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
         hlt_profiler_stop(profiler_tag, &excpt, hlt_global_execution_context());
