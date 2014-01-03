@@ -11,6 +11,7 @@ type Pac2Cookie = caddr
 declare "C-HILTI" BroVal cookie_to_conn_val(Pac2Cookie cookie)
 declare "C-HILTI" BroVal cookie_to_file_val(Pac2Cookie cookie)
 declare "C-HILTI" BroVal cookie_to_is_orig(Pac2Cookie cookie)
+declare "C-HILTI" bool   cookie_to_is_orig_boolean(Pac2Cookie cookie)
 declare "C-HILTI" BroVal h2b_bytes(ref<bytes> val)
 declare "C-HILTI" BroVal h2b_integer_signed(int<64> val)
 declare "C-HILTI" BroVal h2b_integer_unsigned(int<64> val)

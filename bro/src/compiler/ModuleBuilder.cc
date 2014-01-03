@@ -88,6 +88,11 @@ shared_ptr<::hilti::Module> ModuleBuilder::Compile()
 	if ( reporter::errors() > 0 )
 		return nullptr;
 
+	return Finalize();
+	}
+
+shared_ptr<::hilti::Module> ModuleBuilder::Finalize()
+	{
 	// We save the source here once so that we have it on disk for inspection
 	// in case finalization/compilation fails. Normally the Manager will
 	// later override it with the final version.

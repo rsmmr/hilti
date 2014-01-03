@@ -74,6 +74,11 @@ static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *
 	auto c = get_protocol_cookie(cookie, "$is_orig");
 	return new Val(c->is_orig, TYPE_BOOL);
 	}
+int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	auto c = get_protocol_cookie(cookie, "$is_orig");
+	return c->is_orig ? 1 : 0;
+	}
 
 ::Val* libbro_h2b_string(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
