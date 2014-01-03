@@ -1594,7 +1594,6 @@ hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hl
 
     int first = 1;
     hlt_bytes* b = hlt_bytes_new(excpt, ctx);
-	hlt_bytes* tmp;
 
     while ( ! hlt_iterator_list_eq(i, end, excpt, ctx) ) {
 
@@ -1613,7 +1612,7 @@ hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hl
 
         GC_DTOR_GENERIC(obj, ti);
         GC_DTOR(so, hlt_string);
-        GC_DTOR(bo, hlt_string);
+        GC_DTOR(bo, hlt_bytes);
 
         hlt_iterator_list j = i;
         i = hlt_iterator_list_incr(i, excpt, ctx);
@@ -1621,6 +1620,9 @@ hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hl
 
         first = 0;
     }
+
+    GC_DTOR(i, hlt_iterator_list);
+    GC_DTOR(end, hlt_iterator_list);
 
     return b;
 }
