@@ -1,0 +1,27 @@
+#! /usr/bin/env bash
+
+base=`dirname $0`
+brobase=`${base}/get-bro-base`
+
+if [ $# != 2 ]; then
+   echo "usage: `basename $0` <log1> <log2>"
+   exit 1
+fi
+
+log1=$1
+log2=$2
+tmp1=$1.tmp
+tmp2=$2.tmp
+
+trap "rm -f $tmp1 $tmp2; exit" exit
+
+cat $log1 | ${base}/bro-log-canonifier >$tmp1
+cat $log2 | ${base}/bro-log-canonifier >$tmp2
+
+# We unify the diff output to remove file timestamps so that it's stable
+# across runs.
+diff -u $tmp1 $tmp2 | awk '
+
+/^(---|\+\+\+) / { print $1, $2; next }
+                 { print; };
+'

@@ -1,0 +1,6 @@
+#! /usr/bin/env bash
+
+base=`dirname $0`
+brobase=`${base}/get-bro-base`
+
+${brobase}/testing/scripts/diff-canonifier-external
