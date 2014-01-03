@@ -432,8 +432,33 @@ void ModuleBuilder::CompileFunctionBody(const ::Func* func, void* vbody)
 	// represented in the scope; some may be introduced only through
 	// InitStmts.
 
+	ODesc d;
+	func->GetLocationInfo()->Describe(&d);
+	std::string loc = d.Description();
+
+	// Keep just the last two levels of the path.
+	auto i = loc.rfind('/');
+	if ( i > 0 && i != std::string::npos )
+		i = loc.rfind('/', i - 1);
+
+	if ( i != std::string::npos )
+		loc = loc.substr(i + 1, std::string::npos);
+
+	std::string fname = func->Name();
+
+	if ( fname.rfind("::") == std::string::npos )
+		fname = ::util::fmt("%s::%s", ::GLOBAL_MODULE_NAME, fname);
+
+	auto dbgmsg = ::util::fmt("%s (%s)", fname, loc);
+
+	Builder()->addDebugMsg("bro", ::util::fmt("> entering %s", dbgmsg));
+	Builder()->debugPushIndent();
+
 	auto body = reinterpret_cast<::Func::Body*>(vbody);
 	StatementBuilder()->Compile(body->stmts);
+
+	Builder()->debugPopIndent();
+	Builder()->addDebugMsg("bro", ::util::fmt("[func] leaving %s", dbgmsg));
 	}
 
 shared_ptr<::hilti::Expression> ModuleBuilder::DeclareFunction(const Func* func)

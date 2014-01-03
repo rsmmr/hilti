@@ -84,6 +84,8 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, con
 
 	target_types.push_back(target_type);
 
+	Builder()->debugPushIndent();
+
 	switch ( expr->Tag() ) {
 	case EXPR_ADD:
 		e = Compile(static_cast<const ::AddExpr*>(expr));
@@ -252,13 +254,27 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, con
 
 	target_types.pop_back();
 
-	if ( target_type && target_type->Tag() == ::TYPE_ANY )
+	if ( target_type && target_type->Tag() != ::TYPE_ANY && expr->Type()->Tag() == ::TYPE_ANY  )
+		// Need to convert back from Bro value.
+		e = RuntimeValToHilti(e, target_type);
+
+	if ( e && ! expr->IsConst() )
+		{
+		// Log computed value to "bro" debug stream.
+		ODesc d;
+		d.SetShort(1);
+		expr->Describe(&d);
+		std::string s = d.Description();
+		s = ::util::strreplace(s, "\n", " ");
+		auto m = ::hilti::builder::string::create(s);
+		Builder()->addDebugMsg("bro", "- %s -> %s", m, e);
+		}
+
+	if ( target_type && target_type->Tag() == ::TYPE_ANY && expr->Type()->Tag() != ::TYPE_ANY )
 		// Need to pass an actual Bro value.
 		e = RuntimeHiltiToVal(e, expr->Type());
 
-	if ( target_type && expr->Type()->Tag() == ::TYPE_ANY )
-		// Need to convert back from Bro value.
-		e = RuntimeValToHilti(e, target_type);
+	Builder()->debugPopIndent();
 
 	return e;
 	}

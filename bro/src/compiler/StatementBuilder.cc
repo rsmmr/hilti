@@ -63,6 +63,21 @@ shared_ptr<::hilti::Expression> StatementBuilder::CurrentFlowState(FlowState fst
 
 void StatementBuilder::Compile(const Stmt* stmt)
 	{
+	// Add statement source to "bro" debugging stream.
+	if ( stmt->Tag() != STMT_LIST )
+		{
+		ODesc d;
+		d.SetShort(1);
+        stmt->Describe(&d);
+		auto s = ::util::strreplace(d.Description(), "\n", " ");
+
+		if ( s.size() )
+				{
+				Builder()->addComment(s);
+				Builder()->addDebugMsg("bro", string("* " + s));
+				}
+		}
+
 	switch ( stmt->Tag() ) {
 	case STMT_ADD:
 		Compile(static_cast<const ::AddStmt*>(stmt));
@@ -502,22 +517,15 @@ void StatementBuilder::Compile(const ::ReturnStmt* stmt)
 
 void StatementBuilder::Compile(const ::StmtList* stmt)
 	{
+	Builder()->debugPushIndent();
+
 	loop_over_list(stmt->Stmts(), i)
 		{
 		auto s = stmt->Stmts()[i];
-
-		if ( s->Tag() != STMT_LIST )
-			{
-			ODesc d;
-			s->Describe(&d);
-			string cmt = d.Description();
-			cmt = ::util::strreplace(cmt, "\n", " ");
-			Builder()->addComment(cmt);
-			// Builder()->addDebugMsg("bro", cmt);
-			}
-
 		Compile(s);
 		}
+
+	Builder()->debugPopIndent();
 	}
 
 void StatementBuilder::Compile(const ::SwitchStmt* stmt)
