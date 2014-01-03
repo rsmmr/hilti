@@ -66,9 +66,11 @@ protected:
     void setLiveness(shared_ptr<Statement> stmt, variable_set in, variable_set out);
     void addLiveness(shared_ptr<Statement> stmt, variable_set in, variable_set out);
     size_t hashLiveness();
+    void dumpDebug(int round);
 
 private:
     CompilerContext* _context;
+    shared_ptr<Module> _module = nullptr;
     shared_ptr<CFG> _cfg;
     liveness_map _livenesses;
 };

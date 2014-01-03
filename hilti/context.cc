@@ -308,6 +308,9 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     _endPass();
 
     auto cfg = std::make_shared<passes::CFG>(this);
+    auto liveness = std::make_shared<passes::Liveness>(this, cfg);
+
+    module->setPasses(cfg, liveness);
 
     _beginPass(module, *cfg);
 
@@ -316,8 +319,6 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _endPass();
 
-    auto liveness = std::make_shared<passes::Liveness>(this, cfg);
-
     _beginPass(module, *liveness);
 
     if ( ! liveness->run(module) )
@@ -325,7 +326,6 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _endPass();
 
-    module->setPasses(cfg, liveness);
 
     return true;
 }
