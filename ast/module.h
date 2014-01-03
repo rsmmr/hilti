@@ -76,7 +76,7 @@ public:
 
        auto n = node_ptr<ID>(id);
        _imported.push_back(n);
-       this->addChild(n);
+       this->addChild(_imported.back());
     }
 
     /// Imports an ID into the module's state. The AST node does not do more
@@ -106,6 +106,7 @@ public:
     /// be included (or not) by exportedIDs().
     void exportID(shared_ptr<ID> id, bool implicit=false) {
        _exported_ids.push_back(std::make_pair(id, implicit));
+       this->addChild(_exported_ids.back().first);
        _exported.insert(id->name());
     }
 
@@ -168,9 +169,6 @@ private:
 
     typedef std::set<string> string_set;
     string_set _exported;
-
-    typedef std::list<node_ptr<Function>> function_list;
-    function_list _functions;
 };
 
 }

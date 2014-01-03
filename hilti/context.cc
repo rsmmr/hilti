@@ -233,6 +233,13 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _endPass();
 
+    _beginPass(module, block_normalizer);
+
+    if ( ! block_normalizer.run(module) )
+        return false;
+
+    _endPass();
+
     // Rebuilt scopes.
     _beginPass(module, scope_builder);
 

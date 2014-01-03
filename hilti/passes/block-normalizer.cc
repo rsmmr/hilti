@@ -17,6 +17,19 @@ void BlockNormalizer::visit(declaration::Function* f)
 
 void BlockNormalizer::visit(statement::Block* b)
 {
+    // First normalize parent relationships inside the block. Previous
+    // operations can have left nodes with multiple parents that we don't
+    // need anymore (and which would confuse us elsewhere later).
+    for ( auto d : b->declarations() ) {
+        d->removeFromParents();
+        b->addChild(d);
+    }
+
+    for ( auto s : b->statements() ) {
+        s->removeFromParents();
+        b->addChild(s);
+    }
+
     // - Merge anonymous blocks with their unterminated predecessors
     // - Adds jumps from unterminated blocks to their successors.
     auto ostmts = b->statements();
@@ -27,11 +40,6 @@ void BlockNormalizer::visit(statement::Block* b)
     std::set<shared_ptr<statement::Block>> now_terminated;
 
     for ( auto cur = ostmts.begin(); cur != ostmts.end(); cur++ ) {
-
-        // Make sure the AST tree relationships reflect previous
-        // normalizations.
-        (*cur)->removeFromParents();
-        b->addChild(*cur);
 
         if ( pred == ostmts.end() ) {
             nstmts.push_back(*cur);

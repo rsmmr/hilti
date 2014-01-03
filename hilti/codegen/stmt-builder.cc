@@ -273,10 +273,8 @@ void StatementBuilder::visit(declaration::Variable* v)
     auto block = v->firstParent<statement::Block>();
     assert(block);
 
-    llvm::Value* init = nullptr;
-
-    if ( cg()->hiltiModule()->liveness()->liveIn(block, local) )
-        init = local->init() ? cg()->llvmValue(local->init(), local->type(), true) : nullptr;
+    bool live = local->init() ? cg()->hiltiModule()->liveness()->liveIn(block, local) : false;
+    auto init = live ? cg()->llvmValue(local->init(), local->type(), true) : nullptr;
 
     auto name = local->internalName();
     cg()->llvmAddLocal(name, local->type(), init);

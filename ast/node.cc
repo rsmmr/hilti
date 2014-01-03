@@ -91,6 +91,9 @@ void NodeBase::childsInternal(const NodeBase* node, bool recursive, std::set<sha
 
 void NodeBase::removeChild(node_ptr<NodeBase> node)
 {
+    if ( ! node )
+        return;
+
     assert(hasChild(node));
 
     _childs.remove(node);

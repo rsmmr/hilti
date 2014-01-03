@@ -387,7 +387,7 @@ shared_ptr<BlockBuilder> ModuleBuilder::pushBody(bool no_builder, const Location
         func->function->setBody(body->stmt);
 
     if ( ! no_builder )
-        return pushBuilder("", l);
+        return pushBuilder(std::shared_ptr<ID>(), l);
     else
         return nullptr;
 }

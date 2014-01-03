@@ -64,6 +64,7 @@ public:
     ///
     /// body: The statement that makes up the body (typically something like a block-statement).
     void setBody(shared_ptr<Statement> body) {
+       this->removeChild(_body);
        _body = body;
        this->addChild(_body);
     }
