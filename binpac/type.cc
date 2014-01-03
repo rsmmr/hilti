@@ -30,7 +30,9 @@ std::list<trait::Parseable::ParseAttribute> trait::Parseable::parseAttributes() 
 string binpac::Type::render()
 {
     std::ostringstream s;
-    passes::Printer(s, true).run(sharedPtr<Node>());
+    passes::Printer p(s, true);
+    p.setQualifyTypeIDs(true);
+    p.run(sharedPtr<Node>());
     return s.str();
 }
 
