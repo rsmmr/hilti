@@ -159,6 +159,8 @@ public:
    typedef shared_ptr<statement::instruction::Resolved> (*stmt_factory)(
        shared_ptr<hilti::Instruction> instruction, const instruction::Operands& ops, const Location& l);
 
+   virtual ~Instruction() {}
+
    /// Returns the name of the instruction.
    shared_ptr<ID> id() const { return _id; }
 

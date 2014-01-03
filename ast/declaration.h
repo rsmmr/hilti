@@ -20,6 +20,8 @@ class DeclarationOverrider : public Overrider<typename AstInfo::declaration>
 public:
     typedef typename AstInfo::declaration Declaration;
 
+    virtual ~DeclarationOverrider() {}
+
     virtual bool _isConstant() const { return false; }
 };
 
@@ -108,6 +110,8 @@ public:
        target->addChild(_var);
     }
 
+    virtual ~Variable() {}
+
     /// Returns the declared variable.
     shared_ptr<AIVariable> variable() const { return _var; }
 
@@ -136,6 +140,8 @@ public:
        _expr = expr;
        target->addChild(_expr);
     }
+
+    virtual ~Constant() {}
 
     /// Returns the declared value.
     shared_ptr<AIExpression> constant() const { return _expr; }
@@ -195,6 +201,8 @@ public:
        _func = func;
        target->addChild(_func);
     }
+
+    virtual ~Function() {}
 
     /// Returns the declared function.
     shared_ptr<AIFunction> function() const { return _func; }

@@ -326,7 +326,6 @@ void StatementBuilder::CompileForStmtTable(const ::ForStmt* stmt)
 
 void StatementBuilder::CompileForStmtVector(const ::ForStmt* stmt)
 	{
-	auto vtype = stmt->LoopExpr()->Type()->AsVectorType();
 	auto vexpr = HiltiExpression(stmt->LoopExpr());
 	auto vars = stmt->LoopVar();
 	assert(vars->length() == 1);

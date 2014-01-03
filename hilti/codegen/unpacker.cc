@@ -268,7 +268,6 @@ static void _integerUnpack(CodeGen* cg, const UnpackArgs& args, const UnpackResu
 {
     auto iter_type = builder::iterator::typeBytes();
     auto twidth = ast::as<type::Integer>(args.type)->width();
-    auto ttype = cg->llvmTypeInt(twidth);
     auto itype = cg->llvmTypeInt(width);
 
     // Copy the start iterator.

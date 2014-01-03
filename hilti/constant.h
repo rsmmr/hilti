@@ -288,7 +288,7 @@ private:
 
 /// Internal representation for ports.
 struct PortVal {
-    enum Proto { TCP, UDP } proto; //! The port's protocol.
+    enum Proto { TCP, UDP, ICMP } proto; //! The port's protocol.
     uint16_t port;           //! The port number.
 };
 
@@ -498,7 +498,7 @@ public:
    }
 
    /// Returns the interval in nano seconds.
-   const uint64_t value() const { return _interv; }
+   uint64_t value() const { return _interv; }
 
    /// Returns the type of the constant.
    shared_ptr<Type> type() const override {

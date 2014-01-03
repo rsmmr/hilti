@@ -49,7 +49,7 @@ shared_ptr<type::unit::item::field::Container> Production::container() const
 }
 
 
-string Production::render() const
+string Production::render()
 {
     string location = "";
 

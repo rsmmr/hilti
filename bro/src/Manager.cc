@@ -1157,7 +1157,7 @@ error:
 	return false;
 	}
 
-// TODO: Not used anymore currently.
+#if 0
 static bool extract_dotted_id(const string& chunk, size_t* i, string* id)
 	{
 	eat_spaces(chunk, i);
@@ -1180,6 +1180,7 @@ error:
 	return false;
 
 	}
+#endif
 
 static bool extract_expr(const string& chunk, size_t* i, string* expr)
 	{
@@ -2600,7 +2601,6 @@ void Manager::DumpDebug()
 
 	string location;				// Location where the analyzer was defined.
 	string name;					// Name of the analyzer.
-	TransportProto proto;				// The transport layer the analyzer uses.
 	std::list<Port> ports;				// The ports associated with the analyzer.
 	string unit_name_orig;				// The fully-qualified name of the unit type to parse the originator side.
 	string unit_name_resp;				// The fully-qualified name of the unit type to parse the originator side.

@@ -12,19 +12,6 @@ static string _statementName(Statement* stmt)
     return util::fmt("[%0.4lu]", stmt->number());
 }
 
-static string _blockName(Statement* stmt)
-{
-    auto b = ast::tryCast<statement::Block>(stmt);
-
-    if ( ! b )
-        return "<non-block-stmt>";
-
-    if ( b->id() )
-        return b->id()->pathAsString();
-
-    return util::fmt("<anonymous block %p / %s>", stmt, _statementName(stmt));
-}
-
 Printer::Printer(std::ostream& out, bool single_line, bool cfg)
     : ast::passes::Printer<AstInfo>(out, single_line)
 {
@@ -1271,6 +1258,10 @@ void Printer::visit(constant::Port* c)
         p << v.port << "/udp";
         break;
 
+     case constant::PortVal::ICMP:
+        p << v.port << "/icmp";
+        break;
+
      default:
         internalError("unknown protocol");
     }
@@ -1347,8 +1338,6 @@ void Printer::visit(ctor::Vector* c)
 
 void Printer::visit(ctor::RegExp* c)
 {
-    Printer& p = *this;
-
     std::list<string> patterns;
 
     for ( auto p : c->patterns() )

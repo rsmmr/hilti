@@ -213,7 +213,7 @@ void TypeConverter::visit(::hilti::type::Tuple* t)
 void ValueConverter::visit(::hilti::type::Reference* b)
 	{
 	bool set = false;
-	bool success = processOne(b->argType(), &set);
+	processOne(b->argType(), &set);
 	assert(set);
 	setResult(true);
 	}

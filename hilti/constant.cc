@@ -15,15 +15,6 @@ std::list<shared_ptr<hilti::Expression>> Constant::flatten()
     return {};
 }
 
-static shared_ptr<Type> _tuple_type(const constant::Tuple::element_list& elems, const Location& l)
-{
-    type::Tuple::type_list types;
-    for ( auto e : elems )
-        types.push_back(e->type());
-
-    return shared_ptr<Type>(new type::Tuple(types, l));
-}
-
 constant::Tuple::Tuple(const element_list& elems, const Location& l) : Constant(l)
 {
     for ( auto e : elems )

@@ -84,6 +84,7 @@ struct Configuration {
     };
 
     std::list<string> runtime_cflags = {
+        "-std=c99"
     };
 
     std::list<string> runtime_cxxflags = {

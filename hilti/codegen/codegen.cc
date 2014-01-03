@@ -24,12 +24,12 @@ using namespace hilti;
 using namespace codegen;
 
 CodeGen::CodeGen(CompilerContext* ctx, const path_list& libdirs)
-    : _coercer(new Coercer(this)),
-      _loader(new Loader(this)),
+    : _loader(new Loader(this)),
       _storer(new Storer(this)),
       _unpacker(new Unpacker(this)),
       _field_builder(new FieldBuilder(this)),
       _stmt_builder(new StatementBuilder(this)),
+      _coercer(new Coercer(this)),
       _type_builder(new TypeBuilder(this)),
       _debug_info_builder(new DebugInfoBuilder(this)),
       _collector(new passes::Collector())
@@ -1354,7 +1354,6 @@ CodeGen::llvmAdaptFunctionArgs(shared_ptr<type::Function> ftype)
 std::pair<llvm::Type*, std::vector<std::pair<string, llvm::Type*>>>
 CodeGen::llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::function::CallingConvention cc, bool skip_ctx)
 {
-    auto llvm_cc = llvmCallingConvention(cc);
     auto orig_rtype = rtype;
 
     std::vector<std::pair<string, llvm::Type*>> llvm_args;
@@ -2488,8 +2487,6 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     auto llvm_func = llvmAddFunction(func, false, type::function::HILTI_C, name, false);
     rf1 = llvm_func;
 
-    auto args = llvm_func->arg_begin();
-
     pushFunction(llvm_func);
     //_functions.back()->context = llvmGlobalExecutionContext();  // FIXME: Use context argument.
 
@@ -2796,7 +2793,15 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     auto cty = llvm::cast<llvm::StructType>(llvmLibType("hlt.callable"));
     auto arg_start = cty->getNumElements();
 
-    auto llvm_rtype = hook ? llvmType(rtype) : llvm_func->getReturnType();
+    llvm::Type* llvm_rtype = nullptr;
+
+    if ( hook )
+        llvm_rtype = llvmType(rtype);
+
+    else {
+        assert(llvm_func);
+        llvm_rtype = llvm_func->getReturnType();
+    }
 
     // Build the internal function that will later call the target.
     CodeGen::parameter_list params = { std::make_pair("callable", builder::reference::type(builder::callable::type(rtype))) };
@@ -2926,7 +2931,6 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
 
         pushFunction(dtor);
 
-        callable = llvm_call_func->arg_begin();
         callable = builder()->CreateBitCast(dtor->arg_begin(), llvmTypePtr(sty));
         callable = builder()->CreateLoad(callable);
 

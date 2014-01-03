@@ -165,8 +165,6 @@ bool GlobalsPass::runOnBasicBlock(llvm::BasicBlock &bb)
         }
 
         auto gidx = (*t).second.first;
-        auto gtype = (*t).second.second;
-
         auto id = ::util::fmt("%s::%s", module, global);
         auto m = globals_index.find(id);
 
@@ -382,6 +380,7 @@ void Linker::joinFunctions(llvm::Module* dst, const char* new_func, const char* 
         util::checkedCreateCall(builder, "Linker", func, params);
     }
 
+    assert(builder);
     builder->CreateRetVoid();
 }
 

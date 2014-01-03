@@ -123,6 +123,7 @@ shared_ptr<Type> Interval::type() const
     return shared_ptr<Type>(new type::Interval());
 }
 
+#if 0
 static shared_ptr<Type> _tuple_type(const expression_list& elems, const Location& l)
 {
     type::Tuple::type_list types;
@@ -131,6 +132,7 @@ static shared_ptr<Type> _tuple_type(const expression_list& elems, const Location
 
     return shared_ptr<Type>(new type::Tuple(types, l));
 }
+#endif
 
 Bitset::Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Location& l)
 {

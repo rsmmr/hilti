@@ -1,5 +1,5 @@
 //
-// @TEST-EXEC: ${CXX} -g -O0 -o a.out %INPUT `${HILTI_CONFIG} --compiler --runtime --cxxflags --ldflags --libs` -lhilti-jit 
+// @TEST-EXEC: ${CXX} -g -O0 -o a.out %INPUT `${HILTI_CONFIG} --compiler --runtime --cxxflags --ldflags --libs` -lhilti-jit -std=c++11
 // @TEST-EXEC: ./a.out >output
 // @TEST-EXEC: btest-diff output
 //

@@ -621,7 +621,6 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)
 	switch ( ty->Tag() ) {
 	case TYPE_TABLE:
 		{
-		auto mtype = ty->AsTableType();
 		auto op1 = HiltiExpression(expr->Op2());
 		auto op2 = HiltiIndex(expr->Op1());
 

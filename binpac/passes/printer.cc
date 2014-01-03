@@ -112,8 +112,6 @@ void Printer::visit(Attribute* a)
 
 void Printer::visit(AttributeSet* a)
 {
-    Printer& p = *this;
-
     printList(a->attributes(), " ");
 }
 
@@ -185,12 +183,8 @@ void Printer::visit(Module* m)
     p << "module " << m->id() << ";" << endl;
     p << endl;
 
-    bool sep = false;
-
-    for ( auto i : m->importedIDs() ) {
+    for ( auto i : m->importedIDs() )
         p << "import " << i << endl;
-        sep = true;
-    }
 
     for ( auto pr : m->properties() ) {
         p << "%" << pr->key();
@@ -451,7 +445,6 @@ void Printer::visit(expression::ID* i)
 
 void Printer::visit(expression::List* l)
 {
-    Printer& p = *this;
     printList(l->expressions(), ", ");
 }
 
@@ -589,8 +582,6 @@ void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
 
 void Printer::visit(expression::ResolvedOperator* r)
 {
-    Printer& p = *this;
-
     auto exprs = r->operands();
     auto kind = r->kind();
 
@@ -1040,7 +1031,6 @@ void Printer::visit(type::Tuple* t)
     if ( printTypeID(this, t) )
         return;
 
-    Printer& p = *this;
     printList(t->typeList(), ", ", "(", ")");
 }
 

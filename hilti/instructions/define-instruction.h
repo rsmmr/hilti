@@ -59,7 +59,8 @@
            const Location& l=Location::None) {      \
            return shared_ptr<statement::instruction::Resolved>(new typename hilti::statement::instruction::ns::cls(instruction, ops, l)); \
            }                                        \
-       cls() : hilti::Instruction(shared_ptr<ID>(new ID(name)), #ns, #cls, factory) {}
+       cls() : hilti::Instruction(shared_ptr<ID>(new ID(name)), #ns, #cls, factory) {} \
+       virtual ~cls() {}
 
 
 /// Ends the definition of an instruction. Old version - use iEndH/iEndC instead.

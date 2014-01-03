@@ -29,7 +29,6 @@ void StatementBuilder::visit(statement::instruction::integer::Incr* i)
 
 void StatementBuilder::visit(statement::instruction::integer::IncrBy* i)
 {
-    auto width = as<type::Integer>(i->target()->type())->width();
     auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
     auto op2 = cg()->llvmValue(i->op2(), i->target()->type());
 
@@ -50,7 +49,6 @@ void StatementBuilder::visit(statement::instruction::integer::Decr* i)
 
 void StatementBuilder::visit(statement::instruction::integer::DecrBy* i)
 {
-    auto width = as<type::Integer>(i->target()->type())->width();
     auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
     auto op2 = cg()->llvmValue(i->op2(), i->target()->type());
 

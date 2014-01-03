@@ -70,8 +70,6 @@ protected:
 private:
     CompilerContext* _context;
     shared_ptr<CFG> _cfg;
-    bool _run = false;
-
     liveness_map _livenesses;
 };
 

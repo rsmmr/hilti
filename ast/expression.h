@@ -18,6 +18,8 @@ template<typename AstInfo>
 class ExpressionOverrider : public Overrider<typename AstInfo::expression>
 {
 public:
+    virtual ~ExpressionOverrider() {}
+
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::coercer Coercer;
     typedef typename AstInfo::coerced_expression CoercedExpression;
@@ -158,6 +160,8 @@ public:
             target->addChild(i);
     }
 
+    virtual ~List() { }
+
     /// Returns the expressions.
     expression_list expressions() const {
         expression_list exprs;
@@ -202,6 +206,8 @@ public:
        target->addChild(_ctor);
     }
 
+    virtual ~Ctor() { }
+
     /// Returns the constructed value.
     shared_ptr<AICtor> ctor() const { return _ctor; }
 
@@ -236,6 +242,8 @@ public:
        _constant = constant;
        target->addChild(_constant);
     }
+
+    virtual ~Constant() { }
 
     /// Returns the expression's constant.
     shared_ptr<AIConstant> constant() const { return _constant; }
@@ -328,6 +336,8 @@ public:
        target->addChild(_var);
     }
 
+    virtual ~Variable() { }
+
     /// Returns the variable the expression is referening.
     shared_ptr<AIVariable> variable() const { return _var; }
 
@@ -357,6 +367,8 @@ public:
        __type = type;
        target->addChild(__type);
     }
+
+    virtual ~Type() { }
 
     /// Returns the referenced type.
     const shared_ptr<AIType> typeValue() const { return __type; }
@@ -393,6 +405,8 @@ public:
        target->addChild(__type);
     }
 
+    virtual ~Default() { }
+
     /// Returns the expression's tyoe.
     shared_ptr<AIType> _type() const /* override */ { return __type; }
 
@@ -422,6 +436,8 @@ public:
        _block = block;
        target->addChild(_block);
     }
+
+    virtual ~Block() { }
 
     /// Returns the referenced block.
     const shared_ptr<AIBlock> block() const { return _block; }
@@ -458,6 +474,8 @@ public:
        target->addChild(_module);
     }
 
+    virtual ~Module() { }
+
     /// Returns the referenced module.
     const shared_ptr<AIModule> module() const { return _module; }
 
@@ -491,6 +509,8 @@ public:
        _func = func;
        target->addChild(_func);
     }
+
+    virtual ~Function() { }
 
     /// Returns the refenenced function.
     const shared_ptr<AIFunction> function() const { return _func; }
@@ -526,6 +546,8 @@ public:
        _id = id;
        target->addChild(_id);
     }
+
+    virtual ~ID() { }
 
     /// Returns the ID the expression is referencing.
     const shared_ptr<AIID> id() const { return _id; }
@@ -564,6 +586,8 @@ public:
        target->addChild(dst);
     }
 
+    virtual ~Coerced() { }
+
     /// Returns the original expression.
     shared_ptr<Expression> expression() const {
        return _expr;
@@ -600,6 +624,8 @@ public:
        __type = type;
     }
 
+    virtual ~CodeGen() { }
+
     /// Returns the value passed into Init.
     void* cookie() const { return _cookie; }
 
@@ -631,6 +657,8 @@ public:
        _param = param;
        target->addChild(_param);
     }
+
+    virtual ~Parameter() { }
 
     /// Returns the parameter referenced by the expression.
     const shared_ptr<AIParameter> parameter() const { return _param; }

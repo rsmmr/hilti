@@ -8,9 +8,9 @@
 #include "types.h"
 
 #ifdef DEBUG
-# define DBG_LOG(args...) __hlt_debug_printf_internal(args)
+# define DBG_LOG(...) __hlt_debug_printf_internal(__VA_ARGS__)
 #else
-# define DBG_LOG(args...)
+# define DBG_LOG(...)
 #endif
 
 extern void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception** excpt, hlt_execution_context* ctx);

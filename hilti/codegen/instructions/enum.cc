@@ -7,6 +7,7 @@
 using namespace hilti;
 using namespace codegen;
 
+#if 0
 static llvm::Value* _makeVal(CodeGen* cg, bool undef, bool have_value, uint64_t val)
 {
     auto flags = cg->llvmConstInt((undef ? HLT_ENUM_UNDEF : 0) + (have_value ? HLT_ENUM_HAS_VAL : 0), 64);
@@ -17,6 +18,7 @@ static llvm::Value* _makeVal(CodeGen* cg, bool undef, bool have_value, uint64_t 
     elems.push_back(llvm_val);
     return cg->llvmConstStruct(elems, true);
 }
+#endif
 
 static llvm::Value* _makeValLLVM(CodeGen* cg, llvm::Value* undef, llvm::Value* has_val, llvm::Value* val)
 {
@@ -41,12 +43,14 @@ static llvm::Value* _getUndef(CodeGen* cg, llvm::Value* op)
     return cg->builder()->CreateICmpNE(bit, cg->llvmConstInt(0, 64));
 }
 
+#if 0
 static llvm::Value* _getHaveVal(CodeGen* cg, llvm::Value* op)
 {
     auto flags = cg->llvmExtractValue(op, 0);
     auto bit = cg->builder()->CreateAnd(flags, cg->llvmConstInt(HLT_ENUM_HAS_VAL, 64));
     return cg->builder()->CreateICmpNE(bit, cg->llvmConstInt(0, 64));
 }
+#endif
 
 static llvm::Value* _getVal(CodeGen* cg, llvm::Value* op)
 {

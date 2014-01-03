@@ -10,8 +10,8 @@ extern "C" {
 
 #include <stdint.h>
 
-struct BroType;
-struct BroObj;
+class BroType;
+class BroObj;
 
 // The numerical value we use for enums' \c Undef value inside the
 // corresponding Bro type definition.

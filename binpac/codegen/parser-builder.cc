@@ -1195,7 +1195,6 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::I
         return;
 
     auto t = _hookName(id->pathAsString());
-    auto local = t.first;
     auto name = t.second;
 
     if ( unit_module->id()->name() != current_module->id()->name() )
@@ -1296,7 +1295,6 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<binpac::ty
     _hiltiDebugVerbose(msg);
 
     auto t = _hookName(id->pathAsString());
-    auto local = t.first;
     auto name = t.second;
 
     // TODO: Don't need "local" anymore I believe.

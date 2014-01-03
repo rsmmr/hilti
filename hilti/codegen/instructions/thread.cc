@@ -77,7 +77,6 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
     auto job = cg()->llvmCallableBind(func, ftype, params);
 
     auto mgr = cg()->llvmThreadMgr();
-    auto ctx = cg()->llvmExecutionContext();
 
     if ( i->op3() ) {
         // Destination thread given.

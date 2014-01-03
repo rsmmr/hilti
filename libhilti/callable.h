@@ -25,7 +25,7 @@ typedef struct {
 struct __hlt_callable {
     __hlt_gchdr __gch;                     // Header for garbage collection.
     __hlt_callable_func* __func;           // Pointer to the set of function for the callable.
-    ;                                      // Arguments follow here in memory.
+    // ;                                   // Arguments follow here in memory.
 };
 
 /// Executes a callable from C.
@@ -40,7 +40,7 @@ struct __hlt_callable {
 /// declaring a HILTI type \c "type Foo = callable<int, string>" and then running \c "hiltic -P".
 ///
 /// args: The arguments to the callable, with the standard addtional HILTI-C arguments.
-#define HLT_CALLABLE_RUN(callable, target, prototype, args...) \
-   (*(prototype)((callable)->__func->run_c))((callable), target, args)
+#define HLT_CALLABLE_RUN(callable, target, prototype, ...) \
+   (*(prototype)((callable)->__func->run_c))((callable), target, __VA_ARGS__)
 
 #endif

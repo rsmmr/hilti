@@ -365,8 +365,6 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
     hlt_bytes* chunk2;
     hlt_iterator_bytes end = hlt_bytes_end(input, &excpt, ctx);
     hlt_iterator_bytes cur_end;
-    hlt_iterator_bytes ncur;
-    hlt_iterator_bytes ocur;
     int8_t done = 0;
     hlt_exception* resume = 0;
 
@@ -447,20 +445,6 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
     GC_DTOR(cur, hlt_iterator_bytes);
 }
 
-static void input_error(const char* line)
-{
-    fprintf(stderr, "error reading input header: not in expected format.\n");
-    exit(1);
-}
-
-static void parser_exception(const char*fid, hlt_exception* excpt)
-{
-    hlt_execution_context* ctx = hlt_global_execution_context();
-    fprintf(stderr, "%s ", fid);
-    hlt_exception_print_uncaught(excpt, ctx);
-}
-
-
 #ifdef PAC_DRIVER_JIT
 
 // C++ code for JIT version.
@@ -524,14 +508,13 @@ int main(int argc, char** argv)
     int chunk_size = 0;
     int list_parsers = false;
     const char* parser = 0;
-    const char* affinity = 0;
 
     const char* progname = argv[0];
 
     ::Options options;
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dOBhD:UlTPgC")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgC")) != -1) {
 
         switch (ch) {
 
@@ -541,10 +524,6 @@ int main(int argc, char** argv)
 
           case 'p':
             parser = optarg;
-            break;
-
-          case 'a':
-            affinity = strdup(optarg);
             break;
 
           case 'd':

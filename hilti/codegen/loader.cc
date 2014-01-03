@@ -102,7 +102,6 @@ void Loader::visit(variable::Local* v)
 void Loader::visit(variable::Global* v)
 {
     auto addr = cg()->llvmGlobal(v);
-    auto result = cg()->builder()->CreateLoad(addr);
     setResult(addr, false, true);
 }
 
@@ -128,14 +127,14 @@ void Loader::visit(expression::Parameter* p)
 void Loader::visit(expression::Constant* e)
 {
     _LoadResult result;
-    bool success = processOne(e->constant(), &result);
+    processOne(e->constant(), &result);
     CGVisitor<_LoadResult, shared_ptr<Type>>::setResult(result);
 }
 
 void Loader::visit(expression::Ctor* e)
 {
     _LoadResult result;
-    bool success = processOne(e->ctor(), &result);
+    processOne(e->ctor(), &result);
     CGVisitor<_LoadResult, shared_ptr<Type>>::setResult(result);
 }
 
@@ -555,15 +554,12 @@ void Loader::visit(ctor::Callable* c)
     auto func = ast::checkedCast<expression::Function>(c->function())->function();
     auto hook = ast::tryCast<Hook>(func);
     auto ftype = func->type();
-    auto has_result = (! ast::isA<type::Void>(ftype->result()->type()));
-
     auto tuple = ::builder::tuple::create(c->arguments());
 
     CodeGen::expr_list params;
     cg()->prepareCall(c->function(), tuple, &params, false);
 
     if ( hook ) {
-        auto llvm_func = cg()->llvmFunctionHookRun(hook);
         auto htype = ast::checkedCast<type::Hook>(ftype);
         auto callable = cg()->llvmCallableBind(hook, params);
         setResult(callable, true, false);

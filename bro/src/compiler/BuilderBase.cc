@@ -62,6 +62,7 @@ void BuilderBase::InternalError(const std::string& msg, const BroObj* obj) const
 	auto s = msg + ::util::fmt(" [%s]", Location(obj));
 	DBG_LOG_COMPILER("internal builder error: %s", s.c_str());
 	reporter::internal_error(s);
+	abort(); // Can't get here.
 	}
 
 class Compiler* BuilderBase::Compiler() const

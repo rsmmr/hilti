@@ -1203,7 +1203,7 @@ public:
    shared_ptr<Type> type() const { return _type; }
 
    /// Returns the field's start offset, if set via the ctor; -1 if not.
-   const int startOffset() const { return _start_offset; }
+   int startOffset() const { return _start_offset; }
 
    /// Returns the field's predecessor field, if set via the ctor; null if not.
    shared_ptr<ID> startField() const { return _start_field; }

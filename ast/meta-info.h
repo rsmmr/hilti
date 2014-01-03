@@ -21,7 +21,7 @@ public:
     ///
     /// name: The name of the meta node.
     MetaNode(const string& name);
-    ~MetaNode();
+    virtual ~MetaNode();
 
     /// Returns the node's name.
     const string& name() const;

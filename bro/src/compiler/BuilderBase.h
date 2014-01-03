@@ -106,7 +106,7 @@ public:
 	 *
 	 * msg: The error message to log.
 	 */
-	void InternalError(const std::string& msg, const BroObj* obj = 0) const;
+	void InternalError(const std::string& msg, const BroObj* obj = 0) const __attribute__((noreturn));
 
 	/**
 	 * Returns the compiler in use. This forwards to the corresponding

@@ -28,7 +28,7 @@ class ABI;
 
 namespace util { class IRInserter; }
 
-class TypeInfo;
+struct TypeInfo;
 
 /// Namespace for the name of symbols generated/examined by code generator
 /// and linker.

@@ -312,11 +312,12 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PortVal* val)
 
 
 	case ::TRANSPORT_ICMP:
-		Error("no support yet for compiling PortVals of ICMP type", val);
+		proto = ::hilti::constant::PortVal::ICMP;
 		break;
 
 	default:
 		InternalError("unexpected port type in ValueBuilder::Compile");
+        
 	}
 
 	return ::hilti::builder::port::create(val->Port(), proto);
