@@ -189,7 +189,13 @@ void TypeConverter::visit(::hilti::type::Time* t)
 	{
 	auto result = base_type(TYPE_TIME);
 	setResult(result);
-        }
+    }
+
+void TypeConverter::visit(::hilti::type::Interval* t)
+	{
+	auto result = base_type(TYPE_INTERVAL);
+	setResult(result);
+    }
 
 void TypeConverter::visit(::hilti::type::Tuple* t)
 	{
@@ -330,6 +336,17 @@ void ValueConverter::visit(::hilti::type::Time* t)
 	auto args = ::hilti::builder::tuple::create( { val } );
 	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 				  ::hilti::builder::id::create("LibBro::h2b_time"), args);
+	setResult(true);
+    }
+
+void ValueConverter::visit(::hilti::type::Interval* i)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+
+	auto args = ::hilti::builder::tuple::create( { val } );
+	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::h2b_interval"), args);
 	setResult(true);
     }
 

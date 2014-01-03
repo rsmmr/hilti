@@ -146,6 +146,11 @@ int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt
 	return new Val(hlt_time_to_timestamp(t), TYPE_TIME);
 	}
 
+::Val* libbro_h2b_interval(hlt_interval i, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return new IntervalVal(hlt_interval_to_timestamp(i), 1);
+	}
+
 ::Val* libbro_h2b_type(Val* t, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	Ref(t); // TODO: Not sure if we need this.
@@ -196,12 +201,6 @@ int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt
 		struct in_addr in4 = hlt_net_to_in4(n, excpt, ctx);
 		return new SubNetVal(IPPrefix(in4, len - 96));
 		}
-	}
-
-::Val* libbro_h2b_interval(hlt_interval i, hlt_exception** excpt, hlt_execution_context* ctx)
-	{
-	auto nsecs = hlt_interval_nsecs(i, excpt, ctx);
-	return new ::IntervalVal(nsecs / 1e9, 1);
 	}
 
 ::Val* libbro_h2b_regexp(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx)
