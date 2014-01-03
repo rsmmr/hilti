@@ -326,6 +326,9 @@ hlt_port libbro_b2h_port(Val *val, hlt_exception** excpt, hlt_execution_context*
 	case ::TRANSPORT_UDP:
 		return { (uint16_t)port->Port(), HLT_PORT_UDP };
 
+	case ::TRANSPORT_ICMP:
+		return { (uint16_t)port->Port(), HLT_PORT_ICMP };
+
 	default:
 		bro::hilti::reporter::internal_error("unknown prot in libbro_b2h_port()");
 		return hlt_port();
