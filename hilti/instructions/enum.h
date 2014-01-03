@@ -28,9 +28,7 @@ iBegin(enum_, Equal, "equal")
     iValidate {
         auto ty_op1 = as<type::Enum>(op1->type());
         auto ty_op2 = as<type::Enum>(op2->type());
-
-        if ( ty_op1 != ty_op2 )
-            error(op2, "operands must be of the same enum type");
+        equalTypes(ty_op1, ty_op2);
     }
 
     iDoc(R"(
