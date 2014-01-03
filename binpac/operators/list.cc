@@ -29,3 +29,16 @@ opBegin(list::PushBack : MethodCall)
         return op1()->type();
     }
 opEnd
+
+opBegin(list::Size)
+    opOp1(std::make_shared<type::List>())
+
+    opDoc("Returns the length of the list.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Integer>(64, false);
+    }
+opEnd
