@@ -84,7 +84,7 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod)
         _module->setTargetTriple(_abi->targetTriple());
         _module->setDataLayout(_abi->dataLayout());
 
-        auto name = llvm::MDString::get(llvmContext(), _module->getModuleIdentifier());
+        auto name = llvm::MDString::get(llvmContext(), linkerModuleIdentifier());
         auto md = _module->getOrInsertNamedMetadata(symbols::MetaModuleName);
         md->addOperand(codegen::util::llvmMdFromValue(llvmContext(), name));
 
@@ -247,22 +247,25 @@ llvm::Value* CodeGen::llvmGlobal(shared_ptr<Variable> var)
     return llvmGlobal(var.get());
 }
 
-llvm::Value* CodeGen::llvmGlobal(Variable* var)
+string CodeGen::scopedNameGlobal(Variable* var) const
 {
     auto scope = var->id()->scope();
 
     if ( scope.empty() )
         scope = _hilti_module->id()->name();
 
-    // The linker will replace th=is code with the actual global value.
+    return ::util::fmt("%s::%s", scope, var->id()->local());
+}
 
+llvm::Value* CodeGen::llvmGlobal(Variable* var)
+{
+
+    // The linker will replace th=is code with the actual global value.
     llvm::Value* dummy = builder()->CreateAlloca(llvmTypePtr(llvmType(var->type())));
     auto ins = builder()->CreateLoad(dummy);
 
-    auto mdscope = llvm::MDString::get(llvmContext(), scope);
-    auto mdglobal = llvm::MDString::get(llvmContext(), var->id()->local());
-
-    std::vector<llvm::Value*> vals = { mdscope, mdglobal };
+    auto mdglobal = llvm::MDString::get(llvmContext(), scopedNameGlobal(var));
+    std::vector<llvm::Value*> vals = { mdglobal };
     auto md = llvm::MDNode::get(llvmContext(), vals);
     llvm::cast<llvm::Instruction>(ins)->setMetadata("global-access", md);
 
@@ -576,7 +579,7 @@ llvm::Function* CodeGen::llvmPushLinkerJoinableFunction(const string& name)
 
 void CodeGen::createInitFunction()
 {
-    string name = util::mangle(_hilti_module->id(), true, nullptr, "init.module");
+    string name = util::mangle(_hilti_module->id(), true, nullptr, ::util::fmt("init.module.%s", linkerModuleIdentifier()));
     _module_init_func = llvmPushLinkerJoinableFunction(name);
 }
 
@@ -622,7 +625,7 @@ void CodeGen::initGlobals()
     // This global will be accessed by our custom linker. Unfortunastely, it
     // seems, we can't store a type in a metadata node directly, which would
     // simplify the linker.
-    string postfix = string(".") + _hilti_module->id()->name();
+    string postfix = string(".") + linkerModuleIdentifier();
     _globals_type = llvmTypeStruct(symbols::TypeGlobals + postfix, globals);
 
     if ( globals.size() ) {
@@ -644,7 +647,7 @@ void CodeGen::createGlobalsInitFunction()
     string postfix = string(".") + _hilti_module->id()->name();
 
     // Create a function that initializes our globals with defaults.
-    auto name = util::mangle(_hilti_module->id(), true, nullptr, "init.globals");
+    auto name = util::mangle(_hilti_module->id(), true, nullptr, ::util::fmt("init.globals.%s", linkerModuleIdentifier()));
     _globals_init_func = llvmPushLinkerJoinableFunction(name);
 
 #ifdef OLDSTRING
@@ -675,7 +678,7 @@ void CodeGen::createGlobalsInitFunction()
 
     // Create a function that that destroys all the memory managed objects in
     // there.
-    name = util::mangle(_hilti_module->id(), true, nullptr, "dtor.globals");
+    name = util::mangle(_hilti_module->id(), true, nullptr, ::util::fmt("dtor.globals.%s", linkerModuleIdentifier()));
     _globals_dtor_func = llvmPushLinkerJoinableFunction(name);
 
     for ( auto g : _collector->globals() ) {
@@ -710,7 +713,8 @@ llvm::Value* CodeGen::llvmGlobalIndex(Variable* var)
 void CodeGen::createLinkerData()
 {
     // Add them main meta information node.
-    string name = string(symbols::MetaModule) + "." + _module->getModuleIdentifier();
+    auto module_id = linkerModuleIdentifier();
+    string name = ::util::fmt("%s.%s", string(symbols::MetaModule), module_id);
 
     auto old_md = _module->getNamedValue(name);
 
@@ -720,7 +724,7 @@ void CodeGen::createLinkerData()
     auto md  = _module->getOrInsertNamedMetadata(name);
 
     llvm::Value *version = llvm::ConstantInt::get(llvm::Type::getInt16Ty(llvmContext()), 1);
-    llvm::Value *id = llvm::MDString::get(llvmContext(), _hilti_module->id()->name());
+    llvm::Value *id = llvm::MDString::get(llvmContext(), module_id);
     llvm::Value *file = llvm::MDString::get(llvmContext(), _hilti_module->path());
     llvm::Value *ctxtype = llvm::Constant::getNullValue(llvmTypePtr(llvmTypeExecutionContext()));
 
@@ -732,13 +736,13 @@ void CodeGen::createLinkerData()
 
     // Add the line up of our globals.
 
-    name = string(symbols::MetaGlobals) + "." + _module->getModuleIdentifier();
+    name = string(symbols::MetaGlobals) + "." + module_id;
     md  = _module->getOrInsertNamedMetadata(name);
 
     // Iterate through the collector globals here to guarantee same order as
     // in our global struct.
     for ( auto g : _collector->globals() ) {
-        auto n = llvm::MDString::get(llvmContext(), g->id()->name());
+        auto n = llvm::MDString::get(llvmContext(), scopedNameGlobal(g.get()));
         md->addOperand(util::llvmMdFromValue(llvmContext(), n));
     }
 
@@ -823,9 +827,9 @@ string CodeGen::uniqueName(const string& component, const string& str)
     _unique_names.insert(make_tuple(idx, cnt + 1));
 
     if ( cnt == 1 )
-        return ::util::fmt(".hlt.%s.%s", str.c_str(), _module->getModuleIdentifier().c_str());
+        return ::util::fmt(".hlt.%s.%s", str, linkerModuleIdentifier());
     else
-        return ::util::fmt(".hlt.%s.%s.%d", str.c_str(), _module->getModuleIdentifier().c_str(), cnt);
+        return ::util::fmt(".hlt.%s.%s.%d", str, linkerModuleIdentifier(), cnt);
 
 }
 
@@ -4125,7 +4129,19 @@ string CodeGen::llvmGetModuleIdentifier(llvm::Module* module)
         return llvm::cast<llvm::MDString>(node->getOperand(0))->getString();
     }
 
-    return module->getModuleIdentifier();
+    return linkerModuleIdentifierStatic(module);
+}
+
+string CodeGen::linkerModuleIdentifier() const
+{
+    return linkerModuleIdentifierStatic(_module);
+}
+
+string CodeGen::linkerModuleIdentifierStatic(llvm::Module* module)
+{
+    // We add this pointer here so that diffent compile-time units can use
+    // the name module name.
+    return ::util::fmt("%s.%p", module->getModuleIdentifier(), module);
 }
 
 void CodeGen::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call)

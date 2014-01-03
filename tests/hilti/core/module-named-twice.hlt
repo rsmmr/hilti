@@ -1,0 +1,56 @@
+#
+# @TEST-EXEC: hilti-build %INPUT a.hlt b.hlt -o a.out
+# @TEST-EXEC: ./a.out >output
+# @TEST-EXEC: btest-diff output
+#
+
+module Main
+
+import Hilti
+
+declare void Foo::a()
+declare void Foo::b()
+
+declare global string Foo::ga
+declare global string Foo::gb
+
+void run() {
+    call Foo::a()
+    call Foo::b()
+
+    call Hilti::print (Foo::ga)
+    call Hilti::print (Foo::gb)
+}
+
+# @TEST-START-FILE a.hlt
+
+module Foo
+
+import Hilti
+
+global string ga = "global.a"
+
+void a () {
+    call Hilti::print (ga)
+}
+
+export a
+
+# @TEST-END-FILE
+
+# @TEST-START-FILE b.hlt
+
+module Foo
+
+import Hilti
+
+global string gb = "global.b"
+
+void b () {
+    call Hilti::print (gb)
+}
+
+export b
+
+# @TEST-END-FILE
+

@@ -244,6 +244,9 @@ public:
    /// prefix, or the current module if not given.
    string mangleGlobal(shared_ptr<ID> id, shared_ptr<Module> mod = nullptr, string prefix = "", bool internal = false);
 
+   /// XXXX
+   string scopedNameGlobal(Variable* var) const;
+
    /// Returns the builder associated with a block label. This first this is
    /// called for a given pair label/function, a new builder is created and
    /// returned. Subsequent calls for the same pair will then return the same
@@ -2143,6 +2146,12 @@ public:
 
    /// XXX
    void prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call);
+
+   // XXX
+   string linkerModuleIdentifier() const;
+
+   // XXX
+   static string linkerModuleIdentifierStatic(llvm::Module* module);
 
    /// Returns the name of an LLVM module. This first looks for corresponding
    /// meta-data that the code generator inserts and returns that if found,
