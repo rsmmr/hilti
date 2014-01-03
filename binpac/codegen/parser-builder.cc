@@ -1178,13 +1178,11 @@ void ParserBuilder::_hiltiDebugBitfield(shared_ptr<hilti::Expression> value, sha
     cg()->builder()->debugPushIndent();
 
     for ( auto b : type->bits() ) {
-        cg()->builder()->addInstruction(i,
-                                        hilti::instruction::integer::Mask,
-                                        value,
-                                        hilti::builder::integer::create(b->lower()),
-                                        hilti::builder::integer::create(b->upper()));
+        auto bits = cg()->hiltiExtractsBitsFromInteger(value, type,
+                                                   hilti::builder::integer::create(b->lower()),
+                                                   hilti::builder::integer::create(b->upper()));
 
-        auto j = cg()->hiltiApplyAttributesToValue(i, b->attributes());
+        auto j = cg()->hiltiApplyAttributesToValue(bits, b->attributes());
 
         if ( bits == j )
             cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", b->id()->name()), bits);

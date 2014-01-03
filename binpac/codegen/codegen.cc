@@ -15,6 +15,7 @@
 #include "../statement.h"
 #include "../expression.h"
 #include "../grammar.h"
+#include "../scope.h"
 
 using namespace binpac;
 
@@ -544,6 +545,70 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCharset(shared_ptr<Expression> expr)
     auto op = hiltiExpression(expr);
 
     builder()->addInstruction(result, hilti::instruction::Misc::SelectValue, op, tuple);
+
+    return result;
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<hilti::Expression> lower_in, shared_ptr<hilti::Expression> upper_in)
+{
+    auto itype = ast::checkedCast<type::Integer>(type);
+    auto hitype = hiltiType(itype);
+    auto lower = builder()->addTmp("lower", hitype);
+    auto upper = builder()->addTmp("upper", hitype);
+    auto tmp = builder()->addTmp("tmpbits", hitype);
+
+    builder()->addInstruction(lower, hilti::instruction::operator_::Assign, lower_in);
+    builder()->addInstruction(upper, hilti::instruction::operator_::Assign, upper_in);
+
+    shared_ptr<hilti::Expression> result = builder()->addTmp("bits", hitype);
+
+    // Apply bit order.
+
+    hilti::builder::BlockBuilder::case_list cases;
+
+    auto done = moduleBuilder()->newBuilder("bitorder-done");
+
+    auto blsb0 = moduleBuilder()->pushBuilder("lsb0");
+    // Nothing to do.
+    builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    moduleBuilder()->popBuilder(blsb0);
+
+    auto bmsb0 = moduleBuilder()->pushBuilder("msb0");
+
+    // Invert indices.
+    auto w = hilti::builder::integer::create(itype->width() - 1);
+    builder()->addInstruction(tmp, hilti::instruction::integer::Sub, w, upper);
+    builder()->addInstruction(upper, hilti::instruction::integer::Sub, w, lower);
+    builder()->addInstruction(lower, hilti::instruction::operator_::Assign, tmp);
+
+    builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    moduleBuilder()->popBuilder(bmsb0);
+
+    auto bdefault = moduleBuilder()->pushBuilder("unknown");
+    builder()->addInternalError("unexpected bit order");
+    builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    moduleBuilder()->popBuilder(bdefault);
+
+    auto elsb0 = hilti::builder::id::create(hiltiID(std::make_shared<ID>("BinPAC::BitOrder::LSB0")));
+    auto emsb0 = hilti::builder::id::create(hiltiID(std::make_shared<ID>("BinPAC::BitOrder::MSB0")));
+
+    cases.push_back(std::make_pair(elsb0, blsb0));
+    cases.push_back(std::make_pair(emsb0, bmsb0));
+
+    auto etype_expr = module()->body()->scope()->lookupUnique(std::make_shared<ID>("BinPAC::BitOrder"));
+    if ( ! etype_expr )
+        fatalError("type BinPAC::BitOrder missing");
+
+    auto etype = ast::checkedCast<expression::Type>(etype_expr)->typeValue();
+    auto eval = hiltiExpression(itype->bitOrder(), etype);
+
+    builder()->addSwitch(eval, bdefault, cases);
+
+    moduleBuilder()->pushBuilder(done);
+
+    //
+
+    builder()->addInstruction(result, hilti::instruction::integer::Mask, value, lower, upper);
 
     return result;
 }

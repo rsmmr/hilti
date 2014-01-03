@@ -73,6 +73,16 @@ void Normalizer::visit(type::unit::item::Field* f)
             // Insert attribute with default value.
             attributes->add(std::make_shared<Attribute>(pattr.key, pattr.default_, true, f->location()));
     }
+
+    // Set type's bit order for integer fields.
+    auto itype = ast::tryCast<type::Integer>(f->type());
+
+    if ( itype ) {
+        auto border = f->attributes()->lookup("bitorder");
+
+        if ( border )
+            itype->setBitOrder(border->value());
+    }
 }
 
 void Normalizer::visit(type::unit::item::field::Container* c)

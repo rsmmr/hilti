@@ -295,6 +295,9 @@ public:
     /// Returns: The equivalent HILTI character set.
     shared_ptr<hilti::Expression> hiltiCharset(shared_ptr<Expression> expr);
 
+    /// XXX
+    shared_ptr<hilti::Expression> hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<hilti::Expression> lower, shared_ptr<hilti::Expression> upper);
+
 private:
     CompilerContext* _ctx;
     bool _compiling = false;

@@ -310,13 +310,9 @@ void CodeBuilder::visit(expression::operator_::integer::Attribute* i)
     auto bits = itype->bits(attr->id());
     assert(bits);
 
-    shared_ptr<hilti::Expression> result = cg()->builder()->addTmp("bits", cg()->hiltiType(itype));
-
-    cg()->builder()->addInstruction(result,
-                                    hilti::instruction::integer::Mask,
-                                    cg()->hiltiExpression(i->op1()),
-                                    hilti::builder::integer::create(bits->lower()),
-                                    hilti::builder::integer::create(bits->upper()));
+    auto result = cg()->hiltiExtractsBitsFromInteger(hiltiExpression(i->op1()), itype,
+                                                     hilti::builder::integer::create(bits->lower()),
+                                                     hilti::builder::integer::create(bits->upper()));
 
     result = cg()->hiltiApplyAttributesToValue(result, bits->attributes());
 
