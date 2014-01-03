@@ -396,11 +396,46 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ArithCoerceEx
 	if ( hexpr->canCoerceTo(htype) )
 		return hexpr;
 
+	auto result = Builder()->addTmp("coerced", HiltiType(expr->Type()));
+	auto ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, UNARY_OP_FUNC
+		{
+		switch ( expr->Tag() ) 	{
+		case ::TYPE_DOUBLE:
+			Builder()->addInstruction(result,
+						  ::hilti::instruction::integer::AsUDouble,
+						  hexpr);
+			break;
+
+		default:
+			break;
+		}
+		});
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, UNARY_OP_FUNC
+		{
+		switch ( expr->Tag() ) 	{
+		case ::TYPE_DOUBLE:
+			Builder()->addInstruction(result,
+						  ::hilti::instruction::integer::AsSDouble,
+						  hexpr);
+			break;
+
+		default:
+			break;
+		}
+		});
+
+	if ( ok )
+		return result;
+
 	Error(::util::fmt("no support in ArithCoerceExpr for coercion from %s to %s",
 			  ::type_name(expr->Op()->Type()->Tag()), ::type_name(expr->Type()->Tag())), expr);
 
 	return nullptr;
 	}
+
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AssignExpr* expr)
 	{
