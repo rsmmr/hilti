@@ -24,3 +24,5 @@ import "BINPAC-HILTI-C" void file_gap(offset: uint<64>, len: uint<64>);
 import "BINPAC-HILTI-C" void file_end();
 import "BINPAC-HILTI-C" void rule_match(p: PatternType, data: bytes, bol: bool, eol: bool, clear: bool);
 import "BINPAC-HILTI-C" void dpd_confirm();
+
+import "BINPAC-HILTI-C" bool get_const_bool(id: string);

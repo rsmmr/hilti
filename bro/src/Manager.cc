@@ -2058,7 +2058,8 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 
 	body->addStatement(stmt);
 
-	auto hook = std::make_shared<::binpac::Hook>(body);
+    // We use a quite negative hook here to make sure these run last after anything the grammar defines.
+	auto hook = std::make_shared<::binpac::Hook>(body, -1000);
 	auto hdecl = std::make_shared<::binpac::declaration::Hook>(std::make_shared<::binpac::ID>(ev->hook), hook);
 
 	auto raise_result = std::make_shared<::binpac::type::function::Result>(std::make_shared<::binpac::type::Void>(), true);
@@ -2364,7 +2365,7 @@ bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
 		}
 
 	auto canon_name = ::util::strreplace(ev->name, "::", "_");
-	auto handler = mbuilder->addGlobal(util::fmt("__bro_handler_%s", canon_name),
+	auto handler = mbuilder->addGlobal(util::fmt("__bro_handler_%s_%p", canon_name, ev),
 					     ::hilti::builder::type::byName("LibBro::BroEventHandler"));
 
 	auto cond = mbuilder->addTmp("no_handler", ::hilti::builder::boolean::type());

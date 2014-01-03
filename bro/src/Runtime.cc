@@ -917,5 +917,20 @@ void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t e
 	GC_DTOR(end, hlt_iterator_bytes);
 	}
 
+int8_t bro_get_const_bool(hlt_string id, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	char* i = hlt_string_to_native(id, excpt, ctx);
+	::ID* broid = ::global_scope()->Lookup(i);
+	hlt_free(i);
+
+	if ( ! (broid && broid->HasVal()) )
+		{
+		hlt_set_exception(excpt, &hlt_exception_value_error, i);
+		return false;
+		}
+
+	return broid->ID_Val()->AsBool();
+	}
+
 }
 

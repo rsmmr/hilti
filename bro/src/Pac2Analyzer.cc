@@ -353,7 +353,7 @@ void Pac2_UDP_Analyzer::DeliverPacket(int len, const u_char* data, bool is_orig,
 	Analyzer::DeliverPacket(len, data, is_orig, seq, ip, caplen);
 
 	FeedChunk(len, data, is_orig, true);
-	Done();
+	Pac2_Analyzer::Done();
 	}
 
 void Pac2_UDP_Analyzer::Undelivered(int seq, int len, bool is_orig)
