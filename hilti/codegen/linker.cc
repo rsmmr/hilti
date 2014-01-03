@@ -57,7 +57,11 @@ void GlobalsPass::debug()
     logger->debugPushIndent();
 
     for ( auto m : globals_base ) {
-        logger->debug(1, ::util::fmt("  module %s at global index %lu of type %s", m.first, m.second.first, m.second.second));
+
+        string type;
+        llvm::raw_string_ostream out(type);
+        m.second.second->print(out);
+        logger->debug(1, ::util::fmt("  module %s at global index %lu of type %s", m.first, m.second.first, out.str().c_str()));
 
         logger->debugPushIndent();
 
