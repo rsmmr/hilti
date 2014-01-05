@@ -1,0 +1,363 @@
+module asn1;
+
+import BinPAC;
+
+type ASN1Type = enum {
+    BOOLEAN = 1,
+    INTEGER = 2,
+    BITSTRING = 3,
+    OCTETSTRING = 4,
+    NULL = 5,
+    OBJECTIDENTIFIER = 6,
+    ObjectDescriptor = 7,
+    INSTANCEOF = 8,
+    REAL = 9,
+    ENUMERATED = 10,
+    EMBEDDEDPDV = 11,
+    UTF8String = 12,
+    RELATIVEOID = 13,
+    SEQUENCE = 16,
+    SET = 17,
+    NumericString = 18,
+    PrintableString = 19,
+    TeletextString = 20,
+    VideotextString = 21,
+    IA5String = 22,
+    UTCTime = 23,
+    GeneralizedTime = 24,
+    GraphicString = 25,
+    VisibleString = 26,
+    GeneralString = 27,
+    UniversalString = 28,
+    CHARACTERSTRING = 29,
+    BMPString = 30
+};
+
+type ASN1Class = enum {
+  UNIVERSAL = 0,
+  APPLICATION = 1,
+  context-specific = 2,
+  PRIVATE = 3
+};
+
+type SequenceHeader = unit {
+  id : uint8(0x30);
+};
+
+type LengthType = unit {
+
+  data : bitfield(8) {
+     num: 0..6;
+     islong: 7;
+  };
+
+  var len: uint64;
+
+  var tag_len: uint8;
+
+  switch ( self.data.islong ) {
+    0 -> : b"" { self.len = self.data.num; self.tag_len = 1; }
+    1 -> length_parse : LenghTypeSubLength(self.data.num) { self.len = self.length_parse.len; self.tag_len = self.data.num + 1; }
+#    1 -> length_8 : uint8 { self.len = self.length_8; }
+# FIX ME!
+#    1 -> b: bytes &length=self.data.num &convert=cast<uint64>($$) { self.len = self.b; }
+  }; 
+
+#  len : uint8 &parse(self.data.num);
+#if ( self.data.islong == 0 );
+#  len : uint8 if ( self.data.islong == 1 && self.data.num == 1);
+#  len : uint16 if ( self.data.islong == 1 && self.data.num == 2);
+#  len: uint<24> if ( self.data.islong == 1 && self.data.num == 3);
+#  len : uint32 if ( self.data.islong == 1 && self.data.num == 4);
+
+};
+
+type LenghTypeSubLength = unit(length: uint8) {
+  var len: uint64;
+
+  var length_24 : uint32;
+
+  switch ( length ) {
+    1 -> length_8 : uint8 { self.len = self.length_8; }
+    2 -> length_16 : uint16 { self.len = self.length_16; }
+    3 -> { 
+           high_nibble: uint8;
+	   low_nibble: uint16 {
+             self.len = ( self.high_nibble << 16 ) | self.low_nibble;
+	   }
+	 }
+    4 -> length_32 : uint32 { self.len = self.length_32; }
+  };
+};
+
+#type ASNInteger = unit {
+#  var num : uint64 = 0;
+#
+#  nibbles : list<ASNIntegerNibble> &until($$.more == 1); 
+#  #  foreach { self.num = ( self.num << 7 ) | $$.num; }
+#  last_nibble : ASNIntegerNibble {
+#    self.num = ( self.num << 7 ) | self.last_nibble.num;
+#  }
+#};
+
+#type ASNIntegerNibble = unit {
+#  var more : uint8 = 0;
+#  var num : uint64;
+#
+#  data : bitfield(8) {
+#    num: 0..6;
+#    hasmore: 7;
+#  };
+#
+#  on %done {
+#    self.more = self.data.hasmore;
+#    self.num = self.data.num;
+#  }
+#
+#};
+
+#type Certificate = unit {
+#  certificate_sequence: SequenceHeader;
+#  certificate_len: LengthType;
+#  tbscertificate_sequence: SequenceHeader;
+#  tbscertificate_len: LengthType; 
+#  # version: ASNInteger; # test-certificate does not have version
+#  serial : ASNInteger;
+#  algorithm_identifier_sequence: SequenceHeader;
+#  algorithm_identifier_len: LengthType;
+#  algorithm : ObjectIdentifier;
+#  #algorithm : bytes &length=self.algorithm_identifier_len.len { print self.algorithm; }
+#
+#  on %done { print self; }
+#};
+
+type ASN1Tag = unit {
+  var tpe: ASN1Type;
+  var len: uint8 = 1;
+  var class: ASN1Class;
+
+  data : bitfield(8) {
+     num: 0..4;
+     constructed: 5;
+     class: 6..7;
+  };
+
+  on %done { 
+    self.tpe = ASN1Type(self.data.num);
+    self.class = ASN1Class(self.data.class);
+  }
+};
+
+type ASN1BITSTRING = unit(len: uint64, constructed: uint8) {
+   unused_bits: uint8;
+   value_bits: bytes &length=(len - 1);
+
+   # we need >> and << for bytes before we can implement complex bitstrings. I don't think that is here yet.
+};
+
+type ASN1OCTETSTRING = unit(len: uint64, constructed: uint8) {
+  var len: uint64;
+  value: bytes &length = len;
+
+  # todo: constructed form...
+  on %done {
+    self.len = len;
+  }
+};
+
+type ASN1String = unit(tag: ASN1Tag, len: uint64) {
+    octetstring: ASN1OCTETSTRING(len, tag.data.constructed);
+
+    switch ( tag.tpe ) {
+      ASN1Type::PrintableString, ASN1Type::GeneralizedTime, ASN1Type::UTCTime -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(BinPAC::Charset::ASCII);
+      ASN1Type::UTF8String -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(BinPAC::Charset::UTF8);
+      ASN1Type::BMPString -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(BinPAC::Charset::UTF16BE);
+      ASN1Type::UniversalString -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(BinPAC::Charset::UTF32BE);
+    };
+
+#    on %done { print "String: ", self.value; }
+};
+
+type oidnibble = unit {
+  data : bitfield(8) {
+     num: 0..6;
+     more: 7;
+  };
+};
+
+
+type ASN1OBJECTIDENTIFIER = unit(len: uint64) {
+  var oid: list<uint64>;
+  var temp: uint64;
+  var oidstring: bytes;
+
+  first: uint8 if ( len >= 1) {
+    self.temp = self.first / 40;
+    self.oid.push_back( self.temp );
+    self.oidstring = BinPAC::fmt (b"%d", (self.temp, 1));    
+    self.temp = self.first mod 40;
+    self.oid.push_back( self.temp );
+    self.oidstring += BinPAC::fmt(b".%d", (self.temp, 1));
+    self.temp = 0;
+  } 
+
+  sublist: list<oidnibble> &length=(len - 1)
+    foreach {
+      if ( $$.data.more == 1 ) {
+        self.temp = ( self.temp<<7 ) | $$.data.num;
+      } else {
+        self.temp = ( self.temp<<7 ) | $$.data.num;
+        self.oid.push_back(self.temp);
+        self.oidstring += BinPAC::fmt(b".%d", (self.temp, 1));
+	self.temp = 0;
+      }
+    }
+};
+
+#type ASN1Body = unit(tag: ASN1Tag, len: LengthType, total_length: uint64) {
+type ASN1Body = unit(head: ASN1Header) {
+  var parse_length: uint64 = 0;
+
+  switch ( head.tag.tpe ) {
+    ASN1Type::BOOLEAN -> bool_value: uint8; # FIXME: bail out if length != 1
+    ASN1Type::INTEGER, ASN1Type::ENUMERATED -> num_value: bytes &length=head.len.len &convert=$$.to_int(BinPAC::ByteOrder::Big);
+    ASN1Type::NULL -> : void; # todo - bail out if length != 0
+    ASN1Type::BITSTRING -> bitstring: ASN1BITSTRING(head.len.len, head.tag.data.constructed);
+    ASN1Type::OCTETSTRING -> octetstring: ASN1OCTETSTRING(head.len.len, head.tag.data.constructed);
+    ASN1Type::OBJECTIDENTIFIER -> objectidentifier: ASN1OBJECTIDENTIFIER(head.len.len);
+    ASN1Type::PrintableString, ASN1Type::GeneralizedTime, ASN1Type::UTCTime, ASN1Type::UTF8String, ASN1Type::BMPString, ASN1Type::UniversalString -> asn1string: ASN1String(head.tag, head.len.len);
+    ASN1Type::SEQUENCE, ASN1Type::SET -> submessages: list < ASN1Message > &until_including ( self.parse_length + $$.head.total_length >= head.len.len )
+      foreach { self.parse_length = self.parse_length + $$.head.total_length;
+      		#print "Want: ", len.len, "Have so far: ", self.parse_length, " subelement: ", $$.len.len;
+              }
+    * -> : bytes &length=head.len.len { 
+      print "Unknown type: ", head.tag.tpe, head.tag.data.constructed, head.tag.data.class;
+    }
+  };
+};
+
+type ASN1Header = unit {
+  tag: ASN1Tag;
+  
+  var total_length: uint64;
+  
+  len: LengthType { 
+    #print "Parsing element with size ", self.len.len;
+    #print self.len.len, self.tag.len, self.len.tag_len;
+    self.total_length =  self.len.len + self.tag.len + self.len.tag_len;
+  }
+};
+
+type ASN1Message = unit {
+  head: ASN1Header;
+ 
+  #body: ASN1Body(self.head.tag, self.head.len, self.head.total_length) if ( self.head.tag.data.class == 0 );
+  body: ASN1Body(self.head) if ( self.head.tag.data.class == 0 );
+  submessage: ASN1Message if ( self.head.tag.data.class != 0 ); # assume explicit tagging, otherwise this will go horribly wrong
+
+};
+
+type outer = unit {
+  message: ASN1Message;
+
+  on %done { print self; }
+};
+
+# From here, X509 magic
+
+type algorithmidentifier = unit {
+  head: ASN1Header;
+  var algorithm: bytes;
+  algorithm_data: ASN1Message {
+    self.algorithm = self.algorithm_data.body.objectidentifier.oidstring;
+  }
+
+  # parameters
+  : bytes &length=(self.head.len.len - self.algorithm_data.head.total_length);
+};
+
+type cert_issuer_component = unit {
+  head: ASN1Header; # set-header
+  seq: ASN1Header; # sequence header
+
+  var tpe: bytes;
+  var value: string;
+
+  tpe_data: ASN1Message;
+  value_data: ASN1Message {
+    self.tpe = self.tpe_data.body.objectidentifier.oidstring;
+    self.value = self.value_data.body.asn1string.value;
+  }
+};
+
+type cert_issuer = unit {
+  head: ASN1Header;
+  var read_length: uint64 = 0;
+
+  name_components: list<cert_issuer_component> &until_including( self.read_length + $$.head.total_length >= self.head.len.len )
+  foreach { self.read_length = self.read_length + $$.head.total_length; }
+};
+
+type cert_validity = unit {
+  head: ASN1Header;
+
+  var not_before: string;
+  var not_after: string;
+
+  not_before_raw: ASN1Message;
+  not_after_raw: ASN1Message;
+
+  on %done {
+    self.not_before = self.not_before_raw.body.asn1string.value;
+    self.not_after = self.not_after_raw.body.asn1string.value;
+  }
+};
+
+type SubjectPublicKeyInfo = unit {
+  head: ASN1Header;
+  algorithm: algorithmidentifier;
+  subjectPublicKey: ASN1Message;
+};
+
+type tbscertificate = unit {
+  tbscertificate_head: ASN1Header;
+
+  var read_length: uint64 = 0;
+
+  var version: int64 = 1;
+  version_head: ASN1Header;
+  version_data: ASN1Message if (self.version_head.tag.data.class == 2) {  
+    self.version = self.version_data.body.num_value + 1;
+  }
+  serialnumber_head: ASN1Header if ( self.version_head.tag.data.class == 2 ); # otherwhise we have to use version_head
+  var serial: int64;
+  switch ( self.version_head.tag.data.class ) {
+    0 -> serialNumber_raw: ASN1Body(self.version_head);
+    2 -> serialNumber_raw: ASN1Body(self.serialnumber_head);
+  };
+  signature: algorithmidentifier;
+
+  issuer: cert_issuer;
+  validity: cert_validity;
+  subject: cert_issuer;
+  subjectPublicKeyInfo: SubjectPublicKeyInfo {
+    self.read_length = self.version_head.total_length;
+    if ( self.version_head.tag.data.class == 2 ) {
+        self.read_length = self.read_length + self.serialnumber_head.total_length;
+    }
+    self.read_length = self.read_length + self.signature.head.total_length + self.issuer.head.total_length + self.validity.head.total_length + self.subject.head.total_length + self.subjectPublicKeyInfo.head.total_length;
+    self.serial = self.serialNumber_raw.num_value;
+  }
+  # here there may be extension or other stuff if we have not exceeded the length.
+  : bytes &length=( self.tbscertificate_head.len.len - self.read_length); # for now - do not parse it.
+  
+};
+
+export type certificate = unit {
+  certificate_head: ASN1Header;
+
+  certificate: tbscertificate;
+
+  signatureAlgorithm: algorithmidentifier;
+  signature: ASN1Message;
+};
