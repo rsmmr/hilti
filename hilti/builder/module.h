@@ -682,6 +682,14 @@ public:
    /// Returns: An expression referencing the local.
    shared_ptr<hilti::expression::Variable> addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
 
+   /// Returns true if a local of a given name already exists in the current
+   /// function.
+   bool hasLocal(const std::string& id);
+
+   /// Returns true if a local of a given name already exists in the current
+   /// function.
+   bool hasLocal(shared_ptr<hilti::ID> id);
+
    /// Adds a type declaration to the module.
    ///
    /// id: The name of the type. If the name is not unique, it will be made

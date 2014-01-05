@@ -17,11 +17,15 @@ TypeBuilder::~TypeBuilder()
 {
 }
 
-shared_ptr<hilti::Type> TypeBuilder::hiltiType(shared_ptr<Type> type)
+shared_ptr<hilti::Type> TypeBuilder::hiltiType(shared_ptr<Type> type, id_list* deps)
 {
+    _deps = deps;
+
     TypeInfo result;
     bool success = processOne(type, &result);
     assert(success);
+
+    _deps = nullptr;
 
     return result.hilti_type;
 }
@@ -113,14 +117,17 @@ void TypeBuilder::visit(type::Enum* e)
     ti.hilti_default = hilti::builder::id::create(util::fmt("%s::Undef", e->id()->pathAsString()));
     ti.hilti_type = hilti::builder::enum_::type(labels, e->location());
 
-    if ( cg() ) {
-        auto id = cg()->hiltiID(e->id(), true);
+    auto id = cg() ? cg()->hiltiID(e->id(), true) : nullptr;
 
+    if ( cg() ) {
         if ( id->isScoped() )
             cg()->hiltiImportType(std::make_shared<ID>(id->pathAsString()), e->sharedPtr<Type>());
 
         ti.hilti_type->setID(id);
     }
+
+    if ( id && id->isScoped() && _deps )
+        _deps->push_back(id);
 
     setResult(ti);
 }
@@ -177,7 +184,7 @@ void TypeBuilder::visit(type::Map* m)
 
     TypeInfo ti;
     ti.hilti_type = hilti::builder::reference::type(hilti::builder::map::type(key, val, m->location()));
-    ti.hilti_default = hilti::builder::map::create(key, val, {}, m->location());
+    ti.hilti_default = hilti::builder::map::create(key, val, {}, nullptr, m->location());
     ti.always_initialize = true;
     setResult(ti);
 }
@@ -277,8 +284,13 @@ void TypeBuilder::visit(type::Unit* u)
     if ( cg() ) {
         uid = cg()->hiltiID(u->id(), true);
 
-        if ( uid->isScoped() )
-            cg()->hiltiImportType(std::make_shared<ID>(uid->pathAsString()), u->sharedPtr<Type>());
+        if ( uid->isScoped() ) {
+            auto id = std::make_shared<ID>(uid->pathAsString());
+            cg()->hiltiImportType(id, u->sharedPtr<Type>());
+
+            if ( _deps )
+                _deps->push_back(uid);
+        }
     }
 
     else {
@@ -289,6 +301,9 @@ void TypeBuilder::visit(type::Unit* u)
             assert(mod);
             string name = util::fmt("%s::%s", mod->id()->name(), uid->name());
             uid = hilti::builder::id::node(name);
+
+            if ( _deps )
+                _deps->push_back(uid);
         }
     }
 

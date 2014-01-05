@@ -1,0 +1,35 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out && ./a.out >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run()
+{
+    local bool b
+    b = call foo ()
+    call Hilti::print ("yes")
+}
+
+bool foo()
+{
+
+  local bool __tmp_has
+
+  if.else __tmp_has @if_true @if_false
+
+@if_true:
+    return.result True
+    jump @if_cont
+
+@if_false:
+    return.result False
+    jump @if_cont
+
+@if_cont:
+
+}
+

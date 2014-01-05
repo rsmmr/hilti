@@ -20,6 +20,10 @@ namespace hilti {
 namespace bro {
 namespace hilti {
 
+namespace compiler {
+	class ModuleBuilder;
+}
+
 // Converts from BinPAC++ types to Bro types.
 class TypeConverter : ast::Visitor<::hilti::AstInfo, BroType*, shared_ptr<::binpac::Type>>
 {
@@ -52,6 +56,7 @@ protected:
 	void visit(::hilti::type::Integer* i) override;
 	void visit(::hilti::type::String* s) override;
 	void visit(::hilti::type::Time* t) override;
+	void visit(::hilti::type::Tuple* t) override;
 	void visit(::hilti::type::Reference* b) override;
 
 private:
@@ -70,7 +75,7 @@ public:
 	/**
 	 * XXX
 	 */
-	ValueConverter(::hilti::builder::ModuleBuilder* mbuilder,
+	ValueConverter(compiler::ModuleBuilder* mbuilder,
 		       TypeConverter* type_converter);
 
 	/**
@@ -85,7 +90,10 @@ public:
 	 *
 	 * @returns True if the conversion was successul.
 	 */
-	bool Convert(shared_ptr<::hilti::Expression> value, shared_ptr<::hilti::Expression> dst, std::shared_ptr<::binpac::Type> btype);
+	bool Convert(shared_ptr<::hilti::Expression> value,
+		     shared_ptr<::hilti::Expression> dst,
+		     std::shared_ptr<::binpac::Type> btype,
+		     BroType* hint = nullptr);
 
 protected:
 	/**
@@ -107,12 +115,14 @@ private:
 	void visit(::hilti::type::Integer* i) override;
 	void visit(::hilti::type::String* s) override;
 	void visit(::hilti::type::Time* t) override;
+	void visit(::hilti::type::Tuple* t) override;
 	void visit(::hilti::type::Reference* b) override;
 
-	::hilti::builder::ModuleBuilder* mbuilder;
+	compiler::ModuleBuilder* mbuilder;
 	TypeConverter* type_converter;
 
 	shared_ptr<::binpac::Type> _arg3 = nullptr;
+	std::list<BroType*> _bro_type_hints;
 };
 
 }

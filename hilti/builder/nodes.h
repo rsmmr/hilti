@@ -1524,12 +1524,14 @@ typedef ctor::Map::element_list element_list;
 ///
 /// elems: The list of elements.
 ///
+/// def: If given a default value to return for unused indices.
+///
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, shared_ptr<Expression> def = nullptr, const Location& l=Location::None)
 {
-    auto c = std::make_shared<ctor::Map>(ktype, vtype, elems, l);
+    auto c = std::make_shared<ctor::Map>(ktype, vtype, elems, def, l);
     return std::make_shared<hilti::expression::Ctor>(c, l);
 }
 
@@ -1925,6 +1927,24 @@ namespace loop {
 inline shared_ptr<hilti::statement::ForEach> foreach(shared_ptr<ID> var, shared_ptr<Expression> seq, shared_ptr<statement::Block> body, const Location& l=Location::None)
 {
     return std::make_shared<statement::ForEach>(var, seq, body, l);
+}
+
+/// Instantiates a "magic" block label that can be branched to inside a loop
+/// for proceeding directly with the next iteration.
+///
+/// Returns: An expression refering the "magic" block.
+inline shared_ptr<hilti::Expression> next(const Location& l=Location::None)
+{
+    return label::create(hilti::statement::foreach::IDLoopNext);
+}
+
+/// Instantiates a "magic" block label that can be branched to inside a loop
+/// for aborting iteration.
+///
+/// Returns: An expression refering the "magic" block.
+inline shared_ptr<hilti::Expression> break_(const Location& l=Location::None)
+{
+    return label::create(hilti::statement::foreach::IDLoopBreak);
 }
 
 }

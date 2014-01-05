@@ -13,7 +13,7 @@ void run() {
     local ref<file> f
 
     f = new file
-    file.open f "foo.txt" (Hilti::FileType::Text, Hilti::FileMode::Append, "utf8")
+    file.open f "foo.txt" (Hilti::FileType::Text, Hilti::FileMode::Append, Hilti::Charset::UTF8)
     file.write f "Hello, world!"
 
     return.void

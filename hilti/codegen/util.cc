@@ -83,9 +83,10 @@ string codegen::util::mangle(shared_ptr<ID> id, bool global, shared_ptr<ID> pare
     return mangle(id->pathAsString(), global, parent, prefix, internal);
 }
 
-static void _dumpCall(llvm::Function* func, llvm::ArrayRef<llvm::Value *> args, const string& where, const string& msg)
+static void _dumpCall(llvm::Value* callee, llvm::ArrayRef<llvm::Value *> args, const string& where, const string& msg)
 {
-    auto ftype = func->getFunctionType();
+    auto ptype = llvm::cast<llvm::PointerType>(callee->getType());
+    auto ftype = llvm::cast<llvm::FunctionType>(ptype->getPointerElementType());
 
     llvm::raw_os_ostream os(std::cerr);
 
@@ -93,7 +94,7 @@ static void _dumpCall(llvm::Function* func, llvm::ArrayRef<llvm::Value *> args, 
     os << "=== Function call mismatch in " << where << ": " << msg << "\n";
     os << "\n";
     os << "-- Prototype:\n";
-    func->print(os);
+    callee->print(os);
     os << "\n";
 
     for ( int i = 0; i < ftype->getNumParams(); ++i ) {
@@ -130,30 +131,31 @@ static void _dumpCall(llvm::Function* func, llvm::ArrayRef<llvm::Value *> args, 
 llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const string& where, llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name)
 {
     assert(callee);
-    assert(llvm::isa<llvm::Function>(callee));
 
-    auto func = llvm::cast<llvm::Function>(callee);
-    auto ftype = func->getFunctionType();
+    auto ptype = llvm::cast<llvm::PointerType>(callee->getType());
+    auto ftype = llvm::cast<llvm::FunctionType>(ptype->getPointerElementType());
 
     if ( ftype->getNumParams() != args.size() )
-        _dumpCall(func, args, where, ::util::fmt("argument mismatch, LLVM function expects %d but got %d",
+        _dumpCall(callee, args, where, ::util::fmt("argument mismatch, LLVM function expects %d but got %d",
                                                  ftype->getNumParams(), args.size()));
 
     for ( int i = 0; i < args.size(); ++i ) {
         auto t1 = ftype->getParamType(i);
 
         if ( ! args[i] )
-            _dumpCall(func, args, where, ::util::fmt("parameter %d is null", i+1));
+            _dumpCall(callee, args, where, ::util::fmt("parameter %d is null", i+1));
 
         auto t2 = args[i]->getType();
 
         if ( t1 != t2 )
-            _dumpCall(func, args, where, ::util::fmt("type of parameter %d does not match prototype", i+1));
+            _dumpCall(callee, args, where, ::util::fmt("type of parameter %d does not match prototype", i+1));
     }
 
-    auto cfunc = llvm::cast<llvm::Function>(callee);
     auto ci = builder->CreateCall(callee, args, name);
-    ci->setCallingConv(cfunc->getCallingConv());
+
+    if ( auto f = llvm::dyn_cast<llvm::Function>(callee) )
+        ci->setCallingConv(f->getCallingConv());
+
     return ci;
 }
 

@@ -36,6 +36,7 @@
 #include "types.h"
 #include "vector.h"
 #include "rtti.h"
+#include "int.h"
 
 typedef int64_t hlt_bytes_size;     ///< Size of a ~~hlt_bytes instance, and also used for offsets.
 typedef struct __hlt_bytes hlt_bytes; ///< Type for representing a HILTI ~~bytes object.
@@ -174,6 +175,15 @@ extern void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size 
 ///
 /// Returns: The position where the byte is found, or ~~hlt_bytes_end if not found.
 extern hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Checks if a another bytes object is subsequence of a bytes object.
+///
+/// b: The bytes object to search.
+/// other: The other bytes to search for.
+/// \hlt_c
+///
+/// Returns: True if *other* was found *b*.
+extern int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Searches for the first occurance of another bytes object in a bytes object.
 ///
@@ -471,6 +481,9 @@ extern void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_ite
 int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
+int64_t hlt_bytes_to_int_binary(hlt_bytes* data, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
 extern hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
@@ -486,7 +499,10 @@ extern hlt_bytes_pair hlt_bytes_split1(hlt_bytes* b, hlt_bytes* sep, hlt_excepti
 extern hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
-extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* p, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
+extern hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
 

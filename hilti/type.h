@@ -950,7 +950,7 @@ enum CallingConvention {
 }
 
 /// Type for functions.
-class Function : public hilti::Type, public ast::type::mixin::Function<AstInfo>  {
+class Function : public ValueType, public ast::type::mixin::Function<AstInfo>  {
 public:
    /// Constructor.
    ///

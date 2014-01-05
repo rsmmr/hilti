@@ -1,0 +1,34 @@
+#
+# @TEST-EXEC:  printf '\x01\x02' | pac-driver-test -p A::tA b.pac2 %INPUT >output
+# @TEST-EXEC:  btest-diff output
+# 
+# @TEST-KNOWN-FAILURE: importing modules using exports not supported
+
+module A;
+
+import b;
+
+export type tA = unit {
+       B: B::tB;
+
+       on %done {
+           print self;
+       }
+};
+
+### @TEST-START-FILE b.pac2
+module B;
+
+type BEnum = enum {
+ A = 1,
+ B = 2
+};
+
+export type tB = unit {
+       a: uint8 &convert=BEnum($$);
+       b: uint8 &convert=BEnum($$);
+};
+
+### @TEST-END-FILE test.txt
+
+

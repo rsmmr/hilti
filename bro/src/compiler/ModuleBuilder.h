@@ -18,7 +18,6 @@ namespace hilti {
 namespace compiler {
 
 class Compiler;
-class ModuleBuilderCallback;
 
 class ModuleBuilder : public BuilderBase, public ::hilti::builder::ModuleBuilder {
 public:
@@ -97,21 +96,81 @@ public:
 	shared_ptr<::hilti::Expression> DeclareFunction(const Func* func);
 
 	/**
-	 * Declares the prototype for single built-in function given just by name and type.
+	 * Declares a global variable. If the declaration already
+	 * exists, that one is returned.
 	 *
-	 * If the declaration already exists, that one is returned.
+	 * @param id The Bro ID to declare a corresponding global for.
 	 *
-	 * @param name The function's ID.
-	 *
-	 * @param type The function's type.
-	 *
-	 * @return An expression referencing the declared function.
+	 * @return An expression referencing the declared global.
 	 */
-	shared_ptr<::hilti::Expression> DeclareBuiltInFunction(const string& name, const ::BroType* type);
+	std::shared_ptr<::hilti::Expression> DeclareGlobal(const ::ID* id);
+
+	/**
+	 * Declares a local variable. If the declaration already
+	 * exists, that one is returned.
+	 *
+	 * @param id The Bro ID to declare a corresponding local for.
+	 *
+	 * @return An expression referencing the declared local.
+	 */
+	std::shared_ptr<::hilti::Expression> DeclareLocal(const ::ID* id);
+
+	/**
+	 * XXX
+	 */
+	const ::Func* CurrentFunction() const;
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, const ::FuncType* ftype, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallFunctionViaBro(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallScriptFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallEventHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallHookHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallEventLegacy(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallHookLegacy(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	shared_ptr<::hilti::Expression> HiltiCallFunctionLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args);
+
+	/**
+	 * XXX
+	 */
+	void FinalizeGlueCode();
 
 protected:
-	friend class ModuleBuilderCallback;
-
 	/**
 	 * Compiles a single function. This branches out into the other
 	 * Compile*() methods for the various function flavors.
@@ -125,7 +184,7 @@ protected:
 	 *
 	 * @param func The func to compile. The function type's flavor must
 	 * be \c FUNC_FLAVOR_FUNCTION. */
-	void CompileScriptFunction(const ::BroFunc* func);
+	void CompileScriptFunction(const ::BroFunc* func, bool exported);
 
 	/**
 	 * Compiles all the bodies for an event.
@@ -133,7 +192,7 @@ protected:
 	 * @param event The event to compile. The function type's flavor must
 	 * be \c FUNC_FLAVOR_EVENT.
 	 */
-	void CompileEvent(const ::BroFunc* event);
+	void CompileEvent(const ::BroFunc* event, bool exported);
 
 	/**
 	 * Compiles all the bodies for a hook.
@@ -141,7 +200,7 @@ protected:
 	 * @param hook The hook to compile. The function type's flavor must
 	 * be \c FUNC_FLAVOR_HOOK.
 	 */
-	void CompileHook(const ::BroFunc* event);
+	void CompileHook(const ::BroFunc* event, bool exported);
 
 	/**
 	 * Compiles a function body. The function itself must have already
@@ -202,8 +261,19 @@ protected:
 	 */
 	shared_ptr<::hilti::Expression> DeclareBuiltinFunction(const ::BuiltinFunc* bif);
 
+	/**
+	 * XXX
+	 */
+	typedef std::function<void (ModuleBuilder*,
+				    shared_ptr<::hilti::Expression> rval,
+				    shared_ptr<::hilti::Expression>)>
+		create_stub_callback;
+
+	void CreateFunctionStub(const BroFunc* func, create_stub_callback cb);
+
 private:
 	string ns;
+	std::list<const ::Func*> functions;
 
 	class Compiler* compiler;
 	class ExpressionBuilder* expression_builder;
@@ -211,8 +281,6 @@ private:
 	class TypeBuilder* type_builder;
 	class ValueBuilder* value_builder;
 	class ConversionBuilder* conversion_builder;
-
-	static std::shared_ptr<ModuleBuilderCallback> callback;
 };
 
 }

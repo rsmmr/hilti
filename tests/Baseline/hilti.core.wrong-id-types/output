@@ -4,8 +4,8 @@ wrong-id-types.hlt:11-12: error, operands do not match instruction call
   got:
     call: int<32>, int<64>
   expected one of:
-    call: <function>, tuple<*>
-    call: <function>, tuple<*> -> any
+    call: function() -> void, tuple<*>
+    call: function() -> void, tuple<*> -> any
     call: ref<callable<*>>
     call: ref<callable<*>> -> any
  [pass::hilti::InstructionResolver]

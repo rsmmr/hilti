@@ -788,7 +788,9 @@ std::list<trait::Parseable::ParseAttribute> List::parseAttributes() const
 {
     return {
         { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
-        { "until", std::make_shared<type::Bool>(), nullptr, false }
+        { "until", std::make_shared<type::Bool>(), nullptr, false },
+        { "until_including", std::make_shared<type::Bool>(), nullptr, false },
+        { "while", std::make_shared<type::Bool>(), nullptr, false }
     };
 }
 
@@ -1212,22 +1214,44 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
         addHook(hook_push);
     }
 
-    // If they have an &until, they also get another (even higher priority)
-    // hook that checks the condition.
+    // If they have an &until/&while, they also get another (even higher
+    // priority) hook that checks the condition. For &until_including, we
+    // instead do a lower priority hook.
 
     auto until = attributes()->lookup("until");
+    auto until_including = attributes()->lookup("until_including");
+    auto while_ = attributes()->lookup("while");
 
-    if ( until ) {
+    if ( until || until_including || while_ ) {
         auto stop = std::make_shared<statement::Block>(nullptr, l);
         stop->addStatement(std::make_shared<statement::Stop>(l));
 
-        auto body_until = std::make_shared<statement::Block>(nullptr, l);
-        body_until->addStatement(std::make_shared<statement::IfElse>(until->value(), stop, nullptr, l));
+        auto body = std::make_shared<statement::Block>(nullptr, l);
 
-        auto hook_until = std::make_shared<binpac::Hook>(body_until, 255, false, true, l);
-        addHook(hook_until);
+        if ( until )
+            body->addStatement(std::make_shared<statement::IfElse>(until->value(), stop, nullptr, l));
 
-        until->setValue(nullptr); // FIXME.
+        if ( until_including )
+            body->addStatement(std::make_shared<statement::IfElse>(until_including->value(), stop, nullptr, l));
+
+        if ( while_ ) {
+            expression_list ops = { while_->value() };
+            auto neg = std::make_shared<expression::UnresolvedOperator>(operator_::Not, ops, l);
+            body->addStatement(std::make_shared<statement::IfElse>(neg, stop, nullptr, l));
+        }
+
+        auto prio = until_including ? 253 : 255;
+        auto hook = std::make_shared<binpac::Hook>(body, prio, false, true, l);
+        addHook(hook);
+
+        if ( until )
+            until->setValue(nullptr); // FIXME.
+
+        if ( until_including )
+            until_including->setValue(nullptr); // FIXME.
+
+        if ( while_ )
+            while_->setValue(nullptr); // FIXME.
     }
 }
 

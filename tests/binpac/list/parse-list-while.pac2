@@ -1,9 +1,6 @@
 #
-# @TEST-EXEC:  printf "\x01\x02\x03\x04" | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf "\x01\x02\x03\x04" | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
-#
-# @TEST-KNOWN-FAILURE: while not supported. The difference to until is, that the element will be part of list - hence in this case list will be 1,2, and 3
-# Which basically behaves like a while loop where everything happens until the test does not pass anymore.
 
 module Mini;
 

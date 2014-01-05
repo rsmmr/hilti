@@ -228,6 +228,8 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
         return;
 
     auto until = l->attributes()->lookup("until");
+    auto until_including = l->attributes()->lookup("until_including");
+    auto while_ = l->attributes()->lookup("while");
     auto length = l->attributes()->lookup("length");
 
     auto sym = "list:" + l->id()->name();
@@ -237,7 +239,7 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
     field->setContainer(l->sharedPtr<type::unit::item::field::Container>());
     --_in_decl;
 
-    if ( until ) {
+    if ( until || while_ || until_including ) {
         // We use a Loop production here. type::Container installs a &foreach
         // hook that stops the iteration once the condition is satisfied.
         // Doing it this way allows the condition to run in the hook's scope,

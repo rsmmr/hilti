@@ -358,7 +358,6 @@ void Printer::visit(expression::Type* t)
 void Printer::visit(expression::Default* t)
 {
     Printer& p = *this;
-    auto id = t->type()->id();
     p << t->type()->render() << "()";
 }
 
@@ -506,7 +505,28 @@ void Printer::visit(type::function::Result* r)
 void Printer::visit(type::Function * t)
 {
     Printer& p = *this;
-    p << "<function>";
+
+    switch ( t->callingConvention() ) {
+     case type::function::HILTI_C:
+        p << "\"C-HILTI\" ";
+        break;
+
+     case type::function::C:
+        p << "\"C\" ";
+        break;
+
+     case type::function::HILTI:
+     case type::function::HOOK:
+        // Default.
+        break;
+
+     default:
+        internalError("unknown calling convention");
+    }
+
+    p << "function(";
+    printList(t->parameters(), ", ");
+    p << ") -> " << t->result();
 }
 
 void Printer::visit(type::Hook* t)
@@ -1273,6 +1293,9 @@ void Printer::visit(ctor::Map* c)
     }
 
     p << ")";
+
+    if ( c->default_() )
+        p << " &default=" << c->default_();
 }
 
 void Printer::visit(ctor::Set* c)

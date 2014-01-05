@@ -3,7 +3,6 @@
 # @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1     
 # @TEST-EXEC:  btest-diff output
 #
-# @TEST-KNOWN-FAILURE: == and != are not supported for bool yet
 
 module Test;
 

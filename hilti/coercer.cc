@@ -17,6 +17,9 @@ void Coercer::visit(type::Integer* i)
         setResult(true);
         return;
     }
+
+    // We don't allow integer coercion to larger widths here because we
+    // wouldn't know if they are signed or not.
 }
 
 void Coercer::visit(type::Reference* r)
@@ -68,7 +71,13 @@ void Coercer::visit(type::Tuple* t)
         if ( ! stype )
             return;
 
-        // Coerce to struct is fine if all element coerce.
+        // Coerce to struct is fine if (1) it's an emptuple, or (2) all
+        // element coerce.
+
+        if ( t->typeList().size() == 0 ) {
+	    setResult(true);
+	    return;
+	}
 
         if ( t->typeList().size() != stype->typeList().size() )
             return;
@@ -133,4 +142,11 @@ void Coercer::visit(type::CAddr* c)
         setResult(true);
         return;
     }
+}
+
+void Coercer::visit(type::Unset* c)
+{
+    // Generic unsets coerce into any type as the corresponding default
+    // value.
+    setResult(true);
 }

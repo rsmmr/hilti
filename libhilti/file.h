@@ -74,7 +74,7 @@ hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx);
 /// Todo: We aren't very good yet in figuring out whether two different paths
 /// may reference the same physical file. Currently, we just do a simple
 /// string comparision.
-void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx);
+void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Closes a file. Further write operations will not be possible (unless
 /// reopened).
@@ -117,6 +117,13 @@ void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt
 ///
 /// excpt: &
 void hlt_file_write_bytes(hlt_file* file, struct __hlt_bytes* bytes, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Returns a file's path.
+///
+/// file: The file.
+///
+/// excpt: &
+hlt_string hlt_file_name(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Internal function called once at startup from the command queue threadto
 // initialize the file management.

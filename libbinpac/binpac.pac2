@@ -12,6 +12,17 @@ type ByteOrder = enum { Little = 1, Big = 2, Network = 2, Host = 3 };
 type AddrFamily = enum { IPv4 = 1, IPv6 = 2 };
 # %end-AddrFamily
 
+# These values must match Hilti::Charset.
+# %begin-Charset
+# Known character sets
+type Charset = enum { UTF8 = 1, UTF16LE = 2, UTF16BE = 3, UTF32LE = 4, UTF32BE = 5, ASCII = 6 };
+# %end-Charset
+
+# %begin-Side
+# Controls the side of an operation.
+type Side = enum { Left, Right, Both };
+# %end-Side
+
 # These values must match those in binpac.hlt. FIXME: We should have
 # just one definition.
 # # %begin-Filter
@@ -32,3 +43,13 @@ import "HILTI-C" bytes base64_encode(b: bytes);
 # Function for base64 decoding a bytes object.
 import "HILTI-C" bytes base64_decode(b: bytes);
 # %end-base64_decode
+
+# %begin-fmt
+# Formatting function sprintf-style.
+import "HILTI-C" bytes fmt(format: bytes, args: tuple<*>)  &hilti_id=BinPAC::fmt_bytes;
+# %end-fmt
+
+# %begin-fmt
+# Formatting function sprintf-style.
+import "HILTI-C" string fmt(format: string, args: tuple<*>) &hilti_id=BinPAC::fmt_string;
+# %end-fmt

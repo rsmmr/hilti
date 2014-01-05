@@ -52,7 +52,7 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
     obj = *((char**)obj);
 
     if ( ! obj )
-        return hlt_string_from_asciiz("<null>", excpt, ctx);
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
     uint32_t mask = *((uint32_t*)(obj + sizeof(__hlt_gchdr)));
 

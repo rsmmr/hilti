@@ -1,0 +1,28 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type Foo = enum { A, B, C }
+
+void run() {
+    local bool b
+    local ref<map<Foo, string>> m
+
+    m = new map<Foo, string>
+
+    map.insert m Foo::A "a"
+    map.insert m Foo::B "b"
+    call Hilti::print(m)
+
+    b = map.exists m Foo::A
+    call Hilti::print (b)
+
+    b = map.exists m Foo::C
+    call Hilti::print (b)
+
+}

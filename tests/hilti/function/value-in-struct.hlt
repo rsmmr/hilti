@@ -1,0 +1,30 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Make sure empty functions works.
+
+module Main
+
+import Hilti
+
+void foo(int<32> a) {
+    call Hilti::print (a)
+}
+
+type A = struct {
+    function(int<32> a) -> void XXX
+    }
+
+void run() {
+    local ref<A> a
+    local function(int<32> a) -> void    XXX
+
+    a = new A
+    struct.set a "XXX" foo
+
+    XXX = struct.get a "XXX"
+    call XXX (42)
+}
+

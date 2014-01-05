@@ -1,0 +1,28 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+
+    local ref<map<int<32>, string>> l
+    local string s
+    local string addl
+
+    l = map<int<32>, string>(1: "A", 2: "B", 3: "C", 4: "D", 5: "E")
+
+    call Hilti::print ("A", True)
+
+    for ( x in l ) {
+        call Hilti::print (x)
+    }
+
+    call Hilti::print ("B", True)
+
+    return.void
+}
+

@@ -203,6 +203,9 @@ hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32
     assert(type->type == HLT_TYPE_TIMER);
     hlt_timer* timer = *((hlt_timer **)obj);
 
+    if ( ! timer )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
+
     if ( timer->time == HLT_TIME_UNSET )
         return hlt_string_from_asciiz("<unscheduled timer>", excpt, ctx);
 
@@ -337,6 +340,9 @@ hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, i
 {
     assert(type->type == HLT_TYPE_TIMER_MGR);
     hlt_timer_mgr* mgr = *((hlt_timer_mgr **)obj);
+
+    if ( ! mgr )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
     int64_t size = pqueue_size(mgr->timers);
 

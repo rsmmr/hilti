@@ -1,0 +1,13 @@
+Changes from the original version:
+
+- We changed the type names from UTF8, UTF16 to UTF8_t, UTF16_t, etc.
+
+- We changed the definitions for UTF8, UTF16 to uintX_t
+
+- the return type of isLegalUTF8Sequence changed to uint8_t and we 
+  removed the definition of Boolean
+
+- introduce flip-parameter in ConvertUTF16toUTF8 and ConvertUTF32toUTF8
+  that tells the function to flip the byte-order
+
+- prefix function names with hilti_ to prevent conflicts with llvm

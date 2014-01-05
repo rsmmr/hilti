@@ -20,6 +20,8 @@
 #include "globals.h"
 #include "hutil.h"
 #include "threading.h"
+#include "int.h"
+#include "autogen/hilti-hlt.h"
 
 typedef struct {
     __hlt_gchdr __gchdr; // Header for memory management.
@@ -103,6 +105,38 @@ static inline int8_t is_empty(const hlt_bytes* b)
 {
     assert(b->head);
     return is_empty_chunk(b->head);
+}
+
+static inline int8_t is_end(hlt_iterator_bytes pos)
+{
+    return pos.chunk == 0 || (!pos.cur) || pos.cur >= pos.chunk->end;
+}
+
+static inline void normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
+{
+    if ( ! pos->chunk )
+        return;
+
+    // If the pos was previously an end position but now new data has been
+    // added, adjust it so that it's pointing to the next byte.
+    if ( (! pos->cur || pos->cur >= pos->chunk->end) && pos->chunk->next ) {
+
+        // The ref cnt must only be adjusted if the HILTI layer will see the
+        // normalized iterator.
+        if ( adj_refcnt ) {
+            GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
+        }
+        else
+            pos->chunk = pos->chunk->next;
+
+        pos->cur = pos->chunk->start;
+    }
+
+}
+
+void __bytes_normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
+{
+    return normalize_pos(pos, adj_refcnt);
 }
 
 // For debugging.
@@ -401,6 +435,14 @@ hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception**
     return GenericEndPos;
 }
 
+int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_iterator_bytes i = hlt_bytes_find_bytes(b, other, excpt, ctx);
+    int8_t result = (! is_end(i));
+    GC_DTOR(i, hlt_iterator_bytes);
+    return result;
+}
+
 hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iterator_bytes i = hlt_bytes_begin(other, excpt, ctx);
@@ -436,39 +478,6 @@ hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exce
     GC_DTOR(p, hlt_iterator_bytes);
     return GenericEndPos;
 }
-
-static inline int8_t is_end(hlt_iterator_bytes pos)
-{
-    return pos.chunk == 0 || (!pos.cur) || pos.cur >= pos.chunk->end;
-}
-
-static inline void normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
-{
-    if ( ! pos->chunk )
-        return;
-
-    // If the pos was previously an end position but now new data has been
-    // added, adjust it so that it's pointing to the next byte.
-    if ( (! pos->cur || pos->cur >= pos->chunk->end) && pos->chunk->next ) {
-
-        // The ref cnt must only be adjusted if the HILTI layer will see the
-        // normalized iterator.
-        if ( adj_refcnt ) {
-            GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
-        }
-        else
-            pos->chunk = pos->chunk->next;
-
-        pos->cur = pos->chunk->start;
-    }
-
-}
-
-void __bytes_normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
-{
-    return normalize_pos(pos, adj_refcnt);
-}
-
 
 hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -790,17 +799,17 @@ hlt_iterator_bytes hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_
     if ( pos < 0 )
         pos += hlt_bytes_len(b, excpt, ctx);
 
+    if ( pos < 0 )
+        return hlt_bytes_end(b, excpt, ctx);
+
     __hlt_bytes_chunk* c;
-    for ( c = b->head; pos >= (c->end - c->start); c = c->next ) {
-
-        if ( ! c ) {
-            // Position is out range.
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
-            return GenericEndPos;
-        }
-
+    for ( c = b->head; c && pos >= (c->end - c->start); c = c->next ) {
         pos -= (c->end - c->start);
+    }
 
+    if ( ! c ) {
+        // Position is out range, return end().
+        return hlt_bytes_end(b, excpt, ctx);
     }
 
     hlt_iterator_bytes p;
@@ -1080,10 +1089,8 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
 
     const hlt_bytes* b = *((const hlt_bytes**)obj);
 
-    if ( ! b ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! b )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
     char hex[5] = { '\\', 'x', 'X', 'X', '\0' };
     char buffer[256];
@@ -1301,6 +1308,34 @@ int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_
     return negate ? -value : value;
 }
 
+int64_t hlt_bytes_to_int_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    size_t len = hlt_bytes_len(b, excpt, ctx);
+
+    if ( len > 8 ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        return 0;
+    }
+
+    hlt_iterator_bytes cur = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
+
+    int64_t i = 0;
+
+    while ( ! hlt_iterator_bytes_eq(cur, end, excpt, ctx) ) {
+        uint8_t ch = __hlt_bytes_extract_one(&cur, end, excpt, ctx);
+        i = (i << 8) | ch;
+        }
+
+    GC_DTOR(cur, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+
+    if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
+        i = hlt_int_flip(i, len, excpt, ctx);
+
+    return i;
+}
+
 hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
@@ -1484,7 +1519,20 @@ hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt,
     return v;
 }
 
-hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline int strip_it(int8_t ch, hlt_bytes* pat)
+{
+    if ( ! pat )
+        return isspace(ch);
+
+    for ( __hlt_bytes_chunk* c = pat->head; c; c = c->next ) {
+        if ( memchr(c->start, ch, c->end - c->start) )
+            return 1;
+    }
+
+    return 0;
+}
+
+hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* pat, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iterator_bytes start;
     hlt_iterator_bytes end;
@@ -1492,32 +1540,87 @@ hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_exception** excpt, hlt_execution_co
     __hlt_bytes_chunk* c = 0;
     int8_t* p = 0;
 
-    for ( c = b->head; c; c = c->next ) {
-        for ( p = c->start; p < c->end; p++ ) {
-            if ( ! isspace(*p) )
-                goto end_loop1;
+    if ( hlt_enum_equal(side, Hilti_Side_Left, excpt, ctx) ||
+         hlt_enum_equal(side, Hilti_Side_Both, excpt, ctx) ) {
+
+        for ( c = b->head; c; c = c->next ) {
+            for ( p = c->start; p < c->end; p++ ) {
+                if ( ! strip_it(*p, pat) )
+                    goto end_loop1;
+            }
         }
-    }
 
 end_loop1:
     start.chunk = c;
     start.cur = p;
     normalize_pos(&start, 0);
+    }
 
-    for ( c = b->tail; c; c = c->prev ) {
-        for ( p = c->end - 1; p >= c->start; --p ) {
-            if ( ! isspace(*p) ) {
-                ++p;
-                goto end_loop2;
+    else {
+        start.chunk = b->head;
+        start.cur = b->head ? b->head->start : 0;
+    }
+
+    if ( hlt_enum_equal(side, Hilti_Side_Right, excpt, ctx) ||
+         hlt_enum_equal(side, Hilti_Side_Both, excpt, ctx) ) {
+
+        for ( c = b->tail; c; c = c->prev ) {
+            for ( p = c->end - 1; p >= c->start; --p ) {
+                if ( ! strip_it(*p, pat) ) {
+                    ++p;
+                    goto end_loop2;
+                }
             }
         }
-    }
 
 end_loop2:
     end.chunk = c;
     end.cur = p;
     normalize_pos(&end, 0);
 
+    }
+
+    else
+        end = GenericEndPos;
+
     return hlt_bytes_sub(start, end, excpt, ctx);
 }
 
+hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    const hlt_type_info* ti = hlt_list_type(l, excpt, ctx);
+    hlt_iterator_list i = hlt_list_begin(l, excpt, ctx);
+    hlt_iterator_list end = hlt_list_end(l, excpt, ctx);
+
+    int first = 1;
+    hlt_bytes* b = hlt_bytes_new(excpt, ctx);
+	hlt_bytes* tmp;
+
+    while ( ! hlt_iterator_list_eq(i, end, excpt, ctx) ) {
+
+        if ( ! first )
+            hlt_bytes_append(b, sep, excpt, ctx);
+
+        // FIXME: The charset handling isn't really right here. We should
+        // probably change the to_string methods to take a flag indicating
+        // "binary is ok", and then have a hlt_bytes_from_object() function
+        // that just passes that back. Or maybe we even need a separate
+        // to_bytes() function?
+        void* obj = hlt_iterator_list_deref(i, excpt, ctx);
+        hlt_string so = hlt_string_from_object(ti, obj, excpt, ctx);
+        hlt_bytes* bo = hlt_string_encode(so, Hilti_Charset_UTF8, excpt, ctx);
+        hlt_bytes_append(b, bo, excpt, ctx);
+
+        GC_DTOR_GENERIC(obj, ti);
+        GC_DTOR(so, hlt_string);
+        GC_DTOR(bo, hlt_string);
+
+        hlt_iterator_list j = i;
+        i = hlt_iterator_list_incr(i, excpt, ctx);
+        GC_DTOR(j, hlt_iterator_list);
+
+        first = 0;
+    }
+
+    return b;
+}

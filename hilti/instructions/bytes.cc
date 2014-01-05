@@ -136,6 +136,26 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
+    iValidateCC(Contains) {
+    }
+
+    iDocCC(Contains, R"(
+        Returns true if *op1* contains *op2* as a subsequence.
+    )")
+
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(Find) {
+    }
+
+    iDocCC(Find, R"(
+        Returns an iterator representing the first occurence of *op2* in *op1*, or an iterator pointing to the end of *op1* if nowhere.
+    )")
+
+iEndCC
+
+iBeginCC(bytes)
     iValidateCC(Offset) {
     }
 
@@ -183,11 +203,20 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(ToInt) {
+    iValidateCC(ToIntFromAscii) {
     }
 
-    iDocCC(ToInt, R"(
+    iDocCC(ToIntFromAscii, R"(
         Converts a bytes object *op1* into an integer, relative to given base *op2*.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(ToIntFromBinary) {
+    }
+
+    iDocCC(ToIntFromBinary, R"(
+        Converts a bytes object *op1* into an integer, assuming it's encoded in a binary represention with byte order *op2*.
     )")
 iEndCC
 
@@ -214,7 +243,7 @@ iBeginCC(bytes)
     }
 
     iDocCC(Strip, R"(
-        Removes leading and trailing white-space from the bytes object *op1*.
+        Removes leading and trailing sequences of any characters in *op2* from the bytes object *op1*. If *op2* is not given, removes white-space. If *op3* is given, it must be of type ``Hilti::Side`` and indicates which side of *op1* should be stripped. Default is ``Hilti::Side::Both``.
     )")
 iEndCC
 
@@ -244,6 +273,15 @@ iBeginCC(bytes)
 
     iDocCC(Split, R"(
         Splits bytes object *op1* at each occurence of separator *op2*, and return a vector with the individual pieces and the separator removes. If the separator is not found, the returned vector will just have *op1* as a single element.  If the separator is not given, or empty, the split will take place a sequences of white space.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(Join) {
+    }
+
+    iDocCC(Join, R"(
+         Renders each of the elements in list *op2* into a bytes object (as if one printed it), and then concatenates them using *op1* as the separator.
     )")
 iEndCC
 

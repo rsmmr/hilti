@@ -12,6 +12,7 @@
 #include "int.h"
 #include "rtti.h"
 #include "string_.h"
+#include "autogen/hilti-hlt.h"
 
 // Converts the integer into a int64_t correctly considering its width and
 // assuming a signed value.
@@ -110,3 +111,45 @@ int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t opt
         return (int64_t)_makeInt64Signed(type, obj);
 }
 
+int64_t hlt_int_to_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Host, excpt, ctx) )
+        return v;
+
+    if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Big, excpt, ctx) )
+        return (hlt_ntoh64(v) >> (64 - n*8));
+
+    if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
+#if __BIG_ENDIAN__
+        return (hlt_flip64(v) >> (64 - n*8));
+#else
+        return v;
+#endif
+
+    hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+    return 0;
+}
+
+int64_t hlt_int_from_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Host, excpt, ctx) )
+        return v;
+
+    if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Big, excpt, ctx) )
+        return (hlt_ntoh64(v) >> (64 - n*8));
+
+    if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
+#if __BIG_ENDIAN__
+        return (hlt_flip64(v) >> (64 - n*8));
+#else
+        return v;
+#endif
+
+    hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+    return 0;
+}
+
+int64_t hlt_int_flip(int64_t v, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return (hlt_flip64(v) >> (64 - n*8));
+}

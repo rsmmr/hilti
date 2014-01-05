@@ -2,7 +2,7 @@
 >>> jump foo
 wrong-id-types.hlt:7-8: error, operands do not match instruction jump
   got:
-    jump: <function>
+    jump: function(int<32> a) -> void
   expected one of:
     jump: label
  [pass::hilti::InstructionResolver]

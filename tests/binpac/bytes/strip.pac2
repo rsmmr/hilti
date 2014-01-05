@@ -5,10 +5,20 @@
 
 module Test;
 
+import BinPAC;
+
 print b"|" + b"  1212  ".strip() + b"|";
 print b"|" + b"abc".strip() + b"|";
 print b"|" + b" abc".strip() + b"|";
 print b"|" + b" abc ".strip() + b"|";
 print b"|" + b"   ".strip() + b"|";
 print b"|" + b"".strip() + b"|";
+
+print "";
+
+print b"|" + b"  ABC  ".strip(BinPAC::Side::Both) + b"|";
+print b"|" + b"  ABC  ".strip(BinPAC::Side::Left) + b"|";
+print b"|" + b"  ABC  ".strip(BinPAC::Side::Right) + b"|";
+
+print b"|" + b"123ABC456".strip(BinPAC::Side::Both, b"123456") + b"|";
 

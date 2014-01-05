@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  printf "\xa1" | pac-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  printf "\xb5" | pac-driver-test %INPUT >>output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+
+       a: bytes &length=1;
+
+       switch ( self.a ) {
+           b"\xa1" -> : void { print 1; }
+           b"\xb5" -> : void { print 2; }
+           };
+};

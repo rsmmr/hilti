@@ -131,8 +131,7 @@ void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* ty
 
 #ifdef DEBUG
     if ( mtype ) {
-        hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
-        hlt_string s = hlt_string_decode(mtype, ascii, excpt, ctx);
+        hlt_string s = hlt_string_decode(mtype, Hilti_Charset_ASCII, excpt, ctx);
         char* r1 = hlt_string_to_native(s, excpt, ctx);
         char* r2 = hlt_string_to_native(parser->name, excpt, ctx);
 
@@ -140,7 +139,6 @@ void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* ty
 
         hlt_free(r1);
         hlt_free(r2);
-        GC_DTOR(ascii, hlt_string);
         GC_DTOR(s, hlt_string);
     }
     else {

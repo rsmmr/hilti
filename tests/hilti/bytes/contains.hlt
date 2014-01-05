@@ -1,0 +1,33 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run() {
+    local bool i
+    local ref<bytes> b
+
+    b = b"1234567890"
+
+    i = bytes.contains b b"456"
+    call Hilti::print (i)
+
+    i = bytes.contains b b"1"
+    call Hilti::print (i)
+
+    i = bytes.contains b b"0"
+    call Hilti::print (i)
+
+    i = bytes.contains b b"XXX"
+    call Hilti::print (i)
+
+    i = bytes.contains b b""
+    call Hilti::print (i)
+
+    i = bytes.contains b"" b""
+    call Hilti::print (i)
+}

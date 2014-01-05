@@ -61,9 +61,10 @@ static void _dbg_mem_gc(const char* op, const hlt_type_info* ti, void* gcobj, co
     DBG_LOG("hilti-mem", "%10s %p %" PRIu64 " %" PRIu64 " %s %s%s", op, gcobj, 0, hdr->ref_cnt, ti->tag, location, buf);
 }
 
-static void _internal_memory_error(void* gcobj, const char* func, const char* msg)
+static void _internal_memory_error(void* gcobj, const char* func, const char* msg, const hlt_type_info* ti)
 {
-    fprintf(stderr, "internal memory error in %s for object %p: %s\n", func, gcobj, msg);
+    const char* type = ti ? ti->tag : "<unknown>";
+    fprintf(stderr, "internal memory error in %s for object %p of type %s: %s\n", func, gcobj, type, msg);
     abort();
 }
 
@@ -187,16 +188,18 @@ void __hlt_object_ref(const hlt_type_info* ti, void* obj)
 #ifdef DEBUG
     if ( ! ti->gc ) {
         _dbg_mem_gc("! ref", ti, obj, 0, 0);
-        _internal_memory_error(obj, "__hlt_object_ref", "object not garbage collected");
-    }
-
-    if ( hdr->ref_cnt <= 0 ) {
-        _dbg_mem_gc("! ref", ti, obj, 0, 0);
-        _internal_memory_error(obj, "__hlt_object_ref", "bad reference count");
+        _internal_memory_error(obj, "__hlt_object_ref", "object not garbage collected", ti);
     }
 #endif
 
-    ++hdr->ref_cnt;
+    int64_t new_ref_cnt = __atomic_add_fetch(&hdr->ref_cnt, 1, __ATOMIC_SEQ_CST);
+
+#ifdef DEBUG
+    if ( new_ref_cnt <= 0 ) {
+        _dbg_mem_gc("! ref", ti, obj, 0, 0);
+        _internal_memory_error(obj, "__hlt_object_ref", "bad reference count", ti);
+    }
+#endif
 
 #ifdef DEBUG
     ++__hlt_globals()->num_refs;
@@ -213,33 +216,32 @@ void __hlt_object_unref(const hlt_type_info* ti, void* obj)
     __hlt_gchdr* hdr = (__hlt_gchdr*)obj;
 
 #ifdef DEBUG
-    const char* aux = 0;
-
-    if ( hdr->ref_cnt == 0 )
-        aux = "dtor";
-
     if ( ! ti->gc ) {
-        _dbg_mem_gc("! unref", ti, obj, 0, aux);
-        _internal_memory_error(obj, "__hlt_object_unref", "object not garbage collected");
-    }
-
-    if ( hdr->ref_cnt <= 0 ) {
-        _dbg_mem_gc("! unref", ti, obj, 0, aux);
-        _internal_memory_error(obj, "__hlt_object_unref", "bad reference count");
+        _dbg_mem_gc("! unref", ti, obj, 0, "");
+        _internal_memory_error(obj, "__hlt_object_unref", "object not garbage collected", ti);
     }
 #endif
 
-    // We explicitly set it to zero even if we're about to delete the object.
-    // That can catch some errors when the destroyed objects is still
-    // accessed later.
-    --hdr->ref_cnt;
+    int64_t new_ref_cnt = __atomic_sub_fetch(&hdr->ref_cnt, 1, __ATOMIC_SEQ_CST);
+
+#ifdef DEBUG
+    const char* aux = 0;
+
+    if ( new_ref_cnt == 0 )
+        aux = "dtor";
+
+    if ( new_ref_cnt < 0 ) {
+        _dbg_mem_gc("! unref", ti, obj, 0, aux);
+        _internal_memory_error(obj, "__hlt_object_unref", "bad reference count", ti);
+    }
+#endif
 
 #ifdef DEBUG
     ++__hlt_globals()->num_unrefs;
     _dbg_mem_gc("unref", ti, obj, 0, aux);
 #endif
 
-    if ( hdr->ref_cnt == 0 ) {
+    if ( new_ref_cnt == 0 ) {
         if ( ti->obj_dtor )
             (*(ti->obj_dtor))(ti, obj);
 

@@ -105,6 +105,7 @@ using namespace hilti;
 %token         EXPORT         "'export'"
 %token         FILE           "'file'"
 %token         FOR            "'for'"
+%token         FUNCTION       "'function'"
 %token         GLOBAL         "'global'"
 %token         HOOK           "'hook'"
 %token         IMPORT         "'import'"
@@ -137,6 +138,7 @@ using namespace hilti;
 %token         VOID           "'void'"
 %token         WITH           "'with'"
 %token         INIT           "'init'"
+%token         ARROW          "->"
 
 %type <bitset_label>     bitset_label
 %type <bitset_labels>    bitset_labels
@@ -171,7 +173,7 @@ using namespace hilti;
 %type <struct_field>     struct_field
 %type <struct_fields>    struct_fields opt_struct_fields
 %type <sval>             opt_exception_libtype attribute re_pattern_constant 
-%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ overlay context scope opt_scope_ref
+%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ overlay context scope opt_scope_ref function_type
 %type <types>            type_list
 
 %%
@@ -321,6 +323,7 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | scope                            { $$ = $1; }
               | context                          { $$ = $1; }
               | overlay                          { $$ = $1; }
+              | function_type                    { $$ = $1; }
               ;
 
 type          : base_type                        { $$ = $1; }
@@ -472,7 +475,10 @@ ctor          : CBYTES                           { $$ = builder::bytes::create($
               | LIST   '<' type '>' '(' opt_exprs ')' { $$ = builder::list::create($3, $6, loc(@$)); }
               | SET    '<' type '>' '(' opt_exprs ')' { $$ = builder::set::create($3, $6, loc(@$)); }
               | VECTOR '<' type '>' '(' opt_exprs ')' { $$ = builder::vector::create($3, $6, loc(@$)); }
-              | MAP    '<' type ',' type '>' '(' opt_map_elems ')' { $$ = builder::map::create($3, $5, $8, loc(@$)); }
+              | MAP    '<' type ',' type '>' '(' opt_map_elems ')'
+                                                 { $$ = builder::map::create($3, $5, $8, nullptr, loc(@$)); }
+              | MAP    '<' type ',' type '>' '(' opt_map_elems ')' ATTR_DEFAULT '=' expr
+              									 { $$ = builder::map::create($3, $5, $8, $12, loc(@$)); }
               ;
 
 ctor_regexp   : ctor_regexp '|' re_pattern       { $$ = $1; $$.push_back($3); }
@@ -508,6 +514,9 @@ function      : opt_init opt_cc result local_id '(' opt_param_list ')' opt_scope
                                                  {  driver.moduleBuilder()->declareFunction($4, $3, $6, $2, loc(@$));
                                                     driver.moduleBuilder()->exportID($4);
                                                  }
+
+function_type : opt_cc FUNCTION '(' opt_param_list ')' ARROW result
+                                                 { $$ = builder::function::type($7, $4, $1, loc(@$)); }
               ;
 
 opt_init      : INIT                             { $$ = true; }

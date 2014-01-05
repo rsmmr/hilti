@@ -1,6 +1,7 @@
 
 #include "DebugLogger.h"
 #include "Obj.h"
+#include "Expr.h"
 #undef List
 
 #include <util/util.h>
@@ -36,21 +37,27 @@ std::shared_ptr<::hilti::builder::BlockBuilder> BuilderBase::Builder() const
 	return mbuilder->Compiler()->GlueModuleBuilder();
 	}
 
-void BuilderBase::Error(const std::string& msg, const BroObj* obj)
+void BuilderBase::Error(const std::string& msg, const BroObj* obj) const
 	{
 	auto s = msg + ::util::fmt(" [%s]", Location(obj));
 	DBG_LOG_COMPILER("builder error: %s", s.c_str());
+
+#if 1
+	fprintf(stderr, ">> %s\n", msg.c_str());
+	abort();
+#else
 	throw BuilderException(s);
+#endif
 	}
 
-void BuilderBase::Warning(const std::string& msg, const BroObj* obj)
+void BuilderBase::Warning(const std::string& msg, const BroObj* obj) const
 	{
 	auto s = msg + ::util::fmt(" [%s]", Location(obj));
 	DBG_LOG_COMPILER("builder warning: %s", s.c_str());
 	reporter::warning(s);
 	}
 
-void BuilderBase::InternalError(const std::string& msg, const BroObj* obj)
+void BuilderBase::InternalError(const std::string& msg, const BroObj* obj) const
 	{
 	auto s = msg + ::util::fmt(" [%s]", Location(obj));
 	DBG_LOG_COMPILER("internal builder error: %s", s.c_str());
@@ -102,6 +109,11 @@ std::string BuilderBase::HiltiSymbol(const ::ID* id)
 	return mbuilder->Compiler()->HiltiSymbol(id, mbuilder->module());
 	}
 
+std::string BuilderBase::HiltiSymbol(const ::BroType* t)
+	{
+	return mbuilder->Compiler()->HiltiSymbol(t);
+	}
+
 std::string BuilderBase::HiltiODescSymbol(const ::BroObj* obj)
 	{
 	return mbuilder->Compiler()->HiltiODescSymbol(obj);
@@ -112,14 +124,57 @@ std::shared_ptr<::hilti::Type> BuilderBase::HiltiType(const ::BroType* type)
 	return mbuilder->TypeBuilder()->Compile(type);
 	}
 
-std::shared_ptr<::hilti::Expression> BuilderBase::HiltiValue(const ::Val* val)
+std::shared_ptr<::hilti::type::Function> BuilderBase::HiltiFunctionType(const ::FuncType* type)
 	{
-	return mbuilder->ValueBuilder()->Compile(val);
+	return mbuilder->TypeBuilder()->FunctionType(type);
 	}
 
-std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr)
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiValue(const ::Val* val, const ::BroType* target_type, bool init)
 	{
-	return mbuilder->ExpressionBuilder()->Compile(expr);
+	return mbuilder->ValueBuilder()->Compile(val, target_type, init);
+	}
+
+shared_ptr<::hilti::Expression> BuilderBase::HiltiDefaultInitValue(const ::BroType* type)
+	{
+	return mbuilder->ValueBuilder()->DefaultInitValue(type);
+	}
+
+shared_ptr<::hilti::Expression> BuilderBase::HiltiBroVal(const ::BroType* type)
+	{
+	return mbuilder->ValueBuilder()->TypeVal(type);
+	}
+
+shared_ptr<::hilti::Expression> BuilderBase::HiltiBroVal(const ::Func* func)
+	{
+	return mbuilder->ValueBuilder()->FunctionVal(func);
+	}
+
+shared_ptr<::hilti::Expression> BuilderBase::HiltiBroType(const ::BroType* type)
+	{
+	return mbuilder->ValueBuilder()->BroType(type);
+	}
+
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiExpression(const ::Expr* expr, const ::BroType* target_type)
+	{
+	return mbuilder->ExpressionBuilder()->Compile(expr, target_type);
+	}
+
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiIndex(const ::Expr* idx)
+	{
+	if ( idx->Tag() != EXPR_LIST )
+		return HiltiExpression(idx);
+
+	auto lexpr = idx->AsListExpr();
+
+	if ( lexpr->Exprs().length() == 1 )
+		return HiltiExpression(lexpr->Exprs()[0]);
+	else
+		return HiltiExpression(lexpr);
+	}
+
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiStructField(const char* fname)
+	{
+	return ::hilti::builder::string::create(fname);
 	}
 
 shared_ptr<::hilti::Expression> BuilderBase::RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, const ::BroType* type)
@@ -137,7 +192,32 @@ shared_ptr<::hilti::Expression> BuilderBase::DeclareFunction(const ::Func* func)
 	return mbuilder->DeclareFunction(func);
 	}
 
-std::string BuilderBase::Location(const ::BroObj *obj)
+std::shared_ptr<::hilti::Expression> BuilderBase::DeclareGlobal(const ::ID* id)
+	{
+	return mbuilder->DeclareGlobal(id);
+	}
+
+std::shared_ptr<::hilti::Expression> BuilderBase::DeclareLocal(const ::ID* id)
+	{
+	return mbuilder->DeclareLocal(id);
+	}
+
+const ::Func* BuilderBase::CurrentFunction() const
+	{
+	return mbuilder->CurrentFunction();
+	}
+
+shared_ptr<::hilti::Expression> BuilderBase::HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args)
+	{
+	return mbuilder->HiltiCallFunction(func, ftype, args);
+	}
+
+void BuilderBase::MapType(const ::BroType* from, const ::BroType* to)
+	{
+	return mbuilder->ConversionBuilder()->MapType(from, to);
+	}
+
+std::string BuilderBase::Location(const ::BroObj *obj) const
 	{
 	if ( ! obj || ! obj->GetLocationInfo()->filename )
 		return "<no location>";

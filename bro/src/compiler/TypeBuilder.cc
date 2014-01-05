@@ -19,6 +19,7 @@ shared_ptr<hilti::Type> TypeBuilder::Compile(const ::BroType* type)
 	{
 	switch ( type->Tag() ) {
 	case TYPE_ADDR:
+	case TYPE_ANY:
 	case TYPE_BOOL:
 	case TYPE_COUNT:
 	case TYPE_COUNTER:
@@ -29,6 +30,7 @@ shared_ptr<hilti::Type> TypeBuilder::Compile(const ::BroType* type)
 	case TYPE_PORT:
 	case TYPE_STRING:
 	case TYPE_TIME:
+	case TYPE_VOID:
 		return CompileBaseType(static_cast<const ::BroType*>(type));
 
 	case TYPE_ENUM:
@@ -76,6 +78,9 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 	case TYPE_ADDR:
 		return ::hilti::builder::address::type();
 
+	case TYPE_ANY:
+		return ::hilti::builder::type::byName("LibBro::BroVal");
+
 	case TYPE_BOOL:
 		return ::hilti::builder::boolean::type();
 
@@ -93,7 +98,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 		return ::hilti::builder::interval::type();
 
 	case TYPE_PATTERN:
-		return ::hilti::builder::regexp::type();
+		return ::hilti::builder::reference::type(::hilti::builder::regexp::type());
 
 	case TYPE_PORT:
 		return ::hilti::builder::port::type();
@@ -103,6 +108,9 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 
 	case TYPE_TIME:
 		return ::hilti::builder::time::type();
+
+	case TYPE_VOID:
+		return ::hilti::builder::void_::type();
 
 	default:
 		Error("TypeBuilder: cannot be reached", type);
@@ -114,31 +122,41 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::EnumType* type)
 	{
+	auto idx = type->GetTypeID() ? string(type->GetTypeID())
+				     : ::util::fmt("enum_%p", type);
+
+	auto sm = ::extract_module_name(idx.c_str());
+	auto sv = ::extract_var_name(idx.c_str());
+	idx = ::util::fmt("%s::%s", sm, sv);
+
+	if ( auto t = ModuleBuilder()->lookupNode("enum-type", idx) )
+		return ast::checkedCast<::hilti::Type>(t);
+
 	::hilti::builder::enum_::label_list labels;
 
 	for ( auto i : type->Names() )
 		{
-		auto name = i.first;
+		auto label = i.first;
 		auto val = i.second;
 
-		auto module = ::extract_module_name(name.c_str());
-		auto local = ::extract_var_name(name.c_str());
-
-		auto hn = ::util::fmt("%s", local);
-		auto id = ::hilti::builder::id::node(hn);
+		auto name = ::util::strreplace(label, "::", "_");
+		auto id = ::hilti::builder::id::node(name);
 
 		labels.push_back(std::make_pair(id, val));
 		}
 
-	return ::hilti::builder::enum_::type(labels);
+	auto etype = ::hilti::builder::enum_::type(labels);
+	ModuleBuilder()->cacheNode("enum-type", idx, etype);
+	ModuleBuilder()->addType(idx, etype);
+	return etype;
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FileType* type)
 	{
-	return ::hilti::builder::file::type();
+	return ::hilti::builder::reference::type(::hilti::builder::file::type());
 	}
 
-std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
+shared_ptr<::hilti::type::Function> TypeBuilder::FunctionType(const ::FuncType* type)
 	{
 	auto byield = type->YieldType();
 	auto bargs = type->Args();
@@ -156,10 +174,11 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
 	for ( int i = 0; i < bargs->NumFields(); i++ )
 		{
 		auto name = bargs->FieldName(i);
-		auto type = HiltiType(bargs->FieldType(i));
-		auto def = bargs->FieldDefault(i) ? HiltiValue(bargs->FieldDefault(i)) : nullptr;
+		auto ftype = bargs->FieldType(i);
+		auto htype = HiltiType(ftype);
+		auto def = bargs->FieldDefault(i) ? HiltiValue(bargs->FieldDefault(i), ftype, true) : nullptr;
 
-		auto param = ::hilti::builder::function::parameter(name, type, false, def);
+		auto param = ::hilti::builder::function::parameter(name, htype, false, def);
 		hargs.push_back(param);
 		}
 
@@ -178,6 +197,10 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
 	InternalError("cannot be reached", type);
 	}
 
+std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::FuncType* type)
+	{
+	return ::hilti::builder::type::byName("LibBro::BroVal");
+	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::OpaqueType* type)
 	{
@@ -186,6 +209,16 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::OpaqueType* type)
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 	{
+	auto idx = type->GetTypeID() ? string(type->GetTypeID())
+				     : ::util::fmt("struct_%p", type);
+
+	auto sm = ::extract_module_name(idx.c_str());
+	auto sv = ::extract_var_name(idx.c_str());
+	idx = ::util::fmt("%s::%s", sm, sv);
+
+	if ( auto t = ModuleBuilder()->lookupNode("struct-type", idx) )
+		return ast::checkedCast<::hilti::Type>(t);
+
 	::hilti::builder::struct_::field_list fields;
 
 	for ( int i = 0; i < type->NumFields(); i++ )
@@ -193,15 +226,20 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 		auto bdef = type->FieldDefault(i);
 
 		auto name = type->FieldName(i);
-		auto htype = HiltiType(type->FieldType(i));
-		auto def = bdef ? HiltiValue(bdef) : nullptr;
+		auto ftype = type->FieldType(i);
+		auto htype = HiltiType(ftype);
+		auto def = bdef ? HiltiValue(bdef, ftype, true) : nullptr;
 		auto hf = ::hilti::builder::struct_::field(name, htype, def);
 
 		fields.push_back(hf);
 		}
 
 	auto stype = ::hilti::builder::struct_::type(fields);
-	return ::hilti::builder::reference::type(stype);
+	auto rtype = ::hilti::builder::reference::type(stype);
+
+	ModuleBuilder()->cacheNode("struct-type", idx, rtype);
+	ModuleBuilder()->addType(idx, stype);
+	return rtype;
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::SubNetType* type)
@@ -242,8 +280,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TypeList* type)
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::TypeType* type)
 	{
-	Error("no support yet for compiling TypeType", type);
-	return nullptr;
+	return ::hilti::builder::type::byName("LibBro::BroType");
 	}
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::VectorType* type)

@@ -16,8 +16,8 @@ void run() {
     local ref<bytes> b5
     local ref<bytes> b6
 
-    b1 = string.encode "Hallo" "ascii"
-    b2 = string.encode "DuDa" "ascii"
+    b1 = string.encode "Hallo" Hilti::Charset::ASCII
+    b2 = string.encode "DuDa" Hilti::Charset::ASCII
     bytes.append b1 b2
 
     b4 = bytes.copy b1

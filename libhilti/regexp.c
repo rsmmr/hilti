@@ -5,6 +5,7 @@
 #include "regexp.h"
 #include "string_.h"
 #include "memory_.h"
+#include "autogen/hilti-hlt.h"
 
 struct __hlt_regexp {
     __hlt_gchdr __gchdr; // Header for memory management.
@@ -56,10 +57,15 @@ hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt
 
     int64_t *flags = (int64_t*) &(type->type_params);
 
+    return hlt_regexp_new_flags((hlt_regexp_flags)*flags, excpt, ctx);
+}
+
+hlt_regexp* hlt_regexp_new_flags(hlt_regexp_flags flags, hlt_exception** excpt, hlt_execution_context* ctx)
+{
     hlt_regexp* re = GC_NEW(hlt_regexp);
     re->num = 0;
     re->patterns = 0;
-    re->flags = (hlt_regexp_flags)(*flags);
+    re->flags = flags;
     return re;
 }
 
@@ -76,9 +82,7 @@ static inline int _cflags(hlt_regexp_flags flags)
 static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // FIXME: For now, the pattern must contain only ASCII characters.
-    hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
-    hlt_bytes* p = hlt_string_encode(pattern, ascii, excpt, ctx);
-    GC_DTOR(ascii, hlt_string);
+    hlt_bytes* p = hlt_string_encode(pattern, Hilti_Charset_ASCII, excpt, ctx);
     if ( *excpt )
         return;
 
@@ -177,6 +181,9 @@ void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception** 
 hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_regexp* re = *((const hlt_regexp**)obj);
+
+    if ( ! re )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
     if ( ! re->num )
         return hlt_string_from_asciiz("<no pattern>", excpt, ctx);

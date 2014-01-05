@@ -220,6 +220,8 @@ def runHiltic(inputs, output, proto=False):
 
     flags += ["-I%s" % i for i in includes.split()]
 
+    flags += ["-I%s" % i for i in ImportPaths]
+
     flags = uniqueArgs(flags)
 
     for i in range(Options.debug):

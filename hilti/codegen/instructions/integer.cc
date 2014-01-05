@@ -358,7 +358,7 @@ void StatementBuilder::visit(statement::instruction::integer::Trunc* i)
     cg()->llvmStore(i, result);
 }
 
-void StatementBuilder::visit(statement::instruction::integer::Sqeq* i)
+void StatementBuilder::visit(statement::instruction::integer::Sgeq* i)
 {
     auto t = coerceTypes(i->op1(), i->op2());
     auto op1 = cg()->llvmValue(i->op1(), t);
@@ -420,3 +420,58 @@ void StatementBuilder::visit(statement::instruction::integer::ZExt* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::integer::ToHost* i)
+{
+    auto width = ast::checkedCast<type::Integer>(i->op1()->type())->width();
+    auto twidth = ast::checkedCast<type::Integer>(i->target()->type())->width();
+
+    auto op1 = cg()->llvmValue(i->op1());
+    op1 = builder()->CreateZExt(op1, cg()->llvmTypeInt(64));
+
+    CodeGen::expr_list args;
+    args.push_back(builder::codegen::create(builder::integer::type(64), op1));
+    args.push_back(i->op2());
+    args.push_back(builder::integer::create(width / 8));
+
+    auto result = cg()->llvmCall("hlt::int_to_host", args);
+
+    result = builder()->CreateTrunc(result, cg()->llvmTypeInt(twidth));
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::integer::FromHost* i)
+{
+    auto width = ast::checkedCast<type::Integer>(i->op1()->type())->width();
+    auto twidth = ast::checkedCast<type::Integer>(i->target()->type())->width();
+
+    auto op1 = cg()->llvmValue(i->op1());
+    op1 = builder()->CreateZExt(op1, cg()->llvmTypeInt(64));
+
+    CodeGen::expr_list args;
+    args.push_back(builder::codegen::create(builder::integer::type(64), op1));
+    args.push_back(i->op2());
+    args.push_back(builder::integer::create(width / 8));
+
+    auto result = cg()->llvmCall("hlt::int_from_host", args);
+
+    result = builder()->CreateTrunc(result, cg()->llvmTypeInt(twidth));
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::integer::Flip* i)
+{
+    auto width = ast::checkedCast<type::Integer>(i->op1()->type())->width();
+    auto twidth = ast::checkedCast<type::Integer>(i->target()->type())->width();
+
+    auto op1 = cg()->llvmValue(i->op1());
+    op1 = builder()->CreateZExt(op1, cg()->llvmTypeInt(64));
+
+    CodeGen::expr_list args;
+    args.push_back(builder::codegen::create(builder::integer::type(64), op1));
+    args.push_back(builder::integer::create(width / 8));
+
+    auto result = cg()->llvmCall("hlt::int_flip", args);
+
+    result = builder()->CreateTrunc(result, cg()->llvmTypeInt(twidth));
+    cg()->llvmStore(i, result);
+}

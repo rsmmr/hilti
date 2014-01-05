@@ -125,6 +125,28 @@ void StatementBuilder::visit(statement::instruction::bytes::Length* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::Contains* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+
+    auto result = cg()->llvmCall("hlt::bytes_contains_bytes", args);
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Find* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+
+    auto result = cg()->llvmCall("hlt::bytes_find_bytes", args);
+
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::bytes::Offset* i)
 {
     CodeGen::expr_list args;
@@ -166,12 +188,21 @@ void StatementBuilder::visit(statement::instruction::bytes::Unfreeze* i)
     cg()->llvmCall("hlt::bytes_freeze", args);
 }
 
-void StatementBuilder::visit(statement::instruction::bytes::ToInt* i)
+void StatementBuilder::visit(statement::instruction::bytes::ToIntFromAscii* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
     auto result = cg()->llvmCall("hlt::bytes_to_int", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::ToIntFromBinary* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_to_int_binary", args);
     cg()->llvmStore(i, result);
 }
 
@@ -202,8 +233,15 @@ void StatementBuilder::visit(statement::instruction::bytes::StartsWith* i)
 
 void StatementBuilder::visit(statement::instruction::bytes::Strip* i)
 {
+    auto tb = builder::reference::type(builder::bytes::type());
+
+    auto op2 = i->op2() ? cg()->llvmValue(i->op2()) : cg()->llvmEnum("Hilti::Side::Both");
+    auto op3 = i->op3() ? cg()->llvmValue(i->op3()) : cg()->llvmConstNull(cg()->llvmType((tb)));
+
     CodeGen::expr_list args;
     args.push_back(i->op1());
+    args.push_back(builder::codegen::create(cg()->typeByName("Hilti::Side"), op2));
+    args.push_back(builder::codegen::create(tb, op3));
     auto result = cg()->llvmCall("hlt::bytes_strip", args);
     cg()->llvmStore(i, result);
 }
@@ -223,6 +261,15 @@ void StatementBuilder::visit(statement::instruction::bytes::Split* i)
     args.push_back(i->op1());
     args.push_back(i->op2());
     auto result = cg()->llvmCall("hlt::bytes_split", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Join* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_join", args);
     cg()->llvmStore(i, result);
 }
 

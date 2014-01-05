@@ -145,10 +145,13 @@ opEnd
 opBegin(bytes::Strip : MethodCall)
     opOp1(std::make_shared<type::Bytes>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("strip")))
+    opCallArg1("side", std::make_shared<type::OptionalArgument>(std::make_shared<type::Enum>()))
+    opCallArg2("chars", std::make_shared<type::OptionalArgument>(std::make_shared<type::Bytes>()))
 
-    opDoc("Strips off leading and trailing white-space.")
+    opDoc("Strips off leading and/or trailing characters, as indicated by *side* with either if not given. By default it strips off all whitespace; alternatively any characters contained in *chars*.")
 
     opValidate() {
+        // TODO: Check enum type.
     }
 
     opResult() {
@@ -171,6 +174,21 @@ opBegin(bytes::ToUInt : MethodCall)
     }
 opEnd
 
+opBegin(bytes::ToUIntBinary : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_uint")))
+    opCallArg1("byte_order", std::make_shared<type::Enum>())
+
+    opDoc("Interprets the ``bytes`` as representing an binary number encoded with the given byte order, and converts it into an unsigned integer.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Integer>(64, false);
+    }
+opEnd
+
 opBegin(bytes::ToInt : MethodCall)
     opOp1(std::make_shared<type::Bytes>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_int")))
@@ -183,6 +201,36 @@ opBegin(bytes::ToInt : MethodCall)
 
     opResult() {
         return std::make_shared<type::Integer>(64, true);
+    }
+opEnd
+
+opBegin(bytes::ToIntBinary : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_int")))
+    opCallArg1("byte_order", std::make_shared<type::Enum>())
+
+    opDoc("Interprets the ``bytes`` as representing an binary number encoded with the given byte order, and converts it into a signed integer.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Integer>(64, true);
+    }
+opEnd
+
+opBegin(bytes::Decode : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("decode")))
+    opCallArg1("charset", std::make_shared<type::Enum>())
+
+    opDoc("Interprets the ``bytes`` as representing an binary string encoded with the given character set, and converts it into a UTF8 string")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::String>();
     }
 opEnd
 
@@ -217,5 +265,19 @@ opBegin(bytes::Split : MethodCall)
     }
 opEnd
 
+opBegin(bytes::Join : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("join")))
+    opCallArg1("l", std::make_shared<type::List>())
+
+    opDoc("Renders the elements of *l* into textual form and joins them into a single bytes object using the given one as separator.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Bytes>();
+    }
+opEnd
 
 

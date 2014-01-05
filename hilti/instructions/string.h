@@ -68,7 +68,7 @@ iEnd
 iBegin(string, Decode, "string.decode")
     iTarget(optype::string)
     iOp1(optype::refBytes, true);
-    iOp2(optype::string, true);
+    iOp2(optype::enum_, true);
 
     iValidate {
     }
@@ -76,10 +76,10 @@ iBegin(string, Decode, "string.decode")
     iDoc(R"(    
         Converts *bytes op1* into a string, assuming characters are encoded in
         character set *op2*. Supported character sets are currently:
-        ``ascii``, ``utf8``.  If the string cannot be decoded with the given
-        character set, the instruction throws an ~~DecodingError exception. If
-        the character set given is not known, the instruction throws a
-        ~~ValueError exception.
+        ``ASCII``, ``UTF8``, ``UTF16LE``, ``UTF16BE``, ``UTF32LE``, ``UTF32BE``.  
+	If the string cannot be decoded with the given character set, the instruction 
+	throws an ~~DecodingError exception. If the character set given is not supported,
+       	the instruction throws a ~~ValueError exception.
 
         .. todo:: Support further character sets.
     )")
@@ -89,17 +89,17 @@ iEnd
 iBegin(string, Encode, "string.encode")
     iTarget(optype::refBytes)
     iOp1(optype::string, true);
-    iOp2(optype::string, true);
+    iOp2(optype::enum_, true);
 
     iValidate {
     }
 
     iDoc(R"(    
         Converts *op1* into bytes, encoding characters using the character set
-        *op2*. Supported character sets are currently: ``ascii``, ``utf8``.
+        *op2*. Supported character sets are currently: ``ASCII``, ``UTF8``.
         If the any characters cannot be encoded with the given character set,
         they will be replaced with place-holders. If the character set given
-        is not known, the instruction throws a ~~ValueError exception.  Todo:
+        is not supported, the instruction throws a ~~ValueError exception.  Todo:
         We need to figure out how to support more character sets.
     )")
 
@@ -161,6 +161,20 @@ iBegin(string, Substr, "string.substr")
         Extracts the substring of length *op3* from *op1* that starts at
         position *op2*.
     )")
-
 iEnd
+
+iBegin(string, Join, "string.join")
+    iTarget(optype::string)
+    iOp1(optype::string, true)
+    iOp2(optype::refList, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+         Renders each of the elements in list *op2* into a string (as if one printed it),
+         and then concatenates them using *op1* as the separator.
+    )")
+iEnd
+
 

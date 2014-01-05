@@ -162,8 +162,12 @@ public:
    /// current builder() with pushBuilder().
    ///
    /// abort_on_excpt: If true, exceptions in this function will immeidately
-   /// abort execution rather than triggering normal handling. 
-   llvm::Function* pushFunction(llvm::Function* function, bool push_builder=true, bool abort_on_excpt=false, bool is_init_func=false);
+   /// abort execution rather than triggering normal handling.
+   ///
+   /// cc: The function's calling convetion; DEFAULT means "not further
+   /// specified".
+   llvm::Function* pushFunction(llvm::Function* function, bool push_builder=true, bool abort_on_excpt=false,
+                                bool is_init_func=false, type::function::CallingConvention=type::function::DEFAULT);
 
    /// Removes the current LLVM function from the stack of function being
    /// generated. Calls to this function must match with those to
@@ -655,6 +659,21 @@ public:
    ///
    /// Returns: The corresponding LLVM type.
    llvm::Type* llvmType(shared_ptr<hilti::Type> type);
+
+   /// Returns the LLVM type for a function. This includes doing all the ABI
+   /// alignments.
+   ///
+   /// ftype: The function type.
+   ///
+   /// Returns: The final LLVM type.
+   llvm::FunctionType* llvmFunctionType(shared_ptr<type::Function> ftype);
+
+   /// Returns the LLVM calling convention corresponding to a HILTI one.
+   ///
+   /// cc: The HILTI convention.
+   ///
+   /// Returns: The LLVM calling convention.
+   llvm::CallingConv::ID llvmCallingConvention(type::function::CallingConvention cc);
 
    /// Returns the LLVM initialization value for a HILTI type.
    ///
@@ -2192,6 +2211,14 @@ private:
    // name.
    void llvmInstruction(shared_ptr<Expression> target, const string& mnemo, shared_ptr<Expression> op1, shared_ptr<Expression> op2, shared_ptr<Expression> op3, const Location& l=Location::None);
 
+   // Helper factoring out joint code for for llvmAddFunction() and llvmFunctionType().
+   std::pair<llvm::Type*, std::vector<std::pair<string, llvm::Type*>>>
+       llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::function::CallingConvention cc, bool skip_ctx);
+
+   // Helper factoring out joint code for for llvmAddFunction() and llvmFunctionType().
+   std::pair<llvm::Type*, std::vector<std::pair<string, llvm::Type*>>>
+        llvmAdaptFunctionArgs(shared_ptr<type::Function> ftype);
+
    friend class util::IRInserter;
    const string& nextComment() const { // Used by the util::IRInserter.
        return _functions.back()->next_comment;
@@ -2284,6 +2311,7 @@ private:
        declaration::Function* leave_func = nullptr;
        handler_list catches;
        std::list<shared_ptr<Expression>> locals_cleared_on_excpt;
+       type::function::CallingConvention cc;
    };
 
    typedef std::list<std::unique_ptr<FunctionState>> function_list;

@@ -1,0 +1,36 @@
+#
+# @TEST-EXEC-FAIL:  hilti-build %INPUT -o a.out 2>output
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE This error check is currently disabled in
+#                     hilti/codegen/instructions/flow.cc as it's broken.
+
+module Main
+
+import Hilti
+
+void run()
+{
+    local bool b
+    b = call foo ()
+    call Hilti::print ("yes")
+}
+
+bool foo()
+{
+
+  local bool __tmp_has
+
+  if.else __tmp_has @if_true @if_false
+
+@if_true:
+    jump @if_cont
+
+@if_false:
+    return.result False
+    jump @if_cont
+
+@if_cont:
+
+}
+

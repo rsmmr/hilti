@@ -23,7 +23,7 @@ endif ()
 
 find_package(GooglePerftools)
 
-if (${GOOGLEPERFTOOLS_FOUND} STREQUAL "TRUE" )
+if ("${GOOGLEPERFTOOLS_FOUND}" STREQUAL "TRUE" )
     set(HAVE_PERFTOOLS "1")
 else ()
     set(HAVE_PERFTOOLS "0")
@@ -180,6 +180,7 @@ add_library (hilti STATIC
     passes/validator.cc
     passes/cfg.cc
     passes/liveness.cc
+    passes/id-replacer.cc
 
     codegen/abi.cc
     codegen/asm-annotater.cc

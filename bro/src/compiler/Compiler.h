@@ -28,6 +28,8 @@ namespace hilti {
 
 namespace compiler {
 
+class CollectorCallback;
+
 class Compiler {
 public:
 	typedef std::list<std::shared_ptr<::hilti::Module>> module_list;
@@ -49,6 +51,18 @@ public:
 	 * @return A list of compiled modules.
 	 */
 	module_list CompileAll();
+
+	/**
+	 * Returns all of a Bro namespace's function that need to be
+	 * compiled.
+	 */
+	std::list<const Func *> Functions(const string& ns);
+
+	/**
+	 * Returns all of a Bro namespace's global IDs that need to be
+	 * compiled.
+	 */
+	std::list<const ::ID *> Globals(const string& ns);
 
 	/**
 	 * Returns the module builder currently in use.
@@ -77,8 +91,15 @@ public:
 
 	/**
 	 * Returns the module builder for the glue code module.
+	 *
+	 * TODO: We should move the glue builder over to the manager.
 	 */
 	::hilti::builder::ModuleBuilder* GlueModuleBuilder() const;
+
+	/**
+	 * XXXX
+	 */
+	std::shared_ptr<::hilti::Module> FinalizeGlueBuilder();
 
 	/**
 	 * Returns the internal HILTI-level symbol for a Bro Function.
@@ -118,9 +139,20 @@ public:
 	std::string HiltiSymbol(const ::ID* id, shared_ptr<::hilti::Module> module);
 
 	/**
+	 * Returns the internal HILTI-level symbol for a Bro type. This will
+	 * always be a globally valid ID.
+	 *
+	 * @param t The type.
+	 */
+	std::string HiltiSymbol(const ::BroType* );
+
+	/**
 	 * Returns the internal HILTI-level symbol for a Bro ID.
 	 *
 	 * @param id The ID.
+	 *
+	 * @param global True if this is a global ID that need potentially needs
+	 * to be qualified with a namespace.
 	 *
 	 * @param module: If non-empty, a module name to which the returned
 	 * symbol should be relative. If the function's ID has the same
@@ -130,7 +162,7 @@ public:
 	 * module name and hence reoresent the symbol as visibile at the LLVM
 	 * level after linking.
 	 */
-	std::string HiltiSymbol(const std::string& id, const std::string& module, bool include_module = false);
+	std::string HiltiSymbol(const std::string& id, bool global, const std::string& module, bool include_module = false);
 
 	/**
 	 * Renders a \a BroObj via its \c Describe() method and turns the
@@ -155,7 +187,7 @@ public:
 	bool HaveHiltiBif(const std::string& name, std::string* hilti_name = 0);
 
 private:
-	std::string normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool include_module = false);
+	std::string normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool global, bool include_module = false);
 
 	std::list<std::string> GetNamespaces() const;
 
@@ -165,6 +197,8 @@ private:
 	module_builder_list mbuilders;
 
 	shared_ptr<::hilti::builder::ModuleBuilder> glue_module_builder;
+
+	std::shared_ptr<CollectorCallback> collector_callback;
 };
 
 }

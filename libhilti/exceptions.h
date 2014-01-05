@@ -117,6 +117,16 @@ extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context*
 /// Include: include-to-string-sig.txt
 hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Converts an exception into a null-terminated C string.
+///
+/// e: The exception to render.
+///
+/// \hlt_c.
+///
+/// Returns: A pointer to the native string. THe function passes ownership to
+/// the caller, who needs to call hlt_free() once done.
+char* hlt_exception_to_asciiz(hlt_exception* e, hlt_exception** excpt, hlt_execution_context* ctx);
+
 #define __hlt_stringify2(arg) #arg
 #define __hlt_stringify(arg) __hlt_stringify2(arg)
 

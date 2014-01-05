@@ -90,6 +90,18 @@ iBeginH(bytes, Length, "bytes.length")
     iOp1(optype::refBytes, true);
 iEndH
 
+iBeginH(bytes, Contains, "bytes.contains")
+    iTarget(optype::boolean);
+    iOp1(optype::refBytes, true);
+    iOp2(optype::refBytes, true);
+iEndH
+
+iBeginH(bytes, Find, "bytes.find")
+    iTarget(optype::iterBytes);
+    iOp1(optype::refBytes, true);
+    iOp2(optype::refBytes, true);
+iEndH
+
 iBeginH(bytes, Offset, "bytes.offset")
     iTarget(optype::iterBytes);
     iOp1(optype::refBytes, true);
@@ -111,10 +123,16 @@ iBeginH(bytes, Unfreeze, "bytes.unfreeze")
     iOp1(optype::refBytes, false);
 iEndH
 
-iBeginH(bytes, ToInt, "bytes.to_int")
+iBeginH(bytes, ToIntFromAscii, "bytes.to_int")
     iTarget(optype::int64);
     iOp1(optype::refBytes, true);
     iOp2(optype::int64, true);
+iEndH
+
+iBeginH(bytes, ToIntFromBinary, "bytes.to_int")
+    iTarget(optype::int64);
+    iOp1(optype::refBytes, true);
+    iOp2(optype::enum_, true);
 iEndH
 
 iBeginH(bytes, Lower, "bytes.lower")
@@ -129,7 +147,9 @@ iEndH
 
 iBeginH(bytes, Strip, "bytes.strip")
     iTarget(optype::refBytes)
-    iOp1(optype::refBytes, true);
+    iOp1(optype::refBytes, false);
+    iOp2(optype::optional(optype::enum_), true);
+    iOp3(optype::optional(optype::refBytes), true);
 iEndH
 
 iBeginH(bytes, StartsWith, "bytes.startswith")
@@ -148,6 +168,12 @@ iBeginH(bytes, Split, "bytes.split")
     iTarget(optype::refVector)
     iOp1(optype::refBytes, true);
     iOp2(optype::refBytes, true);
+iEndH
+
+iBeginH(bytes, Join, "bytes.join")
+    iTarget(optype::refBytes)
+    iOp1(optype::refBytes, true);
+    iOp2(optype::refList, true);
 iEndH
 
 iBeginH(iterBytes, Begin, "begin")

@@ -137,6 +137,36 @@ iBegin(time, Lt, "time.lt")
 
 iEnd
 
+iBegin(time, Leq, "time.leq")
+    iTarget(optype::boolean)
+    iOp1(optype::time, true)
+    iOp2(optype::time, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Returns True if the time represented by *op1* is earlier or the same than
+        *op2*.
+    )")
+
+iEnd
+
+iBegin(time, Geq, "time.geq")
+    iTarget(optype::boolean)
+    iOp1(optype::time, true)
+    iOp2(optype::time, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Returns True if the time represented by *op1* is later or the same than
+        *op2*.
+    )")
+
+iEnd
+
 iBegin(time, Nsecs, "time.nsecs")
     iTarget(optype::int64)
     iOp1(optype::time, true)
@@ -150,7 +180,20 @@ iBegin(time, Nsecs, "time.nsecs")
 
 iEnd
 
-iBegin(time, Sub, "time.sub")
+iBegin(time, SubTime, "time.sub")
+    iTarget(optype::interval)
+    iOp1(optype::time, true)
+    iOp2(optype::time, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Subtracts time *op2* from the time *op1*
+    )")
+iEnd
+
+iBegin(time, SubInterval, "time.sub")
     iTarget(optype::time)
     iOp1(optype::time, true)
     iOp2(optype::interval, true)
@@ -159,9 +202,8 @@ iBegin(time, Sub, "time.sub")
     }
 
     iDoc(R"(    
-        Subtracts interval *op2* to the time *op1*
+        Subtracts interval *op2* from the time *op1*
     )")
-
 iEnd
 
 iBegin(time, Wall, "time.wall")

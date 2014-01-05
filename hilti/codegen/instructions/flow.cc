@@ -35,6 +35,30 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnVoid* i)
     _doVoidReturn(this);
 }
 
+#if 0
+
+// Doesn't work:
+//
+// - if initial if statement doesn't trigger.
+// - it would hang in loops as it doesn't track which stmtms is has already seen.
+bool is_reachable(StatementBuilder* sbuilder, std::shared_ptr<Statement> s)
+{
+    if ( auto func = sbuilder->current<Function>() ) {
+        if ( func->body()->firstNonBlock() == s )
+            return true;
+    }
+
+    auto preds = sbuilder->cg()->hiltiModule()->cfg()->predecessors(s);
+
+    for ( auto p : preds ) {
+        if ( is_reachable(sbuilder, p) )
+            return true;
+    }
+
+    return false;
+}
+#endif
+
 void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
 {
     auto handler = cg()->topEndOfBlockHandler();
@@ -53,9 +77,23 @@ void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
     else {
         // TODO: We catch this error here; can we do that in the validator?
         auto func = current<declaration::Function>();
+        auto block = current<statement::Block>();
 
-        if ( func && ! ast::isA<type::Void>(func->function()->type()->result()->type()) ) {
-            fatalError(i, "function does not return a value");
+        auto rtype = func ? func->function()->type()->result()->type() : nullptr;
+
+        if ( func
+             && ! ast::isA<type::Void>(rtype) ) {
+
+#if 0
+            // Doesn't work currently, see above.
+            if ( is_reachable(this, i->sharedPtr<Statement>()) ) {
+                fatalError(i, ::util::fmt("function %s may finish without returning a value", func->function()->id()->pathAsString()));
+                return;
+            }
+#endif
+
+            // Return a dummy, we'll never get to this code.
+            cg()->llvmReturn(rtype, cg()->llvmConstNull(cg()->llvmType(rtype)), true);
             return;
         }
 

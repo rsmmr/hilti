@@ -1,0 +1,120 @@
+#! /usr/bin/env bash
+
+bro_addl="Hilti::optimize=F"
+
+function abspath
+{
+    (cd "$1" && pwd)
+}
+
+function run_one
+{
+    script=${BENCHMARKS}/$1
+	dir=${BENCHMARKS}/.tmp/$1
+	mkdir -p ${dir}
+	cd ${dir}
+
+    trace=$2
+
+    std_stdout=bro-std.stdout.log
+    std_stderr=bro-std.stderr.log
+
+    hlt_stdout=bro-hlt.stdout.log
+    hlt_stderr=bro-hlt.stderr.log
+
+    args="-bQ $script ${bro_addl}"
+
+    if [ "${trace}" == "" ]; then
+    	bro ${args} Hilti::compile_scripts=F 2>${std_stderr} | grep -v "^#" >${std_stdout}
+    	bro ${args} Hilti::compile_scripts=T 2>${hlt_stderr} | grep -v "^#" >${hlt_stdout}
+    else
+        if echo ${trace} | grep -q '\.gz$'; then
+           cmd=zcat
+        else
+           cmd=cat
+        fi
+
+        eval ${cmd} ${trace} | bro ${args} -r - Hilti::compile_scripts=F 2>${std_stderr} | grep -v "^#" >${std_stdout}
+        eval ${cmd} ${trace} | bro ${args} -r - Hilti::compile_scripts=T 2>${hlt_stderr} | grep -v "^#" >${hlt_stdout}
+    fi
+
+    if cmp -s ${std_stdout} ${hlt_stdout}; then
+	    output="(same output)"
+	else
+	    output="(WARNING: output differs)"
+	fi
+
+    time_processing_std=`cat ${std_stderr} | grep total-processing | awk '{print $3}' | cut -d "/" -f 1`
+    time_processing_hlt=`cat ${hlt_stderr} | grep total-processing | awk '{print $3}' | cut -d "/" -f 1`
+    time_processing_perc=`awk "BEGIN { if ( ${time_processing_hlt} ) print ${time_processing_std} / ${time_processing_hlt} * 100; }"`
+    fmt_time_processing_std=`printf "%.2fs" "${time_processing_std}"`
+    fmt_time_processing_hlt=`printf "%.2fs" "${time_processing_hlt}"`
+    fmt_time_processing_perc=`printf "%.2f%%"   "${time_processing_perc}"`
+
+    time_script_std=`cat ${std_stderr} | grep total-script | awk '{print $3}' | cut -d "/" -f 1`
+    time_script_hlt=`cat ${hlt_stderr} | grep total-script | awk '{print $3}' | cut -d "/" -f 1`
+    time_script_perc=`awk "BEGIN { if ( ${time_script_hlt} ) print ${time_script_std} / ${time_script_hlt} * 100; }"`
+    fmt_time_script_std=`printf "%.2fs" "${time_script_std}"`
+    fmt_time_script_hlt=`printf "%.2fs" "${time_script_hlt}"`
+    fmt_time_script_perc=`printf "%.2f%%"   "${time_script_perc}"`
+
+    time_protocols_std=`cat ${std_stderr} | grep total-protocols | awk '{print $3}' | cut -d "/" -f 1`
+    time_protocols_hlt=`cat ${hlt_stderr} | grep total-protocols | awk '{print $3}' | cut -d "/" -f 1`
+    time_protocols_perc=`awk "BEGIN { if ( ${time_protocols_hlt} ) print ${time_protocols_std} / ${time_protocols_hlt} * 100; }"`
+    fmt_time_protocols_std=`printf "%.2fs" "${time_protocols_std}"`
+    fmt_time_protocols_hlt=`printf "%.2fs" "${time_protocols_hlt}"`
+    fmt_time_protocols_perc=`printf "%.2f%%"   "${time_protocols_perc}"`
+
+    cycles_processing_std=`cat ${std_stderr} | grep total-processing | awk '{print $3}' | cut -d "/" -f 2`
+    cycles_processing_hlt=`cat ${hlt_stderr} | grep total-processing | awk '{print $3}' | cut -d "/" -f 2`
+    cycles_processing_perc=`awk "BEGIN { if ( ${cycles_processing_hlt} ) print ${cycles_processing_std} / ${cycles_processing_hlt} * 100; }"`
+    fmt_cycles_processing_std=`printf "%.2fs" "${cycles_processing_std}"`
+    fmt_cycles_processing_hlt=`printf "%.2fs" "${cycles_processing_hlt}"`
+    fmt_cycles_processing_perc=`printf "%.2f%%"   "${cycles_processing_perc}"`
+
+    cycles_script_std=`cat ${std_stderr} | grep total-script | awk '{print $3}' | cut -d "/" -f 2`
+    cycles_script_hlt=`cat ${hlt_stderr} | grep total-script | awk '{print $3}' | cut -d "/" -f 2`
+    cycles_script_perc=`awk "BEGIN { if ( ${cycles_script_hlt} ) print ${cycles_script_std} / ${cycles_script_hlt} * 100; }"`
+    fmt_cycles_script_std=`printf "%.2fs" "${cycles_script_std}"`
+    fmt_cycles_script_hlt=`printf "%.2fs" "${cycles_script_hlt}"`
+    fmt_cycles_script_perc=`printf "%.2f%%"   "${cycles_script_perc}"`
+
+    cycles_protocols_std=`cat ${std_stderr} | grep total-protocols | awk '{print $3}' | cut -d "/" -f 2`
+    cycles_protocols_hlt=`cat ${hlt_stderr} | grep total-protocols | awk '{print $3}' | cut -d "/" -f 2`
+    cycles_protocols_perc=`awk "BEGIN { if ( ${cycles_protocols_hlt} ) print ${cycles_protocols_std} / ${cycles_protocols_hlt} * 100; }"`
+    fmt_cycles_protocols_std=`printf "%.2fs" "${cycles_protocols_std}"`
+    fmt_cycles_protocols_hlt=`printf "%.2fs" "${cycles_protocols_hlt}"`
+    fmt_cycles_protocols_perc=`printf "%.2f%%"   "${cycles_protocols_perc}"`
+
+	printf '%20s %20s %20s   %20s %20s  %s\n' \
+        "`basename ${script}`" \
+        "${fmt_time_processing_std}/${fmt_time_script_std}/${fmt_time_protocols_std}" \
+        "${fmt_time_processing_hlt}/${fmt_time_script_hlt}/${fmt_time_protocols_hlt}" \
+        "${fmt_time_processing_perc}/${fmt_time_script_perc}/${fmt_time_protocols_perc}" \
+        "${fmt_cycles_processing_perc}/${fmt_cycles_script_perc}/${fmt_cycles_protocols_perc}" \
+        "${output}"
+}
+
+BASE=`dirname $0`/../..
+BASE=`abspath $BASE`
+
+BROBASE=`cat $BASE/build/CMakeCache.txt | grep BRO_DIST: | cut -d = -f 2`
+BROBASE=`abspath $BROBASE`
+
+BENCHMARKS=`dirname $0`
+BENCHMARKS=`abspath $BENCHMARKS`
+
+source $BROBASE/build/bro-path-dev.sh
+
+cd $BENCHMARKS
+
+echo "#"
+echo "# Legend: Total/Scripts/Protocols"
+echo "#"
+
+printf '%20s %20s %20s   %40s\n' \
+    "Test" "Bro-Std" "Bro-Hilti" "Speed-up (Time / Cycles)"
+
+run_one hello-world.bro
+run_one fibo.bro
+run_one conn-count.bro $BROBASE/testing/external/bro-testing/Traces/2009-M57-day11-18.trace.gz

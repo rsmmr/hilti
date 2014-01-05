@@ -41,6 +41,14 @@ public:
 	 */
 	shared_ptr<::hilti::Type> Compile(const ::BroType* type);
 
+	/**
+	 * Returns the HILTI type for a Bro function. This may be different
+	 * than what Compile() returns: while the Compile() returns how we
+	 * represent a variable of the function's type, this returns the type
+	 * of the function itself.
+	 */
+	shared_ptr<::hilti::type::Function> FunctionType(const ::FuncType* ftype);
+
 protected:
 	std::shared_ptr<::hilti::Type> CompileBaseType(const ::BroType* type);
 	std::shared_ptr<::hilti::Type> Compile(const ::EnumType* type);

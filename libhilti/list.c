@@ -186,6 +186,11 @@ hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_timer_mgr* tmgr, hlt_e
     return l;
 }
 
+const hlt_type_info* hlt_list_type(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return l->type;
+}
+
 void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! l->tmgr ) {
@@ -392,10 +397,8 @@ hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_
 {
     const hlt_list* l = *((const hlt_list**)obj);
 
-    if ( ! l ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! l )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
     hlt_string prefix = hlt_string_from_asciiz("[", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz("]", excpt, ctx);

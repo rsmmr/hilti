@@ -21,6 +21,9 @@ typedef struct __hlt_iterator_list __hlt_list_timer_cookie;
 // Creates a new list.
 extern hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Returns the type of list elements.
+extern const hlt_type_info* hlt_list_type(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Actives automatic expiration of list entries.
 // extern void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx);
 

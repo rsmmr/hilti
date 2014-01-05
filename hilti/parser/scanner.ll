@@ -79,6 +79,7 @@ enum                  return token::ENUM;
 exception             return token::EXCEPTION;
 export                return token::EXPORT;
 file                  return token::FILE;
+function              return token::FUNCTION;
 global                return token::GLOBAL;
 hook                  return token::HOOK;
 import                return token::IMPORT;
@@ -114,6 +115,7 @@ at                    return token::AT;
 for                   return token::FOR;
 in                    return token::IN;
 init                  return token::INIT;
+->                    return token::ARROW;
 
 False                 yylval->bval = 0; return token::CBOOL;
 Null                  return token::CNULL;

@@ -250,6 +250,11 @@ hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t o
     assert(type->type == HLT_TYPE_CHANNEL);
     assert(type->num_params == 2);
 
+    hlt_channel* channel = *((hlt_channel **)obj);
+
+    if ( ! channel )
+        return hlt_string_from_asciiz("(Null)", excpt, ctx);
+
     hlt_string prefix = hlt_string_from_asciiz("channel<", excpt, ctx);
     hlt_string separator = hlt_string_from_asciiz(",", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz(">", excpt, ctx);

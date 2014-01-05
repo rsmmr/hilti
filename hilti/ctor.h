@@ -182,8 +182,11 @@ public:
    ///
    /// elems: The elements for the instance being constructed.
    ///
+   /// def: If given a default value to return for unused indices.
+   ///
    /// l: An associated location.
-   Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l=Location::None);
+   Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems,
+       shared_ptr<Expression> def = nullptr, const Location& l=Location::None);
 
    /// Constructor.
    ///
@@ -202,6 +205,9 @@ public:
    /// wildcard type.
    shared_ptr<Type> type() const { return _type; }
 
+   /// Returns the map's default value, or null if none.
+   shared_ptr<Expression> default_() const { return _default; }
+
    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
    ACCEPT_VISITOR(Ctor);
@@ -209,6 +215,7 @@ public:
 private:
    node_ptr<Type> _type;
    element_list _elems;
+   node_ptr<Expression> _default;
 };
 
 /// AST node for a regexp constructor.

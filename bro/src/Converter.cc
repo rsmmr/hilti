@@ -10,6 +10,8 @@
 #include "Converter.h"
 #include "RuntimeInterface.h"
 #include "LocalReporter.h"
+#include "compiler/ConversionBuilder.h"
+#include "compiler/ModuleBuilder.h"
 
 using namespace bro::hilti;
 
@@ -51,15 +53,16 @@ void TypeConverter::CacheType(std::shared_ptr<::hilti::Type> type, std::shared_p
 	type_cache.insert(std::make_pair(cache_idx, std::make_pair(bro_type, type_idx)));
 	}
 
-ValueConverter::ValueConverter(::hilti::builder::ModuleBuilder* arg_mbuilder,
+ValueConverter::ValueConverter(compiler::ModuleBuilder* arg_mbuilder,
 			       TypeConverter* arg_type_converter)
 	{
 	mbuilder = arg_mbuilder;
 	type_converter = arg_type_converter;
 	}
 
-bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value, shared_ptr<::hilti::Expression> dst, std::shared_ptr<::binpac::Type> btype)
+bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value, shared_ptr<::hilti::Expression> dst, std::shared_ptr<::binpac::Type> btype, BroType* hint)
 	{
+	_bro_type_hints.push_back(hint);
 	setArg1(value);
 	setArg2(dst);
 	_arg3 = btype;
@@ -67,6 +70,7 @@ bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value, shared_ptr<:
 	bool success = processOne(value->type(), &set);
 	assert(set);
 	_arg3 = nullptr;
+	_bro_type_hints.pop_back();
 	return success;
 	}
 
@@ -186,6 +190,25 @@ void TypeConverter::visit(::hilti::type::Time* t)
 	auto result = base_type(TYPE_TIME);
 	setResult(result);
         }
+
+void TypeConverter::visit(::hilti::type::Tuple* t)
+	{
+	auto btype = ast::checkedCast<binpac::type::Tuple>(arg1());
+
+	auto tdecls = new ::type_decl_list;
+
+	auto i = 0;
+
+	for ( auto m : ::util::zip2(t->typeList(), btype->typeList()) )
+		{
+		auto name = ::util::fmt("f%d", i++);
+		auto td = new ::TypeDecl(Convert(m.first, m.second), copy_string(name.c_str()), 0, true);
+		tdecls->append(td);
+		}
+
+	auto result = new ::RecordType(tdecls);
+	setResult(result);
+	}
 
 void ValueConverter::visit(::hilti::type::Reference* b)
 	{
@@ -309,3 +332,24 @@ void ValueConverter::visit(::hilti::type::Time* t)
 				  ::hilti::builder::id::create("LibBro::h2b_time"), args);
 	setResult(true);
     }
+
+void ValueConverter::visit(::hilti::type::Tuple* t)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+	auto ttype = ast::checkedCast<binpac::type::Tuple>(arg3());
+
+	BroType* btype = nullptr;
+
+	if ( _bro_type_hints.back() )
+		btype = _bro_type_hints.back()->AsRecordType();
+
+	else
+		btype = type_converter->Convert(t->sharedPtr<::hilti::Type>(), ttype);
+
+	auto hval = mbuilder->RuntimeHiltiToVal(val, btype);
+	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, hval);
+
+	setResult(true);
+	}
+

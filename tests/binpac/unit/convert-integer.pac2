@@ -1,15 +1,17 @@
 #
-# @TEST-EXEC:  printf '\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05' | pac-driver-test %INPUT >output
+# @TEST-EXEC:  printf '\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\xb4\x92\x04\x00\xb4\x92\x04\x00' | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
-#
-# @TEST-KNOWN-FAILURE: Can't convert binary bytes to integers yet. See
-#                      parse-uint-bytes.pac2 for an alternative idea.
 
 module Mini;
 
 export type test = unit {
-       a: bytes &length=5 &convert=$$.as_int(BinPAC::ByteOrder::Little);
-       a: bytes &length=5 &convert=$$.as_int(BinPAC::ByteOrder::Network);
-       a: bytes &length=5 &convert=$$.as_uint(BinPAC::ByteOrder::Little);
-       a: bytes &length=5 &convert=$$.as_uint(BinPAC::ByteOrder::Network);
+       sl: bytes &length=5 &convert=$$.to_int(BinPAC::ByteOrder::Little);
+       sb: bytes &length=5 &convert=$$.to_int(BinPAC::ByteOrder::Network);
+       ul: bytes &length=5 &convert=$$.to_uint(BinPAC::ByteOrder::Little);
+       ub: bytes &length=5 &convert=$$.to_uint(BinPAC::ByteOrder::Network);
+       
+       a: uint32 &byteorder=BinPAC::ByteOrder::Little;
+       b: bytes &length=4 &convert=$$.to_uint(BinPAC::ByteOrder::Little);
+
+       on %done { print self; }
 };

@@ -1,6 +1,7 @@
 
 #include <Val.h>
 #include <RE.h>
+#include <Func.h>
 #undef List
 
 #include <hilti/hilti.h>
@@ -16,8 +17,111 @@ ValueBuilder::ValueBuilder(class ModuleBuilder* mbuilder)
 	{
 	}
 
-shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val)
+shared_ptr<::hilti::Expression> ValueBuilder::DefaultInitValue(const ::BroType* type)
 	{
+	auto htype = HiltiType(type);
+	auto rtype = ::ast::tryCast<::hilti::type::Reference>(htype);
+
+	switch ( type->Tag() )	{
+	case TYPE_TABLE:
+		{
+		if ( type->IsSet() )
+			{
+			auto stype = ::ast::checkedCast<::hilti::type::Set>(rtype->argType());
+			return ::hilti::builder::set::create(stype->argType(), {});
+			}
+
+		else
+			{
+			auto mtype = ::ast::checkedCast<::hilti::type::Map>(rtype->argType());
+			return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), {});
+			}
+		}
+
+	case TYPE_VECTOR:
+		{
+		auto vtype = ::ast::checkedCast<::hilti::type::Vector>(rtype->argType());
+		return ::hilti::builder::vector::create(vtype->argType(), {});
+		}
+
+	case TYPE_RECORD:
+		{
+		return ::hilti::builder::struct_::create({});
+		}
+
+	case TYPE_STRING:
+		return nullptr;
+
+	case TYPE_FILE:
+		return nullptr;
+
+	default:
+		// For non-reference types, HILTi's default should be right.
+		if ( ! rtype )
+			return nullptr;
+
+	Error(::util::fmt("ValueBuilder does not define a initialization value for type %s", ::type_name(type->Tag())), type);
+	}
+
+	// Cannot be reached.
+	assert(0);
+	return 0;
+	}
+
+shared_ptr<::hilti::Expression> ValueBuilder::TypeVal(const ::BroType* type)
+	{
+	// TODO: Unify with ConversionBuilder. We shouldn't really
+	// look up the type by name each time we need, but precompute
+	// and sotre in a global.
+	if ( ! type->GetTypeID() )
+		{
+		ODesc d;
+		type->Describe(&d);
+		Error(::util::fmt("ValueBuilder: type value without type id (%s)", d.Description()));
+		}
+
+	auto tmp = Builder()->addTmp("ttype", ::hilti::builder::type::byName("LibBro::BroType"));
+	auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type_as_val");
+	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(type->GetTypeID()) } );
+	Builder()->addInstruction(tmp, ::hilti::instruction::flow::CallResult, f, args);
+	return tmp;
+	}
+
+shared_ptr<::hilti::Expression> ValueBuilder::FunctionVal(const ::Func* func)
+	{
+	auto tmp = Builder()->addTmp("func", ::hilti::builder::type::byName("LibBro::BroVal"));
+	auto f = ::hilti::builder::id::create("LibBro::bro_lookup_id_as_val");
+	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(func->Name()) } );
+	Builder()->addInstruction(tmp, ::hilti::instruction::flow::CallResult, f, args);
+	return tmp;
+	}
+
+shared_ptr<::hilti::Expression> ValueBuilder::BroType(const ::BroType* type)
+	{
+	// TODO: Unify with ConversionBuilder. We shouldn't really
+	// look up the type by name each time we need, but precompute
+	// and sotre in a global.
+	if ( ! type->GetTypeID() )
+		{
+		ODesc d;
+		type->Describe(&d);
+		Error(::util::fmt("ValueBuilder: type value without type id (%s)", d.Description()));
+		}
+
+	auto tmp = Builder()->addLocal("ttype", ::hilti::builder::type::byName("LibBro::BroType"));
+	auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type");
+	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(type->GetTypeID()) } );
+	Builder()->addInstruction(tmp, ::hilti::instruction::flow::CallResult, f, args);
+	return tmp;
+	}
+
+shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, const ::BroType* target_type, bool init)
+	{
+	shared_ptr<::hilti::Expression> e = nullptr;
+
+	target_types.push_back(target_type);
+	is_init = init;
+
 	switch ( val->Type()->Tag() ) {
 	case TYPE_BOOL:
 	case TYPE_COUNT:
@@ -29,47 +133,82 @@ shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val)
 	case TYPE_INTERVAL:
 	case TYPE_TIME:
 	case TYPE_TYPE:
-		return CompileBaseVal(static_cast<const ::Val*>(val));
+		e = CompileBaseVal(static_cast<const ::Val*>(val));
+		break;
 
 	case TYPE_ADDR:
-		return Compile(static_cast<const ::AddrVal*>(val));
+		e = Compile(static_cast<const ::AddrVal*>(val));
+		break;
 
 	case TYPE_ENUM:
-		return Compile(static_cast<const ::EnumVal*>(val));
+		e = Compile(static_cast<const ::EnumVal*>(val));
+		break;
 
 	case TYPE_LIST:
-		return Compile(static_cast<const ::ListVal*>(val));
+		e = Compile(static_cast<const ::ListVal*>(val));
+		break;
 
 	case TYPE_OPAQUE:
-		return Compile(static_cast<const ::OpaqueVal*>(val));
+		e = Compile(static_cast<const ::OpaqueVal*>(val));
+		break;
 
 	case TYPE_PATTERN:
-		return Compile(static_cast<const ::PatternVal*>(val));
+		e = Compile(static_cast<const ::PatternVal*>(val));
+		break;
 
 	case TYPE_PORT:
-		return Compile(static_cast<const ::PortVal*>(val));
+		e = Compile(static_cast<const ::PortVal*>(val));
+		break;
 
 	case TYPE_RECORD:
-		return Compile(static_cast<const ::RecordVal*>(val));
+		e = Compile(static_cast<const ::RecordVal*>(val));
+		break;
 
 	case TYPE_STRING:
-		return Compile(static_cast<const ::StringVal*>(val));
+		e = Compile(static_cast<const ::StringVal*>(val));
+		break;
 
 	case TYPE_SUBNET:
-		return Compile(static_cast<const ::SubNetVal*>(val));
+		e = Compile(static_cast<const ::SubNetVal*>(val));
+		break;
 
 	case TYPE_TABLE:
-		return Compile(static_cast<const ::TableVal*>(val));
+		e = Compile(static_cast<const ::TableVal*>(val));
+		break;
 
 	case TYPE_VECTOR:
-		return Compile(static_cast<const ::VectorVal*>(val));
+		e = Compile(static_cast<const ::VectorVal*>(val));
+		break;
 
 	default:
 		Error(::util::fmt("unsupported value of type %s", ::type_name(val->Type()->Tag())));
 	}
 
-	// Cannot be reached.
-	return nullptr;
+	target_types.pop_back();
+
+	if ( target_type && target_type->Tag() == ::TYPE_ANY )
+		// Need to pass an actual Bro value.
+		e = RuntimeHiltiToVal(e, val->Type());
+
+	return e;
+	}
+
+const ::BroType* ValueBuilder::TargetType() const
+	{
+	if ( ! target_types.size() || ! target_types.back() )
+		{
+		Error("ValueBuilder::TargetType() used, but no target type set.");
+		return 0;
+		}
+
+	auto t = target_types.back();
+	assert(t);
+	return t;
+	}
+
+bool ValueBuilder::HasTargetType() const
+	{
+	return target_types.size() && target_types.back();
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* val)
@@ -92,10 +231,8 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* v
 		}
 
 	case TYPE_FUNC:
-		{
-		auto func = DeclareFunction(val->AsFunc());
-		return func;
-		}
+		DeclareFunction(val->AsFunc());
+		return HiltiBroVal(val->AsFunc());
 
 	case TYPE_INT:
 		return ::hilti::builder::integer::create(val->AsInt());
@@ -107,10 +244,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::CompileBaseVal(const ::Val* v
 		return ::hilti::builder::time::create(val->AsTime());
 
 	case TYPE_TYPE:
-		{
-		Error("no support yet for compiling Val of type TYPE_TYPE", val);
-		return nullptr;
-		}
+		return HiltiBroType(val->Type());
 
 	default:
 		Error("ValueBuilder: cannot be reached", val);
@@ -129,7 +263,8 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::EnumVal* val)
 	{
 	auto etype = HiltiType(val->Type());
 	auto label = val->Type()->AsEnumType()->Lookup(val->AsEnum());
-        auto id = ::hilti::builder::id::node(label);
+	auto name = ::util::strreplace(label, "::", "_");
+        auto id = ::hilti::builder::id::node(name);
 	return ::hilti::builder::enum_::create(id, etype);
         }
 
@@ -152,7 +287,12 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::OpaqueVal* va
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PatternVal* val)
 	{
 	// TODO: We don't convert the regexp dialect yet.
-	return ::hilti::builder::address::create(val->AsPattern()->PatternText());
+
+	// The anywhere pattern has the form "^?(.|\n)*(<real-stuff-here>)"
+	auto pt = std::string(val->AsPattern()->AnywherePatternText());
+	auto ps = pt.substr(10, pt.size() - 10 - 1);
+	auto p = ::hilti::builder::regexp::pattern(ps, "");
+	return ::hilti::builder::regexp::create(p);
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PortVal* val)
@@ -191,7 +331,10 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::RecordVal* va
 		auto f = val->Lookup(i);
 
 		if ( f )
-			elems.push_back(HiltiValue(f));
+			{
+			auto ftype = type->FieldType(i);
+			elems.push_back(HiltiValue(f, ftype));
+			}
 		else
 			elems.push_back(::hilti::builder::unset::create());
 		}
@@ -213,7 +356,42 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::SubNetVal* va
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val)
 	{
-	if ( val->Type()->IsSet() )
+	auto ttype = val->Type()->AsTableType();
+
+	if ( ttype->IsUnspecifiedTable() )
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+
+		if ( tt->IsSet() )
+			{
+			auto stype = ast::checkedCast<::hilti::type::Set>(rt->argType());
+			return ::hilti::builder::set::create(stype->argType(), {});
+			}
+
+		else
+			{
+			auto mtype = ast::checkedCast<::hilti::type::Map>(rt->argType());
+			return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), {});
+			}
+		}
+
+	shared_ptr<::hilti::Expression> def;
+
+	if ( Attr* def_attr = val->FindAttr(ATTR_DEFAULT) )
+		{
+		const ::Expr* expr = def_attr->AttrExpr();
+		const ::BroType* ytype = ttype->YieldType();
+		const ::BroType* dtype = expr->Type();
+
+		if ( dtype->Tag() == TYPE_RECORD && ytype->Tag() == TYPE_RECORD &&
+		     ! ::same_type(dtype, ytype) )
+			Error("no support yet for record_coercion in table &default", val);
+
+		def = HiltiExpression(expr, ytype);
+		}
+
+	if ( ttype->IsSet() )
 		{
 		::hilti::builder::set::element_list elems;
 
@@ -240,8 +418,9 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 			}
 
 		auto htype = HiltiType(val->Type());
-		auto stype = ::ast::checkedCast<::hilti::type::Reference>(htype);
-		return ::hilti::builder::set::create(true, stype->argType(), elems);
+		auto rtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
+		auto stype = ::ast::checkedCast<::hilti::type::Set>(rtype->argType());
+		return ::hilti::builder::set::create(stype->argType(), elems);
 		}
 
 	else
@@ -273,18 +452,27 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 			}
 
 		auto htype = HiltiType(val->Type());
-		auto mtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
-		return ::hilti::builder::map::create(mtype->argType(), elems);
+		auto rtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
+		auto mtype = ::ast::checkedCast<::hilti::type::Map>(rtype->argType());
+		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), elems, def);
 		}
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::VectorVal* val)
 	{
+	if ( val->Type()->AsVectorType()->IsUnspecifiedVector() )
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+		auto vtype = ast::checkedCast<::hilti::type::Vector>(rt->argType());
+		return ::hilti::builder::vector::create(vtype->argType(), {});
+		}
+
 	::hilti::builder::vector::element_list elems;
 
 	for ( int i = 0; i < val->Size(); i++ )
 		elems.push_back(HiltiValue(val->Lookup(i)));
 
-	auto vt = HiltiType(val->Type());
+	auto vt = HiltiType(val->Type()->AsVectorType()->YieldType());
 	return ::hilti::builder::vector::create(vt, elems);
 	}

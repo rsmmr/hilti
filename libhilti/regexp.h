@@ -45,6 +45,15 @@ typedef struct {
 /// Returns: The new Regexp instance.
 extern hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Instantiates a new Regexp instance. This version is for use from C and
+/// takes the flags directly rather than as type information.
+///
+/// flags: A bitmask of \c HLT_REGEXP_* flags.
+/// excpt: &
+///
+/// Returns: The new Regexp instance.
+extern hlt_regexp* hlt_regexp_new_flags(hlt_regexp_flags flags, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Instantiates a new Regexp instance by recompiling the patterns from
 /// another instance, potentially with new flags.
 ///

@@ -72,8 +72,8 @@ time. If you add ``print`` statements, they will generate the
 corresponding output as Bro processes input, which can be helpful for
 debugging.
 
-Analyzer Interface
-------------------
+Protocol Analyzer Interface
+---------------------------
 
 Next, we define a file ``ssh.evt`` that refers to the grammar to
 define a new Bro analyzer. An ``*.evt`` file has three parts: (1) an
@@ -246,6 +246,42 @@ making sure to give Bro our event handler ``ssh-banner.bro`` as well::
     SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp], F, 1.99, OpenSSH_3.9p1
     SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp], T, 2.0, OpenSSH_3.8.1p1
 
+File Analyzers
+--------------
+
+Writing a BinPAC++ file analyzer works pretty similar to a protocol
+analyzer. The main difference is indeed just that we need to tell Bro
+to use our BinPAC++ unit for parsing files rather than protocols. We
+do that via the ``*.evt`` file by defining a ``file analyzer`` section
+instead of a ``protocol analyzer``. Here's an example for a GZIP
+decoder:
+
+.. literalinclude:: /../bro/pac2/gzip.evt
+
+The ``parse with`` works the same as with a protocol: it specifies the
+top-level BinPAC++ unit to use. Instead of giving a well-known port to
+activate the analyzer automatically (as we do with protocols), we can
+associate a file analyzer with a MIME type. Now whenever some part of
+Bro finds data of that type, it will deploy our BinPAC++ analyzer to
+take it apart.
+
+Here's the main part of the corresponding grammar file ``gzip.pac2``
+(we skip the definition of the ``OS`` enum for brevity):
+
+.. literalinclude:: /../bro/pac2/gzip.pac2
+    :lines: 6-32
+
+For testing let's also provide an event handler in ``gzip-header.bro``:
+
+.. literalinclude:: /../bro/tests/pac2/gzip-header.bro
+    :lines: 6-9
+
+With that all in place, we can run Bro like this on a trace with a
+GZIP file transferred via HTTP::
+
+    # bro -r gzip-single-request.trace gzip.evt gzip-header.bro
+    7aNwGytV9k4, 8, 0, 1380302739.000000, 0, gzip::UNIX
+
 HILTI/BinPAC++ Options
 ----------------------
 
@@ -297,8 +333,12 @@ BinPAC++       Bro
 ``bool``       ``bool``
 ``bytes``      ``string``
 ``double``     ``double``
+``enum``       ``enum`` [1]
 ``int<*>``     ``int``
 ``string``     ``string``
+``time``       ``time``
 ``uint<*>``    ``count``
 ===========    ==========
+
+[1] A corresponding Bro ``enum`` type is created automatically.
 

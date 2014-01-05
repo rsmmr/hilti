@@ -97,19 +97,19 @@ void CodeBuilder::visit(expression::operator_::time::PlusInterval2* i)
 
 void CodeBuilder::visit(expression::operator_::time::Minus* i)
 {
-    auto result = builder()->addTmp("sum", hilti::builder::interval::type());
+    auto result = builder()->addTmp("sub", hilti::builder::interval::type());
     auto op1 = cg()->hiltiExpression(i->op1());
     auto op2 = cg()->hiltiExpression(i->op2());
-    cg()->builder()->addInstruction(result, hilti::instruction::time::Sub, op1, op2);
+    cg()->builder()->addInstruction(result, hilti::instruction::time::SubTime, op1, op2);
     setResult(result);
 }
 
 void CodeBuilder::visit(expression::operator_::time::MinusInterval* i)
 {
-    auto result = builder()->addTmp("sum", hilti::builder::time::type());
+    auto result = builder()->addTmp("sub", hilti::builder::time::type());
     auto op1 = cg()->hiltiExpression(i->op1());
     auto op2 = cg()->hiltiExpression(i->op2());
-    cg()->builder()->addInstruction(result, hilti::instruction::time::Sub, op1, op2);
+    cg()->builder()->addInstruction(result, hilti::instruction::time::SubInterval, op1, op2);
     setResult(result);
 }
 

@@ -1,0 +1,96 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<64> i64
+    local int<64> i64x
+    local int<32> i32
+    local int<32> i32x
+    local string s
+
+    i64 = 16909060
+    i32 = 16909060
+
+    s = call Hilti::fmt("| %x", (i64))
+    call Hilti::print (s)
+
+    i64x = int.to_host i64 Hilti::ByteOrder::Little
+    s = call Hilti::fmt("%x", (i64x))
+    call Hilti::print (s)
+
+    i64x = int.to_host i64 Hilti::ByteOrder::Big
+    s = call Hilti::fmt("%x", (i64x))
+    call Hilti::print (s)
+
+    i64x = int.to_host i64 Hilti::ByteOrder::Host
+    s = call Hilti::fmt("%x", (i64x))
+    call Hilti::print (s)
+
+    call Hilti::print ("-")
+    ####
+
+    i64x = int.from_host i64 Hilti::ByteOrder::Little
+    s = call Hilti::fmt("%x", (i64x))
+    call Hilti::print (s)
+
+    i64x = int.from_host i64 Hilti::ByteOrder::Big
+    s = call Hilti::fmt("%x", (i64x))
+    call Hilti::print (s)
+
+    i64x = int.from_host i64 Hilti::ByteOrder::Host
+    s = call Hilti::fmt("%x", (i64x))
+    call Hilti::print (s)
+
+    call Hilti::print ("-")
+    ####
+
+    i64x = int.flip i64
+    s = call Hilti::fmt("%x", (i64x))
+    call Hilti::print (s)
+
+    ####
+
+    call Hilti::print ("")
+    s = call Hilti::fmt("| %x", (i32))
+    call Hilti::print (s)
+
+    i32x = int.to_host i32 Hilti::ByteOrder::Little
+    s = call Hilti::fmt("%x", (i32x))
+    call Hilti::print (s)
+
+    i32x = int.to_host i32 Hilti::ByteOrder::Big
+    s = call Hilti::fmt("%x", (i32x))
+    call Hilti::print (s)
+
+    i32x = int.to_host i32 Hilti::ByteOrder::Host
+    s = call Hilti::fmt("%x", (i32x))
+    call Hilti::print (s)
+
+    call Hilti::print ("-")
+    ####
+
+    i32x = int.from_host i32 Hilti::ByteOrder::Little
+    s = call Hilti::fmt("%x", (i32x))
+    call Hilti::print (s)
+
+    i32x = int.from_host i32 Hilti::ByteOrder::Big
+    s = call Hilti::fmt("%x", (i32x))
+    call Hilti::print (s)
+
+    i32x = int.from_host i32 Hilti::ByteOrder::Host
+    s = call Hilti::fmt("%x", (i32x))
+    call Hilti::print (s)
+
+    call Hilti::print ("-")
+    ####
+
+    i32x = int.flip i32
+    s = call Hilti::fmt("%x", (i32x))
+    call Hilti::print (s)
+}

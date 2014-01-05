@@ -103,12 +103,13 @@ std::list<shared_ptr<hilti::Expression>> ctor::Set::flatten()
     return l;
 }
 
-ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l) : Ctor(l)
+ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, shared_ptr<Expression> def, const Location& l) : Ctor(l)
 {
     assert(ktype);
     assert(vtype);
 
     _elems = elems;
+    _default = def;
     _type = std::make_shared<type::Map>(ktype, vtype, l);
     _type = std::make_shared<type::Reference>(_type);
 
@@ -118,6 +119,7 @@ ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_lis
     }
 
     addChild(_type);
+    addChild(_default);
 }
 
 ctor::Map::Map(shared_ptr<Type> mtype, const element_list& elems, const Location& l)

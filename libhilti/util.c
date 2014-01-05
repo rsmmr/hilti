@@ -64,10 +64,12 @@ int hlt_util_number_of_cpus()
 
 void hlt_pthread_setcancelstate(int state, int *oldstate)
 {
-    if ( ! hlt_global_thread_mgr() )
+    hlt_thread_mgr* mgr = hlt_global_thread_mgr();
+
+    if ( ! mgr )
         return;
 
-    if ( hlt_global_thread_mgr()->state != HLT_THREAD_MGR_RUN )
+    if ( mgr->state != HLT_THREAD_MGR_RUN )
         pthread_setcancelstate(state, oldstate);
 }
 
@@ -78,7 +80,38 @@ size_t hlt_util_memory_usage()
     return (r.ru_maxrss * 1024);
 }
 
-static inline uint64_t _flip(uint64_t v)
+uint16_t hlt_flip16(uint16_t v)
+{
+    union {
+        uint32_t ui16;
+        unsigned char c[2];
+    } x;
+
+    char c;
+
+    x.ui16 = v;
+    c = x.c[0]; x.c[0] = x.c[1]; x.c[1] = c;
+
+    return x.ui16;
+}
+
+uint32_t hlt_flip32(uint32_t v)
+{
+    union {
+        uint32_t ui32;
+        unsigned char c[4];
+    } x;
+
+    char c;
+
+    x.ui32 = v;
+    c = x.c[0]; x.c[0] = x.c[3]; x.c[3] = c;
+    c = x.c[1]; x.c[1] = x.c[2]; x.c[2] = c;
+
+    return x.ui32;
+}
+
+uint64_t hlt_flip64(uint64_t v)
 {
     union {
         uint64_t ui64;
@@ -99,7 +132,7 @@ static inline uint64_t _flip(uint64_t v)
 uint64_t hlt_hton64(uint64_t v)
 {
 #if ! __BIG_ENDIAN__
-    return _flip(v);
+    return hlt_flip64(v);
 #else
     return v;
 #endif
@@ -118,7 +151,7 @@ uint16_t hlt_hton16(uint16_t v)
 uint64_t hlt_ntoh64(uint64_t v)
 {
 #if ! __BIG_ENDIAN__
-    return _flip(v);
+    return hlt_flip64(v);
 #else
     return v;
 #endif

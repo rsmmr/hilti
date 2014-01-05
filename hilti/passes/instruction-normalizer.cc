@@ -3,6 +3,7 @@
 #include "../module.h"
 #include "../scope.h"
 #include "hilti/autogen/instructions.h"
+#include "id-replacer.h"
 
 #include "instruction-normalizer.h"
 
@@ -98,7 +99,9 @@ void InstructionNormalizer::visit(statement::ForEach* s)
     shared_ptr<type::Reference> r = ast::as<type::Reference>(s->sequence()->type());
     shared_ptr<Type> t = r ? r->argType() : s->sequence()->type();
     auto iterable = ast::as<type::trait::Iterable>(t);
-    assert(iterable);
+
+    if ( ! iterable )
+        internalError(s, ::util::fmt("InstructionNormalizer/ForEach: %s is not iterable", t->render()));
 
     auto parent = s->firstParent<statement::Block>();
     assert(parent);
@@ -113,23 +116,32 @@ void InstructionNormalizer::visit(statement::ForEach* s)
 
     auto entry = _addBlock(nblock, "loop_entry");
     auto cond = _addBlock(nblock, "loop_cond");
+    auto deref = _addBlock(nblock, "loop_deref");
     auto body = _addBlock(nblock, "loop_body");
+    auto next = _addBlock(nblock, "loop_next");
     auto cont = _addBlock(nblock, "loop_end");
+
+    IDReplacer replacer;
+    replacer.run(s->body(), std::make_shared<ID>(statement::foreach::IDLoopBreak), cont.first->id());
+    replacer.run(s->body(), std::make_shared<ID>(statement::foreach::IDLoopNext), next.first->id());
 
     _addInstruction(entry.first, iter, instruction::operator_::Begin, s->sequence());
     _addInstruction(entry.first, end,  instruction::operator_::End, s->sequence());
     _addInstruction(entry.first, nullptr, instruction::flow::Jump, cond.second);
 
     _addInstruction(cond.first, cmp, instruction::operator_::Equal, iter, end);
-    _addInstruction(cond.first, nullptr, instruction::flow::IfElse, cmp, cont.second, body.second);
+    _addInstruction(cond.first, nullptr, instruction::flow::IfElse, cmp, cont.second, deref.second);
 
-    _addInstruction(body.first, var, instruction::operator_::Deref, iter);
+    _addInstruction(deref.first, var, instruction::operator_::Deref, iter);
+    _addInstruction(deref.first, nullptr, instruction::flow::Jump, body.second);
 
-    body.first->addStatement(s->body());
-    s->body()->scope()->setParent(body.first->scope());
+    auto b = s->body();
 
-    _addInstruction(body.first, iter, instruction::operator_::Incr, iter);
-    _addInstruction(body.first, nullptr, instruction::flow::Jump, cond.second);
+    body.first->addStatement(b);
+    b->scope()->setParent(body.first->scope());
+
+    _addInstruction(next.first, iter, instruction::operator_::Incr, iter);
+    _addInstruction(next.first, nullptr, instruction::flow::Jump, cond.second);
 
     s->replace(nblock);
 }

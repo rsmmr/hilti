@@ -338,17 +338,22 @@ Pac2_UDP_Analyzer::~Pac2_UDP_Analyzer()
 void Pac2_UDP_Analyzer::Init()
 	{
 	Analyzer::Init();
+	Pac2_Analyzer::Init();
 	}
 
 void Pac2_UDP_Analyzer::Done()
 	{
 	Analyzer::Done();
+	Pac2_Analyzer::Done();
 	}
 
 void Pac2_UDP_Analyzer::DeliverPacket(int len, const u_char* data, bool is_orig,
 				    int seq, const IP_Hdr* ip, int caplen)
 	{
 	Analyzer::DeliverPacket(len, data, is_orig, seq, ip, caplen);
+
+	FeedChunk(len, data, is_orig, true);
+	Done();
 	}
 
 void Pac2_UDP_Analyzer::Undelivered(int seq, int len, bool is_orig)

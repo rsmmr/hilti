@@ -57,7 +57,8 @@ iBegin(file, Open, "file.open")
         ~~Hilti::FileMode::Append; and (3) a string giveing the output
         character set for writing out strings. If *op3* is not given, the
         default is ``(Hilti::FileType::Text, Hilti::FileMode::Create,
-        "utf8")``.  Raises ~~IOError if there was a problem opening the file.
+        Hilti::Charset::UTF8)``.  Raises ~~IOError if there was a problem 
+        opening the file.
     )")
 
 iEnd

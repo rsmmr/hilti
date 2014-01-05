@@ -145,6 +145,20 @@ iBegin(double_, Gt, "double.gt")
 
 iEnd
 
+iBegin(double_, Geq, "double.geq")
+    iTarget(optype::boolean)
+    iOp1(optype::double_, true)
+    iOp2(optype::double_, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Returns true iff *op1* is greater or equal than *op2*.
+    )")
+
+iEnd
+
 iBegin(double_, Lt, "double.lt")
     iTarget(optype::boolean)
     iOp1(optype::double_, true)
@@ -156,7 +170,19 @@ iBegin(double_, Lt, "double.lt")
     iDoc(R"(    
         Returns true iff *op1* is less than *op2*.
     )")
+iEnd
 
+iBegin(double_, Leq, "double.leq")
+    iTarget(optype::boolean)
+    iOp1(optype::double_, true)
+    iOp2(optype::double_, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Returns true iff *op1* is less or equal than *op2*.
+    )")
 iEnd
 
 iBegin(double_, Mod, "double.mod")

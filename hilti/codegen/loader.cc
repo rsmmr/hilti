@@ -213,8 +213,11 @@ void Loader::visit(constant::Tuple* t)
 
 void Loader::visit(constant::Unset* t)
 {
-    // Just a dummy value.
-    setResult(cg()->llvmConstInt(0, 1), false, false);
+    if ( ast::tryCast<type::Unset>(t->type()) )
+        // Just a dummy value.
+        setResult(cg()->llvmConstInt(0, 1), false, false);
+    else
+        setResult(cg()->llvmInitVal(t->type()), false, false);
 }
 
 void Loader::visit(constant::Reference* r)
@@ -491,6 +494,12 @@ void Loader::visit(ctor::Map* c)
         auto v = e.second->coerceTo(vtype);
         CodeGen::expr_list args = { mapop, k, v };
         cg()->llvmCall("hlt::map_insert", args);
+    }
+
+    if ( c->default_() ) {
+        auto def = c->default_()->coerceTo(vtype);
+        args = {mapop, def};
+        cg()->llvmCall("hlt::map_default", args);
     }
 
     setResult(map, true, false);
