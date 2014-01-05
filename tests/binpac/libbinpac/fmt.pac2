@@ -3,6 +3,7 @@
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
+# @TEST-KNOWN-FAILURE: formatting of just one element does not seem to work.
 
 module Test;
 
@@ -17,3 +18,8 @@ s = BinPAC::fmt ("string: %s %d %f", ("Foo", 42, 1.2));
 print b;
 print s;
 
+b = BinPAC::fmt (b"bytes: %d", (42));
+s = BinPAC::fmt ("string: %d", (42));
+
+print b;
+print s;
