@@ -18,163 +18,163 @@ void run()
   local string addl
   
   
-      # pred: { <none> } succ: { [0086] }
+      # pred: { <none> } succ: { [0098] }
       # def: { run%l.2 } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { run%l.2 }
       # now-dead: { <none> }
-      [0085] l = assign list<int<32>>(1, 2, 3, 4, 5)
-      # pred: { [0085] } succ: { [0115] }
+      [0097] l = assign list<int<32>>(1, 2, 3, 4, 5)
+      # pred: { [0097] } succ: { [0099] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%l.2 } live-out: { run%l.2 }
       # now-dead: { <none> }
-      [0086] call Hilti::print ("A", True)
-      # pred: { [0086] } succ: { [0087] }
+      [0098] call Hilti::print ("A", True)
+      # pred: { [0098] } succ: { [0100] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%l.2 } live-out: { run%l.2 }
       # now-dead: { <none> }
-      [0115] jump @__loop_entry_2
+      [0099] jump @__loop_entry_2
   
   @__loop_entry_2:
-      # pred: { [0115] } succ: { [0088] }
+      # pred: { [0099] } succ: { [0101] }
       # def: { run%__iter_2.2 } clear: { <none> } mod: { run%l.2 } read: { <none> }
       # live-in: { run%l.2 } live-out: { run%__iter_2.2, run%l.2 }
       # now-dead: { <none> }
-      [0087] __iter_2 = begin l
-      # pred: { [0087] } succ: { [0089] }
+      [0100] __iter_2 = begin l
+      # pred: { [0100] } succ: { [0102] }
       # def: { run%__end_2.2 } clear: { <none> } mod: { run%l.2 } read: { <none> }
       # live-in: { run%__iter_2.2, run%l.2 } live-out: { run%__end_2.2, run%__iter_2.2, run%l.2 }
       # now-dead: { <none> }
-      [0088] __end_2 = end l
-      # pred: { [0088] } succ: { [0090] }
+      [0101] __end_2 = end l
+      # pred: { [0101] } succ: { [0104] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%__end_2.2, run%__iter_2.2, run%l.2 } live-out: { run%__end_2.2, run%__iter_2.2, run%l.2 }
       # now-dead: { <none> }
-      [0089] jump @__loop_cond_2
+      [0102] jump @__loop_cond_2
   
   @__loop_cond_2:
-      # pred: { [0089], [0107] } succ: { [0091] }
+      # pred: { [0102], [0129] } succ: { [0105] }
       # def: { run%__cmp_2.2 } clear: { <none> } mod: { run%__end_2.2, run%__iter_2.2 } read: { <none> }
       # live-in: { run%__end_2.2, run%__iter_2.2, run%l.2 } live-out: { run%__cmp_2.2, run%__end_2.2, run%__iter_2.2, run%l.2 }
       # now-dead: { <none> }
-      [0090] __cmp_2 = equal __iter_2 __end_2
-      # pred: { [0090] } succ: { [0092], [0109] }
+      [0104] __cmp_2 = equal __iter_2 __end_2
+      # pred: { [0104] } succ: { [0107], [0132] }
       # def: { <none> } clear: { <none> } mod: { run%__cmp_2.2 } read: { <none> }
       # live-in: { run%__cmp_2.2, run%__end_2.2, run%__iter_2.2, run%l.2 } live-out: { run%__end_2.2, run%__iter_2.2, run%l.2 }
       # now-dead: { run%__cmp_2.2 }
-      [0091] if.else __cmp_2 @__loop_end_2 @__loop_deref_2
+      [0105] if.else __cmp_2 @__loop_end_2 @__loop_deref_2
   
   @__loop_deref_2:
-      # pred: { [0091] } succ: { [0093] }
+      # pred: { [0105] } succ: { [0108] }
       # def: { run%x.2 } clear: { <none> } mod: { run%__iter_2.2 } read: { <none> }
       # live-in: { run%__end_2.2, run%__iter_2.2, run%l.2 } live-out: { run%__end_2.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { <none> }
-      [0092] x = deref __iter_2
-      # pred: { [0092] } succ: { [0094] }
+      [0107] x = deref __iter_2
+      # pred: { [0107] } succ: { [0110] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%__end_2.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__end_2.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { <none> }
-      [0093] jump @__loop_body_2
+      [0108] jump @__loop_body_2
   
   @__loop_body_2:
-      # pred: { [0093] } succ: { [0095] }
+      # pred: { [0108] } succ: { [0111] }
       # def: { run%__iter_1.2 } clear: { <none> } mod: { run%l.2 } read: { <none> }
       # live-in: { run%__end_2.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { <none> }
-      [0094] __iter_1 = begin l
-      # pred: { [0094] } succ: { [0096] }
+      [0110] __iter_1 = begin l
+      # pred: { [0110] } succ: { [0112] }
       # def: { run%__end_1.2 } clear: { <none> } mod: { run%l.2 } read: { <none> }
       # live-in: { run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { <none> }
-      [0095] __end_1 = end l
-      # pred: { [0095] } succ: { [0097] }
+      [0111] __end_1 = end l
+      # pred: { [0111] } succ: { [0114] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { <none> }
-      [0096] jump @__loop_cond_1
+      [0112] jump @__loop_cond_1
   
   @__loop_cond_1:
-      # pred: { [0096], [0104] } succ: { [0098] }
+      # pred: { [0112], [0124] } succ: { [0115] }
       # def: { run%__cmp_1.2 } clear: { <none> } mod: { run%__end_1.2, run%__iter_1.2 } read: { <none> }
       # live-in: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__cmp_1.2, run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { <none> }
-      [0097] __cmp_1 = equal __iter_1 __end_1
-      # pred: { [0097] } succ: { [0099], [0117] }
+      [0114] __cmp_1 = equal __iter_1 __end_1
+      # pred: { [0114] } succ: { [0117], [0127] }
       # def: { <none> } clear: { <none> } mod: { run%__cmp_1.2 } read: { <none> }
       # live-in: { run%__cmp_1.2, run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { run%__cmp_1.2 }
-      [0098] if.else __cmp_1 @__loop_end_1 @__loop_deref_1
+      [0115] if.else __cmp_1 @__loop_end_1 @__loop_deref_1
   
   @__loop_deref_1:
-      # pred: { [0098] } succ: { [0100] }
+      # pred: { [0115] } succ: { [0118] }
       # def: { run%y.2 } clear: { <none> } mod: { run%__iter_1.2 } read: { <none> }
       # live-in: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2, run%y.2 }
       # now-dead: { <none> }
-      [0099] y = deref __iter_1
-      # pred: { [0099] } succ: { [0101] }
+      [0117] y = deref __iter_1
+      # pred: { [0117] } succ: { [0120] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2, run%y.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2, run%y.2 }
       # now-dead: { <none> }
-      [0100] jump @__loop_body_1
+      [0118] jump @__loop_body_1
   
   @__loop_body_1:
-      # pred: { [0100] } succ: { [0102] }
+      # pred: { [0118] } succ: { [0121] }
       # def: { run%s.2 } clear: { <none> } mod: { run%x.2, run%y.2 } read: { <none> }
       # live-in: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2, run%y.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%s.2, run%x.2 }
       # now-dead: { run%y.2 }
-      [0101] s = call Hilti::fmt ("%d %d", (x, y))
-      # pred: { [0101] } succ: { [0116] }
+      [0120] s = call Hilti::fmt ("%d %d", (x, y))
+      # pred: { [0120] } succ: { [0122] }
       # def: { <none> } clear: { <none> } mod: { run%s.2 } read: { <none> }
       # live-in: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%s.2, run%x.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { run%s.2 }
-      [0102] call Hilti::print (s)
-      # pred: { [0102] } succ: { [0103] }
+      [0121] call Hilti::print (s)
+      # pred: { [0121] } succ: { [0123] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { <none> }
-      [0116] jump @__loop_next_1
+      [0122] jump @__loop_next_1
   
   @__loop_next_1:
-      # pred: { [0116] } succ: { [0104] }
+      # pred: { [0122] } succ: { [0124] }
       # def: { run%__iter_1.2 } clear: { <none> } mod: { run%__iter_1.2 } read: { <none> }
       # live-in: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { <none> }
-      [0103] __iter_1 = incr __iter_1
-      # pred: { [0103] } succ: { [0097] }
+      [0123] __iter_1 = incr __iter_1
+      # pred: { [0123] } succ: { [0114] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 } live-out: { run%__end_1.2, run%__end_2.2, run%__iter_1.2, run%__iter_2.2, run%l.2, run%x.2 }
       # now-dead: { <none> }
-      [0104] jump @__loop_cond_1
+      [0124] jump @__loop_cond_1
   
   @__loop_end_1:
-      # pred: { [0098] } succ: { [0106] }
+      # pred: { [0115] } succ: { [0128] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%__end_2.2, run%__iter_2.2, run%l.2 } live-out: { run%__end_2.2, run%__iter_2.2, run%l.2 }
       # now-dead: { run%__end_1.2, run%__iter_1.2, run%x.2 }
-      [0117] jump @__loop_next_2
+      [0127] jump @__loop_next_2
   
   @__loop_next_2:
-      # pred: { [0117] } succ: { [0107] }
+      # pred: { [0127] } succ: { [0129] }
       # def: { run%__iter_2.2 } clear: { <none> } mod: { run%__iter_2.2 } read: { <none> }
       # live-in: { run%__end_2.2, run%__iter_2.2, run%l.2 } live-out: { run%__end_2.2, run%__iter_2.2, run%l.2 }
       # now-dead: { <none> }
-      [0106] __iter_2 = incr __iter_2
-      # pred: { [0106] } succ: { [0090] }
+      [0128] __iter_2 = incr __iter_2
+      # pred: { [0128] } succ: { [0104] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%__end_2.2, run%__iter_2.2, run%l.2 } live-out: { run%__end_2.2, run%__iter_2.2, run%l.2 }
       # now-dead: { <none> }
-      [0107] jump @__loop_cond_2
+      [0129] jump @__loop_cond_2
   
   @__loop_end_2:
-      # pred: { [0091] } succ: { [0110] }
+      # pred: { [0105] } succ: { [0133] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
       # now-dead: { run%__end_2.2, run%__iter_2.2, run%l.2 }
-      [0109] call Hilti::print ("B", True)
-      # pred: { [0109] } succ: { <none> }
+      [0132] call Hilti::print ("B", True)
+      # pred: { [0132] } succ: { <none> }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
       # now-dead: { <none> }
-      [0110] return.void
+      [0133] return.void
   
 }
 
@@ -184,5 +184,5 @@ void run()
   # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
   # live-in: { <none> } live-out: { <none> }
   # now-dead: { <none> }
-  [0118] block.end
+  [0136] block.end
 

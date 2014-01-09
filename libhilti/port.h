@@ -9,6 +9,7 @@
 
 static const uint8_t HLT_PORT_TCP = 1;
 static const uint8_t HLT_PORT_UDP = 2;
+static const uint8_t HLT_PORT_ICMP = 3;
 
 typedef struct __hlt_port hlt_port;
 

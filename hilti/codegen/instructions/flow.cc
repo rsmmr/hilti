@@ -104,8 +104,9 @@ void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
 
 void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call)
 {
-    auto expr = ast::as<expression::Constant>(args);
-    auto ftype = ast::as<type::Function>(func->type());
+    auto rtype = ast::tryCast<type::Reference>(func->type());
+    auto ftype = ast::checkedCast<type::Function>(rtype ? rtype->argType() : func->type());
+    auto expr = ast::checkedCast<expression::Constant>(args);
     auto params = ftype->parameters();
     auto p = params.begin();
 
@@ -140,7 +141,10 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
     // Add default values.
     while ( p != params.end() ) {
         auto def = (*p++)->default_();
-        assert(def);
+
+        if ( ! def )
+            break;
+
         call_params->push_back(def);
     }
 
@@ -172,6 +176,9 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
 
     auto var = ast::checkedCast<expression::Variable>(i->target());
 
+    if ( ast::isA<type::Any>(ftype->result()->type()) )
+        result = cg()->builder()->CreateBitCast(result, cg()->llvmType(i->target()->type()));
+
     if ( (! ast::isA<variable::Local>(var->variable())) ||
         cg()->hiltiModule()->liveness()->liveOut(i->sharedPtr<Statement>(), i->target()) )
         cg()->llvmStore(i->target(), result, false);
@@ -188,20 +195,28 @@ void StatementBuilder::visit(statement::instruction::flow::CallCallableVoid* i)
 {
     auto ctype = ast::as<type::Callable>(referencedType(i->op1()));
 
-    CodeGen::expr_list params;
     auto op1 = cg()->llvmValue(i->op1());
 
-    cg()->llvmCallableRun(ctype, op1);
+    CodeGen::expr_list params;
+
+    if ( i->op2() )
+        prepareCall(i->op1(), i->op2(), &params, true);
+
+    cg()->llvmCallableRun(ctype, op1, params);
 }
 
 void StatementBuilder::visit(statement::instruction::flow::CallCallableResult* i)
 {
     auto ctype = ast::as<type::Callable>(referencedType(i->op1()));
 
-    CodeGen::expr_list params;
     auto op1 = cg()->llvmValue(i->op1());
 
-    auto result = cg()->llvmCallableRun(ctype, op1);
+    CodeGen::expr_list params;
+
+    if ( i->op2() )
+        prepareCall(i->op1(), i->op2(), &params, true);
+
+    auto result = cg()->llvmCallableRun(ctype, op1, params);
 
     cg()->llvmStore(i->target(), result);
 }

@@ -158,3 +158,39 @@ ctor::RegExp::RegExp(const pattern_list& patterns, const Location& l)
     _type = std::make_shared<type::Reference>(_type);
     addChild(_type);
 }
+
+ctor::Callable::Callable(shared_ptr<hilti::type::function::Result> result, const type::function::parameter_list& params, shared_ptr<Expression> function, const argument_list& args, const Location& l)
+{
+    _type = std::make_shared<type::Callable>(result, params);
+    _type = std::make_shared<type::Reference>(_type);
+    _function = function;
+
+    for ( auto a : args )
+        _args.push_back(a);
+
+    addChild(_type);
+    addChild(_function);
+
+    for ( auto a : _args )
+        addChild(a);
+}
+
+std::list<shared_ptr<Expression>> ctor::Callable::arguments() const
+{
+    std::list<shared_ptr<Expression>> args;
+
+    for ( auto a : _args )
+        args.push_back(a);
+
+    return args;
+}
+
+const shared_ptr<Expression> ctor::Callable::function() const
+{
+    return _function;
+}
+
+shared_ptr<Type> ctor::Callable::type() const
+{
+    return _type;
+}

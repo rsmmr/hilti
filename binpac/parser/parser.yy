@@ -459,7 +459,7 @@ bitfield      : BITFIELD '(' CINTEGER ')' '{' bitfield_bits '}'
                                                    $$ = itype;
                                                  }
 
-bitfield_bits:  bitfield_bits_spec bitfield_bits { $$ = $2; $$.push_back($1); }
+bitfield_bits:  bitfield_bits_spec bitfield_bits { $$ = $2; $$.push_front($1); }
               | /* empty */                      { $$ = type::Integer::bits_list(); }
 
 bitfield_bits_spec

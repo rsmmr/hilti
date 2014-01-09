@@ -54,7 +54,7 @@ public:
 
     /// Returns a readable representation of the production, suitable to
     /// include in error message and debugging output.
-    string render() const;
+    string render() override;
 
     /// Returns true if this production does not recursively contain other
     /// instructions.

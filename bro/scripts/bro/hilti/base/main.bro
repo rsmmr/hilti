@@ -48,6 +48,11 @@ export {
 
 	## Activate the Bro script compiler.
 	const compile_scripts = F &redef;
+
+	## If we're compiling scripts, interface the BinPAC++ directly 
+	## with the compiled events (rather than queuening them through Bro's
+	## core.) 
+	const pac2_to_compiler = T &redef;
 }
 
 

@@ -1,5 +1,5 @@
 //
-// @TEST-EXEC: ${CXX} -g -O0 -o a.out %INPUT `${HILTI_CONFIG} --compiler --runtime --cxxflags --ldflags --libs` -lhilti-jit 
+// @TEST-EXEC: ${CXX} -g -O0 -o a.out %INPUT `${HILTI_CONFIG} --compiler --runtime --cxxflags --ldflags --libs` -lhilti-jit
 // @TEST-EXEC: ./a.out >output
 // @TEST-EXEC: btest-diff output
 //
@@ -17,7 +17,8 @@ int main(int argc, char** argv)
 {
     hilti::init();
 
-    hilti::Options options;
+    auto options = std::make_shared<hilti::Options>();
+    options->jit = true;
     shared_ptr<hilti::CompilerContext> ctx = std::make_shared<hilti::CompilerContext>(options);
     auto m = std::make_shared<hilti::builder::ModuleBuilder>(ctx, "Main");
 

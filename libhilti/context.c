@@ -8,6 +8,7 @@
 #include "exceptions.h"
 #include "config.h"
 #include "profiler.h"
+#include "linker.h"
 
 void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
 {

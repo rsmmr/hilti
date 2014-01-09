@@ -5,7 +5,7 @@
 
 MESSAGE(STATUS "Adapting compiler settings")
 
-set(clang_debug_flags    "-DDEBUG -D_DEBUG -Wno-error=unused-function -Werror -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+set(clang_debug_flags    "-DDEBUG -D_DEBUG -Wall -Wno-error=unused-function -Werror -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 set(clang_release_flags  "-DNDEBUG -O3")
 
 set(clang_cflags_Linux               "")

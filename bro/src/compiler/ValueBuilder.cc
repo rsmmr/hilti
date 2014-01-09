@@ -2,7 +2,9 @@
 #include <Val.h>
 #include <RE.h>
 #include <Func.h>
+#include "ASTDumper.h"
 #undef List
+
 
 #include <hilti/hilti.h>
 #include <util/util.h>
@@ -310,11 +312,12 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PortVal* val)
 
 
 	case ::TRANSPORT_ICMP:
-		Error("no support yet for compiling PortVals of ICMP type", val);
+		proto = ::hilti::constant::PortVal::ICMP;
 		break;
 
 	default:
 		InternalError("unexpected port type in ValueBuilder::Compile");
+        
 	}
 
 	return ::hilti::builder::port::create(val->Port(), proto);
@@ -374,21 +377,6 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 			auto mtype = ast::checkedCast<::hilti::type::Map>(rt->argType());
 			return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), {});
 			}
-		}
-
-	shared_ptr<::hilti::Expression> def;
-
-	if ( Attr* def_attr = val->FindAttr(ATTR_DEFAULT) )
-		{
-		const ::Expr* expr = def_attr->AttrExpr();
-		const ::BroType* ytype = ttype->YieldType();
-		const ::BroType* dtype = expr->Type();
-
-		if ( dtype->Tag() == TYPE_RECORD && ytype->Tag() == TYPE_RECORD &&
-		     ! ::same_type(dtype, ytype) )
-			Error("no support yet for record_coercion in table &default", val);
-
-		def = HiltiExpression(expr, ytype);
 		}
 
 	if ( ttype->IsSet() )
@@ -454,13 +442,50 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::TableVal* val
 		auto htype = HiltiType(val->Type());
 		auto rtype = ::ast::checkedCast<::hilti::type::Reference>(htype);
 		auto mtype = ::ast::checkedCast<::hilti::type::Map>(rtype->argType());
+
+
+		shared_ptr<::hilti::Expression> def;
+
+		if ( Attr* def_attr = val->FindAttr(ATTR_DEFAULT) )
+			{
+			const ::Expr* expr = def_attr->AttrExpr();
+			const ::BroType* ytype = ttype->YieldType();
+			const ::BroType* dtype = expr->Type();
+
+			if ( dtype->Tag() == TYPE_RECORD && ytype->Tag() == TYPE_RECORD &&
+			     ! ::same_type(dtype, ytype) )
+				Error("no support yet for record_coercion in table &default", val);
+
+			if ( dtype->Tag() != TYPE_FUNC )
+				def = HiltiExpression(expr, ytype);
+			else
+				{
+				auto m = BroExprToFunc(expr);
+
+				if ( m.first && m.second )
+					{
+					auto hilti_func = DeclareFunction(m.second);
+					def = ::hilti::builder::callable::create(mtype->valueType(),
+										 { mtype->keyType() },
+										 hilti_func,
+										 {});
+					}
+
+				else
+					Error("no support for non-const table default functions");
+				}
+			}
+
 		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), elems, def);
 		}
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::VectorVal* val)
 	{
-	if ( val->Type()->AsVectorType()->IsUnspecifiedVector() )
+	auto vtype = val->Type()->AsVectorType();
+	auto ytype = val->Type()->AsVectorType()->YieldType();
+
+	if ( vtype->IsUnspecifiedVector() )
 		{
 		auto tt = TargetType();
 		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
@@ -471,8 +496,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::VectorVal* va
 	::hilti::builder::vector::element_list elems;
 
 	for ( int i = 0; i < val->Size(); i++ )
-		elems.push_back(HiltiValue(val->Lookup(i)));
+		elems.push_back(HiltiValue(val->Lookup(i), ytype));
 
-	auto vt = HiltiType(val->Type()->AsVectorType()->YieldType());
-	return ::hilti::builder::vector::create(vt, elems);
+	return ::hilti::builder::vector::create(HiltiType(ytype), elems);
 	}

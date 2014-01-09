@@ -28,7 +28,7 @@ class ABI;
 
 namespace util { class IRInserter; }
 
-class TypeInfo;
+struct TypeInfo;
 
 /// Namespace for the name of symbols generated/examined by code generator
 /// and linker.
@@ -243,6 +243,9 @@ public:
    /// takes module names into a account by adding either the module given as
    /// prefix, or the current module if not given.
    string mangleGlobal(shared_ptr<ID> id, shared_ptr<Module> mod = nullptr, string prefix = "", bool internal = false);
+
+   /// XXXX
+   string scopedNameGlobal(Variable* var) const;
 
    /// Returns the builder associated with a block label. This first this is
    /// called for a given pair label/function, a new builder is created and
@@ -1088,8 +1091,10 @@ public:
    ///
    /// c: A pointer to the callable.
    ///
+   /// args: The (non-bound) arguments to the callable.
+   ///
    /// Returns: The return value for callables that have, or null for ones without.
-   llvm::Value* llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable);
+   llvm::Value* llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable, const expr_list args);
 
    /// Calls a HILTI function inside a newly created fiber. If the fiber
    /// throws an exception, that will be set in the current context,
@@ -1589,6 +1594,12 @@ public:
 
    /// Decreases the indentation level for debugging output.
    void llvmDebugPopIndent();
+
+   /// Prints a string to stderr at runtime.
+   void llvmDebugPrintString(const string& str);
+
+   /// Prints a pointer to stderr at runtime, prefixed with an additional string.
+   void llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr);
 
    /// A case for llvmSwitch().
    struct SwitchCase {
@@ -2133,6 +2144,15 @@ public:
    /// arg: The argument for the update.
    void llvmProfilerUpdate(const string& tag, int64_t arg);
 
+   /// XXX
+   void prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call);
+
+   // XXX
+   string linkerModuleIdentifier() const;
+
+   // XXX
+   static string linkerModuleIdentifierStatic(llvm::Module* module);
+
    /// Returns the name of an LLVM module. This first looks for corresponding
    /// meta-data that the code generator inserts and returns that if found,
    /// and the standard LLVM module name otherwise. The meta data is helpful
@@ -2202,7 +2222,7 @@ private:
 
    // Helpers for llvmCallableBind() that builds the hlt.callable.func
    // object.
-   llvm::Value* llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name);
+   llvm::Value* llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name, const type::function::parameter_list& unbound_args);
 
    // Helper for calling hlt_string_from_data().
    llvm::Value* llvmStringFromData(const string& s);

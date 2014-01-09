@@ -93,6 +93,7 @@ protected:
    std::ostream& output() const { return _output; }
 
    void visit(type::Enum* c) override;
+   void visit(type::Callable* c) override;
    void visit(declaration::Function* f) override;
    void visit(declaration::Type* t) override;
 

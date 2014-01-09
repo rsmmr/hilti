@@ -12,19 +12,6 @@ static string _statementName(Statement* stmt)
     return util::fmt("[%0.4lu]", stmt->number());
 }
 
-static string _blockName(Statement* stmt)
-{
-    auto b = ast::tryCast<statement::Block>(stmt);
-
-    if ( ! b )
-        return "<non-block-stmt>";
-
-    if ( b->id() )
-        return b->id()->pathAsString();
-
-    return util::fmt("<anonymous block %p / %s>", stmt, _statementName(stmt));
-}
-
 Printer::Printer(std::ostream& out, bool single_line, bool cfg)
     : ast::passes::Printer<AstInfo>(out, single_line)
 {
@@ -103,6 +90,7 @@ void Printer::printFlow(Statement* stmt, const string& prefix)
 void Printer::visit(Module* m)
 {
     setPrintOriginalIDs(false);
+
     _module = m;
 
     Printer& p = *this;
@@ -321,6 +309,7 @@ void Printer::visit(expression::Ctor* e)
 void Printer::visit(expression::ID* i)
 {
     Printer& p = *this;
+
     p << scopedID(&p, i, i->id());
 }
 
@@ -502,7 +491,7 @@ void Printer::visit(type::function::Result* r)
     p << r->type();
 }
 
-void Printer::visit(type::Function * t)
+void Printer::visit(type::HiltiFunction * t)
 {
     Printer& p = *this;
 
@@ -513,6 +502,10 @@ void Printer::visit(type::Function * t)
 
      case type::function::C:
         p << "\"C\" ";
+        break;
+
+     case type::function::CALLABLE:
+        p << "\"CALLABLE\" ";
         break;
 
      case type::function::HILTI:
@@ -602,10 +595,17 @@ void Printer::visit(type::Bool* b)
 
 void Printer::visit(type::Reference* t)
 {
+    Printer& p = *this;
+
+#if 0
+    if ( t->argType()->id() ) {
+        p << "ref<" << t->argType()->render() << ">";
+        return;
+    }
+#endif
+
     if ( printTypeID(this, t) )
         return;
-
-    Printer& p = *this;
 
     enableTypeIDs();
 
@@ -827,10 +827,19 @@ void Printer::visit(type::Callable* t)
 
     Printer& p = *this;
 
-    if ( t->argType() )
-        p << "callable<" << t->argType() << ">";
-    else
+    if ( t->wildcard() ) {
         p << "callable<*>";
+        return;
+    }
+
+    p << "callable<" << t->result();
+
+    if ( t->Function::parameters().size() ) {
+        p << ",";
+        printList(t->Function::parameters(), ", ");
+    }
+
+    p << ">";
 }
 
 void Printer::visit(type::Channel* t)
@@ -1249,6 +1258,10 @@ void Printer::visit(constant::Port* c)
         p << v.port << "/udp";
         break;
 
+     case constant::PortVal::ICMP:
+        p << v.port << "/icmp";
+        break;
+
      default:
         internalError("unknown protocol");
     }
@@ -1325,13 +1338,29 @@ void Printer::visit(ctor::Vector* c)
 
 void Printer::visit(ctor::RegExp* c)
 {
-    Printer& p = *this;
-
     std::list<string> patterns;
 
     for ( auto p : c->patterns() )
         patterns.push_back(string("/") + p.first + string("/") + p.second);
 
     printList(patterns, " | ");
+}
+
+void Printer::visit(ctor::Callable* c)
+{
+    auto rtype = ast::checkedCast<type::Reference>(c->type());
+    auto ctype = ast::checkedCast<type::Callable>(rtype->argType());
+
+    Printer& p = *this;
+
+    p << "callable<" << ctype->result()->type();
+
+    for ( auto a : ctype->Function::parameters() )
+        p << ", " << a->type();
+
+    p << ">(" << c->function() << ", (";
+    printList(c->arguments(), ", ");
+    p << "))";
+
 }
 

@@ -42,6 +42,11 @@ public:
     /// this is primarily for debugging purposes.
     bool verify = true;
 
+    /// If true, prepare code for JITing. This must be set if the code will
+    /// be run through JIT. This will be checked for by jitModule(), which
+    /// aborts if it's not set.
+    bool jit = false;
+
     /// List of directories to search for imports and other \c *.hlt library
     /// files. The current directory will always be tried first. By default,
     /// this set is set to the current directory plus the installation-wide

@@ -155,6 +155,7 @@ add_library (hilti STATIC
     builder/module.cc
 
     instructions/bytes.cc
+    instructions/callable.cc
     instructions/channel.cc
     instructions/classifier.cc
     instructions/flow.cc

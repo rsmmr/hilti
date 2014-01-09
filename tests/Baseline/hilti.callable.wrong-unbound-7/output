@@ -1,0 +1,5 @@
+
+>>> result = call c (10, 20, "fo")
+wrong-unbound.hlt:16-17: error, too many arguments given, expected 2 but got 3 [pass::hilti::Validator]
+wrong-unbound.hlt: Aborting due to verification error.
+error running hiltic, aborting

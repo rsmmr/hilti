@@ -48,7 +48,7 @@ void FuncPair() &scope=Pair {
     vid = thread.id
     ctx = thread.get_context
 
-    s = call Hilti::fmt("FuncPair: vid %d ctx %s", (vid, ctx, ctx))
+    s = call Hilti::fmt("FuncPair: vid %d ctx %s", (vid, ctx))
     call Hilti::print (s)
 }
 

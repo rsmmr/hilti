@@ -92,7 +92,6 @@ statement::Instruction::Instruction(shared_ptr<ID> id, const hilti::instruction:
     : Statement(l)
 {
     _id = id;
-
     addChild(_id);
 
     _ops = ops;
@@ -175,10 +174,10 @@ void statement::Block::_init(shared_ptr<Scope> parent, shared_ptr<ID> id, const 
     if ( _id )
         addChild(_id);
 
-    for ( auto i : stmts )
+    for ( auto i : _stmts )
         addChild(i);
 
-    for ( auto i : decls )
+    for ( auto i : _decls )
         addChild(i);
 }
 
@@ -240,6 +239,17 @@ void statement::Block::setStatements(stmt_list stmts)
         addChild(s);
 }
 
+void statement::Block::setDeclarations(decl_list decls)
+{
+    for ( auto d : _decls )
+        removeChild(d);
+
+    _decls = decls;
+
+    for ( auto d : _decls )
+        addChild(d);
+}
+
 bool statement::Block::nop()
 {
     assert(false && "not implemented.");
@@ -254,7 +264,7 @@ shared_ptr<Statement> statement::Block::firstNonBlock()
 
 shared_ptr<Statement> statement::Block::_firstNonBlock(shared_ptr<statement::Block> block, std::set<shared_ptr<statement::Block>>* done)
 {
-    for ( auto s : block->statements() ) {
+    for ( auto s : block->_stmts ) {
         auto b = ast::tryCast<statement::Block>(s);
 
         if ( ! b )

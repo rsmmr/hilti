@@ -192,7 +192,10 @@ void __hlt_object_ref(const hlt_type_info* ti, void* obj)
     }
 #endif
 
-    int64_t new_ref_cnt = __atomic_add_fetch(&hdr->ref_cnt, 1, __ATOMIC_SEQ_CST);
+#ifdef DEBUG
+    int64_t new_ref_cnt =
+#endif
+    __atomic_add_fetch(&hdr->ref_cnt, 1, __ATOMIC_SEQ_CST);
 
 #ifdef DEBUG
     if ( new_ref_cnt <= 0 ) {

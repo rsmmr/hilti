@@ -1,0 +1,5 @@
+
+>>> result = call c (10, "string")
+wrong-unbound.hlt:16-17: error, type of parameter 2 does not match function, have string but expected double [pass::hilti::Validator]
+wrong-unbound.hlt: Aborting due to verification error.
+error running hiltic, aborting

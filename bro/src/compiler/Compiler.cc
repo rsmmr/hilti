@@ -77,6 +77,28 @@ TraversalCode NormalizerCallBack::PreID(const ::ID* id)
 		non_const_id->SetVal(fval);
 		}
 
+	if ( id->HasVal() )
+		{
+		auto val = id->ID_Val();
+
+		if ( val->Type()->Tag() == TYPE_TABLE )
+			{
+			// Make sure we normalize functions used in &default.
+			if ( Attr* def_attr = val->AsTableVal()->FindAttr(ATTR_DEFAULT) )
+				{
+				auto expr = def_attr->AttrExpr();
+
+				if ( expr->Type()->Tag() == TYPE_FUNC )
+					{
+					auto m = compiler->BroExprToFunc(expr);
+
+					if ( m.first && m.second )
+						NormalizeFunction(m.second);
+					}
+				}
+			}
+		}
+
 	return TC_CONTINUE;
 	}
 
@@ -117,7 +139,7 @@ TraversalCode NormalizerCallBack::PreTypedef(const ::ID* id)
 // Walk to Bro AST to gather the interesting pieces for us to compile.
 class bro::hilti::compiler::CollectorCallback : public TraversalCallback {
 public:
-	CollectorCallback();
+	CollectorCallback(Compiler* compiler);
 
 	bool Traverse();
 
@@ -147,10 +169,12 @@ private:
 	ns_map namespaces;
 	name_set used_ids;
 	int level;
+	Compiler* compiler;
 };
 
-CollectorCallback::CollectorCallback()
+CollectorCallback::CollectorCallback(Compiler* arg_compiler)
 	{
+	compiler = arg_compiler;
 	level = 0;
 	}
 
@@ -179,7 +203,10 @@ std::list<const ::Func *> CollectorCallback::Functions(const string& ns)
 				continue;
 
 			if ( ! func->HasBodies() )
+				{
+				DBG_LOG_COMPILER("Skipping event/function %s without bodies", func->Name());
 				continue;
+				}
 
 			assert(func);
 			sfunctions.insert(func);
@@ -259,6 +286,28 @@ TraversalCode CollectorCallback::PreID(const ::ID* id)
 
 	if ( level > 0 )
 		used_ids.insert(id->Name());
+
+	if ( id->HasVal() )
+		{
+		auto val = id->ID_Val();
+
+		if ( val->Type()->Tag() == TYPE_TABLE )
+			{
+			// Make sure we collect functions used in &default.
+			if ( Attr* def_attr = val->AsTableVal()->FindAttr(ATTR_DEFAULT) )
+				{
+				auto expr = def_attr->AttrExpr();
+
+				if ( expr->Type()->Tag() == TYPE_FUNC )
+					{
+					auto m = compiler->BroExprToFunc(def_attr->AttrExpr());
+
+					if ( m.first && m.second )
+						used_ids.insert(m.second->Name());
+					}
+				}
+			}
+		}
 
 	++level;
 	return TC_CONTINUE;
@@ -377,7 +426,7 @@ extern ::Stmt* stmts;
 
 Compiler::module_list Compiler::CompileAll()
 	{
-	collector_callback = std::make_shared<CollectorCallback>();
+	collector_callback = std::make_shared<CollectorCallback>(this);
 
 	if ( ::stmts )
 		{
@@ -458,7 +507,16 @@ std::list<string> Compiler::GetNamespaces() const
 
 string Compiler::HiltiSymbol(const ::Func* func, shared_ptr<::hilti::Module> module, bool include_module)
 	{
-	return normalizeSymbol(func->Name(), "", "", module ? module->id()->name() : "", true, include_module);
+	// Sometimes global functions come without their namespace. We can't
+	// use the modutils functions here as they do some magic with GLOBAL
+	// that we don't want.
+	std::string name = func->Name();
+
+	if ( name.rfind("::") == std::string::npos )
+		name = ::util::fmt("%s::%s", ::GLOBAL_MODULE_NAME, name);
+
+	return normalizeSymbol(name, "", "", module ? module->id()->name() : "", true, include_module);
+
 #if 0
 	if ( func->GetKind() == Func::BUILTIN_FUNC )
 		return func->Name();
@@ -586,4 +644,41 @@ bool Compiler::HaveHiltiBif(const std::string& name, std::string* hilti_name)
 		*hilti_name = name + "_bif";
 
 	return true;
+	}
+
+std::pair<bool, ::Func*> Compiler::BroExprToFunc(const ::Expr* func)
+	{
+	if ( func->Tag() == EXPR_NAME )
+		{
+		auto id = func->AsNameExpr()->Id();
+		assert(id->Type()->Tag() == TYPE_FUNC);
+
+		if ( id->IsGlobal() && id->HasVal() )
+			return std::make_pair(true, id->ID_Val()->AsFunc());
+		}
+
+	else if ( func->Tag() == EXPR_EVENT )
+		{
+		auto ee = dynamic_cast<const ::EventExpr *>(func);
+
+		// Just a double-check ... Bro actually doesn't support indirect events, so nor do we.
+		if ( ::global_scope()->Lookup(ee->Name()) )
+			return std::make_pair(true, ee->Handler()->LocalHandler());
+
+		else
+			{
+			// We flag success in the error case so that the
+			// function gets ingored by the caller.
+			Error(func, ::util::fmt("event %s is not a global ID (indirect event operands aren't supported by Bro)", ee->Name()).c_str());
+			return std::make_pair(true, nullptr);
+			}
+		}
+
+	else if ( func->Tag() == EXPR_CONST )
+		{
+		auto cexpr = dynamic_cast<const ::ConstExpr*>(func);
+		return std::make_pair(true, cexpr->Value()->AsFunc());
+		}
+
+	return std::make_pair(false, nullptr);
 	}

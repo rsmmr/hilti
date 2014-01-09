@@ -136,7 +136,7 @@ public:
     /// Sets the block's name.
     ///
     /// id: The name.
-    void setID(shared_ptr<ID> id) { _id = id;}
+    void setID(shared_ptr<ID> id) { removeChild(_id); _id = id; addChild(_id); }
 
     /// Returns the block's scope.
     shared_ptr<Scope> scope() const { return _scope; }
@@ -152,6 +152,9 @@ public:
 
     /// Returns the block's declaratations..
     const decl_list& declarations() const { return _decls; }
+
+    /// Sets the block's declarations.
+    void setDeclarations(decl_list decls);
 
     /// Associates a comment with the \a next statement that will be added to
     /// the block via addStatement().
@@ -213,7 +216,6 @@ private:
     string _next_comment = "";
     decl_list _decls;
     stmt_list _stmts;
-    block_list _subblocks;
 };
 
 namespace try_ {

@@ -159,6 +159,8 @@ public:
    typedef shared_ptr<statement::instruction::Resolved> (*stmt_factory)(
        shared_ptr<hilti::Instruction> instruction, const instruction::Operands& ops, const Location& l);
 
+   virtual ~Instruction() {}
+
    /// Returns the name of the instruction.
    shared_ptr<ID> id() const { return _id; }
 
@@ -340,7 +342,7 @@ public:
 
    /// Checks whether call parameters are compatible with a function. If not,
    /// an error is reported.
-   bool checkCallParameters(shared_ptr<type::Function> func, shared_ptr<Expression> args) const;
+   bool checkCallParameters(shared_ptr<type::Function> func, shared_ptr<Expression> args, bool allow_unbound = false) const;
 
    /// Checks whether a return expression is compatible with a function's
    /// return type.

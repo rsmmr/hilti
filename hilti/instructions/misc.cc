@@ -7,10 +7,6 @@
 
 iBeginCC(Misc)
     iValidateCC(Select) {
-        auto ty_op1 = as<type::ValueType>(op1->type());
-        auto ty_op2 = as<type::Label>(op2->type());
-        auto ty_op3 = as<type::Tuple>(op3->type());
-
         canCoerceTo(op2, target->type());
         canCoerceTo(op3, target->type());
     }
@@ -22,8 +18,13 @@ iEndCC
 
 iBeginCC(Misc)
     iValidateCC(SelectValue) {
-        auto ty_op1 = as<type::ValueType>(op1->type());
+        auto ty_op1 = op1->type();
         auto ty_op2 = as<type::Tuple>(op2->type());
+
+        if ( ! type::hasTrait<type::trait::ValueType>(ty_op1) ) {
+                error(ty_op1, "operand 1 must a value type");
+                return;
+        }
 
         if ( op3 )
             canCoerceTo(op3, target->type());

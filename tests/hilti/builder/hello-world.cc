@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 {
     hilti::init();
 
-    hilti::Options options;
+    auto options = std::make_shared<hilti::Options>();
     shared_ptr<hilti::CompilerContext> ctx = std::make_shared<hilti::CompilerContext>(options);
     auto m = std::make_shared<hilti::builder::ModuleBuilder>(ctx, "Main");
 

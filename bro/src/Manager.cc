@@ -51,6 +51,7 @@ extern "C" {
 #include "LocalReporter.h"
 #include "compiler/Compiler.h"
 #include "compiler/ModuleBuilder.h"
+#include "compiler/ConversionBuilder.h"
 
 #include "consts.bif.h"
 #include "events.bif.h"
@@ -132,7 +133,6 @@ struct bro::hilti::Pac2ModuleInfo {
 	// The BroFunc_*.hlt module.
 	shared_ptr<::hilti::CompilerContext>         hilti_context;
 	shared_ptr<compiler::ModuleBuilder>          hilti_mbuilder;
-	shared_ptr<::hilti::Module>                  hilti_module;
 
 	// The BroHooks_*.pac2 module.
 	shared_ptr<::binpac::Module>                 pac2_module;
@@ -185,8 +185,8 @@ struct Manager::PIMPL
 	typedef std::list<llvm::Module*>                      llvm_module_list;
 	typedef std::set<std::string>                         path_set;
 
-	::hilti::Options hilti_options;
-	::binpac::Options pac2_options;
+    std::shared_ptr<::hilti::Options> hilti_options = nullptr;
+    std::shared_ptr<::binpac::Options> pac2_options = nullptr;
 
 	bool compile_all;	// Compile all event code, even if no handler, set from BifConst::Hilti::compile_all.
 	bool compile_scripts;	// Activate the Bro script compiler.
@@ -197,6 +197,7 @@ struct Manager::PIMPL
 	bool save_pac2;		// Saves all generated BinPAC++ modules into a file, set from BifConst::Hilti::save_pac2.
 	bool save_hilti;	// Saves all HILTI modules into a file, set from BifConst::Hilti::save_hilti.
 	bool save_llvm;		// Saves the final linked LLVM code into a file, set from BifConst::Hilti::save_llvm.
+	bool pac2_to_compiler;  // If compiling scripts, raise event hooks from BinPAC++ code directly.
 	unsigned int profile;	// True to enable run-time profiling.
 
 	std::list<string> import_paths;
@@ -278,11 +279,14 @@ bool Manager::InitPreScripts()
 
 	pre_scripts_init_run = true;
 
+	pimpl->hilti_options = std::make_shared<::hilti::Options>();
+	pimpl->pac2_options = std::make_shared<::binpac::Options>();
+
 	for ( auto dir : pimpl->import_paths )
 		{
-		pimpl->hilti_options.libdirs_hlt.push_back(dir);
-		pimpl->pac2_options.libdirs_hlt.push_back(dir);
-		pimpl->pac2_options.libdirs_pac2.push_back(dir);
+		pimpl->hilti_options->libdirs_hlt.push_back(dir);
+		pimpl->pac2_options->libdirs_hlt.push_back(dir);
+		pimpl->pac2_options->libdirs_pac2.push_back(dir);
 		}
 
 	pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
@@ -318,23 +322,23 @@ bool Manager::InitPostScripts()
 	pimpl->save_pac2 = BifConst::Hilti::save_pac2;
 	pimpl->save_hilti = BifConst::Hilti::save_hilti;
 	pimpl->save_llvm = BifConst::Hilti::save_llvm;
+	pimpl->pac2_to_compiler = BifConst::Hilti::pac2_to_compiler;
 
-	pimpl->hilti_options.debug = BifConst::Hilti::debug;
-	pimpl->hilti_options.optimize = BifConst::Hilti::optimize;
-	pimpl->hilti_options.profile = BifConst::Hilti::profile;
-	pimpl->hilti_options.verify = ! BifConst::Hilti::no_verify;
-	pimpl->hilti_options.cg_debug = cg_debug;
-	pimpl->hilti_options.module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
+	pimpl->hilti_options->jit = true;
+	pimpl->hilti_options->debug = BifConst::Hilti::debug;
+	pimpl->hilti_options->optimize = BifConst::Hilti::optimize;
+	pimpl->hilti_options->profile = BifConst::Hilti::profile;
+	pimpl->hilti_options->verify = ! BifConst::Hilti::no_verify;
+	pimpl->hilti_options->cg_debug = cg_debug;
+	pimpl->hilti_options->module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
 
-	pimpl->pac2_options.debug = BifConst::Hilti::debug;
-	pimpl->pac2_options.optimize = BifConst::Hilti::optimize;
-	pimpl->pac2_options.profile = BifConst::Hilti::profile;
-	pimpl->pac2_options.verify = ! BifConst::Hilti::no_verify;
-	pimpl->pac2_options.cg_debug = cg_debug;
-	pimpl->pac2_options.module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
-
-	pimpl->hilti_context->setOptions(pimpl->hilti_options);
-	pimpl->pac2_context->setOptions(pimpl->pac2_options);
+	pimpl->pac2_options->jit = true;
+	pimpl->pac2_options->debug = BifConst::Hilti::debug;
+	pimpl->pac2_options->optimize = BifConst::Hilti::optimize;
+	pimpl->pac2_options->profile = BifConst::Hilti::profile;
+	pimpl->pac2_options->verify = ! BifConst::Hilti::no_verify;
+	pimpl->pac2_options->cg_debug = cg_debug;
+	pimpl->pac2_options->module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
 
 	pimpl->llvm_linked_module = nullptr;
 	pimpl->llvm_execution_engine = nullptr;
@@ -782,23 +786,24 @@ bool Manager::Compile()
 			continue;
 
 		AddHiltiTypesForModule(m);
-		m->hilti_mbuilder->FinalizeGlueCode();
 
 		if ( pimpl->dump_code_pre_finalize )
 			{
-			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.hlt\n", m->hilti_module->id()->name()) << std::endl;
-			m->hilti_context->dump(m->hilti_module, std::cerr);
-			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.hlt\n", m->hilti_module->id()->name()) << std::endl;
-			m->hilti_context->print(m->hilti_module, std::cerr);
+			auto hilti_module = m->hilti_mbuilder->module();
+			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.hlt\n", hilti_module->id()->name()) << std::endl;
+			m->hilti_context->dump(hilti_module, std::cerr);
+			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.hlt\n", hilti_module->id()->name()) << std::endl;
+			m->hilti_context->print(hilti_module, std::cerr);
 			}
 
-		// Finalize the HILTI module.
-		if ( ! m->hilti_context->finalize(m->hilti_module) )
+		auto hilti_module = m->hilti_mbuilder->Finalize();
+
+		if ( ! hilti_module )
 			return false;
 
-		pimpl->hilti_modules.push_back(m->hilti_module);
+		pimpl->hilti_modules.push_back(hilti_module);
 
-		auto llvm_hilti_module = m->hilti_context->compile(m->hilti_module);
+		auto llvm_hilti_module = m->hilti_context->compile(hilti_module);
 
 		if ( ! llvm_hilti_module )
 			{
@@ -1060,7 +1065,6 @@ bool Manager::LoadPac2Module(const string& path)
 
 	minfo->hilti_context = std::make_shared<::hilti::CompilerContext>(pimpl->hilti_options);
 	minfo->hilti_mbuilder = std::make_shared<compiler::ModuleBuilder>(pimpl->compiler, minfo->hilti_context, ::util::fmt("BroFuncs_%s", name));
-	minfo->hilti_module = minfo->hilti_mbuilder->module();
 	minfo->hilti_mbuilder->importModule("Hilti");
 	minfo->hilti_mbuilder->importModule("LibBro");
 	minfo->value_converter = std::make_shared<ValueConverter>(minfo->hilti_mbuilder.get(), pimpl->type_converter.get());
@@ -1155,7 +1159,7 @@ error:
 	return false;
 	}
 
-// TODO: Not used anymore currently.
+#if 0
 static bool extract_dotted_id(const string& chunk, size_t* i, string* id)
 	{
 	eat_spaces(chunk, i);
@@ -1178,6 +1182,7 @@ error:
 	return false;
 
 	}
+#endif
 
 static bool extract_expr(const string& chunk, size_t* i, string* expr)
 	{
@@ -1439,7 +1444,7 @@ bool Manager::LoadPac2Events(const string& path)
 			if ( j != string::npos )
 				{
 				dirname = path.substr(0, j);
-				pimpl->pac2_options.libdirs_pac2.push_front(dirname);
+				pimpl->pac2_options->libdirs_pac2.push_front(dirname);
 				}
 
 			pac2 = SearchFile(pac2, dirname);
@@ -2046,14 +2051,15 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 
 	auto args = std::make_shared<::binpac::expression::Constant>(std::make_shared<::binpac::constant::Tuple>(args_tuple));
 
-	auto raise_name = ::util::fmt("%s::raise_%s", ev->minfo->hilti_module->id()->name(), ::util::strreplace(ev->name, "::", "_"));
+	auto raise_name = ::util::fmt("%s::raise_%s_%p", ev->minfo->hilti_mbuilder->module()->id()->name(), ::util::strreplace(ev->name, "::", "_"), ev);
 	::binpac::expression_list op_args = { id_expr(raise_name), args };
 	auto call = std::make_shared<::binpac::expression::UnresolvedOperator>(::binpac::operator_::Call, op_args);
 	auto stmt = std::make_shared<::binpac::statement::Expression>(call);
 
 	body->addStatement(stmt);
 
-	auto hook = std::make_shared<::binpac::Hook>(body);
+    // We use a quite negative hook here to make sure these run last after anything the grammar defines.
+	auto hook = std::make_shared<::binpac::Hook>(body, -1000);
 	auto hdecl = std::make_shared<::binpac::declaration::Hook>(std::make_shared<::binpac::ID>(ev->hook), hook);
 
 	auto raise_result = std::make_shared<::binpac::type::function::Result>(std::make_shared<::binpac::type::Void>(), true);
@@ -2130,7 +2136,7 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
 
 shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(shared_ptr<Pac2EventInfo> ev, int nr, const string& expr)
 	{
-	auto fname = ::util::fmt("accessor_%s_arg%d", ::util::strreplace(ev->name, "::", "_"), nr);
+	auto fname = ::util::fmt("accessor_%s_arg%d_%p", ::util::strreplace(ev->name, "::", "_"), nr, ev);
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Defining BinPAC++ function %s for parameter %d of event %s", fname.c_str(), nr, ev->name.c_str());
 
@@ -2176,7 +2182,7 @@ shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(
 
 shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccessor(shared_ptr<Pac2EventInfo> ev, int nr, shared_ptr<::hilti::Type> rtype)
 	{
-	auto fname = ::util::fmt("%s::accessor_%s_arg%d", ev->minfo->pac2_module->id()->name(), ::util::strreplace(ev->name, "::", "_"), nr);
+	auto fname = ::util::fmt("%s::accessor_%s_arg%d_%p", ev->minfo->pac2_module->id()->name(), ::util::strreplace(ev->name, "::", "_"), nr, ev);
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Declaring HILTI function %s for parameter %d of event %s", fname.c_str(), nr, ev->name.c_str());
 
@@ -2240,7 +2246,7 @@ void Manager::AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev)
 
 bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 	{
-	string fname = ::util::fmt("raise_%s", ::util::strreplace(ev->name, "::", "_"));
+	string fname = ::util::fmt("raise_%s_%p", ::util::strreplace(ev->name, "::", "_"), ev);
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Adding HILTI function %s for event %s", fname.c_str(), ev->name.c_str());
 
@@ -2274,6 +2280,27 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 
 	mbuilder->builder()->addInstruction(::hilti::instruction::profiler::Start,
 					    ::hilti::builder::string::create(string("bro/") + fname));
+
+	if ( pimpl->compile_scripts && pimpl->pac2_to_compiler )
+		CreateHiltiEventFunctionBodyForHilti(ev);
+	else
+		CreateHiltiEventFunctionBodyForBro(ev);
+
+	mbuilder->builder()->addInstruction(::hilti::instruction::profiler::Stop,
+					    ::hilti::builder::string::create(string("bro/") + fname));
+
+	mbuilder->popFunction();
+
+	// pimpl->compiler->popModuleBuilder();
+
+	ev->hilti_raise = func;
+
+	return true;
+	}
+
+bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
+	{
+	auto mbuilder = ev->minfo->hilti_mbuilder;
 
 	::hilti::builder::tuple::element_list vals;
 
@@ -2338,7 +2365,7 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 		}
 
 	auto canon_name = ::util::strreplace(ev->name, "::", "_");
-	auto handler = mbuilder->addGlobal(util::fmt("__bro_handler_%s", canon_name),
+	auto handler = mbuilder->addGlobal(util::fmt("__bro_handler_%s_%p", canon_name, ev),
 					     ::hilti::builder::type::byName("LibBro::BroEventHandler"));
 
 	auto cond = mbuilder->addTmp("no_handler", ::hilti::builder::boolean::type());
@@ -2367,14 +2394,94 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 					    ::hilti::builder::tuple::create({ handler,
 					    ::hilti::builder::tuple::create(vals) } ));
 
-	mbuilder->builder()->addInstruction(::hilti::instruction::profiler::Stop,
-					    ::hilti::builder::string::create(string("bro/") + fname));
+	return true;
+	}
 
-	mbuilder->popFunction();
+bool Manager::CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev)
+	{
+	assert(ev->bro_event_handler->LocalHandler());
 
-	// pimpl->compiler->popModuleBuilder();
+	auto mbuilder = ev->minfo->hilti_mbuilder;
+	auto conversion_builder = mbuilder->ConversionBuilder();
 
-	ev->hilti_raise = func;
+	::hilti::builder::tuple::element_list args;
+
+	int i = 0;
+
+	for ( auto e : ev->expr_accessors )
+		{
+		if ( e->expr == "$conn" )
+			{
+			auto conn_val = mbuilder->addTmp("conn_val", ::hilti::builder::type::byName("LibBro::BroVal"));
+
+			mbuilder->builder()->addInstruction(conn_val,
+							    ::hilti::instruction::flow::CallResult,
+							    ::hilti::builder::id::create("LibBro::cookie_to_conn_val"),
+							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
+
+			auto arg = conversion_builder->ConvertBroToHilti(conn_val, ::connection_type);
+			args.push_back(arg);
+			}
+
+		else if ( e->expr == "$file" )
+			{
+			auto fa_val = mbuilder->addTmp("file_val", ::hilti::builder::type::byName("LibBro::BroVal"));
+
+			mbuilder->builder()->addInstruction(fa_val,
+							    ::hilti::instruction::flow::CallResult,
+							    ::hilti::builder::id::create("LibBro::cookie_to_file_val"),
+							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
+
+			auto arg = conversion_builder->ConvertBroToHilti(fa_val, ::fa_file_type);
+			args.push_back(arg);
+			}
+
+		else if ( e->expr == "$is_orig" )
+			{
+			auto arg = mbuilder->addTmp("is_orig", ::hilti::builder::boolean::type());
+
+			mbuilder->builder()->addInstruction(arg,
+							    ::hilti::instruction::flow::CallResult,
+							    ::hilti::builder::id::create("LibBro::cookie_to_is_orig_boolean"),
+							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
+
+			args.push_back(arg);
+			}
+
+		else
+			{
+			// TODO: If BinPAC++'s and Bro's mapping to HILTI
+			// don't match, we need to do more conversion here
+			// ...
+			auto arg = mbuilder->addTmp("t", e->htype);
+			auto func_id = e->hlt_func ? e->hlt_func->id() : ::hilti::builder::id::node("null-function>");
+
+			auto eargs = ::hilti::builder::tuple::element_list();
+
+			for ( auto m : ev->unit_type->scope()->map() )
+				{
+				auto n = (m.first != "$$" ? m.first : "__dollardollar");
+				auto t = ::ast::tryCast<::binpac::expression::ParserState>(m.second->front());
+
+				if ( t )
+					eargs.push_back(::hilti::builder::id::create(n));
+				}
+
+			eargs.push_back(::hilti::builder::id::create("cookie"));
+
+			mbuilder->builder()->addInstruction(arg,
+							    ::hilti::instruction::flow::CallResult,
+							    ::hilti::builder::id::create(func_id),
+							    ::hilti::builder::tuple::create(eargs));
+
+			args.push_back(arg);
+			}
+
+		i++;
+		}
+
+	auto targs = ::hilti::builder::tuple::create(args);
+	mbuilder->HiltiCallEventHilti(ev->bro_event_handler->LocalHandler(), targs);
 
 	return true;
 	}
@@ -2413,7 +2520,7 @@ void Manager::ExtractParsers(hlt_list* parsers)
 				if ( i != parser_map.end() )
 						{
 						a->parser_orig = i->second;
-						GC_CCTOR(a->parser_orig, hlt_Parser);
+						GC_CCTOR(a->parser_orig, hlt_BinPACHilti_Parser);
 						}
 				}
 
@@ -2424,7 +2531,7 @@ void Manager::ExtractParsers(hlt_list* parsers)
 				if ( i != parser_map.end() )
 						{
 						a->parser_resp = i->second;
-						GC_CCTOR(a->parser_resp, hlt_Parser);
+						GC_CCTOR(a->parser_resp, hlt_BinPACHilti_Parser);
 						}
 				}
 		}
@@ -2439,13 +2546,13 @@ void Manager::ExtractParsers(hlt_list* parsers)
 		if ( i != parser_map.end() )
 			{
 			a->parser = i->second;
-			GC_CCTOR(a->parser, hlt_Parser);
+			GC_CCTOR(a->parser, hlt_BinPACHilti_Parser);
 			}
 		}
 
 	for ( auto p : parser_map )
 		{
-		GC_DTOR(p.second, hlt_Parser);
+		GC_DTOR(p.second, hlt_BinPACHilti_Parser);
 		}
 	}
 
@@ -2480,19 +2587,29 @@ analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
 
 ::Val* Manager::RuntimeCallFunction(const Func* func, val_list* args)
 	{
+	if ( ! func->HasBodies() )
+		// For events raised directly, rather than being queued, we
+		// arrive here. Ignore if we don't have a handler.
+		//
+		// TODO: Should these direct events have a separate entry
+		// point in the plugin API?
+		return new Val(0, TYPE_VOID);
+
 	auto symbol = pimpl->compiler->HiltiStubSymbol(func, nullptr, true);
 	return RuntimeCallFunctionInternal(symbol, args);
 	}
 
 bool Manager::RuntimeRaiseEvent(Event* event)
 	{
-	if ( ! event->Handler()->LocalHandler() )
+	auto efunc = event->Handler()->LocalHandler();
+
+	if ( ! (efunc && efunc->HasBodies())  )
 		{
 		Unref(event);
 		return true;
 		}
 
-	auto symbol = pimpl->compiler->HiltiStubSymbol(event->Handler()->LocalHandler(), nullptr, true);
+	auto symbol = pimpl->compiler->HiltiStubSymbol(efunc, nullptr, true);
 	auto result = RuntimeCallFunctionInternal(symbol, event->Args());
 
 	Unref(result);
@@ -2520,6 +2637,8 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 
 	hlt_exception* excpt = 0;
 	hlt_execution_context* ctx = hlt_global_execution_context();
+	__hlt_context_clear_exception(ctx); // TODO: HILTI should take care of this.
+
 	::Val* result = nullptr;
 
 	switch ( args->length() ) {
@@ -2560,10 +2679,10 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 
 	if ( excpt )
 		{
-                hlt_exception* etmp = 0;
-                char* e = hlt_exception_to_asciiz(excpt, &etmp, ctx);
+		hlt_exception* etmp = 0;
+		char* e = hlt_exception_to_asciiz(excpt, &etmp, ctx);
 		reporter::error(::util::fmt("event/function %s raised exception: %s", symbol, e));
-                hlt_free(e);
+		hlt_free(e);
 		GC_DTOR(excpt, hlt_exception);
 		}
 
@@ -2588,7 +2707,6 @@ void Manager::DumpDebug()
 
 	string location;				// Location where the analyzer was defined.
 	string name;					// Name of the analyzer.
-	TransportProto proto;				// The transport layer the analyzer uses.
 	std::list<Port> ports;				// The ports associated with the analyzer.
 	string unit_name_orig;				// The fully-qualified name of the unit type to parse the originator side.
 	string unit_name_resp;				// The fully-qualified name of the unit type to parse the originator side.

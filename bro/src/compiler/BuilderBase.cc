@@ -62,6 +62,7 @@ void BuilderBase::InternalError(const std::string& msg, const BroObj* obj) const
 	auto s = msg + ::util::fmt(" [%s]", Location(obj));
 	DBG_LOG_COMPILER("internal builder error: %s", s.c_str());
 	reporter::internal_error(s);
+	abort(); // Can't get here.
 	}
 
 class Compiler* BuilderBase::Compiler() const
@@ -205,6 +206,11 @@ std::shared_ptr<::hilti::Expression> BuilderBase::DeclareLocal(const ::ID* id)
 const ::Func* BuilderBase::CurrentFunction() const
 	{
 	return mbuilder->CurrentFunction();
+	}
+
+std::pair<bool, ::Func*> BuilderBase::BroExprToFunc(const ::Expr* func)
+	{
+	return mbuilder->Compiler()->BroExprToFunc(func);
 	}
 
 shared_ptr<::hilti::Expression> BuilderBase::HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args)

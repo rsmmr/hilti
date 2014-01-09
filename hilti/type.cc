@@ -1,4 +1,4 @@
-                                        
+
 #include <initializer_list>
 
 #include "expression.h"
@@ -13,7 +13,9 @@ using namespace hilti;
 string Type::render()
 {
     std::ostringstream s;
-    passes::Printer(s, true).run(sharedPtr<Node>());
+    passes::Printer p(s, true);
+    p.setQualifyTypeIDs(true);
+    p.run(sharedPtr<Node>());
     return s.str();
 }
 
@@ -139,18 +141,22 @@ type::trait::Parameterized::parameter_list type::TypedValueType::parameters() co
 }
 
 type::Function::Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l)
-    : ValueType(l), ast::type::mixin::Function<AstInfo>(this, result, args)
+    : HiltiType(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
     _cc = cc;
     _plusone = true;
 }
 
 type::Function::Function(const Location& l)
-    : ValueType(l),
+    : HiltiType(l),
     ast::type::mixin::Function<AstInfo>(this, std::make_shared<function::Result>(std::make_shared<Void>(), false, l), parameter_list())
 {
     setWildcard(true);
     _cc = function::CallingConvention::HILTI;
+}
+
+type::HiltiFunction::~HiltiFunction()
+{
 }
 
 type::function::Parameter::Parameter(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value, Location l)
@@ -245,6 +251,18 @@ type::Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Lo
 {
     _base = base;
     addChild(_base);
+}
+
+type::trait::Parameterized::parameter_list type::Callable::parameters() const
+{
+    type::trait::Parameterized::parameter_list params;
+
+    params.push_back(std::make_shared<trait::parameter::Type>(result()->type()));
+
+    for ( auto p : Function::parameters() )
+        params.push_back(std::make_shared<trait::parameter::Type>(p->type()));
+
+    return params;
 }
 
 shared_ptr<Type> type::Bytes::iterType()
@@ -553,6 +571,14 @@ type::trait::Parameterized::parameter_list type::Struct::parameters() const
 
 bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
 {
+    // Comparing the types by rendering them to avoid infinite recursion
+    // for cycles.
+    return const_cast<type::Struct *>(this)->render() == ty->render();
+
+#if 0
+    // This version has problems when some type IDs come without namespace.
+    // But looks like can just render directly.
+
     auto other = ast::as<type::Struct>(ty);
 
     if ( _fields.size() != other->_fields.size() )
@@ -599,6 +625,7 @@ bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
     }
 
     return true;
+#endif
 }
 
 bool type::Function::_equal(shared_ptr<hilti::Type> o) const

@@ -14,7 +14,7 @@
 using namespace hilti;
 using namespace hilti::passes;
 
-CompilerContext::CompilerContext(const Options& options)
+CompilerContext::CompilerContext(std::shared_ptr<Options> options)
 {
     setOptions(options);
 }
@@ -29,19 +29,28 @@ const Options& CompilerContext::options() const
     return *_options;
 }
 
-void CompilerContext::setOptions(const Options& options)
+void CompilerContext::setOptions(std::shared_ptr<Options> options)
 {
-    _options = std::shared_ptr<Options>(new Options(options));
+    _options = options;
 
-    if ( options.module_cache.size() ) {
-        if ( options.cgDebugging("cache") )
-            std::cerr << "Enabling module cache in " << options.module_cache << std::endl;
+    if ( options->module_cache.size() ) {
+        if ( options->cgDebugging("cache") )
+            std::cerr << "Enabling module cache in " << options->module_cache << std::endl;
 
-        _cache = std::make_shared<::util::cache::FileCache>(options.module_cache);
+        _cache = std::make_shared<::util::cache::FileCache>(options->module_cache);
+    }
+
+    else {
+        if ( options->cgDebugging("cache") )
+            std::cerr << "Disabled module cache" << std::endl;
+
+        _cache = nullptr;
     }
 
     if ( _options->cgDebugging("visitors") )
-        ast::enableDebuggingForAllVisitors();
+        ast::enableDebuggingForAllVisitors(true);
+    else
+        ast::enableDebuggingForAllVisitors(false);
 }
 
 string CompilerContext::searchModule(shared_ptr<ID> id)
@@ -194,7 +203,7 @@ void CompilerContext::_endPass()
         auto indent = string(_passes.size(), ' ');
 
         if ( cg_passes || delta >= 0.1 )
-            std::cerr << util::fmt("(%2.2fs) %shilti::%s [module \"%s\"]%s",
+            std::cerr << util::fmt("(%2.2fs) %shilti::%s [module \"%s\"]",
                                    delta, indent, pass.name, pass.module) << std::endl;
     }
 
@@ -229,6 +238,13 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     _beginPass(module, block_flattener);
 
     if ( ! block_flattener.run(module) )
+        return false;
+
+    _endPass();
+
+    _beginPass(module, block_normalizer);
+
+    if ( ! block_normalizer.run(module) )
         return false;
 
     _endPass();
@@ -301,6 +317,9 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     _endPass();
 
     auto cfg = std::make_shared<passes::CFG>(this);
+    auto liveness = std::make_shared<passes::Liveness>(this, cfg);
+
+    module->setPasses(cfg, liveness);
 
     _beginPass(module, *cfg);
 
@@ -309,8 +328,6 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _endPass();
 
-    auto liveness = std::make_shared<passes::Liveness>(this, cfg);
-
     _beginPass(module, *liveness);
 
     if ( ! liveness->run(module) )
@@ -318,7 +335,6 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _endPass();
 
-    module->setPasses(cfg, liveness);
 
     return true;
 }
@@ -558,19 +574,16 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
 
     _endPass();
 
-    if ( options().optimize ) {
-        if ( options().cgDebugging("context" ) )
-            std::cerr << "Optimizing compiled module ... " << std::endl;
-
-        codegen::Optimizer optimizer(this);
-
-        _beginPass(module, optimizer);
-
-        if ( ! optimizer.optimize(compiled, false) )
-            return nullptr;
-
-        _endPass();
-    }
+    // We don't optimize the module here. While that could potentially speed
+    // up the final optimization at link time (or not, unknown), it would
+    // also change the instructions the linker is looking for to replace.
+    // Hence we can optimize only after the linker is done with that.
+    //
+    // TODO: There might be ways to get the data stable, such as moving them
+    // into tiny functions and then having the linker replace the function
+    // instead. Not sure if it's worth it, even just doing the LTO passes an
+    // link-time (which we want there, not here, obviously), take most of the
+    // time.
 
     return compiled;
 }
@@ -708,21 +721,13 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
 
     _endPass();
 
-#if 0
-    // It doesn't really make sense to optimize here because the JIT later
-    // will just do it again, and we can skip that because it will apply
-    // further backend-specific optimization as well. We provide a separate
-    // optimize() method instead that does this for when we don't jit.
-    if ( options().optimize ) {
-        if ( ! optimize(linked, true) )
-            return nullptr;
-    }
-#endif
+    if ( ! _optimize(linked, true) )
+        return nullptr;
 
     return linked;
 }
 
-bool CompilerContext::optimize(llvm::Module* module, bool is_linked)
+bool CompilerContext::_optimize(llvm::Module* module, bool is_linked)
 {
     if ( ! options().optimize )
         return true;
@@ -744,6 +749,11 @@ bool CompilerContext::optimize(llvm::Module* module, bool is_linked)
 
 llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module)
 {
+    if ( ! options().jit ) {
+        error("jitModule() called but options.jit not set\n");
+        return nullptr;
+    }
+
     if ( ! _jit )
         _jit = new jit::JIT(this);
 

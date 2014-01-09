@@ -400,6 +400,16 @@ protected:
 	/**
 	 * XXX
 	 */
+	bool CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev);
+
+	/**
+	 * XXX
+	 */
+	bool CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev);
+
+	/**
+	 * XXX
+	 */
 	void AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev);
 
 	/**

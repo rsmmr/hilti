@@ -1,12 +1,12 @@
 
->>> i = new A
+>>> i = new Main::A
 wrong-args.hlt:23-24: error, operands do not match instruction new
   got:
-    new: A -> int<64>
+    new: Main::A -> int<64>
   expected one of:
     new: bytes -> ref<bytes>
+    new: callable<*>, <hook>, tuple<*> -> ref<callable<*>>
     new: callable<*>, function() -> void, tuple<*> -> ref<callable<*>>
-    new: callable<*>, function() -> void<hook>, tuple<*> -> ref<callable<*>>
     new: channel<*>, [ int<64> ] -> ref<channel<*>>
     new: classifier<*> -> ref<classifier<*>>
     new: exception -> ref<exception>

@@ -17,6 +17,8 @@ class Type;
 template<class AstInfo>
 class TypeOverrider : public Overrider<typename AstInfo::type> {
 public:
+    virtual ~TypeOverrider() {}
+
     /// See Type::repr().
     virtual string repr() const { assert(false); return ""; }
 };
@@ -229,6 +231,8 @@ public:
     ///
     /// params: The function's parameters.
     Function(Type* target, shared_ptr<Result> result, const parameter_list& params);
+
+    virtual ~Function() {}
 
     /// Returns the function's parameters.
     parameter_list parameters() const {

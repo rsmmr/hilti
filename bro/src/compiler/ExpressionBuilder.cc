@@ -33,22 +33,31 @@ ExpressionBuilder::ExpressionBuilder(class ModuleBuilder* mbuilder)
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::BroType* type, const char* where)
 	{
-	Error(::util::fmt("type %s not supported in %s", type_name(type->Tag()), where), type);
+	ODesc d;
+	type->Describe(&d);
+
+	Error(::util::fmt("type %s not supported in %s (%s)", type_name(type->Tag()), where, d.Description()), type);
 	return nullptr;
 	}
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Expr* expr, const char* where)
 	{
-	Error(::util::fmt("expression %s not supported in %s", expr_name(expr->Tag()), where), expr);
+	ODesc d;
+	expr->Describe(&d);
+
+	Error(::util::fmt("expression %s not supported in %s (%s)", expr_name(expr->Tag()), where, d.Description()), expr);
 	return nullptr;
 	}
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::UnaryExpr* expr, const char* where)
 	{
-	Error(::util::fmt("unary expression %s not supported for operand of type %s in %s",
+	ODesc d;
+	expr->Describe(&d);
+
+	Error(::util::fmt("unary expression %s not supported for operand of type %s in %s (%s)",
 			  ::expr_name(expr->Tag()),
 			  ::type_name(expr->Op()->Type()->Tag()),
-			  where),
+			  where, d.Description()),
 	      expr);
 
 	return nullptr;
@@ -56,12 +65,15 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Una
 
 std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::BinaryExpr* expr, const char* where)
 	{
-	Error(::util::fmt("binary expression %s not supported for operands of types %s and %s in %s",
+	ODesc d;
+	expr->Describe(&d);
+
+	Error(::util::fmt("binary expression %s not supported for operands of types %s and %s in %s (%s)",
 			  ::expr_name(expr->Tag()),
 			  ::type_name(expr->Op1()->Type()->Tag()),
 			  ::type_name(expr->Op2()->Type()->Tag()),
-              where),
-	     expr);
+			  where, d.Description()),
+	      expr);
 
 	return nullptr;
 	}
@@ -71,6 +83,8 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, con
 	shared_ptr<::hilti::Expression> e = nullptr;
 
 	target_types.push_back(target_type);
+
+	Builder()->debugPushIndent();
 
 	switch ( expr->Tag() ) {
 	case EXPR_ADD:
@@ -240,9 +254,27 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, con
 
 	target_types.pop_back();
 
-	if ( target_type && target_type->Tag() == ::TYPE_ANY )
+	if ( target_type && target_type->Tag() != ::TYPE_ANY && expr->Type()->Tag() == ::TYPE_ANY  )
+		// Need to convert back from Bro value.
+		e = RuntimeValToHilti(e, target_type);
+
+	if ( e && ! expr->IsConst() )
+		{
+		// Log computed value to "bro" debug stream.
+		ODesc d;
+		d.SetShort(1);
+		expr->Describe(&d);
+		std::string s = d.Description();
+		s = ::util::strreplace(s, "\n", " ");
+		auto m = ::hilti::builder::string::create(s);
+		Builder()->addDebugMsg("bro", "- %s -> %s", m, e);
+		}
+
+	if ( target_type && target_type->Tag() == ::TYPE_ANY && expr->Type()->Tag() != ::TYPE_ANY )
 		// Need to pass an actual Bro value.
 		e = RuntimeHiltiToVal(e, expr->Type());
+
+	Builder()->debugPopIndent();
 
 	return e;
 	}
@@ -380,11 +412,46 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::ArithCoerceEx
 	if ( hexpr->canCoerceTo(htype) )
 		return hexpr;
 
+	auto result = Builder()->addTmp("coerced", HiltiType(expr->Type()));
+	auto ok = false;
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_COUNT, UNARY_OP_FUNC
+		{
+		switch ( expr->Tag() ) 	{
+		case ::TYPE_DOUBLE:
+			Builder()->addInstruction(result,
+						  ::hilti::instruction::integer::AsUDouble,
+						  hexpr);
+			break;
+
+		default:
+			break;
+		}
+		});
+
+	ok = ok || CompileOperator(expr, result, ::TYPE_INT, UNARY_OP_FUNC
+		{
+		switch ( expr->Tag() ) 	{
+		case ::TYPE_DOUBLE:
+			Builder()->addInstruction(result,
+						  ::hilti::instruction::integer::AsSDouble,
+						  hexpr);
+			break;
+
+		default:
+			break;
+		}
+		});
+
+	if ( ok )
+		return result;
+
 	Error(::util::fmt("no support in ArithCoerceExpr for coercion from %s to %s",
 			  ::type_name(expr->Op()->Type()->Tag()), ::type_name(expr->Type()->Tag())), expr);
 
 	return nullptr;
 	}
+
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::AssignExpr* expr)
 	{
@@ -605,7 +672,6 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)
 	switch ( ty->Tag() ) {
 	case TYPE_TABLE:
 		{
-		auto mtype = ty->AsTableType();
 		auto op1 = HiltiExpression(expr->Op2());
 		auto op2 = HiltiIndex(expr->Op1());
 
@@ -932,7 +998,12 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SetConstructo
 	auto ttype = expr->Type()->AsTableType();
 
 	if ( ttype->IsUnspecifiedTable() )
-		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+		auto stype = ast::checkedCast<::hilti::type::Set>(rt->argType());
+		return ::hilti::builder::set::create(stype->argType(), {});
+		}
 
 	std::shared_ptr<::hilti::Type> ktype;
 
@@ -1013,8 +1084,20 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::SubExpr* expr
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableCoerceExpr* expr)
 	{
-	auto t = HiltiType(expr->Type());
-	return ::hilti::builder::expression::default_(t);
+	auto tt = expr->Type()->AsTableType();
+	auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+
+	if ( tt->IsSet() )
+		{
+		auto stype = ast::checkedCast<::hilti::type::Set>(rt->argType());
+		return ::hilti::builder::set::create(stype->argType(), {});
+		}
+
+	else
+		{
+		auto mtype = ast::checkedCast<::hilti::type::Map>(rt->argType());
+		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), {});
+		}
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableConstructorExpr* expr)
@@ -1025,7 +1108,12 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TableConstruc
 	auto vtype = HiltiType(ttype->YieldType());
 
 	if ( ttype->IsUnspecifiedTable() )
-		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+		auto mtype = ast::checkedCast<::hilti::type::Map>(rt->argType());
+		return ::hilti::builder::map::create(mtype->keyType(), mtype->valueType(), {});
+		}
 
 	std::shared_ptr<::hilti::Type> ktype;
 
@@ -1080,7 +1168,10 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::TimesExpr* ex
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorCoerceExpr* expr)
 	{
-	return NotSupported(expr, "VectorCoerceExpr");
+	auto vt = expr->Type()->AsVectorType();
+	auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(vt));
+	auto vtype = ast::checkedCast<::hilti::type::Vector>(rt->argType());
+	return ::hilti::builder::vector::create(vtype->argType(), {});
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorConstructorExpr* expr)
@@ -1091,7 +1182,12 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::VectorConstru
 	auto ytype = HiltiType(vtype->YieldType());
 
 	if ( vtype->IsUnspecifiedVector() )
-		return ::hilti::builder::expression::default_(HiltiType(TargetType()));
+		{
+		auto tt = TargetType();
+		auto rt = ast::checkedCast<::hilti::type::Reference>(HiltiType(tt));
+		auto vtype = ast::checkedCast<::hilti::type::Vector>(rt->argType());
+		return ::hilti::builder::vector::create(vtype->argType(), {});
+		}
 
 	::hilti::builder::vector::element_list elems;
 
@@ -1111,29 +1207,56 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::BoolExpr* exp
 	{
 	auto result = Builder()->addTmp("b", ::hilti::builder::boolean::type());
 
-	bool ok = false;
+	auto op1 = HiltiExpression(expr->Op1(), expr->Type());
+	auto b = Builder()->addIfElse(op1);
+	auto true_ = std::get<0>(b);
+	auto false_ = std::get<1>(b);
+	auto cont = std::get<2>(b);
 
 	switch ( expr->Tag() ) {
 	case EXPR_AND:
 		{
-		ok = ok || CompileOperator(expr, result, ::TYPE_BOOL, ::TYPE_BOOL, ::hilti::instruction::boolean::And);
-		break;
+		ModuleBuilder()->pushBuilder(true_);
+		auto op2 = HiltiExpression(expr->Op2(), expr->Type());
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, op2);
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, cont->block());
+		ModuleBuilder()->popBuilder(true_);
+
+		ModuleBuilder()->pushBuilder(false_);
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, ::hilti::builder::boolean::create(false));
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, cont->block());
+		ModuleBuilder()->popBuilder(false_);
+
+		ModuleBuilder()->pushBuilder(cont);
+		// Leave on stack.
+
+		return result;
 		}
 
 	case EXPR_OR:
 		{
-		ok = ok || CompileOperator(expr, result, ::TYPE_BOOL, ::TYPE_BOOL, ::hilti::instruction::boolean::Or);
-		break;
+		ModuleBuilder()->pushBuilder(true_);
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, ::hilti::builder::boolean::create(true));
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, cont->block());
+		ModuleBuilder()->popBuilder(true_);
+
+		ModuleBuilder()->pushBuilder(false_);
+		auto op2 = HiltiExpression(expr->Op2(), expr->Type());
+		Builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, op2);
+		Builder()->addInstruction(::hilti::instruction::flow::Jump, cont->block());
+		ModuleBuilder()->popBuilder(false_);
+
+		ModuleBuilder()->pushBuilder(cont);
+		// Leave on stack.
+
+		return result;
 		}
 
 	default:
 		return NotSupported(expr, "BoolExpr");
 	}
 
-	if ( ! ok )
-		NotSupported(expr, "BoolExpr");
-
-	return result;
+	CANNOT_BE_REACHED
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::EqExpr* expr)

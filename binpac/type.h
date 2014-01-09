@@ -579,6 +579,16 @@ public:
     /// Associated names with subsets of bits.
     void setBits(const bits_list& bits);
 
+    /// Returns the bit order for interpreting bit ranges. This returns an
+    /// expression of type BinPAC::BitOrder.
+    shared_ptr<Expression> bitOrder();
+
+    /// Sets the bit ordering used to interpret bit ranges. Default is LSB0.
+    ///
+    /// order: The order to set. The must be an expression of type type
+    /// BinPAC::BitOrder..
+    void setBitOrder(shared_ptr<Expression> order);
+
     /// Returns the names associated with subsets of bits.
     bits_list bits() const;
 
@@ -599,6 +609,7 @@ public:
 
 private:
     std::list<node_ptr<integer::Bits>> _bits;
+    node_ptr<Expression> _bit_order;
     int _width;
     int _signed;
 };

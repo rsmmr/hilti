@@ -1072,8 +1072,14 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
                                             hilti::builder::string::create(name));
         }
 
-        if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type()))
+        if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type())) {
             cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", name), value);
+
+            if ( auto bf = ast::tryCast<type::Integer>(field->type()) ){
+                if ( bf->bits().size() )
+                    _hiltiDebugBitfield(value, bf);
+            }
+        }
     }
 
     if ( p && p->pgMeta()->for_each ) {
@@ -1122,10 +1128,8 @@ void ParserBuilder::_hiltiDebugVerbose(const string& msg)
 
 void ParserBuilder::_hiltiDebugShowToken(const string& tag, shared_ptr<hilti::Expression> token)
 {
-    if ( cg()->options().debug == 0 )
-        return;
-
-    cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is %s", hilti::builder::string::create(tag), token);
+    if ( cg()->options().debug > 0 )
+        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is %s", hilti::builder::string::create(tag), token);
 }
 
 void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur)
@@ -1162,8 +1166,31 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
 
     cg()->builder()->addInstruction(frozen, hilti::instruction::bytes::IsFrozenIterBytes, cur);
 
-    cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (lit-mode: %s; frozen: %s; trimming %d)",
-                                 hilti::builder::string::create(tag), next, mode, frozen, state()->trim);
+    if ( cg()->options().debug > 0 )
+        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (lit-mode: %s; frozen: %s; trimming %d)",
+                                     hilti::builder::string::create(tag), next, mode, frozen, state()->trim);
+}
+
+void ParserBuilder::_hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type)
+{
+    shared_ptr<hilti::Expression> i = cg()->builder()->addTmp("bits", cg()->hiltiType(type));
+
+    cg()->builder()->debugPushIndent();
+
+    for ( auto b : type->bits() ) {
+        auto bits = cg()->hiltiExtractsBitsFromInteger(value, type,
+                                                   hilti::builder::integer::create(b->lower()),
+                                                   hilti::builder::integer::create(b->upper()));
+
+        auto j = cg()->hiltiApplyAttributesToValue(bits, b->attributes());
+
+        if ( bits == j )
+            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", b->id()->name()), bits);
+        else
+            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s (%%s)", b->id()->name()), j, bits);
+    }
+
+    cg()->builder()->debugPopIndent();
 }
 
 std::pair<bool, string> ParserBuilder::_hookName(const string& path)
@@ -1195,7 +1222,6 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::I
         return;
 
     auto t = _hookName(id->pathAsString());
-    auto local = t.first;
     auto name = t.second;
 
     if ( unit_module->id()->name() != current_module->id()->name() )
@@ -1296,7 +1322,6 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<binpac::ty
     _hiltiDebugVerbose(msg);
 
     auto t = _hookName(id->pathAsString());
-    auto local = t.first;
     auto name = t.second;
 
     // TODO: Don't need "local" anymore I believe.
@@ -1572,7 +1597,6 @@ void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod, const std::l
 
     if ( cg()->options().debug > 0 )
         cg()->builder()->addDebugMsg("binpac-verbose", "- new look-ahead is %s", state()->lahead);
-
 }
 
 shared_ptr<hilti::Expression> ParserBuilder::_hiltiMatchTokenInit(const string& name, const std::list<shared_ptr<production::Terminal>>& terms)

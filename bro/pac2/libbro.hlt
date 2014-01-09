@@ -11,6 +11,7 @@ type Pac2Cookie = caddr
 declare "C-HILTI" BroVal cookie_to_conn_val(Pac2Cookie cookie)
 declare "C-HILTI" BroVal cookie_to_file_val(Pac2Cookie cookie)
 declare "C-HILTI" BroVal cookie_to_is_orig(Pac2Cookie cookie)
+declare "C-HILTI" bool   cookie_to_is_orig_boolean(Pac2Cookie cookie)
 declare "C-HILTI" BroVal h2b_bytes(ref<bytes> val)
 declare "C-HILTI" BroVal h2b_integer_signed(int<64> val)
 declare "C-HILTI" BroVal h2b_integer_unsigned(int<64> val)
@@ -23,6 +24,7 @@ declare "C-HILTI" BroVal h2b_bool(bool b)
 declare "C-HILTI" BroVal h2b_enum(any e, int<64> type_idx)
 declare "C-HILTI" BroVal h2b_enum_type(any e, BroType ty)
 declare "C-HILTI" BroVal h2b_time(time b)
+declare "C-HILTI" BroVal h2b_interval(interval i)
 declare "C-HILTI" BroVal h2b_type(BroVal t)
 declare "C-HILTI" BroVal h2b_function(BroVal t)
 declare "C-HILTI" BroVal h2b_void()
@@ -88,6 +90,12 @@ declare "C-HILTI" BroType bro_enum_type_new(string module_name, string name)
 declare "C-HILTI" void    bro_enum_type_add_name(BroType etype, string module_name, string name, int<64> val)
 
 declare "C-HILTI" BroType bro_subnet_type_new()
+
+declare "C-HILTI" void    object_mapping_register(BroVal bobj, any hobj)
+declare "C-HILTI" void    object_mapping_unregister_bro(BroVal obj)
+declare "C-HILTI" void    object_mapping_unregister_hilti(any obj)
+declare "C-HILTI" BroVal  object_mapping_lookup_bro(any obj)
+declare "C-HILTI" any     object_mapping_lookup_hilti(BroVal val)
 
 export cookie_to_conn_val
 export h2b_bytes

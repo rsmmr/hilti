@@ -176,7 +176,7 @@ int main(int argc, char** argv)
         if ( want_runtime ) {
             appendList(&cflags, binpac_config.runtime_cflags);
             appendList(&cflags, binpac_config.runtime_include_dirs, "-I");
-            appendList(&cxxflags, binpac_config.runtime_cflags);
+            appendList(&cxxflags, binpac_config.runtime_cxxflags);
             appendList(&cxxflags, binpac_config.runtime_include_dirs, "-I");
             appendList(&ldflags, binpac_config.runtime_ldflags);
 
@@ -233,7 +233,7 @@ int main(int argc, char** argv)
         if ( want_runtime ) {
             appendList(&cflags, hilti_config.runtime_cflags);
             appendList(&cflags, hilti_config.runtime_include_dirs, "-I");
-            appendList(&cxxflags, hilti_config.runtime_cflags);
+            appendList(&cxxflags, hilti_config.runtime_cxxflags);
             appendList(&cxxflags, hilti_config.runtime_include_dirs, "-I");
             appendList(&ldflags, hilti_config.runtime_ldflags);
 

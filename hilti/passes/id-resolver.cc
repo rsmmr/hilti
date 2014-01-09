@@ -106,6 +106,10 @@ void IdResolver::visit(type::Unknown* t)
 
     auto tv = nt->typeValue();
 
+    // auto m = current<Module>();
+    // assert(m);
+    // fprintf(stderr, "@ [%s] %s -> %s\n", m->id()->name().c_str(), id->pathAsString().c_str(), tv->render().c_str());
+
     t->replace(tv);
 
     if ( tv->id() ) {

@@ -251,7 +251,15 @@ public:
    virtual type_list alsoMatchableTo() const { return type_list(); }
 };
 
-// class BLockable.
+/// Trait class marking a type that is passed by reference.
+class HeapType : public virtual Trait
+{
+};
+
+/// Trait class marking a type that is passed by value.
+class ValueType : public virtual Trait
+{
+};
 
 }
 
@@ -307,7 +315,7 @@ public:
 };
 
 /// Base class for types that are stored on the stack and value-copied.
-class ValueType : public HiltiType, public trait::Hashable
+class ValueType : public HiltiType, public trait::Hashable, public trait::ValueType
 {
 public:
    /// Constructor.
@@ -319,7 +327,7 @@ public:
 
 /// Base class for types that stored on the heap and manipulated only by
 /// reference.
-class HeapType : public HiltiType, public trait::GarbageCollected
+class HeapType : public HiltiType, public trait::GarbageCollected, public trait::HeapType
 {
 public:
    /// Constructor.
@@ -944,28 +952,16 @@ enum CallingConvention {
     HILTI,      /// Internal convention for calls between HILTI functions.
     HOOK,       /// Internal convention for hooks.
     HILTI_C,    /// C-compatible calling convention, but with extra HILTI run-time parameters.
-    C           /// C-compatable calling convention, with no messing around with parameters.
+    C,          /// C-compatable calling convention, with no messing around with parameters.
+    CALLABLE    /// Internal convention for call to callable instances.
 };
 
 }
 
-/// Type for functions.
-class Function : public ValueType, public ast::type::mixin::Function<AstInfo>  {
+/// Base class for all function types.
+class Function : public HiltiType, public ast::type::mixin::Function<AstInfo>
+{
 public:
-   /// Constructor.
-   ///
-   /// result: The function return type.
-   ///
-   /// params: The function's parameters.
-   ///
-   /// cc: The function's calling convention.
-   ///
-   /// l: Associated location.
-   Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l=Location::None);
-
-   /// Constructor for a function type that matches any other function type (i.e., a wildcard type).
-   Function(const Location& l=Location::None);
-
    /// Returns the function's calling convention.
    hilti::type::function::CallingConvention callingConvention() const { return _cc; }
 
@@ -982,15 +978,53 @@ public:
 
    bool _equal(shared_ptr<hilti::Type> other) const override;
 
-   ACCEPT_VISITOR(hilti::Type);
+   ACCEPT_VISITOR(HiltiType);
+
+protected:
+   /// Constructor.
+   ///
+   /// result: The function return type.
+   ///
+   /// params: The function's parameters.
+   ///
+   /// cc: The function's calling convention.
+   ///
+   /// l: Associated location.
+   Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l=Location::None);
+
+   /// Constructor for a function type that matches any other function type (i.e., a wildcard type).
+   Function(const Location& l=Location::None);
 
 private:
    hilti::type::function::CallingConvention _cc;
    bool _plusone;
 };
 
+/// Type for HILTI-level functions.
+class HiltiFunction : public Function, public trait::ValueType
+{
+public:
+   /// Constructor.
+   ///
+   /// result: The hook's return type.
+   ///
+   /// params: The hooks's parameters.
+   ///
+   /// l: Associated location.
+   HiltiFunction(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l=Location::None)
+       : Function(result, args, cc, l) { }
+
+   /// Constructor for a hook type that matches any other hook type (i.e., a
+   /// wildcard type).
+   HiltiFunction(const Location& l=Location::None) : Function(l) {}
+
+   virtual ~HiltiFunction();
+
+   ACCEPT_VISITOR(hilti::type::Function);
+};
+
 /// Type for hooks.
-class Hook : public Function
+class Hook : public Function, public trait::ValueType
 {
 public:
    /// Constructor.
@@ -1010,6 +1044,34 @@ public:
    virtual ~Hook();
 
    ACCEPT_VISITOR(hilti::type::Function);
+};
+
+/// Type for callable instances.
+///
+class Callable : public Function, public trait::HeapType, public trait::GarbageCollected, public trait::Parameterized
+{
+public:
+   /// Constructor.
+   ///
+   /// result: The callables's return type.
+   ///
+   /// params: The callables's parameters.
+   ///
+   /// l: Associated location.
+   Callable(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args,  const Location& l=Location::None)
+       : Function(result, args, function::CALLABLE, l) {}
+
+   /// Constructor for wildcard callable type..
+   ///
+   /// l: Associated location.
+   Callable(const Location& l=Location::None) : Function(l) {}
+
+   /// Destructor.
+   ~Callable();
+
+   trait::Parameterized::parameter_list parameters() const override;
+
+   ACCEPT_VISITOR(Function);
 };
 
 /// Type for bytes instances.
@@ -1046,29 +1108,6 @@ public:
 };
 
 }
-
-/// Type for callable instances.
-///
-class Callable : public TypedHeapType
-{
-public:
-   /// Constructor.
-   ///
-   /// rtype: The callable's return type. This must be a value type.
-   ///
-   /// l: Associated location.
-   Callable(shared_ptr<Type> rtype, const Location& l=Location::None) : TypedHeapType(rtype, l) {}
-
-   /// Constructor for wildcard callable type..
-   ///
-   /// l: Associated location.
-   Callable(const Location& l=Location::None) : TypedHeapType(l) {}
-
-   /// Destructor.
-   ~Callable();
-
-   ACCEPT_VISITOR(Type);
-};
 
 /// Type for classifier instances.
 ///
@@ -1164,7 +1203,7 @@ public:
    shared_ptr<Type> type() const { return _type; }
 
    /// Returns the field's start offset, if set via the ctor; -1 if not.
-   const int startOffset() const { return _start_offset; }
+   int startOffset() const { return _start_offset; }
 
    /// Returns the field's predecessor field, if set via the ctor; null if not.
    shared_ptr<ID> startField() const { return _start_field; }

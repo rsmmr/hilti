@@ -30,7 +30,9 @@ std::list<trait::Parseable::ParseAttribute> trait::Parseable::parseAttributes() 
 string binpac::Type::render()
 {
     std::ostringstream s;
-    passes::Printer(s, true).run(sharedPtr<Node>());
+    passes::Printer p(s, true);
+    p.setQualifyTypeIDs(true);
+    p.run(sharedPtr<Node>());
     return s.str();
 }
 
@@ -466,6 +468,8 @@ Integer::Integer(int width, bool sign, const Location& l) : PacType(l)
 {
     _width = width;
     _signed = sign;
+
+    setBitOrder(std::make_shared<expression::ID>(std::make_shared<ID>("BinPAC::BitOrder::LSB0")));
 }
 
 Integer::Integer(const Location& l) : PacType(l)
@@ -508,6 +512,18 @@ Integer::bits_list Integer::bits() const
     return bits;
 }
 
+shared_ptr<Expression> Integer::bitOrder()
+{
+    return _bit_order;
+}
+
+void Integer::setBitOrder(shared_ptr<Expression> order)
+{
+    removeChild(_bit_order);
+    _bit_order = order;
+    addChild(_bit_order);
+}
+
 bool Integer::_equal(shared_ptr<binpac::Type> other) const
 {
     auto iother = ast::checkedCast<type::Integer>(other);
@@ -521,7 +537,8 @@ bool Integer::_equal(shared_ptr<binpac::Type> other) const
 std::list<trait::Parseable::ParseAttribute> Integer::parseAttributes() const
 {
     return {
-        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false }
+        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false },
+        { "bitorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::BitOrder")), nullptr, false },
     };
 }
 

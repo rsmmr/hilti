@@ -11,13 +11,13 @@ __attribute__ ((weak)) void __hlt_modules_init(void* ctx)
         (*_functions->__hlt_modules_init)(ctx);
 }
 
-__attribute__ ((weak)) void __hlt_globals_init(struct __hlt_execution_context* ctx)
+__attribute__ ((weak)) void __hlt_globals_init(void* ctx)
 {
     if ( _functions && _functions->__hlt_globals_init )
         (*_functions->__hlt_globals_init)(ctx);
 }
 
-__attribute__ ((weak)) void __hlt_globals_dtor(struct __hlt_execution_context* ctx)
+__attribute__ ((weak)) void __hlt_globals_dtor(void* ctx)
 {
     // fprintf(stderr, "X2 %p %p %p\n", _functions->__hlt_globals_dtor, &_functions, _functions);
 

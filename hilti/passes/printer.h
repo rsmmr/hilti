@@ -28,7 +28,6 @@ public:
    void printFlow(Statement* stmt, const string& prefix = "");
 
 protected:
-
    void visit(Module* m) override;
    void visit(ID* id) override;
 
@@ -59,7 +58,7 @@ protected:
    void visit(type::Enum* t) override;
    void visit(type::Exception* t) override;
    void visit(type::File* t) override;
-   void visit(type::Function* t) override;
+   void visit(type::HiltiFunction* t) override;
    void visit(type::Hook* t) override;
    void visit(type::IOSource* t) override;
    void visit(type::Integer* t) override;
@@ -125,6 +124,7 @@ protected:
    void visit(ctor::RegExp* c) override;
    void visit(ctor::Set* c) override;
    void visit(ctor::Vector* c) override;
+   void visit(ctor::Callable* c) override;
 
 private:
    Module* _module = nullptr;

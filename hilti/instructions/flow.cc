@@ -69,8 +69,11 @@ iEndCC
 
 iBeginCC(flow)
     iValidateCC(CallCallableResult) {
-        auto ctype = ast::as<type::Callable>(referencedType(op1));
-        checkCallResult(ctype->argType(), target->type());
+        auto rt = ast::checkedCast<type::Reference>(op1->type());
+        auto ftype = ast::checkedCast<type::Callable>(rt->argType());
+        auto rtype = ftype->result()->type();
+        checkCallParameters(ftype, op2);
+        checkCallResult(rtype, target->type());
     }
 
     iDocCC(CallCallableResult, "")
@@ -78,9 +81,12 @@ iEndCC
 
 iBeginCC(flow)
     iValidateCC(CallCallableVoid) {
-        auto ctype = ast::as<type::Callable>(referencedType(op1));
+        auto rt = ast::checkedCast<type::Reference>(op1->type());
+        auto ftype = ast::checkedCast<type::Callable>(rt->argType());
+        auto rtype = ftype->result()->type();
         shared_ptr<Type> none = nullptr;
-        checkCallResult(ctype->argType(), none);
+        checkCallParameters(ftype, op2);
+        checkCallResult(rtype, none);
     }
 
     iDocCC(CallCallableVoid, "")
@@ -147,11 +153,11 @@ iEndCC
 
 iBeginCC(flow)
     iValidateCC(Switch) {
-        auto ty_op1 = as<type::ValueType>(op1->type());
+        auto ty_op1 = op1->type();
         auto ty_op2 = as<type::Label>(op2->type());
         auto ty_op3 = as<type::Tuple>(op3->type());
 
-        if ( ! ty_op1 ) {
+        if ( ! type::hasTrait<type::trait::ValueType>(ty_op1) ) {
             error(op1, "switch operand must be a value type");
             return;
         }

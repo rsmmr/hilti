@@ -96,11 +96,11 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_onl
     if ( ! ti->llvm_type && ti->lib_type.size() ) {
         ti->llvm_type = cg()->llvmLibType(ti->lib_type);
 
-        if ( ast::isA<type::HeapType>(type) )
+        if ( type::hasTrait<type::trait::HeapType>(type) )
             ti->llvm_type = cg()->llvmTypePtr(ti->llvm_type);
     }
 
-    if ( ast::isA<type::HeapType>(type) ) {
+    if ( type::hasTrait<type::trait::HeapType>(type) ) {
         ti->obj_dtor = ti->dtor;
         ti->obj_dtor_func = ti->dtor_func;
         ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
@@ -116,7 +116,7 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_onl
     }
 
     if ( type::hasTrait<type::trait::Hashable>(type) &&
-         ast::isA<type::ValueType>(type) ) {
+         type::hasTrait<type::trait::ValueType>(type) ) {
         if ( ti->hash == "" )
             ti->hash = "hlt::default_hash";
 
@@ -127,7 +127,7 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_onl
     if ( ! ti->name.size() )
         ti->name = type->render();
 
-    if ( ti->llvm_type && ! ti->init_val && ast::isA<type::ValueType>(type) )
+    if ( ti->llvm_type && ! ti->init_val && type::hasTrait<type::trait::ValueType>(type) )
         ti->init_val = cg()->llvmConstNull(ti->llvm_type);
 
     if ( ! ti )
@@ -142,7 +142,7 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_onl
     if ( ast::isA<type::HiltiType>(type) && ! ti->llvm_type )
         internalError(::util::fmt("type info for %s does not define an llvm_type", ti->name.c_str()));
 
-    if ( ast::isA<type::ValueType>(type) && ! ti->init_val )
+    if ( type::hasTrait<type::trait::ValueType>(type) && ! ti->init_val )
         internalError(::util::fmt("type info for %s does not define an init value", ti->name.c_str()));
 
 #if 0
@@ -622,12 +622,12 @@ void TypeBuilder::visit(type::Bitset* t)
 void TypeBuilder::visit(type::Enum* t)
 {
     CodeGen::constant_list default_;
-    default_.push_back(cg()->llvmConstInt(HLT_ENUM_UNDEF, 8));
+    default_.push_back(cg()->llvmConstInt(HLT_ENUM_UNDEF, 64));
     default_.push_back(cg()->llvmConstInt(0, 64));
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_ENUM;
-    ti->init_val = cg()->llvmConstStruct(default_);
+    ti->init_val = cg()->llvmConstStruct(default_, true);
     ti->to_string = "hlt::enum_to_string";
     ti->to_int64 = "hlt::enum_to_int64";
 

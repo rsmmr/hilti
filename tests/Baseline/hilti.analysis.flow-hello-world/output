@@ -6,16 +6,16 @@ void run()
 {
 
   
-      # pred: { <none> } succ: { [0031] }
+      # pred: { <none> } succ: { [0030] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
       # now-dead: { <none> }
-      [0028] call Hilti::print ("Hello, World!", True)
-      # pred: { [0028] } succ: { <none> }
+      [0029] call Hilti::print ("Hello, World!", True)
+      # pred: { [0029] } succ: { <none> }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
       # now-dead: { <none> }
-      [0031] block.end
+      [0030] block.end
   
 }
 

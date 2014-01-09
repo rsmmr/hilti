@@ -1,0 +1,5 @@
+
+>>> c = new callable<int<64>,double a1, double a2> foo ("ICSI")
+wrong-unbound.hlt:18-20: error, number of unbound arguments do not match callable (expected 2, have 3) [pass::hilti::Validator]
+wrong-unbound.hlt: Aborting due to verification error.
+error running hiltic, aborting

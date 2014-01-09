@@ -106,7 +106,7 @@ public:
 	 *
 	 * msg: The error message to log.
 	 */
-	void InternalError(const std::string& msg, const BroObj* obj = 0) const;
+	void InternalError(const std::string& msg, const BroObj* obj = 0) const __attribute__((noreturn));
 
 	/**
 	 * Returns the compiler in use. This forwards to the corresponding
@@ -383,6 +383,23 @@ public:
 	 * XXX
 	 */
 	const ::Func* CurrentFunction() const;
+
+	/**
+	 * Attempts to statically determine the Bro function referenced by a
+	 * Bro expression. This may or may not work.
+	 *
+	 * The method forwards to Compiler::BroExprToFunc.
+	 *
+	 * @param func The expression referencing a function
+	 *
+	 * @return A pair \a (success, function). If \a success is true, we
+	 * could infer which Bro function the expression referes to; in that
+	 * case, the function is usually it in the 2nd pair element if
+	 * there's a local implementation (and null instead if not). If \a
+	 * success is false, we couldn't statically determine behind the
+	 * expression; in that case, the 2nd pair element is undefined.
+	 */
+	std::pair<bool, ::Func*> BroExprToFunc(const ::Expr* func);
 
 	/**
 	 * XXX

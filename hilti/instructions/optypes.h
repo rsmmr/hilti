@@ -29,7 +29,7 @@ static shared_ptr<Type> double_(new type::Double());
 static shared_ptr<Type> enum_(new type::Enum());
 static shared_ptr<Type> exception(new type::Exception());
 static shared_ptr<Type> file(new type::File());
-static shared_ptr<Type> function(new type::Function());
+static shared_ptr<Type> function(new type::HiltiFunction());
 static shared_ptr<Type> hook(new type::Hook());
 static shared_ptr<Type> interval(new type::Interval());
 static shared_ptr<Type> iosource(new type::IOSource());

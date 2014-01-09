@@ -19,6 +19,12 @@ typedef hlt_timer* __khval_set_t; // The value stored for sets. Not memory-manag
 
 #include "3rdparty/khash/khash.h"
 
+enum MapDefaultType {
+    HLT_MAP_DEFAULT_NONE,
+    HLT_MAP_DEFAULT_VALUE,
+    HLT_MAP_DEFAULT_FUNCTION
+};
+
 typedef struct __hlt_map {
     __hlt_gchdr __gchdr;    // Header for memory management.
     const hlt_type_info* tkey;   // Key type.
@@ -26,9 +32,14 @@ typedef struct __hlt_map {
     hlt_timer_mgr* tmgr;         // The timer manager or null.
     hlt_interval timeout;        // The timeout value, or 0 if disabled
     hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
-    int8_t have_def;             // True if a default value has been set.
-    __val_t def;                 // The default value if set.
-    void *result;                // Cache for deref's result tuple.
+    enum MapDefaultType default_type; // Type of the map's default.
+    union {
+        __val_t value;           // Default value for HLT_MAP_DEFAULT_VALUE
+        hlt_callable* function;  // Default function for HLT_MAP_DEFAULT_FUNCTION
+    } default_;
+
+    void *cache_result;                // Cache for deref's result tuple.
+    void *cache_default;               // Cache for DEFAULT_FUNCTION's result value.
 
     // These are used by khash and copied from there (see README.HILTI).
     khint_t n_buckets, size, n_occupied, upper_bound;
@@ -67,6 +78,26 @@ static inline int8_t _kh_hash_equal(const void* obj1, const void* obj2, const hl
 KHASH_INIT(map, __khkey_t, __khval_map_t, 1, _kh_hash_func, _kh_hash_equal)
 KHASH_INIT(set, __khkey_t, __khval_set_t, 1, _kh_hash_func, _kh_hash_equal)
 
+static inline void _map_clear_default(hlt_map* m)
+{
+    switch ( m->default_type ) {
+     case HLT_MAP_DEFAULT_NONE:
+        break;
+
+     case HLT_MAP_DEFAULT_VALUE:
+        GC_DTOR_GENERIC(m->default_.value, m->tvalue);
+        hlt_free(m->default_.value);
+        break;
+
+     case HLT_MAP_DEFAULT_FUNCTION:
+        GC_DTOR(m->default_.function, hlt_callable);
+        break;
+    }
+
+    m->default_type = HLT_MAP_DEFAULT_NONE;
+    memset(&m->default_, 0, sizeof(m->default_)); // Just to help debugging.
+}
+
 void hlt_map_dtor(hlt_type_info* ti, hlt_map* m)
 {
     for ( khiter_t i = kh_begin(m); i != kh_end(m); i++ ) {
@@ -78,10 +109,12 @@ void hlt_map_dtor(hlt_type_info* ti, hlt_map* m)
         }
     }
 
+    _map_clear_default(m);
+
     GC_DTOR(m->tmgr, hlt_timer_mgr);
-    GC_DTOR_GENERIC(m->def, m->tvalue);
-    hlt_free(m->result);
-    hlt_free(m->def);
+    hlt_free(m->cache_result);
+    hlt_free(m->cache_default);
+
     kh_destroy_map(m);
 }
 
@@ -170,8 +203,11 @@ hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_t
     m->tvalue = value;
     m->timeout = 0.0;
     m->strategy = hlt_enum_unset(excpt, ctx);
-    m->have_def = 0;
-    m->result = 0;
+    m->cache_result = 0;
+    m->cache_default = 0;
+
+    _map_clear_default(m);
+
     return m;
 }
 
@@ -186,9 +222,23 @@ void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exceptio
 
     if ( i == kh_end(m) ) {
 
-        if ( m->have_def ) {
-            GC_CCTOR_GENERIC(m->def, m->tvalue);
-            return m->def;
+        switch ( m->default_type ) {
+         case HLT_MAP_DEFAULT_NONE:
+            break;
+
+         case HLT_MAP_DEFAULT_VALUE:
+            GC_CCTOR_GENERIC(m->default_.value, m->tvalue);
+            return m->default_.value;
+
+         case HLT_MAP_DEFAULT_FUNCTION: {
+            if ( ! m->cache_default )
+                m->cache_default = hlt_malloc(m->tvalue->size);
+
+            void **k = (void **)key;
+            HLT_CALLABLE_RUN(m->default_.function, m->cache_default, Hilti_MapDefaultFunction, k, excpt, ctx);
+            return m->cache_default;
+         }
+
         }
 
         hlt_set_exception(excpt, &hlt_exception_index_error, 0);
@@ -371,12 +421,28 @@ void hlt_map_clear(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx
 
 void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    GC_DTOR_GENERIC(m->def, tdef);
-    hlt_free(m->def);
+    _map_clear_default(m);
 
-    m->have_def = 1;
-    m->def = _to_voidp(tdef, def);
-    GC_CCTOR_GENERIC(m->def, tdef);
+    if ( tdef->type != HLT_TYPE_CALLABLE )  {
+        m->default_type = HLT_MAP_DEFAULT_VALUE;
+        m->default_.value = _to_voidp(tdef, def);
+        GC_CCTOR_GENERIC(m->default_.value, tdef);
+    }
+
+    else {
+        m->default_type = HLT_MAP_DEFAULT_FUNCTION;
+        m->default_.function = *(hlt_callable **)def;
+        GC_CCTOR(m->default_.function, hlt_callable);
+    }
+}
+
+void hlt_map_default_callable(hlt_map* m, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    _map_clear_default(m);
+
+    m->default_type = HLT_MAP_DEFAULT_FUNCTION;
+    m->default_.function = func;
+    GC_CCTOR(m->default_.function, hlt_callable);
 }
 
 void hlt_map_timeout(hlt_map* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -443,13 +509,13 @@ void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map i, hlt
     void* key = kh_key(i.map, i.iter);
     void* val = kh_value(i.map, i.iter).val;
 
-    if ( ! i.map->result )
-        i.map->result = hlt_malloc(tuple->size);
+    if ( ! i.map->cache_result )
+        i.map->cache_result = hlt_malloc(tuple->size);
 
     int16_t* offsets = (int16_t *)tuple->aux;
     hlt_type_info** types = (hlt_type_info**) &tuple->type_params;
 
-    void *result = i.map->result;
+    void *result = i.map->cache_result;
 
     memcpy(result + offsets[0], key, types[0]->size);
     memcpy(result + offsets[1], val, types[1]->size);

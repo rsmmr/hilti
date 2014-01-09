@@ -17,7 +17,26 @@ hlt_string hlt_port_to_string(const hlt_type_info* type, const void* obj, int32_
 
     hlt_port port = *((hlt_port *)obj);
 
-    const char *proto = (port.proto == HLT_PORT_TCP) ? "tcp" : "udp";
+    const char* proto = 0;
+
+    switch ( port.proto ) {
+     case HLT_PORT_TCP:
+        proto = "tcp";
+        break;
+
+     case HLT_PORT_UDP:
+        proto = "udp";
+        break;
+
+     case HLT_PORT_ICMP:
+        proto = "icmp";
+        break;
+
+     default:
+        proto = "<unknown-protocol>";
+        break;
+    }
+
     char buffer[128];
     snprintf(buffer, sizeof(buffer), "%d/%s", port.port, proto);
     return hlt_string_from_asciiz(buffer, excpt, ctx);
@@ -46,6 +65,9 @@ hlt_port hlt_port_from_asciiz(const char* s, hlt_exception** excpt, hlt_executio
 
     else if ( strcmp(t, "/udp") == 0 )
         p.proto = HLT_PORT_UDP;
+
+    else if ( strcmp(t, "/icmp") == 0 )
+        p.proto = HLT_PORT_ICMP;
 
     else
         goto error;

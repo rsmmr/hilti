@@ -1,0 +1,35 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+int<64> foo(string s1, string s2, double d1, double d2) {
+    local string s
+    local int<64> i
+    local double d
+
+    s = call Hilti::fmt ("%s/%s/%f/%f", (s1, s2, d1, d2))
+    call Hilti::print (s)
+
+    d = double.add d1 d2
+    i = double.as_sint d
+    return.result i
+    }
+
+void run() {
+    local ref<callable<int<64>, double, double>> c
+    local int<64> result
+
+    c = callable<int<64>, double, double>(foo, ("ICSI", "ICIR"))
+    result = call c (10.0, 20.0)
+    call Hilti::print (result)
+
+    result = call callable<int<64>, double, double>(foo, ("ICIR", "ICSI")) (20.0, 30.0)
+    call Hilti::print (result)
+
+    return.void
+}

@@ -38,3 +38,12 @@ void CodeBuilder::visit(expression::operator_::enum_::Call* i)
 
     setResult(result);
 }
+
+void CodeBuilder::visit(expression::operator_::enum_::CastInteger* i)
+{
+    auto itype = ast::checkedCast<type::TypeType>(i->op2()->type())->typeType();
+    auto result = builder()->addTmp("i", cg()->hiltiType(itype));
+    auto op1 = cg()->hiltiExpression(i->op1());
+    cg()->builder()->addInstruction(result, hilti::instruction::enum_::ToInt, op1);
+    setResult(result);
+}

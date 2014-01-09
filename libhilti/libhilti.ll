@@ -134,6 +134,8 @@ declare %hlt.blockable* @__hlt_object_blockable(%hlt.type_info*, i8*, %hlt.excep
 declare void @__hlt_debug_print(i8*, i8*)
 declare void @__hlt_debug_push_indent(%hlt.execution_context*)
 declare void @__hlt_debug_pop_indent(%hlt.execution_context*)
+declare void @__hlt_debug_print_str(i8*, %hlt.execution_context*)
+declare void @__hlt_debug_print_ptr(i8*, i8*, %hlt.execution_context*)
 
 declare %hlt.string* @hlt_string_from_data(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 declare %hlt.bytes*  @hlt_bytes_new_from_data_copy(i8*, i64, %hlt.exception**, %hlt.execution_context*)

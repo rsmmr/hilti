@@ -28,13 +28,13 @@ public:
     ///
     /// libdirs: List of directories to search for relative paths. The current
     /// directly will be tried first.
-    CompilerContext(const Options& options);
+    CompilerContext(std::shared_ptr<Options> options);
 
     /// Returns the set of options in effect.
     const Options& options() const;
 
     /// Updates the current set of options.
-    void setOptions(const Options& options);
+    void setOptions(std::shared_ptr<Options> options);
 
     /// Reads a BinPAC++ source file and returns the parsed AST. The function
     /// searches the file in the paths given and reads it in. It then uses uses

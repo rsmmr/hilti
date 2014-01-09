@@ -44,6 +44,14 @@ void CodeBuilder::visit(expression::operator_::integer::CastTime* i)
     setResult(result);
 }
 
+void CodeBuilder::visit(expression::operator_::integer::CastInterval* i)
+{
+    auto result = builder()->addTmp("i", hilti::builder::interval::type());
+    auto op1 = cg()->hiltiExpression(i->op1());
+    cg()->builder()->addInstruction(result, hilti::instruction::integer::AsInterval, op1);
+    setResult(result);
+}
+
 void CodeBuilder::visit(expression::operator_::integer::CoerceBool* i)
 {
     auto result = builder()->addTmp("notnull", hilti::builder::boolean::type());
@@ -302,13 +310,9 @@ void CodeBuilder::visit(expression::operator_::integer::Attribute* i)
     auto bits = itype->bits(attr->id());
     assert(bits);
 
-    shared_ptr<hilti::Expression> result = cg()->builder()->addTmp("bits", cg()->hiltiType(itype));
-
-    cg()->builder()->addInstruction(result,
-                                    hilti::instruction::integer::Mask,
-                                    cg()->hiltiExpression(i->op1()),
-                                    hilti::builder::integer::create(bits->lower()),
-                                    hilti::builder::integer::create(bits->upper()));
+    auto result = cg()->hiltiExtractsBitsFromInteger(hiltiExpression(i->op1()), itype,
+                                                     hilti::builder::integer::create(bits->lower()),
+                                                     hilti::builder::integer::create(bits->upper()));
 
     result = cg()->hiltiApplyAttributesToValue(result, bits->attributes());
 

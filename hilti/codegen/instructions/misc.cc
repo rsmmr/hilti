@@ -19,7 +19,6 @@ void StatementBuilder::visit(statement::instruction::Misc::Select* i)
 
 void StatementBuilder::visit(statement::instruction::Misc::SelectValue* i)
 {
-    auto op1 = cg()->llvmValue(i->op1());
     auto op3 = i->op3() ? cg()->llvmValue(i->op3(), i->target()->type()) : nullptr;
 
     auto a1 = ast::as<expression::Constant>(i->op2());

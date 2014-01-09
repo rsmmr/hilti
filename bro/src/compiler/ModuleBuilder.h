@@ -49,6 +49,11 @@ public:
 	shared_ptr<::hilti::Module> Compile();
 
 	/**
+	 * XXX Don't call when calling Compile(), it does is already.
+	 */
+	shared_ptr<::hilti::Module> Finalize();
+
+	/**
 	 * Returns the compiler that instantiated this builder.
 	 */
 	class Compiler* Compiler() const;

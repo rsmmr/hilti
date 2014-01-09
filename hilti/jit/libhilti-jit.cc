@@ -53,13 +53,13 @@ void hlt_init_jit(std::shared_ptr<hilti::CompilerContext> ctx, llvm::Module* mod
     assert(hlt_init_from_state);
 
     f = ctx->nativeFunction(module, ee, "__hlt_modules_init");
-    auto modules_init = (void (*)(__hlt_execution_context*))f;
+    auto modules_init = (void (*)(void*))f;
 
     f = ctx->nativeFunction(module, ee, "__hlt_globals_init");
-    auto globals_init = (void (*)(__hlt_execution_context*))f;
+    auto globals_init = (void (*)(void*))f;
 
     f = ctx->nativeFunction(module, ee, "__hlt_globals_dtor");
-    auto globals_dtor = (void (*)(__hlt_execution_context*))f;
+    auto globals_dtor = (void (*)(void*))f;
 
     f = ctx->nativeFunction(module, ee, "__hlt_globals_size");
     auto globals_size = (int64_t (*)())f;

@@ -149,17 +149,23 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildConversionFunction(
 	auto fname = ::util::fmt("%s_%s", tag, HiltiSymbol(type));
 	auto qualified_fname = ::util::fmt("%s::%s_%s", glue_ns, tag, HiltiSymbol(type));
 
-	auto result = ::hilti::builder::function::result(dsttype);
-	auto param = ::hilti::builder::function::parameter("val", valtype, false, nullptr);
-
 	if ( ! glue_mbuilder->declared(fname) )
 		{
 		Compiler()->pushModuleBuilder(glue_mbuilder);
+
+		// Note, we need to compute these type here separately from
+		// those below. By calling HiltiType() only after the glue
+		// builder has been pushed, we make sure that they reference
+		// external types correctly.
+		auto gvaltype = valtype ? valtype : HiltiType(type);
+		auto gdsttype = dsttype ? dsttype : HiltiType(type);
+
+		auto result = ::hilti::builder::function::result(gdsttype);
+		auto param = ::hilti::builder::function::parameter("val", gvaltype, false, nullptr);
 		auto func = glue_mbuilder->pushFunction(fname, result, { param });
 		glue_mbuilder->exportID(func->id());
 
-		auto dst = Builder()->addTmp("dst", dsttype);
-		cb(dst, ::hilti::builder::id::create("val"), type);
+		auto dst = cb(::hilti::builder::id::create("val"), type);
 		Builder()->addInstruction(::hilti::instruction::flow::ReturnResult, dst);
 
 		glue_mbuilder->popFunction();
@@ -167,8 +173,18 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildConversionFunction(
 		Compiler()->popModuleBuilder();
 		}
 
+	if ( ! valtype )
+		valtype = HiltiType(type);
+
+	if ( ! dsttype )
+		dsttype = HiltiType(type);
+
 	if ( ! mbuilder->declared(qualified_fname) )
+		{
+		auto result = ::hilti::builder::function::result(dsttype);
+		auto param = ::hilti::builder::function::parameter("val", valtype, false, nullptr);
 		mbuilder->declareFunction(qualified_fname, result, { param });
+		}
 
 	auto tmp = Builder()->addTmp("conv", dsttype);
 
@@ -218,6 +234,15 @@ void ConversionBuilder::FinalizeTypes()
 
 	glue_mbuilder->popFunction();
 	Compiler()->popModuleBuilder();
+	}
+
+bool ConversionBuilder::IsShadowedType(const BroType* type) const
+	{
+	if ( ! type->GetTypeID() )
+		return false;
+
+	auto name = ::extract_var_name(type->GetTypeID());
+	return name == "connection";
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiGlobalForType(const char* tag,
@@ -334,10 +359,9 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHiltiBaseType(share
 	case TYPE_BOOL:
 		{
 		Builder()->addInstruction(dst,
-					  ::hilti::instruction::Misc::Select,
+					  ::hilti::instruction::operator_::Unequal,
 					  BroInternalInt(val),
-					  ::hilti::builder::boolean::create(true),
-					  ::hilti::builder::boolean::create(false));
+					  ::hilti::builder::integer::create(0));
 		return dst;
 		}
 
@@ -477,6 +501,25 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 
 	auto dst = Builder()->addTmp("b2h", t);
 
+	std::shared_ptr<::hilti::builder::BlockBuilder> cached = nullptr;
+	std::shared_ptr<::hilti::builder::BlockBuilder> not_cached = nullptr;
+	std::shared_ptr<::hilti::builder::BlockBuilder> done = nullptr;
+
+	if ( IsShadowedType(type) )
+		{
+		// Check runtime object registry first.
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::object_mapping_lookup_hilti"),
+					  ::hilti::builder::tuple::create( { val } ));
+
+		auto b = Builder()->addIfElse(dst);
+		cached = std::get<0>(b);
+		not_cached = std::get<1>(b);
+		done = std::get<2>(b);
+
+		ModuleBuilder()->pushBuilder(not_cached);
+		}
+
 	Builder()->addInstruction(dst,
 				  ::hilti::instruction::struct_::New,
 				  ::hilti::builder::type::create(stype));
@@ -515,6 +558,25 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 		ModuleBuilder()->pushBuilder(cont);
 		}
 
+	if ( IsShadowedType(type) )
+		{
+		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+					  ::hilti::builder::id::create("LibBro::object_mapping_register"),
+					  ::hilti::builder::tuple::create( { val, dst } ));
+
+		Builder()->addInstruction(::hilti::instruction::flow::Jump,
+					  done->block());
+
+		ModuleBuilder()->popBuilder(not_cached);
+
+		ModuleBuilder()->pushBuilder(cached);
+		Builder()->addInstruction(::hilti::instruction::flow::Jump,
+					  done->block());
+		ModuleBuilder()->popBuilder(cached);
+
+		ModuleBuilder()->pushBuilder(done);
+		}
+
 	return dst;
 	}
 
@@ -536,12 +598,16 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 
 	if ( type->IsSet() )
 		{
-		return BuildConversionFunction("b2h", val, vtype, HiltiType(type), type,
-					       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+		return BuildConversionFunction("b2h", val, vtype, 0, type,
+					       [&] (shared_ptr<::hilti::Expression> val, const ::BroType* type)
+					       -> shared_ptr<::hilti::Expression>
 			{
 			auto mbuilder = ModuleBuilder();
 
-			auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
+			auto dsttype = HiltiType(type);
+			auto dst = Builder()->addTmp("dst", dsttype);
+
+			auto rtype = ast::checkedCast<type::Reference>(dsttype);
 			auto stype = ast::checkedCast<type::Set>(rtype->argType());
 			auto expr_stype = ::hilti::builder::type::create(stype);
 			auto expr_ktype = ::hilti::builder::type::create(stype->elementType());
@@ -586,17 +652,23 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 			mbuilder->popBuilder(cont);
 
 			mbuilder->pushBuilder(done);
+
+			return dst;
 			});
 		}
 
 	else // A table, not a set.
 		{
-		return BuildConversionFunction("b2h", val, vtype, HiltiType(type), type,
-					       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+		return BuildConversionFunction("b2h", val, vtype, 0, type,
+					       [&] (shared_ptr<::hilti::Expression> val, const ::BroType* type)
+					       -> shared_ptr<::hilti::Expression>
 			{
 			auto mbuilder = ModuleBuilder();
 
-			auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
+			auto dsttype = HiltiType(type);
+			auto dst = Builder()->addTmp("dst", dsttype);
+
+			auto rtype = ast::checkedCast<type::Reference>(dsttype);
 			auto mtype = ast::checkedCast<type::Map>(rtype->argType());
 			auto expr_mtype = ::hilti::builder::type::create(mtype);
 			auto expr_ktype = ::hilti::builder::type::create(mtype->keyType());
@@ -645,6 +717,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 			mbuilder->popBuilder(cont);
 
 			mbuilder->pushBuilder(done);
+
+			return dst;
 			});
 		}
 	}
@@ -653,12 +727,16 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 	{
 	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
 
-	return BuildConversionFunction("b2h", val, vtype, HiltiType(type), type,
-				       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+	return BuildConversionFunction("b2h", val, vtype, 0, type,
+				       [&] (shared_ptr<::hilti::Expression> val, const ::BroType* type)
+				       -> shared_ptr<::hilti::Expression>
 		{
 		auto mbuilder = ModuleBuilder();
 
-		auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
+		auto dsttype = HiltiType(type);
+		auto dst = Builder()->addTmp("dst", dsttype);
+
+		auto rtype = ast::checkedCast<type::Reference>(dsttype);
 		auto vectype = ast::checkedCast<type::Vector>(rtype->argType());
 		auto expr_vectype = ::hilti::builder::type::create(vectype);
 
@@ -718,6 +796,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 		mbuilder->popBuilder(have_not);
 
 		mbuilder->pushBuilder(finished);
+
+		return dst;
 		});
 	}
 
@@ -1014,10 +1094,15 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 
 	if ( type->IsSet() )
 		{
-		return BuildConversionFunction("h2b", val, HiltiType(type), vtype, type,
-					       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+		return BuildConversionFunction("h2b", val, 0, vtype, type,
+					       [&] (shared_ptr<::hilti::Expression> val, const ::BroType* type)
+					       -> shared_ptr<::hilti::Expression>
 			{
 			auto mbuilder = ModuleBuilder();
+
+			auto dsttype = vtype;
+			auto dst = Builder()->addTmp("dst", dsttype);
+
 			auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
 			auto stype = ast::checkedCast<type::Set>(rtype->argType());
 
@@ -1069,15 +1154,22 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 			mbuilder->popBuilder(cont);
 
 			mbuilder->pushBuilder(done);
+
+			return dst;
 			});
 		}
 
 	else // A table, not a set.
 		{
-		return BuildConversionFunction("h2b", val, HiltiType(type), vtype, type,
-					       [&] (shared_ptr<::hilti::Expression> dst, shared_ptr<::hilti::Expression> val, const ::BroType* type)
+		return BuildConversionFunction("h2b", val, 0, vtype, type,
+					       [&] (shared_ptr<::hilti::Expression> val, const ::BroType* type)
+					       -> shared_ptr<::hilti::Expression>
 			{
 			auto mbuilder = ModuleBuilder();
+
+			auto dsttype = vtype;
+			auto dst = Builder()->addTmp("dst", dsttype);
+
 			auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
 			auto mtype = ast::checkedCast<type::Map>(rtype->argType());
 
@@ -1134,6 +1226,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 			mbuilder->popBuilder(cont);
 
 			mbuilder->pushBuilder(done);
+
+			return dst;
 			});
 		}
 	}

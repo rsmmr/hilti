@@ -20,7 +20,6 @@ bool output_llvm_individually = false;
 bool output_bitcode = false;
 bool output_prototypes = false;
 bool dump_ast = false;
-bool use_jit = false;
 bool add_stdlibs = false;
 bool disable_linker = false;
 bool cfg = false;
@@ -220,7 +219,7 @@ int main(int argc, char** argv)
 {
     int num_output_types = 0;
 
-    hilti::Options options;
+    shared_ptr<hilti::Options> options = std::make_shared<hilti::Options>();
 
     while ( true ) {
         int c = getopt_long(argc, argv, "AdD:hjpcFPWbClLsVo:OvI:", long_options, 0);
@@ -239,11 +238,11 @@ int main(int argc, char** argv)
             break;
 
          case 'd':
-            options.debug = true;
+            options->debug = true;
             break;
 
          case 'D':
-            options.cg_debug.insert(optarg);
+            options->cg_debug.insert(optarg);
             break;
 
          case 'o':
@@ -251,7 +250,7 @@ int main(int argc, char** argv)
             break;
 
          case 'O':
-            options.optimize = true;
+            options->optimize = true;
             break;
 
          case 'p':
@@ -270,7 +269,7 @@ int main(int argc, char** argv)
 
          case 'W':
             output_hilti = true;
-            options.verify = false;
+            options->verify = false;
             ++num_output_types;
             break;
 
@@ -281,26 +280,26 @@ int main(int argc, char** argv)
 
          case 'L':
             output_llvm = true;
-            options.verify = false;
+            options->verify = false;
             ++num_output_types;
             break;
 
          case 'V':
             output_llvm_individually = true;
-            options.verify = false;
+            options->verify = false;
             ++num_output_types;
             break;
 
          case 'I':
-            options.libdirs_hlt.push_back(optarg);
+            options->libdirs_hlt.push_back(optarg);
             break;
 
          case 'F':
-            ++options.profile;
+            ++options->profile;
             break;
 
          case 'j':
-            use_jit = true;
+            options->jit = true;
             add_stdlibs = true;
             ++num_output_types;
             break;
@@ -345,7 +344,7 @@ int main(int argc, char** argv)
     if ( disable_linker && num_input_files != 1 )
         error("", "Cannot use more than one input file when not linking");
 
-    if ( disable_linker && use_jit )
+    if ( disable_linker && options->jit )
         error("", "Cannot use JIT when not linking");
 
     if ( num_output_types == 0 )
@@ -358,7 +357,7 @@ int main(int argc, char** argv)
         if ( output_bitcode )
             error("", "No output file given.");
 
-        if ( use_jit )
+        if ( options->jit )
             output = "<JIT code>";
         else
             output = "/dev/stdout";
@@ -413,17 +412,12 @@ int main(int argc, char** argv)
 
         if ( ! linked_module )
             error(output, "Aborted linking.");
-
-        if ( ! use_jit ) {
-            if ( ! ctx->optimize(linked_module, true) )
-                error(output, "Optimization of linked module failed.");
-        }
     }
 
     else
         linked_module = modules.front();
 
-    if ( use_jit ) {
+    if ( options->jit ) {
         if ( ! runJIT(ctx, linked_module, jitargs) )
             return 1;
         else

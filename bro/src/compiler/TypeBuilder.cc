@@ -163,7 +163,7 @@ shared_ptr<::hilti::type::Function> TypeBuilder::FunctionType(const ::FuncType* 
 
 	std::shared_ptr<::hilti::Type> hyield;
 
-	if ( byield && byield->Tag() != TYPE_VOID && byield->Tag() != TYPE_ANY )
+	if ( byield && byield->Tag() != TYPE_VOID )
 		hyield = HiltiType(byield);
 	else
 		hyield = ::hilti::builder::void_::type();
@@ -187,7 +187,11 @@ shared_ptr<::hilti::type::Function> TypeBuilder::FunctionType(const ::FuncType* 
 		return ::hilti::builder::function::type(hresult, hargs);
 
 	case FUNC_FLAVOR_EVENT:
+		return ::hilti::builder::hook::type(hresult, hargs);
+
 	case FUNC_FLAVOR_HOOK:
+		hyield = ::hilti::builder::boolean::type();
+		hresult = ::hilti::builder::function::result(hyield, false);
 		return ::hilti::builder::hook::type(hresult, hargs);
 
 	default:
@@ -228,7 +232,8 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 		auto name = type->FieldName(i);
 		auto ftype = type->FieldType(i);
 		auto htype = HiltiType(ftype);
-		auto def = bdef ? HiltiValue(bdef, ftype, true) : nullptr;
+		auto optional = type->FieldDecl(i)->FindAttr(ATTR_OPTIONAL);
+		auto def = bdef ? HiltiValue(bdef, ftype, true) : (optional ? nullptr: HiltiDefaultInitValue(ftype));
 		auto hf = ::hilti::builder::struct_::field(name, htype, def);
 
 		fields.push_back(hf);

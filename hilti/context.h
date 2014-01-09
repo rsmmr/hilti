@@ -27,7 +27,7 @@ class CompilerContext : public ast::Logger, public std::enable_shared_from_this<
 {
 public:
     /// Constructor.
-    CompilerContext(const Options& options);
+    CompilerContext(std::shared_ptr<Options> options);
 
     /// Destructor.
     ~CompilerContext();
@@ -36,7 +36,7 @@ public:
     const Options& options() const;
 
     /// Updates the current set of options.
-    void setOptions(const Options& options);
+    void setOptions(std::shared_ptr<Options> options);
 
     /// Reads a HILTI module from a file returns the parsed AST. It uses uses
     /// parse() for parsing and, by default, also fully finalizes the module.
@@ -108,7 +108,8 @@ public:
     /// Compiles an AST into a LLVM module. This is the main interface to the
     /// code generater. The AST must have passed through finalize(). After
     /// compilation, it needs to be linked with linkModules(). If caching is
-    /// enabled, this method may return a previously cached copy.
+    /// enabled, this method may return a previously cached copy. If
+    /// optimization is enabled, this also optimizes the final module.
     ///
     /// module: The module to compile.
     ///
@@ -130,19 +131,6 @@ public:
     /// Returns: The HILTI module, or null if errors are encountered. Passes
     /// ownership to the caller.
     llvm::Module* compile(shared_ptr<Module> module, const ::util::cache::FileCache::Key& key);
-
-    /// Optimizes an LLVM module according to the CompilerContext's options
-    /// (including not all if the options don't request optimization). Note
-    /// that you don't need this if calling jitModule() later; the latter
-    /// will optimize automatically.
-    ///
-    /// module: The module to optimize.
-    ///
-    /// is_linked: True if this is the final linked module, false if it's an
-    /// individual module that will later be linked.
-    ///
-    /// Returns: True if successful.
-    bool optimize(llvm::Module* module, bool is_linked);
 
     /// Renders an AST back into HILTI source code.
     ///
@@ -324,6 +312,17 @@ public:
     static std::string llvmGetModuleIdentifier(llvm::Module* module);
 
 private:
+    /// Optimizes an LLVM module according to the CompilerContext's options
+    /// (including not at all if the options don't request optimization).
+    ///
+    /// module: The module to optimize.
+    ///
+    /// is_linked: True if this is the final linked module, false if it's an
+    /// individual module that will later be linked.
+    ///
+    /// Returns: True if successful.
+    bool _optimize(llvm::Module* module, bool is_linked);
+
     /// Finalizes an AST before it can be used for compilation. This checks
     /// for correctness, resolves any unknown bindings, and builds a set of
     /// internal data structures.

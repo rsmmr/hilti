@@ -5,16 +5,16 @@
 /// lookups, and deletes are amortized constant time. Keys must be HILTI *value
 /// types*, while values can be of any time. Up to one value can be associated
 /// with each key.
-/// 
+///
 /// Maps are iterable, yet the order in which elements are iterated over is
 /// undefined.
-/// 
+///
 /// .. todo::Add note on semantics when modifying the hash table while iterating
 /// over it.
-/// 
+///
 /// .. todo:: When resizig, load spikes can occur for large tables. We should
 /// extend the hash table implementation to do resizes incrementally.
-/// 
+///
 /// \ctor map(1: "hurz", map(2: "test")), map()
 ///
 /// \cproto hlt_map*
@@ -123,7 +123,7 @@ iBegin(map, Clear, "map.clear")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Removes all entries from map *op1*.
     )")
 
@@ -134,10 +134,23 @@ iBegin(map, Default, "map.default")
     iOp2(optype::any, true)
 
     iValidate {
+        auto ctype = ast::isA<type::Reference>(op2->type()) ? ast::tryCast<type::Callable>(referencedType(op2))
+                                                            : nullptr;
+        if ( ctype ) {
+            auto params = ctype->Function::parameters();
+
+            if ( params.size() != 1 )
+                error(op1, "default function must receive exactly one parameter");
+
+            equalTypes(params.front()->type(), mapKeyType(referencedType(op1)));
+            equalTypes(ctype->result()->type(), mapValueType(referencedType(op1)));
+            return;
+        }
+
         canCoerceTo(op2, mapValueType(op1));
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Sets a default value *op2* for map *op1* to be returned by *map.get*
         if a key does not exist.
     )")
@@ -153,7 +166,7 @@ iBegin(map, Exists, "map.exists")
         canCoerceTo(op2, mapKeyType(referencedType(op1)));
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Checks whether the key *op2* exists in map *op1*. If so, the
         instruction returns True, and False otherwise.
     )")
@@ -170,7 +183,7 @@ iBegin(map, Get, "map.get")
         canCoerceTo(mapValueType(referencedType(op1)), target);
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns the element with key *op2* in map *op1*. Throws IndexError if
         the key does not exists and no default has been set via *map.default*.
     )")
@@ -189,7 +202,7 @@ iBegin(map, GetDefault, "map.get_default")
         canCoerceTo(mapValueType(referencedType(op1)), target);
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns the element with key *op2* in map *op1* if it exists. If the
         key does not exists, returns *op3*.
     )")
@@ -206,7 +219,7 @@ iBegin(map, Insert, "map.insert")
         canCoerceTo(op3, mapValueType(referencedType(op1)));
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Sets the element at index *op2* in map *op1* to *op3. If the key
         already exists, the previous entry is replaced.
     )")
@@ -221,7 +234,7 @@ iBegin(map, Remove, "map.remove")
         canCoerceTo(op2, mapKeyType(referencedType(op1)));
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Removes the key *op2* from the map *op1*. If the key does not exists,
         the instruction has no effect.
     )")
@@ -235,7 +248,7 @@ iBegin(map, Size, "map.size")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns the current number of entries in map *op1*.
     )")
 
@@ -253,7 +266,7 @@ iBegin(map, Timeout, "map.timeout")
 
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Activates automatic expiration of items for map *op1*. All
         subsequently inserted entries will be expired after an interval of
         *op3* after they have been added (if *op2* is *Expire::Create*) or

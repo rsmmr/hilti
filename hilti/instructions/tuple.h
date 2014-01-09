@@ -41,7 +41,7 @@ iBegin(tuple, Index, "tuple.index")
         auto c = ast::as<expression::Constant>(op2)->constant();
         auto idx = ast::as<constant::Integer>(c)->value();
 
-        if ( idx < 0 || idx >= ttype->typeList().size() ) {
+        if ( idx < 0 || (size_t) idx >= ttype->typeList().size() ) {
             error(op2, "tuple index out of range");
             return;
         }

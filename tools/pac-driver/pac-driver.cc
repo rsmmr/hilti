@@ -36,8 +36,6 @@ extern "C" {
     #include <libbinpac++.h>
 }
 
-typedef binpac::Options Options;
-
 #else
 
 extern "C" {
@@ -81,8 +79,8 @@ static void check_exception(hlt_exception* excpt)
             exit(0);
         else {
             GC_DTOR(excpt, hlt_exception);
-            GC_DTOR(request, hlt_Parser);
-            GC_DTOR(reply, hlt_Parser);
+            GC_DTOR(request, hlt_BinPACHilti_Parser);
+            GC_DTOR(reply, hlt_BinPACHilti_Parser);
             exit(1);
         }
     }
@@ -218,7 +216,7 @@ void listParsers()
 
         fputc('\n', stderr);
 
-        GC_DTOR(p, hlt_Parser);
+        GC_DTOR(p, hlt_BinPACHilti_Parser);
 
         hlt_iterator_list i2 = i;
         i = hlt_iterator_list_incr(i, &excpt, ctx);
@@ -260,7 +258,7 @@ static binpac_parser* findParser(const char* name)
             break;
         }
 
-        GC_DTOR(p, hlt_Parser);
+        GC_DTOR(p, hlt_BinPACHilti_Parser);
 
         hlt_iterator_list j = i;
         i = hlt_iterator_list_incr(i, &excpt, ctx);
@@ -365,8 +363,6 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
     hlt_bytes* chunk2;
     hlt_iterator_bytes end = hlt_bytes_end(input, &excpt, ctx);
     hlt_iterator_bytes cur_end;
-    hlt_iterator_bytes ncur;
-    hlt_iterator_bytes ocur;
     int8_t done = 0;
     hlt_exception* resume = 0;
 
@@ -447,25 +443,11 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
     GC_DTOR(cur, hlt_iterator_bytes);
 }
 
-static void input_error(const char* line)
-{
-    fprintf(stderr, "error reading input header: not in expected format.\n");
-    exit(1);
-}
-
-static void parser_exception(const char*fid, hlt_exception* excpt)
-{
-    hlt_execution_context* ctx = hlt_global_execution_context();
-    fprintf(stderr, "%s ", fid);
-    hlt_exception_print_uncaught(excpt, ctx);
-}
-
-
 #ifdef PAC_DRIVER_JIT
 
 // C++ code for JIT version.
 
-bool jitPac2(const std::list<string>& pac2, const binpac::Options& options)
+bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> options)
 {
     hilti::init();
     binpac::init();
@@ -524,14 +506,18 @@ int main(int argc, char** argv)
     int chunk_size = 0;
     int list_parsers = false;
     const char* parser = 0;
-    const char* affinity = 0;
 
     const char* progname = argv[0];
 
-    ::Options options;
+#ifdef PAC_DRIVER_JIT
+    auto options = std::make_shared<binpac::Options>();
+#else
+    ::Options _options;
+    ::Options* options = &_options;
+#endif
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dOBhD:UlTPgC")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgC")) != -1) {
 
         switch (ch) {
 
@@ -543,12 +529,8 @@ int main(int argc, char** argv)
             parser = optarg;
             break;
 
-          case 'a':
-            affinity = strdup(optarg);
-            break;
-
           case 'd':
-            options.debug = true;
+            options->debug = true;
             break;
 
           case 'g':
@@ -560,7 +542,7 @@ int main(int argc, char** argv)
             break;
 
           case 'P':
-            ++options.profile;
+            ++options->profile;
             break;
 
           case 'l':
@@ -569,15 +551,15 @@ int main(int argc, char** argv)
 
 #ifdef PAC_DRIVER_JIT
          case 'D':
-            options.cg_debug.insert(optarg);
+            options->cg_debug.insert(optarg);
             break;
 
          case 'O':
-            options.optimize = true;
+            options->optimize = true;
             break;
 
          case 'C':
-            options.module_cache = ".cache";
+            options->module_cache = ".cache";
             break;
 #endif
 
@@ -593,7 +575,7 @@ int main(int argc, char** argv)
 
     hlt_config cfg = *hlt_config_get();
 
-    if ( options.profile ) {
+    if ( options->profile ) {
         fprintf(stderr, "Enabling profiling ...\n");
         cfg.profiling = 1;
     }
@@ -608,6 +590,8 @@ int main(int argc, char** argv)
 
     if ( ! pac2.size() )
         usage(progname);
+
+    options->jit = true;
 
     if ( ! jitPac2(pac2, options) )
         return 1;
@@ -635,7 +619,7 @@ int main(int argc, char** argv)
             hlt_iterator_list i = hlt_list_begin(parsers, &excpt, ctx);
             request = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
             assert(request);
-            GC_CCTOR(request, hlt_Parser);
+            GC_CCTOR(request, hlt_BinPACHilti_Parser);
             reply = request;
             GC_DTOR(i, hlt_iterator_list);
             GC_DTOR(parsers, hlt_list);
@@ -677,14 +661,14 @@ int main(int argc, char** argv)
         }
 
         else {
-            GC_CCTOR(request, hlt_Parser);
+            GC_CCTOR(request, hlt_BinPACHilti_Parser);
             reply = request;
         }
     }
 
     assert(request && reply);
 
-    if ( options.profile ) {
+    if ( options->profile ) {
         hlt_exception* excpt = 0;
         hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
         hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt, hlt_global_execution_context());
@@ -693,15 +677,15 @@ int main(int argc, char** argv)
 
     parseSingleInput(request, chunk_size);
 
-    if ( options.profile ) {
+    if ( options->profile ) {
         hlt_exception* excpt = 0;
         hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
         hlt_profiler_stop(profiler_tag, &excpt, hlt_global_execution_context());
         GC_DTOR(profiler_tag, hlt_string);
     }
 
-    GC_DTOR(request, hlt_Parser);
-    GC_DTOR(reply, hlt_Parser);
+    GC_DTOR(request, hlt_BinPACHilti_Parser);
+    GC_DTOR(reply, hlt_BinPACHilti_Parser);
 
     exit(0);
 }

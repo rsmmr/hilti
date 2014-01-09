@@ -43,7 +43,12 @@ void StatementBuilder::visit(statement::instruction::map::Clear* i)
 void StatementBuilder::visit(statement::instruction::map::Default* i)
 {
     auto vtype = ast::as<type::Map>(referencedType(i->op1()))->valueType();
-    auto op2 = i->op2()->coerceTo(vtype);
+    auto op2 = i->op2();
+
+    auto rtype = ast::tryCast<type::Reference>(i->op2()->type());
+
+    if ( ! (rtype && ast::isA<type::Callable>(rtype->argType())) )
+        op2 = op2->coerceTo(vtype);
 
     CodeGen::expr_list args;
     args.push_back(i->op1());

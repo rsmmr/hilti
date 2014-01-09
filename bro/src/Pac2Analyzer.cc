@@ -51,11 +51,11 @@ void Pac2_Analyzer::Init()
 
 void Pac2_Analyzer::Done()
 	{
-	GC_DTOR(orig.parser, hlt_Parser);
+	GC_DTOR(orig.parser, hlt_BinPACHilti_Parser);
 	GC_DTOR(orig.data, hlt_bytes);
 	GC_DTOR(orig.resume, hlt_exception);
 
-	GC_DTOR(resp.parser, hlt_Parser);
+	GC_DTOR(resp.parser, hlt_BinPACHilti_Parser);
 	GC_DTOR(resp.data, hlt_bytes);
 	GC_DTOR(resp.resume, hlt_exception);
 
@@ -109,7 +109,7 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 			return 1;
 			}
 
-		GC_CCTOR(endp->parser, hlt_Parser);
+		GC_CCTOR(endp->parser, hlt_BinPACHilti_Parser);
 		}
 
 	int result = 0;
@@ -353,7 +353,7 @@ void Pac2_UDP_Analyzer::DeliverPacket(int len, const u_char* data, bool is_orig,
 	Analyzer::DeliverPacket(len, data, is_orig, seq, ip, caplen);
 
 	FeedChunk(len, data, is_orig, true);
-	Done();
+	Pac2_Analyzer::Done();
 	}
 
 void Pac2_UDP_Analyzer::Undelivered(int seq, int len, bool is_orig)

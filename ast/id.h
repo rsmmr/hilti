@@ -77,7 +77,9 @@ public:
 
     /// XXX
     void setOriginal(shared_ptr<AstID> org) {
+        this->removeChild(_org);
         _org = org;
+        this->addChild(_org);
     }
 
     /// XXX
@@ -120,7 +122,7 @@ public:
 
 private:
     component_list _path;
-    shared_ptr<AstID> _org = nullptr;
+    node_ptr<AstID> _org = nullptr;
 };
 
 

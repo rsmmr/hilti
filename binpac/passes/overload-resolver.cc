@@ -82,7 +82,10 @@ void OverloadResolver::visit(expression::UnresolvedOperator* o)
 
     auto vals = scope->lookup(id->id());
 
-    assert(vals.size());
+    if ( ! vals.size() ) {
+        error(o, ::util::fmt("OverloadResolver failed to resolve ID %s", id->id()->pathAsString()));
+        return;
+    }
 
     std::list<shared_ptr<expression::Function>> candidates;
 

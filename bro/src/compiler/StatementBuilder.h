@@ -45,10 +45,7 @@ public:
 	 */
 	void Compile(const Stmt* stmt);
 
-protected:
-	enum FlowState { FLOW_STATE_BREAK, FLOW_STATE_NEXT, FLOW_STATE_FALLTHROUGH };
-
-	typedef std::list<std::pair<FlowState, shared_ptr<::hilti::Expression> > > flow_state_list;
+	enum FlowState { FLOW_STATE_BREAK, FLOW_STATE_NEXT, FLOW_STATE_FALLTHROUGH, FLOW_STATE_RETURN };
 
 	/**
 	 * Record a block to branch to for an upcoming flow statement. This
@@ -68,15 +65,22 @@ protected:
 	 */
 	void PopFlowState();
 
+protected:
+	typedef std::list<std::pair<FlowState, shared_ptr<::hilti::Expression> > > flow_state_list;
+
 	/**
 	 * Returns the target block associated with most recently pushed flow
 	 * state of the given type. It's an internal error if there is none.
 	 *
-	 * @param The flow statement to search.
+	 * @param fstate The flow statement to search.
+	 *
+	 * @param optional If true, not having a state of type \a fstate
+	 * registered currently is ok. The method will return null in that
+	 * case.
 	 *
 	 * @return The corresponding block to branch to.
 	 */
-	shared_ptr<::hilti::Expression> CurrentFlowState(FlowState fstate);
+	shared_ptr<::hilti::Expression> CurrentFlowState(FlowState fstate, bool optional = false);
 
 	void NotSupported(const ::BroType* type, const char* where);
 	void NotSupported(const ::Expr* expr, const char* where);
@@ -98,6 +102,9 @@ protected:
 	void Compile(const ::StmtList* stmt);
 	void Compile(const ::SwitchStmt* stmt);
 	void Compile(const ::WhenStmt* stmt);
+
+	void CompileForStmtTable(const ::ForStmt* stmt);
+	void CompileForStmtVector(const ::ForStmt* stmt);
 
 private:
 	flow_state_list flow_stack;

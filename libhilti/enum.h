@@ -7,10 +7,16 @@
 
 #include "exceptions.h"
 
+// We use __packed__ struct so that we don't end up with unitialized bytes
+// that would require a dedicated hash function.
+//
+// TODO: We also use 16 bits for the flags because otherwise out ABI code
+// doesn't seem to pass them correctly by value. *sigh* With that, we
+// wouldn't actually need the packed anymore now ....
 typedef struct hlt_enum {
-    int8_t flags;
+    int64_t flags;
     int64_t value;
-} hlt_enum;
+} __attribute__((__packed__)) hlt_enum;
 
 #define HLT_ENUM_UNDEF   1
 #define HLT_ENUM_HAS_VAL 2

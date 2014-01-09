@@ -6,6 +6,11 @@ module BinPAC;
 type ByteOrder = enum { Little = 1, Big = 2, Network = 2, Host = 3 };
 # %end-ByteOrder
 
+# %begin-BitOrder
+# Bit order.
+type BitOrder = enum { LSB0 = 1, MSB0 = 2 };
+# %end-BitOrder
+
 # These values must match Hilti::AddrFamily.
 # %begin-AddrFamily
 # IP address family.

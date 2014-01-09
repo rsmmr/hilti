@@ -56,6 +56,7 @@ protected:
 	void visit(::hilti::type::Integer* i) override;
 	void visit(::hilti::type::String* s) override;
 	void visit(::hilti::type::Time* t) override;
+	void visit(::hilti::type::Interval* t) override;
 	void visit(::hilti::type::Tuple* t) override;
 	void visit(::hilti::type::Reference* b) override;
 
@@ -115,6 +116,7 @@ private:
 	void visit(::hilti::type::Integer* i) override;
 	void visit(::hilti::type::String* s) override;
 	void visit(::hilti::type::Time* t) override;
+	void visit(::hilti::type::Interval* i) override;
 	void visit(::hilti::type::Tuple* t) override;
 	void visit(::hilti::type::Reference* b) override;
 

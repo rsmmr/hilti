@@ -47,9 +47,6 @@ void Storer::visit(expression::Parameter* p)
 void Storer::visit(expression::CodeGen* c)
 {
     auto val = arg1();
-    auto plusone = arg2().first;
-    auto dtor_first = arg2().second;
-
     llvm::Value* addr = reinterpret_cast<llvm::Value*>(c->cookie());
     cg()->llvmCreateStore(val, addr);
 }

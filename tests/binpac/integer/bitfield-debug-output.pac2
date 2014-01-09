@@ -1,0 +1,18 @@
+#
+# @TEST-EXEC:  printf '\x00\x0a\x00\x3f' | HILTI_DEBUG=binpac pac-driver-test -d %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff hlt-debug.log
+#
+
+module Mini;
+
+import BinPAC;
+
+type Foo = enum { A = 3 };
+
+export type test = unit {
+    a: uint16;
+    b: bitfield(16) {
+        x1: 0..3;
+        x2: 4..7 &convert=Foo($$);
+    };
+};

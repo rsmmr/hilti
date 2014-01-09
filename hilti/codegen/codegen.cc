@@ -24,12 +24,12 @@ using namespace hilti;
 using namespace codegen;
 
 CodeGen::CodeGen(CompilerContext* ctx, const path_list& libdirs)
-    : _coercer(new Coercer(this)),
-      _loader(new Loader(this)),
+    : _loader(new Loader(this)),
       _storer(new Storer(this)),
       _unpacker(new Unpacker(this)),
       _field_builder(new FieldBuilder(this)),
       _stmt_builder(new StatementBuilder(this)),
+      _coercer(new Coercer(this)),
       _type_builder(new TypeBuilder(this)),
       _debug_info_builder(new DebugInfoBuilder(this)),
       _collector(new passes::Collector())
@@ -84,7 +84,7 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod)
         _module->setTargetTriple(_abi->targetTriple());
         _module->setDataLayout(_abi->dataLayout());
 
-        auto name = llvm::MDString::get(llvmContext(), _module->getModuleIdentifier());
+        auto name = llvm::MDString::get(llvmContext(), linkerModuleIdentifier());
         auto md = _module->getOrInsertNamedMetadata(symbols::MetaModuleName);
         md->addOperand(codegen::util::llvmMdFromValue(llvmContext(), name));
 
@@ -247,22 +247,25 @@ llvm::Value* CodeGen::llvmGlobal(shared_ptr<Variable> var)
     return llvmGlobal(var.get());
 }
 
-llvm::Value* CodeGen::llvmGlobal(Variable* var)
+string CodeGen::scopedNameGlobal(Variable* var) const
 {
     auto scope = var->id()->scope();
 
     if ( scope.empty() )
         scope = _hilti_module->id()->name();
 
-    // The linker will replace th=is code with the actual global value.
+    return ::util::fmt("%s::%s", scope, var->id()->local());
+}
 
+llvm::Value* CodeGen::llvmGlobal(Variable* var)
+{
+
+    // The linker will replace th=is code with the actual global value.
     llvm::Value* dummy = builder()->CreateAlloca(llvmTypePtr(llvmType(var->type())));
     auto ins = builder()->CreateLoad(dummy);
 
-    auto mdscope = llvm::MDString::get(llvmContext(), scope);
-    auto mdglobal = llvm::MDString::get(llvmContext(), var->id()->local());
-
-    std::vector<llvm::Value*> vals = { mdscope, mdglobal };
+    auto mdglobal = llvm::MDString::get(llvmContext(), scopedNameGlobal(var));
+    std::vector<llvm::Value*> vals = { mdglobal };
     auto md = llvm::MDNode::get(llvmContext(), vals);
     llvm::cast<llvm::Instruction>(ins)->setMetadata("global-access", md);
 
@@ -576,7 +579,7 @@ llvm::Function* CodeGen::llvmPushLinkerJoinableFunction(const string& name)
 
 void CodeGen::createInitFunction()
 {
-    string name = util::mangle(_hilti_module->id(), true, nullptr, "init.module");
+    string name = util::mangle(_hilti_module->id(), true, nullptr, ::util::fmt("init.module.%s", linkerModuleIdentifier()));
     _module_init_func = llvmPushLinkerJoinableFunction(name);
 }
 
@@ -622,7 +625,7 @@ void CodeGen::initGlobals()
     // This global will be accessed by our custom linker. Unfortunastely, it
     // seems, we can't store a type in a metadata node directly, which would
     // simplify the linker.
-    string postfix = string(".") + _hilti_module->id()->name();
+    string postfix = string(".") + linkerModuleIdentifier();
     _globals_type = llvmTypeStruct(symbols::TypeGlobals + postfix, globals);
 
     if ( globals.size() ) {
@@ -644,7 +647,7 @@ void CodeGen::createGlobalsInitFunction()
     string postfix = string(".") + _hilti_module->id()->name();
 
     // Create a function that initializes our globals with defaults.
-    auto name = util::mangle(_hilti_module->id(), true, nullptr, "init.globals");
+    auto name = util::mangle(_hilti_module->id(), true, nullptr, ::util::fmt("init.globals.%s", linkerModuleIdentifier()));
     _globals_init_func = llvmPushLinkerJoinableFunction(name);
 
 #ifdef OLDSTRING
@@ -675,7 +678,7 @@ void CodeGen::createGlobalsInitFunction()
 
     // Create a function that that destroys all the memory managed objects in
     // there.
-    name = util::mangle(_hilti_module->id(), true, nullptr, "dtor.globals");
+    name = util::mangle(_hilti_module->id(), true, nullptr, ::util::fmt("dtor.globals.%s", linkerModuleIdentifier()));
     _globals_dtor_func = llvmPushLinkerJoinableFunction(name);
 
     for ( auto g : _collector->globals() ) {
@@ -710,7 +713,8 @@ llvm::Value* CodeGen::llvmGlobalIndex(Variable* var)
 void CodeGen::createLinkerData()
 {
     // Add them main meta information node.
-    string name = string(symbols::MetaModule) + "." + _module->getModuleIdentifier();
+    auto module_id = linkerModuleIdentifier();
+    string name = ::util::fmt("%s.%s", string(symbols::MetaModule), module_id);
 
     auto old_md = _module->getNamedValue(name);
 
@@ -720,7 +724,7 @@ void CodeGen::createLinkerData()
     auto md  = _module->getOrInsertNamedMetadata(name);
 
     llvm::Value *version = llvm::ConstantInt::get(llvm::Type::getInt16Ty(llvmContext()), 1);
-    llvm::Value *id = llvm::MDString::get(llvmContext(), _hilti_module->id()->name());
+    llvm::Value *id = llvm::MDString::get(llvmContext(), module_id);
     llvm::Value *file = llvm::MDString::get(llvmContext(), _hilti_module->path());
     llvm::Value *ctxtype = llvm::Constant::getNullValue(llvmTypePtr(llvmTypeExecutionContext()));
 
@@ -732,13 +736,13 @@ void CodeGen::createLinkerData()
 
     // Add the line up of our globals.
 
-    name = string(symbols::MetaGlobals) + "." + _module->getModuleIdentifier();
+    name = string(symbols::MetaGlobals) + "." + module_id;
     md  = _module->getOrInsertNamedMetadata(name);
 
     // Iterate through the collector globals here to guarantee same order as
     // in our global struct.
     for ( auto g : _collector->globals() ) {
-        auto n = llvm::MDString::get(llvmContext(), g->id()->name());
+        auto n = llvm::MDString::get(llvmContext(), scopedNameGlobal(g.get()));
         md->addOperand(util::llvmMdFromValue(llvmContext(), n));
     }
 
@@ -823,9 +827,9 @@ string CodeGen::uniqueName(const string& component, const string& str)
     _unique_names.insert(make_tuple(idx, cnt + 1));
 
     if ( cnt == 1 )
-        return ::util::fmt(".hlt.%s.%s", str.c_str(), _module->getModuleIdentifier().c_str());
+        return ::util::fmt(".hlt.%s.%s", str, linkerModuleIdentifier());
     else
-        return ::util::fmt(".hlt.%s.%s.%d", str.c_str(), _module->getModuleIdentifier().c_str(), cnt);
+        return ::util::fmt(".hlt.%s.%s.%d", str, linkerModuleIdentifier(), cnt);
 
 }
 
@@ -1230,11 +1234,15 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
     auto llvm_type = llvmType(type);
 
     bool init_in_entry_block = false;
+    bool init_is_init_val = false;
 
     if ( ! init ) {
         init_in_entry_block = true;
         init = typeInfo(type)->init_val;
+        init_is_init_val = true;
     }
+
+    assert(init);
 
     llvm::BasicBlock& block(function()->getEntryBlock());
 
@@ -1243,21 +1251,22 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
     auto local = builder->CreateAlloca(llvm_type, 0, name);
     builder->CreateStore(typeInfo(type)->init_val, local);
 
-    if ( init ) {
-        if ( init_in_entry_block )
-            pushBuilder(builder);
-
-        llvmGCClear(local, type, "add-local");
+    if ( init_in_entry_block ) {
+        pushBuilder(builder);
         llvmCreateStore(init, local);
+        popBuilder();
+    }
 
-        if ( init_in_entry_block )
-            popBuilder();
+    else {
+        llvmGCClear(local, type, "add-local");
+
+        if ( ! init_is_init_val )
+            llvmCreateStore(init, local);
     }
 
     _functions.back()->locals.insert(make_pair(name, std::make_pair(local, type)));
 
     delete builder;
-
     return local;
 }
 
@@ -1319,6 +1328,7 @@ llvm::CallingConv::ID CodeGen::llvmCallingConvention(type::function::CallingConv
     switch ( cc ) {
      case type::function::HILTI:
      case type::function::HOOK:
+     case type::function::CALLABLE:
         return llvm::CallingConv::Fast;
 
      case type::function::HILTI_C:
@@ -1353,7 +1363,6 @@ CodeGen::llvmAdaptFunctionArgs(shared_ptr<type::Function> ftype)
 std::pair<llvm::Type*, std::vector<std::pair<string, llvm::Type*>>>
 CodeGen::llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::function::CallingConvention cc, bool skip_ctx)
 {
-    auto llvm_cc = llvmCallingConvention(cc);
     auto orig_rtype = rtype;
 
     std::vector<std::pair<string, llvm::Type*>> llvm_args;
@@ -1361,6 +1370,7 @@ CodeGen::llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::f
     // Adapt the return type according to calling convention.
     switch ( cc ) {
      case type::function::HILTI:
+     case type::function::CALLABLE:
         break;
 
      case type::function::HOOK:
@@ -1385,7 +1395,8 @@ CodeGen::llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::f
 
         switch ( cc ) {
          case type::function::HILTI:
-         case type::function::HOOK: {
+         case type::function::HOOK:
+         case type::function::CALLABLE: {
              auto arg_llvm_type = llvmType(p.second);
              llvm_args.push_back(make_pair(p.first, arg_llvm_type));
              break;
@@ -1427,6 +1438,7 @@ CodeGen::llvmAdaptFunctionArgs(llvm::Type* rtype, parameter_list params, type::f
     // Add additional parameters our calling convention may need.
     switch ( cc ) {
      case type::function::HILTI:
+     case type::function::CALLABLE:
         llvm_args.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext())));
         break;
 
@@ -2296,6 +2308,8 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
         pushBuilder(catch_);
     }
 
+    llvmDebugPrint("hilti-flow", "exception raised");
+
     llvmBuildInstructionCleanup(false);
 
     for ( auto c : _functions.back()->catches ) {
@@ -2481,8 +2495,6 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     auto llvm_func = llvmAddFunction(func, false, type::function::HILTI_C, name, false);
     rf1 = llvm_func;
-
-    auto args = llvm_func->arg_begin();
 
     pushFunction(llvm_func);
     //_functions.back()->context = llvmGlobalExecutionContext();  // FIXME: Use context argument.
@@ -2735,14 +2747,17 @@ llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<ty
 llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
 {
     auto llvm_func = llvm_func_val ? llvm::cast<llvm::Function>(llvm_func_val) : nullptr;
-    auto rtype = ftype->result()->type();
-    auto callable_type = std::make_shared<type::Callable>(rtype);
+    auto result = ftype->result();
 
-    // Create the struct. It starts like any callable and then comes our
-    // additional stuff.
+    type::function::parameter_list unbound_args;
+
+    auto params = ftype->parameters();
+    auto p = params.rbegin();
+
+    for ( int i = 0; i < params.size() - args.size(); i++ )
+        unbound_args.push_front(*p++);
+
     auto cty = llvm::cast<llvm::StructType>(llvmLibType("hlt.callable"));
-
-    auto arg_start = cty->getNumElements();
 
     CodeGen::type_list stypes;
 
@@ -2756,11 +2771,14 @@ llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<
     auto sty = llvm::cast<llvm::StructType>(llvmTypeStruct(::string(".callable.args") + name, stypes));
 
     // Now fill a new callable object with its values.
+    auto callable_type = std::make_shared<type::Callable>(result, unbound_args);
     llvm::Value* c = llvmObjectNew(callable_type, sty);
     llvm::Value* s = builder()->CreateLoad(c);
-    auto func_val = llvmCallableMakeFuncs(llvm_func, hook, ftype, excpt_check, sty, name);
+    auto func_val = llvmCallableMakeFuncs(llvm_func, hook, ftype, excpt_check, sty, name, unbound_args);
     func_val = builder()->CreateBitCast(func_val, stypes[1]); // FIXME: Not sure why we need this cast.
     s = llvmInsertValue(s, func_val, 1);
+
+    auto arg_start = cty->getNumElements();
 
     for ( int i = 0; i < args.size(); ++i ) {
         auto val = llvmValue(args[i]);
@@ -2772,7 +2790,7 @@ llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<
     return builder()->CreateBitCast(c, llvmTypePtr(cty));
 }
 
-llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name)
+llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name, const type::function::parameter_list& unbound_args)
 {
     llvm::Value* cached = lookupCachedValue("callable-func", name);
 
@@ -2780,28 +2798,51 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
         return cached;
 
     auto rtype = ftype->result()->type();
+    auto is_void = rtype->equal(builder::void_::type());
     auto cty = llvm::cast<llvm::StructType>(llvmLibType("hlt.callable"));
     auto arg_start = cty->getNumElements();
 
-    auto llvm_rtype = hook ? llvmType(rtype) : llvm_func->getReturnType();
+    llvm::Type* llvm_rtype = nullptr;
+
+    if ( hook )
+        llvm_rtype = llvmType(rtype);
+
+    else {
+        assert(llvm_func);
+        llvm_rtype = llvm_func->getReturnType();
+    }
 
     // Build the internal function that will later call the target.
     CodeGen::parameter_list params = { std::make_pair("callable", builder::reference::type(builder::callable::type(rtype))) };
+
+    int cnt = 0;
+    for ( auto t : unbound_args ) {
+        auto id = ::util::fmt("__ub%d", ++cnt);
+        params.push_back(std::make_pair(id, t->type()));
+    }
+
     auto llvm_call_func = llvmAddFunction(string(".callable.run") + name, llvm_rtype, params, true, type::function::HILTI);
 
     pushFunction(llvm_call_func);
 
+    llvmDebugPrint("hilti-flow", ::util::fmt("entering callable's run function for %s", name));
+
     auto callable = builder()->CreateBitCast(llvm_call_func->arg_begin(), llvmTypePtr(sty));
     callable = builder()->CreateLoad(callable);
 
+    auto fparams = ftype->parameters();
+    auto targ = fparams.begin();
     expr_list nargs;
 
-    int i = 0;
-    for ( auto a : ftype->parameters() ) {
+    for ( auto i = 0; i < fparams.size() - unbound_args.size(); i++ ) {
         auto val = llvmExtractValue(callable, arg_start + i);
-        nargs.push_back(builder::codegen::create(a->type(), val));
-        ++i;
+        nargs.push_back(builder::codegen::create((*targ++)->type(), val));
     }
+
+    auto farg = llvm_call_func->arg_begin();
+
+    for ( auto t : unbound_args )
+        nargs.push_back(builder::codegen::create(t->type(), ++farg));
 
     auto result = hook && ! rtype->equal(builder::void_::type())
         ? llvmAddTmp("hook.rval", llvm_rtype, nullptr, true) : nullptr;
@@ -2814,6 +2855,8 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     else
         result = llvmDoCall(llvm_func, hook, ftype, nargs, nullptr, excpt_check);
 
+    llvmDebugPrint("hilti-flow", ::util::fmt("leaving callable's run function for %s", name));
+
     // Don't call llvmReturn() here as it would create the normal function
     // return code and reref the result, which return.result will have
     // already done.
@@ -2824,27 +2867,68 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
 
     popFunction();
 
-    // If we have a return value, do variant that will discard it. This is for calling from C.
-    llvm::Constant* llvm_call_func_no_return = nullptr;
+    // Create a separate version to call from C code. If the signature gets
+    // changed here, the protogen code needs to adapt as well.
 
-    if ( rtype->equal(builder::void_::type()) )
-        llvm_call_func_no_return = llvm_call_func;
+    llvm_parameter_list cparams;
 
-    else {
-        auto func_no_return = llvmAddFunction(string(".callable.run.no.result") + name, llvmTypeVoid(), params, true, type::function::HILTI);
+    cparams.push_back(std::make_pair("callable", llvmTypePtr(llvmLibType("hlt.callable"))));
+    cparams.push_back(std::make_pair("target", llvmTypePtr()));
 
-        pushFunction(func_no_return);
-
-        std::vector<llvm::Value*> fargs;
-        for ( auto a = func_no_return->arg_begin(); a != func_no_return->arg_end(); ++a )
-            fargs.push_back(a);
-
-        llvmCreateCall(llvm_call_func, fargs);
-        llvmReturn();
-        popFunction();
-
-        llvm_call_func_no_return = func_no_return;
+    cnt = 0;
+    for ( auto t : unbound_args ) {
+        auto id = ::util::fmt("__ub%d", ++cnt);
+        // We pass them all by pointer here so that we can deal with any parameters.
+        cparams.push_back(std::make_pair(id, llvmTypePtr(llvmType(t->type()))));
     }
+
+    // Plus standard HILTI-C paramters.
+    cparams.push_back(std::make_pair(symbols::ArgException, llvmTypePtr(llvmTypeExceptionPtr())));
+    cparams.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext())));
+
+    auto llvm_call_func_c = llvmAddFunction(string(".callable.run.c") + name,
+                                            llvmType(builder::void_::type()), cparams, true, true);
+
+    pushFunction(llvm_call_func_c);
+
+    llvmDebugPrint("hilti-flow", ::util::fmt("entering callable's C wrapper for %s", name));
+
+    llvmClearException();
+
+    std::vector<llvm::Value*> fargs;
+    auto a = llvm_call_func_c->arg_begin();
+
+    auto arg_callable = a++;
+    auto arg_target = a++;
+
+    fargs.push_back(arg_callable);
+
+    for ( int i = 0; i < unbound_args.size(); i++ ) {
+        auto deref = builder()->CreateLoad(a++);
+        fargs.push_back(deref);
+    }
+
+    auto arg_expt = a++;
+    auto arg_ctx = a++;
+
+    fargs.push_back(arg_ctx);
+
+    auto c_result = llvmCreateCall(llvm_call_func, fargs);
+
+    if ( ! is_void ) {
+        // Transfer result over.
+        auto casted = builder()->CreateBitCast(arg_target, llvmTypePtr(llvm_rtype));
+        llvmGCAssign(casted, c_result, rtype, true, false);
+    }
+
+    // Transfer exception over.
+    auto ctx_excpt = llvmCurrentException();
+    llvmGCAssign(arg_expt, ctx_excpt, builder::reference::type(builder::exception::typeAny()), false);
+    llvmClearException();
+
+    llvmDebugPrint("hilti-flow", ::util::fmt("leaving callable's C wrapper for %s", name));
+    builder()->CreateRetVoid();
+    popFunction();
 
     // Build the internal function that will later dtor all the arguments in the struct.
 
@@ -2856,15 +2940,14 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
 
         pushFunction(dtor);
 
-        callable = llvm_call_func->arg_begin();
         callable = builder()->CreateBitCast(dtor->arg_begin(), llvmTypePtr(sty));
         callable = builder()->CreateLoad(callable);
 
-        int i = 0;
-        for ( auto a : ftype->parameters() ) {
+        auto targ = fparams.begin();
+
+        for ( auto i = 0; i < fparams.size() - unbound_args.size(); i++ ) {
             auto val = llvmExtractValue(callable, arg_start + i);
-            llvmDtor(val, a->type(), false, "callable.run.dtor");
-            ++i;
+            llvmDtor(val, (*targ++)->type(), false, "callable.run.dtor");
         }
 
         llvmReturn();
@@ -2880,7 +2963,7 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     auto ctyfunc = llvm::cast<llvm::StructType>(llvmLibType("hlt.callable.func"));
     auto ctyfuncval = llvmConstNull(ctyfunc);
     ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm::ConstantExpr::getBitCast(llvm_call_func, llvmTypePtr()), 0);
-    ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm::ConstantExpr::getBitCast(llvm_call_func_no_return, llvmTypePtr()), 1);
+    ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm::ConstantExpr::getBitCast(llvm_call_func_c, llvmTypePtr()), 1);
     ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm_dtor_func, 2);
 
     auto ctyfuncglob = llvmAddConst("callable.func" + name, ctyfuncval);
@@ -2888,16 +2971,24 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     return cacheValue("callable-func", name, ctyfuncglob);
 }
 
-llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable)
+llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable, const expr_list unbound_args)
 {
-    value_list args = { callable, llvmExecutionContext() };
+    value_list args = { callable };
+    std::vector<llvm::Type*> types = { callable->getType() };
 
-    std::vector<llvm::Type*> types;
+    auto params = cty->Function::parameters();
+    auto p = params.begin();
 
-    for ( auto a : args )
-        types.push_back(a->getType());
+    for ( auto a : unbound_args ) {
+        auto v = llvmValue(a, (*p++)->type());
+        args.push_back(v);
+        types.push_back(v->getType());
+    }
 
-    auto ftype = llvm::FunctionType::get(llvmType(cty->argType()), types, false);
+    args.push_back(llvmExecutionContext());
+    types.push_back(llvmTypePtr(llvmTypeExecutionContext()));
+
+    auto ftype = llvm::FunctionType::get(llvmType(cty->result()->type()), types, false);
     auto funcobj = llvmExtractValue(builder()->CreateLoad(callable), 1);
     funcobj = builder()->CreateBitCast(funcobj, llvmTypePtr(llvmLibType("hlt.callable.func")));  // FIXME: Not sure why we need this cast.
     auto func = llvmExtractValue(builder()->CreateLoad(funcobj), 0);
@@ -2912,7 +3003,7 @@ llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Valu
 
     llvmCheckException();
 
-    if ( cty->argType()->equal(shared_ptr<Type>(new type::Void())) )
+    if ( cty->result()->type()->equal(shared_ptr<Type>(new type::Void())) )
         return nullptr;
 
     return result;
@@ -2943,6 +3034,9 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
      case type::function::C:
         // Don't mess with arguments.
         break;
+
+     case type::function::CALLABLE:
+        internalError("llvmDoCall doesn't do callables (yet?)");
 
      default:
         internalError("unknown calling convention in llvmCall");
@@ -3189,7 +3283,7 @@ void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, co
 
 void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone, bool dtor_first)
 {
-    assert(ast::isA<type::ValueType>(type));
+    assert(type::hasTrait<type::trait::ValueType>(type));
 
     if ( dtor_first )
         llvmDtor(dst, type, true, "gc-assign");
@@ -3202,7 +3296,7 @@ void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> 
 
 void CodeGen::llvmGCClear(llvm::Value* addr, shared_ptr<Type> type, const string& tag)
 {
-    assert(ast::isA<type::ValueType>(type));
+    assert(type::hasTrait<type::trait::ValueType>(type));
     auto init_val = typeInfo(type)->init_val;
     llvmDtor(addr, type, true, string("gc-clear/") + tag);
     llvmCreateStore(init_val, addr);
@@ -3250,6 +3344,20 @@ void CodeGen::llvmDebugPopIndent()
     llvmCallC("__hlt_debug_pop_indent", args, false, false);
 }
 
+void CodeGen::llvmDebugPrintString(const string& str)
+{
+    auto s = llvmConstAsciizPtr(str);
+    value_list args = { s, llvmExecutionContext() };
+    llvmCallC(llvmLibFunction("__hlt_debug_print_str"), args, false);
+}
+
+void CodeGen::llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr)
+{
+    auto s = llvmConstAsciizPtr(prefix);
+    auto p = builder()->CreateBitCast(ptr, llvmTypePtr());
+    value_list args = { s, p, llvmExecutionContext() };
+    llvmCallC(llvmLibFunction("__hlt_debug_print_ptr"), args, false);
+}
 
 llvm::Value* CodeGen::llvmSwitchEnumConst(llvm::Value* op, const case_list& cases, bool result, const Location& l)
 {
@@ -3259,8 +3367,8 @@ llvm::Value* CodeGen::llvmSwitchEnumConst(llvm::Value* op, const case_list& case
     //
     // FIXME: Copied from enum.cc, should factor out.
     auto flags = llvmExtractValue(op, 0);
-    auto bit = builder()->CreateAnd(flags, llvmConstInt(HLT_ENUM_HAS_VAL, 8));
-    auto have_val = builder()->CreateICmpNE(bit, llvmConstInt(0, 8));
+    auto bit = builder()->CreateAnd(flags, llvmConstInt(HLT_ENUM_HAS_VAL, 64));
+    auto have_val = builder()->CreateICmpNE(bit, llvmConstInt(0, 64));
 
     auto no_val = newBuilder("switch-no-val");
     auto cont = newBuilder("switch-do");
@@ -4021,5 +4129,22 @@ string CodeGen::llvmGetModuleIdentifier(llvm::Module* module)
         return llvm::cast<llvm::MDString>(node->getOperand(0))->getString();
     }
 
-    return module->getModuleIdentifier();
+    return linkerModuleIdentifierStatic(module);
+}
+
+string CodeGen::linkerModuleIdentifier() const
+{
+    return linkerModuleIdentifierStatic(_module);
+}
+
+string CodeGen::linkerModuleIdentifierStatic(llvm::Module* module)
+{
+    // We add this pointer here so that diffent compile-time units can use
+    // the name module name.
+    return ::util::fmt("%s.%p", module->getModuleIdentifier(), module);
+}
+
+void CodeGen::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call)
+{
+    return _stmt_builder->prepareCall(func, args, call_params, before_call);
 }

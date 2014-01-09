@@ -89,10 +89,14 @@ public:
 	 */
 	void FinalizeTypes();
 
+	/**
+	 * XXX
+	 */
+	bool IsShadowedType(const BroType* type) const;
+
 protected:
-	typedef std::function<void (shared_ptr<::hilti::Expression>,
-				    shared_ptr<::hilti::Expression>,
-				    const ::BroType* type)> build_conversion_function_callback;
+	typedef std::function<shared_ptr<::hilti::Expression> (shared_ptr<::hilti::Expression>,
+							       const ::BroType* type)> build_conversion_function_callback;
 
 	std::shared_ptr<::hilti::Expression> BuildConversionFunction(const char* tag,
 								     shared_ptr<::hilti::Expression> val,

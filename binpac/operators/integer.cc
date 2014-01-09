@@ -48,6 +48,20 @@ opBegin(integer::CastTime : Cast)
     }
 opEnd
 
+opBegin(integer::CastInterval : Cast)
+    opOp1(std::make_shared<type::Integer>())
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Interval>()))
+
+    opDoc("Casts an unsigned integer into an interval, interpreting the value as seconds.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Interval>();
+    }
+opEnd
+
 opBegin(integer::Equal)
     opOp1(std::make_shared<type::Integer>())
     opOp2(std::make_shared<type::Integer>())

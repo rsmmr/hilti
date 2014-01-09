@@ -22,8 +22,9 @@ public:
    typedef std::map<std::string, std::pair<size_t, llvm::Type*>> globals_base_map;
    globals_base_map globals_base;
 
-   // Maps a qualified global name to the GEP index inside the module's global struct.
-   typedef std::map<std::string, size_t> globals_index_map;
+   // Maps a qualified global name to a module and the GEP index inside the
+   // module's global struct.
+   typedef std::map<std::string, std::pair<std::string, size_t>> globals_index_map;
    globals_index_map globals_index;
 
    ast::Logger* logger;
@@ -57,17 +58,23 @@ void GlobalsPass::debug()
     logger->debugPushIndent();
 
     for ( auto m : globals_base ) {
-        logger->debug(1, ::util::fmt("  module %s at global index %lu of type %s", m.first, m.second.first, m.second.second));
+
+        string type;
+        llvm::raw_string_ostream out(type);
+        m.second.second->print(out);
+        logger->debug(1, ::util::fmt("  module %s at global index %lu of type %s", m.first, m.second.first, out.str().c_str()));
 
         logger->debugPushIndent();
 
         for ( auto g : globals_index ) {
-            auto i = ::util::strsplit(g.first, "::");
+            auto id = g.first;
+            auto module = g.second.first;
+            auto idx = g.second.second;
 
-            if ( i.front() != ::util::strtolower(m.first) )
+            if ( module != m.first )
                 continue;
 
-            logger->debug(1, ::util::fmt("    %s at module index %lu", g.first, g.second));
+            logger->debug(1, ::util::fmt("    %s at module index %lu", id, idx));
         }
 
         logger->debugPopIndent();
@@ -85,7 +92,7 @@ bool GlobalsPass::runOnBasicBlock(llvm::BasicBlock &bb)
 
     // We can't replace the instruction while we're iterating over the block
     // so first identify and then replace afterwards.
-    std::list<std::tuple<llvm::Instruction *, std::string, std::string>> replace;
+    std::list<std::tuple<llvm::Instruction *, std::string>> replace;
 
     for ( auto ins = bb.begin(); ins != bb.end(); ++ins ) {
         auto md = ins->getMetadata("global-access");
@@ -93,10 +100,8 @@ bool GlobalsPass::runOnBasicBlock(llvm::BasicBlock &bb)
         if ( ! md )
             continue;
 
-        auto module = llvm::cast<llvm::MDString>(md->getOperand(0))->getString();
-        auto global = llvm::cast<llvm::MDString>(md->getOperand(1))->getString();
-
-        replace.push_back(std::make_tuple(ins, module, global));
+        auto global = llvm::cast<llvm::MDString>(md->getOperand(0))->getString();
+        replace.push_back(std::make_tuple(ins, global));
     }
 
     if ( ! replace.size() )
@@ -149,35 +154,32 @@ bool GlobalsPass::runOnBasicBlock(llvm::BasicBlock &bb)
 
     for ( auto i : replace ) {
         auto ins = std::get<0>(i);
-        auto module = ::util::strtolower(std::get<1>(i));
-        auto global = std::get<2>(i);
+        auto global = std::get<1>(i);
 
-        // std::cerr << module << " / " << global << std::endl;
+        auto g = globals_index.find(global);
 
-        // Generate an instruction that computes address of the desired
-        // global by traversing the joint data structure appropiately.
+        if ( g == globals_index.end() ) {
+            logger->error(::util::fmt("reference to unknown global '%s'", global));
+            continue;
+        }
+
+        auto module = g->second.first;
+        auto midx = g->second.second;
 
         auto t = globals_base.find(module);
 
         if ( t == globals_base.end() ) {
-            logger->error(::util::fmt("reference to global '%s' in unknown module '%s'", global, std::get<1>(i)));
+            logger->error(::util::fmt("reference to global '%s' in unknown module '%s'", global, module));
             continue;
         }
 
-        auto gidx = (*t).second.first;
-        auto gtype = (*t).second.second;
+        auto gidx = t->second.first;
 
-        auto id = ::util::fmt("%s::%s", module, global);
-        auto m = globals_index.find(id);
-
-        if ( m == globals_index.end() ) {
-            logger->error(::util::fmt("reference to unknown global '%s::%s'", std::get<1>(i), global));
-            continue;
-        }
-
+        // Generate an instruction that computes address of the desired
+        // global by traversing the joint data structure appropiately.
         auto zero = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), 0);
         auto idx1 = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), gidx);
-        auto idx2 = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), m->second);
+        auto idx2 = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 32), midx);
 
         std::vector<llvm::Value*> indices = { zero, idx1, idx2 };
         auto gep = llvm::GetElementPtrInst::Create(base_addr, indices, "");
@@ -328,9 +330,11 @@ void Linker::joinFunctions(llvm::Module* dst, const char* new_func, const char* 
     if ( ! md )
         return;
 
+    auto old_func = dst->getFunction(new_func);
+
     // If a function under that name already exists with weak linkage,
     // replace it.
-    if ( auto old_func = dst->getFunction(new_func) ) {
+    if ( old_func ) {
         if ( old_func->hasWeakLinkage() )
             old_func->removeFromParent();
         else
@@ -365,6 +369,9 @@ void Linker::joinFunctions(llvm::Module* dst, const char* new_func, const char* 
             nfunc = llvm::Function::Create(ftype, llvm::Function::ExternalLinkage, new_func, dst);
             nfunc->setCallingConv(llvm::CallingConv::C);
             builder = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "", nfunc));
+
+            if ( old_func )
+                old_func->replaceAllUsesWith(nfunc);
         }
 
         std::vector<llvm::Value*> params;
@@ -377,6 +384,7 @@ void Linker::joinFunctions(llvm::Module* dst, const char* new_func, const char* 
         util::checkedCreateCall(builder, "Linker", func, params);
     }
 
+    assert(builder);
     builder->CreateRetVoid();
 }
 
@@ -554,7 +562,7 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
         if ( ! type )
             continue;
 
-        globals_base.insert(std::make_pair(::util::strtolower(name), std::make_pair(globals.size(), type)));
+        globals_base.insert(std::make_pair(name, std::make_pair(globals.size(), type)));
         globals.push_back(type);
     }
 
@@ -569,7 +577,9 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
 
     // If a global_sizes() function already exists with weak linkage, replace
     // it.
-    if ( auto old_func = dst->getFunction(symbols::FunctionGlobalsSize) ) {
+    auto old_func = dst->getFunction(symbols::FunctionGlobalsSize);
+
+    if ( old_func ) {
         if ( old_func->hasWeakLinkage() )
             old_func->removeFromParent();
         else
@@ -581,6 +591,9 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
     gfunc->setCallingConv(llvm::CallingConv::C);
     auto builder = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "", gfunc));
     builder->CreateRet(size);
+
+    if ( old_func )
+        old_func->replaceAllUsesWith(gfunc);
 
     // Create a map of all global IDs to the GEP index inside their individual global structs.
     GlobalsPass::globals_index_map globals_index;
@@ -594,8 +607,14 @@ void Linker::addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_n
         for ( int i = 0; i < md->getNumOperands(); i++ ) {
             auto node = llvm::cast<llvm::MDNode>(md->getOperand(i));
             auto global = llvm::cast<llvm::MDString>(node->getOperand(0))->getString().str();
-            auto id = ::util::fmt("%s::%s", ::util::strtolower(name), global);
-            globals_index.insert(std::make_pair(id, i));
+
+            auto g = globals_index.find(global);
+
+            if ( g != globals_index.end() )
+                fatalError(::util::fmt("global %s defined in two compilation units (%s and %s)",
+                                       global, name, g->second.first));
+
+            globals_index.insert(std::make_pair(global, std::make_pair(name, i)));
         }
     }
 

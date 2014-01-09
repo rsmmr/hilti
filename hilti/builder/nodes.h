@@ -663,7 +663,7 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
     if ( ! result )
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
-    auto ftype = std::make_shared<hilti::type::Function>(result, params, cc, l);
+    auto ftype = std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
     auto func = std::make_shared<Function>(id, ftype, module, scope, body, l);
     return std::make_shared<declaration::Function>(func, l);
 }
@@ -745,7 +745,7 @@ inline shared_ptr<hilti::type::Function> type(shared_ptr<hilti::function::Result
 					      hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
 					      const Location& l=Location::None)
 {
-    return std::make_shared<hilti::type::Function>(result, params, cc, l);
+    return std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
 }
 
 }
@@ -1254,6 +1254,8 @@ inline shared_ptr<hilti::type::Exception> typeAny(const Location& l=Location::No
 
 namespace callable {
 
+typedef hilti::ctor::Callable::argument_list argument_list;
+
 /// Instantiates a type::Callable type.
 ///
 /// rtype: The callable return type.
@@ -1261,8 +1263,53 @@ namespace callable {
 /// l: Location associated with the type.
 ///
 /// Returns: The type node.
+///
+/// \note This is an old version of the builder function and deprecated.
 inline shared_ptr<hilti::type::Callable> type(shared_ptr<hilti::Type> rtype, const Location& l=Location::None) {
-    return std::make_shared<hilti::type::Callable>(rtype, l);
+    auto result = std::make_shared<hilti::function::Result>(rtype, false);
+    hilti::function::parameter_list params;
+    return std::make_shared<hilti::type::Callable>(result, params, l);
+}
+
+/// Instantiates a type::callable type.
+///
+/// result: The parameter representing the return value.
+///
+/// params: The parameters to the callable.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Function> type(shared_ptr<hilti::function::Result> result,
+					      const hilti::function::parameter_list& params = hilti::function::parameter_list(),
+					      const Location& l=Location::None)
+{
+    return std::make_shared<hilti::type::Callable>(result, params, l);
+}
+
+/// Instantiates a type::callable type.
+///
+/// result: The parameter representing the return value. Can be null for a
+/// void function.
+///
+/// params: The type of the parameters to the callable.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Function> type(shared_ptr<Type> result,
+					      const type_list& params,
+					      const Location& l=Location::None)
+{
+    hilti::function::parameter_list p;
+
+    int i = 0;
+    for ( auto t : params ) {
+        auto id = builder::id::node(::util::fmt("a%d", ++i));
+        p.push_back(std::make_shared<hilti::function::Parameter>(id, t, false, nullptr));
+    }
+
+    return std::make_shared<hilti::type::Callable>(function::result(result, false), p, l);
 }
 
 /// Instantiates a type::Callable wildcard type.
@@ -1272,6 +1319,57 @@ inline shared_ptr<hilti::type::Callable> type(shared_ptr<hilti::Type> rtype, con
 /// Returns: The type node.
 inline shared_ptr<hilti::type::Callable> typeAny(const Location& l=Location::None) {
     return std::make_shared<hilti::type::Callable>(l);
+}
+
+/// Instantiates an AST expression node representing a Callable ctor.
+///
+/// rtype: The callable's function result type.
+///
+/// params: The callable's parameter types.
+///
+/// function: Function being bound.
+///
+/// args: The arguments of \a function to bind statically into the
+/// callable. These must match the function's signature starting from the
+/// left, but can leave some unbound.
+///
+/// l: An associated location.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<hilti::type::function::Result> result,
+                                                  const function::parameter_list& params,
+                                                  shared_ptr<Expression> function,
+                                                  const argument_list& args,
+                                                  const Location& l=Location::None)
+{
+    auto c = std::make_shared<ctor::Callable>(result, params, function, args, l);
+    return std::make_shared<hilti::expression::Ctor>(c, l);
+}
+
+/// Instantiates an AST expression node representing a Callable ctor.
+///
+/// rtype: The callable's function result type.
+///
+/// params: The callable's parameter types.
+///
+/// function: Function being bound.
+///
+/// args: The arguments of \a function to bind statically into the
+/// callable. These must match the function's signature starting from the
+/// left, but can leave some unbound.
+///
+/// l: An associated location.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> result,
+                                                  const type_list& params,
+                                                  shared_ptr<Expression> function,
+                                                  const argument_list& args,
+                                                  const Location& l=Location::None)
+{
+    auto ct = type(result, params, l);
+    auto c = std::make_shared<ctor::Callable>(ct->result(), ct->Function::parameters(), function, args, l);
+    return std::make_shared<hilti::expression::Ctor>(c, l);
 }
 
 }

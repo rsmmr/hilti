@@ -9,18 +9,20 @@
 #include <hilti/context.h>
 #include <hilti/jit/libhilti-jit.h>
 
-binpac::CompilerContext::CompilerContext(const Options& options)
+binpac::CompilerContext::CompilerContext(std::shared_ptr<Options> options)
 {
     setOptions(options);
 }
 
-void binpac::CompilerContext::setOptions(const Options& options)
+void binpac::CompilerContext::setOptions(std::shared_ptr<Options> options)
 {
-    _options = std::shared_ptr<Options>(new Options(options));
+    _options = options;
     _hilti_context = std::make_shared<hilti::CompilerContext>(options);
 
-    if ( options.cgDebugging("visitors") )
-        ast::enableDebuggingForAllVisitors();
+    if ( options->cgDebugging("visitors") )
+        ast::enableDebuggingForAllVisitors(true);
+    else
+        ast::enableDebuggingForAllVisitors(false);
 }
 
 llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm::Module*> modules, std::list<string> libs, path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)

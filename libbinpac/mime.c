@@ -14,14 +14,14 @@ extern const hlt_type_info hlt_type_info_hlt_bytes;
 
 void __mime_parser_dtor(hlt_type_info* ti, __mime_parser* mime_parser)
 {
-    GC_CLEAR(mime_parser->parser, hlt_Parser);
+    GC_CLEAR(mime_parser->parser, hlt_BinPACHilti_Parser);
     GC_CLEAR(mime_parser->next, __mime_parser);
 }
 
 static void __add_parser(hlt_bytes* mt, binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __mime_parser* mp = GC_NEW(__mime_parser);
-    GC_INIT(mp->parser, parser, hlt_Parser);
+    GC_INIT(mp->parser, parser, hlt_BinPACHilti_Parser);
     mp->next = 0;
 
     // Deep-copy the pointers, the map needs that.

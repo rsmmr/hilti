@@ -123,6 +123,7 @@ shared_ptr<Type> Interval::type() const
     return shared_ptr<Type>(new type::Interval());
 }
 
+#if 0
 static shared_ptr<Type> _tuple_type(const expression_list& elems, const Location& l)
 {
     type::Tuple::type_list types;
@@ -131,6 +132,7 @@ static shared_ptr<Type> _tuple_type(const expression_list& elems, const Location
 
     return shared_ptr<Type>(new type::Tuple(types, l));
 }
+#endif
 
 Bitset::Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Location& l)
 {
@@ -149,7 +151,7 @@ Bitset::Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Location& l)
         }
 
         if ( ! found )
-            throw ConstantParseError(this, util::fmt("unknown enum label '%s'", b->pathAsString().c_str()));
+            throw ConstantParseError(this, util::fmt("unknown bitset label '%s'", b->pathAsString().c_str()));
     }
 }
 
@@ -170,7 +172,7 @@ Enum::Enum(shared_ptr<ID> value, shared_ptr<Type> etype, const Location& l) : Co
 
     // Check that we know the label.
     for ( auto l : _etype->labels() ) {
-        if ( value == l.first )
+        if ( *value == *l.first )
             return;
     }
 

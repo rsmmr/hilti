@@ -12,6 +12,7 @@
 #include "threading.h"
 #include "profiler.h"
 #include "init.h"
+#include "linker.h"
 
 // Debugging support to flag wrong usage of hlt_init/hlt_exit.
 static int _init_called = 0;
@@ -68,9 +69,6 @@ void __hlt_init_from_state(__hlt_global_state* state)
 
     __hlt_init_common();
     __hlt_globals_set(state);
-
-    // hlt_execution_context* ctx = hlt_global_execution_context();
-    // __hlt_modules_init(ctx);
 
     _init_called = 1;
     _done_called = 1; // Don't clean up.

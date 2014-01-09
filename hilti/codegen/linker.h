@@ -81,8 +81,6 @@ private:
    path_list _paths;
    path_list _natives;
    path_list _bcs;
-
-   llvm::Type* _execution_context_type = nullptr;
 };
 
 }

@@ -56,7 +56,7 @@ bool Validator::validReturnType(ast::NodeBase* node, shared_ptr<Type> type, type
     if ( cc != type::function::HILTI && ast::isA<type::Any>(type) )
         return true;
 
-    if ( ast::isA<type::ValueType>(type) )
+    if ( type::hasTrait<type::trait::ValueType>(type) )
         return true;
 
     error(node, ::util::fmt("function result must be a value type, but is %s", type->render().c_str()));
@@ -80,7 +80,7 @@ bool Validator::validParameterType(ast::NodeBase* node, shared_ptr<Type> type, t
     if ( cc != type::function::HILTI && ast::isA<type::Any>(type) )
         return true;
 
-    if ( ast::isA<type::ValueType>(type) )
+    if ( type::hasTrait<type::trait::ValueType>(type) )
         return true;
 
     if ( ast::isA<type::TypeType>(type) )
@@ -97,7 +97,7 @@ bool Validator::validVariableType(ast::NodeBase* node, shared_ptr<Type> type)
         return false;
     }
 
-    if ( ast::isA<type::ValueType>(type) )
+    if ( type::hasTrait<type::trait::ValueType>(type) )
         return true;
 
     error(node, ::util::fmt("variable type must be a value type, but is %s", type->render().c_str()));
@@ -498,7 +498,7 @@ void Validator::visit(type::Channel* t)
     if ( ! t->argType() )
         error(t, "no type for channel elements given");
 
-    if ( t->argType() && ! ast::isA<type::ValueType>(t->argType()) )
+    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "channel elements must be of value type");
 }
 
@@ -539,7 +539,7 @@ void Validator::visit(type::Enum* t)
 
 void Validator::visit(type::Exception* t)
 {
-    if ( t->argType() && ! ast::isA<type::ValueType>(t->argType()) )
+    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "exception argument type must be of value type");
 
     auto btype = ast::as<type::Exception>(t->baseType());
@@ -637,25 +637,25 @@ void Validator::visit(type::Iterator* t)
 
 void Validator::visit(type::List* t)
 {
-    if ( ! t->argType() && ! in<type::Function>() )
+    if ( ! t->argType() && ! in<type::HiltiFunction>() )
         error(t, "no type for list elements given");
 
-    if ( t->argType() && ! ast::isA<type::ValueType>(t->argType()) )
+    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "list elements must be of value type");
 }
 
 void Validator::visit(type::Map* t)
 {
-    if ( ! t->valueType() && ! in<type::Function>() )
+    if ( ! t->valueType() && ! in<type::HiltiFunction>() )
         error(t, "no type for map elements given");
 
-    if ( ! t->keyType() && ! in<type::Function>() )
+    if ( ! t->keyType() && ! in<type::HiltiFunction>() )
         error(t, "no type for map index given");
 
-    if ( t->valueType() && ! ast::isA<type::ValueType>(t->valueType()) )
+    if ( t->valueType() && ! type::hasTrait<type::trait::ValueType>(t->valueType()) )
         error(t, "map elements must be of value type");
 
-    if ( t->keyType() && ! ast::isA<type::ValueType>(t->keyType()) )
+    if ( t->keyType() && ! type::hasTrait<type::trait::ValueType>(t->keyType()) )
         error(t, "map index must be of value type");
 
     if ( t->valueType() && ! type::hasTrait<type::trait::Hashable>(t->valueType()) )
@@ -704,7 +704,7 @@ void Validator::visit(type::Reference* t)
     if ( ! t->argType() )
         error(t, "no referenced type given");
 
-    if ( t->argType() && ! ast::isA<type::HeapType>(t->argType()) )
+    if ( t->argType() && ! type::hasTrait<type::trait::HeapType>(t->argType()) )
         error(t, "referenced type must be of heap type");
 }
 
@@ -718,10 +718,10 @@ void Validator::visit(type::RegExp* t)
 
 void Validator::visit(type::Set* t)
 {
-    if ( ! t->argType() && ! in<type::Function>() )
+    if ( ! t->argType() && ! in<type::HiltiFunction>() )
         error(t, "no type for set elements given");
 
-    if ( t->argType() && ! ast::isA<type::ValueType>(t->argType()) )
+    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "set elements must be of value type");
 
     if ( t->argType() && ! type::hasTrait<type::trait::Hashable>(t->argType()) )
@@ -755,7 +755,7 @@ void Validator::visit(type::Struct* t)
             continue;
         }
 
-        if ( ! ast::isA<type::ValueType>(f->type()) )
+        if ( ! type::hasTrait<type::trait::ValueType>(f->type()) )
             error(f, "struct fields must be of value type");
 
         if ( f->default_() && ! f->default_()->canCoerceTo(f->type()) ) {
@@ -784,7 +784,7 @@ void Validator::visit(type::Tuple* t)
             continue;
         }
 
-        if ( ! ast::isA<type::ValueType>(e) )
+        if ( ! type::hasTrait<type::trait::ValueType>(e) )
             error(t, "tuple elements must be of value type");
     }
 }
@@ -800,10 +800,10 @@ void Validator::visit(type::Unknown* t)
 
 void Validator::visit(type::Vector* t)
 {
-    if ( ! t->argType() && ! in<type::Function>() )
+    if ( ! t->argType() && ! in<type::HiltiFunction>() )
         error(t, "no type for vector elements given");
 
-    if ( t->argType() && ! ast::isA<type::ValueType>(t->argType()) )
+    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "vector elements must be of value type");
 }
 
@@ -825,19 +825,19 @@ void Validator::visit(expression::Constant* e)
     if ( ast::isA<type::Label>(e->type()) )
         return;
 
-    if ( ! ast::isA<type::ValueType>(e->type()) )
+    if ( ! type::hasTrait<type::trait::ValueType>(e->type()) )
         internalError(e, "constant expression's type needs to be of value type");
 }
 
 void Validator::visit(expression::Ctor* e)
 {
-    if ( ! ast::isA<type::ValueType>(e->type()) )
+    if ( ! type::hasTrait<type::trait::ValueType>(e->type()) )
         internalError(e, "ctor expression's type needs to be of value type");
 }
 
 void Validator::visit(expression::Default* e)
 {
-    if ( ! ast::isA<type::ValueType>(e->type()) )
+    if ( ! type::hasTrait<type::trait::ValueType>(e->type()) )
         error(e, "constructor's type needs to be of value type");
 }
 
@@ -963,3 +963,6 @@ void Validator::visit(ctor::Vector* c)
 {
 }
 
+void Validator::visit(ctor::Callable* c)
+{
+}

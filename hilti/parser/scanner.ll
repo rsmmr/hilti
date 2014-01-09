@@ -128,7 +128,7 @@ True                  yylval->bval = 1; return token::CBOOL;
 &priority             yylval->sval = yytext; return token::ATTR_PRIORITY;
 &scope                yylval->sval = yytext; return token::ATTR_SCOPE;
 
-{digits}\/(tcp|udp)   yylval->sval = yytext; return token::CPORT;
+{digits}\/(tcp|udp|icmp) yylval->sval = yytext; return token::CPORT;
 {address}             yylval->sval = yytext; return token::CADDRESS;
 
 [-+]?{digits}\.{digits} yylval->dval = strtod(yytext, 0); return token::CDOUBLE;

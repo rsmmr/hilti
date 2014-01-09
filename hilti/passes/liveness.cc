@@ -8,6 +8,7 @@
 #include <functional>
 
 #include "hilti/hilti-intern.h"
+#include "hilti/options.h"
 
 using namespace hilti::passes;
 
@@ -20,6 +21,16 @@ Liveness::Liveness(CompilerContext* context, shared_ptr<CFG> cfg) : Pass<>("hilt
 
 Liveness::~Liveness()
 {
+}
+
+void Liveness::dumpDebug(int round)
+{
+    std::cerr << std::endl;
+    std::cerr << util::fmt("=== %s === begin round %d", _module->id()->name(), round) << std::endl;
+    passes::Printer printer(std::cerr, false, true);
+    printer.run(_module);
+    std::cerr << util::fmt("=== %s === end round %d", _module->id()->name(), round) << std::endl;
+    std::cerr << std::endl;
 }
 
 size_t Liveness::hashLiveness()
@@ -45,8 +56,15 @@ size_t Liveness::hashLiveness()
     return hash;
 }
 
-bool Liveness::run(shared_ptr<Node> block)
+bool Liveness::run(shared_ptr<Node> module)
 {
+    _module = ast::checkedCast<Module>(module);
+
+    int round = 0;
+
+    if ( _context->options().cgDebugging("liveness") )
+        dumpDebug(round);
+
     size_t old_size;
     size_t old_hash;
 
@@ -56,6 +74,9 @@ bool Liveness::run(shared_ptr<Node> block)
 
         for ( auto s : _cfg->depthFirstOrder() )
             processStatement(s);
+
+        if ( _context->options().cgDebugging("liveness") )
+            dumpDebug(++round);
 
         // std::cerr << "-> old_size=" << old_size << " new_size=" << _livenesses.size()
         //  << " old_hash=" << old_hash << " new_hash=" << hashLiveness() << std::endl;
@@ -127,7 +148,6 @@ bool Liveness::deadOut(shared_ptr<Statement> stmt, shared_ptr<Expression> e) con
     auto ln = liveness(stmt).dead;
 
     shared_ptr<Statement::FlowVariable> fv = nullptr;
-
 
     if ( auto ep = ast::tryCast<expression::Parameter>(e) )
         fv = std::make_shared<Statement::FlowVariable>(ep);

@@ -4,12 +4,17 @@
 
 #include <stdint.h>
 
+extern void __hlt_modules_init(void* ctx);
+extern void __hlt_globals_init(void* ctx);
+extern void __hlt_globals_dtor(void* ctx);
+extern int64_t __hlt_globals_size();
+
 struct __hlt_execution_context;
 
 struct __hlt_linker_functions {
-    void (*__hlt_modules_init)(struct __hlt_execution_context* ctx);
-    void (*__hlt_globals_init)(struct __hlt_execution_context* ctx);
-    void (*__hlt_globals_dtor)(struct __hlt_execution_context* ctx);
+    void (*__hlt_modules_init)(void* ctx);
+    void (*__hlt_globals_init)(void* ctx);
+    void (*__hlt_globals_dtor)(void* ctx);
     int64_t (*__hlt_globals_size)();
 };
 
