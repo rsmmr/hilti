@@ -1,0 +1,435 @@
+module BACnet;
+
+import Bro;
+
+# This module implements a BACnet parser.
+# 
+# When used on IP, BACnet is a protocol, which is layered on top
+# of UDP.
+# When used with IP, the outmost layer of a BACnet packet is the
+# BACnet Virtual Link Layer (BVLL), which supports a number of different
+# Virtual Link Control Functions (BVLC).
+# 
+# When the BVLL layer is used to sent a higher level message, it wraps
+# a BACnet Network Protocol Data Unit (NPDU). This layer concerns itself
+# with the routing (and so on) of BACnet messages. A NPDU message can either
+# contain different NPDU Message Types, mostly concerning routing. A NPDU
+# can also wrap a BACnet Application Protocol Data Unit (APDU).
+#
+# The APDU layer basically gets all messages that have nothing to do with routing.
+# ASN.1 decoding is needed starting at this layer.
+
+type BVLC_function = enum {
+  # message distribution
+  Original-Unicast-NPDU = 0x0A,
+  Original-Broadcast-NPDU = 0x0B,
+  Distribute-Broadcast-To-Network = 0x09,
+  Forwarded-NPDU = 0x04,
+  # bbmd broadcast distribution & foreign device table management
+  Secure-BVLL = 0x0C,
+  BVLC-Result = 0x00,
+  Write-BDT = 0x01,
+  Read-BDT = 0x02,
+  Read-BDT-ACK= 0x03,
+  Register-FD = 0x05,
+  Read-FDT = 0x06,
+  Read-FDT-ACK = 0x07,
+  Delete-FDT-Entry = 0x08
+};
+
+export type Message = unit {
+  # outer protocol exposed to UDP is BVLC
+  tpe: uint8(0x81);
+  func: uint8 &convert=BVLC_function($$);
+  len: uint16;
+
+  switch ( self.func ) {
+   BVLC_function::Original-Unicast-NPDU,
+   BVLC_function::Original-Broadcast-NPDU,
+   BVLC_function::Distribute-Broadcast-To-Network -> npdu: NPDU(self.len - 4);
+   BVLC_function::Forwarded-NPDU -> {
+     originator: addr &ipv4;
+     originator_port: uint16;
+     npdu: NPDU(self.len - 4);
+   }
+   BVLC_function::BVLC-Result,
+   BVLC_function::Write-BDT,
+   BVLC_function::Read-BDT,
+   BVLC_function::Read-BDT-ACK,
+   BVLC_function::Register-FD,
+   BVLC_function::Read-FDT,
+   BVLC_function::Read-FDT-ACK,
+   BVLC_function::Delete-FDT-Entry -> bbmd: BBMD( self.func, self.len - 4 );
+   # BVLC_function::Secure-BVLL Not yet supported, probably not used
+  };
+
+  on %done { print self; }
+};
+
+type BVLC_result = enum {
+  Success = 0x0000,
+  Write-BDT-NAK = 0x0010,
+  Read-BDT-NAK = 0x0020,
+  Register-FD-NAK = 0x0030,
+  Read-FDT-NAK = 0x0040,
+  Delete-FDT-NAK = 0x0050,
+  Distribute-Broadcast-To-Network-NAK = 0x0060
+};
+
+# Broadcast Distribution Table. Due to the fact that BACnet cannot
+# trust the underlying IP network do to broadcasting right, it does
+# it itself.
+#
+# Each BACnet/IP Broadcast Management Device (BBMD) has a Broadcast
+# Distribution table which contains the network addresses to which
+# broadcasts are forwarded.
+type BDT_entry = unit {
+  address: addr &ipv4;
+  address_port: uint16;
+  mask: uint32;
+};
+
+# Foreign Device Table, also held by a BBMD. Foreign devices are
+# devices that belong to a BACnet network, but reside on a different
+# IP subnet as the other devices forming the subnet.
+type FDT_entry = unit {
+  address: addr &ipv4;
+  address_port: uint16;
+  ttl: uint16;
+  time_remaining: uint16;
+};
+
+type BBMD = unit (func: BVLC_function, len: uint16) {
+  switch ( func ) {
+   BVLC_function::BVLC-Result -> bvlc_result: uint16 &convert=BVLC_result($$);
+   BVLC_function::Read-BDT-ACK,
+   BVLC_function::Write-BDT -> bdts: list<BDT_entry> &length=len/10;
+   BVLC_function::Read-FDT,
+   BVLC_function::Read-BDT -> : void;
+   BVLC_function::Register-FD -> ttl: uint16;
+   BVLC_function::Read-FDT-ACK,
+   BVLC_function::Delete-FDT-Entry -> fdts: list<FDT_entry> &length=len/10;
+  };
+};
+
+type NPDU_type = enum {
+  Who-Is-Router-To-Network = 0x00,
+  I-Am-Router-To-Network = 0x01,
+  I-Could-Be-Router-To-Network = 0x02,
+  Reject-Message-To-Network = 0x03,
+  Router-Busy-To-Network = 0x04,
+  Router-Available-To-Network = 0x05,
+  Initialize-Routing-Table = 0x06,
+  Initialize-Routing-Table-Ack = 0x07,
+  Establish-Connection-To-Network = 0x08,
+  Disconnect-Connection-To-Network = 0x09,
+  Challenge-Request = 0x0A,
+  Security-Payload = 0x0B,
+  Security-Response = 0x0C,
+  Request-Key-Update = 0x0D,
+  Update-Key-Set = 0x0E,
+  Update-Distribution-Key = 0x0F,
+  Request-Master-Key = 0x10,
+  Set-Master-Key = 0x11,
+  What-Is-Network-Number = 0x12,
+  Network-Numer-Is = 0x13
+};
+
+type NPDU_priority = enum {
+  Normal = 0,
+  Urgent = 1,
+  Critical = 2,
+  Life-Safety = 3
+};
+
+type NPDU = unit(len: uint16) {
+  var priority: NPDU_priority;
+
+  version: uint8; # should be 0x1, but wireshark trace also has 10?
+  control : bitfield(8) {
+    priority: 0..1;
+    der: 2;
+    source: 3;
+    reserved1: 4;
+    destination: 5;
+    reserved2: 6;
+    nlmessage: 7;
+  } {
+    self.priority = NPDU_priority(self.control.priority);
+  }
+
+  dnet: uint16 if ( self.control.destination == 1 );
+  dlen: uint8 if ( self.control.destination == 1 );
+  dadr: bytes &length=self.dlen if ( self.control.destination == 1 );
+  snet: uint16 if ( self.control.source == 1 );
+  slen: uint8 if ( self.control.source == 1 );
+  sadr: bytes &length=self.slen if ( self.control.source == 1 );
+  hop_count: uint8 if ( self.control.destination == 1);
+  message_type: uint8 &convert=NPDU_type($$) if ( self.control.nlmessage == 1 );
+
+  npdu_message: NPDU_message( (len - 3), self.message_type) if ( self.control.nlmessage == 1 );
+
+  # if nlmessage == 0, APDU follows
+  apdu: APDU( len - 3 ) if ( self.control.nlmessage == 0 );
+};
+
+type NPDU_Reject_reason = enum {
+  Other = 0,
+  No_route = 1,
+  Router_busy = 2,
+  Unknown_message_type = 3,
+  Message_too_long = 4,
+  Security_error = 5,
+  Addressing_error = 6
+};
+
+
+type NPDU_message = unit(len: uint16, t: NPDU_type) {
+  # len only is remaining length
+  switch ( t ) {
+    NPDU_type::Who-Is-Router-To-Network,
+    NPDU_type::Disconnect-Connection-To-Network -> dnets: list<uint16> &length=1 if ( len >= 2 );
+    NPDU_type::I-Am-Router-To-Network, 
+    NPDU_type::Router-Busy-To-Network,
+    NPDU_type::Router-Available-To-Network -> dnets: list<uint16> &length=len / 2;
+    NPDU_type::I-Could-Be-Router-To-Network -> {
+      dnets: list<uint16> &length=1;
+      performance_index: uint8;
+    }
+    NPDU_type::Reject-Message-To-Network -> {
+      reason: uint8 &convert=NPDU_Reject_reason($$);
+      dnets: list<uint16> &length=1;
+    }
+    NPDU_type::Establish-Connection-To-Network -> {
+      dnets: list<uint16> &length=1;
+      termination_time: uint8;
+    }
+    NPDU_type::What-Is-Network-Number -> : void; # empty packet
+    NPDU_type::Network-Numer-Is -> {
+      network_number: uint16;
+      learned: uint8;
+    }
+    NPDU_type::Initialize-Routing-Table,
+    NPDU_type::Initialize-Routing-Table-Ack -> {
+      number_ports: uint8 if ( len > 0 );
+      routing_entries: list<NPDU_routing_entry> &length=1 if ( len > 0 );
+    }
+  };
+};
+
+type NPDU_routing_entry = unit {
+  dnet: uint16;
+  portId: uint8;
+  portInfo_len: uint8;
+  portInfo: bytes &length=self.portInfo_len;
+};
+
+type PDU_type = enum {
+  ConfirmedRequest = 0,
+  Unconfirmed-Request = 1,
+  SimpleAck = 2,
+  ComplexAck = 3,
+  SegmentAck = 4,
+  Error = 5,
+  Reject = 5,
+  Abort = 7
+};
+
+type APDU = unit(len: uint16) {
+  # ok, the first 4 bits contain the actual message type - but we need them later.
+  head: bytes &length = 1;
+  var tpe: PDU_type;
+  tpe_raw: uint8 &parse(self.head) {
+    self.tpe_raw = (self.tpe_raw & 0xF0) >> 4;
+    self.tpe = PDU_type(self.tpe_raw);
+  }
+
+  switch ( self.tpe ) {
+    PDU_type::ConfirmedRequest -> confirmed_request: PDU_confirmedRequest(self.head, len);
+    PDU_type::Unconfirmed-Request -> unconfirmed_request: PDU_unconfirmedRequest(len);
+    PDU_type::SimpleAck -> simple_ack: PDU_simpleACK;
+    PDU_type::ComplexAck -> complex_ack: PDU_complexAck(self.head);
+    PDU_type::Error -> error: PDU_error;
+    PDU_type::Reject -> reject: PDU_reject;
+    # FIXME: need standard for abort PDU description
+  };
+
+};
+
+type Confirmed_service_choice = enum {
+  AcknowledgeAlarm = 0,
+  ConfirmedCOVNotification = 1,
+  ConfirmedEventNotification = 2,
+  GetAlarmSummary = 3,
+  GetEnrollmentSummary = 4,
+  SubscribeCOV = 5,
+  AtomicReadFile = 6,
+  AtomicWriteFile = 7,
+  AddListElement = 8,
+  RemoveListElement = 9,
+  CreateObject = 10,
+  DeleteObject = 11,
+  ReadProperty = 12,
+  ReadPropertyConditional = 13,
+  ReadPropertyMultiple = 14,
+  WriteProperty = 15,
+  WritePropertyMultiple = 16,
+  DeviceCommunicationControl = 17,
+  ConfirmedPrivateTransfer = 18,
+  ConfirmedTextMessage = 19,
+  ReinitializeDevice = 20,
+  VtOpen = 21,
+  VtClose = 22,
+  VtData = 23,
+  Authenticate = 24,
+  RequestKey = 25,
+  ReadRange = 26,
+  LifeSafetyOperation = 27,
+  SubscribeCOVProperty = 28,
+  GetEventInformation = 29
+};
+
+type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
+  head1 : bitfield(8) {
+    segmented-response-accepted: 1;
+    more-follows: 2;
+    segmented-message: 3;
+    tpe: 4..7;
+  } &parse(head);
+  head2: bitfield(8) {
+    max-APDU-length-accepted: 0..3;
+    max-segments-accepted: 4..6;
+  };
+
+  invokeID: uint8;
+  sequence_number: uint8 if ( self.head1.segmented-message == 1 );
+  proposed_window_size: uint8 if ( self.head1.segmented-message == 1 );
+  confirmed_service_choice: uint8 &convert=Confirmed_service_choice($$);
+  # variable part following - need standard for decoding.
+};
+
+type Unconfirmed_service_choice = enum {
+  I-Am = 0,
+  I-Have = 1,
+  Who-Has = 7,
+  Who-Is = 8
+};
+
+type PDU_unconfirmedRequest = unit(len: uint16) {
+  service_choice: uint8 &convert=Unconfirmed_service_choice($$);
+  # Following - variable part. Need standard to look up encoding.
+
+  switch ( self.service_choice ) {
+    Unconfirmed_service_choice::Who-Is -> who_is: PDU_who_is(len - 2);
+    * -> : void;
+  };
+};
+
+type PDU_who_is = unit(len: uint16) {
+  tag: BACnetTag if ( len > 0 ); # context specific - has to be tag 0
+  deviceInstanceRangeLowLimit: uint16;
+  tag2: BACnetTag if ( len > 0 ); # context specific - has to be tag 1
+  deviceInstanceRangeHighLimit: uint16;
+};
+
+type PDU_simpleACK = unit {
+  invokeID: uint8;
+  service_choice: uint8 &convert=Confirmed_service_choice($$);
+};
+
+type PDU_complexAck = unit(head_raw: bytes) {
+  head : bitfield(8) {
+    more-follows: 2;
+    segmented-message: 3;
+    tpe: 4..7;
+  } &parse(head_raw);
+  invokeID: uint8;
+  sequence_number: uint8 if ( self.head.segmented-message == 1 );
+  proposed_window_size: uint8 if ( self.head.segmented-message == 1 );
+  confirmed_service_choice: uint8; # conversion list is at standard 135-2004 pg 392.
+  # Following - variable part. Need standard to look up encoding.
+};
+
+type PDU_error = unit {
+  invokeID: uint8;
+  error-class: uint8;
+  error-code: uint8;
+  # conversion codes -> standard;
+};
+
+type Reject_reason = enum {
+  Other = 0,
+  BufferOverflow = 1,
+  InconsistentParameters = 2,
+  InvalidParameterDataType = 3,
+  InvalidTag = 4,
+  MissingRequiredParameter = 4,
+  ParameterOutOfRange = 6,
+  TooManyArguments = 7,
+  UndefinedEnumeration = 8,
+  UnrecognizedService = 9
+};
+
+type PDU_reject = unit {
+  invokeID: uint8;
+  reject_reason: uint8 &convert=Reject_reason($$);
+};
+
+## from here, a bit of duplication with asn1.pac2. Sorry.
+
+type ASN1Class = enum {
+  UNIVERSAL = 0,
+  APPLICATION = 1,
+  context-specific = 2,
+  PRIVATE = 3
+};
+
+type BACnetType = enum {
+  NULL = 0,
+  BOOLEAN = 1,
+  UnsignedInteger = 2,
+  Integer = 3,
+  Real = 4,
+  Double = 5,
+  OctetString = 6,
+  CharacterString = 7,
+  BitString = 8,
+  Enumerated = 9,
+  Date = 10,
+  Time = 11,
+  BACnetObjectIdentifier = 12
+};
+
+type BACnetTag = unit {
+  var tpe: BACnetType;
+  var class: ASN1Class;
+
+  data : bitfield(8) {
+     lvt: 0..2;
+     class: 3;
+     tag: 4..7;
+  } &bitorder=BinPAC::BitOrder::LSB0;
+
+  tag: uint8 if ( self.data.tag == 0xF );
+  lvt: uint8 if ( self.data.lvt == 0x5 );
+
+  on %done { 
+    if ( self.data.tag != 0xF ) {
+      self.tag = self.data.tag;
+    }
+    if ( self.data.lvt != 0x5 ) {
+      self.lvt = self.data.lvt;
+    }
+    self.tpe = BACnetType(self.tag);
+    self.class = ASN1Class(self.data.class + 1); # bacnet only has application / context-specific
+  }
+};
+
+
+# Fixme: need to get the type mapping from somewhere, probably the standard...
+type BACnetObjectIdentifier = unit {
+  data: bitfield(32) {
+    instanceNumer: 0..21;
+    type: 33..31;
+  };
+};

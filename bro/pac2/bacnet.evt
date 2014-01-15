@@ -1,0 +1,6 @@
+grammar bacnet.pac2;
+
+protocol analyzer pac2::DNS over UDP:
+    parse with BACnet::Message,
+    port 47808/udp;
+
