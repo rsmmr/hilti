@@ -19,6 +19,11 @@ import Bro;
 # The APDU layer basically gets all messages that have nothing to do with routing.
 # ASN.1 decoding is needed starting at this layer.
 
+# Todo: add vendor IDs. Current list of BACnet vendor IDs is available at 
+# http://www.bacnet.org/VendorID/BACnet%20Vendor%20IDs.htm
+#
+# vim search-replace for enums: s/^\(.*\) (\(\d*\).*/  \1 = \2,/
+
 type BVLC_function = enum {
   # message distribution
   Original-Unicast-NPDU = 0x0A,
@@ -50,7 +55,7 @@ export type Message = unit {
    BVLC_function::Forwarded-NPDU -> {
      originator: addr &ipv4;
      originator_port: uint16;
-     npdu: NPDU(self.len - 4);
+     npdu: NPDU(self.len - 10); # 4 bytes header + IP Address + port
    }
    BVLC_function::BVLC-Result,
    BVLC_function::Write-BDT,
@@ -145,6 +150,8 @@ type NPDU_priority = enum {
 type NPDU = unit(len: uint16) {
   var priority: NPDU_priority;
 
+  var head_length: uint16 = 2; # version + control
+
   version: uint8; # should be 0x1, but wireshark trace also has 10?
   control : bitfield(8) {
     priority: 0..1;
@@ -158,19 +165,35 @@ type NPDU = unit(len: uint16) {
     self.priority = NPDU_priority(self.control.priority);
   }
 
-  dnet: uint16 if ( self.control.destination == 1 );
-  dlen: uint8 if ( self.control.destination == 1 );
-  dadr: bytes &length=self.dlen if ( self.control.destination == 1 );
-  snet: uint16 if ( self.control.source == 1 );
-  slen: uint8 if ( self.control.source == 1 );
-  sadr: bytes &length=self.slen if ( self.control.source == 1 );
-  hop_count: uint8 if ( self.control.destination == 1);
-  message_type: uint8 &convert=NPDU_type($$) if ( self.control.nlmessage == 1 );
+  dnet: uint16 if ( self.control.destination == 1 ) {
+    self.head_length = self.head_length + 2;
+  }
+  dlen: uint8 if ( self.control.destination == 1 ) {
+    self.head_length = self.head_length + 1;
+  }
+  dadr: bytes &length=self.dlen if ( self.control.destination == 1 ) {
+    self.head_length = self.head_length + self.dlen;
+  }
+  snet: uint16 if ( self.control.source == 1 ) {
+    self.head_length = self.head_length + 2;
+  }
+  slen: uint8 if ( self.control.source == 1 ) {
+    self.head_length = self.head_length + 1;
+  }
+  sadr: bytes &length=self.slen if ( self.control.source == 1 ) {
+    self.head_length = self.head_length + self.slen;
+  }
+  hop_count: uint8 if ( self.control.destination == 1) {
+    self.head_length = self.head_length + 1;
+  }
+  message_type: uint8 &convert=NPDU_type($$) if ( self.control.nlmessage == 1 ) {
+    self.head_length = self.head_length + 1;
+  }
 
-  npdu_message: NPDU_message( (len - 3), self.message_type) if ( self.control.nlmessage == 1 );
+  npdu_message: NPDU_message( (len - self.head_length), self.message_type) if ( self.control.nlmessage == 1 );
 
   # if nlmessage == 0, APDU follows
-  apdu: APDU( len - 3 ) if ( self.control.nlmessage == 0 );
+  apdu: APDU( len - self.head_length ) if ( self.control.nlmessage == 0 );
 };
 
 type NPDU_Reject_reason = enum {
@@ -251,42 +274,44 @@ type APDU = unit(len: uint16) {
     PDU_type::ComplexAck -> complex_ack: PDU_complexAck(self.head);
     PDU_type::Error -> error: PDU_error;
     PDU_type::Reject -> reject: PDU_reject;
-    # FIXME: need standard for abort PDU description
+    PDU_type::Abort -> abort: PDU_abort(self.head);
   };
 
 };
 
-type Confirmed_service_choice = enum {
-  AcknowledgeAlarm = 0,
-  ConfirmedCOVNotification = 1,
-  ConfirmedEventNotification = 2,
-  GetAlarmSummary = 3,
-  GetEnrollmentSummary = 4,
-  SubscribeCOV = 5,
-  AtomicReadFile = 6,
-  AtomicWriteFile = 7,
-  AddListElement = 8,
-  RemoveListElement = 9,
-  CreateObject = 10,
-  DeleteObject = 11,
-  ReadProperty = 12,
-  ReadPropertyConditional = 13,
-  ReadPropertyMultiple = 14,
-  WriteProperty = 15,
-  WritePropertyMultiple = 16,
-  DeviceCommunicationControl = 17,
-  ConfirmedPrivateTransfer = 18,
-  ConfirmedTextMessage = 19,
-  ReinitializeDevice = 20,
-  VtOpen = 21,
-  VtClose = 22,
-  VtData = 23,
-  Authenticate = 24,
-  RequestKey = 25,
-  ReadRange = 26,
-  LifeSafetyOperation = 27,
-  SubscribeCOVProperty = 28,
-  GetEventInformation = 29
+type BACnetConfirmedServiceChoice = enum {
+  # Alarm and Event Services
+  acknowledgeAlarm = 0,
+  confirmedCOVNotification = 1,
+  confirmedEventNotification = 2,
+  getAlarmSummary = 3,
+  getEnrollmentSummary = 4,
+  getEventInformation = 29,
+  subscribeCOV = 5,
+  subscribeCOVProperty = 28,
+  lifeSafetyOperation = 27,
+  # File Access Services
+  atomicReadFile = 6,
+  atomicWriteFile = 7,
+  # Object Access Services
+  addListElement = 8,
+  removeListElement = 9,
+  createObject = 10,
+  deleteObject = 11,
+  readProperty = 12,
+  readPropertyMultiple = 14,
+  readRange = 26,
+  writeProperty = 15,
+  writePropertyMultiple = 16,
+  # Remote Device Management Services
+  deviceCommunicationControl = 17,
+  confirmedPrivateTransfer = 18,
+  confirmedTextMessage = 19,
+  reinitializeDevice = 20,
+  # Virtual Terminal Services
+  vtOpen = 21,
+  vtClose = 22,
+  vtData = 23
 };
 
 type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
@@ -304,37 +329,52 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
   invokeID: uint8;
   sequence_number: uint8 if ( self.head1.segmented-message == 1 );
   proposed_window_size: uint8 if ( self.head1.segmented-message == 1 );
-  confirmed_service_choice: uint8 &convert=Confirmed_service_choice($$);
+  confirmed_service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$);
   # variable part following - need standard for decoding.
 };
 
-type Unconfirmed_service_choice = enum {
-  I-Am = 0,
-  I-Have = 1,
-  Who-Has = 7,
-  Who-Is = 8
+type BACnetUnconfirmedServiceChoice = enum {
+  i-Am = 0,
+  i-Have = 1,
+  unconfirmedCOVNotification = 2,
+  unconfirmedEventNotification = 3,
+  unconfirmedPrivateTransfer = 4,
+  unconfirmedTextMessage = 5,
+  timeSynchronization = 6,
+  who-Has = 7,
+  who-Is = 8,
+  utcTimeSynchronization = 9,
+  writeGroup = 10
 };
 
 type PDU_unconfirmedRequest = unit(len: uint16) {
-  service_choice: uint8 &convert=Unconfirmed_service_choice($$);
+  service_choice: uint8 &convert=BACnetUnconfirmedServiceChoice($$);
   # Following - variable part. Need standard to look up encoding.
 
   switch ( self.service_choice ) {
-    Unconfirmed_service_choice::Who-Is -> who_is: PDU_who_is(len - 2);
+    BACnetUnconfirmedServiceChoice::i-Am -> i_am: PDU_i_am;    
+    BACnetUnconfirmedServiceChoice::who-Is -> who_is: PDU_who_is(len - 2);
     * -> : void;
   };
 };
 
 type PDU_who_is = unit(len: uint16) {
   tag: BACnetTag if ( len > 0 ); # context specific - has to be tag 0
-  deviceInstanceRangeLowLimit: uint16;
+  deviceInstanceRangeLowLimit: uint16 if ( len > 0 );
   tag2: BACnetTag if ( len > 0 ); # context specific - has to be tag 1
-  deviceInstanceRangeHighLimit: uint16;
+  deviceInstanceRangeHighLimit: uint16 if ( len > 0);
+};
+
+type PDU_i_am = unit {
+  iAmDeviceIdentifier: BACnetMessage; # oid 
+  maxAPDULengthAccepted: BACnetMessage; # unsigned 
+  segmentationSupported: BACnetMessage; # BACnetSegmentation
+  vendorID: BACnetMessage; # unsigned16
 };
 
 type PDU_simpleACK = unit {
   invokeID: uint8;
-  service_choice: uint8 &convert=Confirmed_service_choice($$);
+  service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$);
 };
 
 type PDU_complexAck = unit(head_raw: bytes) {
@@ -346,7 +386,7 @@ type PDU_complexAck = unit(head_raw: bytes) {
   invokeID: uint8;
   sequence_number: uint8 if ( self.head.segmented-message == 1 );
   proposed_window_size: uint8 if ( self.head.segmented-message == 1 );
-  confirmed_service_choice: uint8; # conversion list is at standard 135-2004 pg 392.
+  confirmed_service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$); 
   # Following - variable part. Need standard to look up encoding.
 };
 
@@ -357,25 +397,47 @@ type PDU_error = unit {
   # conversion codes -> standard;
 };
 
-type Reject_reason = enum {
-  Other = 0,
-  BufferOverflow = 1,
-  InconsistentParameters = 2,
-  InvalidParameterDataType = 3,
-  InvalidTag = 4,
-  MissingRequiredParameter = 4,
-  ParameterOutOfRange = 6,
-  TooManyArguments = 7,
-  UndefinedEnumeration = 8,
-  UnrecognizedService = 9
+type BACnetRejectReason = enum {
+  other = 0,
+  buffer-overflow = 1,
+  inconsistent-parameters = 2,
+  invalid-parameter-data-type = 3,
+  invalid-tag = 4,
+  missing-required-parameter = 5,
+  parameter-out-of-range = 6,
+  too-many-arguments = 7,
+  undefined-enumeration = 8,
+  unrecognized-service = 9
 };
 
 type PDU_reject = unit {
   invokeID: uint8;
-  reject_reason: uint8 &convert=Reject_reason($$);
+  reject_reason: uint8 &convert=BACnetAbortReason($$);
 };
 
-## from here, a bit of duplication with asn1.pac2. Sorry.
+type BACnetAbortReason = enum {
+  other = 0,
+  buffer-overflow = 1,
+  invalid-apdu-in-this-state = 2,
+  preempted-by-higher-priority-task = 3,
+  segmentation-not-supported = 4,
+  security-error = 5,
+  insufficient-security = 6,
+  window-size-out-of-range = 7,
+  application-exceeded-reply-time = 8,
+  out-of-resources = 9,
+  tsm-timeout = 10,
+  apdu-too-long = 11
+};
+
+type PDU_abort = unit(head_raw: bytes) { # page 624
+  head : bitfield(8) {
+    server: 0;
+    tpe: 4..7;
+  } &parse(head_raw);
+  invokeID: uint8;
+  abort_reason: uint8 &convert=BACnetAbortReason($$); # pg. 652
+};
 
 type ASN1Class = enum {
   UNIVERSAL = 0,
@@ -425,11 +487,150 @@ type BACnetTag = unit {
   }
 };
 
+type BACnetObjectType = enum { 
+  alert-enrollment = 52,
+  access-credential = 32,
+  access-door = 30,
+  access-point = 33,
+  access-rights = 34,
+  access-user = 35,
+  access-zone = 36,
+  accumulator = 23,
+  analog-input = 0,
+  analog-output = 1,
+  analog-value = 2,
+  averaging = 18,
+  binary-input = 3,
+  binary-output = 4,
+  binary-value = 5,
+  bitstring-value = 39,
+  calendar = 6,
+  channel = 53,
+  characterstring-value = 40,
+  command = 7,
+  credential-data-input = 37,
+  date-pattern-value = 41,
+  date-value = 42,
+  datetime-pattern-value = 43,
+  datetime-value = 44,
+  device = 8,
+  event-enrollment = 9,
+  event-log = 25,
+  bacnet-file = 10,  # original name: file
+  global-group = 26,
+  group = 11,
+  integer-value = 45,
+  large-analog-value = 46,
+  life-safety-point = 21,
+  life-safety-zone = 22,
+  lighting-output = 54,
+  load-control = 28,
+  loop = 12,
+  multi-state-input = 13,
+  multi-state-output = 14,
+  multi-state-value = 19,
+  network-security = 38,
+  notification-class = 15,
+  notification-forwarder = 51,
+  octetstring-value = 47,
+  positive-integer-value = 48,
+  program = 16,
+  pulse-converter = 24,
+  schedule = 17,
+  structured-view = 29,
+  time-pattern-value = 49,
+  time-value = 50,
+  trend-log = 20,
+  trend-log-multiple = 27
+};
 
 # Fixme: need to get the type mapping from somewhere, probably the standard...
 type BACnetObjectIdentifier = unit {
+  var tpe: BACnetObjectType;
+
   data: bitfield(32) {
     instanceNumer: 0..21;
-    type: 33..31;
+    tpe: 22..31;
+  } { 
+    self.tpe = BACnetObjectType(self.data.tpe);
+  }
+};
+
+type BACnetMessage = unit {
+  tag: BACnetTag;
+
+  var boolean: uint16;
+
+  switch ( self.tag.tpe ) {
+    BACnetType::NULL -> : void;
+    BACnetType::BOOLEAN -> : void { self.boolean = self.tag.data.lvt; }
+    BACnetType::UnsignedInteger,
+    BACnetType::Enumerated -> unsigned: bytes &length=self.tag.data.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network);
+    BACnetType::Integer -> signed: bytes &length=self.tag.data.lvt &convert=$$.to_int(BinPAC::ByteOrder::Network);
+    BACnetType::OctetString -> octets: bytes &length=self.tag.data.lvt;
+    BACnetType::CharacterString -> characters: BACnetCharacterString(self.tag.data.lvt);
+    BACnetType::BitString -> bistring: BACnetBitString(self.tag.data.lvt);
+    BACnetType::Date -> date: BACnetDate;
+    BACnetType::Time -> btime: BACnetTime;
+    BACnetType::BACnetObjectIdentifier -> oid: BACnetObjectIdentifier;
+    
+    # Fixme: Real, double. I don't think Binpac++ can read those from wire yet.
+    BACnetType::Real -> : bytes &length = 4;
+    BACnetType::Double -> : bytes &length = 8;
   };
 };
+
+type BACnetDate = unit {
+  # a value of 0xFF in any field means wildcard.
+
+  var year: uint16;
+  year_raw: uint8 {
+    if ( self.year_raw != 0xFF ) {
+      self.year = self.year_raw;
+      self.year = self.year + 1900;
+    } else {
+      self.year = 0; # unspecified
+    }
+  }
+
+  month: uint8;
+  day: uint8;
+  weekday: uint8; # monday = 1 
+};
+
+type BACnetTime = unit {
+  # a value of 0xFF in any field means wildcard.
+  hour: uint8;
+  minute: uint8;
+  second: uint8;
+  centisecond: uint8;
+};
+  
+
+type BACnetCharacterStringType = enum {
+  UTF8 = 0,
+  DBCS = 1,
+  JISX0208 = 2,
+  UCS4 = 3,
+  UCS2 = 4,
+  ISO00591 = 5
+};
+
+type BACnetCharacterString = unit(len: uint16) {
+  tpe: uint8 &convert=BACnetCharacterStringType($$);
+
+  switch ( self.tpe ) {
+    # LE and BE could be switched, not quite sure...
+    BACnetCharacterStringType::UTF8 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF8); 
+    BACnetCharacterStringType::UCS2 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF16BE); 
+    BACnetCharacterStringType::UCS4 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF32BE); 
+    * -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::ASCII); # FIXME! DBCS, JOSX0208, ISO885901
+  };
+  
+};
+
+type BACnetBitString = unit(len: uint16) {
+   unused_bits: uint8;
+   value_bits: bytes &length=(len - 1);
+};
+

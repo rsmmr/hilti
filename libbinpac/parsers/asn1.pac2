@@ -40,10 +40,6 @@ type ASN1Class = enum {
   PRIVATE = 3
 };
 
-type SequenceHeader = unit {
-  id : uint8(0x30);
-};
-
 type LengthType = unit {
 
   data : bitfield(8) {
@@ -62,14 +58,6 @@ type LengthType = unit {
 # FIX ME!
 #    1 -> b: bytes &length=self.data.num &convert=cast<uint64>($$) { self.len = self.b; }
   }; 
-
-#  len : uint8 &parse(self.data.num);
-#if ( self.data.islong == 0 );
-#  len : uint8 if ( self.data.islong == 1 && self.data.num == 1);
-#  len : uint16 if ( self.data.islong == 1 && self.data.num == 2);
-#  len: uint<24> if ( self.data.islong == 1 && self.data.num == 3);
-#  len : uint32 if ( self.data.islong == 1 && self.data.num == 4);
-
 };
 
 type LenghTypeSubLength = unit(length: uint8) {
