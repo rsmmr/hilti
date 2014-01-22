@@ -117,8 +117,6 @@ void TypeBuilder::visit(type::Enum* e)
     ti.hilti_default = hilti::builder::id::create(util::fmt("%s::Undef", e->id()->pathAsString()));
     ti.hilti_type = hilti::builder::enum_::type(labels, e->location());
 
-    auto id = cg() ? cg()->hiltiID(e->id(), true) : nullptr;
-
     if ( cg() ) {
         if ( id->isScoped() )
             cg()->hiltiImportType(std::make_shared<ID>(id->pathAsString()), e->sharedPtr<Type>());
