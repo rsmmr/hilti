@@ -19,6 +19,7 @@ target_link_libraries(hilti-config ${LLVM_LIBS} ${LLVM_LDFLAGS}) # TODO: Should 
 
 add_executable(binpac++ binpac++.cc)
 target_link_libraries(binpac++ binpacxx ${HILTI_LIBS})
+add_dependencies(binpac++ hilti-rt hilti-rt-dbg)
 
 add_executable(hiltic hiltic.cc)
 target_link_libraries(hiltic ${HILTI_LIBS})
@@ -33,6 +34,7 @@ set_target_properties(hiltic-nojit PROPERTIES COMPILE_DEFINITIONS "HILTIC_NO_JIT
 
 add_executable(hilti-doc hilti-doc.cc)
 target_link_libraries(hilti-doc binpacxx ${HILTI_LIBS})
+add_dependencies(hilti-doc hilti-rt hilti-rt-dbg)
 
 add_subdirectory(pac-driver)
 
