@@ -100,7 +100,7 @@ hlt_addr hlt_addr_from_in6(struct in6_addr in, hlt_exception** excpt, hlt_execut
     uint64_t a2;
     memcpy(&a2, ((char*)&in) + 8, 8);
 
-    hlt_addr a = { hlt_ntoh64(a1), hlt_ntoh64(a1) };
+    hlt_addr a = { hlt_ntoh64(a1), hlt_ntoh64(a2) };
     return a;
     }
 
