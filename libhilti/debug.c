@@ -228,3 +228,7 @@ void __hlt_debug_pop_indent(hlt_execution_context* ctx)
         --ctx->debug_indent;
 }
 
+void __hlt_debug_print_stderr(const char* asciiz)
+{
+    fprintf(stderr, "debug: %s\n", asciiz);
+}

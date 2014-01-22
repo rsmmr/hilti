@@ -19,6 +19,7 @@
 
 extern "C" {
 #include <libhilti/libhilti.h>
+#include <autogen/libbro.hlt.h>
 }
 
 #include "LocalReporter.h"
@@ -110,12 +111,6 @@ int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt
 		struct in_addr in4 = hlt_addr_to_in4(addr, excpt, ctx);
 		return new AddrVal(IPAddr(in4));
 		}
-	}
-
-::Val* libbro_h2b_any(::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
-	{
-	Ref(val);
-	return val;
 	}
 
 ::Val* libbro_h2b_double(double d, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -513,6 +508,7 @@ bro_table_iterate_result libbro_bro_table_iterate(::TableVal* val, ::IterCookie*
 
 	hlt_free(n);
 	Ref(t);
+
 	return t;
 	}
 
@@ -736,7 +732,7 @@ void libbro_object_mapping_unregister_bro(::BroObj* obj, hlt_exception** excpt, 
 	objects_b2h.erase(m);
 
 	Unref(bobj);
-        GC_DTOR_GENERIC(&hobj, ti);
+    GC_DTOR_GENERIC(&hobj, ti);
 	}
 
 void libbro_object_mapping_unregister_hilti(hlt_type_info* ti, void** hobj, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -752,16 +748,17 @@ void libbro_object_mapping_unregister_hilti(hlt_type_info* ti, void** hobj, hlt_
 
 void* libbro_object_mapping_lookup_hilti(::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+    static void* null_ = 0;
+
 	auto m = objects_b2h.find(obj);
 
 	if ( m == objects_b2h.end() )
-		return 0;
+		return &null_;
 
 	const hlt_type_info* ti = m->second.first;
-	void* hobj = m->second.second;
+	GC_CCTOR_GENERIC(&m->second.second, ti);
 
-	GC_CCTOR_GENERIC(&hobj, ti);
-	return hobj;
+	return &m->second.second;
 	}
 
 // User-visible Bro::* functions.
@@ -930,6 +927,74 @@ int8_t bro_get_const_bool(hlt_string id, void* cookie, hlt_exception** excpt, hl
 		}
 
 	return broid->ID_Val()->AsBool();
+	}
+
+// Functions implementing the "any" type.
+
+struct hlt_LibBro_BroAny;
+typedef struct hlt_LibBro_BroAny* (*from_val_func_t)(Val*, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef Val* (*to_val_func_t)(struct hlt_LibBro_BroAny*, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// This must match HILTI's struct layout.
+// TODO: hiltic -P should be the one generating this.
+struct hlt_LibBro_BroAny {
+	__hlt_gchdr __gchdr;
+	int32_t mask;
+	//
+	void* ptr;
+	hlt_type_info* type_info;
+	::BroType* bro_type;
+	to_val_func_t to_val_func;
+};
+
+void libbro_any_dtor(hlt_type_info* type, hlt_LibBro_BroAny* any)
+	{
+	GC_DTOR_GENERIC(any->ptr, any->type_info);
+	hlt_free(any->ptr);
+	Unref(any->bro_type);
+	}
+
+void libbro_any_cctor(hlt_type_info* ti, hlt_LibBro_BroAny* any)
+	{
+	void* ptr = hlt_malloc(ti->size);
+	memcpy(ptr, any->ptr, ti->size);
+	any->ptr = ptr;
+	GC_CCTOR_GENERIC(any->ptr, any->type_info);
+
+	if ( any->bro_type )
+		Ref(any->bro_type);
+	}
+
+
+hlt_LibBro_BroAny* libbro_any_from_hilti(hlt_type_info* ti, void* obj, BroType* btype, to_val_func_t to_val_func, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	hlt_LibBro_BroAny* any = (hlt_LibBro_BroAny*) GC_NEW(hlt_LibBro_BroAny);
+
+	any->mask = 255;
+	any->ptr = hlt_malloc(ti->size);
+	memcpy(any->ptr, obj, ti->size);
+	any->type_info = ti;
+	any->bro_type = btype;
+	any->to_val_func = to_val_func;
+
+	GC_CCTOR_GENERIC(any->ptr, any->type_info);
+
+	if ( any->bro_type )
+		::Ref(any->bro_type);
+
+	return any;
+	}
+
+void* libbro_any_to_hilti(hlt_LibBro_BroAny* any, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	GC_CCTOR_GENERIC(any->ptr, any->type_info);
+	return any->ptr;
+	}
+
+// TODO move to h2b_any
+::Val* libbro_any_to_val(hlt_LibBro_BroAny* a, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	return (*a->to_val_func)(a, excpt, ctx);
 	}
 
 }

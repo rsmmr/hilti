@@ -2481,7 +2481,7 @@ bool Manager::CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev)
 		}
 
 	auto targs = ::hilti::builder::tuple::create(args);
-	mbuilder->HiltiCallEventHilti(ev->bro_event_handler->LocalHandler(), targs);
+	mbuilder->HiltiCallEventHilti(ev->bro_event_handler->LocalHandler(), targs, nullptr);
 
 	return true;
 	}

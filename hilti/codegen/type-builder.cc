@@ -888,11 +888,11 @@ void TypeBuilder::visit(type::MatchTokenState* t)
 // the end when all type information has been generated. Otherwise we'd run
 // into trouble with cyclic structures as they function already needs the
 // fields' type information already.
-llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llvm_type)
+llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llvm_type, const string& external_name)
 {
     auto type = t->sharedPtr<Type>();
 
-    string name = "dtor_" + type->render();
+    string name = external_name.size() ? external_name : "dtor_" + type->render();
 
     llvm::Value* cached = cg()->lookupCachedValue("dtor-struct", name);
 
@@ -905,6 +905,9 @@ llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llv
 
     auto func = cg()->llvmAddFunction(name, cg()->llvmTypeVoid(), params, false);
     func->setLinkage(llvm::GlobalValue::LinkOnceODRLinkage);
+
+    if ( external_name.size() )
+        func->setCallingConv(llvm::CallingConv::C);
 
     cg()->cacheValue("dtor-struct", name, func);
 
@@ -1004,7 +1007,7 @@ void TypeBuilder::visit(type::Struct* t)
 
     if ( ! llvm_type_only ) {
         if ( ! t->wildcard() )
-            ti->dtor_func = _declareStructDtor(t, stype);
+            ti->dtor_func = _declareStructDtor(t, stype, t->libHiltiDtor());
         else
             // Generic versions working with all tuples.
             ti->dtor = "hlt::struct_dtor";

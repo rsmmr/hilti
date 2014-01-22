@@ -68,7 +68,7 @@ void StatementBuilder::Compile(const Stmt* stmt)
 		{
 		ODesc d;
 		d.SetShort(1);
-        stmt->Describe(&d);
+		stmt->Describe(&d);
 		auto s = ::util::strreplace(d.Description(), "\n", " ");
 
 		if ( s.size() )
@@ -230,7 +230,7 @@ void StatementBuilder::Compile(const ::DelStmt* stmt)
 void StatementBuilder::Compile(const ::EventStmt* stmt)
 	{
 	auto ev = dynamic_cast<const ::EventExpr *>(stmt->StmtExpr());
-	HiltiCallFunction(ev, ev->Handler()->FType(), ev->Args());
+	HiltiCallFunction(ev, ev->Handler()->FType(), ev->Args(), nullptr);
 	}
 
 void StatementBuilder::Compile(const ::ExprStmt* stmt)

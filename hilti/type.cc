@@ -547,6 +547,16 @@ type::Struct::field_list type::Struct::sortedFields()
     return sorted;
 }
 
+void type::Struct::setLibHiltiDtor(const string& dtor)
+{
+    _dtor = dtor;
+}
+
+const string& type::Struct::libHiltiDtor() const
+{
+    return _dtor;
+}
+
 const type::trait::TypeList::type_list type::Struct::typeList() const
 {
     type::trait::TypeList::type_list types;

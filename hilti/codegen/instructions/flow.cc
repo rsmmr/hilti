@@ -176,8 +176,17 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
 
     auto var = ast::checkedCast<expression::Variable>(i->target());
 
-    if ( ast::isA<type::Any>(ftype->result()->type()) )
-        result = cg()->builder()->CreateBitCast(result, cg()->llvmType(i->target()->type()));
+    if ( ast::isA<type::Any>(ftype->result()->type()) ) {
+        auto ttype = i->target()->type();
+
+        if ( ftype->callingConvention() == type::function::HILTI_C ) {
+            auto casted = builder()->CreateBitCast(result, cg()->llvmTypePtr(cg()->llvmType(ttype)));
+            result = builder()->CreateLoad(casted);
+        }
+
+        else
+            result = cg()->builder()->CreateBitCast(result, cg()->llvmType(ttype));
+    }
 
     if ( (! ast::isA<variable::Local>(var->variable())) ||
         cg()->hiltiModule()->liveness()->liveOut(i->sharedPtr<Statement>(), i->target()) )

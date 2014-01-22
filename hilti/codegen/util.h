@@ -118,6 +118,10 @@ extern IRBuilder* newBuilder(llvm::LLVMContext& ctx, llvm::BasicBlock* block, bo
 /// Returns: The LLVM IRBuilder.
 extern IRBuilder* newBuilder(CodeGen* cg, llvm::BasicBlock* block, bool insert_at_beginning = false);
 
+// Print a string directly to stderr, without any further reliance on
+// a HILTI context.
+extern void llvmDebugPrintStderr(IRBuilder* builder, const std::string& s);
+
 /// Converts a 64-bit value from host-order to network order.
 ///
 /// v: The value to convert.

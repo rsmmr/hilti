@@ -28,7 +28,8 @@ void StatementBuilder::visit(statement::instruction::caddr::Function* i)
      }
 
      case type::function::HILTI_C: {
-         v1 = cg()->llvmValue(op1);
+         auto f = cg()->llvmValue(op1);
+         v1 = cg()->builder()->CreateBitCast(f, cg()->llvmTypePtr());
          v2 = cg()->llvmConstNull(cg()->llvmTypePtr());
          break;
      }

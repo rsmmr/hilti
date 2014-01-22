@@ -79,7 +79,7 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 		return ::hilti::builder::address::type();
 
 	case TYPE_ANY:
-		return ::hilti::builder::type::byName("LibBro::BroVal");
+        return ::hilti::builder::reference::type(::hilti::builder::type::byName("LibBro::BroAny"));
 
 	case TYPE_BOOL:
 		return ::hilti::builder::boolean::type();

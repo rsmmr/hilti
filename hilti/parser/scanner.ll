@@ -127,6 +127,8 @@ True                  yylval->bval = 1; return token::CBOOL;
 &nosub                yylval->sval = yytext; return token::ATTR_NOSUB;
 &priority             yylval->sval = yytext; return token::ATTR_PRIORITY;
 &scope                yylval->sval = yytext; return token::ATTR_SCOPE;
+&libhilti_dtor        yylval->sval = yytext; return token::ATTR_DTOR;
+
 
 {digits}\/(tcp|udp|icmp) yylval->sval = yytext; return token::CPORT;
 {address}             yylval->sval = yytext; return token::CADDRESS;

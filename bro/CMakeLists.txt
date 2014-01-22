@@ -29,6 +29,7 @@ if ( BRO_DIST )
 
         message(STATUS "Building Bro plugin as part of HILTI tree")
         set(binpac "${CMAKE_CURRENT_BINARY_DIR}/../tools/binpac++")
+        set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic")
 
     else ()
         project(Bro-Plugin-Hilti)
@@ -51,6 +52,7 @@ if ( BRO_DIST )
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_LD_FLAGS} ${HILTI_LD_FLAGS}")
 
         set(binpac "XXX")
+        set(hiltic "XXX")
     endif ()
 
     # Make sure the library ends up in the right directory where Bro
@@ -65,7 +67,23 @@ if ( BRO_DIST )
         DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/bro.pac2 binpac.hlt ${binpac}
         )
 
-    set_source_files_properties(${autogen}/bro.pac2.h PROPERTIES GENERATED 1)
+    # Autogenerate libbro.hly C prototypes.
+    add_custom_command(
+        OUTPUT   ${autogen}/libbro.hlt.h
+        COMMAND  ${hiltic} -P ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt -o ${autogen}/libbro.hlt.h
+        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt ${hiltic}
+        )
+
+    # Autogenerate the type information for libbro.hlt.
+    add_custom_command(
+        OUTPUT   ${autogen}/libbro.hlt.o
+        COMMAND  ${hiltic} -b
+        ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt -C -o ${autogen}/libbro.hlt.bc && llc -relocation-model=pic -filetype=obj -o ${autogen}/libbro.hlt.o ${autogen}/libbro.hlt.bc
+        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt ${hiltic}
+        )
+
+    set_source_files_properties(${autogen}/bro.pac2.h   PROPERTIES GENERATED 1)
+    set_source_files_properties(${autogen}/libbro.hlt.h PROPERTIES GENERATED 1)
 
     bro_plugin_begin(Bro Hilti)
     bro_plugin_cc(src/Converter.cc)
@@ -91,6 +109,8 @@ if ( BRO_DIST )
     bro_plugin_bif(src/events.bif)
     bro_plugin_bif(src/functions.bif)
     bro_plugin_obj(${autogen}/bro.pac2.h)
+    bro_plugin_obj(${autogen}/libbro.hlt.h)
+    bro_plugin_obj(${autogen}/libbro.hlt.o)
     bro_plugin_end()
 
     if ( BUILDING_HILTI )
@@ -110,7 +130,7 @@ if ( BRO_DIST )
 
         target_link_libraries(${_plugin_lib} ${plugin_hilti_libs} ${plugin_binpac_libs} ${plugin_external_libs})
         target_link_libraries(${_plugin_lib} ${addl_libs})
-        add_dependencies(${_plugin_lib} ${autogen}/bro.pac2.h ${plugin_deps})
+        add_dependencies(${_plugin_lib} ${autogen}/bro.pac2.h ${autogen}/libbro.hlt.h ${autogen}/libbro.hlt.o ${plugin_deps})
     else ()
         message(FATAL_ERROR "Building the Bro plugin outside of the HILTI tree is not yet supported.")
     endif ()

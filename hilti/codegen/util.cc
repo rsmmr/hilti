@@ -192,6 +192,18 @@ IRBuilder* codegen::util::newBuilder(llvm::LLVMContext& ctx, llvm::BasicBlock* b
     return builder;
 }
 
+void codegen::util::llvmDebugPrintStderr(IRBuilder* builder, const std::string& str)
+{
+    auto module = builder->GetInsertBlock()->getParent()->getParent();
+
+    llvm::ArrayRef<llvm::Type *> params = { builder->getInt8PtrTy() };
+    auto ftype = llvm::FunctionType::get(builder->getVoidTy(), params, false);
+    auto func = module->getOrInsertFunction("__hlt_debug_print_stderr", ftype);
+    auto s = builder->CreateGlobalStringPtr(str);
+    llvm::ArrayRef<llvm::Value *> args = { s };
+    builder->CreateCall(func, args);
+}
+
 #define _flip(x) \
     ((((x) & 0xff00000000000000LL) >> 56) | \
     (((x) & 0x00ff000000000000LL) >> 40) | \
