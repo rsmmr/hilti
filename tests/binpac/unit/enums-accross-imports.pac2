@@ -2,6 +2,7 @@
 # @TEST-EXEC:  printf '\x01\x02' | pac-driver-test -p A::tA b.pac2 %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
+# @TEST-KNOWN-FAILURE: importing modules using exports not supported
 
 module A;
 
@@ -26,6 +27,11 @@ type BEnum = enum {
 export type tB = unit {
        a: uint8 &convert=BEnum($$);
        b: uint8 &convert=BEnum($$);
+
+       switch ( self.a ) {
+         BEnum::A -> : void { print "switch-A"; }
+         BEnum::B -> : void { print "switch-B"; }
+       };
 };
 
 ### @TEST-END-FILE test.txt
