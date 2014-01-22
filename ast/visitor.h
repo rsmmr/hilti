@@ -83,6 +83,10 @@ public:
     typedef typename AstInfo::visitor_interface VisitorInterface;
     typedef std::list<shared_ptr<NodeBase>> node_list;
 
+    /// Marks the visittor as one who may modify node relationships while
+    /// running.
+    void setModifier(bool is_modifier) { _modifier = is_modifier; }
+
     /// Processes all child nodes pre-order, i.e., parent nodes are visited
     /// before their childs.
     ///
@@ -472,6 +476,7 @@ private:
     int _errors = 0;
     int _level = 0;
     bool _debug = false;
+    bool _modifier = false;
 
     std::list<NodeBase *> _loc_nodes = { nullptr }; // Initial null element.
 
@@ -610,14 +615,35 @@ inline void Visitor<AstInfo, Result, Arg1, Arg2>::preOrder(shared_ptr<NodeBase> 
     this->printDebug(node);
     this->callAccept(node);
 
-    if ( ! reverse ) {
+    NodeBase::node_list tmp;
+    NodeBase::node_list::const_iterator begin;
+    NodeBase::node_list::const_iterator end;
+    NodeBase::node_list::const_reverse_iterator rbegin;
+    NodeBase::node_list::const_reverse_iterator rend;
+
+    if ( ! _modifier ) {
+        begin  = node->begin();
+        end    = node->end();
+        rbegin = node->rbegin();
+        rend   = node->rend();
+    }
+    else {
         for ( auto i = node->begin(); i != node->end(); i++ )
-            this->preOrder(*i);
+            tmp.push_back(*i);
+
+        begin  = tmp.begin();
+        end    = tmp.end();
+        rbegin = tmp.rbegin();
+        rend   = tmp.rend();
     }
 
+    if ( ! reverse ) {
+        for ( auto i = begin; i != end; i++ )
+            this->preOrder((*i)->sharedPtr<NodeBase>());
+    }
     else {
-        for ( auto i = node->rbegin(); i != node->rend(); i++ )
-            this->preOrder(*i);
+        for ( auto i = rbegin; i != rend; i++ )
+            this->preOrder((*i)->sharedPtr<NodeBase>());
     }
 
     popCurrent();
@@ -634,14 +660,35 @@ inline void Visitor<AstInfo, Result, Arg1, Arg2>::postOrder(shared_ptr<NodeBase>
 
     pushCurrent(node);
 
-    if ( ! reverse ) {
+    NodeBase::node_list tmp;
+    NodeBase::node_list::const_iterator begin;
+    NodeBase::node_list::const_iterator end;
+    NodeBase::node_list::const_reverse_iterator rbegin;
+    NodeBase::node_list::const_reverse_iterator rend;
+
+    if ( ! _modifier ) {
+        begin  = node->begin();
+        end    = node->end();
+        rbegin = node->rbegin();
+        rend   = node->rend();
+    }
+    else {
         for ( auto i = node->begin(); i != node->end(); i++ )
-            this->postOrder(*i);
+            tmp.push_back(*i);
+
+        begin  = tmp.begin();
+        end    = tmp.end();
+        rbegin = tmp.rbegin();
+        rend   = tmp.rend();
     }
 
+    if ( ! reverse ) {
+        for ( auto i = begin; i != end; i++ )
+            this->postOrder((*i)->sharedPtr<NodeBase>());
+    }
     else {
-        for ( auto i = node->rbegin(); i != node->rend(); i++ )
-            this->postOrder(*i);
+        for ( auto i = rbegin; i != rend; i++ )
+            this->postOrder((*i)->sharedPtr<NodeBase>());
     }
 
     this->printDebug(node);

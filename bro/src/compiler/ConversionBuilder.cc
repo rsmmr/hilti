@@ -1303,6 +1303,10 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::AnyConversionFunction(co
 		idx = d.Description();
 		}
 
+	ODesc d;
+	d.SetShort(1);
+	type->Describe(&d);
+
 	if ( auto to = ModuleBuilder()->lookupNode("any-func-to", idx) )
 		return ast::checkedCast<::hilti::Expression>(to);
 

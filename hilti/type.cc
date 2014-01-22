@@ -144,7 +144,7 @@ type::Function::Function(shared_ptr<hilti::type::function::Result> result, const
     : HiltiType(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
     _cc = cc;
-    _plusone = true;
+    _plusone = (cc == function::CallingConvention::HILTI || cc == function::CallingConvention::CALLABLE);
 }
 
 type::Function::Function(const Location& l)

@@ -21,7 +21,7 @@ endif ()
 
 ## Perftools
 
-find_package(GooglePerftools)
+# find_package(GooglePerftools)
 
 if ("${GOOGLEPERFTOOLS_FOUND}" STREQUAL "TRUE" )
     set(HAVE_PERFTOOLS "1")

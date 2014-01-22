@@ -64,9 +64,7 @@ void InstructionResolver::processInstruction(shared_ptr<statement::Instruction> 
      case 1: {
          // Everthing is fine. Replace with the actual instruction.
          auto new_stmt = InstructionRegistry::globalRegistry()->resolveStatement(*matches.begin(), instr);
-         //std::cerr << "O "; instr->dump(std::cerr);
          instr->replace(new_stmt);
-         //std::cerr << "N "; new_stmt->dump(std::cerr);
          return;
      }
 
@@ -93,7 +91,9 @@ void InstructionResolver::visit(statement::instruction::Unresolved* s)
     if ( instr->instruction() && ! util::startsWith(instr->instruction()->id()->name(), ".op.") ) {
         // We already know the instruction, just need to transfer the operands over.
         auto new_stmt = InstructionRegistry::globalRegistry()->resolveStatement(instr->instruction(), instr);
+
         instr->replace(new_stmt);
+
         return;
     }
 

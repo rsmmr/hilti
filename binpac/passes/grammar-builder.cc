@@ -14,7 +14,7 @@ using namespace binpac;
 using namespace binpac::passes;
 
 GrammarBuilder::GrammarBuilder(std::ostream& out)
-    : ast::Pass<AstInfo, shared_ptr<Production>>("binpac::GrammarBuilder"), _debug_out(out)
+    : ast::Pass<AstInfo, shared_ptr<Production>>("binpac::GrammarBuilder", false), _debug_out(out)
 {
 }
 
@@ -68,7 +68,7 @@ void GrammarBuilder::_resolveUnknown(shared_ptr<Production> production)
     }
 
     for ( auto c : production->childs() )
-        _resolveUnknown(c);
+        _resolveUnknown(c->sharedPtr<binpac::Production>());
 }
 
 string GrammarBuilder::counter(const string& key)

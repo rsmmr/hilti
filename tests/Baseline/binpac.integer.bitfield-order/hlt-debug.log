@@ -1,10 +1,10 @@
 00000001 [binpac/main-thread]           test
 00000002 [binpac/main-thread]             f1 = 16385
-00000003 [binpac/main-thread]               x1 = 0 (0)
-00000004 [binpac/main-thread]               x2 = 2 (0)
+00000003 [binpac/main-thread]               x1 = 0
+00000004 [binpac/main-thread]               x2 = 2
 00000005 [binpac/main-thread]             f2 = 16385
-00000006 [binpac/main-thread]               x1 = 1 (0)
-00000007 [binpac/main-thread]               x2 = 0 (0)
+00000006 [binpac/main-thread]               x1 = 1
+00000007 [binpac/main-thread]               x2 = 0
 00000008 [binpac/main-thread]             f3 = 16385
-00000009 [binpac/main-thread]               x1 = 1 (0)
-00000010 [binpac/main-thread]               x2 = 0 (0)
+00000009 [binpac/main-thread]               x1 = 1
+00000010 [binpac/main-thread]               x2 = 0

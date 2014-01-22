@@ -13,7 +13,7 @@ class IDReplacer : public Pass<>
 {
 public:
    /// Constructor.
-   IDReplacer() : Pass<>("hilti::passes::IDReplacer") {}
+   IDReplacer() : Pass<>("hilti::passes::IDReplacer", true) {}
 
    /// Collects information about an AST.
    bool run(shared_ptr<Node> node, shared_ptr<ID> old_id, shared_ptr<ID> new_id);

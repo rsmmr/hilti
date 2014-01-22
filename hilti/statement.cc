@@ -91,7 +91,7 @@ shared_ptr<Statement> Statement::firstNonBlock()
 statement::Instruction::Instruction(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l)
     : Statement(l)
 {
-    _id = id;
+    _id = id ? id->clone() : nullptr;
     addChild(_id);
 
     _ops = ops;
@@ -164,9 +164,16 @@ void statement::Block::addDeclarations(const decl_list& decls)
         addDeclaration(d);
 }
 
+void statement::Block::setID(shared_ptr<ID> id)
+{
+    removeChild(_id);
+    _id = id ? id->clone() : nullptr;
+    addChild(_id);
+}
+
 void statement::Block::_init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l)
 {
-    _id = id;
+    _id = id ? id->clone() : nullptr;
     _stmts = stmts;
     _decls = decls;
     _scope = std::make_shared<Scope>(parent);

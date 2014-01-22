@@ -12,7 +12,7 @@ namespace passes {
 class IdResolver : public Pass<>
 {
 public:
-   IdResolver() : Pass<>("hilti::IdResolver") {}
+   IdResolver() : Pass<>("hilti::IdResolver", true) {}
    virtual ~IdResolver();
 
    /// Resolves ID references.

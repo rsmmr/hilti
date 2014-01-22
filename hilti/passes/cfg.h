@@ -75,6 +75,7 @@ private:
     bool _run = false;
     bool _changed = false;
     int _pass = 0;
+    shared_ptr<Module> _module;
     shared_ptr<DepthOrderTraversal> _dot;
 
     std::list<shared_ptr<Statement>> _siblings;

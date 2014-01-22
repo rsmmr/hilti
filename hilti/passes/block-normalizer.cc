@@ -10,6 +10,17 @@
 using namespace hilti;
 using namespace passes;
 
+BlockNormalizer::BlockNormalizer(bool instructions_normalized) : Pass<>("hilti::codegen::BlockNormalizer", true)
+{
+    _instructions_normalized = instructions_normalized;
+}
+
+bool BlockNormalizer::run(shared_ptr<hilti::Node> module)
+{
+    return processAllPreOrder(module);
+}
+
+
 void BlockNormalizer::visit(declaration::Function* f)
 {
     _anon_cnt = 0;
@@ -17,19 +28,6 @@ void BlockNormalizer::visit(declaration::Function* f)
 
 void BlockNormalizer::visit(statement::Block* b)
 {
-    // First normalize parent relationships inside the block. Previous
-    // operations can have left nodes with multiple parents that we don't
-    // need anymore (and which would confuse us elsewhere later).
-    for ( auto d : b->declarations() ) {
-        d->removeFromParents();
-        b->addChild(d);
-    }
-
-    for ( auto s : b->statements() ) {
-        s->removeFromParents();
-        b->addChild(s);
-    }
-
     // - Merge anonymous blocks with their unterminated predecessors
     // - Adds jumps from unterminated blocks to their successors.
     auto ostmts = b->statements();
@@ -88,74 +86,19 @@ void BlockNormalizer::visit(statement::Block* b)
 
     b->setStatements(nstmts);
 
-    // Add a block.end at the end of still unterminated blocks.
-    for ( auto s : b->statements() ) {
-        auto block = ast::tryCast<statement::Block>(s);
+    if ( _instructions_normalized ) {
+        // Add a block.end at the end of still unterminated blocks.
+        for ( auto s : b->statements() ) {
+            auto block = ast::tryCast<statement::Block>(s);
 
-        if ( block && ! block->terminated() && now_terminated.find(block) == now_terminated.end() ) {
-            hilti::instruction::Operands no_ops;
-            auto end = std::make_shared<statement::instruction::Unresolved>(instruction::flow::BlockEnd, no_ops);
-            block->addStatement(end);
+            if ( block && ! block->terminated() && now_terminated.find(block) == now_terminated.end() ) {
+                hilti::instruction::Operands no_ops;
+                auto end = std::make_shared<statement::instruction::Unresolved>(instruction::flow::BlockEnd, no_ops);
+                block->addStatement(end);
+            }
+
+            b->removeUseless();
         }
     }
-
-    b->removeUseless();
-
-#if 0
-
-    if ( ! b->terminated() )
-        return;
-    // Determine where to continue execution after block.
-    //
-    // 1. If we have a block sibling, go there.
-    // 2. Otherwise, add a block_end instruction.
-
-    shared_ptr<statement::instruction::Unresolved> terminator = 0;
-    statement::Block* next = nullptr;
-
-    auto parent_ = parent<statement::Block>();
-
-    if ( parent_ ) {
-        ast::NodeBase* n = b;
-
-        while ( n ) {
-            n = parent_->siblingOfChild(n);
-            next = dynamic_cast<statement::Block*>(n);
-
-            if ( next )
-                break;
-        }
-    }
-
-    if ( next ) {
-        if ( ! next->id() )
-            next->setID(builder::id::node(::util::fmt("__bn_anon_%d", ++_anon_cnt)));
-
-        auto label = next->id();
-
-        hilti::instruction::Operands ops;
-
-        auto c = shared_ptr<hilti::constant::Label>(new hilti::constant::Label(label->name()));
-        auto e = shared_ptr<hilti::expression::Constant>(new hilti::expression::Constant(c));
-        ops.push_back(shared_ptr<Expression>()); // No target.
-        ops.push_back(e);
-
-        terminator = shared_ptr<hilti::statement::instruction::Unresolved>(
-            new hilti::statement::instruction::Unresolved("jump", ops, b->location()));
-        terminator->setInternal();
-        b->addStatement(terminator);
-
-        return;
-    }
-
-    // Otherwise an internal block.end statement.
-    hilti::instruction::Operands no_ops;
-
-    terminator = shared_ptr<hilti::statement::instruction::Unresolved>(
-                 new hilti::statement::instruction::Unresolved("block.end", no_ops, b->location()));
-
-    terminator->setInternal();
-    b->addStatement(terminator);
-#endif
 }
 

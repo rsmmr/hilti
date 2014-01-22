@@ -5,6 +5,8 @@
 
 #include "node.h"
 
+namespace hilti { namespace statement { namespace instruction { class Unresolved; } } };
+
 using namespace ast;
 
 NodeBase::~NodeBase()
@@ -12,42 +14,174 @@ NodeBase::~NodeBase()
     for ( auto c : _childs )
         c->_parents.remove(this);
 
-#if 0
-    // This crashes, the sharedPtr() call?
-    for ( auto p : _parents )
-        p->_childs.remove(this->sharedPtr<NodeBase>());
-#endif
+    bool changed = false;
+
+    do {
+        changed = false;
+
+        for ( auto p : _parents ) {
+            for ( auto c = p->_childs.begin(); c != p->_childs.end(); c++ ) {
+                if ( (*c).get() == this ) {
+                    p->_childs.erase(c);
+                    changed = true;
+                    break;
+                }
+            }
+
+            if ( changed )
+                break;
+        }
+    } while ( changed );
+
+    _parents.clear();
 }
 
 void NodeBase::addChild(node_ptr<NodeBase> node)
 {
-    if ( ! node )
+    if ( ! node.get() )
         return;
 
-#if 0
-    // Make sure we don't get loop.
-    for ( auto p = this; p; p = p->_parent ) {
-        if ( p == node.get() ) {
-            fprintf(stderr, "internal error in addChild(): recursive node detected\n");
-            abort();
-        }
-    }
-#endif
+    bool exists = false;
 
+    for ( auto i = _childs.begin(); i != _childs.end(); i++ ) {
+        if ( &(*i) == &node )
+            return;
+
+        if ( (*i).get() == node.get() )
+            exists = true;
+    }
+
+    assert(node);
     _childs.push_back(node);
     node->_parents.push_back(this);
 }
 
-bool NodeBase::hasChildInternal(node_ptr<NodeBase> node, bool recursive, std::set<shared_ptr<NodeBase>>* done) const
+void NodeBase::removeChild(node_ptr<NodeBase> node)
 {
+    if ( ! node )
+        return;
+
+    bool changed = false;
+
+    do {
+        changed = false;
+
+        for ( auto i = _childs.begin(); i != _childs.end(); i++ ) {
+            if ( (*i).get() == node.get() ) {
+                bool found = false;
+
+                for ( auto j = node->_parents.begin(); j != node->_parents.end(); j++ ) {
+                    if ( *j == this ) {
+                        found = true;
+                        node->_parents.erase(j);
+                        break;
+                    }
+                }
+
+                assert(found);
+
+                _childs.erase(i);
+                changed = true;
+                break;
+            }
+        }
+
+    } while ( changed );
+}
+
+void NodeBase::removeChild(node_list::iterator i)
+{
+    auto node = *i;
+
+    bool found = false;
+
+    for ( auto j = node->_parents.begin(); j != node->_parents.end(); j++ ) {
+        if ( *j == this ) {
+            found = true;
+            node->_parents.erase(j);
+            break;
+        }
+    }
+
+    assert(found);
+
+    _childs.erase(i);
+}
+
+void NodeBase::removeFromParents()
+{
+    bool changed = false;
+
+    do {
+        changed = false;
+
+        for ( auto p : _parents ) {
+            for ( auto c = p->_childs.begin(); c != p->_childs.end(); c++ ) {
+                if ( (*c).get() == this ) {
+                    p->removeChild(c);
+                    changed = true;
+                    break;
+                }
+            }
+
+            if ( changed )
+                break;
+        }
+    } while ( changed );
+
+    assert(_parents.size() == 0);
+}
+
+void NodeBase::replace(shared_ptr<NodeBase> n)
+{
+    assert(n);
+
+    if ( n.get() == this )
+        return;
+
+    std::list<NodeBase*> parents = _parents;
+
+    bool changed;
+
+    do {
+        changed = false;
+
+        for ( auto p : _parents ) {
+            for ( auto c = p->_childs.begin(); c != p->_childs.end(); c++ ) {
+                if ( (*c).get() == this ) {
+                    node_ptr<NodeBase> old = *c;
+                    p->addChild(n);
+                    p->removeChild(c);
+                    old = n;
+                    changed = true;
+                    goto next;
+                }
+            }
+        }
+next: {}
+    } while ( changed );
+
+    for ( auto c : _childs )
+        c->_parents.remove(this);
+
+    _childs.clear();
+}
+
+
+bool NodeBase::hasChildInternal(NodeBase* node, bool recursive, node_set* done) const
+{
+    assert(done || ! recursive);
+
     for ( auto c: _childs ) {
 
-        if ( done->find(c) != done->end() )
-            continue;
+        if ( done ) {
+            if ( done->find(c) != done->end() )
+                continue;
 
-        done->insert(c);
+            done->insert(c);
+        }
 
-        if ( c.get() == node.get() )
+        if ( c.get() == node )
             return true;
 
         if ( recursive && c->hasChildInternal(node, true, done) )
@@ -59,16 +193,21 @@ bool NodeBase::hasChildInternal(node_ptr<NodeBase> node, bool recursive, std::se
 
 bool NodeBase::hasChild(node_ptr<NodeBase> node, bool recursive) const
 {
-    std::set<shared_ptr<NodeBase>> done;
+    return hasChild(node.get(), recursive);
+}
+
+bool NodeBase::hasChild(NodeBase* node, bool recursive) const
+{
+    node_set done;
     return hasChildInternal(node, recursive, &done);
 }
 
-NodeBase::node_list NodeBase::childs(bool recursive) const
+const NodeBase::node_list NodeBase::childs(bool recursive) const
 {
     if ( ! recursive )
         return _childs;
 
-    std::set<shared_ptr<NodeBase>> childs;
+    node_set childs;
     childsInternal(this, recursive, &childs);
 
     node_list result;
@@ -78,7 +217,7 @@ NodeBase::node_list NodeBase::childs(bool recursive) const
     return result;
 }
 
-void NodeBase::childsInternal(const NodeBase* node, bool recursive, std::set<shared_ptr<NodeBase>>* childs) const
+void NodeBase::childsInternal(const NodeBase* node, bool recursive, node_set* childs) const
 {
     for ( auto c : node->_childs ) {
         if ( childs->find(c) != childs->end() )
@@ -87,58 +226,6 @@ void NodeBase::childsInternal(const NodeBase* node, bool recursive, std::set<sha
         childs->insert(c);
         childsInternal(c.get(), recursive, childs);
     }
-}
-
-void NodeBase::removeChild(node_ptr<NodeBase> node)
-{
-    if ( ! node )
-        return;
-
-    assert(hasChild(node));
-
-    _childs.remove(node);
-    node->_parents.remove(this);
-}
-
-void NodeBase::removeChild(node_list::iterator node)
-{
-    assert(hasChild(*node));
-
-    _childs.remove(*node);
-    (*node)->_parents.remove(this);
-}
-
-void NodeBase::removeFromParents()
-{
-    for ( auto p : _parents )
-        p->_childs.remove(this->sharedPtr<NodeBase>());
-
-    _parents.clear();
-}
-
-void NodeBase::replace(shared_ptr<NodeBase> n)
-{
-    std::list<std::pair<shared_ptr<NodeBase>, NodeBase*>> add_parents;
-    std::list<std::pair<shared_ptr<NodeBase>, NodeBase*>> del_parents;
-//        for ( node_list::iterator i = p->_childs.begin(); i != p->_childs.end(); i++ ) {
-//            auto c = (*i).get();
-
-    for ( auto p : _parents ) {
-        for ( auto c : p->_childs ) {
-            if ( c.get() == this ) {
-                c = n;
-                add_parents.push_back(std::make_pair(n, p));
-                // del_parents.push_back(std::make_pair(c, p));
-            }
-        }
-    }
-
-    for ( auto np : add_parents )
-        np.first->_parents.push_back(np.second);
-
-    for ( auto np : del_parents )
-        np.first->_parents.remove(np.second);
-
 }
 
 NodeBase* NodeBase::siblingOfChild(NodeBase* child) const
@@ -184,13 +271,21 @@ void NodeBase::dump(std::ostream& out, int level, node_set* seen)
     for ( int i = 0; i < level; ++i )
         out << "  ";
 
-    if ( seen->find(this) == seen->end() ) {
-        seen->insert(this);
+    if ( seen->find(this->sharedPtr<NodeBase>()) == seen->end() ) {
+        seen->insert(this->sharedPtr<NodeBase>());
 
         out << string(*this) << std::endl;
 
-        for ( auto c : _childs )
-            c->dump(out, level + 1, seen);
+        for ( auto c : _childs ) {
+            if ( c )
+                c->dump(out, level + 1, seen);
+
+            else {
+                for ( int i = 0; i < level + 1; ++i )
+                    out << "  ";
+                out << "NULL\n";
+            }
+        }
     }
 
     else

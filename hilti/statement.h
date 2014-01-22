@@ -136,7 +136,7 @@ public:
     /// Sets the block's name.
     ///
     /// id: The name.
-    void setID(shared_ptr<ID> id) { removeChild(_id); _id = id; addChild(_id); }
+    void setID(shared_ptr<ID> id);
 
     /// Returns the block's scope.
     shared_ptr<Scope> scope() const { return _scope; }

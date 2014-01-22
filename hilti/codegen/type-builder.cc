@@ -960,9 +960,9 @@ void TypeBuilder::visit(type::Struct* t)
         sname = t->id()->pathAsString();
 
         if ( ! t->id()->isScoped() ) {
-            auto m = t->firstParent<Module>();
-            if ( m )
-                sname = ::util::fmt("%s::%s", m->id()->name(), sname);
+            auto s = t->scope();
+            if ( s.size() )
+                sname = ::util::fmt("%s::%s", s, sname);
         }
     }
 

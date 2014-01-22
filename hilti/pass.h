@@ -17,7 +17,11 @@ protected:
    ///
    /// name: A name for the pass, which will be used for identification in
    /// output messages.
-   Pass(const char* name) { this->setLoggerName(string("pass::") + name); }
+   Pass(const char* name, bool modifier=false) {
+       this->setLoggerName(string("pass::") + name);
+       this->setModifier(modifier);
+       }
+
    virtual ~Pass() {}
 
    /// Runs the pass on a given AST.

@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC: bro -b %INPUT Hilti::compile_scripts=T Hilti::save_hilti=T >output
+# @TEST-EXEC: bro -b %INPUT Hilti::compile_scripts=T Hilti::save_hilti=T | sed 's/0x.*/0xXXX/g' >output
 # @TEST-EXEC: btest-diff output
 #
 #

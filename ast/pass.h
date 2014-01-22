@@ -16,7 +16,12 @@ protected:
     ///
     /// name: A name for the pass, which will be used for identification in
     /// output messages.
-    Pass(const char* name) { this->setLoggerName(string("pass::") + name); }
+    ///
+    /// modifier: True if the pass may modify the node relationships.
+    Pass(const char* name, bool modifier) {
+        this->setLoggerName(string("pass::") + name);
+        this->setModifier(modifier);
+    }
     virtual ~Pass() {}
 
     /// Runs the pass on a given AST.

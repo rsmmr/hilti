@@ -373,8 +373,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCall(shared_ptr<expression::Function
          ftype->callingConvention() == type::function::HILTI ||
          ftype->callingConvention() == type::function::BINPAC_HILTI ) {
         if ( func->scope().size() )
-            hiltiDefineFunction(func->function());
-            // moduleBuilder()->importModule(hilti::builder::id::node(func->scope()));
+            hiltiDefineFunction(func->function(), false, func->scope());
     }
 
     switch ( ftype->callingConvention() ) {

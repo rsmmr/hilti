@@ -270,7 +270,7 @@ void StatementBuilder::visit(declaration::Variable* v)
         // GLobals are taken care of directly by the CodeGen.
         return;
 
-    auto block = v->firstParent<statement::Block>();
+    auto block = current<statement::Block>();
     assert(block);
 
     bool live = local->init() ? cg()->hiltiModule()->liveness()->liveIn(block, local) : false;

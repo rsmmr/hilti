@@ -10,8 +10,12 @@ using namespace passes;
 
 bool IDReplacer::run(shared_ptr<hilti::Node> node, shared_ptr<ID> old_id, shared_ptr<ID> new_id)
 {
+    if ( old_id->pathAsString() == new_id->pathAsString() )
+        return true;
+
     _old_id = old_id;
     _new_id = new_id;
+
     return run(node);
 }
 

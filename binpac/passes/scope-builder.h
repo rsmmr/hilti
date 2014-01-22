@@ -38,6 +38,7 @@ public:
 
 private:
     CompilerContext* _context;
+    shared_ptr<Module> _module;
     shared_ptr<Scope> _checkDecl(Declaration* decl);
 };
 

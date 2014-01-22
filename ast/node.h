@@ -104,7 +104,7 @@ public:
     NodeBase(const NodeBase& other) {
        _location = other._location;
        _comments = other._comments;
-       _childs = _childs;
+       _childs = other._childs;
     }
 
     virtual ~NodeBase();
@@ -120,7 +120,7 @@ public:
     /// Returns all the parents of a given type, in the order they are
     /// encountered when going up the tree.
     template<typename T>
-    void _parentsInternal(NodeBase* n, std::list<shared_ptr<T>>* dst, std::set<NodeBase *>* done) {
+    void _parentsInternal(NodeBase* n, std::list<shared_ptr<T>>* dst, std::set<NodeBase *>* done, int level=0) {
         for ( auto p : n->_parents ) {
             if ( done->find(p) != done->end() )
                 continue;
@@ -130,7 +130,7 @@ public:
             if ( dynamic_cast<T*>(p) )
                 dst->push_back(p->sharedPtr<T>());
 
-            _parentsInternal(p, dst, done);
+            _parentsInternal(p, dst, done, level+1);
         }
     }
 
@@ -146,6 +146,14 @@ public:
 
     /// Returns the first parent of a given type, as encountered in the list
     /// returned by parents(); null if none.
+    ///
+    /// Deprecated: This function does not produce well-defined results, as
+    /// it depends on the order in which the parents happen to be added. We
+    /// should remove the method and adapt the current callers to get the
+    /// node the need in somer other way.
+    ///
+    /// In fact, we should try to remove the whole parent pointering; it's
+    /// complex, may still have a bug, and may not be necessart anyways.
     template<typename T>
     shared_ptr<T> firstParent() {
         std::list<shared_ptr<T>> p = parents<T>();
@@ -175,11 +183,11 @@ public:
     /// Cast operator converting into a Location.
     operator const Location&() const { return _location; }
 
-    typedef std::list<node_ptr<NodeBase> > node_list;
+    typedef std::list<node_ptr<NodeBase>> node_list;
 
     /// Returns a list of all child nodes, recursively if requestd. Child
     /// nodes are added via addChild().
-    node_list childs(bool recursive = false) const;
+    const node_list childs(bool recursive = false) const;
 
     /// Returns an iterator to the first child node.
     node_list::const_iterator begin() const { return _childs.begin(); }
@@ -235,11 +243,20 @@ public:
     /// n: The new node.
     void replace(shared_ptr<NodeBase> n);
 
+    /// Disconnects the node from all its childs and parents.
+    void disconnect();
+
     /// Returns true if a given node is a child of this one.
     ///
     /// recursive: If true, descend the tree recursively for seaching the
     /// child
     bool hasChild(node_ptr<NodeBase> n, bool recursive = false) const;
+
+    /// Returns true if a given node is a child of this one.
+    ///
+    /// recursive: If true, descend the tree recursively for seaching the
+    /// child
+    bool hasChild(NodeBase* n, bool recursive = false) const;
 
     /// Returns the set of meta information nodes associated with the AST
     /// node.
@@ -253,18 +270,19 @@ public:
     virtual string render() { return string("<node>"); }
 
 private:
+    typedef std::set<std::shared_ptr<NodeBase>> node_set;
+
     NodeBase& operator = (const NodeBase&); // No assignment.
 
-    bool hasChildInternal(node_ptr<NodeBase> node, bool recursive, std::set<shared_ptr<NodeBase>>* done) const;
-    void childsInternal(const NodeBase* node, bool recursive, std::set<shared_ptr<NodeBase>>* childs) const;
-
-    typedef std::set<const NodeBase*> node_set;
+    bool hasChildInternal(NodeBase* node, bool recursive, node_set* done) const;
+    void childsInternal(const NodeBase* node, bool recursive, node_set* childs) const;
     void dump(std::ostream& out, int level, node_set* seen);
 
-    std::list<NodeBase*>  _parents;
+    std::list<NodeBase*> _parents;
+    node_list _childs;
+
     Location _location;
     std::list<string> _comments;
-    node_list _childs;
     MetaInfo _meta;
 };
 

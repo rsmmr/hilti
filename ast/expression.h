@@ -25,10 +25,11 @@ public:
     typedef typename AstInfo::coerced_expression CoercedExpression;
     typedef typename AstInfo::expression Expression;
     typedef typename AstInfo::optional_type OptionalType;
+    typedef typename AstInfo::module Module;
 
     // See Expression::canCoerceTo().
     virtual bool _canCoerceTo(shared_ptr<Type> target) const {
-       return Coercer().canCoerceTo(this->object()->type(), target);
+        return Coercer().canCoerceTo(this->object()->type(), target);
     };
 
     // See Expression::coerceTo().
@@ -232,6 +233,7 @@ public:
     typedef typename AstInfo::coercer Coercer;
     typedef typename AstInfo::coerced_expression CoercedExpression;
     typedef typename AstInfo::optional_type OptionalType;
+    typedef typename AstInfo::module Module;
 
     /// Constructor.
     ///

@@ -2603,16 +2603,13 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 	{
 	auto efunc = event->Handler()->LocalHandler();
 
-	if ( ! (efunc && efunc->HasBodies())  )
+	if ( efunc && efunc->HasBodies() )
 		{
-		Unref(event);
-		return true;
+		auto symbol = pimpl->compiler->HiltiStubSymbol(efunc, nullptr, true);
+		auto result = RuntimeCallFunctionInternal(symbol, event->Args());
+		Unref(result);
 		}
 
-	auto symbol = pimpl->compiler->HiltiStubSymbol(efunc, nullptr, true);
-	auto result = RuntimeCallFunctionInternal(symbol, event->Args());
-
-	Unref(result);
 	Unref(event);
 	return true;
 	}
@@ -2686,7 +2683,10 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		GC_DTOR(excpt, hlt_exception);
 		}
 
-	return result;
+	loop_over_list(*args, i)
+		Unref((*args)[i]);
+
+	return result ? result : new ::Val(0, ::TYPE_VOID);
 	}
 
 void Manager::DumpDebug()

@@ -11,7 +11,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-IDResolver::IDResolver() : Pass<AstInfo>("binpac::IDResolver")
+IDResolver::IDResolver() : Pass<AstInfo>("binpac::IDResolver", true)
 {
 }
 
@@ -176,8 +176,12 @@ void IDResolver::visit(type::Unknown* t)
     auto tv = nt->typeValue();
     t->replace(tv);
 
-    if ( ! tv->id() || ! (tv->id()->isScoped() && id->isScoped()) )
+    if ( ! tv->id() || ! (tv->id()->isScoped() && id->isScoped()) ) {
         tv->setID(id);
+
+        if ( ! id->isScoped() )
+            tv->setScope(current<Module>()->id()->name());
+    }
 }
 
 void IDResolver::visit(declaration::Hook* h)
@@ -234,6 +238,7 @@ void IDResolver::visit(declaration::Hook* h)
     assert(mid);
 
     unit->setID(std::make_shared<ID>(uid->pathAsString(mid)));
+    unit->setScope(mid->name());
 }
 
 void IDResolver::visit(type::unit::item::field::Unknown* f)

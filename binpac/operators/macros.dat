@@ -93,7 +93,7 @@ protected:
 ===
 > opEnd h
 private:
-    static shared_ptr<expression::ResolvedOperator> _factory(shared_ptr<Operator> op, const expression_list& ops, const Location& l);
+    static shared_ptr<expression::ResolvedOperator> _factory(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<binpac::Module> module, const Location& l);
 };
 
 } // namespace $NAMESPACE
@@ -105,7 +105,7 @@ namespace $NAMESPACE {
 class $CLASS : public ResolvedOperator
 {
 public:
-    $CLASS(shared_ptr<Operator> op, const expression_list& ops, const Location& l);
+    $CLASS(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<binpac::Module> module, const Location& l);
     ACCEPT_VISITOR(::binpac::expression::ResolvedOperator);
 };
 
@@ -132,8 +132,8 @@ operator_::$NAMESPACE::$CLASS::~$CLASS()
 {
 }
 
-expression::operator_::$NAMESPACE::$CLASS::$CLASS(shared_ptr<Operator> op, const expression_list& ops, const Location& l)
-    :  expression::ResolvedOperator(op, ops, l)
+expression::operator_::$NAMESPACE::$CLASS::$CLASS(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<binpac::Module> module, const Location& l)
+    :  expression::ResolvedOperator(op, ops, module, l)
 {
 }
 ===
@@ -258,9 +258,10 @@ shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__docTypeResult() const
 shared_ptr<Expression> operator_::$NAMESPACE::$CLASS::__simplify() const
 ===
 > opEnd cc
-shared_ptr<expression::ResolvedOperator> operator_::$NAMESPACE::$CLASS::_factory(shared_ptr<Operator> op, const expression_list& ops, const Location& l)
+shared_ptr<expression::ResolvedOperator>
+operator_::$NAMESPACE::$CLASS::_factory(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<binpac::Module> module, const Location& l)
 {
-    return shared_ptr<expression::ResolvedOperator>(new expression::operator_::$NAMESPACE::$CLASS(op, ops, l));
+    return shared_ptr<expression::ResolvedOperator>(new expression::operator_::$NAMESPACE::$CLASS(op, ops, module, l));
 }
 
 void __register_$NAMESPACE_$CLASS()

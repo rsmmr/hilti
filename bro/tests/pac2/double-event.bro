@@ -2,8 +2,6 @@
 # @TEST-EXEC: bro -r ${TRACES}/ssh-single-conn.trace ./ssh-cond.evt %INPUT >output
 # @TEST-EXEC: btest-diff output
 #
-# @TEST-KNOWN-FAILURE: The Bro interface can't handle two "on .." clauses
-#                      raising the same event.
 
 event ssh::banner(i: int, software: string)
 	{

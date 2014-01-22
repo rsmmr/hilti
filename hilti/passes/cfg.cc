@@ -87,7 +87,7 @@ CFG::~CFG()
 
 bool CFG::run(shared_ptr<Node> node)
 {
-    auto module = ast::checkedCast<Module>(node);
+    _module = ast::checkedCast<Module>(node);
 
     if ( ! processAllPreOrder(node) )
         return false;
@@ -95,7 +95,7 @@ bool CFG::run(shared_ptr<Node> node)
     _run = (errors() == 0);
 
     if ( _run )
-        _dot->run(module);
+        _dot->run(_module);
 
     return _run;
 }
@@ -219,10 +219,8 @@ void CFG::visit(statement::instruction::Resolved* s)
     for ( auto succ : fi.successors )
         addSuccessor(s, succ);
 
-    if ( s->successor() ) {
-        assert(! s->instruction()->terminator());
+    if ( s->successor() && ! s->instruction()->terminator() )
         addSuccessor(s, s->successor());
-    }
 
     for ( auto c : _excpt_handlers )
         addSuccessor(s, c.first->block());
@@ -235,7 +233,7 @@ void CFG::visit(statement::instruction::Unresolved* s)
 
 void CFG::visit(statement::instruction::exception::__BeginHandler* i)
 {
-    auto parent = i->firstParent<statement::Block>();
+    auto parent = current<statement::Block>();
     assert(parent);
 
     auto const_ = ast::checkedCast<expression::Constant>(i->op1());

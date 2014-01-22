@@ -20,6 +20,13 @@ public:
    /// l: Associated location.
    ID(string path, const Location & l=Location::None) : ast::ID<AstInfo>(path, l) {}
 
+   /// Constructor.
+   ///
+   /// path: Scope components.
+   ///
+   /// l: Associated location.
+   ID(component_list path, const Location& l=Location::None) : ast::ID<AstInfo>(path, l) {}
+
    ACCEPT_VISITOR_ROOT();
 private:
 };

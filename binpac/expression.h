@@ -438,12 +438,17 @@ public:
     ///
     /// ops: The list of operands.
     ///
+    /// module: The module this operator is part of.
+    ///
     /// l: An associated location.
-    ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops, const Location& l=Location::None);
+    ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<binpac::Module> module, const Location& l=Location::None);
     ~ResolvedOperator();
 
     /// Returns the operator.
     shared_ptr<Operator> operator_() const;
+
+    /// Returns the module the operator is part of.
+    shared_ptr<Module> module() const;
 
     /// Returns the first operator, or null if none.
     shared_ptr<Expression> op1() const;
@@ -468,6 +473,7 @@ protected:
 
 private:
     shared_ptr<Operator> _op;
+    shared_ptr<binpac::Module> _module; // no node_ptr
     node_ptr<Type> _type;
     std::vector<node_ptr<Expression>> _ops;
 };

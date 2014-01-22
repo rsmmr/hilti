@@ -17,7 +17,7 @@ namespace passes {
 class OperatorResolver : public ast::Pass<AstInfo>
 {
 public:
-    OperatorResolver();
+    OperatorResolver(shared_ptr<Module> module);
     virtual ~OperatorResolver();
 
     /// Resolves operators.
@@ -32,6 +32,7 @@ protected:
     void visit(Variable* i);
 
 private:
+    shared_ptr<Module> _module;
     std::list<expression::UnresolvedOperator*> _unknowns;
 };
 

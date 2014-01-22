@@ -14,7 +14,7 @@ namespace binpac {
 class ScopeClearer : public ast::Pass<AstInfo>
 {
 public:
-    ScopeClearer() : Pass<AstInfo>("binpac::ScopeClearer") {}
+    ScopeClearer() : Pass<AstInfo>("binpac::ScopeClearer", false) {}
     virtual ~ScopeClearer() {}
 
     bool run(shared_ptr<ast::NodeBase> module) override { return processAllPreOrder(module); }
@@ -29,7 +29,7 @@ protected:
 using namespace binpac;
 using namespace binpac::passes;
 
-ScopeBuilder::ScopeBuilder(CompilerContext* context) : Pass<AstInfo>("binpac::ScopeBuilder")
+ScopeBuilder::ScopeBuilder(CompilerContext* context) : Pass<AstInfo>("binpac::ScopeBuilder", false)
 {
     _context = context;
 }
@@ -40,6 +40,8 @@ ScopeBuilder::~ScopeBuilder()
 
 bool ScopeBuilder::run(shared_ptr<ast::NodeBase> module)
 {
+    _module = ast::checkedCast<Module>(module);
+
     ScopeClearer clearer;
     clearer.run(module);
 
@@ -125,6 +127,7 @@ void ScopeBuilder::visit(declaration::Type* t)
     }
 
     t->type()->setID(t->id());
+    t->type()->setScope(_module->id()->name());
 }
 
 void ScopeBuilder::visit(declaration::Constant* c)

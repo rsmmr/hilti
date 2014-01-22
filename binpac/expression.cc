@@ -1,5 +1,6 @@
 
 #include "expression.h"
+#include "module.h"
 
 #include "passes/printer.h"
 
@@ -66,7 +67,7 @@ bool Expression::canCoerceTo(shared_ptr<Type> target) const
 
 shared_ptr<binpac::Expression> Expression::coerceTo(shared_ptr<Type> target)
 {
-#ifdef DEBUG
+#if 0
     if ( ! canCoerceTo(target) ) {
         std::cerr << util::fmt("debug check failed: cannot coerce expression of type %s to type %s (%s / %s)",
                                type()->render().c_str(),
@@ -343,10 +344,11 @@ shared_ptr<Type> expression::UnresolvedOperator::type() const
     return std::make_shared<type::Unknown>(location());
 }
 
-expression::ResolvedOperator::ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops, const Location& l)
+expression::ResolvedOperator::ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<binpac::Module> module, const Location& l)
     : CustomExpression(l)
 {
     _op = op;
+    _module = module;
 
     for ( auto op : ops )
         _ops.push_back(op);
@@ -354,8 +356,7 @@ expression::ResolvedOperator::ResolvedOperator(shared_ptr<Operator> op, const ex
     for ( auto op : _ops )
         addChild(op);
 
-    _type = _op->type(operands());
-    addChild(_type);
+    _type = nullptr;
 }
 
 expression::ResolvedOperator::~ResolvedOperator()
@@ -384,7 +385,7 @@ expression_list expression::ResolvedOperator::operands() const
 
 shared_ptr<Type> expression::ResolvedOperator::type() const
 {
-    return _type;
+    return _op->type(_module, operands());
 }
 
 shared_ptr<Expression> expression::ResolvedOperator::op1() const
