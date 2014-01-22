@@ -100,6 +100,7 @@ static void usage(const char* prog)
     fprintf(stderr, "    -g            Enable pac-driver's debug output\n");
     fprintf(stderr, "    -B            Enable BinPAC++ debugging hooks\n");
     fprintf(stderr, "    -i <n>        Feed input incrementally in chunks of size <n>\n");
+    fprintf(stderr, "    -I            Add directory to import path.\n");
     fprintf(stderr, "    -l            Show available parsers\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
@@ -517,7 +518,7 @@ int main(int argc, char** argv)
 #endif
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgC")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:")) != -1) {
 
         switch (ch) {
 
@@ -547,6 +548,10 @@ int main(int argc, char** argv)
 
           case 'l':
             list_parsers = true;
+            break;
+
+         case 'I':
+            options->libdirs_pac2.push_back(optarg);
             break;
 
 #ifdef PAC_DRIVER_JIT
