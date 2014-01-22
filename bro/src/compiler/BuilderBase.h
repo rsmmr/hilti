@@ -342,6 +342,21 @@ public:
 	std::shared_ptr<::hilti::Expression> RuntimeHiltiToVal(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
 
 	/**
+	 * XXX
+	 */
+	std::shared_ptr<::hilti::Expression> HiltiFromAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
+
+	/**
+	 * XXX
+	 */
+	std::shared_ptr<::hilti::Expression> HiltiToAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
+
+	/**
+	 * XXX
+	 */
+	std::shared_ptr<::hilti::Expression> HiltiAnyBroType(std::shared_ptr<::hilti::Expression> val);
+
+	/**
 	 * Declares the prototype for single function. This branches out into
 	 * the other Declare*() methods for the various function flavors.
 	 *
@@ -404,7 +419,7 @@ public:
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args, const ::BroType* target_type);
 
 	/**
 	 * XXXX

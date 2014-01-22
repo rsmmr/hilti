@@ -11,7 +11,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-Validator::Validator() : Pass<AstInfo>("binpac::Validator")
+Validator::Validator() : Pass<AstInfo>("binpac::Validator", false)
 {
 }
 
@@ -216,8 +216,9 @@ void Validator::visit(declaration::Variable* v)
 
 void Validator::visit(expression::Assign* a)
 {
-    if ( ! a->source()->canCoerceTo(a->destination()->type()) )
+    if ( ! a->source()->canCoerceTo(a->destination()->type()) ) {
         error(a->source(), "incompatible type for assigment");
+    }
 }
 
 void Validator::visit(expression::CodeGen* c)

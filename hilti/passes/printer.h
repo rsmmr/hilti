@@ -26,6 +26,7 @@ public:
 
    bool includeFlow() const;
    void printFlow(Statement* stmt, const string& prefix = "");
+   bool printTypeID(Type* t);
 
 protected:
    void visit(Module* m) override;

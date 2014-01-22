@@ -1973,10 +1973,10 @@ void CodeGen::llvmBuildFunctionCleanup()
 
     auto func = _functions.back()->leave_func;
 
-    if ( func ) {
-        // If our parameters were passed at +1, we need to unref all the consts
-        // because nobody else does that. For the non-consts, the shadows take
-        // care of that.
+    // If our parameters were passed at +1, we need to unref all the consts
+    // because nobody else does that. For the non-consts, the shadows take
+    // care of that.
+    if ( func && func->function()->type()->ccPlusOne() ) {
         for ( auto p : func->function()->type()->parameters() ) {
             if ( ! p->constant() )
                 continue;

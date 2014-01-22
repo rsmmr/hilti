@@ -25,6 +25,7 @@ public:
 
 protected:
     void printOperator(operator_::Kind kind, const expression_list& exprs);
+    bool printTypeID(Type* t);
 
     void visit(Attribute* a) override;
     void visit(AttributeSet* a) override;
@@ -131,6 +132,10 @@ protected:
     void visit(type::unit::item::field::switch_::Case* ) override;
     void visit(variable::Global* g) override;
     void visit(variable::Local* l) override;
+
+private:
+    Module* _module;
+
 };
 
 }

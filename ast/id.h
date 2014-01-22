@@ -44,6 +44,10 @@ public:
        assert(_path.size() > 0);
     }
 
+    shared_ptr<AstID> clone() const {
+        return std::make_shared<AstID>(_path, this->location());
+    }
+
     /// Returns the identifier as a list of components making it up. For
     /// non-scoped IDs, the returned list will have exactly one element.
     component_list path() const {

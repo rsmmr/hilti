@@ -82,6 +82,7 @@ using namespace hilti;
 %token <sval>  ATTR_NOSUB     "'&nosub'"
 %token <sval>  ATTR_PRIORITY  "'&priority'"
 %token <sval>  ATTR_SCOPE     "'&scope'"
+%token <sval>  ATTR_DTOR      "'&libhilti_dtor'"
 
 %token         ADDR           "'addr'"
 %token         AFTER          "'after'"
@@ -172,7 +173,7 @@ using namespace hilti;
 %type <strings>          attr_list opt_attr_list
 %type <struct_field>     struct_field
 %type <struct_fields>    struct_fields opt_struct_fields
-%type <sval>             opt_exception_libtype attribute re_pattern_constant 
+%type <sval>             opt_exception_libtype attribute re_pattern_constant opt_struct_libhilti_dtor
 %type <type>             base_type type enum_ bitset exception opt_exception_base struct_ overlay context scope opt_scope_ref function_type
 %type <types>            type_list
 
@@ -377,8 +378,16 @@ exception     : EXCEPTION '<' type '>' opt_exception_base opt_exception_libtype 
                                                  ast::as<type::Exception>($$)->setLibraryType($3);
               }
 
-struct_       : STRUCT                           { driver.disableLineMode(); }
-                  '{' opt_struct_fields '}'      { driver.enableLineMode(); $$ = builder::struct_::type($4, loc(@$)); }
+struct_       : STRUCT opt_struct_libhilti_dtor  { driver.disableLineMode(); }
+                  '{' opt_struct_fields '}'      { driver.enableLineMode();
+                                                   $$ = builder::struct_::type($5, loc(@$));
+                                                   ast::as<type::Struct>($$)->setLibHiltiDtor($2);
+                                                 }
+
+opt_struct_libhilti_dtor:
+                ATTR_DTOR '=' CSTRING            { $$ = $3; }
+              | /* empty */                      { $$ = string(); }
+
 
 opt_struct_fields : struct_fields                { $$ = $1; }
               | /* empty */                      { $$ = builder::struct_::field_list(); }

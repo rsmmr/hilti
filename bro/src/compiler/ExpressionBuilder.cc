@@ -255,8 +255,7 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, con
 	target_types.pop_back();
 
 	if ( target_type && target_type->Tag() != ::TYPE_ANY && expr->Type()->Tag() == ::TYPE_ANY  )
-		// Need to convert back from Bro value.
-		e = RuntimeValToHilti(e, target_type);
+		e = HiltiFromAny(e, target_type);
 
 	if ( e && ! expr->IsConst() )
 		{
@@ -271,8 +270,7 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, con
 		}
 
 	if ( target_type && target_type->Tag() == ::TYPE_ANY && expr->Type()->Tag() != ::TYPE_ANY )
-		// Need to pass an actual Bro value.
-		e = RuntimeHiltiToVal(e, expr->Type());
+		e = HiltiToAny(e, expr->Type());
 
 	Builder()->debugPopIndent();
 
@@ -554,7 +552,8 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::Li
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CallExpr* expr)
 	{
-	return HiltiCallFunction(expr->Func(), expr->Func()->Type()->AsFuncType(), expr->Args());
+	auto tt = HasTargetType() ? TargetType() : ::base_type(::TYPE_VOID);
+	return HiltiCallFunction(expr->Func(), expr->Func()->Type()->AsFuncType(), expr->Args(), tt);
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CloneExpr* expr)

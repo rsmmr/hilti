@@ -85,6 +85,14 @@ public:
        this->addChild(_id);
     }
 
+    /// Returns the scope associated with the type, or an empty string if none.
+    std::string scope() const { return _scope; }
+
+    /// Associates a scope with the type.
+    void setScope(const std::string& scope) {
+       _scope = scope;
+    }
+
     /// Returns true if the type has been marked a wildcard type. See
     /// setWildcard().
     bool wildcard(void) const { return _wildcard; }
@@ -106,6 +114,7 @@ private:
     bool operator==(const Type& other) const; // Disable.
 
     node_ptr<ID> _id;
+    std::string _scope;
     bool _wildcard = false;
     bool _any = false;
 };

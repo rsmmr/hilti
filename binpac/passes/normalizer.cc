@@ -13,7 +13,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-Normalizer::Normalizer() : ast::Pass<AstInfo>("binpac::Normalizer")
+Normalizer::Normalizer() : ast::Pass<AstInfo>("binpac::Normalizer", true)
 {
 }
 

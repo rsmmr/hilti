@@ -185,9 +185,9 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> node, bool verify)
 {
     passes::GrammarBuilder   grammar_builder(std::cerr);
     passes::IDResolver       id_resolver;
-    passes::OverloadResolver overload_resolver;
+    passes::OverloadResolver overload_resolver(node);
     passes::Normalizer       normalizer;
-    passes::OperatorResolver op_resolver;
+    passes::OperatorResolver op_resolver(node);
     passes::ScopeBuilder     scope_builder(this);
     passes::ScopePrinter     scope_printer(std::cerr);
     passes::UnitScopeBuilder unit_scope_builder;

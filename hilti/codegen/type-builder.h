@@ -269,7 +269,7 @@ private:
    llvm::Function* _makeOverlayDtor(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type);
    llvm::Function* _makeOverlayFuncHelper(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type, bool dtor);
 
-   llvm::Function* _declareStructDtor(type::Struct* t, llvm::Type* llvm_type);
+   llvm::Function* _declareStructDtor(type::Struct* t, llvm::Type* llvm_type, const string& external_name);
    void _makeStructDtor(type::Struct* t, llvm::Function* func);
 
    // We cached all once computed type-infos and return the cached version

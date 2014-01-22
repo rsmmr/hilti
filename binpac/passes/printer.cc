@@ -98,6 +98,7 @@ static string _callingConvention(type::function::CallingConvention cc)
 Printer::Printer(std::ostream& out, bool single_line)
     : ast::passes::Printer<AstInfo>(out, single_line)
 {
+    _module = nullptr;
 }
 
 void Printer::visit(Attribute* a)
@@ -178,6 +179,8 @@ void Printer::visit(ID* i)
 
 void Printer::visit(Module* m)
 {
+    _module = m;
+
     Printer& p = *this;
 
     p << "module " << m->id() << ";" << endl;
@@ -580,6 +583,11 @@ void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
     }
 }
 
+bool Printer::printTypeID(Type* t)
+{
+    return ::ast::passes::printer::printTypeID(this, t, _module);
+}
+
 void Printer::visit(expression::ResolvedOperator* r)
 {
     auto exprs = r->operands();
@@ -708,7 +716,7 @@ void Printer::visit(statement::try_::Catch* c)
 
 void Printer::visit(type::Address* a)
 {
-    if ( printTypeID(this, a) )
+    if ( printTypeID(a) )
         return;
 
     Printer& p = *this;
@@ -717,7 +725,7 @@ void Printer::visit(type::Address* a)
 
 void Printer::visit(type::Any* a)
 {
-    if ( printTypeID(this, a) )
+    if ( printTypeID(a) )
         return;
 
     Printer& p = *this;
@@ -726,7 +734,7 @@ void Printer::visit(type::Any* a)
 
 void Printer::visit(type::Bitset* c)
 {
-    if ( printTypeID(this, c) )
+    if ( printTypeID(c) )
         return;
 
     Printer& p = *this;
@@ -756,7 +764,7 @@ void Printer::visit(type::Bitset* c)
 
 void Printer::visit(type::Bool* b)
 {
-    if ( printTypeID(this, b) )
+    if ( printTypeID(b) )
         return;
 
     Printer& p = *this;
@@ -765,7 +773,7 @@ void Printer::visit(type::Bool* b)
 
 void Printer::visit(type::Bytes* b)
 {
-    if ( printTypeID(this, b) )
+    if ( printTypeID(b) )
         return;
 
     Printer& p = *this;
@@ -774,7 +782,7 @@ void Printer::visit(type::Bytes* b)
 
 void Printer::visit(type::CAddr* c)
 {
-    if ( printTypeID(this, c) )
+    if ( printTypeID(c) )
         return;
 
     Printer& p = *this;
@@ -783,7 +791,7 @@ void Printer::visit(type::CAddr* c)
 
 void Printer::visit(type::Double* d)
 {
-    if ( printTypeID(this, d) )
+    if ( printTypeID(d) )
         return;
 
     Printer& p = *this;
@@ -792,12 +800,12 @@ void Printer::visit(type::Double* d)
 
 void Printer::visit(type::Enum* c)
 {
-    if ( printTypeID(this, c) )
+    if ( printTypeID(c) )
         return;
 
     Printer& p = *this;
 
-    if ( printTypeID(this, c) )
+    if ( printTypeID(c) )
         return;
 
     p << "enum { ";
@@ -820,7 +828,7 @@ void Printer::visit(type::Enum* c)
 
 void Printer::visit(type::Exception* e)
 {
-    if ( printTypeID(this, e) )
+    if ( printTypeID(e) )
         return;
 
     Printer& p = *this;
@@ -829,7 +837,7 @@ void Printer::visit(type::Exception* e)
 
 void Printer::visit(type::File* f)
 {
-    if ( printTypeID(this, f) )
+    if ( printTypeID(f) )
         return;
 
     Printer& p = *this;
@@ -838,7 +846,7 @@ void Printer::visit(type::File* f)
 
 void Printer::visit(type::Function* f)
 {
-    if ( printTypeID(this, f) )
+    if ( printTypeID(f) )
         return;
 
     Printer& p = *this;
@@ -854,7 +862,7 @@ void Printer::visit(type::Function* f)
 
 void Printer::visit(type::Hook* h)
 {
-    if ( printTypeID(this, h) )
+    if ( printTypeID(h) )
         return;
 
     Printer& p = *this;
@@ -863,7 +871,7 @@ void Printer::visit(type::Hook* h)
 
 void Printer::visit(type::Integer* i)
 {
-    if ( printTypeID(this, i) )
+    if ( printTypeID(i) )
         return;
 
     Printer& p = *this;
@@ -885,7 +893,7 @@ void Printer::visit(type::Integer* i)
 
 void Printer::visit(type::Interval* i)
 {
-    if ( printTypeID(this, i) )
+    if ( printTypeID(i) )
         return;
 
     Printer& p = *this;
@@ -894,7 +902,7 @@ void Printer::visit(type::Interval* i)
 
 void Printer::visit(type::Iterator* i)
 {
-    if ( printTypeID(this, i) )
+    if ( printTypeID(i) )
         return;
 
     Printer& p = *this;
@@ -907,7 +915,7 @@ void Printer::visit(type::Iterator* i)
 
 void Printer::visit(type::List* l)
 {
-    if ( printTypeID(this, l) )
+    if ( printTypeID(l) )
         return;
 
     Printer& p = *this;
@@ -920,7 +928,7 @@ void Printer::visit(type::List* l)
 
 void Printer::visit(type::Map* m)
 {
-    if ( printTypeID(this, m) )
+    if ( printTypeID(m) )
         return;
 
     Printer& p = *this;
@@ -943,7 +951,7 @@ void Printer::visit(type::Map* m)
 
 void Printer::visit(type::Module* m)
 {
-    if ( printTypeID(this, m) )
+    if ( printTypeID(m) )
         return;
 
     Printer& p = *this;
@@ -952,7 +960,7 @@ void Printer::visit(type::Module* m)
 
 void Printer::visit(type::Network* n)
 {
-    if ( printTypeID(this, n) )
+    if ( printTypeID(n) )
         return;
 
     Printer& p = *this;
@@ -961,7 +969,7 @@ void Printer::visit(type::Network* n)
 
 void Printer::visit(type::OptionalArgument* o)
 {
-    if ( printTypeID(this, o) )
+    if ( printTypeID(o) )
         return;
 
     Printer& p = *this;
@@ -970,7 +978,7 @@ void Printer::visit(type::OptionalArgument* o)
 
 void Printer::visit(type::Port* po)
 {
-    if ( printTypeID(this, po) )
+    if ( printTypeID(po) )
         return;
 
     Printer& p = *this;
@@ -979,7 +987,7 @@ void Printer::visit(type::Port* po)
 
 void Printer::visit(type::RegExp* r)
 {
-    if ( printTypeID(this, r) )
+    if ( printTypeID(r) )
         return;
 
     Printer& p = *this;
@@ -988,7 +996,7 @@ void Printer::visit(type::RegExp* r)
 
 void Printer::visit(type::Set* s)
 {
-    if ( printTypeID(this, s) )
+    if ( printTypeID(s) )
         return;
 
     Printer& p = *this;
@@ -1001,7 +1009,7 @@ void Printer::visit(type::Set* s)
 
 void Printer::visit(type::String* s)
 {
-    if ( printTypeID(this, s) )
+    if ( printTypeID(s) )
         return;
 
     Printer& p = *this;
@@ -1010,7 +1018,7 @@ void Printer::visit(type::String* s)
 
 void Printer::visit(type::Sink* s)
 {
-    if ( printTypeID(this, s) )
+    if ( printTypeID(s) )
         return;
 
     Printer& p = *this;
@@ -1019,7 +1027,7 @@ void Printer::visit(type::Sink* s)
 
 void Printer::visit(type::Time* t)
 {
-    if ( printTypeID(this, t) )
+    if ( printTypeID(t) )
         return;
 
     Printer& p = *this;
@@ -1028,7 +1036,7 @@ void Printer::visit(type::Time* t)
 
 void Printer::visit(type::Tuple* t)
 {
-    if ( printTypeID(this, t) )
+    if ( printTypeID(t) )
         return;
 
     printList(t->typeList(), ", ", "(", ")");
@@ -1036,7 +1044,7 @@ void Printer::visit(type::Tuple* t)
 
 void Printer::visit(type::TypeByName* t)
 {
-    if ( printTypeID(this, t) )
+    if ( printTypeID(t) )
         return;
 
     Printer& p = *this;
@@ -1045,7 +1053,7 @@ void Printer::visit(type::TypeByName* t)
 
 void Printer::visit(type::TypeType* t)
 {
-    if ( printTypeID(this, t) )
+    if ( printTypeID(t) )
         return;
 
     Printer& p = *this;
@@ -1054,7 +1062,7 @@ void Printer::visit(type::TypeType* t)
 
 void Printer::visit(type::Unit* u)
 {
-    if ( printTypeID(this, u) )
+    if ( printTypeID(u) )
         return;
 
     Printer& p = *this;
@@ -1085,7 +1093,7 @@ void Printer::visit(type::Unknown* u)
 
 void Printer::visit(type::Unset* u)
 {
-    if ( printTypeID(this, u) )
+    if ( printTypeID(u) )
         return;
 
     Printer& p = *this;
@@ -1094,7 +1102,7 @@ void Printer::visit(type::Unset* u)
 
 void Printer::visit(type::Vector* v)
 {
-    if ( printTypeID(this, v) )
+    if ( printTypeID(v) )
         return;
 
     Printer& p = *this;
@@ -1107,7 +1115,7 @@ void Printer::visit(type::Vector* v)
 
 void Printer::visit(type::Void* v)
 {
-    if ( printTypeID(this, v) )
+    if ( printTypeID(v) )
         return;
 
     Printer& p = *this;

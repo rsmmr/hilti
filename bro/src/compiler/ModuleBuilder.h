@@ -128,47 +128,47 @@ public:
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, const ::FuncType* ftype, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallFunction(const ::Expr* func, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallFunctionViaBro(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallFunctionViaBro(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallScriptFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
+	shared_ptr<::hilti::Expression> HiltiCallScriptFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args, const ::BroType* target_type);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallEventHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
+	shared_ptr<::hilti::Expression> HiltiCallEventHilti(const ::Func* func, shared_ptr<::hilti::Expression> args, const ::BroType* target_type);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallHookHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
+	shared_ptr<::hilti::Expression> HiltiCallHookHilti(const ::Func* func, shared_ptr<::hilti::Expression> args, const ::BroType* target_type);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args);
+	shared_ptr<::hilti::Expression> HiltiCallBuiltinFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args, const ::BroType* target_type);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallEventLegacy(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallEventLegacy(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallHookLegacy(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallHookLegacy(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type);
 
 	/**
 	 * XXX
 	 */
-	shared_ptr<::hilti::Expression> HiltiCallFunctionLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args);
+	shared_ptr<::hilti::Expression> HiltiCallFunctionLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type);
 
 	/**
 	 * XXX

@@ -57,6 +57,9 @@ shared_ptr<::hilti::Expression> ValueBuilder::DefaultInitValue(const ::BroType* 
 	case TYPE_FILE:
 		return nullptr;
 
+	case TYPE_ANY:
+		return nullptr;
+
 	default:
 		// For non-reference types, HILTi's default should be right.
 		if ( ! rtype )
@@ -110,7 +113,7 @@ shared_ptr<::hilti::Expression> ValueBuilder::BroType(const ::BroType* type)
 		Error(::util::fmt("ValueBuilder: type value without type id (%s)", d.Description()));
 		}
 
-	auto tmp = Builder()->addLocal("ttype", ::hilti::builder::type::byName("LibBro::BroType"));
+	auto tmp = Builder()->addTmp("ttype", ::hilti::builder::type::byName("LibBro::BroType"));
 	auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type");
 	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(type->GetTypeID()) } );
 	Builder()->addInstruction(tmp, ::hilti::instruction::flow::CallResult, f, args);
@@ -189,8 +192,7 @@ shared_ptr<hilti::Expression> ValueBuilder::Compile(const ::Val* val, const ::Br
 	target_types.pop_back();
 
 	if ( target_type && target_type->Tag() == ::TYPE_ANY )
-		// Need to pass an actual Bro value.
-		e = RuntimeHiltiToVal(e, val->Type());
+		e = HiltiToAny(e, val->Type());
 
 	return e;
 	}

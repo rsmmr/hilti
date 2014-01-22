@@ -188,6 +188,21 @@ shared_ptr<::hilti::Expression> BuilderBase::RuntimeValToHilti(shared_ptr<::hilt
 	return mbuilder->ConversionBuilder()->ConvertBroToHilti(val, type);
 	}
 
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiFromAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type)
+	{
+	return mbuilder->ConversionBuilder()->FromAny(val, type);
+	}
+
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiToAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type)
+	{
+	return mbuilder->ConversionBuilder()->ToAny(val, type);
+	}
+
+std::shared_ptr<::hilti::Expression> BuilderBase::HiltiAnyBroType(std::shared_ptr<::hilti::Expression> val)
+	{
+	return mbuilder->ConversionBuilder()->AnyBroType(val);
+	}
+
 shared_ptr<::hilti::Expression> BuilderBase::DeclareFunction(const ::Func* func)
 	{
 	return mbuilder->DeclareFunction(func);
@@ -213,9 +228,9 @@ std::pair<bool, ::Func*> BuilderBase::BroExprToFunc(const ::Expr* func)
 	return mbuilder->Compiler()->BroExprToFunc(func);
 	}
 
-shared_ptr<::hilti::Expression> BuilderBase::HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args)
+shared_ptr<::hilti::Expression> BuilderBase::HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args, const BroType* target_type)
 	{
-	return mbuilder->HiltiCallFunction(func, ftype, args);
+	return mbuilder->HiltiCallFunction(func, ftype, args, target_type);
 	}
 
 void BuilderBase::MapType(const ::BroType* from, const ::BroType* to)

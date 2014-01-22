@@ -10,7 +10,7 @@
 using namespace hilti;
 using namespace passes;
 
-InstructionNormalizer::InstructionNormalizer() : Pass<>("hilti::InstructionNormalizer")
+InstructionNormalizer::InstructionNormalizer() : Pass<>("hilti::InstructionNormalizer", true)
 {
 }
 
@@ -19,7 +19,7 @@ bool InstructionNormalizer::run(shared_ptr<hilti::Node> module)
     return processAllPostOrder(module);
 }
 
-shared_ptr<Expression> InstructionNormalizer::_addLocal(shared_ptr<statement::Block> block, const string& hint, shared_ptr<Type> type, bool force_name, const Location& l)
+shared_ptr<expression::Variable> InstructionNormalizer::_addLocal(shared_ptr<statement::Block> block, const string& hint, shared_ptr<Type> type, bool force_name, const Location& l)
 {
     auto cnt = 0;
     string name;
@@ -103,13 +103,13 @@ void InstructionNormalizer::visit(statement::ForEach* s)
     if ( ! iterable )
         internalError(s, ::util::fmt("InstructionNormalizer/ForEach: %s is not iterable", t->render()));
 
-    auto parent = s->firstParent<statement::Block>();
+    auto parent = current<statement::Block>();
     assert(parent);
 
     auto nblock = std::make_shared<statement::Block>(nullptr);
     nblock->scope()->setParent(parent->scope());
 
-    auto var = _addLocal(nblock, s->id()->name(), iterable->elementType(), true);
+    auto var = _addLocal(nblock, s->id()->name(), iterable->elementType());
     auto end = _addLocal(nblock, "end",  iterable->iterType());
     auto iter = _addLocal(nblock, "iter", iterable->iterType());
     auto cmp = _addLocal(nblock, "cmp", std::make_shared<type::Bool>());
@@ -124,6 +124,7 @@ void InstructionNormalizer::visit(statement::ForEach* s)
     IDReplacer replacer;
     replacer.run(s->body(), std::make_shared<ID>(statement::foreach::IDLoopBreak), cont.first->id());
     replacer.run(s->body(), std::make_shared<ID>(statement::foreach::IDLoopNext), next.first->id());
+    replacer.run(s->body(), s->id(), var->variable()->id());
 
     _addInstruction(entry.first, iter, instruction::operator_::Begin, s->sequence());
     _addInstruction(entry.first, end,  instruction::operator_::End, s->sequence());
@@ -136,6 +137,7 @@ void InstructionNormalizer::visit(statement::ForEach* s)
     _addInstruction(deref.first, nullptr, instruction::flow::Jump, body.second);
 
     auto b = s->body();
+    b->removeFromParents();
 
     body.first->addStatement(b);
     b->scope()->setParent(body.first->scope());
@@ -148,7 +150,7 @@ void InstructionNormalizer::visit(statement::ForEach* s)
 
 void InstructionNormalizer::visit(statement::Try* s)
 {
-    auto parent = s->firstParent<statement::Block>();
+    auto parent = current<statement::Block>();
     assert(parent);
 
     auto nblock = std::make_shared<statement::Block>(nullptr);

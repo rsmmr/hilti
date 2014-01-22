@@ -283,8 +283,8 @@ void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_
     void* keytmp = _to_voidp(tkey, key);
     void* valtmp = _to_voidp(tval, value);
 
-	int ret;
-	khiter_t i = kh_put_map(m, keytmp, &ret, tkey);
+    int ret;
+    khiter_t i = kh_put_map(m, keytmp, &ret, tkey);
 
     if ( ! ret ) {
         // Entry already exists.

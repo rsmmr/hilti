@@ -13,6 +13,7 @@
 #include "profiler.h"
 #include "init.h"
 #include "linker.h"
+#include "exceptions.h"
 
 // Debugging support to flag wrong usage of hlt_init/hlt_exit.
 static int _init_called = 0;
@@ -54,6 +55,9 @@ void hlt_init()
 
     hlt_execution_context* ctx = hlt_global_execution_context();
     __hlt_modules_init(ctx);
+
+    if ( ctx->excpt )
+        __hlt_exception_print_uncaught_abort(ctx->excpt, ctx);
 
     atexit(__hlt_done);
 }

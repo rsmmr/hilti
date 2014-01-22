@@ -9,7 +9,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-UnitScopeBuilder::UnitScopeBuilder() : Pass<AstInfo>("binpac::UnitScopeBuilder")
+UnitScopeBuilder::UnitScopeBuilder() : Pass<AstInfo>("binpac::UnitScopeBuilder", false)
 {
 }
 

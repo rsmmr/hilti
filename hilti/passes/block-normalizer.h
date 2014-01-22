@@ -12,18 +12,17 @@ class BlockNormalizer : public Pass<>
 {
 public:
    /// Constructor.
-   BlockNormalizer() : Pass<>("hilti::codegen::BlockNormalizer") {}
+   BlockNormalizer(bool instructions_normalized);
 
    /// Collects information about an AST.
-   bool run(shared_ptr<hilti::Node> module) override {
-       return processAllPreOrder(module);
-   }
+   bool run(shared_ptr<hilti::Node> module);
 
 protected:
    virtual void visit(statement::Block* b);
    virtual void visit(declaration::Function* f);
 
 private:
+   bool _instructions_normalized = false;
    uint64_t _anon_cnt = 0;
 };
 

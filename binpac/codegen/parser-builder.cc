@@ -832,6 +832,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
     if ( u->id() ) {
         auto uid = cg()->hiltiID(u->id());
         s->setID(uid);
+        s->setScope(cg()->moduleBuilder()->module()->id()->name());
 
         if ( u->id()->isScoped() && ! cg()->moduleBuilder()->declared(uid) )
             // An externally defined unit. We define it locally again so that we

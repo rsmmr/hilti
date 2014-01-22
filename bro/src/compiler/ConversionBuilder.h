@@ -64,6 +64,21 @@ public:
 	shared_ptr<::hilti::Expression> ConvertHiltiToBro(shared_ptr<::hilti::Expression> val, const ::BroType* type);
 
 	/**
+	 * XXX
+	 */
+	std::shared_ptr<::hilti::Expression> FromAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
+
+	/**
+	 * XXX
+	 */
+	std::shared_ptr<::hilti::Expression> ToAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
+
+	/**
+	 * XXX
+	 */
+	std::shared_ptr<::hilti::Expression> AnyBroType(std::shared_ptr<::hilti::Expression> val);
+
+	/**
 	 * Generates code to create \a BroType object for at runtime.
 	 *
 	 * This is a bit odd but at runtime we sometimes need to have a
@@ -115,6 +130,8 @@ protected:
 	std::shared_ptr<::hilti::Expression> PostponeBuildCreateBroType(const char* tag,
 									const ::BroType* type,
 									build_create_type_callback cb);
+
+	std::shared_ptr<::hilti::Expression> AnyConversionFunction(const ::BroType* type);
 
 	std::shared_ptr<::hilti::Expression> BroToHiltiBaseType(shared_ptr<::hilti::Expression> val, const ::BroType* type);
 	std::shared_ptr<::hilti::Expression> BroToHilti(shared_ptr<::hilti::Expression> val, const ::EnumType* type);

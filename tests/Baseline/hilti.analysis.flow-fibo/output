@@ -10,55 +10,55 @@ int<32> fibo(int<32> n)
   local bool cond
   
   
-      # pred: { <none> } succ: { [0052] }
+      # pred: { <none> } succ: { [0049] }
       # def: { fibo%cond.2 } clear: { <none> } mod: { p:n } read: { <none> }
       # live-in: { p:n } live-out: { fibo%cond.2, p:n }
       # now-dead: { <none> }
-      [0051] cond = int.slt n 2
-      # pred: { [0051] } succ: { [0054], [0061] }
+      [0048] cond = int.slt n 2
+      # pred: { [0048] } succ: { [0051], [0058] }
       # def: { <none> } clear: { <none> } mod: { fibo%cond.2 } read: { <none> }
       # live-in: { fibo%cond.2, p:n } live-out: { p:n }
       # now-dead: { fibo%cond.2 }
-      [0052] if.else cond @done @recurse
+      [0049] if.else cond @done @recurse
   
   @recurse:
-      # pred: { [0052] } succ: { [0055] }
+      # pred: { [0049] } succ: { [0052] }
       # def: { p:n } clear: { <none> } mod: { p:n } read: { <none> }
       # live-in: { p:n } live-out: { p:n }
       # now-dead: { <none> }
-      [0054] n = int.sub n 1
-      # pred: { [0054] } succ: { [0056] }
+      [0051] n = int.sub n 1
+      # pred: { [0051] } succ: { [0053] }
       # def: { fibo%f1.2 } clear: { <none> } mod: { p:n } read: { <none> }
       # live-in: { p:n } live-out: { fibo%f1.2, p:n }
       # now-dead: { <none> }
-      [0055] f1 = call fibo (n)
-      # pred: { [0055] } succ: { [0057] }
+      [0052] f1 = call fibo (n)
+      # pred: { [0052] } succ: { [0054] }
       # def: { p:n } clear: { <none> } mod: { p:n } read: { <none> }
       # live-in: { fibo%f1.2, p:n } live-out: { fibo%f1.2, p:n }
       # now-dead: { <none> }
-      [0056] n = int.sub n 1
-      # pred: { [0056] } succ: { [0058] }
+      [0053] n = int.sub n 1
+      # pred: { [0053] } succ: { [0055] }
       # def: { fibo%f2.2 } clear: { <none> } mod: { p:n } read: { <none> }
       # live-in: { fibo%f1.2, p:n } live-out: { fibo%f1.2, fibo%f2.2 }
       # now-dead: { p:n }
-      [0057] f2 = call fibo (n)
-      # pred: { [0057] } succ: { [0059] }
+      [0054] f2 = call fibo (n)
+      # pred: { [0054] } succ: { [0056] }
       # def: { fibo%f1.2 } clear: { <none> } mod: { fibo%f1.2, fibo%f2.2 } read: { <none> }
       # live-in: { fibo%f1.2, fibo%f2.2 } live-out: { fibo%f1.2 }
       # now-dead: { fibo%f2.2 }
-      [0058] f1 = int.add f1 f2
-      # pred: { [0058] } succ: { <none> }
+      [0055] f1 = int.add f1 f2
+      # pred: { [0055] } succ: { <none> }
       # def: { <none> } clear: { <none> } mod: { fibo%f1.2 } read: { <none> }
       # live-in: { fibo%f1.2 } live-out: { <none> }
       # now-dead: { fibo%f1.2 }
-      [0059] return.result f1
+      [0056] return.result f1
   
   @done:
-      # pred: { [0052] } succ: { <none> }
+      # pred: { [0049] } succ: { <none> }
       # def: { <none> } clear: { <none> } mod: { p:n } read: { <none> }
       # live-in: { p:n } live-out: { <none> }
       # now-dead: { p:n }
-      [0061] return.result n
+      [0058] return.result n
   
 }
 
@@ -69,21 +69,21 @@ void run()
   local int<32> f
   
   
-      # pred: { <none> } succ: { [0064] }
+      # pred: { <none> } succ: { [0060] }
       # def: { run%f.2 } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { run%f.2 }
       # now-dead: { <none> }
-      [0063] f = call fibo (10)
-      # pred: { [0063] } succ: { [0065] }
+      [0059] f = call fibo (10)
+      # pred: { [0059] } succ: { [0061] }
       # def: { <none> } clear: { <none> } mod: { run%f.2 } read: { <none> }
       # live-in: { run%f.2 } live-out: { <none> }
       # now-dead: { run%f.2 }
-      [0064] call Hilti::print (f)
-      # pred: { [0064] } succ: { <none> }
+      [0060] call Hilti::print (f)
+      # pred: { [0060] } succ: { <none> }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
       # now-dead: { <none> }
-      [0065] return.void
+      [0061] return.void
   
 }
 
@@ -93,5 +93,5 @@ void run()
   # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
   # live-in: { <none> } live-out: { <none> }
   # now-dead: { <none> }
-  [0068] block.end
+  [0064] block.end
 

@@ -21,12 +21,14 @@ endif ()
 
 ## Perftools
 
-find_package(GooglePerftools)
+set(HAVE_PERFTOOLS "0")
 
-if ("${GOOGLEPERFTOOLS_FOUND}" STREQUAL "TRUE" )
-    set(HAVE_PERFTOOLS "1")
-else ()
-    set(HAVE_PERFTOOLS "0")
+if ( NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
+    find_package(GooglePerftools)
+
+    if ("${GOOGLEPERFTOOLS_FOUND}" STREQUAL "TRUE" )
+        set(HAVE_PERFTOOLS "1")
+    endif ()
 endif ()
 
 ## Create config file.

@@ -6,6 +6,8 @@
 #include "expression.h"
 #include "coercer.h"
 #include "constant.h"
+#include "statement.h"
+#include "scope.h"
 
 #include "passes/validator.h"
 
@@ -124,11 +126,38 @@ void Operator::validate(passes::Validator* vld, shared_ptr<Type> result, const e
 #endif
 }
 
-shared_ptr<Type> Operator::type(const expression_list& ops)
+shared_ptr<Type> Operator::type(shared_ptr<Module> module, const expression_list& ops)
 {
     pushOperands(ops);
     auto result = __typeResult();
     popOperands();
+
+    auto name = ast::tryCast<type::TypeByName>(result);
+
+    if ( name ) {
+        auto id = name->id();
+        auto types = module->body()->scope()->lookup(name->id(), true);
+
+        if ( types.size() > 1 ) {
+            error(name, util::fmt("ID %s defined more than once", id->pathAsString()));
+            return result;
+        }
+
+        if ( types.size() == 1 ) {
+            auto t = types.front();
+            auto nt = ast::tryCast<expression::Type>(t);
+
+            if ( ! nt ) {
+                error(t, util::fmt("ID %s does not reference a type", id->pathAsString()));
+                return result;
+            }
+
+            return nt->typeValue();
+        }
+
+        // We pass unknown types through, hoping they can be resolved later.
+    }
+
     return result;
 }
 
@@ -379,9 +408,9 @@ operator_list OperatorRegistry::byKind(operator_::Kind kind) const
     return ops;
 }
 
-shared_ptr<expression::ResolvedOperator> OperatorRegistry::resolveOperator(shared_ptr<Operator> op, const expression_list& ops, const Location& l)
+shared_ptr<expression::ResolvedOperator> OperatorRegistry::resolveOperator(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<Module> module, const Location& l)
 {
-    return (op->factory())(op, ops, l);
+    return (op->factory())(op, ops, module, l);
 }
 
 void OperatorRegistry::addOperator(shared_ptr<Operator> op)

@@ -14,7 +14,7 @@ using namespace passes;
 class VarRenamer : public Pass<>
 {
 public:
-    VarRenamer(shared_ptr<ID> old, shared_ptr<ID> new_) : Pass<>("hilti::block-flattener::VarRenamer") {
+    VarRenamer(shared_ptr<ID> old, shared_ptr<ID> new_) : Pass<>("hilti::block-flattener::VarRenamer", true) {
         _old = old;
         _new = new_;
         new_->setOriginal(_old);
@@ -29,7 +29,7 @@ public:
 protected:
     void visit(ID* i) override {
 
-        if ( i->firstParent<declaration::Type>() )
+        if ( current<declaration::Type>() )
             return;
 
         if ( i->pathAsString() == _old->pathAsString() )
@@ -46,7 +46,7 @@ private:
     shared_ptr<ID> _new;
 };
 
-BlockFlattener::BlockFlattener() : Pass<>("hilti::codegen::BlockFlattener")
+BlockFlattener::BlockFlattener() : Pass<>("hilti::codegen::BlockFlattener", true)
 {
 }
 
@@ -91,6 +91,7 @@ shared_ptr<statement::Block> BlockFlattener::flatten(shared_ptr<statement::Block
 
         if ( ! cur ) {
             cur = std::make_shared<statement::Block>(nullptr);
+            cur->removeFromParents();
             toplevel->addStatement(cur);
             cur->scope()->setParent(toplevel->scope());
 
@@ -102,6 +103,7 @@ shared_ptr<statement::Block> BlockFlattener::flatten(shared_ptr<statement::Block
             }
         }
 
+        s->removeFromParents();
         cur->addStatement(s);
     }
 
@@ -132,6 +134,7 @@ shared_ptr<statement::Block> BlockFlattener::flatten(shared_ptr<statement::Block
             }
         }
 
+        d->removeFromParents();
         toplevel->addDeclaration(d);
 
         if ( var ) {

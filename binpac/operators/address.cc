@@ -24,7 +24,7 @@ opBegin(address::Family : MethodCall)
     }
 
     opResult() {
-        return std::make_shared<type::Unknown>(std::make_shared<ID>("BinPAC::AddrFamily"));
+        return std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::AddrFamily"));
     }
 opEnd
 

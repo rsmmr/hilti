@@ -1726,6 +1726,15 @@ public:
    /// Returns the field of a given name, or null if no such field.
    shared_ptr<struct_::Field> lookup(shared_ptr<ID> id) const;
 
+   /// Overwrites the default runtime dtor function.
+   ///
+   /// dtor: The linker-level name of the function.
+   void setLibHiltiDtor(const string& dtor);
+
+   /// Returns the struct's custom dtor runtime function name if one has
+   /// been set, or an empty string if not.
+   const string& libHiltiDtor() const;
+
    const trait::TypeList::type_list typeList() const override;
    parameter_list parameters() const override;
 
@@ -1739,6 +1748,7 @@ protected:
 
 private:
    std::list<node_ptr<struct_::Field>> _fields;
+   string _dtor;
 };
 
 

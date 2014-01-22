@@ -350,9 +350,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHiltiBaseType(share
 
 	case TYPE_ANY:
 		{
-		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_any"), args);
+		auto ty_bany = ::hilti::builder::reference::type(::hilti::builder::type::byName("LibBro::BroAny"));
+        Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, ::hilti::builder::expression::default_(ty_bany));
 		return dst;
 		}
 
@@ -819,7 +818,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroBaseType(share
 		{
 		auto args = ::hilti::builder::tuple::create( { val } );
 		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::h2b_any"), args);
+					  ::hilti::builder::id::create("LibBro::any_to_val"), args);
 		return dst;
 		}
 
@@ -1281,6 +1280,111 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 	mbuilder->popBuilder(cont);
 
 	mbuilder->pushBuilder(done);
+	return dst;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::AnyConversionFunction(const ::BroType* type)
+	{
+	string idx;;
+
+	if ( type->GetTypeID() )
+		{
+		idx = type->GetTypeID();
+		auto sm = ::extract_module_name(idx.c_str());
+		auto sv = ::extract_var_name(idx.c_str());
+		idx = ::util::fmt("%s::%s", sm, sv);
+		}
+
+	else
+		{
+		ODesc d;
+		d.SetShort(1);
+		type->Describe(&d);
+		idx = d.Description();
+		}
+
+	ODesc d;
+	d.SetShort(1);
+	type->Describe(&d);
+
+	if ( auto to = ModuleBuilder()->lookupNode("any-func-to", idx) )
+		return ast::checkedCast<::hilti::Expression>(to);
+
+	auto fname = ::util::fmt("type_to_any.%s", idx);
+	fname = ::util::strreplace(fname, "::", "_");
+	fname = ::util::strreplace(fname, " ", "_");
+	fname = ::util::strreplace(fname, "\n", "_");
+
+	auto ty_bany = ::hilti::builder::reference::type(::hilti::builder::type::byName("LibBro::BroAny"));
+	auto ty_bval = ::hilti::builder::type::byName("LibBro::BroVal");
+
+	auto fresult = ::hilti::builder::function::result(ty_bval);
+	auto fargs = ::hilti::builder::function::parameter_list();
+	fargs = { ::hilti::builder::function::parameter("a", ty_bany, true, nullptr) };
+	auto func = ModuleBuilder()->pushFunction(fname, fresult, fargs, ::hilti::type::function::HILTI_C);
+
+	auto t = Builder()->addTmp("t", HiltiType(type));
+
+	Builder()->addInstruction(t,
+				  ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::any_to_hilti"),
+				  ::hilti::builder::tuple::create({ ::hilti::builder::id::create("a") }));
+
+	auto v = RuntimeHiltiToVal(t, type);
+
+	Builder()->addInstruction(::hilti::instruction::flow::ReturnResult, v);
+
+	ModuleBuilder()->popFunction();
+
+	auto id = ::hilti::builder::id::create(fname);
+	ModuleBuilder()->cacheNode("any-func-to", idx, id);
+	return id;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::ToAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type)
+	{
+	auto dst = Builder()->addTmp("dst", ::hilti::builder::reference::type(::hilti::builder::type::byName("LibBro::BroAny")));
+
+	::hilti::builder::type_list targs = { ::hilti::builder::caddr::type(), ::hilti::builder::caddr::type() };
+	auto ttype = ::hilti::builder::tuple::type(targs);
+	auto tfunc = Builder()->addTmp("tfunc", ttype);
+	auto faddr = Builder()->addTmp("faddr", ::hilti::builder::caddr::type());
+
+	auto func = AnyConversionFunction(type);
+
+	Builder()->addInstruction(tfunc, ::hilti::instruction::caddr::Function, func);
+	Builder()->addInstruction(faddr, ::hilti::instruction::tuple::Index, tfunc, ::hilti::builder::integer::create(0));
+
+	Builder()->addInstruction(dst,
+				  ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::any_from_hilti"),
+				  ::hilti::builder::tuple::create({ val, CreateBroType(type), faddr }));
+
+	return dst;
+	}
+
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::FromAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type)
+	{
+	auto dst = Builder()->addTmp("dst", HiltiType(type));
+
+	Builder()->addInstruction(dst,
+				  ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::any_to_hilti"),
+				  ::hilti::builder::tuple::create({ val }));
+
+	return dst;
+	}
+
+std::shared_ptr<::hilti::Expression> ConversionBuilder::AnyBroType(std::shared_ptr<::hilti::Expression> val)
+	{
+	auto dst = Builder()->addTmp("dst", ::hilti::builder::type::byName("LibBro::BroType"));
+
+	Builder()->addInstruction(dst,
+				  ::hilti::instruction::flow::CallResult,
+				  ::hilti::builder::id::create("LibBro::any_bro_type"),
+				  ::hilti::builder::tuple::create({ val }));
+
 	return dst;
 	}
 

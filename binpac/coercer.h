@@ -35,7 +35,6 @@ public:
 private:
     // Main internal work horse function.
     bool _coerceTo(shared_ptr<Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst, shared_ptr<Expression>* result, string* error);
-
 };
 
 }

@@ -82,7 +82,8 @@ void CodeBuilder::visit(declaration::Constant* c)
 
 void CodeBuilder::visit(declaration::Function* f)
 {
-    cg()->hiltiDefineFunction(f->function());
+    auto scope = current<Module>()->id()->name();
+    cg()->hiltiDefineFunction(f->function(), false, scope);
 }
 
 void CodeBuilder::visit(declaration::Hook* h)

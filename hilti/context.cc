@@ -223,7 +223,8 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     passes::IdResolver            id_resolver;
     passes::InstructionResolver   instruction_resolver;
     passes::InstructionNormalizer instruction_normalizer;
-    passes::BlockNormalizer       block_normalizer;
+    passes::BlockNormalizer       block_normalizer_before_instr(false);
+    passes::BlockNormalizer       block_normalizer_after_instr(true);
     passes::BlockFlattener        block_flattener;
     passes::Validator             validator;
     passes::ScopeBuilder          scope_builder(this);
@@ -242,9 +243,9 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _endPass();
 
-    _beginPass(module, block_normalizer);
+    _beginPass(module, block_normalizer_before_instr);
 
-    if ( ! block_normalizer.run(module) )
+    if ( ! block_normalizer_before_instr.run(module) )
         return false;
 
     _endPass();
@@ -271,9 +272,9 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _endPass();
 
-    _beginPass(module, block_normalizer);
+    _beginPass(module, block_normalizer_after_instr);
 
-    if ( ! block_normalizer.run(module) )
+    if ( ! block_normalizer_after_instr.run(module) )
         return false;
 
     _endPass();
@@ -561,6 +562,8 @@ std::string CompilerContext::llvmGetModuleIdentifier(llvm::Module* module)
 
 llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
 {
+    // module->dump(std::cerr);
+
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Compiling module %s ...", module->id()->pathAsString()) << std::endl;
 

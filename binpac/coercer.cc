@@ -75,8 +75,10 @@ bool Coercer::_coerceTo(shared_ptr<Expression> expr, shared_ptr<Type> src, share
     auto op = match.first;
     ops = match.second;
 
-    if ( result )
-        *result = OperatorRegistry::globalRegistry()->resolveOperator(op, ops, expr->location());
+    if ( result ) {
+        auto module = expr->firstParent<Module>();
+        *result = OperatorRegistry::globalRegistry()->resolveOperator(op, ops, module, expr->location());
+    }
 
 #if 0
     if ( result ) {

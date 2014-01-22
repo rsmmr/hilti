@@ -35,8 +35,9 @@ static string _fmtOpCandidates(const OperatorRegistry::matching_result& candidat
 }
 
 
-OperatorResolver::OperatorResolver() : Pass<AstInfo>("binpac::OperatorResolver")
+OperatorResolver::OperatorResolver(shared_ptr<Module> module) : Pass<AstInfo>("binpac::OperatorResolver", true)
 {
+    _module = module;
 }
 
 OperatorResolver::~OperatorResolver()
@@ -87,7 +88,7 @@ void OperatorResolver::visit(expression::UnresolvedOperator* o)
      case 1: {
          // Everthing is fine. Replace with the actual operator.
          auto match = matches.front();
-         auto nop = OperatorRegistry::globalRegistry()->resolveOperator(match.first, match.second, o->location());
+         auto nop = OperatorRegistry::globalRegistry()->resolveOperator(match.first, match.second, _module, o->location());
          o->replace(nop);
          break;
      }

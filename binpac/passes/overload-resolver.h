@@ -15,7 +15,7 @@ namespace passes {
 class OverloadResolver : public ast::Pass<AstInfo>
 {
 public:
-    OverloadResolver();
+    OverloadResolver(shared_ptr<Module> module);
 
     virtual ~OverloadResolver();
 
@@ -28,6 +28,9 @@ public:
 
 protected:
     void visit(expression::UnresolvedOperator* o) override;
+
+private:
+    shared_ptr<Module> _module;
 };
 
 }

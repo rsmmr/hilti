@@ -12,8 +12,9 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-OverloadResolver::OverloadResolver() : Pass<AstInfo>("binpac::OverloadResolver")
+OverloadResolver::OverloadResolver(shared_ptr<Module> module) : Pass<AstInfo>("binpac::OverloadResolver", true)
 {
+    _module = module;
 }
 
 
@@ -146,7 +147,7 @@ no_match:
     auto call = std::make_shared<operator_::function::Call>();
     expression_list noperands = { func, *i };
 
-    auto nop = std::make_shared<expression::operator_::function::Call>(call, noperands, o->location());
+    auto nop = std::make_shared<expression::operator_::function::Call>(call, noperands, _module, o->location());
 
     o->replace(nop);
 }

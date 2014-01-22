@@ -144,7 +144,7 @@ type::Function::Function(shared_ptr<hilti::type::function::Result> result, const
     : HiltiType(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
     _cc = cc;
-    _plusone = true;
+    _plusone = (cc == function::CallingConvention::HILTI || cc == function::CallingConvention::CALLABLE);
 }
 
 type::Function::Function(const Location& l)
@@ -545,6 +545,16 @@ type::Struct::field_list type::Struct::sortedFields()
         return lhs->id()->name().compare(rhs->id()->name()) < 0; });
 
     return sorted;
+}
+
+void type::Struct::setLibHiltiDtor(const string& dtor)
+{
+    _dtor = dtor;
+}
+
+const string& type::Struct::libHiltiDtor() const
+{
+    return _dtor;
 }
 
 const type::trait::TypeList::type_list type::Struct::typeList() const

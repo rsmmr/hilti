@@ -4,6 +4,8 @@ wrong-cast.pac2:10-10: error, no matching operator found for types
 got operands: (int<32>, (type type))
 candidate operators:
     cast<(type type)>(double)
+    cast<(type type)>(enum { )
+    cast<(type type)>(int<*>)
     cast<(type type)>(int<*>)
     cast<(type type)>(int<*>)
     cast<(type type)>(interval)

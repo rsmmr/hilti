@@ -252,7 +252,6 @@ void ModuleBuilder::CompileScriptFunction(const BroFunc* func, bool exported)
 
 	popFunction();
 
-
 	// We need to always export it due to how Bro puts most event
 	// handlers into global space, and thus they may end up in a
 	// different compilation unit but still call non-exported functions.
@@ -564,7 +563,7 @@ const ::Func* ModuleBuilder::CurrentFunction() const
 	return functions.size() ? functions.back() : nullptr;
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* func, const ::FuncType* ftype, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* func, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type)
 	{
 	// If the expression references a callee by name, we call it directly
 	// and purely inside HILTI. If not, we go through the Bro core.
@@ -576,7 +575,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* f
 
 	if ( ! success )
 		// Cannot handle it ourselves, pass on to Bro.
-		return HiltiCallFunctionViaBro(HiltiExpression(func), ftype, args);
+		return HiltiCallFunctionViaBro(HiltiExpression(func), ftype, args, target_type);
 
 	if ( ! bro_func )
 		// Known, but no implementation.
@@ -587,20 +586,20 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* f
 	if ( bro_func->GetKind() == Func::BUILTIN_FUNC )
 		{
 		if ( Compiler()->HaveHiltiBif(bro_func->Name()) )
-			return HiltiCallBuiltinFunctionHilti(static_cast<const BuiltinFunc*>(bro_func), hargs);
+			return HiltiCallBuiltinFunctionHilti(static_cast<const BuiltinFunc*>(bro_func), hargs, target_type);
 		else
-			return HiltiCallFunctionViaBro(HiltiExpression(func), ftype, args);
+			return HiltiCallFunctionViaBro(HiltiExpression(func), ftype, args, target_type);
 		}
 
 	switch ( ftype->Flavor() ) {
 		case FUNC_FLAVOR_FUNCTION:
-			return HiltiCallScriptFunctionHilti(bro_func, hargs);
+			return HiltiCallScriptFunctionHilti(bro_func, hargs, target_type);
 
 		case FUNC_FLAVOR_EVENT:
-			return HiltiCallEventHilti(bro_func, hargs);
+			return HiltiCallEventHilti(bro_func, hargs, target_type);
 
 		case FUNC_FLAVOR_HOOK:
-			return HiltiCallHookHilti(bro_func, hargs);
+			return HiltiCallHookHilti(bro_func, hargs, target_type);
 
 		default:
 			Error("unknown function flavor in CallFunction", func);
@@ -610,17 +609,17 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunction(const ::Expr* f
 	return nullptr;
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionViaBro(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionViaBro(shared_ptr<::hilti::Expression> func, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type)
 	{
 	switch ( ftype->Flavor() ) {
 		case FUNC_FLAVOR_FUNCTION:
-			return HiltiCallFunctionLegacy(func, ftype, args);
+			return HiltiCallFunctionLegacy(func, ftype, args, target_type);
 
 		case FUNC_FLAVOR_EVENT:
-			return HiltiCallEventLegacy(func, ftype, args);
+			return HiltiCallEventLegacy(func, ftype, args, target_type);
 
 		case FUNC_FLAVOR_HOOK:
-			return HiltiCallHookLegacy(func, ftype, args);
+			return HiltiCallHookLegacy(func, ftype, args, target_type);
 
 		default:
 			reporter::internal_error("unknown function flavor in CallFunction");
@@ -629,7 +628,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionViaBro(shared_pt
 	reporter::internal_error("cannot be reached");
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallScriptFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallScriptFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args, const ::BroType* target_type)
 	{
 	auto ftype = func->FType();
 	auto ytype = ftype->YieldType();
@@ -651,7 +650,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallScriptFunctionHilti(cons
 		}
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEventHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEventHilti(const ::Func* func, shared_ptr<::hilti::Expression> args, const ::BroType* target_type)
 	{
 	auto hfunc = DeclareFunction(func);
 
@@ -671,7 +670,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEventHilti(const ::Func*
 	return nullptr;
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookHilti(const ::Func* func, shared_ptr<::hilti::Expression> args, const ::BroType* target_type)
 	{
 	auto true_ = ::hilti::builder::boolean::create(true);
 	auto result = Builder()->addTmp("result", ::hilti::builder::boolean::type(), true_);
@@ -680,10 +679,18 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookHilti(const ::Func* 
 	return result;
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionHilti(const ::Func* func, shared_ptr<::hilti::Expression> args, const ::BroType* target_type)
 	{
 	auto ftype = func->FType();
-	auto ytype = ftype->YieldType();
+
+	const ::BroType* ytype = ftype->YieldType();
+
+	if ( ytype->Tag() == TYPE_ANY )
+		{
+		assert(target_type);
+		ytype = target_type;
+		}
+
 	assert(ytype);
 
 	auto hftype = HiltiFunctionType(ftype);
@@ -711,13 +718,13 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionHilti(con
 		}
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEventLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallEventLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type)
 	{
 	Error("CallEventLegacy not yet implemented");
 	return 0;
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type)
 	{
 	RecordType* fargs = ftype->Args();
 	auto exprs = args->Exprs();
@@ -749,7 +756,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallHookLegacy(shared_ptr<::
 	return RuntimeValToHilti(rval, ::base_type(TYPE_BOOL));
 	}
 
-shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args)
+shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionLegacy(shared_ptr<::hilti::Expression> fval, const ::FuncType* ftype, ListExpr* args, const ::BroType* target_type)
 	{
 	RecordType* fargs = ftype->Args();
 	auto exprs = args->Exprs();
@@ -770,8 +777,13 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallFunctionLegacy(shared_pt
 	auto t = ::hilti::builder::tuple::create(func_args);
 	auto ca = ::hilti::builder::tuple::create({ fval, t });
 
-	auto ytype = ftype->YieldType();
-	auto hytype = HiltiType(ytype);
+	const ::BroType* ytype = ftype->YieldType();
+
+	if ( ytype->Tag() == TYPE_ANY )
+		{
+		assert(target_type);
+		ytype = target_type;
+		}
 
 	if ( ytype && ytype->Tag() != TYPE_VOID )
 		{

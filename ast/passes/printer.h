@@ -19,7 +19,7 @@ public:
     /// single_line: If true, all line separators while be turned into space
     /// so that we get a single-line version of the output.
     Printer(std::ostream& out, bool single_line = false)
-       : Pass<AstInfo>("Printer"), _out(out), _single_line(single_line) {}
+       : Pass<AstInfo>("Printer", false), _out(out), _single_line(single_line) {}
 
     /// Renders an AST back into HILTI source code.
     ///
@@ -171,11 +171,9 @@ string scopedID(Printer<AstInfo>* printer, Expr expr, Id id)
         return id->pathAsString();
 }
 
-template<typename AstInfo, typename Ty>
-bool printTypeID(Printer<AstInfo>* printer, Ty* t)
+template<typename AstInfo, typename Ty, typename Module>
+bool printTypeID(Printer<AstInfo>* printer, Ty* t, Module* module)
 {
-    typedef typename AstInfo::module Module;
-
     if ( ! printer->_print_type_ids )
         return false;
 
@@ -185,7 +183,12 @@ bool printTypeID(Printer<AstInfo>* printer, Ty* t)
     auto id = t->id();
 
     if ( printer->_qualify_type_ids && ! id->isScoped() ) {
-        if ( auto module = id->template firstParent<Module>() ) {
+        if ( t->scope().size() ) {
+            (*printer) << util::fmt("%s::%s", t->scope(), id->name());
+            return true;
+        }
+
+        if ( module ) {
             (*printer) << util::fmt("%s::%s", module->id()->name(), id->name());
             return true;
         }

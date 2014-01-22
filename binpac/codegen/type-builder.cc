@@ -114,16 +114,20 @@ void TypeBuilder::visit(type::Enum* e)
         labels.push_back(std::make_pair(id, l.second));
     }
 
-    ti.hilti_default = hilti::builder::id::create(util::fmt("%s::Undef", e->id()->pathAsString()));
     ti.hilti_type = hilti::builder::enum_::type(labels, e->location());
+    ti.hilti_default = ti.hilti_type->typeScope()->lookupUnique(::hilti::builder::id::node("Undef"));
+    assert(ti.hilti_default);
 
     auto id = cg() ? cg()->hiltiID(e->id(), true) : nullptr;
 
     if ( cg() ) {
+        assert(id);
+
         if ( id->isScoped() )
             cg()->hiltiImportType(std::make_shared<ID>(id->pathAsString()), e->sharedPtr<Type>());
 
         ti.hilti_type->setID(id);
+        ti.hilti_type->setScope(id->scope());
     }
 
     if ( id && id->isScoped() && _deps )
