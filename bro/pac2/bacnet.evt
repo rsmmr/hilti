@@ -1,6 +1,17 @@
 grammar bacnet.pac2;
 
-protocol analyzer pac2::DNS over UDP:
+protocol analyzer pac2::BACnet over UDP:
     parse with BACnet::Message,
     port 47808/udp;
 
+on BACnet::Message -> event bacnet_message($conn, $is_orig, self.func);
+
+## BVLC management functions.
+## At the moment, Read-FDT and Readt-BDT do not have their own event, beause they
+## do not carry any data. Get those by examining bacnet_message
+
+#on BACnet::Message if ( self.func == BACnet::BVLC_function::BVLC-Result ) 
+#  -> event bacnet_bvlc_result ($conn, self.bbmd.bvlc_result);
+
+#on BACnet::Message if ( self.func == BVLC_function::Write-BDT )
+#  -> event bacnet_bvlc_write_bdd ($conn, self.bbmd.bdts);

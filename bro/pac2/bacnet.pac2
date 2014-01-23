@@ -24,6 +24,366 @@ import Bro;
 #
 # vim search-replace for enums: s/^\(.*\) (\(\d*\).*/  \1 = \2,/
 
+type BACnetPropertyIdentifier = enum { 
+  absentee-limit = 244,
+  accepted-modes = 175,
+  access-alarm-events = 245,
+  access-doors = 246,
+  access-event = 247,
+  access-event-authentication-factor = 248,
+  access-event-credential = 249,
+  access-event-tag = 322,
+  access-event-time = 250,
+  access-transaction-events = 251,
+  accompaniment = 252,
+  accompaniment-time = 253,
+  ack-required = 1,
+  acked-transitions = 0,
+  action = 2,
+  action-text = 3,
+  activation-time = 254,
+  active-authentication-policy = 255,
+  active-cov-subscriptions = 152,
+  active-text = 4,
+  active-vt-sessions = 5,
+  actual-shed-level = 212,
+  adjust-value = 176,
+  alarm-value = 6,
+  alarm-values = 7,
+  align-intervals = 193,
+  all = 8,
+  all-writes-successful = 9,
+  allow-group-delay-inhibit = 365,
+  apdu-segment-timeout = 10,
+  apdu-timeout = 11,
+  application-software-version = 12,
+  archive = 13,
+  assigned-access-rights = 256,
+  attempted-samples = 124,
+  authentication-factors = 257,
+  authentication-policy-list = 258,
+  authentication-policy-names = 259,
+  authentication-status = 260,
+  authorization-exemptions = 364,
+  authorization-mode = 261,
+  auto-slave-discovery = 169,
+  average-value = 125,
+  backup-and-restore-state = 338,
+  backup-failure-timeout = 153,
+  backup-preparation-time = 339,
+  base-device-security-policy = 327,
+  belongs-to = 262,
+  bias = 14,
+  bit-mask = 342,
+  bit-text = 343,
+  blink-warn-enable = 373,
+  buffer-size = 126,
+  change-of-state-count = 15,
+  change-of-state-time = 16,
+  channel-number = 366,
+  client-cov-increment = 127,
+  configuration-files = 154,
+  control-groups = 367,
+  controlled-variable-reference = 19,
+  controlled-variable-units = 20,
+  controlled-variable-value = 21,
+  count = 177,
+  count-before-change = 178,
+  count-change-time = 179,
+  cov-increment = 22,
+  cov-period = 180,
+  cov-resubscription-interval = 128,
+  covu-period = 349,
+  covu-recipients = 350,
+  credential-disable = 263,
+  credential-status = 264,
+  credentials = 265,
+  credentials-in-zone = 266,
+  database-revision = 155,
+  date-list = 23,
+  daylight-savings-status = 24,
+  days-remaining = 267,
+  deadband = 25,
+  default-fade-time = 374,
+  default-ramp-rate = 375,
+  default-step-increment = 376,
+  derivative-constant = 26,
+  derivative-constant-units = 27,
+  description = 28,
+  description-of-halt = 29,
+  device-address-binding = 30,
+  device-type = 31,
+  direct-reading = 156,
+  distribution-key-revision = 328,
+  do-not-hide = 329,
+  door-alarm-state = 226,
+  door-extended-pulse-time = 227,
+  door-members = 228,
+  door-open-too-long-time = 229,
+  door-pulse-time = 230,
+  door-status = 231,
+  door-unlock-delay-time = 232,
+  duty-window = 213,
+  effective-period = 32,
+  egress-time = 377,
+  egress-active = 386,
+  elapsed-active-time = 33,
+  entry-points = 268,
+  enable = 133,
+  error-limit = 34,
+  event-algorithm-inhibit = 354,
+  event-algorithm-inhibit-ref = 355,
+  event-detection-enable = 353,
+  event-enable = 35,
+  event-message-texts = 351,
+  event-message-texts-config = 352,
+  event-state = 36,
+  event-time-stamps = 130,
+  event-type = 37,
+  event-parameters = 83,
+  exception-schedule = 38,
+  execution-delay = 368,
+  exit-points = 269,
+  expected-shed-level = 214,
+  expiry-time = 270,
+  extended-time-enable = 271,
+  failed-attempt-events = 272,
+  failed-attempts = 273,
+  failed-attempts-time = 274,
+  fault-parameters = 358,
+  fault-type = 359,
+  fault-values = 39,
+  feedback-value = 40,
+  file-access-method = 41,
+  file-size = 42,
+  file-type = 43,
+  firmware-revision = 44,
+  full-duty-baseline = 215,
+  global-identifier = 323,
+  group-members = 345,
+  group-member-names = 346,
+  high-limit = 45,
+  inactive-text = 46,
+  in-process = 47,
+  in-progress = 378,
+  input-reference = 181,
+  instance-of = 48,
+  instantaneous-power = 379,
+  integral-constant = 49,
+  integral-constant-units = 50,
+  interval-offset = 195,
+  is-utc = 344,
+  key-sets = 330,
+  last-access-event = 275,
+  last-access-point = 276,
+  last-credential-added = 277,
+  last-credential-added-time = 278,
+  last-credential-removed = 279,
+  last-credential-removed-time = 280,
+  last-key-server = 331,
+  last-notify-record = 173,
+  last-priority = 369,
+  last-restart-reason = 196,
+  last-restore-time = 157,
+  last-use-time = 281,
+  life-safety-alarm-values = 166,
+  lighting-command = 380,
+  lighting-command-default-priority = 381,
+  limit-enable = 52,
+  limit-monitoring-interval = 182,
+  list-of-group-members = 53,
+  list-of-object-property-references = 54,
+  local-date = 56,
+  local-forwarding-only = 360,
+  local-time = 57,
+  location = 58,
+  lock-status = 233,
+  lockout = 282,
+  lockout-relinquish-time = 283,
+  log-buffer = 131,
+  log-device-object-property = 132,
+  log-interval = 134,
+  logging-object = 183,
+  logging-record = 184,
+  logging-type = 197,
+  low-limit = 59,
+  maintenance-required = 158,
+  manipulated-variable-reference = 60,
+  manual-slave-address-binding = 170,
+  masked-alarm-values = 234,
+  maximum-output = 61,
+  maximum-value = 135,
+  maximum-value-timestamp = 149,
+  max-actual-value = 382,
+  max-apdu-length-accepted = 62,
+  max-failed-attempts = 285,
+  max-info-frames = 63,
+  max-master = 64,
+  max-pres-value = 65,
+  max-segments-accepted = 167,
+  member-of = 159,
+  member-status-flags = 347,
+  members = 286,
+  minimum-off-time = 66,
+  minimum-on-time = 67,
+  minimum-output = 68,
+  minimum-value = 136,
+  minimum-value-timestamp = 150,
+  min-actual-value = 383,
+  min-pres-value = 69,
+  mode = 160,
+  model-name = 70,
+  modification-date = 71,
+  muster-point = 287,
+  negative-access-rules = 288,
+  network-access-security-policies = 332,
+  node-subtype = 207,
+  node-type = 208,
+  notification-class = 17,
+  notification-threshold = 137,
+  notify-type = 72,
+  number-of-apdu-retries = 73,
+  number-of-authentication-policies = 289,
+  number-of-states = 74,
+  object-identifier = 75,
+  object-list = 76,
+  object-name = 77,
+  object-property-reference = 78,
+  object-type = 79,
+  occupancy-count = 290,
+  occupancy-count-adjust = 291,
+  occupancy-count-enable = 292,
+  occupancy-lower-limit = 294,
+  occupancy-lower-limit-enforced = 295,
+  occupancy-state = 296,
+  occupancy-upper-limit = 297,
+  occupancy-upper-limit-enforced = 298,
+  operation-expected = 161,
+  optional = 80,
+  out-of-service = 81,
+  output-units = 82,
+  packet-reorder-time = 333,
+  passback-mode = 300,
+  passback-timeout = 301,
+  polarity = 84,
+  port-filter = 363,
+  positive-access-rules = 302,
+  power = 384,
+  prescale = 185,
+  present-value = 85,
+  priority = 86,
+  priority-array = 87,
+  priority-for-writing = 88,
+  process-identifier = 89,
+  process-identifier-filter = 361,
+  profile-name = 168,
+  program-change = 90,
+  program-location = 91,
+  program-state = 92,
+  property-list = 371,
+  proportional-constant = 93,
+  proportional-constant-units = 94,
+  protocol-object-types-supported = 96,
+  protocol-revision = 139,
+  protocol-services-supported = 97,
+  protocol-version = 98,
+  pulse-rate = 186,
+  read-only = 99,
+  reason-for-disable = 303,
+  reason-for-halt = 100,
+  recipient-list = 102,
+  records-since-notification = 140,
+  record-count = 141,
+  reliability = 103,
+  reliability-evaluation-inhibit = 357,
+  relinquish-default = 104,
+  requested-shed-level = 218,
+  requested-update-interval = 348,
+  required = 105,
+  resolution = 106,
+  restart-notification-recipients = 202,
+  restore-completion-time = 340,
+  restore-preparation-time = 341,
+  scale = 187,
+  scale-factor = 188,
+  schedule-default = 174,
+  secured-status = 235,
+  security-pdu-timeout = 334,
+  security-time-window = 335,
+  segmentation-supported = 107,
+  serial-number = 372,
+  setpoint = 108,
+  setpoint-reference = 109,
+  setting = 162,
+  shed-duration = 219,
+  shed-level-descriptions = 220,
+  shed-levels = 221,
+  silenced = 163,
+  slave-address-binding = 171,
+  slave-proxy-enable = 172,
+  start-time = 142,
+  state-description = 222,
+  state-text = 110,
+  status-flags = 111,
+  stop-time = 143,
+  stop-when-full = 144,
+  structured-object-list = 209,
+  subordinate-annotations = 210,
+  subordinate-list = 211,
+  subscribed-recipients = 362,
+  supported-formats = 304,
+  supported-format-classes = 305,
+  supported-security-algorithms = 336,
+  system-status = 112,
+  threat-authority = 306,
+  threat-level = 307,
+  time-delay = 113,
+  time-delay-normal = 356,
+  time-of-active-time-reset = 114,
+  time-of-device-restart = 203,
+  time-of-state-count-reset = 115,
+  time-synchronization-interval = 204,
+  time-synchronization-recipients = 116,
+  total-record-count = 145,
+  trace-flag = 308,
+  tracking-value = 164,
+  transaction-notification-class = 309,
+  transition = 385,
+  trigger = 205,
+  units = 117,
+  update-interval = 118,
+  update-key-set-timeout = 337,
+  update-time = 189,
+  user-external-identifier = 310,
+  user-information-reference = 311,
+  user-name = 317,
+  user-type = 318,
+  uses-remaining = 319,
+  utc-offset = 119,
+  utc-time-synchronization-recipients = 206,
+  valid-samples = 146,
+  value-before-change = 190,
+  value-set = 191,
+  value-change-time = 192,
+  variance-value = 151,
+  vendor-identifier = 120,
+  vendor-name = 121,
+  verification-time = 326,
+  vt-classes-supported = 122,
+  weekly-schedule = 123,
+  window-interval = 147,
+  window-samples = 148,
+  write-status = 370,
+  zone-from = 320,
+  zone-members = 165,
+  zone-to = 321
+# The special property identifiers all, optional, and required are reserved for use in the
+# ReadPropertyMultiple service or services not defined in this standard.
+#
+# Enumerated values 0-511 are reserved for definition by ASHRAE. Enumerated values 512-4194303 may be used by
+# others subject to the procedures and constraints described in Clause 23.
+};
+
 type BVLC_function = enum {
   # message distribution
   Original-Unicast-NPDU = 0x0A,
@@ -93,6 +453,11 @@ type BDT_entry = unit {
   address_port: uint16;
   mask: uint32;
 };
+
+# convert a BDT entry into a Bro tuple
+tuple<addr, uint64, uint64> bro_bdr_entry(entry: BDT_entry) {
+  return (entry.address, cast<uint64>(entry.address_port), cast<uint64>(entry.mask));
+}
 
 # Foreign Device Table, also held by a BBMD. Foreign devices are
 # devices that belong to a BACnet network, but reside on a different
@@ -315,12 +680,18 @@ type BACnetConfirmedServiceChoice = enum {
 };
 
 type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
+  var len: uint16 = 4;
+
   head1 : bitfield(8) {
     segmented-response-accepted: 1;
     more-follows: 2;
     segmented-message: 3;
     tpe: 4..7;
-  } &parse(head);
+  } &parse(head) {
+    if ( self.head1.segmented-message == 1 ) {
+      self.len = self.len + 2;
+    }
+  }
   head2: bitfield(8) {
     max-APDU-length-accepted: 0..3;
     max-segments-accepted: 4..6;
@@ -330,7 +701,32 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
   sequence_number: uint8 if ( self.head1.segmented-message == 1 );
   proposed_window_size: uint8 if ( self.head1.segmented-message == 1 );
   confirmed_service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$);
-  # variable part following - need standard for decoding.
+
+  switch ( self.confirmed_service_choice ) {
+    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len );
+    BACnetConfirmedServiceChoice::writeProperty -> writeProperty: WriteProperty_Request( len - self.len );
+    * -> : void;
+  };
+};
+
+type ReadProperty_Request = unit(len: uint16) {
+  # context-specific tags 0 - 2
+   : BACnetTag;
+  objectIdentifier: BACnetObjectIdentifier;
+  propertyIdentifier_tag: BACnetTag;
+  propertyIdentifier: bytes &length=self.propertyIdentifier_tag.lvt &convert=BACnetPropertyIdentifier($$.to_uint(BinPAC::ByteOrder::Network));
+  propertyArrayIndex_tag : BACnetTag if ( len > self.offset() );
+  propertyArrayIndex: bytes &length=self.propertyArrayIndex_tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network) if ( len > self.offset() );
+};
+
+type WriteProperty_Request = unit(len: uint16) {
+  # context-specific tags 0 - 4
+   : BACnetTag;
+  objectIdentifier: BACnetObjectIdentifier;
+  propertyIdentifier_tag: BACnetTag;
+  propertyIdentifier: bytes &length=self.propertyIdentifier_tag.lvt &convert=BACnetPropertyIdentifier($$.to_uint(BinPAC::ByteOrder::Network));
+  propertyArrayIndex_tag: BACnetTag; # tag 2
+  propertyArrayIndex: bytes &length=self.propertyArrayIndex_tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network) if ( self.propertyArrayIndex_tag.tag == 2 );
 };
 
 type BACnetUnconfirmedServiceChoice = enum {
@@ -353,6 +749,8 @@ type PDU_unconfirmedRequest = unit(len: uint16) {
 
   switch ( self.service_choice ) {
     BACnetUnconfirmedServiceChoice::i-Am -> i_am: PDU_i_am;    
+#    BACnetUnconfirmedServiceChoice::unconfirmedCOVNotification -> unconfirmedCOVNotification: PDU_UnconfirmedCOVNotification(len - 2);    
+#    BACnetUnconfirmedServiceChoice::unconfirmedEventNotification -> unconfirmedEventNotification: PDU_UnconfirmedEventNotification(len - 2);    
     BACnetUnconfirmedServiceChoice::who-Is -> who_is: PDU_who_is(len - 2);
     * -> : void;
   };
@@ -371,6 +769,39 @@ type PDU_i_am = unit {
   segmentationSupported: BACnetMessage; # BACnetSegmentation
   vendorID: BACnetMessage; # unsigned16
 };
+
+#type PDU_UnconfirmedCOVNotification = unit(len: uint16) {
+#  # context specific tags 0-4.
+#  : BACnetTag;
+#  subscriberProcessIdentifier: uint32;
+#  : BACnetTag;
+#  initiatingDeviceIdentifier: BACnetObjectIdentifier;
+#  : BACnetTag;
+#  monitoredObjectIdentifier: BACnetObjectIdentifier;
+#  timeRemaining_tag : BACnetTag;
+#  timeRemaining: bytes &length=timeRemaining_tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network); 
+#  : BACnetTag;
+#  # FIXME! Sequence of BACnetPropertyValue!
+#};
+#
+#type PDU_UnconfirmedEventNotification = unit(len: uint16) {
+#  : BACnetTag;
+#  processIdentifier : uint32;
+#  : BACnetTag;
+#  initiatingDeviceIdentifier: BACnetObjectIdentifier
+#  : BACnetTag;
+#  BACnetObjectIdentifier: BACnetObjectIdentifier
+#  : BACnetTag;
+#  timeStamp: BACnetTimeStamp;
+#  notificationClass_tag: BACnetTag;
+#  notificationClass: bytes &length=notificationClass_tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network); 
+#  : BACnetTag;
+#  priority: uint8;
+#  : BACnetTag;
+#  eventType: BACnetEventType;
+#  : BACnetTag;
+#  # tag 7 messageText character string optional
+#};
 
 type PDU_simpleACK = unit {
   invokeID: uint8;
@@ -467,13 +898,17 @@ type BACnetTag = unit {
   var class: ASN1Class;
 
   data : bitfield(8) {
-     lvt: 0..2;
-     class: 3;
+     lvt: 0..2;      class: 3;
      tag: 4..7;
   } &bitorder=BinPAC::BitOrder::LSB0;
 
   tag: uint8 if ( self.data.tag == 0xF );
   lvt: uint8 if ( self.data.lvt == 0x5 );
+  # length/value/type.
+  # for context-specific, a length of 6 means an open tag, a length of 7 means
+  # a close-tag.
+  # The close tag needs to be context-specific too and have the same tag-value
+  # as the opening tag.
 
   on %done { 
     if ( self.data.tag != 0xF ) {
@@ -486,6 +921,14 @@ type BACnetTag = unit {
     self.class = ASN1Class(self.data.class + 1); # bacnet only has application / context-specific
   }
 };
+
+#type BACnetArray = unit {
+#  # start tag of the array.
+#  # FIXME: bail out if the tag is not context-specific
+#  begin: BACnetTag;
+#  # FIXME: bail out if self.begin.lvt != 6
+#  # FIXME: we need if for switches to be able to implement this.
+#};
 
 type BACnetObjectType = enum { 
   alert-enrollment = 52,
@@ -563,13 +1006,13 @@ type BACnetMessage = unit {
 
   switch ( self.tag.tpe ) {
     BACnetType::NULL -> : void;
-    BACnetType::BOOLEAN -> : void { self.boolean = self.tag.data.lvt; }
+    BACnetType::BOOLEAN -> : void { self.boolean = self.tag.lvt; }
     BACnetType::UnsignedInteger,
-    BACnetType::Enumerated -> unsigned: bytes &length=self.tag.data.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network);
-    BACnetType::Integer -> signed: bytes &length=self.tag.data.lvt &convert=$$.to_int(BinPAC::ByteOrder::Network);
-    BACnetType::OctetString -> octets: bytes &length=self.tag.data.lvt;
-    BACnetType::CharacterString -> characters: BACnetCharacterString(self.tag.data.lvt);
-    BACnetType::BitString -> bistring: BACnetBitString(self.tag.data.lvt);
+    BACnetType::Enumerated -> unsigned: bytes &length=self.tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network);
+    BACnetType::Integer -> signed: bytes &length=self.tag.lvt &convert=$$.to_int(BinPAC::ByteOrder::Network);
+    BACnetType::OctetString -> octets: bytes &length=self.tag.lvt;
+    BACnetType::CharacterString -> characters: BACnetCharacterString(self.tag.lvt);
+    BACnetType::BitString -> bistring: BACnetBitString(self.tag.lvt);
     BACnetType::Date -> date: BACnetDate;
     BACnetType::Time -> btime: BACnetTime;
     BACnetType::BACnetObjectIdentifier -> oid: BACnetObjectIdentifier;
@@ -605,7 +1048,6 @@ type BACnetTime = unit {
   second: uint8;
   centisecond: uint8;
 };
-  
 
 type BACnetCharacterStringType = enum {
   UTF8 = 0,
