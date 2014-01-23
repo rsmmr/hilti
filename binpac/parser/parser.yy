@@ -534,8 +534,8 @@ unit_field_in_container :
 unit_fields   : unit_field unit_fields         { $$ = $2; $$.push_front($1); }
               | unit_field                     { $$ = unit_field_list(); $$.push_back($1); }
 
-unit_switch   : SWITCH '(' expr ')' '{' unit_switch_cases '}' ';'
-                                                 { $$ = std::make_shared<type::unit::item::field::Switch>($3, $6, hook_list(), loc(@$)); }
+unit_switch   : SWITCH '(' expr ')' '{' unit_switch_cases '}' opt_unit_field_cond ';'
+                                                 { $$ = std::make_shared<type::unit::item::field::Switch>($3, $6, $8, hook_list(), loc(@$)); }
 
 unit_switch_cases
               : unit_switch_case unit_switch_cases
