@@ -2452,7 +2452,7 @@ bool Manager::CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev)
 			{
 			// TODO: If BinPAC++'s and Bro's mapping to HILTI
 			// don't match, we need to do more conversion here
-			// ...
+			// ... Update: first example below for integers ...
 			auto arg = mbuilder->addTmp("t", e->htype);
 			auto func_id = e->hlt_func ? e->hlt_func->id() : ::hilti::builder::id::node("null-function>");
 
@@ -2473,6 +2473,16 @@ bool Manager::CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev)
 							    ::hilti::instruction::flow::CallResult,
 							    ::hilti::builder::id::create(func_id),
 							    ::hilti::builder::tuple::create(eargs));
+
+			if ( auto itype = ::ast::tryCast<::hilti::type::Integer>(e->htype) )
+				{
+				if ( itype->width() != 64 )
+					{
+					auto arg64 = mbuilder->addTmp("t", ::hilti::builder::integer::type(64));
+					mbuilder->builder()->addInstruction(arg64, ::hilti::instruction::integer::ZExt, arg);
+					arg = arg64;
+					}
+				}
 
 			args.push_back(arg);
 			}

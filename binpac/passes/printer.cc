@@ -1131,7 +1131,7 @@ void Printer::visit(type::function::Parameter* pa)
 void Printer::visit(type::function::Result* r)
 {
     Printer& p = *this;
-    p << "(type func result)";
+    p << r->type();
 }
 
 void Printer::visit(type::unit::item::GlobalHook* g)
