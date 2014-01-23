@@ -18,10 +18,13 @@ void CodeBuilder::visit(constant::Enum* e)
 {
     assert(e->type()->id());
 
+    auto module =  e->firstParent<Module>();
+    assert(module);
+
     auto expr =  e->firstParent<Expression>();
     assert(expr);
 
-    ID::component_list path = { expr->scope(), e->value()->name() };
+    ID::component_list path = { module->id()->name(), expr->scope(), e->value()->name() };
     auto fq = std::make_shared<ID>(path, e->location());
     auto result = hilti::builder::id::create(cg()->hiltiID(fq));
     setResult(result);

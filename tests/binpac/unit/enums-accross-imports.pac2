@@ -2,7 +2,6 @@
 # @TEST-EXEC:  printf '\x01\x02' | pac-driver-test -p A::tA b.pac2 %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
-# @TEST-KNOWN-FAILURE: importing modules using exports not supported
 
 module A;
 
