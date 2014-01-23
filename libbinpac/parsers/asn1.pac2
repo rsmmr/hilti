@@ -53,29 +53,8 @@ type LengthType = unit {
 
   switch ( self.data.islong ) {
     0 -> : b"" { self.len = self.data.num; self.tag_len = 1; }
-    1 -> length_parse : LenghTypeSubLength(self.data.num) { self.len = self.length_parse.len; self.tag_len = self.data.num + 1; }
-#    1 -> length_8 : uint8 { self.len = self.length_8; }
-# FIX ME!
-#    1 -> b: bytes &length=self.data.num &convert=cast<uint64>($$) { self.len = self.b; }
+    1 -> length_parse: bytes &length=self.data.num &convert=$$.to_uint(BinPAC::ByteOrder::Network) { self.len = self.length_parse; self.tag_len = self.data.num + 1; }
   }; 
-};
-
-type LenghTypeSubLength = unit(length: uint8) {
-  var len: uint64;
-
-  var length_24 : uint32;
-
-  switch ( length ) {
-    1 -> length_8 : uint8 { self.len = self.length_8; }
-    2 -> length_16 : uint16 { self.len = self.length_16; }
-    3 -> { 
-           high_nibble: uint8;
-	   low_nibble: uint16 {
-             self.len = ( self.high_nibble << 16 ) | self.low_nibble;
-	   }
-	 }
-    4 -> length_32 : uint32 { self.len = self.length_32; }
-  };
 };
 
 type ASN1Tag = unit {
@@ -132,7 +111,6 @@ type oidnibble = unit {
   };
 };
 
-
 type ASN1OBJECTIDENTIFIER = unit(len: uint64) {
   var oid: list<uint64>;
   var temp: uint64;
@@ -161,7 +139,6 @@ type ASN1OBJECTIDENTIFIER = unit(len: uint64) {
     }
 };
 
-#type ASN1Body = unit(tag: ASN1Tag, len: LengthType, total_length: uint64) {
 type ASN1Body = unit(head: ASN1Header) {
   var parse_length: uint64 = 0;
 
@@ -174,8 +151,8 @@ type ASN1Body = unit(head: ASN1Header) {
     ASN1Type::OBJECTIDENTIFIER -> objectidentifier: ASN1OBJECTIDENTIFIER(head.len.len);
     ASN1Type::PrintableString, ASN1Type::GeneralizedTime, ASN1Type::UTCTime, ASN1Type::UTF8String, ASN1Type::BMPString, ASN1Type::UniversalString -> asn1string: ASN1String(head.tag, head.len.len);
     ASN1Type::SEQUENCE, ASN1Type::SET -> submessages: list < ASN1Message > &until_including ( self.parse_length + $$.head.total_length >= head.len.len )
-      foreach { self.parse_length = self.parse_length + $$.head.total_length;
-      		#print "Want: ", len.len, "Have so far: ", self.parse_length, " subelement: ", $$.len.len;
+      foreach { 
+                self.parse_length = self.parse_length + $$.head.total_length;
               }
     * -> : bytes &length=head.len.len { 
       print "Unknown type: ", head.tag.tpe, head.tag.data.constructed, head.tag.data.class;
@@ -189,24 +166,19 @@ type ASN1Header = unit {
   var total_length: uint64;
   
   len: LengthType { 
-    #print "Parsing element with size ", self.len.len;
-    #print self.len.len, self.tag.len, self.len.tag_len;
-    self.total_length =  self.len.len + self.tag.len + self.len.tag_len;
+    self.total_length = self.len.len + self.tag.len + self.len.tag_len;
   }
 };
 
 type ASN1Message = unit {
   head: ASN1Header;
  
-  #body: ASN1Body(self.head.tag, self.head.len, self.head.total_length) if ( self.head.tag.data.class == 0 );
-  body: ASN1Body(self.head) if ( self.head.tag.data.class == 0 );
-  submessage: ASN1Message if ( self.head.tag.data.class != 0 ); # assume explicit tagging, otherwise this will go horribly wrong
+  body: ASN1Body(self.head) if ( self.head.tag.class == ASN1Class::UNIVERSAL );
+  submessage: ASN1Message if ( self.head.tag.class != ASN1Class::UNIVERSAL ); # assume explicit tagging, otherwise this will go horribly wrong
 
 };
 
 type outer = unit {
   message: ASN1Message;
-
-  on %done { print self; }
 };
 

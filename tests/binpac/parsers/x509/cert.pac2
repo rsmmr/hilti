@@ -1,13 +1,15 @@
 #
-# @TEST-EXEC:  cat %DIR/v1cert.der | pac-driver-test %INPUT ${PARSERS}/asn1.pac2 >v1
-# @TEST-EXEC:  cat %DIR/google.der| pac-driver-test %INPUT ${PARSERS}/asn1.pac2 >google
+# Work around import issues
+# @TEST-EXEC:  cat ${PARSERS}/asn1.pac2 ${PARSERS}/x509.pac2 > out.pac2
+# @TEST-EXEC:  cat %DIR/v1cert.der | pac-driver-test %INPUT out.pac2 >v1
+# @TEST-EXEC:  cat %DIR/google.der| pac-driver-test %INPUT out.pac2 >google
 # @TEST-EXEC:  btest-diff v1
 # @TEST-EXEC:  btest-diff google 
 #
 
 module Test;
 
-import parsers/asn1;
+import out; # hacky...
 
 on asn1::tbscertificate::%done {
   print "Version: ", self.version;

@@ -1,4 +1,4 @@
-# needs loaded asn1 module, due to bugs no own namespace yet.
+# x-imports are not working yet.
 
 global SubjectOids = map<bytes, bytes>(
   b"2.5.4.3": b"CN",
@@ -103,10 +103,10 @@ type tbscertificate = unit {
 
   var version: int64 = 1;
   version_head: ASN1Header;
-  version_data: ASN1Message if (self.version_head.tag.data.class == 2) {  
+  version_data: ASN1Message if (self.version_head.tag.class == ASN1Class::context-specific) {  
     self.version = self.version_data.body.num_value + 1;
   }
-  serialnumber_head: ASN1Header if ( self.version_head.tag.data.class == 2 ); # otherwhise we have to use version_head
+  serialnumber_head: ASN1Header if ( self.version_head.tag.class == ASN1Class::context-specific ); # otherwhise we have to use version_head
   var serial: int64;
   switch ( self.version_head.tag.data.class ) {
     0 -> serialNumber_raw: ASN1Body(self.version_head);
@@ -119,7 +119,7 @@ type tbscertificate = unit {
   subject: cert_issuer;
   subjectPublicKeyInfo: SubjectPublicKeyInfo {
     self.read_length = self.version_head.total_length;
-    if ( self.version_head.tag.data.class == 2 ) {
+    if ( self.version_head.tag.class == ASN1Class::context-specific ) {
         self.read_length = self.read_length + self.serialnumber_head.total_length;
     }
     self.read_length = self.read_length + self.signature.head.total_length + self.issuer.head.total_length + self.validity.head.total_length + self.subject.head.total_length + self.subjectPublicKeyInfo.head.total_length;
