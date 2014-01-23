@@ -118,6 +118,6 @@ void Normalizer::visit(statement::Return* r)
 
     auto rtype = func->type()->result()->type();
 
-    if ( ast::isA<type::Unknown>(rtype) )
+    if ( ast::isA<type::Unknown>(rtype) ) 
         rtype->replace(r->expression()->type());
 }

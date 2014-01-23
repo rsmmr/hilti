@@ -1257,7 +1257,7 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
             body->addStatement(std::make_shared<statement::IfElse>(neg, stop, nullptr, l));
         }
 
-        auto prio = until_including ? -255 : 255;
+        auto prio = until_including ? 253 : 255;
         auto hook = std::make_shared<binpac::Hook>(body, prio, false, true, l);
         addHook(hook);
 
@@ -1396,8 +1396,8 @@ unit_field_list unit::item::field::switch_::Case::items() const
     return items;
 }
 
-unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, const hook_list& hooks, const Location& l)
-    : Field(nullptr, nullptr, nullptr, hooks, attribute_list(), expression_list(), expression_list(), l)
+unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, shared_ptr<Expression> cond, const hook_list& hooks, const Location& l)
+    : Field(nullptr, nullptr, cond, hooks, attribute_list(), expression_list(), expression_list(), l)
 {
     _expr = expr;
     addChild(_expr);

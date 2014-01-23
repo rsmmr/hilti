@@ -9,16 +9,12 @@ module Mini;
 
 export type test = unit {
 
-       a: bytes &length=1;
+  a: bytes &length=1;
 
-       switch ( self.a ) {
-           b"1" -> b1: bytes &length=4;
-           b"2" -> b2: bytes &length=4;
-           } if ( self.a == b"1" );
+  switch ( self.a ) {
+    b"1" -> b1: bytes &length=4;
+    b"2" -> b2: bytes &length=4;
+  } if ( self.a == b"1" );
 
-       c: bytes &length=5
-           {
-           print "b1", self.b1;
-           print "b2", self.b2;
-           }
+  on %done { print self; }
 };

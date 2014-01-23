@@ -1558,7 +1558,11 @@ public:
     /// hooks: Hooks associated with this item.
     ///
     /// l: Location associated with the item.
-    Switch(shared_ptr<Expression> expr, const case_list& cases, const hook_list& hooks = hook_list(), const Location& l=Location::None);
+    Switch(shared_ptr<Expression> expr,
+           const case_list& cases, 
+           shared_ptr<Expression> cond = nullptr,           
+           const hook_list& hooks = hook_list(), 
+           const Location& l=Location::None);
 
     /// Returns the switch's expression.
     shared_ptr<Expression> expression() const;
