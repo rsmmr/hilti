@@ -1257,7 +1257,7 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
             body->addStatement(std::make_shared<statement::IfElse>(neg, stop, nullptr, l));
         }
 
-        auto prio = until_including ? -255 : 255;
+        auto prio = until_including ? 253 : 255;
         auto hook = std::make_shared<binpac::Hook>(body, prio, false, true, l);
         addHook(hook);
 
