@@ -35,9 +35,9 @@ void InstructionResolver::processInstruction(shared_ptr<statement::Instruction> 
 
              auto body = current<statement::Block>();
 
-             if ( body->scope()->lookupUnique(id) ) {
+             if ( auto expr = body->scope()->lookupUnique(id) ) {
                  auto assign = std::make_shared<ID>("assign");
-                 instruction::Operands ops = { instr->target(), builder::id::create(instr->id()), nullptr, nullptr };
+                 instruction::Operands ops = { instr->target(), expr, nullptr, nullptr };
                  auto matches = InstructionRegistry::globalRegistry()->getMatching(assign, ops);
 
                  if ( matches.size() != 1 ) {
