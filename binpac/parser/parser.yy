@@ -668,6 +668,11 @@ expr2         : scoped_id                        { $$ = std::make_shared<express
               | constant                         { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
               | expr '=' expr                    { $$ = std::make_shared<expression::Assign>($1, $3, loc(@$)); }
               | expr '?' expr ':' expr           { $$ = std::make_shared<expression::Conditional>($1, $3, $5, loc(@$)); }
+              | '[' expr FOR local_id IN expr ']'{ $$ = std::make_shared<expression::ListComprehension>($2, $4, $6, nullptr, loc(@$)); }
+              | '[' expr FOR local_id IN expr IF expr ']'
+                                                 { $$ = std::make_shared<expression::ListComprehension>($2, $4, $6, $8, loc(@$)); }
+
+
 /*            | atomic_type '(' ')'                { $$ = std::make_shared<expression::Default>($1, loc(@$)); } */
 
               /* Overloaded operators */

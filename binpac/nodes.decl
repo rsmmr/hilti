@@ -53,6 +53,7 @@ expression::Default
 expression::Function
 expression::ID
 expression::List
+expression::ListComprehension
 expression::MemberAttribute
 expression::Module
 expression::Parameter

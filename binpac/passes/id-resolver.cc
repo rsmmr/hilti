@@ -11,6 +11,32 @@
 using namespace binpac;
 using namespace binpac::passes;
 
+// A helper pass that replaces an ID expression with a different node within a subtree.
+class IDExprReplacer : public ast::Pass<AstInfo>
+{
+public:
+    IDExprReplacer(shared_ptr<ID> old, shared_ptr<Node> new_) : ast::Pass<AstInfo>("binpac::normalizer::IDExprReplacer", true) {
+        _old = old;
+        _new = new_;
+    }
+
+    virtual ~IDExprReplacer() {}
+
+    bool run(shared_ptr<ast::NodeBase> node) override {
+        return processAllPreOrder(node);
+    }
+
+protected:
+    void visit(expression::ID* i) override {
+        if ( i->id()->pathAsString() == _old->pathAsString() )
+            i->replace(_new);
+    }
+
+private:
+    shared_ptr<ID> _old;
+    shared_ptr<Node> _new;
+};
+
 IDResolver::IDResolver() : Pass<AstInfo>("binpac::IDResolver", true)
 {
 }
@@ -126,7 +152,7 @@ void IDResolver::visit(expression::ID* i)
         if ( ! ok )
             error(i, util::fmt("$$ not defined here"));
     }
-#endif    
+#endif
 
     auto val = vals.front();
 
@@ -135,6 +161,19 @@ void IDResolver::visit(expression::ID* i)
     if ( id->id()->isScoped() )
         val->setScope(id->id()->scope());
 
+}
+
+void IDResolver::visit(expression::ListComprehension* c)
+{
+    auto iterable = ast::type::trait::asTrait<type::trait::Iterable>(c->input()->type().get());
+    auto var = std::make_shared<variable::Local>(c->variable(), iterable->elementType());
+    auto evar = std::make_shared<expression::Variable>(var);
+    IDExprReplacer replacer(c->variable(), evar);
+
+    if ( c->predicate() )
+        replacer.run(c->predicate());
+
+    replacer.run(c->output());
 }
 
 void IDResolver::visit(type::Unknown* t)
