@@ -711,22 +711,23 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
 
 type ReadProperty_Request = unit(len: uint16) {
   # context-specific tags 0 - 2
-   : BACnetTag;
-  objectIdentifier: BACnetObjectIdentifier;
+  first_tag: BACnetTag;
+  objectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 0, self.first_tag);
   propertyIdentifier_tag: BACnetTag;
   propertyIdentifier: bytes &length=self.propertyIdentifier_tag.lvt &convert=BACnetPropertyIdentifier($$.to_uint(BinPAC::ByteOrder::Network));
-  propertyArrayIndex_tag : BACnetTag if ( len > self.offset() );
-  propertyArrayIndex: bytes &length=self.propertyArrayIndex_tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network) if ( len > self.offset() );
+  propertyArrayIndex: BACnetContextMessage(BACnetType::UnsignedInteger, 2, self.propertyIdentifier_tag) if ( len > self.offset() );
 };
 
 type WriteProperty_Request = unit(len: uint16) {
   # context-specific tags 0 - 4
-   : BACnetTag;
-  objectIdentifier: BACnetObjectIdentifier;
-  propertyIdentifier_tag: BACnetTag;
+  first_tag: BACnetTag;
+  objectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 0, self.first_tag);
+  propertyIdentifier_tag: BACnetTag; # tag 1
   propertyIdentifier: bytes &length=self.propertyIdentifier_tag.lvt &convert=BACnetPropertyIdentifier($$.to_uint(BinPAC::ByteOrder::Network));
-  propertyArrayIndex_tag: BACnetTag; # tag 2
-  propertyArrayIndex: bytes &length=self.propertyArrayIndex_tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network) if ( self.propertyArrayIndex_tag.tag == 2 );
+  propertyArrayIndex: BACnetContextMessage(BACnetType::UnsignedInteger, 2, self.propertyIdentifier_tag);
+  propertyValue_tag: BACnetTag if ( self.propertyArrayIndex.tag.tag != 3 ); # check if previous tag was optional. This tag = 3
+  propertyValue: BACnetArray(3);
+  priority: BACnetContextMessage(BACnetType::UnsignedInteger, 4, self.first_tag) if ( len > self.offset() );
 };
 
 type BACnetUnconfirmedServiceChoice = enum {
@@ -818,7 +819,22 @@ type PDU_complexAck = unit(head_raw: bytes) {
   sequence_number: uint8 if ( self.head.segmented-message == 1 );
   proposed_window_size: uint8 if ( self.head.segmented-message == 1 );
   confirmed_service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$); 
-  # Following - variable part. Need standard to look up encoding.
+
+  switch ( self.confirmed_service_choice ) {
+    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK;
+    * -> : void; # FIXME: missing cases
+  };
+};
+
+type ReadProperty_ACK = unit {
+  # context-specific tags 0 - 3
+  first_tag: BACnetTag;
+  objectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 0, self.first_tag);
+  propertyIdentifier_tag: BACnetTag;
+  propertyIdentifier: bytes &length=self.propertyIdentifier_tag.lvt &convert=BACnetPropertyIdentifier($$.to_uint(BinPAC::ByteOrder::Network));
+  propertyArrayIndex: BACnetContextMessage(BACnetType::UnsignedInteger, 2, self.propertyIdentifier_tag);
+  propertyValue_tag: BACnetTag if ( self.propertyArrayIndex.tag.tag != 3 ); # check if previous tag was optional. This tag = 3
+  propertyValue: BACnetArray(3);
 };
 
 type PDU_error = unit {
@@ -898,7 +914,8 @@ type BACnetTag = unit {
   var class: ASN1Class;
 
   data : bitfield(8) {
-     lvt: 0..2;      class: 3;
+     lvt: 0..2;
+     class: 3;
      tag: 4..7;
   } &bitorder=BinPAC::BitOrder::LSB0;
 
@@ -922,13 +939,36 @@ type BACnetTag = unit {
   }
 };
 
-#type BACnetArray = unit {
-#  # start tag of the array.
-#  # FIXME: bail out if the tag is not context-specific
-#  begin: BACnetTag;
-#  # FIXME: bail out if self.begin.lvt != 6
-#  # FIXME: we need if for switches to be able to implement this.
+# This is a unit to make my live when parsing bacnet a little bit easier.
+# In many cases, we have a number of context-specific tags, of which a few are optional.
+# When a tag is optional, the next tag is only parsed when the optional tag was present, otherwhise
+# it basically is skipped. This unit is used for the tag _after_ an optional tag. 
+# If the tag number of the passed(previous) tag is the tag-number of this tag, it returns the old
+# tag again. Otherwhise it reads the tag from the wire.
+# type OptionalBACnetTag = unit(tag: BACnetTag, expect: uint8) {
+#  var tag: BACnetTag;
+#  
+#  tag_raw: BACnetTag if ( tag.tag != expect );
+#
+#  on %done {
+#    if ( tag != expect ) {
+#      self.tag = self.tag_raw;
+#    } else {
+#      self.tag = tag;
+#    }
+#  }
 #};
+
+type BACnetArray = unit(tag: uint8) {
+  # start tag of the array.
+  # FIXME: bail out if the tag is not context-specific
+  # FIXME: bail out if self.begin.lvt != 6
+  #begin: BACnetTag;
+  value: list<BACnetMessage> &until( ( $$.tag.class == ASN1Class::context-specific ) &&
+                                     ( $$.tag.lvt == 7 ) &&
+                                     ( $$.tag.tag == tag ) );
+  # FIXME: we need if for switches to be able to implement this.
+};
 
 type BACnetObjectType = enum { 
   alert-enrollment = 52,
@@ -1020,7 +1060,49 @@ type BACnetMessage = unit {
     # Fixme: Real, double. I don't think Binpac++ can read those from wire yet.
     BACnetType::Real -> : bytes &length = 4;
     BACnetType::Double -> : bytes &length = 8;
-  };
+  } if ( self.tag.class == ASN1Class::APPLICATION); 
+  # skip parsing if we do not have an application tag. Usually, this should only happen when we are parsing
+  # arrays. There the last tag will be context-specific and we use it to abort.
+};
+
+# This basically is a plain copy of the unit from above. Once I get default arguments, it will be easy to get
+# rid of this :)
+# tpe: type we expect
+# tag: tag number we expect. If this does not match, skip
+# prev_tag: the previous tag. If the tag number we expect matches the previous tag, take the previous tag.
+type BACnetContextMessage = unit(tpe: BACnetType, tag: uint8, prev_tag: BACnetTag) {
+  var tag: BACnetTag;
+
+  tag_new: BACnetTag if ( prev_tag.tag != tag ); # only if the old tag does not match what we want.
+
+  : void { # sorry, abusing void just works too well here :)
+    if ( prev_tag.tag != tag ) {
+      self.tag = self.tag_new;
+    } else {
+      self.tag = prev_tag;
+    }
+  }
+
+  var boolean: uint16;
+
+  switch ( tpe ) {
+    BACnetType::NULL -> : void;
+    BACnetType::BOOLEAN -> : void { self.boolean = self.tag.lvt; }
+    BACnetType::UnsignedInteger,
+    BACnetType::Enumerated -> unsigned: bytes &length=self.tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network);
+    BACnetType::Integer -> signed: bytes &length=self.tag.lvt &convert=$$.to_int(BinPAC::ByteOrder::Network);
+    BACnetType::OctetString -> octets: bytes &length=self.tag.lvt;
+    BACnetType::CharacterString -> characters: BACnetCharacterString(self.tag.lvt);
+    BACnetType::BitString -> bistring: BACnetBitString(self.tag.lvt);
+    BACnetType::Date -> date: BACnetDate;
+    BACnetType::Time -> btime: BACnetTime;
+    BACnetType::BACnetObjectIdentifier -> oid: BACnetObjectIdentifier;
+    
+    # Fixme: Real, double. I don't think Binpac++ can read those from wire yet.
+    BACnetType::Real -> : bytes &length = 4;
+    BACnetType::Double -> : bytes &length = 8;
+  } if ( self.tag.tag == tag );
+  # this check is in case we get optional tags. In this case we may not read the data because it probably will not fit.
 };
 
 type BACnetDate = unit {
