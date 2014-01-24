@@ -18,13 +18,21 @@ void CodeBuilder::visit(constant::Enum* e)
 {
     assert(e->type()->id());
 
-    auto module =  e->firstParent<Module>();
-    assert(module);
-
     auto expr =  e->firstParent<Expression>();
     assert(expr);
 
-    ID::component_list path = { module->id()->name(), expr->scope(), e->value()->name() };
+    ID::component_list path = { expr->scope(), e->value()->name() };
+
+    if ( expr->scope().find("::") == std::string::npos ) {
+        // TODO: This is a bit hackish to get the right result depending on
+        // whether the scope is already qualified with a module name or not.
+        // We'll eventually need to clean up how scopes/modules are
+        // associated with IDs/expressions.
+        auto module = e->firstParent<Module>();
+        assert(module);
+        path.push_front(module->id()->name());
+    }
+
     auto fq = std::make_shared<ID>(path, e->location());
     auto result = hilti::builder::id::create(cg()->hiltiID(fq));
     setResult(result);

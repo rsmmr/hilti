@@ -134,6 +134,7 @@ void IDResolver::visit(expression::ID* i)
 
     if ( id->id()->isScoped() )
         val->setScope(id->id()->scope());
+
 }
 
 void IDResolver::visit(type::Unknown* t)

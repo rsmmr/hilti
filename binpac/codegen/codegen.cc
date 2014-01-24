@@ -188,9 +188,9 @@ shared_ptr<hilti::ID> CodeGen::hiltiID(shared_ptr<ID> id, bool qualify)
 
     string name;
 
-    if ( ! uid->isScoped() || uid->scope() != mod->id()->name() ) {
+    if ( ! uid->isScoped() ) {
         if ( mod->id()->name() != module()->id()->name() )
-            name = util::fmt("%s::%s", mod->id()->name(), uid->pathAsString());
+            name = util::fmt("%s::%s", mod->id()->name(), uid->name());
         else
             name = uid->name();
     }
