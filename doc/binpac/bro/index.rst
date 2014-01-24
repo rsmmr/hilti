@@ -338,7 +338,17 @@ BinPAC++       Bro
 ``string``     ``string``
 ``time``       ``time``
 ``uint<*>``    ``count``
+``tuple<*>``   ``record`` [2]
+``list<*>``    ``vector``
+``set<*>``     ``set``
+``vector<*>``  ``vector``
 ===========    ==========
 
 [1] A corresponding Bro ``enum`` type is created automatically.
+
+[2] The record fields will by default be named ``f<n>`` with *n* being
+the zero-baed element index. However, if the tuple gets passed into a
+Bro event, the initially created record will be coered into the type
+the event expects and hence then use the corresponding field names
+instead.
 

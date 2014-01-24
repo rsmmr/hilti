@@ -1237,12 +1237,14 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 	auto dst = Builder()->addTmp("val", vtype);
 
 	auto mbuilder = ModuleBuilder();
-	auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
-	auto vectype = ast::checkedCast<type::Vector>(rtype->argType());
+	// auto rvtype = ast::checkedCast<type::Reference>(HiltiType(type));
+	// auto itype = ast::checkedCast<type::Vector>(rtype->argType());
+	auto rtype = ast::checkedCast<::hilti::type::Reference>(val->type());
+	auto itype = ::ast::type::checkedTrait<::hilti::type::trait::Iterable>(rtype->argType());
 
-	auto cur = mbuilder->addTmp("cur", vectype->iterType());
-	auto end = mbuilder->addTmp("end", vectype->iterType());
-	auto e = mbuilder->addTmp("e", vectype->elementType());
+	auto cur = mbuilder->addTmp("cur", itype->iterType());
+	auto end = mbuilder->addTmp("end", itype->iterType());
+	auto e = mbuilder->addTmp("e", itype->elementType());
 	auto is_end = mbuilder->addTmp("is_end", ::hilti::builder::boolean::type());
 
 	Builder()->addInstruction(dst,

@@ -2127,7 +2127,7 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
 			continue;
 
 		acc->btype = acc->pac2_func ? acc->pac2_func->function()->type()->result()->type() : nullptr;
-		acc->htype = acc->btype ? pimpl->pac2_context->hiltiType(acc->btype, &ev->minfo->dep_types) : nullptr;
+		acc->htype = acc->btype ? pimpl->pac2_context->hiltiType(acc->btype, &ev->minfo->dep_types) : nullptr; // QQQ
 		acc->hlt_func = DeclareHiltiExpressionAccessor(ev, acc->nr, acc->htype);
 		}
 

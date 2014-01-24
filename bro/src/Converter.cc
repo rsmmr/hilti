@@ -125,14 +125,14 @@ void TypeConverter::visit(::hilti::type::Enum* e)
 		return;
 		}
 
-        if ( ! etype->id() )
-                reporter::internal_error("TypeConverter::visit(Enum): type has not ID");
+	if ( ! etype->id() )
+		reporter::internal_error("TypeConverter::visit(Enum): type has not ID");
 
-        string module;
-        string name;
-        auto c = etype->id()->path();
+	string module;
+	string name;
+	auto c = etype->id()->path();
 
-        if ( c.size() == 1 )
+	if ( c.size() == 1 )
 		{
 		name = c.front();
 
@@ -213,6 +213,33 @@ void TypeConverter::visit(::hilti::type::Tuple* t)
 		}
 
 	auto result = new ::RecordType(tdecls);
+	setResult(result);
+	}
+
+void TypeConverter::visit(::hilti::type::List* t)
+	{
+	auto btype = ast::checkedCast<binpac::type::List>(arg1());
+	auto itype = Convert(t->argType(), btype->argType());
+	auto result = new ::VectorType(itype);
+	setResult(result);
+	}
+
+void TypeConverter::visit(::hilti::type::Vector* t)
+	{
+	auto btype = ast::checkedCast<binpac::type::Vector>(arg1());
+	auto itype = Convert(t->argType(), btype->argType());
+	auto result = new ::VectorType(itype);
+	setResult(result);
+	}
+
+void TypeConverter::visit(::hilti::type::Set* t)
+	{
+	auto btype = ast::checkedCast<binpac::type::Set>(arg1());
+	auto itype = Convert(t->argType(), btype->argType());
+
+	auto types = new ::TypeList();
+	types->Append(itype); // FIXME: No tuple indices yet.
+	auto result = new ::TableType(types, 0);
 	setResult(result);
 	}
 
@@ -348,7 +375,7 @@ void ValueConverter::visit(::hilti::type::Interval* i)
 	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 				  ::hilti::builder::id::create("LibBro::h2b_interval"), args);
 	setResult(true);
-    }
+	}
 
 void ValueConverter::visit(::hilti::type::Tuple* t)
 	{
@@ -367,6 +394,66 @@ void ValueConverter::visit(::hilti::type::Tuple* t)
 	auto hval = mbuilder->RuntimeHiltiToVal(val, btype);
 	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, hval);
 
+	setResult(true);
+	}
+
+void ValueConverter::visit(::hilti::type::List* t)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+	auto ltype = ast::checkedCast<binpac::type::List>(arg3());
+
+	BroType* btype = nullptr;
+
+	if ( _bro_type_hints.back() )
+		btype = _bro_type_hints.back()->AsVectorType();
+
+	else
+		btype = type_converter->Convert(t->sharedPtr<::hilti::Type>(), ltype);
+
+	auto result = mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, btype);
+
+	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, result);
+	setResult(true);
+	}
+
+void ValueConverter::visit(::hilti::type::Vector* t)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+	auto vtype = ast::checkedCast<binpac::type::Vector>(arg3());
+
+	BroType* btype = nullptr;
+
+	if ( _bro_type_hints.back() )
+		btype = _bro_type_hints.back()->AsVectorType();
+
+	else
+		btype = type_converter->Convert(t->sharedPtr<::hilti::Type>(), vtype);
+
+	auto result = mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, btype);
+
+	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, result);
+	setResult(true);
+	}
+
+void ValueConverter::visit(::hilti::type::Set* t)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+	auto stype = ast::checkedCast<binpac::type::Set>(arg3());
+
+	BroType* btype = nullptr;
+
+	if ( _bro_type_hints.back() )
+		btype = _bro_type_hints.back()->AsTableType();
+
+	else
+		btype = type_converter->Convert(t->sharedPtr<::hilti::Type>(), stype);
+
+	auto result = mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, btype);
+
+	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, result);
 	setResult(true);
 	}
 

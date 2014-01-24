@@ -59,6 +59,9 @@ protected:
 	void visit(::hilti::type::Interval* t) override;
 	void visit(::hilti::type::Tuple* t) override;
 	void visit(::hilti::type::Reference* b) override;
+	void visit(::hilti::type::List* b) override;
+	void visit(::hilti::type::Vector* b) override;
+	void visit(::hilti::type::Set* b) override;
 
 private:
 	string CacheIndex(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype);
@@ -119,6 +122,9 @@ private:
 	void visit(::hilti::type::Interval* i) override;
 	void visit(::hilti::type::Tuple* t) override;
 	void visit(::hilti::type::Reference* b) override;
+	void visit(::hilti::type::List* b) override;
+	void visit(::hilti::type::Vector* b) override;
+	void visit(::hilti::type::Set* b) override;
 
 	compiler::ModuleBuilder* mbuilder;
 	TypeConverter* type_converter;
