@@ -1,0 +1,20 @@
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+global l1: list<string> = list("a", "b", "c");
+
+print [2 * i for i in l1];
+
+export type Test = unit {
+  var l1: list<integer> = list(1,2,3);
+  var l2: list<integer>;
+
+  on %done {
+    self.l2 = [ i + 1 for i in self.l1];
+    print self.l2;
+  }
+};
