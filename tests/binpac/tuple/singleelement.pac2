@@ -1,0 +1,20 @@
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: tuple assignment of single integer value is impossible. Kind of mean from a parsing point of view, I know...
+
+module Test;
+
+global t1 = ("foo");
+global t2: tuple<int64>;
+global t3: tuple<int64>;
+global t4 = (1);
+
+t2 = (1);
+t3 = (2);
+
+print t1;
+print t2 == t4;
+print t3 == t4;
+

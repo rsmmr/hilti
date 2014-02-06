@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: Tuples and Enums do not work together
+
+module Test;
+
+type TestEnum = enum {
+  A, B, C, D
+};
+
+global t1 = (TestEnum::A, 2, 3);
+global t2: tuple<TestEnum, uint64, uint64);
+global t3: tuple<TestEnum, uint64, uint64);
+
+t2 = (TestEnum::A, 2, 3); 
+t3 = (TestEnum::C, 2, 3); 
+
+
+print t1;
+print t1 == t2;
+print t1 == t2;
+
+print t1[0], t2[0], t3[0];
