@@ -384,6 +384,228 @@ type BACnetPropertyIdentifier = enum {
 # others subject to the procedures and constraints described in Clause 23.
 };
 
+type BACnetEventType = enum {
+  change-of-bitstring = 0,
+  change-of-state = 1,
+  change-of-value = 2,
+  command-failure = 3,
+  floating-limit = 4,
+  out-of-range = 5,
+  # complex-event-type = 6,
+  # context tag 7 is deprecated
+  change-of-life-safety = 8,
+  extended = 9,
+  buffer-ready = 10,
+  unsigned-range = 11,
+  # enumeration value 12 is reserved for future addenda
+  access-event = 13,
+  double-out-of-range = 14,
+  signed-out-of-range = 15,
+  unsigned-out-of-range = 16,
+  change-of-characterstring = 17,
+  change-of-status-flags = 18,
+  change-of-reliability = 19,  
+  none = 20
+## Enumerated values 0-63 are reserved for definition by ASHRAE. Enumerated values
+## 64-65535 may be used by others subject to the procedures and constraints described
+## in Clause 23. It is expected that these enumerated values will correspond to the use of the
+## complex-event-type CHOICE [6] of the BACnetNotificationParameters production.
+};
+
+type BACnetNotifyType = enum {
+  alarm = 0,
+  event = 1,
+  ack-notification = 2
+};
+
+type BACnetEventState = enum {
+  normal = 0,
+  fault = 1,
+  offnormal = 2,
+  high-limit = 3,
+  low-limit = 4,
+  life-safety-alarm = 5
+## Enumerated values 0-63 are reserved for definition by ASHRAE. Enumerated values
+## 64-65535 may be used by others subject to the procedures and constraints described
+## in Clause 23. The last enumeration used in this version is 5.
+};
+
+type BACnetLifeSafetyMode = enum {
+  off = 0,
+  bacnet-on = 1, # original: on
+  test = 2,
+  manned = 3,
+  unmanned = 4,
+  armed = 5,
+  disarmed = 6,
+  prearmed = 7,
+  slow = 8,
+  fast = 9,
+  disconnected = 10,
+  enabled = 11,
+  disabled = 12,
+  automatic-release-disabled = 13,
+  default = 14
+## Enumerated values 0-255 are reserved for definition by ASHRAE. Enumerated values
+## 256-65535 may be used by others subject to procedures and constraints described in Clause 23.
+};
+
+type BACnetLifeSafetyOperation = enum {
+  none = 0,
+  silence = 1,
+  silence-audible = 2,
+  silence-visual = 3,
+  reset = 4,
+  reset-alarm = 5,
+  reset-fault = 6,
+  unsilence = 7,
+  unsilence-audible = 8,
+  unsilence-visual = 9
+## Enumerated values 0-63 are reserved for definition by ASHRAE. Enumerated values
+## 64-65535 may be used by others subject to procedures and constraints described in
+## Clause 23.
+};
+
+type BACnetLifeSafetyState = enum {
+  quiet = 0,
+  pre-alarm = 1,
+  alarm = 2,
+  fault = 3,
+  fault-pre-alarm = 4,
+  fault-alarm = 5,
+  not-ready = 6,
+  active = 7,
+  tamper = 8,
+  test-alarm = 9,
+  test-active = 10,
+  test-fault = 11,
+  test-fault-alarm = 12,
+  holdup = 13,
+  duress = 14,
+  tamper-alarm = 15,
+  abnormal = 16,
+  emergency-power = 17,
+  delayed = 18,
+  blocked = 19,
+  local-alarm = 20,
+  general-alarm = 21,
+  supervisory = 22,
+  test-supervisory = 23
+## Enumerated values 0-255 are reserved for definition by ASHRAE. Enumerated values
+## 256-65535 may be used by others subject to procedures and constraints described in Clause 23.
+};
+
+type BACnetAccessEvent = enum {
+  none = 0,
+  granted = 1,
+  muster = 2,
+  passback-detected = 3,
+  duress = 4,
+  trace = 5,
+  lockout-max-attempts = 6,
+  lockout-other = 7,
+  lockout-relinquished = 8,
+  locked-by-higher-priority = 9,
+  out-of-service = 10,
+  out-of-service-relinquished = 11,
+  accompaniment-by = 12,
+  authentication-factor-read = 13,
+  authorization-delayed = 14,
+  verification-required = 15,
+  no-entry-after-grant = 16,
+## Enumerated values 128-511 are used for events which indicate that access has been denied.
+  denied-deny-all = 128,
+  denied-unknown-credential = 129,
+  denied-authentication-unavailable = 130,
+  denied-authentication-factor-timeout = 131,
+  denied-incorrect-authentication-factor = 132,
+  denied-zone-no-access-rights = 133,
+  denied-point-no-access-rights = 134,
+  denied-no-access-rights = 135,
+  denied-out-of-time-range = 136,
+  denied-threat-level = 137,
+  denied-passback = 138,
+  denied-unexpected-location-usage = 139,
+  denied-max-attempts = 140,
+  denied-lower-occupancy-limit = 141,
+  denied-upper-occupancy-limit = 142,
+  denied-authentication-factor-lost = 143,
+  denied-authentication-factor-stolen = 144,
+  denied-authentication-factor-damaged = 145,
+  denied-authentication-factor-destroyed = 146,
+  denied-authentication-factor-disabled = 147,
+  denied-authentication-factor-error = 148,
+  denied-credential-unassigned = 149,
+  denied-credential-not-provisioned = 150,
+  denied-credential-not-yet-active = 151,
+  denied-credential-expired = 152,
+  denied-credential-manual-disable = 153,
+  denied-credential-lockout = 154,
+  denied-credential-max-days = 155,
+  denied-credential-max-uses = 156,
+  denied-credential-inactivity = 157,
+  denied-credential-disabled = 158,
+  denied-no-accompaniment = 159,
+  denied-incorrect-accompaniment = 160,
+  denied-lockout = 161,
+  denied-verification-failed = 162,
+  denied-verification-timeout = 163,
+  denied-other = 164
+## Enumerated values 0-511 are reserved for definition by ASHRAE. Enumerated values
+## 512-65535 may be used by others subject to the procedures and constraints described
+## in Clause 23.
+};
+
+type BACnetAuthenticationFactorType = enum {
+  undefined = 0,
+  error = 1,
+  custom = 2,
+  simple-number16 = 3,
+  simple-number32 = 4,
+  simple-number56 = 5,
+  simple-alpha-numeric = 6,
+  aba-track2 = 7,
+  wiegand26 = 8,
+  wiegand37 = 9,
+  wiegand37-facility = 10,
+  facility16-card32 = 11,
+  facility32-card32 = 12,
+  fasc-n = 13,
+  fasc-n-bcd = 14,
+  fasc-n-large = 15,
+  fasc-n-large-bcd = 16,
+  gsa75 = 17,
+  chuid = 18,
+  chuid-full = 19,
+  guid = 20,
+  cbeff-A = 21,
+  cbeff-B = 22,
+  cbeff-C = 23,
+  user-password = 24
+};
+
+type BACnetReliability = enum {
+  no-fault-detected = 0,
+  no-sensor = 1,
+  over-range = 2,
+  under-range = 3,
+  open-loop = 4,
+  shorted-loop = 5,
+  no-output = 6,
+  unreliable-other = 7,
+  process-error = 8,
+  multi-state-fault = 9,
+  configuration-error = 10,
+## enumeration value 11 is reserved for a future addendum
+  communication-failure = 12,
+  member-fault = 13,
+  monitored-object-fault = 14,
+  tripped = 15
+## Enumerated values 0-63 are reserved for definition by ASHRAE. Enumerated values
+## 64-65535 may be used by others subject to the procedures and constraints described
+## in Clause 23.
+};
+
 type BVLC_function = enum {
   # message distribution
   Original-Unicast-NPDU = 0x0A,
@@ -428,7 +650,7 @@ export type Message = unit {
    # BVLC_function::Secure-BVLL Not yet supported, probably not used
   };
 
-  on %done { print self; }
+  # on %done { print self; }
 };
 
 type BVLC_result = enum {
@@ -455,8 +677,8 @@ type BDT_entry = unit {
 };
 
 # convert a BDT entry into a Bro tuple
-tuple<addr, uint64, uint64> bro_bdr_entry(entry: BDT_entry) {
-  return (entry.address, cast<uint64>(entry.address_port), cast<uint64>(entry.mask));
+tuple<addr, uint64, uint64> bro_bdt_entry(entry: BDT_entry) {
+  return ( entry.address, cast<uint64>(entry.address_port), cast<uint64>(entry.mask) );
 }
 
 # Foreign Device Table, also held by a BBMD. Foreign devices are
@@ -469,11 +691,20 @@ type FDT_entry = unit {
   time_remaining: uint16;
 };
 
+# convert a FDT entry into a Bro tuple
+tuple<addr, uint64, uint64, uint64> bro_fdt_entry(entry: FDT_entry) {
+  return ( entry.address, cast<uint64>(entry.address_port), cast<uint64>(entry.ttl), cast<uint64>(entry.time_remaining) );
+}
+
 type BBMD = unit (func: BVLC_function, len: uint16) {
+   # var bdts_brolist: list< tuple<addr, uint64, uint64> >;
+
   switch ( func ) {
    BVLC_function::BVLC-Result -> bvlc_result: uint16 &convert=BVLC_result($$);
    BVLC_function::Read-BDT-ACK,
-   BVLC_function::Write-BDT -> bdts: list<BDT_entry> &length=len/10;
+   BVLC_function::Write-BDT -> bdts: list<BDT_entry> &length=len/10; # {
+#                                 self.bdts_brolist = [ i for i in self.bdts ];
+#                               }
    BVLC_function::Read-FDT,
    BVLC_function::Read-BDT -> : void;
    BVLC_function::Register-FD -> ttl: uint16;
@@ -561,6 +792,11 @@ type NPDU = unit(len: uint16) {
   apdu: APDU( len - self.head_length ) if ( self.control.nlmessage == 0 );
 };
 
+# convert data present in all NPDUs into a NPDU_info record
+#tuple<NPDU_priority, uint64, bytes, uint64, bytes, uint64, NPDU_type> bro_npdu_info(npdu: NPDU) {
+#  return ( npdu.priority, cast<uint64>(npdu.dnet), npdu.dadr, cast<uint64>(npdu.snet), npdu.sadr, cast<uint64>(npdu.hop_count), npdu.message_type );
+#};
+
 type NPDU_Reject_reason = enum {
   Other = 0,
   No_route = 1,
@@ -570,7 +806,6 @@ type NPDU_Reject_reason = enum {
   Security_error = 5,
   Addressing_error = 6
 };
-
 
 type NPDU_message = unit(len: uint16, t: NPDU_type) {
   # len only is remaining length
@@ -636,7 +871,7 @@ type APDU = unit(len: uint16) {
     PDU_type::ConfirmedRequest -> confirmed_request: PDU_confirmedRequest(self.head, len);
     PDU_type::Unconfirmed-Request -> unconfirmed_request: PDU_unconfirmedRequest(len);
     PDU_type::SimpleAck -> simple_ack: PDU_simpleACK;
-    PDU_type::ComplexAck -> complex_ack: PDU_complexAck(self.head);
+    PDU_type::ComplexAck -> complex_ack: PDU_complexAck(self.head, len);
     PDU_type::Error -> error: PDU_error;
     PDU_type::Reject -> reject: PDU_reject;
     PDU_type::Abort -> abort: PDU_abort(self.head);
@@ -703,10 +938,124 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
   confirmed_service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$);
 
   switch ( self.confirmed_service_choice ) {
+    BACnetConfirmedServiceChoice::confirmedEventNotification -> confirmedEventNotification: ConfirmedEventNotification_Request( len - self.len );
     BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len );
     BACnetConfirmedServiceChoice::writeProperty -> writeProperty: WriteProperty_Request( len - self.len );
-    * -> : void;
-  };
+    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_Request;
+    BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_Request;
+    BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_Request( len - self.len );
+    BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_Request( len - self.len );
+    * -> : void { print "unhandled confirmedrequest", self.confirmed_service_choice; }
+  } if ( self.head1.more-follows == 0 && self.head1.segmented-message == 0 );
+};
+
+type ReadRange_Request = unit(len: uint16) {
+  # context specific tags 0-6, last few optional choice
+  first_tag: BACnetTag;
+  objectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 0, self.first_tag);
+  var propertyIdentifier: BACnetPropertyIdentifier;
+  propertyIdentifier_raw: BACnetContextMessage(BACnetType::Enumerated, 1, self.objectIdentifier.tag) {
+    self.propertyIdentifier = BACnetPropertyIdentifier(self.propertyIdentifier_raw.unsigned);
+  }
+  propertyArrayIndex: BACnetContextMessage(BACnetType::UnsignedInteger, 2, self.propertyIdentifier_raw.tag);
+  # Range
+  range: BACnetTag if ( len > self.offset() );
+  ## byPosition - 3
+  ## 4 and 5 are deprecated
+  ## bySequenceNumber - 6
+  ## byTime - 7
+  
+  # types vary by range choice.
+  reference: BACnetMessage if ( len > self.offset() );
+  count: BACnetMessage if ( len > self.offset() ); # integer16 optional
+};
+
+type ConfirmedPrivateTransfer_Request = unit(len: uint16) {
+  # context specific tags 0-2, last optional
+  first_tag: BACnetTag;
+  vendorID: BACnetContextMessage(BACnetType::UnsignedInteger, 0, self.first_tag);
+  serviceNumber: BACnetContextMessage(BACnetType::UnsignedInteger, 1, self.vendorID.tag);
+  serviceParameters: BACnetArray if ( len > self.offset() ); # ABSTRACT-SYNTAX.&Type OPTIONAL
+};
+
+type ConfirmedEventNotification_Request = unit(len: uint16) {
+  # context-specific tags 0 - 12
+  first_tag: BACnetTag;
+  processIdentifier: BACnetContextMessage(BACnetType::UnsignedInteger, 0, self.first_tag);
+  initiatingDeviceIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 1, self.processIdentifier.tag);
+  eventObjectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 2, self.initiatingDeviceIdentifier.tag);
+  timeStamp_tag: BACnetTag; # wrapped timestamp
+  timeStamp: BACnetTimeStamp;
+  : BACnetTag if ( self.timeStamp_tag.lvt == 6 ); # end tag, has to have tag == 3
+  notificationClass: BACnetContextMessage(BACnetType::UnsignedInteger, 4, self.timeStamp_tag);
+  priority: BACnetContextMessage(BACnetType::UnsignedInteger, 5, self.notificationClass.tag);
+  var eventType: BACnetEventType;
+  eventType_raw: BACnetContextMessage(BACnetType::Enumerated, 6, self.priority.tag) { # BACnetEventType
+    self.eventType = BACnetEventType(self.eventType_raw.unsigned);
+  }
+  messageText: BACnetContextMessage(BACnetType::CharacterString, 7, self.eventType_raw.tag); # optional
+  var notifyType: BACnetNotifyType;
+  notifyType_raw: BACnetContextMessage(BACnetType::Enumerated, 8, self.messageText.tag) { # BACnetNotifyType,
+    self.notifyType = BACnetNotifyType(self.notifyType_raw.unsigned);
+  }
+  ackRequired: BACnetContextMessage(BACnetType::BOOLEAN, 9, self.notifyType_raw.tag);
+  var fromState: BACnetEventState;
+  fromState_raw: BACnetContextMessage(BACnetType::Enumerated, 10, self.ackRequired.tag) { # BACnetEventState, optional
+    if ( self.fromState_raw.tag.tag == 10 ) {
+      self.fromState = BACnetEventState(self.fromState_raw.unsigned);
+    }
+  }
+  toState_raw: BACnetContextMessage(BACnetType::Enumerated, 11, self.fromState_raw.tag); # BACnetEventState, not optional
+#  eventValues: ... if ( len > self.offset() ); # BACnetNotificationParameters, optional # Fixme: we do not handle the BACnetNotificationParameters yet
+#
+};
+#
+# Enums to handle bacnetnotificationparameters:
+# 
+# BACnetPropertyStates,
+# BACnetLifeSafetyState,
+# BACnetLifeSafetyMode,
+# BACnetLifeSafetyOperation
+# BACnetDeviceObjectPropertyValue
+# BACnetDeviceObjectPropertyReference,
+# BACnetAccessEvent,
+# BACnetStatusFlags,
+# BACnetDeviceObjectReference,
+# BACnetAuthenticationFactor
+# BACnetReliability,
+
+type AtomicReadFile_Request = unit {
+  fileIdentifier: BACnetMessage; # oid
+  # choice. Opening tag
+  open_tag: BACnetTag;
+
+  # streamAccess
+    fileStartPosition: BACnetMessage if ( self.open_tag.tag == 0 ); # integer
+    requestedOctetCount: BACnetMessage if ( self.open_tag.tag == 0 ); # unsigned
+  
+  # recordAccess
+    fileStartRecord: BACnetMessage if ( self.open_tag.tag == 1 ); # integer
+    requestedRecordCount: BACnetMessage if ( self.open_tag.tag == 1 ); # unsigned
+  # close tag
+   : BACnetTag;
+};
+
+type AtomicWriteFile_Request = unit {
+  fileIdentifier: BACnetMessage; # oid
+  # choice. Opening tag
+  open_tag: BACnetTag;
+
+  # streamAccess
+  	fileStartPosition: BACnetMessage if ( self.open_tag.tag == 0 ); # integer
+	FileData: BACnetMessage if ( self.open_tag.tag == 0 ); # octet string
+  
+  # recordAccess
+  	fileStartRecord: BACnetMessage if ( self.open_tag.tag == 1 ); # integer
+	recordCount: BACnetMessage if ( self.open_tag.tag == 1 ); # unsigned
+	# sequence of octet string
+	fileRecordData: BACnetArray if ( self.open_tag.tag == 1 );
+  # close Tag
+   : BACnetTag;
 };
 
 type ReadProperty_Request = unit(len: uint16) {
@@ -726,7 +1075,7 @@ type WriteProperty_Request = unit(len: uint16) {
   propertyIdentifier: bytes &length=self.propertyIdentifier_tag.lvt &convert=BACnetPropertyIdentifier($$.to_uint(BinPAC::ByteOrder::Network));
   propertyArrayIndex: BACnetContextMessage(BACnetType::UnsignedInteger, 2, self.propertyIdentifier_tag);
   propertyValue_tag: BACnetTag if ( self.propertyArrayIndex.tag.tag != 3 ); # check if previous tag was optional. This tag = 3
-  propertyValue: BACnetArray(3);
+  propertyValue: BACnetArray_Partial(3);
   priority: BACnetContextMessage(BACnetType::UnsignedInteger, 4, self.first_tag) if ( len > self.offset() );
 };
 
@@ -746,45 +1095,59 @@ type BACnetUnconfirmedServiceChoice = enum {
 
 type PDU_unconfirmedRequest = unit(len: uint16) {
   service_choice: uint8 &convert=BACnetUnconfirmedServiceChoice($$);
-  # Following - variable part. Need standard to look up encoding.
 
   switch ( self.service_choice ) {
-    BACnetUnconfirmedServiceChoice::i-Am -> i_am: PDU_i_am;    
-#    BACnetUnconfirmedServiceChoice::unconfirmedCOVNotification -> unconfirmedCOVNotification: PDU_UnconfirmedCOVNotification(len - 2);    
+    BACnetUnconfirmedServiceChoice::i-Am -> i_am: I_Am_Request;
+    BACnetUnconfirmedServiceChoice::unconfirmedCOVNotification -> unconfirmedCOVNotification: UnconfirmedCOVNotification_Request(len - 2);    
 #    BACnetUnconfirmedServiceChoice::unconfirmedEventNotification -> unconfirmedEventNotification: PDU_UnconfirmedEventNotification(len - 2);    
-    BACnetUnconfirmedServiceChoice::who-Is -> who_is: PDU_who_is(len - 2);
-    * -> : void;
+    BACnetUnconfirmedServiceChoice::unconfirmedPrivateTransfer -> unconfirmedPrivateTransfer: UnconfirmedPrivateTransfer_Request(len - 2);    
+    BACnetUnconfirmedServiceChoice::who-Is -> who_is: Who_Is_Request(len - 2);
+    BACnetUnconfirmedServiceChoice::who-Has -> who_has: Who_Has_Request(len - 2);
+    * -> : void { print "unhandled unconfirmedconfirmedrequest", self.service_choice; }
   };
 };
 
-type PDU_who_is = unit(len: uint16) {
+type Who_Is_Request = unit(len: uint16) {
   tag: BACnetTag if ( len > 0 ); # context specific - has to be tag 0
   deviceInstanceRangeLowLimit: uint16 if ( len > 0 );
   tag2: BACnetTag if ( len > 0 ); # context specific - has to be tag 1
   deviceInstanceRangeHighLimit: uint16 if ( len > 0);
 };
 
-type PDU_i_am = unit {
+type Who_Has_Request = unit(len: uint16) {
+  # context specific tags 0 - 3
+  first_tag: BACnetTag;
+  deviceInstanceRangeLowLimit: BACnetContextMessage(BACnetType::UnsignedInteger, 0, self.first_tag);
+  deviceInstanceRangeHighLimit: BACnetContextMessage(BACnetType::UnsignedInteger, 1, self.deviceInstanceRangeLowLimit.tag);
+  objectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 2, self.deviceInstanceRangeHighLimit.tag);
+  objectName: BACnetContextMessage(BACnetType::CharacterString, 3, self.objectIdentifier.tag);
+};
+
+type I_Am_Request = unit {
   iAmDeviceIdentifier: BACnetMessage; # oid 
   maxAPDULengthAccepted: BACnetMessage; # unsigned 
   segmentationSupported: BACnetMessage; # BACnetSegmentation
   vendorID: BACnetMessage; # unsigned16
 };
 
-#type PDU_UnconfirmedCOVNotification = unit(len: uint16) {
-#  # context specific tags 0-4.
-#  : BACnetTag;
-#  subscriberProcessIdentifier: uint32;
-#  : BACnetTag;
-#  initiatingDeviceIdentifier: BACnetObjectIdentifier;
-#  : BACnetTag;
-#  monitoredObjectIdentifier: BACnetObjectIdentifier;
-#  timeRemaining_tag : BACnetTag;
-#  timeRemaining: bytes &length=timeRemaining_tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network); 
-#  : BACnetTag;
-#  # FIXME! Sequence of BACnetPropertyValue!
-#};
-#
+type UnconfirmedPrivateTransfer_Request = unit(len: uint16) {
+  # context specific tags 0-2, last optional
+  first_tag: BACnetTag;
+  vendorID: BACnetContextMessage(BACnetType::UnsignedInteger, 0, self.first_tag);
+  serviceNumber: BACnetContextMessage(BACnetType::UnsignedInteger, 1, self.vendorID.tag);
+  serviceParameters: BACnetArray if ( len > self.offset() ); # ABSTRACT-SYNTAX.&Type OPTIONAL
+};
+
+type UnconfirmedCOVNotification_Request = unit(len: uint16) {
+  # context specific tags 0-4.
+  first_tag: BACnetTag;
+  subscriberProcessIdentifier: BACnetContextMessage(BACnetType::UnsignedInteger, 0, self.first_tag);
+  initiatingDeviceIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 1, self.subscriberProcessIdentifier.tag);
+  monitoredObjectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 2, self.initiatingDeviceIdentifier.tag);
+  timeRemaining: BACnetContextMessage(BACnetType::UnsignedInteger, 3, self.monitoredObjectIdentifier.tag);
+  listOfValues: BACnetArray; # Sequence of BACnetPropertyValue
+};
+
 #type PDU_UnconfirmedEventNotification = unit(len: uint16) {
 #  : BACnetTag;
 #  processIdentifier : uint32;
@@ -809,21 +1172,84 @@ type PDU_simpleACK = unit {
   service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$);
 };
 
-type PDU_complexAck = unit(head_raw: bytes) {
+type PDU_complexAck = unit(head_raw: bytes, len: uint16) {
+  var len: uint16 = 3;
+
   head : bitfield(8) {
     more-follows: 2;
     segmented-message: 3;
     tpe: 4..7;
-  } &parse(head_raw);
+  } &parse(head_raw) {
+    if ( self.head.segmented-message == 1 ) {
+      self.len = self.len + 2;
+    }
+  }
   invokeID: uint8;
   sequence_number: uint8 if ( self.head.segmented-message == 1 );
   proposed_window_size: uint8 if ( self.head.segmented-message == 1 );
   confirmed_service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$); 
 
+  # Fixme: segmentation handling
+
   switch ( self.confirmed_service_choice ) {
     BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK;
-    * -> : void; # FIXME: missing cases
-  };
+    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_ACK;
+    BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_ACK;
+    BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_ACK( len - self.len );
+    BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_ACK( len - self.len );
+    * -> : void { print "unhandled complexAck", self.confirmed_service_choice; } # Fixme: missing cases
+  } if ( self.head.more-follows == 0 && self.head.segmented-message == 0 ); # only parse message if we are in last chunk/single-chunk
+};
+
+type ReadRange_ACK = unit(len: uint16) {
+  # context specific tags 0-6, last optional
+  first_tag: BACnetTag;
+  objectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 0, self.first_tag);
+  var propertyIdentifier: BACnetPropertyIdentifier;
+  propertyIdentifier_raw: BACnetContextMessage(BACnetType::Enumerated, 1, self.objectIdentifier.tag) {
+    self.propertyIdentifier = BACnetPropertyIdentifier(self.propertyIdentifier_raw.unsigned);
+  }
+  propertyArrayIndex: BACnetContextMessage(BACnetType::UnsignedInteger, 2, self.propertyIdentifier_raw.tag);
+  #var resultFlags: BACnetResultFlags;
+  resultFlags: BACnetContextMessage(BACnetType::BitString, 3, self.propertyArrayIndex.tag); # Fixme: unparsed (bitstring) {
+  #  self.resultFlags = BACnetResultFlags(self.resultFlags_raw.unsigned);
+  #}
+  itemCount: BACnetContextMessage(BACnetType::UnsignedInteger, 4, self.resultFlags.tag);
+  itemData: BACnetArray;
+  test: uint8;
+  firstSequenceNumber: BACnetContextMessage(BACnetType::UnsignedInteger, 6, self.itemData.begin) if ( len > self.offset() );
+};
+
+type ConfirmedPrivateTransfer_ACK = unit(len: uint16) {
+  # context specific tags 0-2, last optional
+  first_tag: BACnetTag;
+  vendorID: BACnetContextMessage(BACnetType::UnsignedInteger, 0, self.first_tag);
+  serviceNumber: BACnetContextMessage(BACnetType::UnsignedInteger, 1, self.vendorID.tag);
+  resultBlock: BACnetArray if ( len > self.offset() ); # ABSTRACT-SYNTAX.&Type OPTIONAL
+};
+
+type AtomicReadFile_ACK = unit {
+  endOfFile: BACnetMessage; # boolean
+  # choice. Opening tag
+  open_tag: BACnetTag;
+
+  # streamAccess
+    fileStartPosition: BACnetMessage if ( self.open_tag.tag == 0 ); # integer
+    fileData: BACnetMessage if ( self.open_tag.tag == 0 ); # octet String
+  
+  # recordAccess
+    fileStartRecord: BACnetMessage if ( self.open_tag.tag == 1 ); # integer
+    fileRecordCount: BACnetMessage if ( self.open_tag.tag == 1 ); # unsigned
+    # sequence of octet string
+    fileRecordData: BACnetArray if ( self.open_tag.tag == 1 );	
+  # close tag
+   : BACnetTag;
+};
+
+type AtomicWriteFile_ACK = unit {
+  first_tag: BACnetTag;
+  fileStartPosition: BACnetContextMessage(BACnetType::Integer, 0, self.first_tag);
+  FileStartRecord: BACnetContextMessage(BACnetType::Integer, 0, self.fileStartPosition.tag);
 };
 
 type ReadProperty_ACK = unit {
@@ -834,7 +1260,7 @@ type ReadProperty_ACK = unit {
   propertyIdentifier: bytes &length=self.propertyIdentifier_tag.lvt &convert=BACnetPropertyIdentifier($$.to_uint(BinPAC::ByteOrder::Network));
   propertyArrayIndex: BACnetContextMessage(BACnetType::UnsignedInteger, 2, self.propertyIdentifier_tag);
   propertyValue_tag: BACnetTag if ( self.propertyArrayIndex.tag.tag != 3 ); # check if previous tag was optional. This tag = 3
-  propertyValue: BACnetArray(3);
+  propertyValue: BACnetArray_Partial(3);
 };
 
 type PDU_error = unit {
@@ -959,15 +1385,24 @@ type BACnetTag = unit {
 #  }
 #};
 
-type BACnetArray = unit(tag: uint8) {
+type BACnetArray_Partial = unit(tag: uint8) { # BACnetArray without the beginning tag (we alrady read that)
   # start tag of the array.
-  # FIXME: bail out if the tag is not context-specific
-  # FIXME: bail out if self.begin.lvt != 6
+  # Fixme: bail out if the tag is not context-specific
+  # Fixme: bail out if self.begin.lvt != 6
   #begin: BACnetTag;
   value: list<BACnetMessage> &until( ( $$.tag.class == ASN1Class::context-specific ) &&
                                      ( $$.tag.lvt == 7 ) &&
                                      ( $$.tag.tag == tag ) );
-  # FIXME: we need if for switches to be able to implement this.
+};
+
+type BACnetArray = unit { #
+  # start tag of the array.
+  # Fixme: bail out if the tag is not context-specific
+  # Fixme: bail out if self.begin.lvt != 6
+  begin: BACnetTag;
+  value: list<BACnetMessage> &until( ( $$.tag.class == ASN1Class::context-specific ) &&
+                                     ( $$.tag.lvt == 7 ) &&
+                                     ( $$.tag.tag == self.begin.tag ) );
 };
 
 type BACnetObjectType = enum { 
@@ -1052,7 +1487,7 @@ type BACnetMessage = unit {
     BACnetType::Integer -> signed: bytes &length=self.tag.lvt &convert=$$.to_int(BinPAC::ByteOrder::Network);
     BACnetType::OctetString -> octets: bytes &length=self.tag.lvt;
     BACnetType::CharacterString -> characters: BACnetCharacterString(self.tag.lvt);
-    BACnetType::BitString -> bistring: BACnetBitString(self.tag.lvt);
+    BACnetType::BitString -> bitstring: BACnetBitString(self.tag.lvt);
     BACnetType::Date -> date: BACnetDate;
     BACnetType::Time -> btime: BACnetTime;
     BACnetType::BACnetObjectIdentifier -> oid: BACnetObjectIdentifier;
@@ -1070,13 +1505,14 @@ type BACnetMessage = unit {
 # tpe: type we expect
 # tag: tag number we expect. If this does not match, skip
 # prev_tag: the previous tag. If the tag number we expect matches the previous tag, take the previous tag.
+# Assume correct ordering of tags. I think we always have that in BACnet...
 type BACnetContextMessage = unit(tpe: BACnetType, tag: uint8, prev_tag: BACnetTag) {
   var tag: BACnetTag;
 
-  tag_new: BACnetTag if ( prev_tag.tag != tag ); # only if the old tag does not match what we want.
+  tag_new: BACnetTag if ( prev_tag.tag < tag ); # only if the old tag does not match what we want.
 
   : void { # sorry, abusing void just works too well here :)
-    if ( prev_tag.tag != tag ) {
+    if ( prev_tag.tag < tag ) {
       self.tag = self.tag_new;
     } else {
       self.tag = prev_tag;
@@ -1103,6 +1539,22 @@ type BACnetContextMessage = unit(tpe: BACnetType, tag: uint8, prev_tag: BACnetTa
     BACnetType::Double -> : bytes &length = 8;
   } if ( self.tag.tag == tag );
   # this check is in case we get optional tags. In this case we may not read the data because it probably will not fit.
+};
+
+type BACnetDateTime = unit {
+  date: BACnetMessage; 
+  btime: BACnetMessage;
+};
+
+type BACnetTimeStamp = unit {
+  # choice
+  tag: BACnetTag;
+
+  btime: BACnetTime if ( self.tag.tag == 0 );
+  sequenceNumber: bytes &length=self.tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network) if ( self.tag.tag == 1);
+  dateTime: BACnetDateTime if ( self.tag.tag == 2 );
+
+  : BACnetTag if ( self.tag.lvt == 6 );
 };
 
 type BACnetDate = unit {
@@ -1148,7 +1600,7 @@ type BACnetCharacterString = unit(len: uint16) {
     BACnetCharacterStringType::UTF8 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF8); 
     BACnetCharacterStringType::UCS2 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF16BE); 
     BACnetCharacterStringType::UCS4 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF32BE); 
-    * -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::ASCII); # FIXME! DBCS, JOSX0208, ISO885901
+    * -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::ASCII); # Fixme: DBCS, JOSX0208, ISO885901
   };
   
 };
