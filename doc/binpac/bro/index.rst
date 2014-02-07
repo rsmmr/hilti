@@ -326,9 +326,9 @@ Type Mapping
 The following table summarizes how BinPAC++ types get mapped into Bro
 types. Types not listed are not yet implemented.
 
-===========    ==========
+=============  ==============
 BinPAC++       Bro
-===========    ==========
+=============  ==============
 ``addr``       ``addr``
 ``bool``       ``bool``
 ``bytes``      ``string``
@@ -342,7 +342,7 @@ BinPAC++       Bro
 ``list<*>``    ``vector``
 ``set<*>``     ``set``
 ``vector<*>``  ``vector``
-===========    ==========
+=============  ==============
 
 [1] A corresponding Bro ``enum`` type is created automatically.
 
