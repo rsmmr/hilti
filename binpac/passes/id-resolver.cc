@@ -165,9 +165,12 @@ void IDResolver::visit(expression::ID* i)
 
 void IDResolver::visit(expression::ListComprehension* c)
 {
-    auto iterable = ast::type::trait::asTrait<type::trait::Iterable>(c->input()->type().get());
-    auto var = std::make_shared<variable::Local>(c->variable(), iterable->elementType());
+    auto etype = std::make_shared<type::UnknownElementType>(c->input());
+
+    auto id = std::make_shared<ID>(::util::fmt("%s", c->variable()->name()));
+    auto var = std::make_shared<variable::Local>(id, etype);
     auto evar = std::make_shared<expression::Variable>(var);
+
     IDExprReplacer replacer(c->variable(), evar);
 
     if ( c->predicate() )

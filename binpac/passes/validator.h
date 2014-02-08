@@ -118,6 +118,7 @@ protected:
     void visit(expression::Function* f) override;
     void visit(expression::ID* i) override;
     void visit(expression::List* l) override;
+    void visit(expression::ListComprehension* c) override;
     void visit(expression::Module* m) override;
     void visit(expression::Parameter* p) override;
     void visit(expression::ParserState* p) override;

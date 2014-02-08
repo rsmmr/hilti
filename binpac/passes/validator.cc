@@ -258,6 +258,12 @@ void Validator::visit(expression::List* l)
 {
 }
 
+void Validator::visit(expression::ListComprehension* c)
+{
+    if ( ! ast::type::trait::hasTrait<type::trait::Iterable>(c->input()->type()) )
+        error(c->input(), "non-iterable gives as input set for list comprehension");
+}
+
 void Validator::visit(expression::Module* m)
 {
 }

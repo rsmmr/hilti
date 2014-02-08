@@ -29,7 +29,7 @@ shared_ptr<expression::Variable> InstructionNormalizer::_addLocal(shared_ptr<sta
 
     else {
         do {
-            name = util::fmt("__%s_%d", hint, ++cnt);
+            name = util::fmt("__%s_%p_%d", hint, block.get(), ++cnt);
         } while ( _names.find(name) != _names.end() );
     }
 

@@ -127,6 +127,7 @@ type::TypeByName
 type::TypeType
 type::Unit
 type::Unknown
+type::UnknownElementType
 type::Unset
 type::Vector
 type::Void

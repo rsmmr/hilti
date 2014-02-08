@@ -242,6 +242,27 @@ private:
     node_ptr<ID> _id = nullptr;
 };
 
+/// A place-holder for the element type of a iterable that we may not have
+/// resolved yet. It will later be replaced with the actual element type.
+class UnknownElementType : public binpac::Type
+{
+public:
+    /// Constructor referencing an expression that evaluate to a iterable.
+    /// The iterable's element type will eventually substitute for this
+    /// type.
+    ///
+    /// Note that we take a node_ptr here to track any changes.
+    UnknownElementType(node_ptr<Expression> expr, const Location& l=Location::None);
+
+    /// Returns the iterable expression associated with the type.
+    shared_ptr<Expression> expression() const;
+
+    ACCEPT_VISITOR(Type);
+
+private:
+    node_ptr<Expression> _expr = nullptr;
+};
+
 /// An internal place holder type representing a type by its name, to be
 /// resolved later. This should be used only in situations where's its
 /// guaranteed that the resolving will be done manually, there's no automatic

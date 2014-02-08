@@ -159,7 +159,7 @@ void binpac::CompilerContext::_endPass()
         auto indent = string(_hilti_context->passes().size(), ' ');
 
         if ( cgpasses || delta >= 0.1 )
-            std::cerr << util::fmt("(%2.2fs) %sbinpac::%s [module \"%s\"] %s",
+            std::cerr << util::fmt("(%2.2fs) %sbinpac::%s [module \"%s\"]",
                                    delta, indent, pass.name, pass.module) << std::endl;
     }
 
@@ -192,6 +192,13 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> node, bool verify)
     passes::ScopePrinter     scope_printer(std::cerr);
     passes::UnitScopeBuilder unit_scope_builder;
     passes::Validator        validator;
+
+    // TODO: This needs a reorg. Currently the op_resolver iterates until it
+    // hasn't changed anything anymore but that leaves the other passes out
+    // of that loop and we have to run them manually a few times more (and
+    // the number of rounds might not be constant actually). We need to pull
+    // that up a higher a level and iterate over all the passes until nothing
+    // has changed anymore.
 
     _beginPass(node, scope_builder);
 

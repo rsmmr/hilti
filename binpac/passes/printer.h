@@ -116,6 +116,7 @@ protected:
     void visit(type::TypeType* t) override;
     void visit(type::Unit* u) override;
     void visit(type::Unknown* u) override;
+    void visit(type::UnknownElementType* u) override;
     void visit(type::Unset* u) override;
     void visit(type::Vector* v) override;
     void visit(type::Void* v) override;

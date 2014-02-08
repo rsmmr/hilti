@@ -121,3 +121,4 @@ void Normalizer::visit(statement::Return* r)
     if ( ast::isA<type::Unknown>(rtype) ) 
         rtype->replace(r->expression()->type());
 }
+
