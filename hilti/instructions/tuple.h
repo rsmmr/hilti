@@ -12,51 +12,19 @@
 
 #include "define-instruction.h"
 
-iBegin(tuple, Equal, "equal")
+iBeginH(tuple, Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::tuple, true);
     iOp2(optype::tuple, true);
+iEndH
 
-    iValidate {
-        equalTypes(op1, op2);
-    }
-
-    iDoc(R"(
-    """Returns True if the tuple in *op1* equals the tuple in *op2*."""
-    )")
-
-iEnd
-
-iBegin(tuple, Index, "tuple.index")
+iBeginH(tuple, Index, "tuple.index")
     iTarget(optype::any)
     iOp1(optype::tuple, true)
     iOp2(optype::integer, true)
+iEndH
 
-    iValidate {
-        auto ty_target = target->type();
-        auto ttype = ast::as<type::Tuple>(op1->type());
-
-        isConstant(op2);
-
-        auto c = ast::as<expression::Constant>(op2)->constant();
-        auto idx = ast::as<constant::Integer>(c)->value();
-
-        if ( idx < 0 || (size_t) idx >= ttype->typeList().size() ) {
-            error(op2, "tuple index out of range");
-            return;
-        }
-
-        int i = 0;
-        for ( auto t : ttype->typeList() ) {
-            if ( i++ == idx )
-                canCoerceTo(t, target);
-        }
-    }
-
-    iDoc(R"(    
-       """Returns the tuple's value with index *op2*. The index is zero-based.
-       *op2* must be an integer *constant*.
-    )")
-
-iEnd
-
+iBeginH(tuple, Length, "tuple.length")
+    iTarget(optype::int64);
+    iOp1(optype::tuple, true)
+iEndH

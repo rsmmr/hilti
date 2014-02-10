@@ -1,0 +1,18 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<64> i
+    i = tuple.length (42, "foo", True)
+    call Hilti::print(i)
+
+    i = tuple.length ()
+    call Hilti::print(i)
+}
+

@@ -169,6 +169,7 @@ add_library (hilti STATIC
     instructions/port.cc
     instructions/profiler.cc
     instructions/thread.cc
+    instructions/tuple.cc
 
     parser/driver.cc
 
