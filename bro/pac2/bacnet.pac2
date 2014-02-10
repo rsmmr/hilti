@@ -1374,8 +1374,6 @@ export type Message = unit {
    BVLC_function::Delete-FDT-Entry -> bbmd: BBMD( self.func, self.len - 4 );
    # BVLC_function::Secure-BVLL Not yet supported, probably not used
   };
-
-  # on %done { print self; }
 };
 
 type BVLC_result = enum {
@@ -1471,8 +1469,6 @@ type NPDU_priority = enum {
 type NPDU = unit(len: uint16) {
   var priority: NPDU_priority;
 
-  var head_length: uint16 = 2; # version + control
-
   version: uint8; # should be 0x1, but wireshark trace also has 10?
   control : bitfield(8) {
     priority: 0..1;
@@ -1486,35 +1482,19 @@ type NPDU = unit(len: uint16) {
     self.priority = NPDU_priority(self.control.priority);
   }
 
-  dnet: uint16 if ( self.control.destination == 1 ) {
-    self.head_length = self.head_length + 2;
-  }
-  dlen: uint8 if ( self.control.destination == 1 ) {
-    self.head_length = self.head_length + 1;
-  }
-  dadr: bytes &length=self.dlen if ( self.control.destination == 1 ) {
-    self.head_length = self.head_length + self.dlen;
-  }
-  snet: uint16 if ( self.control.source == 1 ) {
-    self.head_length = self.head_length + 2;
-  }
-  slen: uint8 if ( self.control.source == 1 ) {
-    self.head_length = self.head_length + 1;
-  }
-  sadr: bytes &length=self.slen if ( self.control.source == 1 ) {
-    self.head_length = self.head_length + self.slen;
-  }
-  hop_count: uint8 if ( self.control.destination == 1) {
-    self.head_length = self.head_length + 1;
-  }
-  message_type: uint8 &convert=NPDU_type($$) if ( self.control.nlmessage == 1 ) {
-    self.head_length = self.head_length + 1;
-  }
+  dnet: uint16 if ( self.control.destination == 1 );
+  dlen: uint8 if ( self.control.destination == 1 );
+  dadr: bytes &length=self.dlen if ( self.control.destination == 1 );
+  snet: uint16 if ( self.control.source == 1 );
+  slen: uint8 if ( self.control.source == 1 );
+  sadr: bytes &length=self.slen if ( self.control.source == 1 );
+  hop_count: uint8 if ( self.control.destination == 1);
+  message_type: uint8 &convert=NPDU_type($$) if ( self.control.nlmessage == 1 );
 
-  npdu_message: NPDU_message( (len - self.head_length), self.message_type) if ( self.control.nlmessage == 1 );
+  npdu_message: NPDU_message( (len - cast<uint16>(self.offset())), self.message_type) if ( self.control.nlmessage == 1 );
 
   # if nlmessage == 0, APDU follows
-  apdu: APDU( len - self.head_length ) if ( self.control.nlmessage == 0 );
+  apdu: APDU( len - cast<uint16>(self.offset()) ) if ( self.control.nlmessage == 0 );
 };
 
 # convert data present in all NPDUs into a NPDU_info record
@@ -1596,12 +1576,12 @@ type APDU = unit(len: uint16) {
     PDU_type::ConfirmedRequest -> confirmed_request: PDU_confirmedRequest(self.head, len);
     PDU_type::Unconfirmed-Request -> unconfirmed_request: PDU_unconfirmedRequest(len);
     PDU_type::SimpleAck -> simple_ack: PDU_simpleACK;
-    PDU_type::ComplexAck -> complex_ack: PDU_complexAck(self.head, len);
+    PDU_type::ComplexAck -> complex_ack: BACnet_ComplexACK_PDU(self.head, len);
+    PDU_type::SegmentAck -> segment_ack: BACnet_SegmentACK_PDU(self.head);
     PDU_type::Error -> error: PDU_error;
     PDU_type::Reject -> reject: PDU_reject;
     PDU_type::Abort -> abort: PDU_abort(self.head);
   };
-
 };
 
 type BACnetConfirmedServiceChoice = enum {
@@ -1639,8 +1619,24 @@ type BACnetConfirmedServiceChoice = enum {
   vtData = 23
 };
 
+type BACnet_SegmentACK_PDU = unit(head: bytes) {
+   head : bitfield(8) {
+    srv: 0; # sent by server? 0 = by client
+    nak: 1; # 0 = normal acknowledgment. 1 = negative acknowledgment, segment out of order
+    tpe: 4..7;
+  } &parse(head);
+
+  invokeID: uint8;
+  sequence_number: uint8;
+  actual_window_size: uint8;
+};
+
+global confirmedReq_bytes: map<uint8, bytes>; # store the current bytes
+global confirmedReq_status: map<uint8, uint8>; # store the current invokeId to sequence number mapping
+
 type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
   var len: uint16 = 4;
+  var segmentation_status: bool = False;
 
   head1 : bitfield(8) {
     segmented-response-accepted: 1;
@@ -1662,6 +1658,47 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
   proposed_window_size: uint8 if ( self.head1.segmented-message == 1 );
   confirmed_service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$);
 
+  # Segmentation is by invokeID with increasing sequence numbers (first is 0).
+  # If more-follows == 0, we can just re-assemble the packet and parse it in a second
+  # step.
+  content_bytes: bytes &length=( len - self.len ) if ( self.head1.segmented-message == 1 ) {
+
+    # first segment - initialize data structures
+    if ( ( self.head1.segmented-message == 1 ) && ( self.sequence_number == 0)  ) {
+      confirmedReq_status[self.invokeID] = 0;
+      confirmedReq_bytes[self.invokeID] = self.content_bytes;
+      #print "First segment, invokeID", self.invokeID;
+    } else if ( ( self.head1.segmented-message == 1 ) && ( self.sequence_number > 0 ) ) {
+    # segment other than the first.
+    # look if we already know the invokeID and the right sequence number is following. Otherwise - abort or 
+    # ignore
+      if ( self.invokeID in confirmedReq_status ) {
+        if ( confirmedReq_status[self.invokeID] >= self.sequence_number ) {
+          # we already have this one, skip...
+          #print "Skipped fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", confirmedReq_status[self.invokeID];          
+        } else if ( confirmedReq_status[self.invokeID] == ( self.sequence_number - 1 ) ) {
+          # add fragment
+          #print "Added fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", confirmedReq_status[self.invokeID];
+          #if ( self.head1.more-follows == 0 ) {
+          #  print "Last fragment";
+          #}
+          confirmedReq_status[self.invokeID] = self.sequence_number;
+          confirmedReq_bytes[self.invokeID] = confirmedReq_bytes[self.invokeID] + self.content_bytes;
+          self.content_bytes = confirmedReq_bytes[self.invokeID];
+          self.segmentation_status = True;
+        } else {
+          # we missed a fragment. Kill it...
+          # Fixme: and output an error or whatever
+          #print "Missing fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", confirmedReq_status[self.invokeID];
+          delete confirmedReq_bytes[self.invokeID];
+          delete confirmedReq_status[self.invokeID];
+        }
+      } else {
+        #print "Unknown fragment, invokeID", self.invokeID, "sequence number", self.sequence_number;
+      }
+    } 
+  }
+
   switch ( self.confirmed_service_choice ) {
     BACnetConfirmedServiceChoice::confirmedEventNotification -> confirmedEventNotification: ConfirmedEventNotification_Request( len - self.len );
     BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len );
@@ -1672,6 +1709,25 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_Request( len - self.len );
     * -> : void { print "unhandled confirmedrequest", self.confirmed_service_choice; }
   } if ( self.head1.more-follows == 0 && self.head1.segmented-message == 0 );
+
+  switch ( self.confirmed_service_choice ) {
+    BACnetConfirmedServiceChoice::confirmedEventNotification -> confirmedEventNotification: ConfirmedEventNotification_Request( len - self.len );
+    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len );
+    BACnetConfirmedServiceChoice::writeProperty -> writeProperty: WriteProperty_Request( len - self.len );
+    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_Request;
+    BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_Request;
+    BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_Request( len - self.len );
+    BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_Request( len - self.len );
+    * -> : void { print "unhandled confirmedrequest", self.confirmed_service_choice; }
+  } if ( ( self.head1.more-follows == 0 ) && ( self.head1.segmented-message == 1 ) && ( self.segmentation_status ) ); # only parse message if we are in last chunk and have all data
+
+    : void {
+      if ( ( self.head1.more-follows == 0 ) && ( self.head1.segmented-message == 1 ) && ( self.segmentation_status ) ) {
+        #print "Reassembled:", self.invokeID;
+        delete confirmedReq_bytes[self.invokeID];
+        delete confirmedReq_status[self.invokeID];
+      }
+    }
 };
 
 type ReadRange_Request = unit(len: uint16) {
@@ -1701,6 +1757,7 @@ type ConfirmedPrivateTransfer_Request = unit(len: uint16) {
   var vendorID: BACnetVendorIDs;
   vendorID_raw: BACnetContextMessage(BACnetType::UnsignedInteger, 0, self.first_tag) {
     self.vendorID = BACnetVendorIDs(self.vendorID_raw.unsigned);
+    #print "vendorID ConfirmedPrivateTransfer_Request", self.vendorID;
   }
   serviceNumber: BACnetContextMessage(BACnetType::UnsignedInteger, 1, self.vendorID_raw.tag);
   serviceParameters: BACnetArray if ( len > self.offset() ); # ABSTRACT-SYNTAX.&Type OPTIONAL
@@ -1858,6 +1915,7 @@ type I_Am_Request = unit {
   var vendorID: BACnetVendorIDs;
   vendorID_raw: BACnetMessage { # unsigned16
     self.vendorID = BACnetVendorIDs(self.vendorID_raw.unsigned);
+    #print "vendorID i_am_request", self.vendorID;
   }
   
 };
@@ -1868,6 +1926,7 @@ type UnconfirmedPrivateTransfer_Request = unit(len: uint16) {
   var vendorID: BACnetVendorIDs;
   vendorID_raw: BACnetContextMessage(BACnetType::UnsignedInteger, 0, self.first_tag) {
     self.vendorID = BACnetVendorIDs(self.vendorID_raw.unsigned);
+    #print "vendorID UnconfirmedPrivateTransfer_Request", self.vendorID;
   }
   serviceNumber: BACnetContextMessage(BACnetType::UnsignedInteger, 1, self.vendorID_raw.tag);
   serviceParameters: BACnetArray if ( len > self.offset() ); # ABSTRACT-SYNTAX.&Type OPTIONAL
@@ -1907,8 +1966,13 @@ type PDU_simpleACK = unit {
   service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$);
 };
 
-type PDU_complexAck = unit(head_raw: bytes, len: uint16) {
+# Fixme: we should perhaps not only id by invokeID, but also by IP...
+global complexAck_bytes: map<uint8, bytes>; # store the current bytes
+global complexAck_status: map<uint8, uint8>; # store the current invokeId to sequence number mapping
+
+type BACnet_ComplexACK_PDU = unit(head_raw: bytes, len: uint16) {
   var len: uint16 = 3;
+  var segmentation_status: bool = False;
 
   head : bitfield(8) {
     more-follows: 2;
@@ -1922,9 +1986,48 @@ type PDU_complexAck = unit(head_raw: bytes, len: uint16) {
   invokeID: uint8;
   sequence_number: uint8 if ( self.head.segmented-message == 1 );
   proposed_window_size: uint8 if ( self.head.segmented-message == 1 );
-  confirmed_service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$); 
+  confirmed_service_choice: uint8 &convert=BACnetConfirmedServiceChoice($$);
 
-  # Fixme: segmentation handling
+  # Segmentation is by invokeID with increasing sequence numbers (first is 0).
+  # If more-follows == 0, we can just re-assemble the packet and parse it in a second
+  # step.
+  content_bytes: bytes &length=( len - self.len ) if ( self.head.segmented-message == 1 ) {
+
+    # first segment - initialize data structures
+    if ( ( self.head.segmented-message == 1 ) && ( self.sequence_number == 0)  ) {
+      complexAck_status[self.invokeID] = 0;
+      complexAck_bytes[self.invokeID] = self.content_bytes;
+      #print "First segment, invokeID", self.invokeID;
+    } else if ( ( self.head.segmented-message == 1 ) && ( self.sequence_number > 0 ) ) {
+    # segment other than the first.
+    # look if we already know the invokeID and the right sequence number is following. Otherwise - abort or 
+    # ignore
+      if ( self.invokeID in complexAck_status ) {
+        if ( complexAck_status[self.invokeID] >= self.sequence_number ) {
+          # we already have this one, skip...
+          #print "Skipped fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", complexAck_status[self.invokeID];          
+        } else if ( complexAck_status[self.invokeID] == ( self.sequence_number - 1 ) ) {
+          # add fragment
+          #print "Added fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", complexAck_status[self.invokeID];
+          complexAck_status[self.invokeID] = self.sequence_number;
+          complexAck_bytes[self.invokeID] = complexAck_bytes[self.invokeID] + self.content_bytes;
+          self.content_bytes = complexAck_bytes[self.invokeID];
+          self.segmentation_status = True;
+          #if ( self.head.more-follows == 0 ) {
+          #  print "complex-ack-Last fragment. Final length:", |self.content_bytes|;
+          #}
+        } else {
+          # we missed a fragment. Kill it...
+          # Fixme: and output an error or whatever
+          #print "Missing fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", complexAck_status[self.invokeID];
+          delete complexAck_bytes[self.invokeID];
+          delete complexAck_status[self.invokeID];
+        }
+      } else {
+        #print "Unknown fragment, invokeID", self.invokeID, "sequence number", self.sequence_number;
+      }
+    } 
+  }
 
   switch ( self.confirmed_service_choice ) {
     BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK;
@@ -1933,7 +2036,25 @@ type PDU_complexAck = unit(head_raw: bytes, len: uint16) {
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_ACK( len - self.len );
     BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_ACK( len - self.len );
     * -> : void { print "unhandled complexAck", self.confirmed_service_choice; } # Fixme: missing cases
-  } if ( self.head.more-follows == 0 && self.head.segmented-message == 0 ); # only parse message if we are in last chunk/single-chunk
+  } if ( self.head.more-follows == 0 && self.head.segmented-message == 0 ); # only parse message if we are in single-chunk
+
+  switch ( self.confirmed_service_choice ) {
+    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK &parse(self.content_bytes);
+    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_ACK &parse(self.content_bytes);
+    BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_ACK &parse(self.content_bytes);
+    BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_ACK( cast<uint16>(|self.content_bytes|) ) &parse(self.content_bytes);
+    BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_ACK( cast<uint16>(|self.content_bytes|) ) &parse(self.content_bytes);
+    * -> : void { print "unhandled complexAck", self.confirmed_service_choice; } # Fixme: missing cases
+  } if ( ( self.head.more-follows == 0 ) && ( self.head.segmented-message == 1 ) && ( self.segmentation_status ) ); # only parse message if we are in last chunk and have all data
+
+    : void {
+      if ( ( self.head.more-follows == 0 ) && ( self.head.segmented-message == 1 ) && ( self.segmentation_status ) ) {
+        #print "Reassembled:", self.invokeID;
+        delete complexAck_bytes[self.invokeID];
+        delete complexAck_status[self.invokeID];
+      }
+    }
+
 };
 
 type ReadRange_ACK = unit(len: uint16) {
@@ -1961,6 +2082,7 @@ type ConfirmedPrivateTransfer_ACK = unit(len: uint16) {
   var vendorID: BACnetVendorIDs;
   vendorID_raw: BACnetContextMessage(BACnetType::UnsignedInteger, 0, self.first_tag) {
     self.vendorID = BACnetVendorIDs(self.vendorID_raw.unsigned);
+    #print "vendorID ConfirmedPrivateTransfer_ACK", self.vendorID;
   }
   serviceNumber: BACnetContextMessage(BACnetType::UnsignedInteger, 1, self.vendorID_raw.tag);
   resultBlock: BACnetArray if ( len > self.offset() ); # ABSTRACT-SYNTAX.&Type OPTIONAL
@@ -2265,8 +2387,8 @@ type BACnetContextMessage = unit(tpe: BACnetType, tag: uint8, prev_tag: BACnetTa
     BACnetType::UnsignedInteger,
     BACnetType::Enumerated -> unsigned: bytes &length=self.tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network);
     BACnetType::Integer -> signed: bytes &length=self.tag.lvt &convert=$$.to_int(BinPAC::ByteOrder::Network);
-    BACnetType::OctetString -> octets: bytes &length=self.tag.lvt { print self.octets; }
-    BACnetType::CharacterString -> characters: BACnetCharacterString(self.tag.lvt) { print self.characters; }
+    BACnetType::OctetString -> octets: bytes &length=self.tag.lvt; # { print self.octets; }
+    BACnetType::CharacterString -> characters: BACnetCharacterString(self.tag.lvt); # { print self.characters; }
     BACnetType::BitString -> bistring: BACnetBitString(self.tag.lvt);
     BACnetType::Date -> date: BACnetDate;
     BACnetType::Time -> btime: BACnetTime;
@@ -2344,7 +2466,8 @@ type BACnetCharacterString = unit(len: uint16) {
 };
 
 type BACnetBitString = unit(len: uint16) {
-   unused_bits: uint8;
-   value_bits: bytes &length=(len - 1);
+   # We have cases where the length is 0. I do not think this is legal, but... 
+   unused_bits: uint8 if ( len > 0 );
+   value_bits: bytes &length=(len - 1) if ( len > 1 );
 };
 
