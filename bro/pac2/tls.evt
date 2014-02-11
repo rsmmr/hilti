@@ -1,0 +1,12 @@
+
+grammar ./tls.pac2;
+
+protocol analyzer pac2::TLS over TCP:
+  parse originator with TLS::Requests,
+  parse responder with TLS::Requests,
+  port 443/tcp,
+  replaces SSL;
+
+on TLS::ClientHello -> event ssl_client_hello($conn, self.client_version, self.random.gmt_unix_time, self.random.random_bytes, self.session_id, self.cipher_suites);
+
+on TLS::ServerHello -> event ssl_server_hello($conn, self.server_version, self.random.gmt_unix_time, self.random.random_bytes, self.session_id, self.cipher_suite, self.compression_method);
