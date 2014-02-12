@@ -140,6 +140,10 @@ void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception*
     re->patterns = hlt_malloc(sizeof(hlt_string));
     jrx_regset_init(&re->regexp, -1, _cflags(re->flags));
     _compile_one(re, pattern, 0, excpt, ctx);
+
+    if ( *excpt )
+	return;
+
     jrx_regset_finalize(&re->regexp);
 }
 
