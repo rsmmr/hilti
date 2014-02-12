@@ -93,7 +93,7 @@ static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_except
 
     if ( jrx_regset_add(&re->regexp, (const char*)praw, plen) != 0 ) {
         hlt_free(praw);
-        hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_pattern_error, pattern);
         return;
     }
 

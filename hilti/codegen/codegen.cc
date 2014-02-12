@@ -661,11 +661,13 @@ void CodeGen::createGlobalsInitFunction()
 
     // Init user defined globals.
     for ( auto g : _collector->globals() ) {
+        llvmDebugPrint("hilti-trace", ::util::fmt("init global %s", g->id()->pathAsString()));
         auto init = g->init() ? llvmValue(g->init(), g->type(), true) : llvmInitVal(g->type());
         assert(init);
         auto addr = llvmGlobal(g.get());
         llvmCreateStore(init, addr);
         llvmBuildInstructionCleanup();
+        llvmCheckException();
     }
 
     if ( functionEmpty() ) {

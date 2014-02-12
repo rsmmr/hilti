@@ -206,6 +206,13 @@ void codegen::util::llvmDebugPrintStderr(IRBuilder* builder, const std::string& 
     builder->CreateCall(func, args);
 }
 
+void codegen::util::llvmDebugTrap(IRBuilder* builder)
+{
+    auto module = builder->GetInsertBlock()->getParent()->getParent();
+    auto dt = llvm::Intrinsic::getDeclaration(module, llvm::Intrinsic::debugtrap);
+    builder->CreateCall(dt);
+}
+
 #define _flip(x) \
     ((((x) & 0xff00000000000000LL) >> 56) | \
     (((x) & 0x00ff000000000000LL) >> 40) | \
