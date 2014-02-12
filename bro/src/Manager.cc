@@ -240,7 +240,6 @@ Manager::Manager()
 	pre_scripts_init_run = false;
 	post_scripts_init_run = false;
 
-	pimpl->type_converter = std::make_shared<TypeConverter>();
 	pimpl->pac2_ast = new Pac2AST;
 
 	char* dir = getenv("BRO_PAC2_PATH");
@@ -292,6 +291,7 @@ bool Manager::InitPreScripts()
 	pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
 	pimpl->hilti_context = pimpl->pac2_context->hiltiContext();
 	pimpl->compiler = new compiler::Compiler(pimpl->hilti_context);
+	pimpl->type_converter = std::make_shared<TypeConverter>(pimpl->compiler);
 
 	pimpl->libbro_path = pimpl->hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
 
@@ -1924,8 +1924,13 @@ void Manager::InstallTypeMappings(shared_ptr<compiler::ModuleBuilder> mbuilder, 
 				    t1->AsVectorType()->YieldType(),
 				    t2->AsVectorType()->YieldType());
 
- 	if ( t1->Tag() == TYPE_TABLE )
-		reporter::internal_error("tables/sets not yet supported in Manager::InstallTypeMappings");
+ 	if ( t1->Tag() == TYPE_TABLE ) 
+		{
+		if ( t1->AsTableType()->YieldType() )
+			InstallTypeMappings(mbuilder,
+					    t1->AsTableType()->YieldType(),
+					    t2->AsTableType()->YieldType());
+		}
 	}
 
 void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)

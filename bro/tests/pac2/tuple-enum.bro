@@ -2,13 +2,6 @@
 # @TEST-EXEC: bro -r ${TRACES}/ssh-single-conn.trace ./tupleenum.evt %INPUT >output
 # @TEST-EXEC: btest-diff output
 #
-# @TEST-KNOWN-FAILURE: binpac++ enum values do not work in bro records
-#
-# Error with test as it is:
-# no location>:: error, type enum { A = 83, B = 84, C = 85 } is not compatible with target type GLOBAL::enum_0x7fac1730d390 [pass::hilti::Validator]
-#
-# Error when commenting the event line in tupleenum.evt:
-# error in [..]/tuple-enum.bro, line 9: identifier not defined: TupleEnum::TestEnum
 
 type Foo: record {
     i: TupleEnum::TestEnum;

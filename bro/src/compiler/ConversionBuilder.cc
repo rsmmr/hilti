@@ -933,7 +933,23 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 	{
 	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
 	auto dst = Builder()->addTmp("val", vtype);
-	auto etype = CreateBroType(type);
+
+	shared_ptr<::hilti::Expression> etype;
+
+	auto cached = Compiler()->LookupCachedCustomBroType(type);
+
+	if ( cached.first )
+		{
+		auto btype = ::hilti::builder::type::byName("LibBro::BroType");
+		auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type");
+		auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(cached.second) } );
+
+		etype = Builder()->addTmp("et", btype);
+		Builder()->addInstruction(etype, ::hilti::instruction::flow::CallResult, f, args);
+		}
+
+	else
+		etype = CreateBroType(type);
 
         auto args = ::hilti::builder::tuple::create( { val, etype } );
 	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,

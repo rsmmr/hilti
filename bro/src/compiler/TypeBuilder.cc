@@ -7,6 +7,7 @@
 #include <util/util.h>
 
 #include "TypeBuilder.h"
+#include "Compiler.h"
 
 using namespace bro::hilti::compiler;
 
@@ -17,6 +18,11 @@ TypeBuilder::TypeBuilder(class ModuleBuilder* mbuilder)
 
 shared_ptr<hilti::Type> TypeBuilder::Compile(const ::BroType* type)
 	{
+	auto cached = Compiler()->LookupCachedCustomBroType(type);
+
+	if ( cached.first )
+		return cached.first;
+
 	switch ( type->Tag() ) {
 	case TYPE_ADDR:
 	case TYPE_ANY:

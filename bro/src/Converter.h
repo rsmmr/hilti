@@ -22,13 +22,17 @@ namespace hilti {
 
 namespace compiler {
 	class ModuleBuilder;
+	class Compiler;
 }
 
 // Converts from BinPAC++ types to Bro types.
 class TypeConverter : ast::Visitor<::hilti::AstInfo, BroType*, shared_ptr<::binpac::Type>>
 {
 public:
-	TypeConverter();
+	/**
+	 * XXX
+	 */
+	TypeConverter(compiler::Compiler* compiler);
 
 	/**
 	 * Converts a HILTI type corresponding to a BinPAC++ type into a Bro
@@ -67,6 +71,8 @@ private:
 	string CacheIndex(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype);
 	BroType* LookupCachedType(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype);
 	void CacheType(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype, BroType* bro_type);
+
+	compiler::Compiler* compiler = 0;
 
 	// Caches dynamic types and their indices within the runtime's table.
 	std::map<string, std::pair<BroType*, std::uint64_t>> type_cache;

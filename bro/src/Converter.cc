@@ -10,13 +10,15 @@
 #include "Converter.h"
 #include "RuntimeInterface.h"
 #include "LocalReporter.h"
+#include "compiler/Compiler.h"
 #include "compiler/ConversionBuilder.h"
 #include "compiler/ModuleBuilder.h"
 
 using namespace bro::hilti;
 
-TypeConverter::TypeConverter()
+TypeConverter::TypeConverter(compiler::Compiler* arg_compiler)
 	{
+	compiler = arg_compiler;
 	}
 
 BroType* TypeConverter::Convert(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype)
@@ -152,7 +154,7 @@ void TypeConverter::visit(::hilti::type::Enum* e)
 
 	// Build the Bro type.
 	auto type_id = etype->id()->name();
-	auto eresult = new EnumType(name);
+	auto eresult = new EnumType(type_id);
 	auto undef = ::util::fmt("%s_Undef", type_id);
 	eresult->AddName(module, undef.c_str(), lib_bro_enum_undef_val, true);
 
@@ -166,12 +168,14 @@ void TypeConverter::visit(::hilti::type::Enum* e)
 		}
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Adding Bro enum type %s::%s", module.c_str(), name.c_str());
-	string id_name = ::util::fmt("%s::%s", module, name);
 	::ID* id = install_ID(name.c_str(), module.c_str(), true, true);
 	id->SetType(eresult);
 	id->MakeType();
 
+	string id_name = ::util::fmt("%s::%s", module, name);
 	CacheType(e->sharedPtr<::hilti::type::Enum>(), etype, eresult);
+	compiler->CacheCustomBroType(eresult, e->sharedPtr<::hilti::Type>(), id_name);
+
 	setResult(eresult);
 	}
 
