@@ -155,8 +155,8 @@ void InstructionRegistry::addInstruction(shared_ptr<Instruction> ins)
 
 InstructionRegistry::instr_list InstructionRegistry::getMatching(shared_ptr<ID> id, const instruction::Operands& ops) const
 {
-    // We try this twice. First, without coerce, then with. To ambiguity, we
-    // prefer matches from the former.
+    // We try this twice. First, without coerce, then with. To avoid
+    // ambiguity, we prefer matches from the former.
 
     instr_list matches;
 
@@ -241,6 +241,31 @@ bool Instruction::matchesOperands(const instruction::Operands& ops, bool coerce)
         return false;
 
     if ( ! __matchOp3(ops[3], coerce) )
+        return false;
+
+    if ( ! coerce )
+        return true;
+
+    // For instructions with more than one argument operand, we don't allow
+    // all operands to change their type at the same type. Here, change means
+    // switching to a different type classes, whereas staying with the same
+    // type but changing just its parameterization is fine.
+
+    int num_ops = 0;
+    int num_changes = 0;
+
+    for ( int i = 1; i <= 3; i++ ) {
+
+        if ( ! ops[i] )
+            continue;
+
+        ++num_ops;
+
+        if ( typeid(*ops[i]->type()) != typeid(*typeOperand(i).first) )
+            ++num_changes;
+    }
+
+    if ( num_ops > 1 && num_changes == num_ops )
         return false;
 
     return true;
