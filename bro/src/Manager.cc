@@ -1886,6 +1886,8 @@ void Manager::BuildBroEventSignature(shared_ptr<Pac2EventInfo> ev)
 	ev->bro_event_type = ftype;
 	}
 
+#if 0
+// Have patched Bro to allow field names to not match.
 static bool records_compatible(::RecordType* rt1, ::RecordType* rt2)
 	{
 	// Cannot use same_type() here as that also compares the field names,
@@ -1904,6 +1906,26 @@ static bool records_compatible(::RecordType* rt1, ::RecordType* rt2)
 		}
 
 	return true;
+	}
+#endif
+
+void Manager::InstallTypeMappings(shared_ptr<compiler::ModuleBuilder> mbuilder, ::BroType* t1, ::BroType* t2)
+	{
+	assert(t1->Tag() == t2->Tag());
+
+	if ( t1->Tag() == TYPE_RECORD )
+		{
+		mbuilder->MapType(t1, t2);
+		return;
+		}
+
+ 	if ( t1->Tag() == TYPE_VECTOR )
+		InstallTypeMappings(mbuilder,
+				    t1->AsVectorType()->YieldType(),
+				    t2->AsVectorType()->YieldType());
+
+ 	if ( t1->Tag() == TYPE_TABLE )
+		reporter::internal_error("tables/sets not yet supported in Manager::InstallTypeMappings");
 	}
 
 void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
@@ -1926,11 +1948,12 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 
 		if ( handler->FType() )
 			{
-			// For record arguments, we want to use the one from
+			// Check if the event types are compatible. Also,
+			// for record arguments we want to use the one from
 			// the Bro event, rather than ours, which might have
-			// just dummy field names. So we go through and
-			// install mappings as needed. We also use the
-			// opportunity to check if the types match.
+			// just dummy field names. So we go through
+			// (recursively for containers) and install mappings
+			// as needed.
 			auto a1 = ev->bro_event_type->AsFuncType()->Args();
 			auto a2 = handler->FType()->Args();
 
@@ -1945,22 +1968,13 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 				auto t1 = a1->FieldType(i);
 				auto t2 = a2->FieldType(i);
 
-				if ( t1->Tag() == TYPE_RECORD && t2->Tag() == TYPE_RECORD )
-					{
-					if ( ! records_compatible(t1->AsRecordType(), t2->AsRecordType()) )
-						{
-						EventSignatureMismatch(ev->name, t1, t2, i);
-						return;
-						}
-
-					ev->minfo->hilti_mbuilder->MapType(t1, t2);
-					}
-
-				else if ( ! same_type(t1, t2) )
+				if ( ! same_type(t1, t2, 0, false) )
 					{
 					EventSignatureMismatch(ev->name, t1, t2, i);
 					return;
 					}
+
+				InstallTypeMappings(ev->minfo->hilti_mbuilder, t1, t2);
 				}
 			}
 

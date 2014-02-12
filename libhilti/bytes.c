@@ -1216,6 +1216,12 @@ void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_b
 
 int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    if ( ! b1 )
+	fprintf(stderr, "! 1\n");
+
+    if ( ! b2 )
+	fprintf(stderr, "! 2\n");
+
     if ( ! (b1 && b2) ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
         return 0;

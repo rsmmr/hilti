@@ -211,29 +211,23 @@ void ConversionBuilder::MapType(const ::BroType* from, const ::BroType* to)
 
 	DBG_LOG_COMPILER("Mapping type %s to %s", d1.Description(), d2.Description());
 #endif
-	mapped_types.insert(std::make_pair(from, to));
-	}
-
-void ConversionBuilder::FinalizeTypes()
-	{
-	// TODO: We should unify this code with the
-	// ValueBuilder/ConversionBuilder to treat types vals in a single
-	// way.
 
 	auto glue_mbuilder = GlueModuleBuilder();
 
 	Compiler()->pushModuleBuilder(glue_mbuilder);
 	glue_mbuilder->pushModuleInit();
 
-	for ( auto m : mapped_types )
-		{
-		auto from = CreateBroType(m.first);
-		auto to = CreateBroType(m.second);
-		Builder()->addInstruction(from, ::hilti::instruction::operator_::Assign, to);
-		}
+	auto hfrom = CreateBroType(from);
+	auto hto = CreateBroType(to);
+	Builder()->addInstruction(hfrom, ::hilti::instruction::operator_::Assign, hto);
 
 	glue_mbuilder->popFunction();
 	Compiler()->popModuleBuilder();
+	}
+
+void ConversionBuilder::FinalizeTypes()
+	{
+	return;
 	}
 
 bool ConversionBuilder::IsShadowedType(const BroType* type) const

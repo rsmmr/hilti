@@ -181,7 +181,6 @@ private:
 	typedef std::map<const ::BroType*, std::pair<string, build_create_type_callback>> type_builder_map;
 	typedef std::list<const ::BroType*> type_builder_list;
 
-	type_map mapped_types;
 	type_builder_map postponed_types;
 };
 

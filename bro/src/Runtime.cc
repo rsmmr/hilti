@@ -630,6 +630,7 @@ void libbro_bro_record_assign(::RecordVal* rval, uint64_t idx, ::Val* val, hlt_e
 
 void libbro_bro_vector_append(::VectorVal* vval, ::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+	val->Ref();
 	vval->Assign(vval->Size(), val);
 	}
 
