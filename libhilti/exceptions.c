@@ -170,7 +170,10 @@ static hlt_string __exception_render(const hlt_exception* e, hlt_execution_conte
     hlt_string s = hlt_string_from_asciiz(e->type->name, &excpt, ctx);
 
     if ( e->arg ) {
-        hlt_string arg = hlt_string_from_object(e->type->argtype, e->arg, &excpt, ctx);
+        __hlt_pointer_stack* seen = __hlt_pointer_stack_new();
+        hlt_string arg = hlt_object_to_string(e->type->argtype, e->arg, 0, seen, &excpt, ctx);
+        __hlt_pointer_stack_delete(seen);
+
         s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz(" with argument '", &excpt, ctx), &excpt, ctx);
         s = hlt_string_concat_and_unref(s, arg, &excpt, ctx);
         s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz("'", &excpt, ctx), &excpt, ctx);

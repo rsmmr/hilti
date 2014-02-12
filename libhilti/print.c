@@ -14,6 +14,8 @@
 #include "types.h"
 #include "rtti.h"
 #include "memory_.h"
+#include "string_.h"
+#include "hutil.h"
 
 /*
  * Hilti::print(obj, newline = True)
@@ -26,8 +28,8 @@
  */
 void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    // To prevent race conditions with multiple threads, we have to lock stdout here and then
-    // unlock it at each possible exit to this function.
+    // To prevent race conditions with multiple threads, we have to lock
+    // stdout here and then unlock it at each possible exit to this function.
 
     // We must not terminate while in here.
     int old_state;
@@ -36,7 +38,10 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
     flockfile(stdout);
 
     if ( type->to_string ) {
-        hlt_string s = (*type->to_string)(type, obj, 0, excpt, ctx);
+        __hlt_pointer_stack* seen = __hlt_pointer_stack_new();
+        hlt_string s = hlt_object_to_string(type, obj, 0, seen, excpt, ctx);
+        __hlt_pointer_stack_delete(seen);
+
         if ( *excpt )
             goto unlock;
 

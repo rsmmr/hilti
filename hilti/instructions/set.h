@@ -99,7 +99,7 @@ iEnd
 iBegin(set, New, "new")
     iTarget(optype::refSet)
     iOp1(optype::typeSet, true)
-    iOp2(optype::optional(optype::refTimerMgr), true)
+    iOp2(optype::optional(optype::refTimerMgr), false)
 
     iValidate {
         equalTypes(referencedType(target), typedType(op1));
@@ -142,7 +142,7 @@ iEnd
 
 iBegin(set, Insert, "set.insert")
     iOp1(optype::refSet, false)
-    iOp2(optype::any, true)
+    iOp2(optype::any, false)
 
     iValidate {
         canCoerceTo(op2, elementType(referencedType(op1)));

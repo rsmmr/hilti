@@ -114,4 +114,19 @@ extern int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, co
 /// Wrapper around the standard \a write(2) that restarts on \c EINTR.
 extern int8_t __hlt_safe_write(int fd, const char* data, int len);
 
+// XXX
+
+struct __hlt_pointer_stack {
+    const void** ptrs;
+    size_t size;
+    size_t capacity;
+};
+
+__hlt_pointer_stack* __hlt_pointer_stack_new();
+void   __hlt_pointer_stack_push_back(__hlt_pointer_stack* set, const void *ptr);
+void   __hlt_pointer_stack_pop_back(__hlt_pointer_stack* set);
+int8_t __hlt_pointer_stack_lookup(__hlt_pointer_stack* set, const void *ptr);
+void   __hlt_pointer_stack_delete(__hlt_pointer_stack* set);
+
 #endif
+

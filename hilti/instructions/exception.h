@@ -13,7 +13,7 @@ iBeginH(exception, NewWithArg, "new")
 iEndH
 
 iBeginH(exception, Throw, "exception.throw")
-    iOp1(optype::refException, true)
+    iOp1(optype::refException, false)
 iEndH
 
 iBeginH(exception, __BeginHandler, "exception.__begin_handler")

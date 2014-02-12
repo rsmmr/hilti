@@ -1,0 +1,54 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+# @TEST-EXEC:  hiltic -p %INPUT | egrep 'b"|list<' >ctors
+# @TEST-EXEC:  btest-diff ctors
+
+module Main
+
+import Hilti
+
+void f(ref<list<string>> l) {
+    list.push_back l "changed"
+}
+
+void run() {
+
+    local int<8> i
+    local int<64> l
+    local ref<bytes> y
+    local bool b
+
+    i = bytes.cmp b"12" b"12"
+    call Hilti::print (i)
+
+    i = bytes.cmp b"12" b"13"
+    call Hilti::print (i)
+
+    b = equal b"12" b"12"
+    call Hilti::print (b)
+
+    b = equal b"12" b"13"
+    call Hilti::print (b)
+
+    l = tuple.length ((1, (2, list<string>("A", "B"))), (1, (2, list<string>("A", "b"))))
+    call Hilti::print (l)
+
+    # Function calls aren't yet optimized.
+    # call Hilti::print (((1, (2, list<string>("A", "B"))), (1, (2, list<string>("A", "C")))))
+
+    y = map.get map<int<64>, ref<bytes> >(1: b"X", 2: b"Y", 3: b"Z") 2
+    call Hilti::print (y)
+
+    #### The following should *not* be optimized.
+
+    i = 3
+
+@loop:
+    call Hilti::print(list<string>("A", "B"))
+    i = decr i
+    if.else i @loop @done
+
+@done:
+
+}

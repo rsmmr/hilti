@@ -102,7 +102,7 @@ iEnd
 iBegin(vector, New, "new")
     iTarget(optype::refVector)
     iOp1(optype::typeVector, true);
-    iOp2(optype::optional(optype::refTimerMgr), true);
+    iOp2(optype::optional(optype::refTimerMgr), false);
 
     iValidate {
         equalTypes(referencedType(target), typedType(op1));
@@ -131,7 +131,7 @@ iEnd
 
 iBegin(vector, PushBack, "vector.push_back")
     iOp1(optype::refVector, false)
-    iOp2(optype::any, true)
+    iOp2(optype::any, false)
 
     iValidate {
         canCoerceTo(op2, elementType(referencedType(op1)));
@@ -163,7 +163,7 @@ iEnd
 iBegin(vector, Set, "vector.set")
     iOp1(optype::refVector, false)
     iOp2(optype::int64, true)
-    iOp3(optype::any, true)
+    iOp3(optype::any, false)
 
     iValidate {
         canCoerceTo(op3, elementType(referencedType(op1)));

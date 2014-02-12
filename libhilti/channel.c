@@ -245,7 +245,7 @@ hlt_channel_capacity hlt_channel_size(hlt_channel* ch, hlt_exception** excpt, hl
     return ch->size;
 }
 
-hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_CHANNEL);
     assert(type->num_params == 2);
@@ -264,16 +264,7 @@ hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t o
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
     int i;
     for ( i = 0; i < type->num_params; i++ ) {
-        hlt_string t;
-
-        if ( types[i]->to_string ) {
-            t = (types[i]->to_string)(types[i], obj, 0, excpt, ctx);
-            if ( *excpt )
-                return 0;
-        }
-        else
-            t = hlt_string_from_asciiz(types[i]->tag, excpt, ctx);
-
+        hlt_string t = hlt_object_to_string(types[i], obj, options, seen, excpt, ctx);
         s = hlt_string_concat_and_unref(s, t, excpt, ctx);
 
         if ( i < type->num_params - 1 ) {

@@ -131,19 +131,19 @@ Instruction::operator string() const
 {
     std::list<string> ops;
 
-    if ( __typeOp1() )
-        ops.push_back(__typeOp1()->render());
+    if ( __typeOp1().first )
+        ops.push_back(__typeOp1().first->render());
 
-    if ( __typeOp2() )
-        ops.push_back(__typeOp2()->render());
+    if ( __typeOp2().first )
+        ops.push_back(__typeOp2().first->render());
 
-    if ( __typeOp3() )
-        ops.push_back(__typeOp3()->render());
+    if ( __typeOp3().first )
+        ops.push_back(__typeOp3().first->render());
 
     string s = _id->name() + ": " + util::strjoin(ops, ", ");
 
-    if ( __typeOp0() )
-        s += " -> " + __typeOp0()->render();
+    if ( __typeOp0().first )
+        s += " -> " + __typeOp0().first->render();
 
     return s;
 }
@@ -209,17 +209,17 @@ bool Instruction::matchesOperands(const instruction::Operands& ops, bool coerce)
 
 #if 0
     fprintf(stderr, "--- %s  coerce %d\n", string(*this).c_str(), coerce);
-    fprintf(stderr, "0 %s | %s\n", ops[0] ? ops[0]->render().c_str() : "-", __typeOp0() ? __typeOp0()->render().c_str() : "-");
-    fprintf(stderr, "1 %s | %s\n", ops[1] ? ops[1]->render().c_str() : "-", __typeOp1() ? __typeOp1()->render().c_str() : "-");
-    fprintf(stderr, "2 %s | %s\n", ops[2] ? ops[2]->render().c_str() : "-", __typeOp2() ? __typeOp2()->render().c_str() : "-");
-    fprintf(stderr, "3 %s | %s\n", ops[3] ? ops[3]->render().c_str() : "-", __typeOp3() ? __typeOp3()->render().c_str() : "-");
+    fprintf(stderr, "0 %s | %s\n", ops[0] ? ops[0]->render().c_str() : "-", __typeOp0().first ? __typeOp0().first->render().c_str() : "-");
+    fprintf(stderr, "1 %s | %s\n", ops[1] ? ops[1]->render().c_str() : "-", __typeOp1().first ? __typeOp1().first->render().c_str() : "-");
+    fprintf(stderr, "2 %s | %s\n", ops[2] ? ops[2]->render().c_str() : "-", __typeOp2().first ? __typeOp2().first->render().c_str() : "-");
+    fprintf(stderr, "3 %s | %s\n", ops[3] ? ops[3]->render().c_str() : "-", __typeOp3().first ? __typeOp3().first->render().c_str() : "-");
 
     fprintf(stderr, "match: 0->%d 1->%d 2->%d 3->%d\n", (int)__matchOp0(ops[0], coerce), (int)__matchOp1(ops[1], coerce), (int)__matchOp2(ops[2], coerce),  (int)__matchOp3(ops[3], coerce));
 
     if ( ! ops[1] )
-        fprintf(stderr, " A %d\n", (int)ast::isA<type::OptionalArgument>(__typeOp1()));
+        fprintf(stderr, " A %d\n", (int)ast::isA<type::OptionalArgument>(__typeOp1().first));
 
-    if ( ! __typeOp1()->equal(ops[1]->type()) )
+    if ( ! __typeOp1().first->equal(ops[1]->type()) )
         fprintf(stderr, " B F\n");
 
     //if ( ops[1]->isConstant() && ! constant )
@@ -500,10 +500,13 @@ Instruction::Info Instruction::info() const
     info.class_ = _class;
     info.description = ::util::escapeBytes(__doc());
     info.terminator = __terminator();
-    info.type_target = __typeOp0();
-    info.type_op1 = __typeOp1();
-    info.type_op2 = __typeOp2();
-    info.type_op3 = __typeOp3();
+    info.type_target = __typeOp0().first;
+    info.type_op1 = __typeOp1().first;
+    info.type_op2 = __typeOp2().first;
+    info.type_op3 = __typeOp3().first;
+    info.const_op1 = __typeOp1().second;
+    info.const_op2 = __typeOp2().second;
+    info.const_op3 = __typeOp3().second;
     info.default_op1 = __defaultOp1();
     info.default_op2 = __defaultOp2();
     info.default_op3 = __defaultOp3();
@@ -551,13 +554,13 @@ std::pair<shared_ptr<Type>, bool> Instruction::typeOperand(int n) const
 {
     switch ( n ) {
      case 1:
-        return std::make_pair(__typeOp1(), false);
+        return __typeOp1();
 
      case 2:
-        return std::make_pair(__typeOp2(), false);
+        return __typeOp2();
 
      case 3:
-        return std::make_pair(__typeOp3(), false);
+        return __typeOp3();
 
     }
     return std::make_pair(nullptr, false);
@@ -565,7 +568,7 @@ std::pair<shared_ptr<Type>, bool> Instruction::typeOperand(int n) const
 
 shared_ptr<Type> Instruction::typeTarget() const
 {
-    return __typeOp0();
+    return __typeOp0().first;
 }
 
 shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(shared_ptr<Instruction> instr, shared_ptr<statement::Instruction> stmt)
@@ -599,18 +602,18 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
 
             switch ( i ) {
              case 1:
-                if ( instr->__typeOp1() )
-                    op = op->coerceTo(instr->__typeOp1());
+                if ( instr->__typeOp1().first )
+                    op = op->coerceTo(instr->__typeOp1().first);
                 break;
 
              case 2:
-                if ( instr->__typeOp2() )
-                    op = op->coerceTo(instr->__typeOp2());
+                if ( instr->__typeOp2().first )
+                    op = op->coerceTo(instr->__typeOp2().first);
                 break;
 
              case 3:
-                if ( instr->__typeOp3() )
-                    op = op->coerceTo(instr->__typeOp3());
+                if ( instr->__typeOp3().first )
+                    op = op->coerceTo(instr->__typeOp3().first);
                 break;
             }
         }

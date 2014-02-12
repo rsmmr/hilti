@@ -136,6 +136,14 @@ extern string escapeUTF8(const string& s);
 /// Returns: The escaped string.
 extern string escapeBytes(const string& s);
 
+/// Turns an arbitrary string into something that can be used as C-level identifier.
+///
+/// s: The string to convert.
+///
+/// ensure_non_keyword: If true, the returned ID will be expanded to make
+/// sure it won't accidentdally match a compiler keyword.
+extern string toIdentifier(const string& s, bool ensure_non_keyword = false);
+
 /// Returns the curren time in seconds since the epoch.
 extern double currentTime();
 

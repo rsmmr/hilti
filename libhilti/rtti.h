@@ -107,7 +107,7 @@ struct __hlt_type_info {
     // value stored with the C type as HILTI uses normally for values of that
     // type. 'options' is a bitmask of HLT_CONVERT_* options. 'expt' can be
     // set to raise an exception.
-    struct __hlt_string* (*to_string)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
+    struct __hlt_string* (*to_string)(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** expt, hlt_execution_context* ctx);
     int64_t (*to_int64)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
     double (*to_double)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
 

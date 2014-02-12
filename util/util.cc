@@ -404,3 +404,50 @@ double util::currentTime()
     gettimeofday(&tv, 0);
     return double(tv.tv_sec) + double(tv.tv_usec) / 1e6;
 }
+
+std::string util::toIdentifier(const string& s, bool ensure_non_keyword)
+{
+    static char const* const hex = "0123456789abcdef";
+
+    if ( s.empty() )
+        return s;
+
+    string normalized = s;
+
+    normalized = ::util::strreplace(normalized, "::", "_");
+    normalized = ::util::strreplace(normalized, "<", "_");
+    normalized = ::util::strreplace(normalized, ">", "_");
+    normalized = ::util::strreplace(normalized, ",", "_");
+    normalized = ::util::strreplace(normalized, ".", "_");
+    normalized = ::util::strreplace(normalized, " ", "_");
+    normalized = ::util::strreplace(normalized, "-", "_");
+    normalized = ::util::strreplace(normalized, "'", "_");
+    normalized = ::util::strreplace(normalized, "\"", "_");
+    normalized = ::util::strreplace(normalized, "__", "_");
+
+    while ( ::util::endsWith(normalized, "_") )
+        normalized = normalized.substr(0, normalized.size() - 1);
+
+    std::string ns;
+
+    for ( auto c : normalized ) {
+        if ( isalnum(c) || c == '_' ) {
+            ns += c;
+            continue;
+        }
+
+        ns += "x";
+        ns += hex[c >> 4];
+        ns += hex[c % 0x0f];
+    }
+
+    ns = ::util::strreplace(ns, "__", "_");
+
+    if ( isdigit(ns[0]) )
+        ns = "_" + ns;
+
+    if ( ensure_non_keyword )
+        ns += "_";
+
+    return ns;
+}

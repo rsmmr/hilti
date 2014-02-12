@@ -77,7 +77,7 @@ iEnd
 
 iBegin(operator_, Assign, "assign")
     iTarget(optype::any)
-    iOp1(optype::any, true)
+    iOp1(optype::any, false)
 
     iValidate {
         if ( ! type::hasTrait<type::trait::ValueType>(target->type()) ) {

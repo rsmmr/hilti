@@ -13,5 +13,7 @@
 #include "block-flattener.h"
 #include "cfg.h"
 #include "liveness.h"
+#include "optimize-ctors.h"
+#include "optimize-peephole.h"
 
 #endif

@@ -1,0 +1,13 @@
+void f(ref<list<string>> l)
+    call Hilti::print (list<string>("A", "B"))
+global ref<bytes> __opt_ctor_1 = b"12"
+global ref<bytes> __opt_ctor_2 = b"12"
+global ref<bytes> __opt_ctor_3 = b"12"
+global ref<bytes> __opt_ctor_4 = b"13"
+global ref<bytes> __opt_ctor_5 = b"12"
+global ref<bytes> __opt_ctor_6 = b"12"
+global ref<bytes> __opt_ctor_7 = b"12"
+global ref<bytes> __opt_ctor_8 = b"13"
+global ref<list<string>> __opt_ctor_9 = list<string>("A", "B")
+global ref<list<string>> __opt_ctor_10 = list<string>("A", "b")
+global ref<map<int<64>, ref<bytes>>> __opt_ctor_11 = map<int<64>, ref<bytes>>(1: b"X", 2: b"Y", 3: b"Z")

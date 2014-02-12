@@ -31,6 +31,8 @@ void codegen::util::IRInserter::InsertHelper(llvm::Instruction *I, const llvm::T
 
 string codegen::util::mangle(const string& name, bool global, shared_ptr<ID> parent, string prefix, bool internal)
 {
+    // TODO: Leverate util::toIdentifier().
+
     static char const* const hex = "0123456789abcdef";
 
     string normalized = name;

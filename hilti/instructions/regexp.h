@@ -59,7 +59,7 @@ iEnd
 
 iBegin(regexp, CompileSet, "regexp.compile")
     iOp1(optype::refRegExp, false)
-    iOp2(optype::refList, true)
+    iOp2(optype::refList, false)
 
     iValidate {
         equalTypes(elementType(referencedType(op2)), optype::string);

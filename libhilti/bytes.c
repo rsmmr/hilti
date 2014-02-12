@@ -1606,7 +1606,11 @@ hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hl
         // that just passes that back. Or maybe we even need a separate
         // to_bytes() function?
         void* obj = hlt_iterator_list_deref(i, excpt, ctx);
-        hlt_string so = hlt_string_from_object(ti, obj, excpt, ctx);
+
+        __hlt_pointer_stack* seen = __hlt_pointer_stack_new();
+        hlt_string so = hlt_object_to_string(ti, obj, 0, seen, excpt, ctx);
+        __hlt_pointer_stack_delete(seen);
+
         hlt_bytes* bo = hlt_string_encode(so, Hilti_Charset_UTF8, excpt, ctx);
         hlt_bytes_append(b, bo, excpt, ctx);
 

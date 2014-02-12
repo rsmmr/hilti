@@ -393,7 +393,7 @@ int8_t hlt_iterator_list_eq(const hlt_iterator_list i1, const hlt_iterator_list 
 }
 
 
-hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_list* l = *((const hlt_list**)obj);
 
@@ -409,13 +409,7 @@ hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_
 
     for ( __hlt_list_node* n = l->head; n; n = n->next ) {
 
-        hlt_string t = 0;
-
-        if ( l->type->to_string )
-            t = (l->type->to_string)(l->type, &n->data, options, excpt, ctx);
-        else
-            // No format function.
-            t = hlt_string_from_asciiz(l->type->tag, excpt, ctx);
+        hlt_string t = hlt_object_to_string(l->type, &n->data, options, seen, excpt, ctx);
 
         if ( *excpt )
             goto error;

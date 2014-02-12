@@ -298,7 +298,7 @@ int8_t hlt_iterator_vector_eq(hlt_iterator_vector i1, hlt_iterator_vector i2, hl
     return i1.vec == i2.vec && i1.idx == i2.idx;
 }
 
-hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_vector* v = *((const hlt_vector**)obj);
 
@@ -320,13 +320,7 @@ hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int3
         s = hlt_string_concat(s, sep1, excpt, ctx);
         GC_DTOR(tmp, hlt_string);
 
-        hlt_string t = 0;
-
-        if ( v->type->to_string )
-            t = (v->type->to_string)(v->type, v->elems + i * v->type->size, options, excpt, ctx);
-        else
-            // No format function.
-            t = hlt_string_from_asciiz(v->type->tag, excpt, ctx);
+        hlt_string t = hlt_object_to_string(v->type, v->elems + i * v->type->size, options, seen, excpt, ctx);
 
         s = hlt_string_concat_and_unref(s, t, excpt, ctx);
 

@@ -33,7 +33,7 @@ protocol analyzer listconv over TCP:
 
 on listconv::Test -> event listconv::test($conn,
                                   $is_orig,
-                                  [ listconv::bro_convert(i) for i in self.a ],
+                                  [listconv::bro_convert(i) for i in self.a],
                                   self.b,
                                   self.c
                                   );
@@ -47,7 +47,7 @@ type int_tuple: record {
 
 event listconv::test(x: connection,
                  is_orig: bool,
-                 a: set[int_tuple],
+                 a: vector of int_tuple,
                  b: int,
                  c: count
                 ) {

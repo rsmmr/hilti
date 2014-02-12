@@ -42,11 +42,11 @@ iEndH
 
 iBeginH(channel, Write, "channel.write")
     iOp1(optype::refChannel, false)
-    iOp2(optype::any, true)
+    iOp2(optype::any, false)
 iEndH
 
 iBeginH(channel, WriteTry, "channel.write_try")
     iOp1(optype::refChannel, false)
-    iOp2(optype::any, true)
+    iOp2(optype::any, false)
 iEndH
 

@@ -147,7 +147,10 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
 
       case 's':
         if ( fmt_type->to_string ) {
-            hlt_string str = (*fmt_type->to_string)(fmt_type, fmt_arg, HLT_CONVERT_NONE, excpt, ctx);
+            __hlt_pointer_stack* seen = __hlt_pointer_stack_new();
+            hlt_string str = (*fmt_type->to_string)(fmt_type, fmt_arg, HLT_CONVERT_NONE, seen, excpt, ctx);
+            __hlt_pointer_stack_delete(seen);
+
             if ( *excpt )
                 return;
 

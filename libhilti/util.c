@@ -14,6 +14,7 @@
 #include "globals.h"
 #include "threading.h"
 #include "globals.h"
+#include "memory_.h"
 
 void hlt_util_nanosleep(uint64_t nsecs)
 {
@@ -216,3 +217,51 @@ int8_t __hlt_safe_write(int fd, const char* data, int len)
 
 	return 1;
 }
+
+__hlt_pointer_stack* __hlt_pointer_stack_new()
+{
+    static const size_t initial_size = 5;
+    __hlt_pointer_stack* set = hlt_malloc(sizeof(__hlt_pointer_stack));
+    set->ptrs = hlt_malloc(sizeof(void *) * initial_size);
+    set->size = 0;
+    set->capacity = initial_size;
+    return set;
+}
+
+void __hlt_pointer_stack_delete(__hlt_pointer_stack* set)
+{
+    hlt_free(set->ptrs);
+    hlt_free(set);
+}
+
+int8_t __hlt_pointer_stack_lookup(__hlt_pointer_stack* set, const void *ptr)
+{
+    for ( size_t i = 0; i < set->size; i++ ) {
+        if ( set->ptrs[i] == ptr )
+            return 1;
+    }
+
+    return 0;
+}
+
+void __hlt_pointer_stack_push_back(__hlt_pointer_stack* set, const void *ptr)
+{
+    if ( __hlt_pointer_stack_lookup(set, ptr) )
+        return;
+
+    if ( set->size >= set->capacity ) {
+        size_t new_capacity = set->capacity * 2;
+        set->ptrs = hlt_realloc(set->ptrs, sizeof(void *) * new_capacity, sizeof(void *) * set->capacity);
+        set->capacity = new_capacity;
+    }
+
+    set->ptrs[set->size++] = ptr;
+}
+
+void __hlt_pointer_stack_pop_back(__hlt_pointer_stack* set)
+{
+    --set->size;
+
+    // Not worth freeing space here.
+}
+

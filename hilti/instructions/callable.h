@@ -12,12 +12,12 @@ iBeginH(callable, NewFunction, "new")
     iTarget(optype::refCallable)
     iOp1(optype::typeCallable, true);
     iOp2(optype::function, true)
-    iOp3(optype::tuple, true)
+    iOp3(optype::tuple, false)
 iEndH
 
 iBeginH(callable, NewHook, "new")
     iTarget(optype::refCallable)
     iOp1(optype::typeCallable, true);
     iOp2(optype::hook, true)
-    iOp3(optype::tuple, true)
+    iOp3(optype::tuple, false)
 iEndH

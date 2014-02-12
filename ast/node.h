@@ -241,7 +241,9 @@ public:
     /// that all corresponding node_ptr will reflect the change.
     ///
     /// n: The new node.
-    void replace(shared_ptr<NodeBase> n);
+    /// 
+    /// parent: If given, replace only for this parent.
+    void replace(shared_ptr<NodeBase> n, shared_ptr<NodeBase> parent = nullptr);
 
     /// Disconnects the node from all its childs and parents.
     void disconnect();

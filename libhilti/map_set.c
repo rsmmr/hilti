@@ -531,7 +531,7 @@ int8_t hlt_iterator_map_eq(hlt_iterator_map i1, hlt_iterator_map i2, hlt_excepti
     return i1.map == i2.map && i1.iter == i2.iter;
 }
 
-hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_map* m = *((const hlt_map**)obj);
 
@@ -555,20 +555,8 @@ hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t
             GC_DTOR(tmp, hlt_string);
         }
 
-        hlt_string key = 0;
-        hlt_string value = 0;
-
-        if ( m->tkey->to_string )
-            key = (m->tkey->to_string)(m->tkey, kh_key(m, i), options, excpt, ctx);
-        else
-            // No format function.
-            key = hlt_string_from_asciiz(m->tkey->tag, excpt, ctx);
-
-        if ( m->tvalue->to_string )
-            value = (m->tvalue->to_string)(m->tvalue, kh_value(m, i).val, options, excpt, ctx);
-        else
-            // No format function.
-            value = hlt_string_from_asciiz(m->tvalue->tag, excpt, ctx);
+        hlt_string key = hlt_object_to_string(m->tkey, kh_key(m, i), options, seen, excpt, ctx);
+        hlt_string value = hlt_object_to_string(m->tvalue, kh_value(m, i).val, options, seen, excpt, ctx);
 
         s = hlt_string_concat_and_unref(s, key, excpt, ctx);
 
@@ -804,7 +792,7 @@ int8_t hlt_iterator_set_eq(hlt_iterator_set i1, hlt_iterator_set i2, hlt_excepti
     return i1.set == i2.set && i1.iter == i2.iter;
 }
 
-hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_set* m = *((const hlt_set**)obj);
 
@@ -827,13 +815,7 @@ hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t
             GC_DTOR(tmp, hlt_string);
         }
 
-        hlt_string key = 0;
-
-        if ( m->tkey->to_string )
-            key = (m->tkey->to_string)(m->tkey, kh_key(m, i), options, excpt, ctx);
-        else
-            // No format function.
-            key = hlt_string_from_asciiz(m->tkey->tag, excpt, ctx);
+        hlt_string key = hlt_object_to_string(m->tkey, kh_key(m, i), options, seen, excpt, ctx);
 
         s = hlt_string_concat_and_unref(s, key, excpt, ctx);
 

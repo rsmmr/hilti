@@ -132,7 +132,7 @@ void NodeBase::removeFromParents()
     assert(_parents.size() == 0);
 }
 
-void NodeBase::replace(shared_ptr<NodeBase> n)
+void NodeBase::replace(shared_ptr<NodeBase> n, shared_ptr<NodeBase> parent)
 {
     assert(n);
 
@@ -147,6 +147,10 @@ void NodeBase::replace(shared_ptr<NodeBase> n)
         changed = false;
 
         for ( auto p : _parents ) {
+
+            if ( parent && parent.get() != p )
+                continue;
+
             for ( auto c = p->_childs.begin(); c != p->_childs.end(); c++ ) {
                 if ( (*c).get() == this ) {
                     node_ptr<NodeBase> old = *c;
@@ -161,10 +165,12 @@ void NodeBase::replace(shared_ptr<NodeBase> n)
 next: {}
     } while ( changed );
 
-    for ( auto c : _childs )
-        c->_parents.remove(this);
+    if ( ! parent ) {
+        for ( auto c : _childs )
+            c->_parents.remove(this);
 
-    _childs.clear();
+        _childs.clear();
+    }
 }
 
 

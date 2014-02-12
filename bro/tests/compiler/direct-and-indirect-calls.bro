@@ -4,7 +4,8 @@
 #
 # Make sure that the calls are indeed direct and indirect, respectively:
 #
-# @TEST-EXEC: cat bro.GLOBAL.hlt | sed -n '/^hook void bro_init/,/^}/p'| egrep -1 '"(in)?direct call"' >code
+# @TEST-EXEC: cat bro.GLOBAL.hlt | sed -n '/^hook void bro_init/,/^}/p'| egrep -1 'call.*(foo|legacy)' >code
+# @TEST-EXEC: cat bro.GLOBAL.hlt | egrep 'global.*_ctor_' >>code
 # @TEST-EXEC: btest-diff code
 #
 #

@@ -7,7 +7,7 @@
 
 iBeginH(flow, ReturnResult, "return.result")
     iTerminator()
-    iOp1(optype::any, true)
+    iOp1(optype::any, false)
 iEndH
 
 iBeginH(flow, ReturnVoid, "return.void")
@@ -44,7 +44,7 @@ iBeginH(flow, Yield, "yield")
 iEndH
 
 iBeginH(flow, YieldUntil, "yield.until")
-    iOp1(optype::any, true)
+    iOp1(optype::any, false)
 iEndH
 
 iBeginH(flow, IfElse, "if.else")

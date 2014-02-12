@@ -228,6 +228,8 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     passes::BlockFlattener        block_flattener;
     passes::Validator             validator;
     passes::ScopeBuilder          scope_builder(this);
+    passes::OptimizeCtors         optimize_ctors;
+    passes::OptimizePeepHole      optimize_peephole;
 
     _beginPass(module, instruction_normalizer);
 
@@ -306,6 +308,27 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     _beginPass(module, instruction_resolver);
 
     if ( ! instruction_resolver.run(module, true) )
+        return false;
+
+    _endPass();
+
+    _beginPass(module, validator);
+
+    if ( options().verify && ! validator.run(module) )
+        return false;
+
+    _endPass();
+
+    _beginPass(module, optimize_peephole);
+
+    if ( ! optimize_peephole.run(module) )
+        return false;
+
+    _endPass();
+
+    _beginPass(module, optimize_ctors);
+
+    if ( ! optimize_ctors.run(module) )
         return false;
 
     _endPass();
