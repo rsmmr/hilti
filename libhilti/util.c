@@ -175,13 +175,13 @@ void hlt_abort()
     abort();
 }
 
-hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len)
+hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len, hlt_hash prev_hash)
 {
     // This is copied and adapted from hhash.h
     if ( ! len )
         return 0;
 
-	hlt_hash h = 0;
+	hlt_hash h = prev_hash;
     while ( len-- )
         h = (h << 5) - h + *s++;
 
@@ -190,7 +190,7 @@ hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len)
 
 hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_hash hash = hlt_hash_bytes(obj, type->size);
+    hlt_hash hash = hlt_hash_bytes(obj, type->size, 0);
     return hash;
 }
 

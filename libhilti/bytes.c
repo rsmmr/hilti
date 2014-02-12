@@ -1139,7 +1139,7 @@ hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exceptio
     hlt_hash hash = 0;
 
     for ( const __hlt_bytes_chunk* c = b->head; c; c = c->next )
-        hash += hlt_hash_bytes(c->start, c->end - c->start);
+        hash = hlt_hash_bytes(c->start, c->end - c->start, hash);
 
     return hash;
 }

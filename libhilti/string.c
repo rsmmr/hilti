@@ -37,7 +37,7 @@ hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int3
 hlt_hash hlt_string_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s = *((hlt_string*)obj);
-    return s ? hlt_hash_bytes(s->bytes, s->len) : 0;
+    return s ? hlt_hash_bytes(s->bytes, s->len, 0) : 0;
 }
 
 int8_t hlt_string_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)

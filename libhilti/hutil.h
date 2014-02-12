@@ -102,8 +102,11 @@ extern uint64_t hlt_flip64(uint64_t v);
 ///
 /// len: The number of bytes to include, starting at *s*.
 ///
+/// prev_hash: To use the hash incrementally on subsequent chunks of data,
+/// pass the previous value here. Set to zero on initial call.
+///
 /// Returns: The hash value.
-extern hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len);
+extern hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len, hlt_hash prev_hash);
 
 /// Default hash function hashing a value by value.
 extern hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
