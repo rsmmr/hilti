@@ -1,0 +1,45 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+# @TEST-EXEC:  hiltic -p %INPUT | grep call.*_ >ctors
+# @TEST-EXEC:  btest-diff ctors
+
+module Main
+
+import Hilti
+
+void f_const(const ref<bytes> b) {
+    call Hilti::print (b)
+}
+
+void f_non_const(ref<bytes> b) {
+    call Hilti::print (b)
+    bytes.append b b"Modified"
+}
+
+void ft_const(const tuple<int<64>, ref<bytes>> t) {
+    call Hilti::print (t)
+}
+
+void ft_non_const(tuple<int<64>, ref<bytes>> t) {
+    call Hilti::print (t)
+    local ref<bytes> b
+    b = tuple.index t 1
+    bytes.append b b"Modified"
+}
+
+void foo() {
+    call f_const(b"A")
+    call f_non_const(b"B")
+
+    call Hilti::print ("+")
+
+    call ft_const((42, b"X"))
+    call ft_non_const((42, b"X"))
+}
+
+void run() {
+    call foo()
+    call Hilti::print ("-")
+    call foo()
+}

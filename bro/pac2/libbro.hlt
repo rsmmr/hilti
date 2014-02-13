@@ -21,7 +21,7 @@ declare "C-HILTI" BroVal cookie_to_conn_val(Pac2Cookie cookie)
 declare "C-HILTI" BroVal cookie_to_file_val(Pac2Cookie cookie)
 declare "C-HILTI" BroVal cookie_to_is_orig(Pac2Cookie cookie)
 declare "C-HILTI" bool   cookie_to_is_orig_boolean(Pac2Cookie cookie)
-declare "C-HILTI" BroVal h2b_bytes(ref<bytes> val)
+declare "C-HILTI" BroVal h2b_bytes(const ref<bytes> val)
 declare "C-HILTI" BroVal h2b_integer_signed(int<64> val)
 declare "C-HILTI" BroVal h2b_integer_unsigned(int<64> val)
 declare "C-HILTI" BroVal h2b_double(double val)
@@ -42,7 +42,7 @@ declare "C-HILTI" ref<bytes> b2h_string(BroVal val)
 declare "C-HILTI" int<64>    b2h_count(BroVal val)
 declare "C-HILTI" bool       b2h_bool(BroVal val)
 
-declare "C-HILTI" BroEventHandler get_event_handler(ref<bytes> name)
+declare "C-HILTI" BroEventHandler get_event_handler(const ref<bytes> name)
 declare "C-HILTI" void            raise_event(BroEventHandler hdl, tuple<*> vals)
 declare "C-HILTI" void            call_legacy_void(BroVal func, tuple<*> vals)
 declare "C-HILTI" BroVal          call_legacy_result(BroVal func, tuple<*> vals)
@@ -72,9 +72,9 @@ declare "C-HILTI" ref<file>   b2h_file(BroVal val)
 
 declare "C-HILTI" BroVal      h2b_network(net val)
 declare "C-HILTI" BroVal      h2b_interval(interval b)
-declare "C-HILTI" BroVal      h2b_regexp(ref<regexp> re)
+declare "C-HILTI" BroVal      h2b_regexp(const ref<regexp> re)
 declare "C-HILTI" BroVal      h2b_port(port val)
-declare "C-HILTI" BroVal      h2b_file(ref<file> f)
+declare "C-HILTI" BroVal      h2b_file(const ref<file> f)
 declare "C-HILTI" BroVal      b2h_type(BroVal val)
 declare "C-HILTI" BroVal      b2h_function(BroVal val)
 
@@ -83,7 +83,7 @@ declare "C-HILTI" BroVal  bro_record_index(BroVal rval, int<64> idx)
 declare "C-HILTI" void    bro_record_assign(BroVal rval, int<64> idx, BroVal val)
 
 declare "C-HILTI" BroTypeDecl bro_record_typedecl_new(string fname, BroType ftype)
-declare "C-HILTI" BroType     bro_record_type_new(ref<list<BroTypeDecl>> fields)
+declare "C-HILTI" BroType     bro_record_type_new(const ref<list<BroTypeDecl>> fields)
 
 declare "C-HILTI" BroVal               bro_vector_new(BroType vtype)
 declare "C-HILTI" void                 bro_vector_append(BroVal vval, BroVal val)
@@ -106,11 +106,11 @@ declare "C-HILTI" void    object_mapping_unregister_hilti(any obj)
 declare "C-HILTI" BroVal  object_mapping_lookup_bro(any obj)
 declare "C-HILTI" any     object_mapping_lookup_hilti(BroVal val)
 
-declare "C-HILTI" ref<BroAny> any_from_hilti(any obj, BroType btype, caddr to_val_func)
-declare "C-HILTI" any         any_to_hilti(ref<BroAny> a)
+declare "C-HILTI" ref<BroAny> any_from_hilti(const any obj, BroType btype, caddr to_val_func)
+declare "C-HILTI" any         any_to_hilti(const ref<BroAny> a)
 
 declare "C-HILTI" ref<BroAny> any_from_val(BroVal v)
-declare "C-HILTI" BroVal      any_to_val(ref<BroAny> a)
+declare "C-HILTI" BroVal      any_to_val(const ref<BroAny> a)
 
 export cookie_to_conn_val
 export h2b_bytes

@@ -1,0 +1,4 @@
+    call f_const (__opt_ctor_3)
+    call f_non_const (b"B")
+    call ft_const ((42, __opt_ctor_4))
+    call ft_non_const ((42, b"X"))

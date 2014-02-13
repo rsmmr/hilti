@@ -28,11 +28,12 @@ void OptimizeCtors::visit(expression::Ctor* c)
     // also keep the child right after that parent.
     auto nodes = currentNodes();
 
-    std::string x = ::util::fmt("*** %s",c->render());
     bool replace_with_global = false;
 
     shared_ptr<ast::NodeBase> parent = nullptr;
     shared_ptr<ast::NodeBase> child_of_parent = nullptr;
+    shared_ptr<ast::NodeBase> child_of_child_of_parent = nullptr;
+    shared_ptr<ast::NodeBase> child_of_child_of_child_of_parent = nullptr;
     shared_ptr<ast::NodeBase> direct_parent = nullptr;
 
     for ( Pass::node_list::const_reverse_iterator i = nodes.rbegin();
@@ -43,14 +44,13 @@ void OptimizeCtors::visit(expression::Ctor* c)
             break;
         }
 
+        child_of_child_of_child_of_parent = child_of_child_of_parent;
+        child_of_child_of_parent = child_of_parent;
         child_of_parent = *i;
 
         if ( ! direct_parent && (*i).get() != c )
             direct_parent = *i;
     }
-
-    //fprintf(stderr, "?1 %s -> %d (%p/%p/%p)\n", x.c_str(), (int) replace_with_global,
-//            parent.get(), direct_parent.get(), child_of_parent.get());
 
     if ( ! (parent && child_of_parent) )
         // Nothing found, probably won't happen annyways.
@@ -62,31 +62,59 @@ void OptimizeCtors::visit(expression::Ctor* c)
     // If it's an instruction, determine if the child we came through here
     // (i.e., the operand) is a constant.
 
-    if ( auto ins = ast::tryCast<statement::instruction::Resolved>(parent) ) {
-        if ( ins->op1() == child_of_parent )
-            replace_with_global = ins->instruction()->typeOperand(1).second;
+    if ( auto stmt = ast::tryCast<statement::instruction::Resolved>(parent) ) {
+        auto ins = stmt->instruction();
 
-        if ( ins->op2() == child_of_parent )
-            replace_with_global = ins->instruction()->typeOperand(2).second;
+        if ( stmt->op1() == child_of_parent )
+            replace_with_global = ins->typeOperand(1).second;
 
-        if ( ins->op3() == child_of_parent )
-            replace_with_global = ins->instruction()->typeOperand(3).second;
+        if ( stmt->op2() == child_of_parent )
+            replace_with_global = ins->typeOperand(2).second;
 
-        x = ::util::fmt(" %s | %d %d %d (%p/%p/%p)\n", string(*ins).c_str(),
-           (int)ins->instruction()->typeOperand(1).second,
-           (int)ins->instruction()->typeOperand(2).second,
-           (int)ins->instruction()->typeOperand(3).second,
-           ins->op1().get(), ins->op2().get(), ins->op3().get()
-           );
+        if ( stmt->op3() == child_of_parent )
+            replace_with_global = ins->typeOperand(3).second;
 
+        // For function arguments, check against the signature.
+
+        shared_ptr<hilti::type::Function> ftype = nullptr;
+        shared_ptr<hilti::Expression> tuple_op = nullptr;
+
+        if ( ast::isA<statement::instruction::flow::CallResult>(stmt) ||
+             ast::isA<statement::instruction::flow::CallVoid>(stmt) ||
+             ast::isA<statement::instruction::thread::Schedule>(stmt) ) {
+            ftype = ast::checkedCast<type::Function>(stmt->op1()->type());
+            tuple_op = stmt->op2();
+        }
+
+        if ( ast::isA<statement::instruction::flow::CallCallableResult>(stmt) ||
+             ast::isA<statement::instruction::flow::CallCallableVoid>(stmt) ) {
+            auto rt = ast::checkedCast<type::Reference>(stmt->op1()->type());
+            ftype = ast::checkedCast<type::Callable>(rt->argType());
+            tuple_op = stmt->op2();
+        }
+
+        if ( ast::isA<statement::instruction::hook::Run>(stmt) ) {
+            ftype = ast::checkedCast<type::Hook>(stmt->op1()->type());
+            tuple_op = stmt->op2();
+        }
+
+        if ( ftype && tuple_op && tuple_op.get() == child_of_parent.get() ) {
+            auto args_expr = ast::checkedCast<expression::Constant>(tuple_op);
+            auto args_tuple = ast::checkedCast<constant::Tuple>(args_expr->constant());
+
+            auto fparams = ftype->parameters();
+            auto p = fparams.begin();
+
+            for ( auto a : args_tuple->value() ) {
+                if ( a.get() == child_of_child_of_child_of_parent.get() && (*p)->constant() )
+                    replace_with_global = true;
+
+                ++p;
+            }
+        }
     }
 
-    // TODO: Check for constant parameters to function calls.
-
     // Now, if we can replace it with a global, do so.
-
-//fprintf(stderr, "?2 %s -> %d (%p/%p/%p)\n", x.c_str(), (int) replace_with_global,
-//            parent.get(), direct_parent.get(), child_of_parent.get());
 
     if ( ! replace_with_global )
         return;
@@ -96,20 +124,8 @@ void OptimizeCtors::visit(expression::Ctor* c)
 
     auto scope = _module->body()->scope();
 
-#if 0
     // Note, we don't cache once-created object here for reuse because that
-    // would change the semantics of "equal ctor1 ctor2". Because equal does
-    // ptr comparision, not a deep comparision, we get false for two ctors
-    // that create otherwise identical objects.
-    //
-    // If we ever changed that to deep copies, we could cache here. Then
-    // we need to change the name from a counter to using maybe the pointer
-    // or a string representation.
-
-    auto nexpr = scope->lookupUnique(id);
-
-    if ( ! nexpr )
-#endif
+    // could change the semantics of "equal ctor1 ctor2".
 
     auto init = std::make_shared<expression::Ctor>(c->ctor());
     auto var = std::make_shared<variable::Global>(id, c->type(), init, c->location());
@@ -118,12 +134,6 @@ void OptimizeCtors::visit(expression::Ctor* c)
 
     _module->body()->addDeclaration(decl);
     scope->insert(id, nexpr);
-
-#if 0
-    }
-#endif
-
-// fprintf(stderr, "%s -> %s | %s\n", c->render().c_str(), nexpr->render().c_str(), x.c_str());
 
     c->replace(nexpr, direct_parent);
 }
