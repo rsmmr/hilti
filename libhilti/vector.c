@@ -109,6 +109,8 @@ hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, struc
         v->timers = hlt_malloc(sizeof(hlt_timer*) *  InitialCapacity);
         assert(v->timers);
     }
+    else
+        v->timers = 0;
 
     // We need to deep-copy the default element as the caller might have it
     // on its stack.
@@ -123,6 +125,83 @@ hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, struc
     v->strategy = hlt_enum_unset(excpt, ctx);
 
     return v;
+}
+
+static void _clone_init_in_thread(const hlt_type_info* ti, void* dstp, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_vector* dst = *(hlt_vector**)dstp;
+
+    // If we arrive here, it can't be a custom timer mgr but only the
+    // thread-wide one.
+    dst->tmgr = ctx->tmgr;
+    GC_CCTOR(dst->tmgr, hlt_timer_mgr);
+
+    assert(dst->timers);
+
+    for ( hlt_vector_idx i = 0; i <= dst->last; i++ ) {
+
+        hlt_timer* t = dst->timers[i];
+
+        if ( ! t )
+            continue;
+
+        hlt_timer_mgr_schedule(dst->tmgr, t->time, t, excpt, ctx);
+        GC_DTOR(t, hlt_timer); // Not memory-managed on our end.
+    }
+}
+
+void* hlt_vector_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return GC_NEW(hlt_vector);
+}
+
+void hlt_vector_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_vector* src = *(hlt_vector**)srcp;
+    hlt_vector* dst = *(hlt_vector**)dstp;
+
+    if ( src->tmgr && src->tmgr != ctx->tmgr ) {
+        hlt_string msg = hlt_string_from_asciiz("vector with non-standard timer mgr cannot be cloned", excpt, ctx);
+        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg);
+        return;
+    }
+
+    dst->elems = hlt_malloc(src->type->size * src->capacity);
+
+    if ( src->timers && src->timeout )
+        dst->timers = hlt_malloc(sizeof(hlt_timer*) * src->capacity);
+    else
+        dst->timers = 0;
+
+    for ( hlt_vector_idx i = 0; i <= src->last; i++ ) {
+        void *selem = src->elems + i * src->type->size;
+        void *delem = dst->elems + i * src->type->size;
+
+        __hlt_clone(delem, src->type, selem, cstate, excpt, ctx);
+
+        if ( src->timers && src->timeout ) {
+            if ( src->timers[i] ) {
+                GC_CCTOR(dst, hlt_vector);
+                __hlt_vector_timer_cookie cookie = { dst, i };
+                dst->timers[i] = __hlt_timer_new_vector(cookie, excpt, ctx);
+                dst->timers[i]->time = src->timers[i]->time; // Preset time.
+            }
+            else
+                dst->timers[i] = 0;
+        }
+    }
+
+    dst->last = src->last;
+    dst->capacity = src->capacity;
+    dst->type = src->type;
+    dst->timeout = src->timeout;
+    dst->strategy = src->strategy;
+    dst->tmgr = 0; // Set by init_in_thread()
+    dst->def = hlt_malloc(dst->type->size);
+    __hlt_clone(dst->def, src->type, src->def, cstate, excpt, ctx);
+
+    if ( src->tmgr )
+        __hlt_clone_init_in_thread(_clone_init_in_thread, ti, dstp, cstate, excpt, ctx);
 }
 
 void hlt_vector_timeout(hlt_vector* v, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -347,4 +426,3 @@ error:
     GC_DTOR(s, hlt_string);
     return 0;
 }
-

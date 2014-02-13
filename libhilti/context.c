@@ -9,6 +9,7 @@
 #include "config.h"
 #include "profiler.h"
 #include "linker.h"
+#include "timer.h"
 
 void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
 {
@@ -25,6 +26,10 @@ void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
 
     if ( ctx->tcontext ) {
         GC_DTOR_GENERIC(&ctx->tcontext, ctx->tcontext_type);
+    }
+
+    if ( ctx->tmgr ) {
+        GC_DTOR(ctx->tmgr, hlt_timer_mgr);
     }
 
     __hlt_fiber_pool_delete(ctx->fiber_pool);
@@ -49,6 +54,7 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
     ctx->tcontext_type = 0;
     ctx->pstate = 0;
     ctx->blockable = 0;
+    ctx->tmgr = hlt_timer_mgr_new(&ctx->excpt, ctx);
 
     return ctx;
 }

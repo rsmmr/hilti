@@ -1,0 +1,32 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void foo(string s, ref<bytes> b, double d) {
+    local string x
+    x = call Hilti::fmt ("%s/%s/%f", (s, b, d))
+    call Hilti::print (x)
+    }
+
+void run() {
+    local ref<callable<void, double>> c1
+    local ref<callable<void, double>> c2
+
+    local ref<bytes> q
+
+    q = b"a"
+
+    c1 = callable<void, double>(foo, ("s", q))
+    c2 = clone c1
+
+    bytes.append q b"b"
+
+    call c1 (10.1)
+    call c2 (20.2)
+}

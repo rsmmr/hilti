@@ -133,25 +133,30 @@ static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_
     GC_DTOR(n, __hlt_list_node);
 }
 
-// Returns a ref'ed node.
+// Returns a ref'ed node. Val not yet ref'ed.
 static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __hlt_list_node* n = GC_NEW_CUSTOM_SIZE(__hlt_list_node, sizeof(__hlt_list_node) + l->type->size);
     n->type = l->type;
 
-    // Init node (note that the memory is zero-initialized).
+    // Other fields are null initialized.
+
     memcpy(&n->data, val, l->type->size);
     GC_CCTOR_GENERIC(&n->data, l->type);
 
-    // Start timer if needed.
-    if ( l->tmgr && l->timeout ) {
+    hlt_time t = (l->tmgr && l->timeout) ? hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout : 0;
+
+    if ( t ) {
+        assert(l->tmgr);
         __hlt_list_timer_cookie cookie = { l, n };
         GC_CCTOR(cookie, hlt_iterator_list);
         n->timer = __hlt_timer_new_list(cookie, excpt, ctx);
-        hlt_time t = hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout;
         hlt_timer_mgr_schedule(l->tmgr, t, n->timer, excpt, ctx);
         GC_DTOR(n->timer, hlt_timer); // Not memory-managed on our end.
     }
+
+    else
+        n->timer = 0;
 
     return n;
 }
@@ -184,6 +189,71 @@ hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_timer_mgr* tmgr, hlt_e
     l->timeout = 0.0;
     l->strategy = hlt_enum_unset(excpt, ctx);
     return l;
+}
+
+static void _clone_init_in_thread(const hlt_type_info* ti, void* dstp, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_list* dst = *(hlt_list**)dstp;
+
+    // If we arrive here, it can't be a custom timer mgr but only the
+    // thread-wide one.
+    dst->tmgr = ctx->tmgr;
+    GC_DTOR(dst->tmgr, hlt_timer_mgr);
+
+    for ( __hlt_list_node* n = dst->head; n; n = n->next ) {
+        if ( ! n->timer )
+            continue;
+
+        hlt_timer_mgr_schedule(dst->tmgr, n->timer->time, n->timer, excpt, ctx);
+        GC_DTOR(n->timer, hlt_timer); // Not memory-managed on our end.
+    }
+}
+
+void* hlt_list_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return GC_NEW(hlt_list);
+}
+
+void hlt_list_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_list* src = *(hlt_list**)srcp;
+    hlt_list* dst = *(hlt_list**)dstp;
+
+    if ( src->tmgr && src->tmgr != ctx->tmgr ) {
+        hlt_string msg = hlt_string_from_asciiz("list with non-standard timer mgr cannot be cloned", excpt, ctx);
+        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg);
+        return;
+    }
+
+    dst->head = dst->tail = 0;
+    dst->size = 0;
+    dst->type = src->type;
+    dst->timeout = src->timeout;
+    dst->strategy = src->strategy;
+    dst->tmgr = 0; // Set by init_in_thread().
+
+    for ( __hlt_list_node* ns = src->head; ns; ns = ns->next ) {
+        __hlt_list_node* nd = GC_NEW_CUSTOM_SIZE(__hlt_list_node, sizeof(__hlt_list_node) + dst->type->size);
+        nd->type = ns->type;
+
+        __hlt_clone(&nd->data, nd->type, &ns->data, cstate, excpt, ctx);
+
+        if ( ns->timer ) {
+            __hlt_list_timer_cookie cookie = { dst, nd };
+            GC_CCTOR(cookie, hlt_iterator_list);
+            hlt_timer* t = __hlt_timer_new_list(cookie, excpt, ctx);
+            t->time = ns->timer->time;
+            nd->timer = t;
+        }
+
+        else
+            nd->timer = 0;
+
+        _link(dst, nd, dst->tail);
+    }
+
+    if ( src->tmgr )
+        __hlt_clone_init_in_thread(_clone_init_in_thread, ti, dstp, cstate, excpt, ctx);
 }
 
 const hlt_type_info* hlt_list_type(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)

@@ -38,9 +38,10 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
     flockfile(stdout);
 
     if ( type->to_string ) {
-        __hlt_pointer_stack* seen = __hlt_pointer_stack_new();
-        hlt_string s = hlt_object_to_string(type, obj, 0, seen, excpt, ctx);
-        __hlt_pointer_stack_delete(seen);
+        __hlt_pointer_stack seen;
+        __hlt_pointer_stack_init(&seen);
+        hlt_string s = hlt_object_to_string(type, obj, 0, &seen, excpt, ctx);
+        __hlt_pointer_stack_destroy(&seen);
 
         if ( *excpt )
             goto unlock;

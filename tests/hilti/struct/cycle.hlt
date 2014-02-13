@@ -1,0 +1,31 @@
+# No leak checking, we're creating reference cycles ...
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  HILTI_DEBUG= ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+type D = struct {
+    string s,
+    ref<E> e
+    }
+
+type E = struct {
+    string s,
+    ref<D> d
+    }
+
+void run() {
+    local ref<D> d
+    local ref<E> e1
+    local ref<E> e2
+
+    d = ("D", ())
+    e1 = ("E", d)
+    struct.set d "e" e1
+    call Hilti::print(e1)
+}

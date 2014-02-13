@@ -1,0 +1,44 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run() {
+    local string a
+    local string b
+    local string s1
+    local string s2
+    local bool c
+
+    # As we can't modify a string, we can't change the original
+    # one to see if the new one remains unaffected.
+
+    a = "Foo"
+    b = clone a
+    call Hilti::print(a)
+    call Hilti::print(b)
+
+    s1 = call Hilti::fmt("%p", (a))
+    s2 = call Hilti::fmt("%p", (b))
+    c = equal s1 s2
+    call Hilti::print(c)
+
+    call Hilti::print("--")
+
+    a = ""
+    b = clone a
+    call Hilti::print(a)
+    call Hilti::print(b)
+
+    # They will be both zero here.
+    s1 = call Hilti::fmt("%p", (a))
+    s2 = call Hilti::fmt("%p", (b))
+    c = equal s1 s2
+    call Hilti::print(s1)
+    call Hilti::print(s2)
+}

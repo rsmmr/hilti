@@ -218,20 +218,17 @@ int8_t __hlt_safe_write(int fd, const char* data, int len)
 	return 1;
 }
 
-__hlt_pointer_stack* __hlt_pointer_stack_new()
+void __hlt_pointer_stack_init(__hlt_pointer_stack* set)
 {
     static const size_t initial_size = 5;
-    __hlt_pointer_stack* set = hlt_malloc(sizeof(__hlt_pointer_stack));
     set->ptrs = hlt_malloc(sizeof(void *) * initial_size);
     set->size = 0;
     set->capacity = initial_size;
-    return set;
 }
 
-void __hlt_pointer_stack_delete(__hlt_pointer_stack* set)
+void __hlt_pointer_stack_destroy(__hlt_pointer_stack* set)
 {
     hlt_free(set->ptrs);
-    hlt_free(set);
 }
 
 int8_t __hlt_pointer_stack_lookup(__hlt_pointer_stack* set, const void *ptr)
@@ -265,3 +262,41 @@ void __hlt_pointer_stack_pop_back(__hlt_pointer_stack* set)
     // Not worth freeing space here.
 }
 
+void __hlt_pointer_map_init(__hlt_pointer_map* map)
+{
+    static const size_t initial_size = 5;
+    map->ptrs = hlt_malloc(sizeof(void *) * initial_size * 2);
+    map->size = 0;
+    map->capacity = initial_size;
+}
+
+void  __hlt_pointer_map_insert(__hlt_pointer_map* map, const void *key, const void* value)
+{
+    if ( __hlt_pointer_map_lookup(map, key) )
+        return;
+
+    if ( map->size >= map->capacity ) {
+        size_t new_capacity = map->capacity * 2;
+        map->ptrs = hlt_realloc(map->ptrs, sizeof(void *) * new_capacity * 2, sizeof(void *) * map->capacity);
+        map->capacity = new_capacity;
+    }
+
+    int idx = (2 * map->size++);
+    map->ptrs[idx] = key;
+    map->ptrs[idx + 1] = value;
+}
+
+const void* __hlt_pointer_map_lookup(__hlt_pointer_map* map, const void *key)
+{
+    for ( int idx = 0; idx < (2 * map->size); idx += 2 ) {
+        if ( map->ptrs[idx] == key )
+            return map->ptrs[idx + 1];
+    }
+
+    return 0;
+}
+
+void  __hlt_pointer_map_destroy(__hlt_pointer_map* map)
+{
+    hlt_free(map->ptrs);
+}

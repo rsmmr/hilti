@@ -1,0 +1,8 @@
+<i=101, b=True, test=Changed, d=3.140000, e=3.410000>
+<i=101, b=True, test=Abrakadraba, d=3.140000, e=3.410000>
+--
+<a=<i=1, b=True, test=A, d=3.000000, e=0.300000>, b=<a=<i=1, b=True, test=A, d=3.000000, e=0.300000>>>
+<a=<i=1, b=True, test=B, d=3.000000, e=0.300000>, b=<a=<i=1, b=True, test=B, d=3.000000, e=0.300000>>>
+--
+<s=E, d=<s=D, e=[...recursion...]>>
+<s=E, d=<s=DD, e=[...recursion...]>>

@@ -208,6 +208,10 @@ extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char
    __hlt_object_new(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__,__LINE__));
 
 /// XXX
+#define GC_NEW_CUSTOM_SIZE_GENERIC(ti, size) \
+   __hlt_object_new(ti, size, __hlt_make_location(__FILE__,__LINE__));
+
+/// XXX
 #define GC_DTOR(obj, tag) \
    { \
        __hlt_object_dtor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \

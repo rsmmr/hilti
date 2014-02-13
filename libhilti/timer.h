@@ -54,6 +54,13 @@ struct __hlt_timer {
     } cookie;
 };
 
+/// Returns a timer's expiration time.
+///
+/// timer: The timer to query.
+///
+/// excpt: &
+extern hlt_time hlt_timer_time(hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Advances a timer to a time further ahead.
 ///
 /// timer: The timer to cancel.

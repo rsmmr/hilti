@@ -27,6 +27,21 @@ void hlt_string_dtor(hlt_type_info* ti, hlt_string* s)
     // Nothing to do.
 }
 
+void* hlt_string_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_string src = *(hlt_string*)srcp;
+    return GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + src->len);
+}
+
+void hlt_string_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_string src = *(hlt_string*)srcp;
+    hlt_string dst = *(hlt_string*)dstp;
+
+    dst->len = src->len;
+    memcpy(&dst->bytes, src->bytes, src->len);
+}
+
 hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s = *((hlt_string*)obj);
@@ -643,9 +658,10 @@ hlt_string hlt_string_join(hlt_string sep, hlt_list* l, hlt_exception** excpt, h
 
         void* obj = hlt_iterator_list_deref(i, excpt, ctx);
 
-        __hlt_pointer_stack* seen = __hlt_pointer_stack_new();
-        hlt_string so = hlt_object_to_string(ti, obj, 0, seen, excpt, ctx);
-        __hlt_pointer_stack_delete(seen);
+        __hlt_pointer_stack seen;
+        __hlt_pointer_stack_init(&seen);
+        hlt_string so = hlt_object_to_string(ti, obj, 0, &seen, excpt, ctx);
+        __hlt_pointer_stack_destroy(&seen);
 
         s = hlt_string_concat_and_unref(s, so, excpt, ctx);
 

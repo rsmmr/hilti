@@ -244,6 +244,31 @@ hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_size len, 
     return b;
 }
 
+void* hlt_bytes_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return hlt_bytes_new(excpt, ctx);
+}
+
+void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes* src = *(hlt_bytes**)srcp;
+    hlt_bytes* dst = *(hlt_bytes**)dstp;
+
+    if ( is_empty(src) )
+        return;
+
+    hlt_bytes_size len = hlt_bytes_len(src, excpt, ctx);
+    int8_t* data = hlt_malloc(len);
+    hlt_bytes_to_raw_buffer(src, data, len, excpt, ctx);
+
+    dst->head->bytes = GC_NEW(__hlt_bytes_data);
+    dst->head->bytes->data = data;
+    dst->head->start = data;
+    dst->head->end = data + len;
+
+    assert(!is_empty(dst));
+}
+
 // Returns the number of bytes stored.
 hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -1613,9 +1638,10 @@ hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hl
         // to_bytes() function?
         void* obj = hlt_iterator_list_deref(i, excpt, ctx);
 
-        __hlt_pointer_stack* seen = __hlt_pointer_stack_new();
-        hlt_string so = hlt_object_to_string(ti, obj, 0, seen, excpt, ctx);
-        __hlt_pointer_stack_delete(seen);
+        __hlt_pointer_stack seen;
+        __hlt_pointer_stack_init(&seen);
+        hlt_string so = hlt_object_to_string(ti, obj, 0, &seen, excpt, ctx);
+        __hlt_pointer_stack_destroy(&seen);
 
         hlt_bytes* bo = hlt_string_encode(so, Hilti_Charset_UTF8, excpt, ctx);
         hlt_bytes_append(b, bo, excpt, ctx);

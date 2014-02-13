@@ -1,0 +1,28 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> a
+    local ref<bytes> b
+
+    a = b"Foo"
+    b = clone a
+    bytes.append a b"Bar"
+    call Hilti::print(a)
+    call Hilti::print(b)
+
+    call Hilti::print("--")
+
+    a = b""
+    b = clone a
+    bytes.append a b"Bar"
+    call Hilti::print(a)
+    call Hilti::print(b)
+}

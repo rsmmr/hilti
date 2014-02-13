@@ -162,6 +162,11 @@ hlt_timer* __hlt_timer_new_profiler(__hlt_profiler_timer_cookie cookie, hlt_exce
     return timer;
 }
 
+hlt_time hlt_timer_time(hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return timer->time;
+}
+
 void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! timer ) {

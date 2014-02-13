@@ -256,6 +256,9 @@ extern hlt_exception_type hlt_exception_conversion_error;
 /// Raised by Hilti::terminate() to terminate exectuin.
 extern hlt_exception_type hlt_exception_termination;
 
+/// A type doesn't support the clone operation.
+extern hlt_exception_type hlt_exception_cloning_not_supported;
+
 
 /// @}
 

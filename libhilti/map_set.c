@@ -211,6 +211,101 @@ hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_t
     return m;
 }
 
+static void _clone_init_in_thread_map(const hlt_type_info* ti, void* dstp, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_map* dst = *(hlt_map**)dstp;
+
+    // If we arrive here, it can't be a custom timer mgr but only the
+    // thread-wide one.
+    dst->tmgr = ctx->tmgr;
+    GC_CCTOR(dst->tmgr, hlt_timer_mgr);
+
+    for ( khiter_t i = kh_begin(dst); i != kh_end(dst); i++ ) {
+        if ( ! kh_exist(dst, i) )
+            continue;
+
+        hlt_timer* t = kh_value(dst, i).timer;
+
+        if ( ! t )
+            continue;
+
+        hlt_timer_mgr_schedule(dst->tmgr, t->time, t, excpt, ctx);
+        GC_DTOR(t, hlt_timer); // Not memory-managed on our end.
+    }
+}
+
+void* hlt_map_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return GC_NEW(hlt_map);
+}
+
+void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_map* src = *(hlt_map**)srcp;
+    hlt_map* dst = *(hlt_map**)dstp;
+
+    if ( src->tmgr && src->tmgr != ctx->tmgr ) {
+        hlt_string msg = hlt_string_from_asciiz("map with non-standard timer mgr cannot be cloned", excpt, ctx);
+        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg);
+        return;
+    }
+
+    dst->tmgr = 0; // set my init_in_thread()
+    dst->tkey = src->tkey;
+    dst->tvalue = src->tvalue;
+    dst->timeout = src->timeout;
+    dst->strategy = src->strategy;
+    dst->default_type = src->default_type;
+    dst->cache_result = 0;
+    dst->cache_default = 0;
+
+    switch ( src->default_type ) {
+     case HLT_MAP_DEFAULT_NONE:
+        break;
+
+     case HLT_MAP_DEFAULT_VALUE:
+        dst->default_.value = hlt_malloc(dst->tvalue->size);
+        __hlt_clone(dst->default_.value, src->tvalue, src->default_.value, cstate, excpt, ctx);
+        break;
+
+     case HLT_MAP_DEFAULT_FUNCTION:
+        dst->default_.function = hlt_malloc(dst->tvalue->size);
+        __hlt_clone(dst->default_.function, &hlt_type_info_hlt_callable, src->default_.function, cstate, excpt, ctx);
+        break;
+    }
+
+    for ( khiter_t i = kh_begin(src); i != kh_end(src); i++ ) {
+        if ( ! kh_exist(src, i) )
+            continue;
+
+        void* key = hlt_malloc(src->tkey->size);
+        void* val = hlt_malloc(src->tvalue->size);
+
+        __hlt_clone(key, src->tkey, kh_key(src, i), cstate, excpt, ctx);
+        __hlt_clone(val, src->tvalue, kh_value(src, i).val, cstate, excpt, ctx);
+
+        int ret;
+        khiter_t i = kh_put_map(dst, key, &ret, src->tkey);
+        assert(ret); // Cannot exist yet.
+
+        if ( src->tmgr && src->timeout ) {
+            GC_CCTOR(dst, hlt_map);
+            __hlt_map_timer_cookie cookie = { dst, key };
+            hlt_timer* t = __hlt_timer_new_map(cookie, excpt, ctx);
+            t->time = kh_value(src, i).timer->time;
+            kh_value(dst, i).timer = t;
+        }
+
+        else
+            kh_value(dst, i).timer = 0;
+
+        kh_value(dst, i).val = val;
+    }
+
+    if ( src->tmgr )
+        __hlt_clone_init_in_thread(_clone_init_in_thread_map, ti, dstp, cstate, excpt, ctx);
+}
+
 void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
@@ -596,6 +691,78 @@ hlt_set* hlt_set_new(const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exceptio
     m->timeout = 0.0;
     m->strategy = hlt_enum_unset(excpt, ctx);
     return m;
+}
+
+static void _clone_init_in_thread_set(const hlt_type_info* ti, void* dstp, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_set* dst = *(hlt_set**)dstp;
+
+    // If we arrive here, it can't be a custom timer mgr but only the
+    // thread-wide one.
+    dst->tmgr = ctx->tmgr;
+    GC_CCTOR(dst->tmgr, hlt_timer_mgr);
+
+    for ( khiter_t i = kh_begin(dst); i != kh_end(dst); i++ ) {
+        if ( ! kh_exist(dst, i) )
+            continue;
+
+        hlt_timer* t = kh_value(dst, i);
+
+        if ( ! t )
+            continue;
+
+        hlt_timer_mgr_schedule(dst->tmgr, t->time, t, excpt, ctx);
+        GC_DTOR(t, hlt_timer); // Not memory-managed on our end.
+    }
+}
+
+void* hlt_set_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return GC_NEW(hlt_set);
+}
+
+void hlt_set_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_set* src = *(hlt_set**)srcp;
+    hlt_set* dst = *(hlt_set**)dstp;
+
+    if ( src->tmgr && src->tmgr != ctx->tmgr ) {
+        hlt_string msg = hlt_string_from_asciiz("set with non-standard timer mgr cannot be cloned", excpt, ctx);
+        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg);
+        return;
+    }
+
+    dst->tmgr = 0; // set my init_in_thread()
+    dst->tkey = src->tkey;
+    dst->timeout = src->timeout;
+    dst->strategy = src->strategy;
+
+    for ( khiter_t i = kh_begin(src); i != kh_end(src); i++ ) {
+        if ( ! kh_exist(src, i) )
+            continue;
+
+        void* key = hlt_malloc(src->tkey->size);
+
+        __hlt_clone(key, src->tkey, kh_key(src, i), cstate, excpt, ctx);
+
+        int ret;
+        khiter_t i = kh_put_set(dst, key, &ret, src->tkey);
+        assert(ret); // Cannot exist yet.
+
+        if ( src->tmgr && src->timeout ) {
+            GC_CCTOR(dst, hlt_set);
+            __hlt_set_timer_cookie cookie = { dst, key };
+            hlt_timer* t = __hlt_timer_new_set(cookie, excpt, ctx);
+            t->time = kh_value(src, i)->time;
+            kh_value(dst, i) = t;
+        }
+
+        else
+            kh_value(dst, i) = 0;
+    }
+
+    if ( src->tmgr )
+        __hlt_clone_init_in_thread(_clone_init_in_thread_set, ti, dstp, cstate, excpt, ctx);
 }
 
 void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_exception** excpt, hlt_execution_context* ctx)

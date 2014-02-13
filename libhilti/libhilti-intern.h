@@ -57,5 +57,6 @@
 #include "profiler.h"
 #include "classifier.h"
 #include "hutil.h"
+#include "clone.h"
 
 #endif

@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<64> i
+    local bool b
+    local double d
+
+    d = 42.42
+
+    i = clone 64
+    b = clone True
+    d = clone d
+
+    call Hilti::print(i)
+    call Hilti::print(b)
+    call Hilti::print(d)
+}

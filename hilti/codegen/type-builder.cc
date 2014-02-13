@@ -188,12 +188,16 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     std::vector<llvm::Constant*> vals;
 
     int gc = 0;
+    int atomic = 0;
 
     auto rt = ast::as<type::Reference>(type);
 
     if ( type::hasTrait<type::trait::GarbageCollected>(type)
          || (rt && type::hasTrait<type::trait::GarbageCollected>(rt->argType())) )
         gc = 1;
+
+    if ( type::hasTrait<type::trait::Atomic>(type) )
+        atomic = 1;
 
     auto ti = typeInfo(type);
 
@@ -203,6 +207,19 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
         sizeof_ = llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->init_val), cg()->llvmTypeInt(16));
     else
         sizeof_ = cg()->llvmConstInt(0, 16);
+
+    llvm::Constant* object_size = nullptr;
+
+    if ( gc && ti->object_type )
+        object_size = llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->object_type), cg()->llvmTypeInt(16));
+    else
+        object_size = cg()->llvmConstInt(0, 16);
+
+    if ( ti->atomic && (ti->clone_init.size() || ti->clone_init_func || ti->clone_alloc.size() || ti->clone_alloc_func) )
+        internalError(::util::fmt("clone function(s) specified for atomic type '%s'", type->render().c_str()));
+
+    if ( ti->atomic && (ti->obj_dtor.size() || ti->obj_dtor_func || ti->cctor_func || ti->dtor_func) )
+        internalError(::util::fmt("ctor or dtor function(s) specified for atomic type '%s'", type->render().c_str()));
 
     // Ok if not the right type here.
     shared_ptr<type::trait::Parameterized> ptype = std::dynamic_pointer_cast<type::trait::Parameterized>(ti->type);
@@ -214,9 +231,11 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
 
     vals.push_back(cg()->llvmConstInt(ti->id, 16));
     vals.push_back(sizeof_);
+    vals.push_back(object_size);
     vals.push_back(cg()->llvmConstAsciizPtr(ti->name));
     vals.push_back(cg()->llvmConstInt(num_params, 16));
     vals.push_back(cg()->llvmConstInt(gc, 16));
+    vals.push_back(cg()->llvmConstInt(atomic, 16));
     vals.push_back(ti->aux ? ti->aux : cg()->llvmConstNull(cg()->llvmTypePtr()));
     vals.push_back(ti->ptr_map ? ti->ptr_map : cg()->llvmConstNull(cg()->llvmTypePtr()));
     vals.push_back(_lookupFunction(ti->to_string));
@@ -228,6 +247,8 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     vals.push_back(ti->dtor_func ? ti->dtor_func : _lookupFunction(ti->dtor));
     vals.push_back(ti->obj_dtor_func ? ti->obj_dtor_func : _lookupFunction(ti->obj_dtor));
     vals.push_back(ti->cctor_func ? ti->cctor_func : _lookupFunction(ti->cctor));
+    vals.push_back(ti->clone_init_func ? ti->clone_init_func : _lookupFunction(ti->clone_init));
+    vals.push_back(ti->clone_alloc_func ? ti->clone_alloc_func : _lookupFunction(ti->clone_alloc));
 
     if ( ptype ) {
         // Add type parameters.
@@ -301,6 +322,8 @@ void TypeBuilder::visit(type::String* s)
     ti->to_string = "hlt::string_to_string";
     ti->hash = "hlt::string_hash";
     ti->equal = "hlt::string_equal";
+    ti->clone_alloc = "hlt::string_clone_alloc";
+    ti->clone_init = "hlt::string_clone_init";
     setResult(ti);
 }
 
@@ -505,6 +528,11 @@ void TypeBuilder::visit(type::Tuple* t)
     ti->to_string = "hlt::tuple_to_string";
     ti->hash = "hlt::tuple_hash";
     ti->equal = "hlt::tuple_equal";
+
+    // TODO: Is is worth it to generate a per-type function here for
+    // non-wildcard tuples?
+    ti->clone_init = "hlt::tuple_clone_init";
+
     ti->aux = aux;
 
     if ( ! t->wildcard() ) {
@@ -705,6 +733,8 @@ void TypeBuilder::visit(type::Bytes* b)
     ti->hash = "hlt::bytes_hash";
     ti->equal = "hlt::bytes_equal";
     ti->blockable = "hlt::bytes_blockable";
+    ti->clone_alloc = "hlt::bytes_clone_alloc";
+    ti->clone_init = "hlt::bytes_clone_init";
     setResult(ti);
 }
 
@@ -714,6 +744,8 @@ void TypeBuilder::visit(type::Callable* t)
     ti->id = HLT_TYPE_CALLABLE;
     ti->dtor = "hlt::callable_dtor";
     ti->lib_type = "hlt.callable";
+    ti->clone_alloc = "hlt::callable_clone_alloc";
+    ti->clone_init = "hlt::callable_clone_init";
     setResult(ti);
 }
 
@@ -743,6 +775,8 @@ void TypeBuilder::visit(type::File* t)
     ti->dtor = "hlt::file_dtor";
     ti->lib_type = "hlt.file";
     ti->to_string = "hlt::file_to_string";
+    ti->clone_alloc = "hlt::file_clone_alloc";
+    ti->clone_init = "hlt::file_clone_init";
     setResult(ti);
 }
 
@@ -772,6 +806,8 @@ void TypeBuilder::visit(type::List* t)
     ti->dtor = "hlt::list_dtor";
     ti->lib_type = "hlt.list";
     ti->to_string = "hlt::list_to_string";
+    ti->clone_alloc = "hlt::list_clone_alloc";
+    ti->clone_init = "hlt::list_clone_init";
 
     setResult(ti);
 }
@@ -783,6 +819,8 @@ void TypeBuilder::visit(type::Map* t)
     ti->dtor = "hlt::map_dtor";
     ti->lib_type = "hlt.map";
     ti->to_string = "hlt::map_to_string";
+    ti->clone_alloc = "hlt::map_clone_alloc";
+    ti->clone_init = "hlt::map_clone_init";
     setResult(ti);
 }
 
@@ -793,6 +831,8 @@ void TypeBuilder::visit(type::Vector* t)
     ti->dtor = "hlt::vector_dtor";
     ti->lib_type = "hlt.vector";
     ti->to_string = "hlt::vector_to_string";
+    ti->clone_alloc = "hlt::vector_clone_alloc";
+    ti->clone_init = "hlt::vector_clone_init";
     setResult(ti);
 }
 
@@ -803,6 +843,8 @@ void TypeBuilder::visit(type::Set* t)
     ti->dtor = "hlt::set_dtor";
     ti->lib_type = "hlt.set";
     ti->to_string = "hlt::set_to_string";
+    ti->clone_alloc = "hlt::set_clone_alloc";
+    ti->clone_init = "hlt::set_clone_init";
     setResult(ti);
 }
 
@@ -872,6 +914,8 @@ void TypeBuilder::visit(type::RegExp* t)
     ti->dtor = "hlt::regexp_dtor";
     ti->lib_type = "hlt.regexp";
     ti->to_string = "hlt::regexp_to_string";
+    ti->clone_alloc = "hlt::regexp_clone_alloc";
+    ti->clone_init = "hlt::regexp_clone_init";
     setResult(ti);
 }
 
@@ -999,9 +1043,15 @@ void TypeBuilder::visit(type::Struct* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_STRUCT;
     ti->init_val = cg()->llvmConstNull(cg()->llvmTypePtr(stype));
+    ti->object_type = stype;
     ti->to_string = "hlt::struct_to_string";
     ti->hash = "hlt::struct_hash";
     ti->equal = "hlt::struct_equal";
+
+    // TODO: Is is worth it to generate per-type functions here for
+    // non-wildcard structs?
+    ti->clone_alloc = "hlt::struct_clone_alloc";
+    ti->clone_init = "hlt::struct_clone_init";
 
     setResult(ti);
 

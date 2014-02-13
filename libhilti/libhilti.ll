@@ -20,11 +20,12 @@
     %hlt.fiber*,                  ; fiber
     i8*,                          ; fiber_pool
     i8*,                          ; worker
-    i8*,                          ; profiling state
-    i64,                          ; debug_indent
     i8*,                          ; tcontext
     i8*,                          ; tcontext_type
     %hlt.blockable*,              ; blockable
+    i8*,                          ; tmgr
+    i8*,                          ; profiling state
+    i64,                          ; debug_indent
     i8*  ;; Start of globals (right here, pointer content isn't used.)
 }
 
@@ -34,7 +35,9 @@
 %hlt.callable.func = type {
     i8*, ;; Function pointer for call.
     i8*, ;; Function pointer for call that discards result.
-    i8*  ;; Function pointer for dtor.
+    i8*, ;; Function pointer for dtor.
+    i8*, ;; Function pointer for clone_init.
+    i64  ;; Total size of %hlt.callable object.
 }
 
 ; A callable object.
@@ -180,6 +183,10 @@ declare %hlt.execution_context* @hlt_fiber_context(%hlt.fiber*)
 
 declare void @__hlt_thread_mgr_schedule(%hlt.thread_mgr*, %hlt.vid, %hlt.callable*, %hlt.exception**, %hlt.execution_context*)
 declare void @__hlt_thread_mgr_schedule_tcontext(%hlt.thread_mgr*, %hlt.type_info*, %hlt.void*, %hlt.callable*, %hlt.exception**, %hlt.execution_context*)
+
+declare void @hlt_clone(i8*, %hlt.type_info*, i8*, i16, %hlt.exception**, %hlt.execution_context*)
+declare void @hlt_clone_for_thread(i8*, %hlt.type_info*, i8*, %hlt.vid, %hlt.exception**, %hlt.execution_context*)
+declare void @__hlt_clone(i8*, %hlt.type_info*, i8*, i8*, %hlt.exception**, %hlt.execution_context*)
 
 ;;; Exception types used by the code generator.
 @hlt_exception_unspecified = external constant %hlt.exception.type

@@ -1,0 +1,92 @@
+# No leak checking, we're creating reference cycles ...
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  HILTI_DEBUG= ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+type A = struct {
+    int<64> i &default=100,
+    bool b,
+    string test,
+    double d,
+    double e &default=3.41
+    }
+
+type B = struct {
+    ref<A> a
+    }
+
+type C = struct {
+    ref<A> a,
+    ref<B> b
+    }
+
+type D = struct {
+    string s,
+    ref<E> e
+    }
+
+type E = struct {
+    string s,
+    ref<D> d
+    }
+
+void run() {
+    local ref<A> a1
+    local ref<A> a2
+    local ref<B> b
+    local ref<C> c1
+    local ref<C> c2
+
+    local ref<D> d
+    local ref<E> e1
+    local ref<E> e2
+
+    a1 = (101, True, "Abrakadraba", 3.14, *)
+    a2 = clone a1
+
+    struct.set a1 "test" "Changed"
+
+    call Hilti::print(a1)
+    call Hilti::print(a2)
+
+    call Hilti::print("--")
+
+    # Create a graph were the same node gets references twice from
+    # different parents; when we change it, that change needs to
+    # show up at both places.
+
+    a1 = (1, True, "A", 3.0, 0.3)
+    b = (a1)
+    c1 = (a1, b)
+
+    c2 = clone c1
+
+    a1 = struct.get c2 "a"
+    struct.set a1 "test" "B"
+
+    call Hilti::print(c1)
+    call Hilti::print(c2)
+
+    call Hilti::print("--")
+
+    # Create a reference loop.
+
+    d = ("D", ())
+    e1 = ("E", d)
+    struct.set d "e" e1
+
+    e2 = clone e1
+
+    d = struct.get e2 "d"
+    struct.set d "s" "DD"
+
+    call Hilti::print(e1)
+    call Hilti::print(e2)
+
+}

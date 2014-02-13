@@ -30,6 +30,40 @@ static void print_bytes_raw(const char* b2, hlt_bytes_size size, hlt_exception**
 static void print_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 #endif
 
+static inline int _cflags(hlt_regexp_flags flags)
+{
+    int cflags = REG_EXTENDED | REG_LAZY;
+    if ( flags & HLT_REGEXP_NOSUB )
+        cflags |= REG_NOSUB;
+
+    return cflags | ((cflags & REG_NOSUB) ? REG_ANCHOR : 0);
+}
+
+// patter not net ref'ed.
+static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    // FIXME: For now, the pattern must contain only ASCII characters.
+    hlt_bytes* p = hlt_string_encode(pattern, Hilti_Charset_ASCII, excpt, ctx);
+    if ( *excpt )
+        return;
+
+    hlt_bytes_size plen = hlt_bytes_len(p, excpt, ctx);
+    int8_t* praw = hlt_bytes_to_raw(p, excpt, ctx);
+
+    GC_DTOR(p, hlt_bytes);
+
+    if ( jrx_regset_add(&re->regexp, (const char*)praw, plen) != 0 ) {
+        hlt_free(praw);
+        hlt_set_exception(excpt, &hlt_exception_pattern_error, pattern);
+        return;
+    }
+
+    hlt_free(praw);
+
+    GC_CCTOR(pattern, hlt_string);
+    re->patterns[idx] = pattern;
+}
+
 void hlt_regexp_dtor(hlt_type_info* ti, hlt_regexp* re)
 {
     for ( int i = 0; i < re->num; i++ )
@@ -69,38 +103,35 @@ hlt_regexp* hlt_regexp_new_flags(hlt_regexp_flags flags, hlt_exception** excpt, 
     return re;
 }
 
-static inline int _cflags(hlt_regexp_flags flags)
+void* hlt_regexp_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    int cflags = REG_EXTENDED | REG_LAZY;
-    if ( flags & HLT_REGEXP_NOSUB )
-        cflags |= REG_NOSUB;
-
-    return cflags | ((cflags & REG_NOSUB) ? REG_ANCHOR : 0);
+    return GC_NEW(hlt_regexp);
 }
 
-// patter not net ref'ed.
-static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_regexp_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    // FIXME: For now, the pattern must contain only ASCII characters.
-    hlt_bytes* p = hlt_string_encode(pattern, Hilti_Charset_ASCII, excpt, ctx);
-    if ( *excpt )
-        return;
+    hlt_regexp* src = *(hlt_regexp**)srcp;
+    hlt_regexp* dst = *(hlt_regexp**)dstp;
 
-    hlt_bytes_size plen = hlt_bytes_len(p, excpt, ctx);
-    int8_t* praw = hlt_bytes_to_raw(p, excpt, ctx);
+    dst->num = src->num;
+    dst->flags = src->flags;
+    dst->patterns = hlt_malloc(src->num * sizeof(hlt_string));
 
-    GC_DTOR(p, hlt_bytes);
+    for ( int i = 0; i < src->num; i++ )
+        __hlt_clone(&dst->patterns[i], &hlt_type_info_hlt_string, &src->patterns[i], cstate, excpt, ctx);
 
-    if ( jrx_regset_add(&re->regexp, (const char*)praw, plen) != 0 ) {
-        hlt_free(praw);
-        hlt_set_exception(excpt, &hlt_exception_pattern_error, pattern);
-        return;
+    // TODO: Figure out a way to reuse the compiled regexp. Need to make that
+    // thread-safe though.
+
+    jrx_regset_init(&dst->regexp, -1, _cflags(dst->flags));
+
+    for ( int idx = 0; idx < dst->num; idx++ ) {
+        hlt_string pattern = dst->patterns[idx];
+        _compile_one(dst, pattern, idx, excpt, ctx);
+        GC_DTOR(pattern, hlt_string);
     }
 
-    hlt_free(praw);
-
-    GC_CCTOR(pattern, hlt_string);
-    re->patterns[idx] = pattern;
+    jrx_regset_finalize(&dst->regexp);
 }
 
 hlt_regexp* hlt_regexp_new_from_regexp(const hlt_type_info* type, hlt_regexp* other, hlt_exception** excpt, hlt_execution_context* ctx)

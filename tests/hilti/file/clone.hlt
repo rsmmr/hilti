@@ -1,0 +1,43 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  cat file >>output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<file> a
+    local ref<file> b
+    local string s1
+    local string s2
+    local bool c
+
+    # As we can't modify a file, we can't change the original
+    # one to see if the new one remains unaffected.
+
+    a = new file
+    file.open a "file"
+
+    b = clone a
+
+    file.write a b"Instance A, 1"
+    file.write b b"Instance B, 1"
+
+    file.close a
+    # file.write a b"Instance A, 2" # This would now throw an IOError.
+
+    file.write b b"Instance B, 2"
+    file.close b
+
+    call Hilti::print(a)
+    call Hilti::print(b)
+
+    s1 = call Hilti::fmt("%p", (a))
+    s2 = call Hilti::fmt("%p", (b))
+    c = equal s1 s2
+    call Hilti::print(c)
+}

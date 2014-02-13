@@ -80,8 +80,16 @@ struct __hlt_type_info {
     /// The type's HLT_TYPE_* id.
     int16_t type;
 
-    /// The size of an instance in bytes.
+    /// The size of an instance in bytes. This corresponds to the size needed
+    /// on the stack for storing an instance of this type; for a garbage
+    /// collected type that's the size of the reference, not the object.
     int16_t size;
+
+    /// For garbage collected objects, the size of an instance in bytes as
+    /// it's stored on the heap. Note that not for all types this can be
+    /// determined statically, and hence it's only provided for types where
+    /// the compiler is explicitly told to do so; otherwise it's zero.
+    int16_t object_size;
 
     /// A readable version of the type's name.
     const char* tag;
@@ -91,6 +99,12 @@ struct __hlt_type_info {
 
     /// True if instances of this type are garbage collected.
     int16_t gc;
+
+    /// True if this type is atomic in the sense that it doesn't refer or
+    /// contain to any other values. Being atomic implies that it can be
+    /// copied and cloned with a bitwise copy, and that it won't need a cctor
+    /// or dtor.
+    int16_t atomic;
 
     /// Type-specific information; null if not used.
     void* aux;
@@ -141,6 +155,30 @@ struct __hlt_type_info {
     /// involves it.
     void (*cctor)(const struct __hlt_type_info* ti, void* obj);
 
+    /// Initializes a previously allocated instance with a deep-copy of a
+    /// non-atomic value. \a obj is a pointer to the source object of type \a
+    /// ti, and \a dst a pointer to newly allocated object that needs
+    /// initialization. \a cstate is an opaque parameter that needs to be
+    /// passed on to \a __hlt_clone() when other objects needs to be cloned
+    /// recursively.
+    ///
+    /// This will be ignored for atomic types and should be set to null in
+    /// that case.
+    void (*clone_init)(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
+
+    /// If this is a garbage collected type, a function that allocates a new
+    /// instance of a type in preparation for deep-copying it, yet without
+    /// yet initializing it (must be null for atomic types). clone_init()
+    /// will be called afterwards and must be defined as well. \a obj is the
+    /// source object that's about to be cloned, of type \a ti. \a cstate is
+    /// an opaque parameter that needs to be passed on to \a __hlt_clone()
+    /// when other objects needs to be cloned recursively. Returns the newly
+    /// allocated instance.
+    ///
+    /// This will be ignored for non gc types and should be set to null in
+    /// that case.
+    void* (*clone_alloc)(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
+
     // Type-parameters start here. The format is type-specific.
     char type_params[];
 };
@@ -151,9 +189,11 @@ struct __hlt_type_info {
    const hlt_type_info hlt_type_info_##id = { \
        type, \
        sizeof(id), \
+       0, \
        #id, \
        0, \
        1, \
+       0, \
        0, \
        (int16_t*)-1, \
        0, 0, 0, 0, 0, 0, \

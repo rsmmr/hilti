@@ -64,6 +64,29 @@ declare "C-HILTI" int<64> struct_equal(any s)
 
 declare "C-HILTI" any bytes_blockable(any s)
 
+declare "C-HILTI" caddr string_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  string_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr bytes_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  bytes_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr list_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  list_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr set_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  set_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr vector_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  vector_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr map_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  map_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr regexp_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  regexp_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr file_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  file_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr callable_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  callable_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr struct_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  struct_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr tuple_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  tuple_clone_init(caddr dst, any src, caddr cstate)
+
 ###
 
 declare "C-HILTI" void exception_dtor(ref<exception> b)
@@ -335,4 +358,3 @@ declare "C-HILTI" any classifier_get(ref<classifier<*>> c, caddr vals)
 # declare "C" void abort()
 #
 # ##
-#

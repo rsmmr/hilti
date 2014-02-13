@@ -1,7 +1,7 @@
 
 #include "define-instruction.h"
 
-// Most operators are implemented by overloading, rather than by providing a
+// Most operators are implemented by overloading rather than by providing a
 // direct instruction. For these, we still creates instructions here so that
 // we have a class "operator_::XXX" to use with the builder interface.
 // However, we name their mnemonics by starting them with a ".op", turning
@@ -138,5 +138,16 @@ iBegin(operator_, Clear, "clear")
         Resets *op1* to the default value a new variable would be set to.
 
         Note: This operator is automatically defined for all value types.
+    )")
+iEnd
+
+iBegin(operator_, Clone, "clone")
+    iTarget(optype::any)
+    iOp1(optype::any, true)
+    iValidate {
+        equalTypes(target, op1);
+    }
+    iDoc(R"(
+        Returns a deep copy of *op1*.
     )")
 iEnd

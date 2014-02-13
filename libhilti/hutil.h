@@ -118,6 +118,7 @@ extern int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, co
 extern int8_t __hlt_safe_write(int fd, const char* data, int len);
 
 // XXX
+// These data structures are optimized for a small numbers of items.
 
 struct __hlt_pointer_stack {
     const void** ptrs;
@@ -125,11 +126,22 @@ struct __hlt_pointer_stack {
     size_t capacity;
 };
 
-__hlt_pointer_stack* __hlt_pointer_stack_new();
+void   __hlt_pointer_stack_init(__hlt_pointer_stack* set);
 void   __hlt_pointer_stack_push_back(__hlt_pointer_stack* set, const void *ptr);
 void   __hlt_pointer_stack_pop_back(__hlt_pointer_stack* set);
 int8_t __hlt_pointer_stack_lookup(__hlt_pointer_stack* set, const void *ptr);
-void   __hlt_pointer_stack_delete(__hlt_pointer_stack* set);
+void   __hlt_pointer_stack_destroy(__hlt_pointer_stack* set);
+
+struct __hlt_pointer_map {
+    const void** ptrs;
+    size_t size;
+    size_t capacity;
+};
+
+void        __hlt_pointer_map_init(__hlt_pointer_map* map);
+void        __hlt_pointer_map_insert(__hlt_pointer_map* map, const void *key, const void* value);
+const void* __hlt_pointer_map_lookup(__hlt_pointer_map* map, const void *key);
+void        __hlt_pointer_map_destroy(__hlt_pointer_map* map);
 
 #endif
 
