@@ -1466,6 +1466,11 @@ type NPDU_priority = enum {
   Life-Safety = 3
 };
 
+# convert data present in all NPDUs into a NPDU_info record
+#tuple<NPDU_priority, uint64, bytes, uint64, bytes, uint64, NPDU_type> bro_npdu_info(npdu: NPDU) {
+#  return ( npdu.priority, cast<uint64>(npdu.dnet), npdu.dadr, cast<uint64>(npdu.snet), npdu.sadr, cast<uint64>(npdu.hop_count), npdu.message_type );
+#};
+
 type NPDU = unit(len: uint16) {
   var priority: NPDU_priority;
 
@@ -1496,11 +1501,6 @@ type NPDU = unit(len: uint16) {
   # if nlmessage == 0, APDU follows
   apdu: APDU( len - cast<uint16>(self.offset()) ) if ( self.control.nlmessage == 0 );
 };
-
-# convert data present in all NPDUs into a NPDU_info record
-#tuple<NPDU_priority, uint64, bytes, uint64, bytes, uint64, NPDU_type> bro_npdu_info(npdu: NPDU) {
-#  return ( npdu.priority, cast<uint64>(npdu.dnet), npdu.dadr, cast<uint64>(npdu.snet), npdu.sadr, cast<uint64>(npdu.hop_count), npdu.message_type );
-#};
 
 type NPDU_Reject_reason = enum {
   Other = 0,
@@ -1544,6 +1544,11 @@ type NPDU_message = unit(len: uint16, t: NPDU_type) {
     }
   };
 };
+
+# convert a NPDU routing entry into a Bro tuple
+#tuple<uint64, uint64, uint64, bytes> bro_npdu_routing_entry(entry: BDT_entry) {
+#  return ( cast<uint64>(entry.address_port), cast<uint64>(entry.mask) );
+#} FIXME!
 
 type NPDU_routing_entry = unit {
   dnet: uint16;

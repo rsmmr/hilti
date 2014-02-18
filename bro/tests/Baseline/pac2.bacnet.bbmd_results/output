@@ -1,0 +1,14 @@
+Message, 192.168.1.100, 192.168.1.105, BACnet::BVLC_function_Write-BDT, 24
+Write bdt, [[address=192.168.1.100, address_port=47808, mask=4294967295], [address=192.168.2.200, address_port=47808, mask=4294967295]]
+Message, 192.168.1.100, 192.168.1.105, BACnet::BVLC_function_BVLC-Result, 6
+Bvlc result, 192.168.1.100, 192.168.1.105, BACnet::BVLC_result_Write-BDT-NAK
+Message, 192.168.1.100, 192.168.1.105, BACnet::BVLC_function_Read-BDT, 4
+Message, 192.168.1.100, 192.168.1.105, BACnet::BVLC_function_BVLC-Result, 6
+Bvlc result, 192.168.1.100, 192.168.1.105, BACnet::BVLC_result_Read-BDT-NAK
+Message, 192.168.1.100, 192.168.1.105, BACnet::BVLC_function_Read-FDT, 4
+Message, 192.168.1.100, 192.168.1.105, BACnet::BVLC_function_BVLC-Result, 6
+Bvlc result, 192.168.1.100, 192.168.1.105, BACnet::BVLC_result_Read-FDT-NAK
+Message, 192.168.1.100, 192.168.1.105, BACnet::BVLC_function_Register-FD, 6
+Register fd, 60
+Message, 192.168.1.100, 192.168.1.105, BACnet::BVLC_function_BVLC-Result, 6
+Bvlc result, 192.168.1.100, 192.168.1.105, BACnet::BVLC_result_Register-FD-NAK
