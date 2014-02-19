@@ -357,6 +357,7 @@ void TypeBuilder::visit(type::iterator::Bytes* i)
     ti->id = HLT_TYPE_ITERATOR_BYTES;
     ti->dtor = "hlt::iterator_bytes_dtor";
     ti->cctor = "hlt::iterator_bytes_cctor";
+    ti->clone_init = "hlt::iterator_bytes_clone_init";
     ti->init_val = cg()->llvmConstNull(cg()->llvmLibType("hlt.iterator.bytes"));
     setResult(ti);
 }

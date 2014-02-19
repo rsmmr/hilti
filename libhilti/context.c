@@ -13,9 +13,16 @@
 
 void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
 {
+    hlt_exception* excpt = 0;
+
+    // Do this first, it may still need the context.
+    if ( ctx->tmgr ) {
+        hlt_timer_mgr_expire(ctx->tmgr, 0, &excpt, ctx);
+        GC_DTOR(ctx->tmgr, hlt_timer_mgr);
+    }
+
     __hlt_globals_dtor(ctx);
 
-    hlt_exception* excpt = 0;
     GC_DTOR(ctx->excpt, hlt_exception);
 
     if ( ctx->fiber )
@@ -26,10 +33,6 @@ void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
 
     if ( ctx->tcontext ) {
         GC_DTOR_GENERIC(&ctx->tcontext, ctx->tcontext_type);
-    }
-
-    if ( ctx->tmgr ) {
-        GC_DTOR(ctx->tmgr, hlt_timer_mgr);
     }
 
     __hlt_fiber_pool_delete(ctx->fiber_pool);

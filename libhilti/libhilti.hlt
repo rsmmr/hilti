@@ -66,6 +66,7 @@ declare "C-HILTI" any bytes_blockable(any s)
 
 declare "C-HILTI" caddr string_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  string_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" void  iterator_bytes_clone_init(caddr dst, any src, caddr cstate)
 declare "C-HILTI" caddr bytes_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  bytes_clone_init(caddr dst, any src, caddr cstate)
 declare "C-HILTI" caddr list_clone_alloc(any src, caddr cstate)

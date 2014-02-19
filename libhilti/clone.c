@@ -7,28 +7,43 @@
 #include "string_.h"
 #include "exceptions.h"
 
+// When cloning, copy only the first level and keep all contained references
+// the same.
+#define __HLT_CLONE_SHALLOW     1
+
+// When cloning, perform a recursive deep copy.
+#define __HLT_CLONE_DEEP        2 // Value used in hilti/codegen/instructions/operators.cc
+
 // We break out the fastpaths to help the compiler inline.
-static int8_t _fastpath_clone(void* dst, const hlt_type_info* ti, void* srcp);
-static void _slowpath_clone(void* dst, const hlt_type_info* ti, void* srcp, int16_t type, hlt_vthread_id vid, hlt_exception** excpt, hlt_execution_context* ctx);
-static void _slowpath_clone_recursive(void* dst, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
+static int8_t _fastpath_clone(void* dst, const hlt_type_info* ti, const void* srcp);
+static void _slowpath_clone(void* dst, const hlt_type_info* ti, const void* srcp, int16_t type, hlt_vthread_id vid, hlt_exception** excpt, hlt_execution_context* ctx);
+static void _slowpath_clone_recursive(void* dst, const hlt_type_info* ti, const void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
 
-void hlt_clone(void* dstp, const hlt_type_info* ti, void* srcp, int16_t type, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_clone_deep(void* dstp, const hlt_type_info* ti, const void* srcp, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( _fastpath_clone(dstp, ti, srcp) )
         return;
 
-    _slowpath_clone(dstp, ti, srcp, type, ctx->vid, excpt, ctx);
+    _slowpath_clone(dstp, ti, srcp, __HLT_CLONE_DEEP, ctx->vid, excpt, ctx);
 }
 
-void hlt_clone_for_thread(void* dstp, const hlt_type_info* ti, void* srcp, hlt_vthread_id vid, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_clone_shallow(void* dstp, const hlt_type_info* ti, const void* srcp, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( _fastpath_clone(dstp, ti, srcp) )
         return;
 
-    _slowpath_clone(dstp, ti, srcp, HLT_CLONE_DEEP, vid, excpt, ctx);
+    _slowpath_clone(dstp, ti, srcp, __HLT_CLONE_SHALLOW, ctx->vid, excpt, ctx);
 }
 
-void __hlt_clone(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_clone_for_thread(void* dstp, const hlt_type_info* ti, const void* srcp, hlt_vthread_id vid, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( _fastpath_clone(dstp, ti, srcp) )
+        return;
+
+    _slowpath_clone(dstp, ti, srcp, __HLT_CLONE_DEEP, vid, excpt, ctx);
+}
+
+void __hlt_clone(void* dstp, const hlt_type_info* ti, const void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( _fastpath_clone(dstp, ti, srcp) )
         return;
@@ -53,7 +68,7 @@ void __hlt_clone_init_in_thread(__hlt_init_in_thread_callback cb, const hlt_type
     hlt_set_exception(excpt, &hlt_exception_not_implemented, msg);
 }
 
-int8_t _fastpath_clone(void* dstp, const hlt_type_info* ti, void* srcp)
+int8_t _fastpath_clone(void* dstp, const hlt_type_info* ti, const void* srcp)
 {
     if ( ti->atomic ) {
         // Short-cut the easy case.
@@ -61,7 +76,7 @@ int8_t _fastpath_clone(void* dstp, const hlt_type_info* ti, void* srcp)
         return 1;
     }
 
-    if ( ti->gc && ! *(void**)srcp ) {
+    if ( (ti->gc || ti->type == HLT_TYPE_ANY) && ! *(void**)srcp ) {
         *(void **)dstp = 0;
         return 1;
     }
@@ -69,7 +84,7 @@ int8_t _fastpath_clone(void* dstp, const hlt_type_info* ti, void* srcp)
     return 0;
 }
 
-static void _slowpath_clone(void* dstp, const hlt_type_info* ti, void* srcp, int16_t type, hlt_vthread_id vid, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _slowpath_clone(void* dstp, const hlt_type_info* ti, const void* srcp, int16_t type, hlt_vthread_id vid, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __hlt_clone_state cstate;
     __hlt_pointer_map_init(&cstate.objs);
@@ -82,7 +97,7 @@ static void _slowpath_clone(void* dstp, const hlt_type_info* ti, void* srcp, int
     __hlt_pointer_map_destroy(&cstate.objs);
 }
 
-static void _slowpath_clone_recursive(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _slowpath_clone_recursive(void* dstp, const hlt_type_info* ti, const void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     ++cstate->level;
 
@@ -96,7 +111,7 @@ static void _slowpath_clone_recursive(void* dstp, const hlt_type_info* ti, void*
         }
     }
 
-    if ( cstate->type == HLT_CLONE_SHALLOW && cstate->level > 0 ) {
+    if ( cstate->type == __HLT_CLONE_SHALLOW && cstate->level > 0 ) {
         if ( ti->gc )
             memcpy(dstp, srcp, sizeof(void *));
         else
@@ -106,7 +121,7 @@ static void _slowpath_clone_recursive(void* dstp, const hlt_type_info* ti, void*
         return;
     }
 
-    if ( cstate->type == HLT_CLONE_DEEP || cstate->level == 0) {
+    if ( cstate->type == __HLT_CLONE_DEEP || cstate->level == 0) {
 
         if ( ti->gc ) {
             if ( ! ti->clone_alloc ) {

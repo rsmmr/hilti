@@ -43,7 +43,22 @@ void StatementBuilder::visit(statement::instruction::struct_::GetDefault* i)
     auto op1 = cg()->llvmValue(i->op1());
     auto op3 = cg()->llvmValue(i->op3(), field->type());
     auto result = cg()->llvmStructGet(stype, op1, fname,
+#if 1
+                                      [&] (CodeGen* cg) -> llvm::Value* {
+                                          auto clone = cg->llvmCreateAlloca(op3->getType());
+                                          auto orig  = cg->llvmCreateAlloca(op3->getType());
+                                          cg->llvmCreateStore(op3, orig);
+
+                                          auto src = cg->builder()->CreateBitCast(orig, cg->llvmTypePtr());
+                                          auto dst = cg->builder()->CreateBitCast(clone, cg->llvmTypePtr());
+                                          CodeGen::value_list args = { dst, cg->llvmRtti(i->op3()->type()), src };
+                                          cg->llvmCallC("hlt_clone_deep", args, true, false);
+                                          return cg->builder()->CreateLoad(clone);
+                                      },
+#else
                                       [&] (CodeGen* cg) -> llvm::Value* { return op3; },
+#endif
+
                                       nullptr, i->location());
     cg()->llvmStore(i, result);
 }

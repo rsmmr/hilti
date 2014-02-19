@@ -115,8 +115,7 @@ hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, struc
     // We need to deep-copy the default element as the caller might have it
     // on its stack.
     v->def = hlt_malloc(elemtype->size);
-    memcpy(v->def, def, elemtype->size);
-    GC_CCTOR_GENERIC(v->def, elemtype);
+    hlt_clone_deep(v->def, elemtype, def, excpt, ctx);
 
     v->last = -1;
     v->capacity = InitialCapacity;
@@ -245,8 +244,7 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
     for ( int j = v->last + 1; j <= i; j++ ) {
         // Initialize elements between old and new end of vector.
         void* dst = v->elems + j * v->type->size;
-        memcpy(dst, v->def, v->type->size);
-        GC_CCTOR_GENERIC(dst, v->type);
+        hlt_clone_deep(dst, v->type, v->def, excpt, ctx);
 
         if ( v->tmgr ) {
             assert(v->timers);
@@ -288,7 +286,7 @@ hlt_vector_idx hlt_vector_size(hlt_vector* v, hlt_exception** excpt, hlt_executi
     return v->last + 1;
 }
 
-void hlt_vector_expire(__hlt_vector_timer_cookie cookie)
+void hlt_vector_expire(__hlt_vector_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_vector* v = cookie.vec;
     hlt_vector_idx i = cookie.idx;
@@ -298,8 +296,8 @@ void hlt_vector_expire(__hlt_vector_timer_cookie cookie)
 
     void* dst = v->elems + i * v->type->size;
     GC_DTOR_GENERIC(dst, v->type);
-    memcpy(dst, v->def, v->type->size);
-    GC_CCTOR_GENERIC(dst, v->type);
+
+    hlt_clone_deep(dst, v->type, v->def, excpt, ctx);
 }
 
 void hlt_vector_reserve(hlt_vector* v, hlt_vector_idx n, hlt_exception** excpt, hlt_execution_context* ctx)

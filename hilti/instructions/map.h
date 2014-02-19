@@ -131,7 +131,7 @@ iEnd
 
 iBegin(map, Default, "map.default")
     iOp1(optype::refMap, false)
-    iOp2(optype::any, false)
+    iOp2(optype::any, true)
 
     iValidate {
         auto ctype = ast::isA<type::Reference>(op2->type()) ? ast::tryCast<type::Callable>(referencedType(op2))
@@ -197,7 +197,7 @@ iBegin(map, GetDefault, "map.get_default")
     iTarget(optype::any)
     iOp1(optype::refMap, true)
     iOp2(optype::any, true)
-    iOp3(optype::any, false)
+    iOp3(optype::any, true)
 
     iValidate {
         canCoerceTo(op2, mapKeyType(referencedType(op1)));

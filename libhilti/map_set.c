@@ -322,8 +322,11 @@ void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exceptio
             break;
 
          case HLT_MAP_DEFAULT_VALUE:
-            GC_CCTOR_GENERIC(m->default_.value, m->tvalue);
-            return m->default_.value;
+            if ( ! m->cache_default )
+                m->cache_default = hlt_malloc(m->tvalue->size);
+
+            hlt_clone_deep(m->cache_default, m->tvalue, m->default_.value, excpt, ctx);
+            return m->cache_default;
 
          case HLT_MAP_DEFAULT_FUNCTION: {
             if ( ! m->cache_default )
@@ -459,7 +462,7 @@ void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_except
     }
 }
 
-void hlt_map_expire(__hlt_map_timer_cookie cookie)
+void hlt_map_expire(__hlt_map_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     khiter_t i = kh_get_map(cookie.map, cookie.key, cookie.map->tkey);
 
@@ -520,8 +523,8 @@ void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_excep
 
     if ( tdef->type != HLT_TYPE_CALLABLE )  {
         m->default_type = HLT_MAP_DEFAULT_VALUE;
-        m->default_.value = _to_voidp(tdef, def);
-        GC_CCTOR_GENERIC(m->default_.value, tdef);
+        m->default_.value = hlt_malloc(m->tvalue->size);
+        hlt_clone_deep(m->default_.value, m->tvalue, def, excpt, ctx);
     }
 
     else {
@@ -840,7 +843,7 @@ void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_except
     }
 }
 
-void hlt_set_expire(__hlt_set_timer_cookie cookie)
+void hlt_set_expire(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     khiter_t i = kh_get_set(cookie.set, cookie.key, cookie.set->tkey);
 

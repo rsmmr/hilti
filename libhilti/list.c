@@ -374,9 +374,9 @@ void hlt_list_erase(hlt_iterator_list i, hlt_exception** excpt, hlt_execution_co
     _unlink(i.list, i.node, excpt, ctx);
 }
 
-void hlt_list_expire(__hlt_list_timer_cookie cookie)
+void hlt_list_expire(__hlt_list_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    _unlink(cookie.list, cookie.node, 0, 0);
+    _unlink(cookie.list, cookie.node, 0, 0); // don't pass context on
 }
 
 void hlt_list_insert(const hlt_type_info* type, void* val, hlt_iterator_list i, hlt_exception** excpt, hlt_execution_context* ctx)

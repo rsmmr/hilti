@@ -184,7 +184,8 @@ declare %hlt.execution_context* @hlt_fiber_context(%hlt.fiber*)
 declare void @__hlt_thread_mgr_schedule(%hlt.thread_mgr*, %hlt.vid, %hlt.callable*, %hlt.exception**, %hlt.execution_context*)
 declare void @__hlt_thread_mgr_schedule_tcontext(%hlt.thread_mgr*, %hlt.type_info*, %hlt.void*, %hlt.callable*, %hlt.exception**, %hlt.execution_context*)
 
-declare void @hlt_clone(i8*, %hlt.type_info*, i8*, i16, %hlt.exception**, %hlt.execution_context*)
+declare void @hlt_clone_deep(i8*, %hlt.type_info*, i8*, %hlt.exception**, %hlt.execution_context*)
+declare void @hlt_clone_shallow(i8*, %hlt.type_info*, i8*, %hlt.exception**, %hlt.execution_context*)
 declare void @hlt_clone_for_thread(i8*, %hlt.type_info*, i8*, %hlt.vid, %hlt.exception**, %hlt.execution_context*)
 declare void @__hlt_clone(i8*, %hlt.type_info*, i8*, i8*, %hlt.exception**, %hlt.execution_context*)
 

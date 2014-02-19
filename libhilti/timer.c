@@ -75,19 +75,19 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
         break;
 
       case HLT_TIMER_LIST:
-        hlt_list_expire(timer->cookie.list);
+        hlt_list_expire(timer->cookie.list, excpt, ctx);
         break;
 
       case HLT_TIMER_MAP:
-        hlt_map_expire(timer->cookie.map);
+        hlt_map_expire(timer->cookie.map, excpt, ctx);
         break;
 
       case HLT_TIMER_SET:
-        hlt_set_expire(timer->cookie.set);
+        hlt_set_expire(timer->cookie.set, excpt, ctx);
         break;
 
       case HLT_TIMER_VECTOR:
-        hlt_vector_expire(timer->cookie.vector);
+        hlt_vector_expire(timer->cookie.vector, excpt, ctx);
         break;
 
       case HLT_TIMER_PROFILER:

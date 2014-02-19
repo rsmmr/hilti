@@ -65,6 +65,6 @@ extern hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* ob
 /// Called by an expiring timer to remove an element from the vector.
 ///
 /// cookie: The cookie identifying the element to be removed.
-extern void hlt_vector_expire(__hlt_vector_timer_cookie cookie);
+extern void hlt_vector_expire(__hlt_vector_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

@@ -77,9 +77,6 @@ void StatementBuilder::visit(statement::instruction::operator_::Clear* i)
 
 void StatementBuilder::visit(statement::instruction::operator_::Clone* i)
 {
-    // -1000 = HLT_VID_NONE in threading.h
-    auto type = cg()->llvmConstInt(2, 16); // HLT_CLONE_DEEP
-
     auto t = i->op1()->type();
     auto lt = cg()->llvmType(t);
     auto dst = cg()->builder()->CreateAlloca(lt, 0, "clone");
@@ -93,8 +90,8 @@ void StatementBuilder::visit(statement::instruction::operator_::Clone* i)
     auto src_casted = cg()->builder()->CreateBitCast(src, cg()->llvmTypePtr());
     auto dst_casted = cg()->builder()->CreateBitCast(dst, cg()->llvmTypePtr());
 
-    CodeGen::value_list vals = { dst_casted, ti, src_casted, type };
-    cg()->llvmCallC("hlt_clone", vals, true, true);
+    CodeGen::value_list vals = { dst_casted, ti, src_casted };
+    cg()->llvmCallC("hlt_clone_deep", vals, true, true);
 
     auto result = cg()->builder()->CreateLoad(dst);
     cg()->llvmStore(i, result);

@@ -92,6 +92,8 @@ static const int16_t MAX_COPY_SIZE = 256;
 // If we allocate a chunk of a data ourselves, it will be of this size.
 static const int16_t ALLOC_SIZE = 1024;
 
+static hlt_iterator_bytes GenericEndPos = { 0, 0 };
+
 // Sentinial for marking a chunk as empty by having both start and end point
 // here.
 static int8_t empty_sentinel;
@@ -186,6 +188,22 @@ static void add_chunk(hlt_bytes* b, __hlt_bytes_chunk* c)
     }
 
     //assert(!is_empty_chunk(b->head));
+}
+
+void hlt_iterator_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_iterator_bytes* src = (hlt_iterator_bytes*)srcp;
+    hlt_iterator_bytes* dst = (hlt_iterator_bytes*)srcp;
+
+    // We can only clone the and eob iterator.
+    if ( is_end(*src) ) {
+        *dst = GenericEndPos;
+        return;
+    }
+
+    hlt_string msg = hlt_string_from_asciiz("iterator<bytes> supports cloning only for end position", excpt, ctx);
+    hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg);
+    return;
 }
 
 hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
@@ -443,8 +461,6 @@ hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** 
     hlt_bytes_append(s, b2, excpt, ctx);
     return s;
 }
-
-static hlt_iterator_bytes GenericEndPos = { 0, 0 };
 
 hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
 {

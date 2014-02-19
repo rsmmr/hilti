@@ -164,7 +164,7 @@ struct __hlt_type_info {
     ///
     /// This will be ignored for atomic types and should be set to null in
     /// that case.
-    void (*clone_init)(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
+    void (*clone_init)(void* dstp, const hlt_type_info* ti, const void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
 
     /// If this is a garbage collected type, a function that allocates a new
     /// instance of a type in preparation for deep-copying it, yet without
@@ -177,7 +177,7 @@ struct __hlt_type_info {
     ///
     /// This will be ignored for non gc types and should be set to null in
     /// that case.
-    void* (*clone_alloc)(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
+    void* (*clone_alloc)(const hlt_type_info* ti, const void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
 
     // Type-parameters start here. The format is type-specific.
     char type_params[];
