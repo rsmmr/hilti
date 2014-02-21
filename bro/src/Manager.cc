@@ -1077,6 +1077,16 @@ bool Manager::LoadPac2Module(const string& path)
 
 	pimpl->pac2_ast->process(minfo, module);
 
+	// Make exported enum types available to Bro.
+	for ( auto t : module->exportedTypes() )
+		{
+		if ( ! ast::isA<::binpac::type::Enum>(t) )
+			continue;
+
+		auto htype = pimpl->pac2_context->hiltiType(t, &minfo->dep_types);
+		pimpl->type_converter->Convert(htype, t);
+		}
+
 	return true;
 	}
 
@@ -1924,7 +1934,7 @@ void Manager::InstallTypeMappings(shared_ptr<compiler::ModuleBuilder> mbuilder, 
 				    t1->AsVectorType()->YieldType(),
 				    t2->AsVectorType()->YieldType());
 
- 	if ( t1->Tag() == TYPE_TABLE ) 
+ 	if ( t1->Tag() == TYPE_TABLE )
 		{
 		if ( t1->AsTableType()->YieldType() )
 			InstallTypeMappings(mbuilder,

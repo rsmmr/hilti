@@ -307,7 +307,11 @@ init_expr     : '=' expr                         { $$ = $2; }
 import        : IMPORT path_id ';'              { driver.module()->import($2); }
 
 type_decl     : opt_linkage TYPE local_id '=' type ';'
-                                                 { $$ = std::make_shared<declaration::Type>($3, $1, $5, loc(@$)); }
+                                                 { $$ = std::make_shared<declaration::Type>($3, $1, $5, loc(@$));
+
+                                                   if ( $1 == Declaration::EXPORTED )
+                                                       driver.module()->exportType($5);
+                                                 }
 
 func_decl     : opt_linkage opt_cc rtype local_id '(' opt_params ')' block
                                                  { auto ftype = std::make_shared<type::Function>($3, $6, $2, loc(@$));
