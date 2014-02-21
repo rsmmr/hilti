@@ -34,6 +34,17 @@ void Normalizer::visit(declaration::Type* t)
         unit->setExported();
 }
 
+void Normalizer::visit(declaration::Variable* t)
+{
+    auto var = t->variable();
+
+    // The init expression could have had a type that wasn't resolvable
+    // initially, potentially leaving the variable with an unknown type. At
+    // this point that should be fixed.
+    if ( var->init() && ast::isA<type::Unknown>(var->type()) )
+        var->setType(var->init()->type());
+}
+
 void Normalizer::visit(type::unit::Item* i)
 {
 }

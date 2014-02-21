@@ -24,6 +24,7 @@ public:
 
 protected:
     void visit(declaration::Type* t);
+    void visit(declaration::Variable* t);
     void visit(type::unit::Item* i);
     void visit(type::unit::item::Field* f);
     void visit(type::unit::item::field::Container* c);

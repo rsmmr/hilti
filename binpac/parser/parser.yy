@@ -442,8 +442,8 @@ bitset        : BITSET '{' id_with_ints '}'      { $$ = std::make_shared<type::B
 enum_         : ENUM '{' id_with_ints '}'        { $$ = std::make_shared<type::Enum>($3, loc(@$)); }
               ;
 
-types         : base_type ',' types              { $$ = $3; $$.push_front($1); }
-              | base_type                        { $$ = type_list(); $$.push_back($1); }
+types         : type ',' types                   { $$ = $3; $$.push_front($1); }
+              | type                             { $$ = type_list(); $$.push_back($1); }
 
 id_with_ints  : id_with_ints ',' id_with_int     { $$ = $1; $$.push_back($3); }
               | id_with_int                      { $$ = std::list<std::pair<shared_ptr<ID>, int>>(); $$.push_back($1); }
