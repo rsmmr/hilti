@@ -15,11 +15,6 @@ event bro_init() {
 
 grammar tupleenum.pac2;
 
-protocol analyzer TupleEnum over TCP:
-    parse with TupleEnum::Message,
-    port 22/tcp,
-    replaces SSH;
-
 # @TEST-END-FILE
 
 # @TEST-START-FILE tupleenum.pac2
