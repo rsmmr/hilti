@@ -30,6 +30,7 @@ public:
 protected:
     void visit(expression::UnresolvedOperator* i) override;
     void visit(Variable* i);
+    void visit(type::UnknownElementType* i);
 
 private:
     shared_ptr<Module> _module;

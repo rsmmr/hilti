@@ -211,29 +211,23 @@ void ConversionBuilder::MapType(const ::BroType* from, const ::BroType* to)
 
 	DBG_LOG_COMPILER("Mapping type %s to %s", d1.Description(), d2.Description());
 #endif
-	mapped_types.insert(std::make_pair(from, to));
-	}
-
-void ConversionBuilder::FinalizeTypes()
-	{
-	// TODO: We should unify this code with the
-	// ValueBuilder/ConversionBuilder to treat types vals in a single
-	// way.
 
 	auto glue_mbuilder = GlueModuleBuilder();
 
 	Compiler()->pushModuleBuilder(glue_mbuilder);
 	glue_mbuilder->pushModuleInit();
 
-	for ( auto m : mapped_types )
-		{
-		auto from = CreateBroType(m.first);
-		auto to = CreateBroType(m.second);
-		Builder()->addInstruction(from, ::hilti::instruction::operator_::Assign, to);
-		}
+	auto hfrom = CreateBroType(from);
+	auto hto = CreateBroType(to);
+	Builder()->addInstruction(hfrom, ::hilti::instruction::operator_::Assign, hto);
 
 	glue_mbuilder->popFunction();
 	Compiler()->popModuleBuilder();
+	}
+
+void ConversionBuilder::FinalizeTypes()
+	{
+	return;
 	}
 
 bool ConversionBuilder::IsShadowedType(const BroType* type) const
@@ -939,7 +933,23 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 	{
 	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
 	auto dst = Builder()->addTmp("val", vtype);
-	auto etype = CreateBroType(type);
+
+	shared_ptr<::hilti::Expression> etype;
+
+	auto cached = Compiler()->LookupCachedCustomBroType(type);
+
+	if ( cached.first )
+		{
+		auto btype = ::hilti::builder::type::byName("LibBro::BroType");
+		auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type");
+		auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(cached.second) } );
+
+		etype = Builder()->addTmp("et", btype);
+		Builder()->addInstruction(etype, ::hilti::instruction::flow::CallResult, f, args);
+		}
+
+	else
+		etype = CreateBroType(type);
 
         auto args = ::hilti::builder::tuple::create( { val, etype } );
 	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
@@ -1237,12 +1247,14 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 	auto dst = Builder()->addTmp("val", vtype);
 
 	auto mbuilder = ModuleBuilder();
-	auto rtype = ast::checkedCast<type::Reference>(HiltiType(type));
-	auto vectype = ast::checkedCast<type::Vector>(rtype->argType());
+	// auto rvtype = ast::checkedCast<type::Reference>(HiltiType(type));
+	// auto itype = ast::checkedCast<type::Vector>(rtype->argType());
+	auto rtype = ast::checkedCast<::hilti::type::Reference>(val->type());
+	auto itype = ::ast::type::checkedTrait<::hilti::type::trait::Iterable>(rtype->argType());
 
-	auto cur = mbuilder->addTmp("cur", vectype->iterType());
-	auto end = mbuilder->addTmp("end", vectype->iterType());
-	auto e = mbuilder->addTmp("e", vectype->elementType());
+	auto cur = mbuilder->addTmp("cur", itype->iterType());
+	auto end = mbuilder->addTmp("end", itype->iterType());
+	auto e = mbuilder->addTmp("e", itype->elementType());
 	auto is_end = mbuilder->addTmp("is_end", ::hilti::builder::boolean::type());
 
 	Builder()->addInstruction(dst,

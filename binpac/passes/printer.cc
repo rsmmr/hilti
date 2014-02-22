@@ -1091,6 +1091,12 @@ void Printer::visit(type::Unknown* u)
     p << "(unresolved type)";
 }
 
+void Printer::visit(type::UnknownElementType* u)
+{
+    Printer& p = *this;
+    p << "(unresolved element type)";
+}
+
 void Printer::visit(type::Unset* u)
 {
     if ( printTypeID(u) )

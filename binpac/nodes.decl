@@ -53,6 +53,7 @@ expression::Default
 expression::Function
 expression::ID
 expression::List
+expression::ListComprehension
 expression::MemberAttribute
 expression::Module
 expression::Parameter
@@ -126,6 +127,7 @@ type::TypeByName
 type::TypeType
 type::Unit
 type::Unknown
+type::UnknownElementType
 type::Unset
 type::Vector
 type::Void

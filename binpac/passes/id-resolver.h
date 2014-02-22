@@ -32,6 +32,7 @@ public:
 
 protected:
     void visit(expression::ID* i) override;
+    void visit(expression::ListComprehension* c) override;
     void visit(type::Unknown* t) override;
     void visit(declaration::Hook* t) override;
     void visit(type::unit::item::field::Unknown* f) override;

@@ -17,6 +17,10 @@ export type Test = unit {
     g: bytes &length=1 &convert=True;
     h: bytes &length=1 &convert="MyString";
 
+    var s: set< uint<64> > = set< uint<64> >(1,2,3);
+    var v: vector<bytes> = vector<bytes>(b"A", b"B", b"C");
+    var l: list<bytes> = list<bytes>(b"A", b"B", b"C");
+
     on %done { print self; }
 };
 
@@ -40,7 +44,10 @@ on Conv::Test -> event conv::test($conn,
                                   self.e,
                                   self.f,
                                   self.g,
-                                  self.h
+                                  self.h,
+				  self.s,
+				  self.v,
+				  self.l
                                   );
 
 @TEST-END-FILE
@@ -55,7 +62,10 @@ event conv::test(x: connection,
                  e: addr,
                  f: addr,
                  g: bool,
-                 h: string
+                 h: string,
+		 s: set[count],
+		 v: vector of string,
+		 l: vector of string
                 )
 	{
 	print x$id;
@@ -68,5 +78,8 @@ event conv::test(x: connection,
 	print f;
 	print g;
 	print h;
+	print s;
+	print v;
+	print l;
 	}
 

@@ -11,19 +11,19 @@ int<32> fibo(int<32> n)
   
   
       # pred: { <none> } succ: { [0049] }
-      # def: { fibo%cond.2 } clear: { <none> } mod: { p:n } read: { <none> }
+      # def: { fibo%cond.2 } clear: { <none> } mod: { <none> } read: { p:n }
       # live-in: { p:n } live-out: { fibo%cond.2, p:n }
       # now-dead: { <none> }
       [0048] cond = int.slt n 2
       # pred: { [0048] } succ: { [0051], [0058] }
-      # def: { <none> } clear: { <none> } mod: { fibo%cond.2 } read: { <none> }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { fibo%cond.2 }
       # live-in: { fibo%cond.2, p:n } live-out: { p:n }
       # now-dead: { fibo%cond.2 }
       [0049] if.else cond @done @recurse
   
   @recurse:
       # pred: { [0049] } succ: { [0052] }
-      # def: { p:n } clear: { <none> } mod: { p:n } read: { <none> }
+      # def: { p:n } clear: { <none> } mod: { <none> } read: { p:n }
       # live-in: { p:n } live-out: { p:n }
       # now-dead: { <none> }
       [0051] n = int.sub n 1
@@ -33,7 +33,7 @@ int<32> fibo(int<32> n)
       # now-dead: { <none> }
       [0052] f1 = call fibo (n)
       # pred: { [0052] } succ: { [0054] }
-      # def: { p:n } clear: { <none> } mod: { p:n } read: { <none> }
+      # def: { p:n } clear: { <none> } mod: { <none> } read: { p:n }
       # live-in: { fibo%f1.2, p:n } live-out: { fibo%f1.2, p:n }
       # now-dead: { <none> }
       [0053] n = int.sub n 1
@@ -43,7 +43,7 @@ int<32> fibo(int<32> n)
       # now-dead: { p:n }
       [0054] f2 = call fibo (n)
       # pred: { [0054] } succ: { [0056] }
-      # def: { fibo%f1.2 } clear: { <none> } mod: { fibo%f1.2, fibo%f2.2 } read: { <none> }
+      # def: { fibo%f1.2 } clear: { <none> } mod: { <none> } read: { fibo%f1.2, fibo%f2.2 }
       # live-in: { fibo%f1.2, fibo%f2.2 } live-out: { fibo%f1.2 }
       # now-dead: { fibo%f2.2 }
       [0055] f1 = int.add f1 f2

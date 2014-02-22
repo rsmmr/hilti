@@ -106,8 +106,8 @@
    }
 
 #define __implementOp(nr, ty, constant) \
-       shared_ptr<Type> __typeOp##nr()  const override { \
-           return ty;                                    \
+       std::pair<shared_ptr<Type>, bool> __typeOp##nr()  const override { \
+           return std::make_pair(ty, constant);          \
        }                                                 \
                                                          \
        bool __matchOp##nr(shared_ptr<Expression> op, bool coerce) override {        \
@@ -117,9 +117,13 @@
            }                                                           \
            else                                                        \
                if ( ! ty->equal(op->type()) ) return false;            \
-           if ( op->isConstant() && ! constant ) return false;         \
            return true;                                                \
            }
+
+           // This used to be in __matchOp() but it's not right: whether an
+           // argument is a constant or not doesn't mean anything about
+           // the parameter being marked as const.
+           // if ( op->isConstant() && ! constant ) return false; 
 
 #define __implementDefault(op, def) \
        shared_ptr<Expression> __default##op() const override {                                     \

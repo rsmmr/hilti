@@ -86,6 +86,10 @@ struct Pac2FileAnalyzerInfo;
 struct Pac2ModuleInfo;
 struct Pac2ExpressionAccessor;
 
+namespace compiler {
+	class ModuleBuilder;
+}
+
 class Manager
 {
 public:
@@ -456,6 +460,7 @@ protected:
 private:
 	void InitMembers();
 	::Val* RuntimeCallFunctionInternal(const string& symbol, val_list* args);
+	void InstallTypeMappings(shared_ptr<compiler::ModuleBuilder> mbuilder, ::BroType* t1, ::BroType* t2);
 
 	bool pre_scripts_init_run;
 	bool post_scripts_init_run;

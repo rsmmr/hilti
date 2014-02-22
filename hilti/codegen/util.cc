@@ -31,6 +31,8 @@ void codegen::util::IRInserter::InsertHelper(llvm::Instruction *I, const llvm::T
 
 string codegen::util::mangle(const string& name, bool global, shared_ptr<ID> parent, string prefix, bool internal)
 {
+    // TODO: Leverate util::toIdentifier().
+
     static char const* const hex = "0123456789abcdef";
 
     string normalized = name;
@@ -202,6 +204,13 @@ void codegen::util::llvmDebugPrintStderr(IRBuilder* builder, const std::string& 
     auto s = builder->CreateGlobalStringPtr(str);
     llvm::ArrayRef<llvm::Value *> args = { s };
     builder->CreateCall(func, args);
+}
+
+void codegen::util::llvmDebugTrap(IRBuilder* builder)
+{
+    auto module = builder->GetInsertBlock()->getParent()->getParent();
+    auto dt = llvm::Intrinsic::getDeclaration(module, llvm::Intrinsic::debugtrap);
+    builder->CreateCall(dt);
 }
 
 #define _flip(x) \

@@ -27,6 +27,21 @@ void hlt_string_dtor(hlt_type_info* ti, hlt_string* s)
     // Nothing to do.
 }
 
+void* hlt_string_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_string src = *(hlt_string*)srcp;
+    return GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + src->len);
+}
+
+void hlt_string_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_string src = *(hlt_string*)srcp;
+    hlt_string dst = *(hlt_string*)dstp;
+
+    dst->len = src->len;
+    memcpy(&dst->bytes, src->bytes, src->len);
+}
+
 hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s = *((hlt_string*)obj);
@@ -37,7 +52,7 @@ hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int3
 hlt_hash hlt_string_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s = *((hlt_string*)obj);
-    return s ? hlt_hash_bytes(s->bytes, s->len) : 0;
+    return s ? hlt_hash_bytes(s->bytes, s->len, 0) : 0;
 }
 
 int8_t hlt_string_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -302,14 +317,30 @@ hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exc
     return dst;
 }
 
-hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_object_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( type->to_string )
-        return (*type->to_string)(type, obj, 0, excpt, ctx);
-    else
-        return hlt_string_from_asciiz(type->tag, excpt, ctx);
-}
+    assert(seen);
 
+    if ( type->gc && type->to_string ) {
+        void *ptr = *(void **)obj;
+        if ( __hlt_pointer_stack_lookup(seen, ptr) )
+            return hlt_string_from_asciiz("[...recursion...]", excpt, ctx);
+
+        __hlt_pointer_stack_push_back(seen, ptr);
+    }
+
+    hlt_string s = 0;
+
+    if ( type->to_string )
+        s = (*type->to_string)(type, obj, options, seen, excpt, ctx);
+    else
+        s = hlt_string_from_asciiz(type->tag, excpt, ctx);
+
+    if ( type->gc && type->to_string )
+        __hlt_pointer_stack_pop_back(seen);
+
+    return s;
+}
 
 enum Charset { ERROR, UTF8, UTF16LE, UTF16BE, UTF32LE, UTF32BE, ASCII };
 
@@ -626,7 +657,12 @@ hlt_string hlt_string_join(hlt_string sep, hlt_list* l, hlt_exception** excpt, h
         }
 
         void* obj = hlt_iterator_list_deref(i, excpt, ctx);
-        hlt_string so = hlt_string_from_object(ti, obj, excpt, ctx);
+
+        __hlt_pointer_stack seen;
+        __hlt_pointer_stack_init(&seen);
+        hlt_string so = hlt_object_to_string(ti, obj, 0, &seen, excpt, ctx);
+        __hlt_pointer_stack_destroy(&seen);
+
         s = hlt_string_concat_and_unref(s, so, excpt, ctx);
 
         GC_DTOR_GENERIC(obj, ti);

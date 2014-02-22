@@ -141,7 +141,7 @@ iBegin(list, Front, "list.front")
 iEnd
 
 iBegin(list, Insert, "list.insert")
-    iOp1(optype::any, true)
+    iOp1(optype::any, false)
     iOp2(optype::iterList, true)
 
     iValidate {
@@ -188,7 +188,7 @@ iEnd
 
 iBegin(list, PushBack, "list.push_back")
     iOp1(optype::refList, false)
-    iOp2(optype::any, true)
+    iOp2(optype::any, false)
 
     iValidate {
         canCoerceTo(op2, elementType(referencedType(op1)));
@@ -202,7 +202,7 @@ iEnd
 
 iBegin(list, PushFront, "list.push_front")
     iOp1(optype::refList, false)
-    iOp2(optype::any, true)
+    iOp2(optype::any, false)
 
     iValidate {
         canCoerceTo(op2, elementType(referencedType(op1)));
@@ -216,7 +216,7 @@ iEnd
 
 iBegin(list, Append, "list.append")
     iOp1(optype::refList, false)
-    iOp2(optype::refList, true)
+    iOp2(optype::refList, false)
 
     iValidate {
         equalTypes(elementType(referencedType(op1)), elementType(referencedType(op2)));

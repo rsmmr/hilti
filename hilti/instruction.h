@@ -361,6 +361,9 @@ public:
        shared_ptr<Type> type_op1;    /// Type of operand 1, or null if not used.
        shared_ptr<Type> type_op2;    /// Type of operand 2, or null if not used.
        shared_ptr<Type> type_op3;    /// Type of operand 3, or null if not used.
+       bool const_op1;               /// True if operand 1 won't be modified.
+       bool const_op2;               /// True if operand 2 won't be modified.
+       bool const_op3;               /// True if operand 3 won't be modified.
        shared_ptr<Expression> default_op1; /// Default for operand 1, or null if not used.
        shared_ptr<Expression> default_op2; /// Default for operand 2, or null if not used.
        shared_ptr<Expression> default_op3; /// Default for operand 3, or null if not used.
@@ -420,16 +423,16 @@ protected:
    virtual bool __matchOp3(shared_ptr<Expression> op, bool coerce) { return op.get() == nullptr; }
 
    // For internal use only. Will be overridden automagically via macros.
-   virtual shared_ptr<Type> __typeOp0() const  { return nullptr; }
+   virtual std::pair<shared_ptr<Type>, bool> __typeOp0() const  { return std::make_pair(nullptr, false); }
 
    // For internal use only. Will be overridden automagically via macros.
-   virtual shared_ptr<Type> __typeOp1() const  { return nullptr; }
+   virtual std::pair<shared_ptr<Type>, bool> __typeOp1() const  { return std::make_pair(nullptr, false); }
 
    // For internal use only. Will be overridden automagically via macros.
-   virtual shared_ptr<Type> __typeOp2() const  { return nullptr; }
+   virtual std::pair<shared_ptr<Type>, bool> __typeOp2() const  { return std::make_pair(nullptr, false); }
 
    // For internal use only. Will be overridden automagically via macros.
-   virtual shared_ptr<Type> __typeOp3() const { return nullptr; }
+   virtual std::pair<shared_ptr<Type>, bool> __typeOp3() const { return std::make_pair(nullptr, false); }
 
    // For internal use only. Will be overridden automagically via macros.
    virtual shared_ptr<Expression> __defaultOp0() const { return nullptr; }

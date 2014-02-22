@@ -286,6 +286,8 @@ public:
    /// Returns the type of the constructed callable.
    shared_ptr<Type> type() const override;
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
+
    ACCEPT_VISITOR(Ctor);
 
 private:

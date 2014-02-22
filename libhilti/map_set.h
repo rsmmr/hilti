@@ -120,7 +120,7 @@ extern void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt
 /// Called by an expiring timer to remove an element from the map.
 ///
 /// cookie: The cookie identifying the element to be removed.
-extern void hlt_map_expire(__hlt_map_timer_cookie cookie);
+extern void hlt_map_expire(__hlt_map_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the number of keys in a map.
 ///
@@ -279,7 +279,7 @@ extern void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt
 /// Called by an expiring timer to remove an element from the set.
 ///
 /// cookie: The cookie identifying the element to be removed.
-extern void hlt_set_expire(__hlt_set_timer_cookie cookie);
+extern void hlt_set_expire(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the number of keys in a set.
 ///

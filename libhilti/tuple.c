@@ -27,7 +27,29 @@ void hlt_tuple_cctor(hlt_type_info* ti, void* obj, const char* location)
     }
 }
 
-hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+// Generic version working with all tuple types.
+void hlt_tuple_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    const char* src = (const char*)srcp;
+    char* dst = (char*)dstp;
+
+    if ( ! src ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return;
+    }
+
+    hlt_type_info** types = (hlt_type_info**) &ti->type_params;
+    int16_t* offsets = (int16_t *)ti->aux;
+
+    for ( int i = 0; i < ti->num_params; i++ ) {
+        int16_t offset = offsets[i];
+        __hlt_clone(dst + offset, types[i], src + offset, cstate, excpt, ctx);
+        if ( *excpt )
+            return;
+    }
+}
+
+hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string postfix = hlt_string_from_asciiz(")", excpt, ctx);
     hlt_string separator = hlt_string_from_asciiz(",", excpt, ctx);
@@ -44,17 +66,8 @@ hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32
 
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
     for ( i = 0; i < type->num_params; i++ ) {
-        hlt_string t;
 
-        if ( types[i]->to_string ) {
-            t = (types[i]->to_string)(types[i], obj + offsets[i], 0, excpt, ctx);
-            if ( *excpt )
-                goto error;
-        }
-        else
-            // No format function.
-            t = hlt_string_from_asciiz(types[i]->tag, excpt, ctx);
-
+        hlt_string t = hlt_object_to_string(types[i], obj + offsets[i], 0, seen, excpt, ctx);
         hlt_string tmp = s;
         s = hlt_string_concat(s, t, excpt, ctx);
 

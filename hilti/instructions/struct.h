@@ -86,7 +86,7 @@ iBegin(struct_, GetDefault, "struct.get_default")
     iTarget(optype::any)
     iOp1(optype::refStruct, true)
     iOp2(optype::string, true)
-    iOp3(optype::any, true)
+    iOp3(optype::any, false)
 
     iValidate {
         if ( ! isConstant(op2) )
@@ -133,7 +133,7 @@ iEnd
 iBegin(struct_, Set, "struct.set")
     iOp1(optype::refStruct, false)
     iOp2(optype::string, true)
-    iOp3(optype::any, true)
+    iOp3(optype::any, false)
 
     iValidate {
         if ( ! isConstant(op2) )

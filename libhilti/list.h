@@ -76,11 +76,11 @@ extern void* hlt_iterator_list_deref(const hlt_iterator_list i, hlt_exception** 
 extern int8_t hlt_iterator_list_eq(const hlt_iterator_list i1, const hlt_iterator_list i2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Converts a list into a string.
-extern hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Called by an expiring timer to remove an element from the list.
 ///
 /// cookie: The cookie identifying the element to be removed.
-extern void hlt_list_expire(__hlt_list_timer_cookie cookie);
+extern void hlt_list_expire(__hlt_list_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

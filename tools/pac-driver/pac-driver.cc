@@ -100,11 +100,11 @@ static void usage(const char* prog)
     fprintf(stderr, "    -g            Enable pac-driver's debug output\n");
     fprintf(stderr, "    -B            Enable BinPAC++ debugging hooks\n");
     fprintf(stderr, "    -i <n>        Feed input incrementally in chunks of size <n>\n");
-    fprintf(stderr, "    -I            Add directory to import path.\n");
     fprintf(stderr, "    -l            Show available parsers\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
 #ifdef PAC_DRIVER_JIT
+    fprintf(stderr, "    -I            Add directory to import path.\n");
     fprintf(stderr, "    -d            Enable debug mode for JIT compilation\n");
     fprintf(stderr, "    -D <type>     Debug output during code generation; type can be %s\n", dbgstr.c_str());
     fprintf(stderr, "    -O            Optimize generated code.             [Default: off].\n");
@@ -550,11 +550,12 @@ int main(int argc, char** argv)
             list_parsers = true;
             break;
 
+
+#ifdef PAC_DRIVER_JIT
          case 'I':
             options->libdirs_pac2.push_back(optarg);
             break;
 
-#ifdef PAC_DRIVER_JIT
          case 'D':
             options->cg_debug.insert(optarg);
             break;

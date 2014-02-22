@@ -92,6 +92,8 @@ static const int16_t MAX_COPY_SIZE = 256;
 // If we allocate a chunk of a data ourselves, it will be of this size.
 static const int16_t ALLOC_SIZE = 1024;
 
+static hlt_iterator_bytes GenericEndPos = { 0, 0 };
+
 // Sentinial for marking a chunk as empty by having both start and end point
 // here.
 static int8_t empty_sentinel;
@@ -188,6 +190,22 @@ static void add_chunk(hlt_bytes* b, __hlt_bytes_chunk* c)
     //assert(!is_empty_chunk(b->head));
 }
 
+void hlt_iterator_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_iterator_bytes* src = (hlt_iterator_bytes*)srcp;
+    hlt_iterator_bytes* dst = (hlt_iterator_bytes*)srcp;
+
+    // We can only clone the and eob iterator.
+    if ( is_end(*src) ) {
+        *dst = GenericEndPos;
+        return;
+    }
+
+    hlt_string msg = hlt_string_from_asciiz("iterator<bytes> supports cloning only for end position", excpt, ctx);
+    hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg);
+    return;
+}
+
 hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b = GC_NEW(hlt_bytes);
@@ -242,6 +260,31 @@ hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_size len, 
     }
 
     return b;
+}
+
+void* hlt_bytes_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return hlt_bytes_new(excpt, ctx);
+}
+
+void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes* src = *(hlt_bytes**)srcp;
+    hlt_bytes* dst = *(hlt_bytes**)dstp;
+
+    if ( is_empty(src) )
+        return;
+
+    hlt_bytes_size len = hlt_bytes_len(src, excpt, ctx);
+    int8_t* data = hlt_malloc(len);
+    hlt_bytes_to_raw_buffer(src, data, len, excpt, ctx);
+
+    dst->head->bytes = GC_NEW(__hlt_bytes_data);
+    dst->head->bytes->data = data;
+    dst->head->start = data;
+    dst->head->end = data + len;
+
+    assert(!is_empty(dst));
 }
 
 // Returns the number of bytes stored.
@@ -418,8 +461,6 @@ hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** 
     hlt_bytes_append(s, b2, excpt, ctx);
     return s;
 }
-
-static hlt_iterator_bytes GenericEndPos = { 0, 0 };
 
 hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -1139,7 +1180,7 @@ hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exceptio
     hlt_hash hash = 0;
 
     for ( const __hlt_bytes_chunk* c = b->head; c; c = c->next )
-        hash += hlt_hash_bytes(c->start, c->end - c->start);
+        hash = hlt_hash_bytes(c->start, c->end - c->start, hash);
 
     return hash;
 }
@@ -1216,6 +1257,12 @@ void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_b
 
 int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    if ( ! b1 )
+	fprintf(stderr, "! 1\n");
+
+    if ( ! b2 )
+	fprintf(stderr, "! 2\n");
+
     if ( ! (b1 && b2) ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
         return 0;
@@ -1606,7 +1653,12 @@ hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hl
         // that just passes that back. Or maybe we even need a separate
         // to_bytes() function?
         void* obj = hlt_iterator_list_deref(i, excpt, ctx);
-        hlt_string so = hlt_string_from_object(ti, obj, excpt, ctx);
+
+        __hlt_pointer_stack seen;
+        __hlt_pointer_stack_init(&seen);
+        hlt_string so = hlt_object_to_string(ti, obj, 0, &seen, excpt, ctx);
+        __hlt_pointer_stack_destroy(&seen);
+
         hlt_bytes* bo = hlt_string_encode(so, Hilti_Charset_UTF8, excpt, ctx);
         hlt_bytes_append(b, bo, excpt, ctx);
 

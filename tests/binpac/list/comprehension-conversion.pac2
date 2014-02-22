@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  echo | pac-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+global l1: list<bytes> = list(b"a", b"b", b"c");
+global l2: list<int64> = list(10,20,30);
+
+print [i + i for i in l1];
+print [i + i for i in l2];
+
+export type Test = unit {
+  var l1: list<int64> = list(1,2,3);
+  var l2: list<int64>;
+
+  on %done {
+    self.l2 = [ i + 1 for i in self.l1];
+    print self.l2;
+  }
+};

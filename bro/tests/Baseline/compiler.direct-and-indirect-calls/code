@@ -1,9 +1,27 @@
-    debug.pop_indent
-    debug.msg "bro" "- %s -> %s" ("direct call", (b"direct call"))
-    debug.pop_indent
+    debug.msg "bro" "* c = foo1(direct call)" ()
     __tmp_result = call foo1 (b"direct call")
-    debug.msg "bro" "- %s -> %s" ("foo1(direct call)", __tmp_result)
+    c = assign __tmp_result
 --
-    debug.pop_indent
-    __tmp_val = call LibBro::h2b_bytes (b"indirect call")
+    debug.msg "bro" "* f = foo2" ()
+    __tmp_func = call LibBro::bro_lookup_id_as_val ("foo2")
+    f = assign __tmp_func
+--
+    __tmp_val = call LibBro::h2b_bytes (__opt_ctor_3)
     __tmp_rval = call LibBro::call_legacy_result (f, (__tmp_val))
+    __tmp_i = call LibBro::bro_internal_int (__tmp_rval)
+--
+    __tmp_func = call LibBro::bro_lookup_id_as_val ("Analyzer::__disable_all_analyzers")
+    call LibBro::call_legacy_void (__tmp_func, ())
+    jump @if_cont
+global ref<bytes> __opt_ctor_1 = b"samba-unknown-%d"
+global ref<bytes> __opt_ctor_2 = b"samba-unknown-%d"
+global ref<bytes> __opt_ctor_3 = b"indirect call"
+global ref<bytes> __opt_ctor_4 = b"|"
+global ref<regexp<>> __opt_ctor_5 = /(~~)/
+global ref<regexp<>> __opt_ctor_6 = /(~~)/
+global ref<set<net>> __opt_ctor_7 = set<net>()
+global ref<bytes> __opt_ctor_8 = b"BRO_LOG_SUFFIX"
+global ref<bytes> __opt_ctor_9 = b""
+global ref<bytes> __opt_ctor_10 = b"BRO_LOG_SUFFIX"
+global ref<bytes> __opt_ctor_11 = b"%s.%s"
+global ref<bytes> __opt_ctor_12 = b"%s.%s"

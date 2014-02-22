@@ -16,6 +16,7 @@ class ID;
 namespace hilti {
 	class CompilerContext;
 	class Module;
+	class Type;
 
 	namespace builder {
 		class BlockBuilder;
@@ -201,6 +202,16 @@ public:
 	 */
 	std::pair<bool, ::Func*> BroExprToFunc(const ::Expr* func);
 
+	/**
+	 * XXX
+	 */
+	void CacheCustomBroType(const BroType* btype, shared_ptr<::hilti::Type> htype, const std::string& bro_id_name);
+
+	/**
+	 * XXX
+	 */
+	std::pair<shared_ptr<::hilti::Type>, std::string> LookupCachedCustomBroType(const BroType* btype);
+
 private:
 	std::string normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool global, bool include_module = false);
 
@@ -214,6 +225,8 @@ private:
 	shared_ptr<::hilti::builder::ModuleBuilder> glue_module_builder;
 
 	std::shared_ptr<CollectorCallback> collector_callback;
+
+	std::map<const BroType*, std::pair<shared_ptr<::hilti::Type>, std::string>> cached_custom_types;
 };
 
 }

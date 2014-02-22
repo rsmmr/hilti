@@ -1,4 +1,3 @@
-
 #include <Traverse.h>
 #include <Func.h>
 #undef List
@@ -457,7 +456,7 @@ void ModuleBuilder::CompileFunctionBody(const ::Func* func, void* vbody)
 	StatementBuilder()->Compile(body->stmts);
 
 	Builder()->debugPopIndent();
-	Builder()->addDebugMsg("bro", ::util::fmt("[func] leaving %s", dbgmsg));
+	Builder()->addDebugMsg("bro", ::util::fmt("< leaving %s", dbgmsg));
 	}
 
 shared_ptr<::hilti::Expression> ModuleBuilder::DeclareFunction(const Func* func)

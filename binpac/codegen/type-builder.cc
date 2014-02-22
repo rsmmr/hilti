@@ -130,6 +130,9 @@ void TypeBuilder::visit(type::Enum* e)
         ti.hilti_type->setScope(id->scope());
     }
 
+    else
+        ti.hilti_type->setID(std::make_shared<hilti::ID>(::util::fmt("enum_no_cg_%p", e)));
+
     if ( id && id->isScoped() && _deps )
         _deps->push_back(id);
 

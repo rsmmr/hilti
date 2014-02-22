@@ -12,5 +12,7 @@ global test1 = b"AA";
 global test2 = b"A";
 test2 += b"A";
 
+print test1, test2;
+
 print m1.get(test1, b"1 failed");
 print m1.get(test2, b"2 failed");

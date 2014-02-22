@@ -180,6 +180,12 @@ class GarbageCollected : public virtual Trait
 {
 };
 
+/// Trait class marking types which's instances can be copied bit-wise
+/// without any need for further cctors/dtors.
+class Atomic : public virtual Trait
+{
+};
+
 /// Trait class marking a type that provides iterators.
 class Iterable : public virtual Trait
 {
@@ -554,7 +560,7 @@ public:
 };
 
 /// Type for IP addresses.
-class Address : public ValueType, public trait::Unpackable, public trait::Classifiable {
+class Address : public ValueType, public trait::Atomic, public trait::Unpackable, public trait::Classifiable {
 public:
    /// Constructor.
    ///
@@ -568,7 +574,7 @@ public:
 };
 
 /// Type for IP subnets.
-class Network : public ValueType, public trait::Classifiable {
+class Network : public ValueType, public trait::Atomic, public trait::Classifiable {
 public:
    /// Constructor.
    ///
@@ -580,7 +586,7 @@ public:
 };
 
 /// Type for ports.
-class Port : public ValueType, public trait::Unpackable, public trait::Classifiable {
+class Port : public ValueType, public trait::Atomic, public trait::Unpackable, public trait::Classifiable {
 public:
    /// Constructor.
    ///
@@ -594,7 +600,7 @@ public:
 };
 
 /// Type for bitsets.
-class Bitset : public ValueType {
+class Bitset : public ValueType, public trait::Atomic {
 public:
    typedef std::pair<shared_ptr<ID>, int> Label;
    typedef std::list<Label> label_list;
@@ -631,7 +637,7 @@ private:
 };
 
 /// Type for enums.
-class Enum : public ValueType {
+class Enum : public ValueType, public trait::Atomic {
 public:
    typedef std::pair<shared_ptr<ID>, int> Label;
    typedef std::list<Label> label_list;
@@ -668,7 +674,7 @@ private:
 };
 
 /// Type for caddr values.
-class CAddr : public ValueType {
+class CAddr : public ValueType, public trait::Atomic {
 public:
    /// Constructor.
    ///
@@ -680,7 +686,7 @@ public:
 };
 
 /// Type for doubles.
-class Double : public ValueType {
+class Double : public ValueType, public trait::Atomic {
 public:
    /// Constructor.
    ///
@@ -692,7 +698,7 @@ public:
 };
 
 /// Type for booleans.
-class Bool : public ValueType, public trait::Unpackable, public trait::Classifiable {
+class Bool : public ValueType, public trait::Atomic, public trait::Unpackable, public trait::Classifiable {
 public:
    /// Constructor.
    ///
@@ -706,7 +712,7 @@ public:
 };
 
 /// Type for interval values.
-class Interval : public ValueType {
+class Interval : public ValueType, public trait::Atomic {
 public:
    /// Constructor.
    ///
@@ -718,7 +724,7 @@ public:
 };
 
 /// Type for time values.
-class Time : public ValueType {
+class Time : public ValueType, public trait::Atomic {
 public:
    /// Constructor.
    ///
@@ -731,7 +737,7 @@ public:
 
 
 /// Type for integer values.
-class Integer : public ValueType, public trait::Parameterized, public trait::Unpackable, public trait::Classifiable
+class Integer : public ValueType, public trait::Atomic, public trait::Parameterized, public trait::Unpackable, public trait::Classifiable
 {
 public:
    /// Constructor.

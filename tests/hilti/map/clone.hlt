@@ -1,0 +1,40 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<map<ref<bytes>, ref<bytes>>> a
+    local ref<map<ref<bytes>, ref<bytes>>> b
+    local ref<bytes> x
+    local ref<bytes> xx
+
+    x = b"X"
+    xx = b"XX"
+
+    a = map<ref<bytes>, ref<bytes>>(b"1": b"11", b"2": b"22", b"3": b"33", x: xx)
+    b = clone a
+
+    map.insert a b"4" b"44"
+    bytes.append x b"Y"
+    bytes.append xx b"YY"
+
+    call Hilti::print(a)
+    call Hilti::print(b)
+    call Hilti::print(x)
+
+    call Hilti::print("--")
+
+    a = map<ref<bytes>, ref<bytes>>()
+    b = clone a
+
+    map.insert a b"4" b"44"
+
+    call Hilti::print(a)
+    call Hilti::print(b)
+}

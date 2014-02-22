@@ -29,7 +29,7 @@ shared_ptr<expression::Variable> InstructionNormalizer::_addLocal(shared_ptr<sta
 
     else {
         do {
-            name = util::fmt("__%s_%d", hint, ++cnt);
+            name = util::fmt("__%s_%p_%d", hint, block.get(), ++cnt);
         } while ( _names.find(name) != _names.end() );
     }
 
@@ -113,6 +113,7 @@ void InstructionNormalizer::visit(statement::ForEach* s)
     auto end = _addLocal(nblock, "end",  iterable->iterType());
     auto iter = _addLocal(nblock, "iter", iterable->iterType());
     auto cmp = _addLocal(nblock, "cmp", std::make_shared<type::Bool>());
+    auto container = _addLocal(nblock, "iterable", s->sequence()->type());
 
     auto entry = _addBlock(nblock, "loop_entry");
     auto cond = _addBlock(nblock, "loop_cond");
@@ -126,8 +127,9 @@ void InstructionNormalizer::visit(statement::ForEach* s)
     replacer.run(s->body(), std::make_shared<ID>(statement::foreach::IDLoopNext), next.first->id());
     replacer.run(s->body(), s->id(), var->variable()->id());
 
-    _addInstruction(entry.first, iter, instruction::operator_::Begin, s->sequence());
-    _addInstruction(entry.first, end,  instruction::operator_::End, s->sequence());
+    _addInstruction(entry.first, container, instruction::operator_::Assign, s->sequence());
+    _addInstruction(entry.first, iter, instruction::operator_::Begin, container);
+    _addInstruction(entry.first, end,  instruction::operator_::End, container);
     _addInstruction(entry.first, nullptr, instruction::flow::Jump, cond.second);
 
     _addInstruction(cond.first, cmp, instruction::operator_::Equal, iter, end);

@@ -75,19 +75,19 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
         break;
 
       case HLT_TIMER_LIST:
-        hlt_list_expire(timer->cookie.list);
+        hlt_list_expire(timer->cookie.list, excpt, ctx);
         break;
 
       case HLT_TIMER_MAP:
-        hlt_map_expire(timer->cookie.map);
+        hlt_map_expire(timer->cookie.map, excpt, ctx);
         break;
 
       case HLT_TIMER_SET:
-        hlt_set_expire(timer->cookie.set);
+        hlt_set_expire(timer->cookie.set, excpt, ctx);
         break;
 
       case HLT_TIMER_VECTOR:
-        hlt_vector_expire(timer->cookie.vector);
+        hlt_vector_expire(timer->cookie.vector, excpt, ctx);
         break;
 
       case HLT_TIMER_PROFILER:
@@ -160,6 +160,11 @@ hlt_timer* __hlt_timer_new_profiler(__hlt_profiler_timer_cookie cookie, hlt_exce
     timer->type = HLT_TIMER_PROFILER;
     GC_INIT(timer->cookie.profiler, cookie, hlt_string);
     return timer;
+}
+
+hlt_time hlt_timer_time(hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return timer->time;
 }
 
 void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)

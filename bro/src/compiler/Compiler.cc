@@ -682,3 +682,14 @@ std::pair<bool, ::Func*> Compiler::BroExprToFunc(const ::Expr* func)
 
 	return std::make_pair(false, nullptr);
 	}
+
+void Compiler::CacheCustomBroType(const BroType* btype, shared_ptr<::hilti::Type> htype, const std::string& bro_id_name)
+	{
+	cached_custom_types.insert(std::make_pair(btype, std::make_pair(htype, bro_id_name)));
+	}
+
+std::pair<shared_ptr<::hilti::Type>, std::string> Compiler::LookupCachedCustomBroType(const BroType* btype)
+	{
+	auto i = cached_custom_types.find(btype);
+	return i != cached_custom_types.end() ? i->second : std::make_pair(nullptr, "");
+	}

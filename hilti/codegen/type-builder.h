@@ -92,9 +92,20 @@ struct TypeInfo {
     /// defaults to a null value of that type.
     llvm::Constant* init_val = nullptr;
 
+    /// For garbage collected types, an optional type corresponding to how an
+    /// instance is represented. This should be set only if that type is
+    /// static across all instances represented by this type information; it
+    /// will be used it determine the size stored in the RTTI's \c object_size.
+    llvm::Type* object_type = nullptr;
+
     /// For ValueTypes, true if the the HILTI-C calling convention passes type
-   /// information for this type.
+    /// information for this type.
     bool pass_type_info = false;
+
+    /// True if this type is atomic in the sense that it doesn't refer or
+    /// contain to any other values. Being atomic implies that it can be
+    /// copied and cloned with a bitwise copy.
+    bool atomic = false;
 
     /// The name of an internal libhilti function that converts a value of the
     /// type into a readable string representation. See ``hilti-intern.h`` for
@@ -154,6 +165,27 @@ struct TypeInfo {
     /// Like \a dtor, but giving the function (of the same signature)
     /// directly. Only one of \a cctor and \a cctor_func must be given.
     llvm::Function* cctor_func = 0;
+
+    /// The name of an internal libhilti function that will be called to
+    /// initialize a deep-copy of a non-atomic value. See \c libhilti/rtti.h
+    /// for more details. Will not be used for atomic types and should be set
+    /// to null in that case.
+    string clone_init = "";
+
+    /// Like \a clone_init but giving the function directly. Only one of the
+    /// two may be given.
+    llvm::Function* clone_init_func = 0;
+
+    /// The name of an internal libhilti function that will be called to
+    /// allocate memory for deep-copy of a garbage collected value, without
+    /// initializing it yet. See \c libhilti/rtti.h for more details. If this
+    /// is set, clone_init (or clone_init_func) must be as well. Will not be
+    /// used for non-gc types and should be set to null in that case.
+    string clone_alloc = "";
+
+    /// Like \a clone_alloc but giving the function directly. Only one of the
+    /// two may be given.
+    llvm::Function* clone_alloc_func = 0;
 
     /// A global LLVM variable with auxiliary type-specific RTTI information,
     /// which will be accessible from the C level.

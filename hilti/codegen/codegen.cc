@@ -661,11 +661,13 @@ void CodeGen::createGlobalsInitFunction()
 
     // Init user defined globals.
     for ( auto g : _collector->globals() ) {
+        llvmDebugPrint("hilti-trace", ::util::fmt("init global %s", g->id()->pathAsString()));
         auto init = g->init() ? llvmValue(g->init(), g->type(), true) : llvmInitVal(g->type());
         assert(init);
         auto addr = llvmGlobal(g.get());
         llvmCreateStore(init, addr);
         llvmBuildInstructionCleanup();
+        llvmCheckException();
     }
 
     if ( functionEmpty() ) {
@@ -2930,7 +2932,9 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     builder()->CreateRetVoid();
     popFunction();
 
-    // Build the internal function that will later dtor all the arguments in the struct.
+    // Build the internal function that will later dtor all the arguments in
+    // the struct. This functions clones only the parameters, the runtime
+    // does the rest.
 
     llvm::Constant* llvm_dtor_func = nullptr;
 
@@ -2958,13 +2962,64 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     else
         llvm_dtor_func = llvmConstNull(llvmTypePtr());
 
+    // Build the internal function that will init a cloned callable. This
+    // functions clones only the parameters, the runtime does the rest.
+
+    llvm::Constant* llvm_clone_init_func = nullptr;
+
+    if ( ftype->parameters().size() ) {
+        CodeGen::llvm_parameter_list lparams = {
+            std::make_pair("callable", llvmTypePtr(cty)),
+            std::make_pair("callable", llvmTypePtr(cty)),
+            std::make_pair("cstate", llvmTypePtr()),
+            std::make_pair("excpt", llvmTypePtr(llvmTypeExceptionPtr())),
+            std::make_pair("ctx", llvmTypePtr(llvmTypeExecutionContext()))
+            };
+
+        auto clone_init = llvmAddFunction(string(".callable.clone_init.params") + name, llvmTypeVoid(), lparams, true, true);
+
+        pushFunction(clone_init);
+
+        auto a = clone_init->arg_begin();
+        auto arg_dst = a++;
+        auto arg_src = a++;
+        auto arg_cstate = a++;
+        auto arg_excpt = a++;
+        auto arg_ctx = a++;
+
+        auto src = builder()->CreateBitCast(arg_src, llvmTypePtr(sty));
+        auto dst = builder()->CreateBitCast(arg_dst, llvmTypePtr(sty));
+
+        auto targ = fparams.begin();
+
+        for ( auto i = 0; i < fparams.size() - unbound_args.size(); i++ ) {
+            auto zero = llvmGEPIdx(0);
+            auto argidx = llvmGEPIdx(arg_start + i);
+            auto src_param = builder()->CreateBitCast(llvmGEP(src, zero, argidx), llvmTypePtr());
+            auto dst_param = builder()->CreateBitCast(llvmGEP(dst, zero, argidx), llvmTypePtr());
+            value_list args = { dst_param, llvmRtti((*targ++)->type()), src_param, arg_cstate, arg_excpt, arg_ctx };
+            llvmCallC("__hlt_clone", args, false, false);
+        }
+
+        llvmReturn();
+        popFunction();
+
+        llvm_clone_init_func = llvm::ConstantExpr::getBitCast(clone_init, llvmTypePtr());
+    }
+
+    else
+        llvm_clone_init_func = llvmConstNull(llvmTypePtr());
+
     // Build the per-function object for this callable.
 
     auto ctyfunc = llvm::cast<llvm::StructType>(llvmLibType("hlt.callable.func"));
     auto ctyfuncval = llvmConstNull(ctyfunc);
+    auto object_size = llvmSizeOf(sty);
     ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm::ConstantExpr::getBitCast(llvm_call_func, llvmTypePtr()), 0);
     ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm::ConstantExpr::getBitCast(llvm_call_func_c, llvmTypePtr()), 1);
     ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm_dtor_func, 2);
+    ctyfuncval = llvmConstInsertValue(ctyfuncval, llvm_clone_init_func, 3);
+    ctyfuncval = llvmConstInsertValue(ctyfuncval, object_size, 4);
 
     auto ctyfuncglob = llvmAddConst("callable.func" + name, ctyfuncval);
 

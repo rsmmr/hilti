@@ -102,8 +102,11 @@ extern uint64_t hlt_flip64(uint64_t v);
 ///
 /// len: The number of bytes to include, starting at *s*.
 ///
+/// prev_hash: To use the hash incrementally on subsequent chunks of data,
+/// pass the previous value here. Set to zero on initial call.
+///
 /// Returns: The hash value.
-extern hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len);
+extern hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len, hlt_hash prev_hash);
 
 /// Default hash function hashing a value by value.
 extern hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -114,4 +117,31 @@ extern int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, co
 /// Wrapper around the standard \a write(2) that restarts on \c EINTR.
 extern int8_t __hlt_safe_write(int fd, const char* data, int len);
 
+// XXX
+// These data structures are optimized for a small numbers of items.
+
+struct __hlt_pointer_stack {
+    const void** ptrs;
+    size_t size;
+    size_t capacity;
+};
+
+void   __hlt_pointer_stack_init(__hlt_pointer_stack* set);
+void   __hlt_pointer_stack_push_back(__hlt_pointer_stack* set, const void *ptr);
+void   __hlt_pointer_stack_pop_back(__hlt_pointer_stack* set);
+int8_t __hlt_pointer_stack_lookup(__hlt_pointer_stack* set, const void *ptr);
+void   __hlt_pointer_stack_destroy(__hlt_pointer_stack* set);
+
+struct __hlt_pointer_map {
+    const void** ptrs;
+    size_t size;
+    size_t capacity;
+};
+
+void        __hlt_pointer_map_init(__hlt_pointer_map* map);
+void        __hlt_pointer_map_insert(__hlt_pointer_map* map, const void *key, const void* value);
+const void* __hlt_pointer_map_lookup(__hlt_pointer_map* map, const void *key);
+void        __hlt_pointer_map_destroy(__hlt_pointer_map* map);
+
 #endif
+

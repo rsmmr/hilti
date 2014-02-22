@@ -33,6 +33,7 @@ struct __hlt_execution_context {
     void* tcontext;                     /// The current threading context, per the module's "context" definition; NULL if not set. This is ref counted.
     hlt_type_info* tcontext_type;       /// The type of the current threading context.
     __hlt_thread_mgr_blockable* blockable; /// A blockable set to go along with the next yield.
+    hlt_timer_mgr* tmgr;                /// The context's timer manager. TODO: No yet used.
 
     // TODO: We should not compile this in non-profiling mode.
     __hlt_profiler_state* pstate;      /// State for ongoing profiling, or 0 if none.

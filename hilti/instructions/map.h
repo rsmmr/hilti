@@ -104,7 +104,7 @@ iEnd
 iBegin(map, New, "new")
     iTarget(optype::refMap)
     iOp1(optype::typeMap, true)
-    iOp2(optype::optional(optype::refTimerMgr), true)
+    iOp2(optype::optional(optype::refTimerMgr), false)
 
     iValidate {
         equalTypes(referencedType(target), typedType(op1));
@@ -190,6 +190,9 @@ iBegin(map, Get, "map.get")
 
 iEnd
 
+// TODO: Once we have a clone operator we should make the default constant
+// and then clone it when it's returned.
+
 iBegin(map, GetDefault, "map.get_default")
     iTarget(optype::any)
     iOp1(optype::refMap, true)
@@ -211,8 +214,8 @@ iEnd
 
 iBegin(map, Insert, "map.insert")
     iOp1(optype::refMap, false)
-    iOp2(optype::any, true)
-    iOp3(optype::any, true)
+    iOp2(optype::any, false)
+    iOp3(optype::any, false)
 
     iValidate {
         canCoerceTo(op2, mapKeyType(referencedType(op1)));

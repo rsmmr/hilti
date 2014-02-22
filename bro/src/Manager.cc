@@ -240,7 +240,6 @@ Manager::Manager()
 	pre_scripts_init_run = false;
 	post_scripts_init_run = false;
 
-	pimpl->type_converter = std::make_shared<TypeConverter>();
 	pimpl->pac2_ast = new Pac2AST;
 
 	char* dir = getenv("BRO_PAC2_PATH");
@@ -292,6 +291,7 @@ bool Manager::InitPreScripts()
 	pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
 	pimpl->hilti_context = pimpl->pac2_context->hiltiContext();
 	pimpl->compiler = new compiler::Compiler(pimpl->hilti_context);
+	pimpl->type_converter = std::make_shared<TypeConverter>(pimpl->compiler);
 
 	pimpl->libbro_path = pimpl->hilti_context->searchModule(::hilti::builder::id::node("LibBro"));
 
@@ -1076,6 +1076,16 @@ bool Manager::LoadPac2Module(const string& path)
 	pimpl->pac2_modules.push_back(minfo);
 
 	pimpl->pac2_ast->process(minfo, module);
+
+	// Make exported enum types available to Bro.
+	for ( auto t : module->exportedTypes() )
+		{
+		if ( ! ast::isA<::binpac::type::Enum>(t) )
+			continue;
+
+		auto htype = pimpl->pac2_context->hiltiType(t, &minfo->dep_types);
+		pimpl->type_converter->Convert(htype, t);
+		}
 
 	return true;
 	}
@@ -1886,6 +1896,8 @@ void Manager::BuildBroEventSignature(shared_ptr<Pac2EventInfo> ev)
 	ev->bro_event_type = ftype;
 	}
 
+#if 0
+// Have patched Bro to allow field names to not match.
 static bool records_compatible(::RecordType* rt1, ::RecordType* rt2)
 	{
 	// Cannot use same_type() here as that also compares the field names,
@@ -1904,6 +1916,31 @@ static bool records_compatible(::RecordType* rt1, ::RecordType* rt2)
 		}
 
 	return true;
+	}
+#endif
+
+void Manager::InstallTypeMappings(shared_ptr<compiler::ModuleBuilder> mbuilder, ::BroType* t1, ::BroType* t2)
+	{
+	assert(t1->Tag() == t2->Tag());
+
+	if ( t1->Tag() == TYPE_RECORD )
+		{
+		mbuilder->MapType(t1, t2);
+		return;
+		}
+
+ 	if ( t1->Tag() == TYPE_VECTOR )
+		InstallTypeMappings(mbuilder,
+				    t1->AsVectorType()->YieldType(),
+				    t2->AsVectorType()->YieldType());
+
+ 	if ( t1->Tag() == TYPE_TABLE )
+		{
+		if ( t1->AsTableType()->YieldType() )
+			InstallTypeMappings(mbuilder,
+					    t1->AsTableType()->YieldType(),
+					    t2->AsTableType()->YieldType());
+		}
 	}
 
 void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
@@ -1926,11 +1963,12 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 
 		if ( handler->FType() )
 			{
-			// For record arguments, we want to use the one from
+			// Check if the event types are compatible. Also,
+			// for record arguments we want to use the one from
 			// the Bro event, rather than ours, which might have
-			// just dummy field names. So we go through and
-			// install mappings as needed. We also use the
-			// opportunity to check if the types match.
+			// just dummy field names. So we go through
+			// (recursively for containers) and install mappings
+			// as needed.
 			auto a1 = ev->bro_event_type->AsFuncType()->Args();
 			auto a2 = handler->FType()->Args();
 
@@ -1945,22 +1983,13 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 				auto t1 = a1->FieldType(i);
 				auto t2 = a2->FieldType(i);
 
-				if ( t1->Tag() == TYPE_RECORD && t2->Tag() == TYPE_RECORD )
-					{
-					if ( ! records_compatible(t1->AsRecordType(), t2->AsRecordType()) )
-						{
-						EventSignatureMismatch(ev->name, t1, t2, i);
-						return;
-						}
-
-					ev->minfo->hilti_mbuilder->MapType(t1, t2);
-					}
-
-				else if ( ! same_type(t1, t2) )
+				if ( ! same_type(t1, t2, 0, false) )
 					{
 					EventSignatureMismatch(ev->name, t1, t2, i);
 					return;
 					}
+
+				InstallTypeMappings(ev->minfo->hilti_mbuilder, t1, t2);
 				}
 			}
 
@@ -2127,7 +2156,7 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
 			continue;
 
 		acc->btype = acc->pac2_func ? acc->pac2_func->function()->type()->result()->type() : nullptr;
-		acc->htype = acc->btype ? pimpl->pac2_context->hiltiType(acc->btype, &ev->minfo->dep_types) : nullptr;
+		acc->htype = acc->btype ? pimpl->pac2_context->hiltiType(acc->btype, &ev->minfo->dep_types) : nullptr; // QQQ
 		acc->hlt_func = DeclareHiltiExpressionAccessor(ev, acc->nr, acc->htype);
 		}
 

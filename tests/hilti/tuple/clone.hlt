@@ -1,0 +1,26 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run() {
+    local tuple<int<32>, bool, ref<bytes>, double> a
+    local tuple<int<32>, bool, ref<bytes>, double> b
+
+    local ref<bytes> x = b"X"
+
+    a = (101, True, x, 3.14)
+    b = clone a
+
+    bytes.append x b"Y"
+
+    call Hilti::print(a)
+    call Hilti::print(b)
+
+    call Hilti::print("--")
+}

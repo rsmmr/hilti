@@ -1,6 +1,7 @@
 #
 # @TEST-EXEC: bro -b %INPUT Hilti::compile_scripts=T >output
 # @TEST-EXEC: btest-diff output
+# @TEST-KNOWN-FAILURE:
 #
 
 event bro_init() &priority = 42

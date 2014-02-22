@@ -292,10 +292,12 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PatternVal* v
 	{
 	// TODO: We don't convert the regexp dialect yet.
 
-	// The anywhere pattern has the form "^?(.|\n)*(<real-stuff-here>)"
+	// The anywhere patterns start with "^?(.|\n)*(<real-stuff-here>)".
+	// However, note that by combined patterns this maybe appear in the
+	// middle as well, so we just generally remove it.
 	auto pt = std::string(val->AsPattern()->AnywherePatternText());
-	auto ps = pt.substr(10, pt.size() - 10 - 1);
-	auto p = ::hilti::builder::regexp::pattern(ps, "");
+	pt = ::util::strreplace(pt, "^?(.|\\n)*", "");
+	auto p = ::hilti::builder::regexp::pattern(pt, "");
 	return ::hilti::builder::regexp::create(p);
 	}
 

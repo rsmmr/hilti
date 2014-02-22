@@ -307,7 +307,11 @@ init_expr     : '=' expr                         { $$ = $2; }
 import        : IMPORT path_id ';'              { driver.module()->import($2); }
 
 type_decl     : opt_linkage TYPE local_id '=' type ';'
-                                                 { $$ = std::make_shared<declaration::Type>($3, $1, $5, loc(@$)); }
+                                                 { $$ = std::make_shared<declaration::Type>($3, $1, $5, loc(@$));
+
+                                                   if ( $1 == Declaration::EXPORTED )
+                                                       driver.module()->exportType($5);
+                                                 }
 
 func_decl     : opt_linkage opt_cc rtype local_id '(' opt_params ')' block
                                                  { auto ftype = std::make_shared<type::Function>($3, $6, $2, loc(@$));
@@ -442,8 +446,8 @@ bitset        : BITSET '{' id_with_ints '}'      { $$ = std::make_shared<type::B
 enum_         : ENUM '{' id_with_ints '}'        { $$ = std::make_shared<type::Enum>($3, loc(@$)); }
               ;
 
-types         : base_type ',' types              { $$ = $3; $$.push_front($1); }
-              | base_type                        { $$ = type_list(); $$.push_back($1); }
+types         : type ',' types                   { $$ = $3; $$.push_front($1); }
+              | type                             { $$ = type_list(); $$.push_back($1); }
 
 id_with_ints  : id_with_ints ',' id_with_int     { $$ = $1; $$.push_back($3); }
               | id_with_int                      { $$ = std::list<std::pair<shared_ptr<ID>, int>>(); $$.push_back($1); }
@@ -668,6 +672,11 @@ expr2         : scoped_id                        { $$ = std::make_shared<express
               | constant                         { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
               | expr '=' expr                    { $$ = std::make_shared<expression::Assign>($1, $3, loc(@$)); }
               | expr '?' expr ':' expr           { $$ = std::make_shared<expression::Conditional>($1, $3, $5, loc(@$)); }
+              | '[' expr FOR local_id IN expr ']'{ $$ = std::make_shared<expression::ListComprehension>($2, $4, $6, nullptr, loc(@$)); }
+              | '[' expr FOR local_id IN expr IF expr ']'
+                                                 { $$ = std::make_shared<expression::ListComprehension>($2, $4, $6, $8, loc(@$)); }
+
+
 /*            | atomic_type '(' ')'                { $$ = std::make_shared<expression::Default>($1, loc(@$)); } */
 
               /* Overloaded operators */

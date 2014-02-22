@@ -74,3 +74,25 @@ void StatementBuilder::visit(statement::instruction::operator_::Clear* i)
 {
     cg()->llvmStore(i->op1(), cg()->typeInfo(i->op1()->type())->init_val);
 }
+
+void StatementBuilder::visit(statement::instruction::operator_::Clone* i)
+{
+    auto t = i->op1()->type();
+    auto lt = cg()->llvmType(t);
+    auto dst = cg()->builder()->CreateAlloca(lt, 0, "clone");
+
+    auto op = cg()->llvmValue(i->op1());
+    auto src = cg()->builder()->CreateAlloca(lt, 0, "src");
+    cg()->llvmCreateStore(op, src);
+
+    auto ti = cg()->llvmRtti(t);
+
+    auto src_casted = cg()->builder()->CreateBitCast(src, cg()->llvmTypePtr());
+    auto dst_casted = cg()->builder()->CreateBitCast(dst, cg()->llvmTypePtr());
+
+    CodeGen::value_list vals = { dst_casted, ti, src_casted };
+    cg()->llvmCallC("hlt_clone_deep", vals, true, true);
+
+    auto result = cg()->builder()->CreateLoad(dst);
+    cg()->llvmStore(i, result);
+}

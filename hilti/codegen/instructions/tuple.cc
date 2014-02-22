@@ -92,3 +92,10 @@ void StatementBuilder::visit(statement::instruction::tuple::Index* i)
 
     cg()->llvmStore(i, result);
 }
+
+void StatementBuilder::visit(statement::instruction::tuple::Length* i)
+{
+    auto ttype = ast::as<type::Tuple>(i->op1()->type());
+    auto result = cg()->llvmConstInt(ttype->typeList().size(), 64);
+    cg()->llvmStore(i, result);
+}

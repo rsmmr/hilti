@@ -14,6 +14,7 @@
 #include "globals.h"
 #include "threading.h"
 #include "globals.h"
+#include "memory_.h"
 
 void hlt_util_nanosleep(uint64_t nsecs)
 {
@@ -174,13 +175,13 @@ void hlt_abort()
     abort();
 }
 
-hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len)
+hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len, hlt_hash prev_hash)
 {
     // This is copied and adapted from hhash.h
     if ( ! len )
         return 0;
 
-	hlt_hash h = 0;
+	hlt_hash h = prev_hash;
     while ( len-- )
         h = (h << 5) - h + *s++;
 
@@ -189,7 +190,7 @@ hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len)
 
 hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_hash hash = hlt_hash_bytes(obj, type->size);
+    hlt_hash hash = hlt_hash_bytes(obj, type->size, 0);
     return hash;
 }
 
@@ -215,4 +216,87 @@ int8_t __hlt_safe_write(int fd, const char* data, int len)
     }
 
 	return 1;
+}
+
+void __hlt_pointer_stack_init(__hlt_pointer_stack* set)
+{
+    static const size_t initial_size = 5;
+    set->ptrs = hlt_malloc(sizeof(void *) * initial_size);
+    set->size = 0;
+    set->capacity = initial_size;
+}
+
+void __hlt_pointer_stack_destroy(__hlt_pointer_stack* set)
+{
+    hlt_free(set->ptrs);
+}
+
+int8_t __hlt_pointer_stack_lookup(__hlt_pointer_stack* set, const void *ptr)
+{
+    for ( size_t i = 0; i < set->size; i++ ) {
+        if ( set->ptrs[i] == ptr )
+            return 1;
+    }
+
+    return 0;
+}
+
+void __hlt_pointer_stack_push_back(__hlt_pointer_stack* set, const void *ptr)
+{
+    if ( __hlt_pointer_stack_lookup(set, ptr) )
+        return;
+
+    if ( set->size >= set->capacity ) {
+        size_t new_capacity = set->capacity * 2;
+        set->ptrs = hlt_realloc(set->ptrs, sizeof(void *) * new_capacity, sizeof(void *) * set->capacity);
+        set->capacity = new_capacity;
+    }
+
+    set->ptrs[set->size++] = ptr;
+}
+
+void __hlt_pointer_stack_pop_back(__hlt_pointer_stack* set)
+{
+    --set->size;
+
+    // Not worth freeing space here.
+}
+
+void __hlt_pointer_map_init(__hlt_pointer_map* map)
+{
+    static const size_t initial_size = 5;
+    map->ptrs = hlt_malloc(sizeof(void *) * initial_size * 2);
+    map->size = 0;
+    map->capacity = initial_size;
+}
+
+void  __hlt_pointer_map_insert(__hlt_pointer_map* map, const void *key, const void* value)
+{
+    if ( __hlt_pointer_map_lookup(map, key) )
+        return;
+
+    if ( map->size >= map->capacity ) {
+        size_t new_capacity = map->capacity * 2;
+        map->ptrs = hlt_realloc(map->ptrs, sizeof(void *) * new_capacity * 2, sizeof(void *) * map->capacity);
+        map->capacity = new_capacity;
+    }
+
+    int idx = (2 * map->size++);
+    map->ptrs[idx] = key;
+    map->ptrs[idx + 1] = value;
+}
+
+const void* __hlt_pointer_map_lookup(__hlt_pointer_map* map, const void *key)
+{
+    for ( int idx = 0; idx < (2 * map->size); idx += 2 ) {
+        if ( map->ptrs[idx] == key )
+            return map->ptrs[idx + 1];
+    }
+
+    return 0;
+}
+
+void  __hlt_pointer_map_destroy(__hlt_pointer_map* map)
+{
+    hlt_free(map->ptrs);
 }

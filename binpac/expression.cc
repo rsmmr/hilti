@@ -415,3 +415,40 @@ shared_ptr<Type> expression::PlaceHolder::type() const
     return _type;
 }
 
+expression::ListComprehension::ListComprehension(shared_ptr<Expression> output, shared_ptr<binpac::ID> variable, shared_ptr<Expression> input, shared_ptr<Expression> predicate, const Location& l)
+{
+    _output = output;
+    _variable = variable;
+    _input = input;
+    _predicate = predicate;
+
+    addChild(_output);
+    addChild(_variable);
+    addChild(_input);
+    addChild(_predicate);
+}
+
+shared_ptr<Expression> expression::ListComprehension::output() const
+{
+    return _output;
+}
+
+shared_ptr<binpac::ID> expression::ListComprehension::variable() const
+{
+    return _variable;
+}
+
+shared_ptr<Expression> expression::ListComprehension::input() const
+{
+    return _input;
+}
+
+shared_ptr<Expression> expression::ListComprehension::predicate() const
+{
+    return _predicate;
+}
+
+shared_ptr<Type> expression::ListComprehension::type() const
+{
+    return std::make_shared<type::List>(_output->type());
+}

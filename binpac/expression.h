@@ -499,6 +499,47 @@ private:
 };
 
 
+/// AST node for a list comprehension expression.
+class ListComprehension : public CustomExpression
+{
+public:
+    /// Constructor.
+    ///
+    /// output: The expression calculating a single output value.
+    ///
+    /// var: The variable representing values of the input set.
+    ///
+    /// input: The input set, of type trait type::trait::Iterable.
+    ///
+    /// predicate: An option predicate taking a single input element and
+    /// returning whether to include into the output.
+    ///
+    /// l: An associated location.
+    ListComprehension(shared_ptr<Expression> output, shared_ptr<binpac::ID> variable, shared_ptr<Expression> input, shared_ptr<Expression> predicate = nullptr, const Location& l=Location::None);
+
+    /// Returns the output expression.
+    shared_ptr<Expression> output() const;
+
+    /// Returns the ID for the variable.
+    shared_ptr<binpac::ID> variable() const;
+
+    /// Returns the input expression.
+    shared_ptr<Expression> input() const;
+
+    /// Returns the expression for the predicate.
+    shared_ptr<Expression> predicate() const;
+
+    shared_ptr<Type> type() const override;
+
+    ACCEPT_VISITOR(binpac::Expression);
+
+private:
+    node_ptr<Expression> _output;
+    node_ptr<Expression> _input;
+    node_ptr<Expression> _predicate;
+    node_ptr<binpac::ID> _variable;
+};
+
 }
 
 }

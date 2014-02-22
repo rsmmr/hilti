@@ -194,3 +194,13 @@ shared_ptr<Type> ctor::Callable::type() const
 {
     return _type;
 }
+
+std::list<shared_ptr<hilti::Expression>> ctor::Callable::flatten()
+{
+    std::list<shared_ptr<hilti::Expression>> l = _function->flatten();
+
+    for ( auto e : _args )
+        l.merge(e->flatten());
+
+    return l;
+}

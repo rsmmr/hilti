@@ -1,5 +1,6 @@
 
 #include "operator-resolver.h"
+#include "id-resolver.h"
 
 #include "../operator.h"
 #include "../expression.h"
@@ -104,4 +105,26 @@ void OperatorResolver::visit(Variable* i)
     if ( i->init() && ast::isA<type::Unknown>(i->type()) && ! ast::isA<type::Unknown>(i->init()->type()) )
         // We should have resolved the init expression by now.
         i->setType(i->init()->type());
+}
+
+void OperatorResolver::visit(type::UnknownElementType* u)
+{
+    auto t = u->expression()->type();
+
+    if ( ast::isA<type::Unknown>(t) )
+        return;
+
+    auto iterable = ast::type::tryTrait<type::trait::Iterable>(t);
+
+    if ( ! iterable ) {
+        error(u->expression(), "expression not of iterable type");
+        return;
+    }
+
+    auto etype = iterable->elementType();
+
+    if ( ast::isA<type::Unknown>(etype) )
+        return;
+
+    u->replace(etype);
 }

@@ -198,7 +198,7 @@ extern hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, 
 /// \hlt_c
 ///
 /// Returns: The string representation.
-extern hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_object_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Prints a string to a file. This is mainly for debugging purposes.
 ///

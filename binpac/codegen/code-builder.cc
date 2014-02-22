@@ -239,6 +239,47 @@ void CodeBuilder::visit(expression::List* l)
 {
 }
 
+void CodeBuilder::visit(expression::ListComprehension* c)
+{
+    auto mbuilder = cg()->moduleBuilder();
+
+    auto ltype = hilti::builder::list::type(cg()->hiltiType(c->output()->type()));
+    auto output = cg()->builder()->addTmp("lcout", hilti::builder::reference::type(ltype));
+
+    cg()->builder()->addInstruction(output, hilti::instruction::list::New, hilti::builder::type::create(ltype));
+
+	std::shared_ptr<::hilti::ID> n(nullptr);
+	mbuilder->pushBody(true);
+	mbuilder->pushBuilder(n);
+
+    auto add = mbuilder->newBuilder("add_elem");
+
+    if ( c->predicate() ) {
+        auto pred = cg()->hiltiExpression(c->predicate());
+        cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, pred, add->block(), ::hilti::builder::loop::next());
+    }
+
+    else
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, add->block());
+
+    mbuilder->pushBuilder(add);
+    auto val = cg()->hiltiExpression(c->output());
+    cg()->builder()->addInstruction(hilti::instruction::list::PushBack, output, val);
+    mbuilder->popBuilder(add);
+
+    mbuilder->popBuilder();
+
+	auto body = mbuilder->popBody();
+	auto body_stmt = ::ast::checkedCast<hilti::statement::Block>(body->block());
+
+    auto id = cg()->hiltiID(c->variable());
+    auto input = cg()->hiltiExpression(c->input());
+	auto s = ::hilti::builder::loop::foreach(id, input, body_stmt);
+	cg()->builder()->addInstruction(s);
+
+    setResult(output);
+}
+
 void CodeBuilder::visit(expression::MemberAttribute* m)
 {
 }

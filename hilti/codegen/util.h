@@ -122,6 +122,9 @@ extern IRBuilder* newBuilder(CodeGen* cg, llvm::BasicBlock* block, bool insert_a
 // a HILTI context.
 extern void llvmDebugPrintStderr(IRBuilder* builder, const std::string& s);
 
+// Inserts a debu trap, without any further reliance on a HILTI context.
+extern void llvmDebugTrap(IRBuilder* builder);
+
 /// Converts a 64-bit value from host-order to network order.
 ///
 /// v: The value to convert.

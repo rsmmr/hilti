@@ -147,7 +147,7 @@ Unknown::Unknown(const Location& l) : binpac::Type(l)
 {
 }
 
-Unknown::Unknown(shared_ptr<ID> id, const Location& l)
+Unknown::Unknown(shared_ptr<ID> id, const Location& l) : binpac::Type(l)
 {
     _id = id;
     addChild(_id);
@@ -156,6 +156,17 @@ Unknown::Unknown(shared_ptr<ID> id, const Location& l)
 shared_ptr<ID> Unknown::id() const
 {
     return _id;
+}
+
+UnknownElementType::UnknownElementType(node_ptr<Expression> expr, const Location& l) : binpac::Type(l)
+{
+    _expr = expr;
+    addChild(_expr);
+}
+
+shared_ptr<Expression> UnknownElementType::expression() const
+{
+    return _expr;
 }
 
 TypeByName::TypeByName(shared_ptr<ID> id, const Location& l) : binpac::Type(l)

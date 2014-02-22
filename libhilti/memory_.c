@@ -171,6 +171,8 @@ void __hlt_free(void *memory, const char* type, const char* location)
 
 void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* location)
 {
+    assert(size);
+
     __hlt_gchdr* hdr = (__hlt_gchdr*)__hlt_malloc(size, ti->tag, location);
     hdr->ref_cnt = 1;
 

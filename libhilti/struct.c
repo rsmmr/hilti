@@ -43,7 +43,41 @@ void hlt_struct_dtor(hlt_type_info* type, void* obj, const char* location)
     }
 }
 
-hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+// Generic version working with all struct types.
+void* hlt_struct_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return GC_NEW_CUSTOM_SIZE_GENERIC(ti, ti->object_size);
+}
+
+void hlt_struct_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    const char* src = *((const char**)srcp);
+    char* dst = *(char**)dstp;
+
+    if ( ! src ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return;
+    }
+
+    uint32_t mask = *((uint32_t*)(src + sizeof(__hlt_gchdr)));
+    *((uint32_t*)(dst + sizeof(__hlt_gchdr))) = mask;
+
+    struct field* fields = (struct field *)ti->aux;
+    hlt_type_info** types = (hlt_type_info**) &ti->type_params;
+
+    for ( int i = 0; i < ti->num_params; i++ ) {
+        uint32_t is_set = (mask & (1 << i));
+
+        if ( is_set ) {
+            int16_t offset = fields[i].offset;
+            __hlt_clone(dst + offset, types[i], src + offset, cstate, excpt, ctx);
+            if ( *excpt )
+                return;
+        }
+    }
+}
+
+hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_STRUCT);
 
@@ -92,14 +126,8 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
             s = hlt_string_concat_and_unref(s, not_set, excpt, ctx);
         }
 
-        else if ( types[i]->to_string ) {
-            hlt_string t = (types[i]->to_string)(types[i], obj + array[i].offset, 0, excpt, ctx);
-            s = hlt_string_concat_and_unref(s, t, excpt, ctx);
-        }
-
         else {
-            // No format function.
-            hlt_string t = hlt_string_from_asciiz(types[i]->tag, excpt, ctx);
+            hlt_string t = hlt_object_to_string(types[i], obj + array[i].offset, options, seen, excpt, ctx);
             s = hlt_string_concat_and_unref(s, t, excpt, ctx);
         }
 

@@ -114,6 +114,36 @@ hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx)
     return file;
 }
 
+void* hlt_file_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return GC_NEW(hlt_file);
+}
+
+void hlt_file_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_file* src = *(hlt_file**)srcp;
+    hlt_file* dst = *(hlt_file**)dstp;
+
+    // Not so great that we need to lock here, but we need to to increase the
+    // writer count.
+    // 
+    // TODO: can we make this an atomic variable instead?
+
+    if ( src->info && src->open ) {
+        int s = 0;
+        acqire_lock(&s);
+        ++src->info->writers;
+        release_lock(s);
+    }
+
+    dst->info = src->info;
+    dst->open = src->open;
+    dst->charset = src->charset;
+    dst->type = src->type;
+
+    __hlt_clone(&dst->path, &hlt_type_info_hlt_string, &src->path, cstate, excpt, ctx);
+}
+
 void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( file->open ) {
@@ -421,4 +451,3 @@ hlt_string hlt_file_to_string(const hlt_type_info* type, const void* obj, int32_
 
     return s;
 }
-
