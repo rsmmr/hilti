@@ -24,23 +24,23 @@
  */
 
 
-#ifndef PQUEUE_H
-#define PQUEUE_H
+#ifndef PRIORITY_QUEUE_H
+#define PRIORITY_QUEUE_H
 
 #include "../../../memory_.h"
 #include "../../../timer.h"
 
 /** priority data type */
-typedef hlt_time pqueue_pri_t;
+typedef hlt_time priority_queue_pri_t;
 
 /** the priority queue handle */
-typedef struct pqueue_t
+typedef struct priority_queue_t
 {
     size_t size;
     size_t avail;
     size_t step;
     void **d;
-} pqueue_t;
+} priority_queue_t;
 
 
 /**
@@ -54,21 +54,21 @@ typedef struct pqueue_t
  *
  * @Return the handle or NULL for insufficent memory
  */
-pqueue_t *
-pqueue_init(size_t n);
+priority_queue_t *
+priority_queue_init(size_t n);
 
 /**
  * free all memory used by the queue
  * @param q the queue
  */
-void pqueue_free(pqueue_t *q);
+void priority_queue_free(priority_queue_t *q);
 
 
 /**
  * return the size of the queue.
  * @param q the queue
  */
-size_t pqueue_size(pqueue_t *q);
+size_t priority_queue_size(priority_queue_t *q);
 
 
 /**
@@ -77,7 +77,7 @@ size_t pqueue_size(pqueue_t *q);
  * @param d the item
  * @return 0 on success
  */
-int pqueue_insert(pqueue_t *q, void *d);
+int priority_queue_insert(priority_queue_t *q, void *d);
 
 
 /**
@@ -87,8 +87,8 @@ int pqueue_insert(pqueue_t *q, void *d);
  * @param d the entry
  */
 void
-pqueue_change_priority(pqueue_t *q,
-                       pqueue_pri_t new_pri,
+priority_queue_change_priority(priority_queue_t *q,
+                       priority_queue_pri_t new_pri,
                        void *d);
 
 
@@ -98,7 +98,7 @@ pqueue_change_priority(pqueue_t *q,
  * @param d where to copy the entry to
  * @return NULL on error, otherwise the entry
  */
-void *pqueue_pop(pqueue_t *q);
+void *priority_queue_pop(priority_queue_t *q);
 
 
 /**
@@ -107,7 +107,7 @@ void *pqueue_pop(pqueue_t *q);
  * @param d the entry
  * @return 0 on success
  */
-int pqueue_remove(pqueue_t *q, void *d);
+int priority_queue_remove(priority_queue_t *q, void *d);
 
 
 /**
@@ -116,7 +116,7 @@ int pqueue_remove(pqueue_t *q, void *d);
  * @param d the entry
  * @return NULL on error, otherwise the entry
  */
-void *pqueue_peek(pqueue_t *q);
+void *priority_queue_peek(priority_queue_t *q);
 
 
 #if 0
@@ -129,9 +129,9 @@ void *pqueue_peek(pqueue_t *q);
  * @param the callback function to print the entry
  */
 void
-pqueue_print(pqueue_t *q, 
+priority_queue_print(priority_queue_t *q, 
              FILE *out, 
-             pqueue_print_entry_f print);
+             priority_queue_print_entry_f print);
 
 /**
  * dump the queue and it's internal structure
@@ -142,9 +142,9 @@ pqueue_print(pqueue_t *q,
  * @param the callback function to print the entry
  */
 void
-pqueueu_dump(pqueue_t *q, 
+pqueueu_dump(priority_queue_t *q, 
              FILE *out,
-             pqueue_print_entry_f print);
+             priority_queue_print_entry_f print);
 
 #endif
 
@@ -154,8 +154,8 @@ pqueueu_dump(pqueue_t *q,
  * debug function only
  * @param q the queue
  */
-int pqueue_is_valid(pqueue_t *q);
+int priority_queue_is_valid(priority_queue_t *q);
 
 
-#endif /* PQUEUE_H */
+#endif /* PRIORITY_QUEUE_H */
 /** @} */

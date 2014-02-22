@@ -10,4 +10,6 @@ For HILTI, we adapated libpqueue a bit:
 
 - The output functionality is removed.
 
+- Renaming pqueue_* to priority_queue_* to avoic name clashes with
+  system libraries.
 
