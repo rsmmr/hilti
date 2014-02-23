@@ -1,0 +1,2 @@
+From HILTI: <orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp>
+From Bro:   <orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp>

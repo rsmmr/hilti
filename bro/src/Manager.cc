@@ -213,6 +213,7 @@ struct Manager::PIMPL
 	pac2_file_analyzer_vector pac2_file_analyzers_by_subtype;	// All file analyzers indexed by their file_analysis::Tag subtype.
 	path_set evt_files;                             // All loaded *.evt files.
 	path_set pac2_files;                            // All loaded *.pac2 files.
+	path_set hlt_files;                             // All loaded *.hlt files specified by the user.
 
 	shared_ptr<::hilti::CompilerContext>         hilti_context = nullptr;
 	shared_ptr<::binpac::CompilerContext>        pac2_context = nullptr;
@@ -414,6 +415,16 @@ bool Manager::LoadFile(const std::string& file)
 
 		pimpl->evt_files.insert(path);
 		return LoadPac2Events(path);
+		}
+
+	if ( path.size() > 4 && path.substr(path.size() - 4) == ".hlt" )
+		{
+		if ( pimpl->hlt_files.find(path) != pimpl->hlt_files.end() )
+			// Already loaded.
+			return true;
+
+		pimpl->hlt_files.insert(path);
+		return LoadExternalHiltiCode(path);
 		}
 
 	reporter::internal_error(::util::fmt("unknown file type passed to HILTI loader: %s", path));
@@ -738,6 +749,9 @@ bool Manager::Compile()
 		reporter::error("LibBro library module not found");
 		return false;
 		}
+
+	// TODO: Replace loading libbro with a call to
+	// LoadExternalHiltiCode() once that supports caching.
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Loading %s", pimpl->libbro_path.c_str());
 
@@ -2726,6 +2740,31 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		Unref((*args)[i]);
 
 	return result ? result : new ::Val(0, ::TYPE_VOID);
+	}
+
+bool Manager::LoadExternalHiltiCode(const std::string& path)
+	{
+	PLUGIN_DBG_LOG(HiltiPlugin, "Loading %s", path.c_str());
+
+	auto m = pimpl->hilti_context->loadModule(path);
+
+	if ( ! m )
+		{
+		reporter::error(::util::fmt("loading external module %s failed", path));
+		return false;
+		}
+
+	pimpl->hilti_modules.push_back(m);
+	auto lm = pimpl->hilti_context->compile(m);
+
+	if ( ! lm )
+		{
+		reporter::error(::util::fmt("compiling external module %s failed", path));
+		return false;
+		}
+
+	pimpl->llvm_modules.push_back(lm);
+	return true;
 	}
 
 void Manager::DumpDebug()

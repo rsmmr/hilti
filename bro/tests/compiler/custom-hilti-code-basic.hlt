@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC: bro -b %INPUT Hilti::compile_scripts=T >output
+# @TEST-EXEC: btest-diff output
+#
+
+module MyCustomCode
+
+import Hilti
+
+hook void GLOBAL::bro_init()
+{
+    call Hilti::print("Hello from HILTI!")
+}
+
+
+

@@ -300,6 +300,15 @@ protected:
 	bool LoadPac2Events(const std::string& path);
 
 	/**
+	 * Loads one external *.hlt file.
+	 *
+	 * @param path The full path to load the file from.
+	 *
+	 * @return True if successfull.
+	 */
+	bool LoadExternalHiltiCode(const std::string& path);
+
+	/**
 	 * Parses a single event specification.
 	 *
 	 * chunk: The semicolon-separated specification; may contain newlines, which will be ignored.

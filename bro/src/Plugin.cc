@@ -37,7 +37,7 @@ void plugin::Bro_Hilti::Plugin::InitPreScript()
 	{
 	SetName("Bro::Hilti");
 	SetDynamicPlugin(true);
-	SetFileExtensions("pac2:evt");
+	SetFileExtensions("pac2:evt:hlt");
 
 	BRO_PLUGIN_VERSION(1);
 	BRO_PLUGIN_DESCRIPTION("Dynamically compiled HILTI/BinPAC++ functionality");
