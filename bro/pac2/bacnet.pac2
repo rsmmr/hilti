@@ -1425,9 +1425,7 @@ type BBMD = unit (func: BVLC_function, len: uint16) {
   switch ( func ) {
    BVLC_function::BVLC-Result -> bvlc_result: uint16 &convert=BVLC_result($$);
    BVLC_function::Read-BDT-ACK,
-   BVLC_function::Write-BDT -> bdts: list<BDT_entry> &length=len/10; # {
-#                                 self.bdts_brolist = [ i for i in self.bdts ];
-#                               }
+   BVLC_function::Write-BDT -> bdts: list<BDT_entry> &length=len/10; 
    BVLC_function::Read-FDT,
    BVLC_function::Read-BDT -> : void;
    BVLC_function::Register-FD -> ttl: uint16;
@@ -1467,9 +1465,13 @@ type NPDU_priority = enum {
 };
 
 # convert data present in all NPDUs into a NPDU_info record
-#tuple<NPDU_priority, uint64, bytes, uint64, bytes, uint64, NPDU_type> bro_npdu_info(npdu: NPDU) {
+tuple<NPDU_priority, uint64, bytes, uint64, bytes, uint64, NPDU_type> bro_npdu_info(npdu: NPDU) {
 #  return ( npdu.priority, cast<uint64>(npdu.dnet), npdu.dadr, cast<uint64>(npdu.snet), npdu.sadr, cast<uint64>(npdu.hop_count), npdu.message_type );
-#};
+# Fixme: since nearly all of these are optionals, we cannot return them
+# at the moment..
+
+  return (npdu.priority, 0, b"", 0, b"", 0, npdu.message_type);
+}
 
 type NPDU = unit(len: uint16) {
   var priority: NPDU_priority;
@@ -1540,15 +1542,15 @@ type NPDU_message = unit(len: uint16, t: NPDU_type) {
     NPDU_type::Initialize-Routing-Table,
     NPDU_type::Initialize-Routing-Table-Ack -> {
       number_ports: uint8 if ( len > 0 );
-      routing_entries: list<NPDU_routing_entry> &length=1 if ( len > 0 );
+      routing_entries: list<NPDU_routing_entry> &length=self.number_ports if ( len > 0 );
     }
   };
 };
 
 # convert a NPDU routing entry into a Bro tuple
-#tuple<uint64, uint64, uint64, bytes> bro_npdu_routing_entry(entry: BDT_entry) {
-#  return ( cast<uint64>(entry.address_port), cast<uint64>(entry.mask) );
-#} FIXME!
+tuple<uint64, uint64, bytes> bro_npdu_routing_entry(entry: NPDU_routing_entry) {
+  return ( cast<uint64>(entry.dnet), cast<uint64>(entry.portId), entry.portInfo );
+} 
 
 type NPDU_routing_entry = unit {
   dnet: uint16;

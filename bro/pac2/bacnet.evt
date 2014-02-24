@@ -44,21 +44,35 @@ on BACnet::Message if ( self.func == BACnet::BVLC_function::Forwarded-NPDU )
 # Router-Busy-To-Network,
 # I-Am-Router-To-Network,
 # Router-Available-To-Network,
-#on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::Who-Is-Router-To-Network ) )
-#  -> event bacnet_npdu_network_messages ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ]);
+on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( 
+    self.message_type == BACnet::NPDU_type::Who-Is-Router-To-Network ||
+    self.message_type == BACnet::NPDU_type::Disconnect-Connection-To-Network ||
+    self.message_type == BACnet::NPDU_type::I-Am-Router-To-Network ||
+    self.message_type == BACnet::NPDU_type::Router-Busy-To-Network ||
+    self.message_type == BACnet::NPDU_type::Router-Available-To-Network 
+  ) )
+  -> event bacnet_npdu_network_messages ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ] );
 
+# Fixme: return only the first element of dnets (length has to be 1)
+on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::I-Could-Be-Router-To-Network  ) )
+  -> event bacnet_npdu_i_could_be_router_to_network ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ], cast<uint64>(self.npdu_message.performance_index) );
 
-#on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::Reject-Message-To-Network  ) )
-#  -> event bacnet_npdu_i_could_be_router_to_network ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ], self.npdu_message.reason );
+on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::Reject-Message-To-Network  ) )
+  -> event bacnet_npdu_reject_message_to_network ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ], self.npdu_message.reason );
 
-#on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::I-Could-Be-Router-To-Network  ) )
-#  -> event bacnet_npdu_i_could_be_router_to_network ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ], cast<uint64>(self.npdu_message.performance_index) );
+on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::What-Is-Network-Number  ) )
+  -> event bacnet_npdu_what_is_network_number ($conn, BACnet::bro_npdu_info(self));
 
-#on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::Reject-Message-To-Network  ) )
-#  -> event bacnet_npdu_reject_message_to_network ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ], self.npdu_message.reason );
+on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::Network-Numer-Is  ) )
+  -> event bacnet_npdu_network_number_is ($conn, BACnet::bro_npdu_info(self), cast<uint64>(self.npdu_message.network_number), cast<uint64>(self.npdu_message.learned) );
 
-#on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::What-Is-Network-Number  ) )
-#  -> event bacnet_npdu_what_is_network_number ($conn, BACnet::bro_npdu_info(self));
+# Message is used for ACK as well as for the initial message. Check message_type for the type...
+on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( 
+    self.message_type == BACnet::NPDU_type::Initialize-Routing-Table ||
+    self.message_type == BACnet::NPDU_type::Initialize-Routing-Table-Ack
+  ) )
+  -> event bacnet_npdu_routing_table_change ($conn, BACnet::bro_npdu_info(self), [ BACnet::bro_npdu_routing_entry(i) for i in self.npdu_message.routing_entries ] );
 
-#on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::Network-Numer-Is  ) )
-#  -> event bacnet_npdu_network_number_is ($conn, BACnet::bro_npdu_info(self), cast<uint64>(self.npdu_message.network_number), cast<uint64>(self.npdu_message.learned) );
+# Fixme: return only the first element of dnet (length has to be 1)
+on BACnet::NPDU if ( (  self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::Establish-Connection-To-Network ) )
+  -> event bacnet_npdu_establish_connection_to_network ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ], cast<uint64>(self.npdu_message.termination_time) );
