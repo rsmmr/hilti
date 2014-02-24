@@ -4,14 +4,14 @@
 #
 
 event bacnet_message(c: connection, is_orig: bool, func: BACnet::BVLC_function, len: count)
-	{
-	print "Message", c$id$orig_h, c$id$resp_h, func, len;
-	}
+  {
+  print "Message", c$id$orig_h, c$id$resp_h, func, len;
+  }
 
 event bacnet_bvlc_result(c: connection, result: BACnet::BVLC_result)
-	{
-	print "Bvlc result", c$id$orig_h, c$id$resp_h, result;
-	}
+  {
+  print "Bvlc result", c$id$orig_h, c$id$resp_h, result;
+  }
 
 event bacnet_bvlc_write_bdt(c: connection, result: vector of BACnet::BDT_entry)
   {
