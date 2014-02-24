@@ -229,6 +229,11 @@ public:
 	 */
 	::Val* RuntimeCallFunction(const Func* func, val_list* args);
 
+	/**
+	 * XXX
+	 */
+	bool HaveCustomHandler(const ::Func* ev);
+
 	/** Dumps a summary all BinPAC++/HILTI analyzers/events/code to standard error.
 	 */
 	void DumpDebug();
@@ -298,15 +303,6 @@ protected:
 	 * @return True if successfull.
 	 */
 	bool LoadPac2Events(const std::string& path);
-
-	/**
-	 * Loads one external *.hlt file.
-	 *
-	 * @param path The full path to load the file from.
-	 *
-	 * @return True if successfull.
-	 */
-	bool LoadExternalHiltiCode(const std::string& path);
 
 	/**
 	 * Parses a single event specification.

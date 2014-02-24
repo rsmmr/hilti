@@ -185,8 +185,8 @@ struct Manager::PIMPL
 	typedef std::list<llvm::Module*>                      llvm_module_list;
 	typedef std::set<std::string>                         path_set;
 
-    std::shared_ptr<::hilti::Options> hilti_options = nullptr;
-    std::shared_ptr<::binpac::Options> pac2_options = nullptr;
+	std::shared_ptr<::hilti::Options> hilti_options = nullptr;
+	std::shared_ptr<::binpac::Options> pac2_options = nullptr;
 
 	bool compile_all;	// Compile all event code, even if no handler, set from BifConst::Hilti::compile_all.
 	bool compile_scripts;	// Activate the Bro script compiler.
@@ -367,7 +367,7 @@ bool Manager::InitPostScripts()
 			}
 		}
 
-	if ( ! pimpl->compile_scripts )
+	if ( ! pimpl->compile_scripts && ! pimpl->hlt_files.size() )
 		HiltiPlugin.DisableInterpreterPlugin();
 
 	post_scripts_init_run = true;
@@ -424,7 +424,7 @@ bool Manager::LoadFile(const std::string& file)
 			return true;
 
 		pimpl->hlt_files.insert(path);
-		return LoadExternalHiltiCode(path);
+		return pimpl->compiler->LoadExternalHiltiCode(path);
 		}
 
 	reporter::internal_error(::util::fmt("unknown file type passed to HILTI loader: %s", path));
@@ -750,9 +750,6 @@ bool Manager::Compile()
 		return false;
 		}
 
-	// TODO: Replace loading libbro with a call to
-	// LoadExternalHiltiCode() once that supports caching.
-
 	PLUGIN_DBG_LOG(HiltiPlugin, "Loading %s", pimpl->libbro_path.c_str());
 
 	auto libbro = pimpl->hilti_context->loadModule(pimpl->libbro_path);
@@ -817,6 +814,10 @@ bool Manager::Compile()
 
 		pimpl->hilti_modules.push_back(hilti_module);
 
+		// TODO: Not sure why we need this import here.
+		pimpl->hilti_context->importModule(std::make_shared<::hilti::ID>("LibBro"));
+		pimpl->hilti_context->finalize(hilti_module);
+
 		auto llvm_hilti_module = m->hilti_context->compile(hilti_module);
 
 		if ( ! llvm_hilti_module )
@@ -880,14 +881,6 @@ bool Manager::Compile()
 
 bool Manager::CompileBroScripts()
 	{
-	if ( ! pimpl->compile_scripts )
-		{
-		PLUGIN_DBG_LOG(HiltiPlugin, "Script compilation disabled");
-		return true;
-		}
-
-	PLUGIN_DBG_LOG(HiltiPlugin, "Compiling Bro scripts ...");
-
 	compiler::Compiler::module_list modules = pimpl->compiler->CompileAll();
 
 	for ( auto m : modules )
@@ -2640,7 +2633,7 @@ analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
 
 ::Val* Manager::RuntimeCallFunction(const Func* func, val_list* args)
 	{
-	if ( ! func->HasBodies() )
+	if ( ! (func->HasBodies() || HaveCustomHandler(func)) )
 		// For events raised directly, rather than being queued, we
 		// arrive here. Ignore if we don't have a handler.
 		//
@@ -2652,11 +2645,16 @@ analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
 	return RuntimeCallFunctionInternal(symbol, args);
 	}
 
+bool Manager::HaveCustomHandler(const ::Func* ev)
+	{
+	return pimpl->compiler->HaveCustomHandler(ev);
+	}
+
 bool Manager::RuntimeRaiseEvent(Event* event)
 	{
 	auto efunc = event->Handler()->LocalHandler();
 
-	if ( efunc && efunc->HasBodies() )
+	if ( efunc && (efunc->HasBodies() || HaveCustomHandler(efunc)) )
 		{
 		auto symbol = pimpl->compiler->HiltiStubSymbol(efunc, nullptr, true);
 		auto result = RuntimeCallFunctionInternal(symbol, event->Args());
@@ -2740,31 +2738,6 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		Unref((*args)[i]);
 
 	return result ? result : new ::Val(0, ::TYPE_VOID);
-	}
-
-bool Manager::LoadExternalHiltiCode(const std::string& path)
-	{
-	PLUGIN_DBG_LOG(HiltiPlugin, "Loading %s", path.c_str());
-
-	auto m = pimpl->hilti_context->loadModule(path);
-
-	if ( ! m )
-		{
-		reporter::error(::util::fmt("loading external module %s failed", path));
-		return false;
-		}
-
-	pimpl->hilti_modules.push_back(m);
-	auto lm = pimpl->hilti_context->compile(m);
-
-	if ( ! lm )
-		{
-		reporter::error(::util::fmt("compiling external module %s failed", path));
-		return false;
-		}
-
-	pimpl->llvm_modules.push_back(lm);
-	return true;
 	}
 
 void Manager::DumpDebug()

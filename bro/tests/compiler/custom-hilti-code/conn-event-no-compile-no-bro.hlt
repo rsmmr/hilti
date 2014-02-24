@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC: bro -r ${TRACES}/ssh-single-conn.trace -b %INPUT bro-event.bro Hilti::compile_scripts=T >output
+# @TEST-EXEC: bro -b -r ${TRACES}/ssh-single-conn.trace %INPUT Hilti::compile_scripts=F >output
 # @TEST-EXEC: btest-diff output
 #
 # Note: We need the Bro handler at the end sohat Bro actually generates the event,
@@ -53,14 +53,3 @@ hook void GLOBAL::connection_established(ref<GLOBAL::connection> c)
     call Hilti::print ("From HILTI: ", False)
     call Hilti::print (__tmp_field)
 }
-
-# @TEST-START-FILE bro-event.bro
-
-# Note: We need this so that Bro actually generates the event,
-# otherwise our custom HILTI hook would never be raised.
-event connection_established(c: connection)
-{
-   print "From Bro:  ", c$id;
-}
-
-# @TEST-END-FILE

@@ -508,15 +508,21 @@ void Linker::makeHooks(const std::list<string>& module_names, llvm::Module* modu
         auto next = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "hook", func));
 
         for ( auto i : decl.impls ) {
+            auto ifunc = llvm::cast<llvm::Function>(i.func);
+
             IRBuilder* current = next;
             next = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "hook", func));
 
             std::vector<llvm::Value *> args;
 
-            for ( auto p = func->arg_begin(); p != func->arg_end(); ++p )
-                args.push_back(p);
+            auto pt = ifunc->arg_begin();
+            for ( auto p = func->arg_begin(); p != func->arg_end(); ++p ) {
+                auto casted = current->CreateBitCast(p, pt->getType());
+                args.push_back(casted);
+                pt++;
+            }
 
-            auto result = util::checkedCreateCall(current, "Linker::makeHooks", i.func, args);
+            auto result = util::checkedCreateCall(current, "Linker::makeHooks", ifunc, args);
 
             llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx, 1), 0);
             current->CreateCondBr(result, stopped->GetInsertBlock(), next->GetInsertBlock());

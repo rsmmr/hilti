@@ -104,7 +104,7 @@ shared_ptr<::hilti::Module> ModuleBuilder::Finalize()
 
 	FinalizeGlueCode();
 
-	return finalize();
+	return module();
 	}
 
 class Compiler* ModuleBuilder::Compiler() const
@@ -196,6 +196,11 @@ void ModuleBuilder::CreateFunctionStub(const BroFunc* func, create_stub_callback
 	auto stub_result = ::hilti::builder::function::result(rtype);
 	auto stub_args = ::hilti::builder::function::parameter_list();
 
+	if ( lookupNode("bro-function-stub", stub_name) )
+		return;
+
+	DBG_LOG_COMPILER("Compiling stub for %s", func->Name());
+
 	RecordType* args = func->FType()->Args();
 	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
 
@@ -225,6 +230,8 @@ void ModuleBuilder::CreateFunctionStub(const BroFunc* func, create_stub_callback
 
 	Builder()->addInstruction(::hilti::instruction::flow::ReturnResult, rval);
 	popFunction();
+
+	cacheNode("bro-function-stub", stub_name, stub);
 	}
 
 void ModuleBuilder::CompileScriptFunction(const BroFunc* func, bool exported)
@@ -290,12 +297,48 @@ void ModuleBuilder::CompileScriptFunction(const BroFunc* func, bool exported)
 			   });
 	}
 
+void ModuleBuilder::CompileEventStub(const ::BroFunc* event)
+	{
+	auto event_name = Compiler()->HiltiSymbol(event, module());
+	auto stub_name = Compiler()->HiltiStubSymbol(event, module(), false);
+
+	// If there's no body, make sure the hook is declared.
+	DeclareEvent(event);
+
+	CreateFunctionStub(event, [&](ModuleBuilder* mbuilder, shared_ptr<::hilti::Expression> rval, shared_ptr<::hilti::Expression> args)
+			   {
+			   auto tc = ::hilti::builder::callable::type(::hilti::builder::void_::type());
+			   auto rtc = ::hilti::builder::reference::type(tc);
+			   auto c = addTmp("c", rtc);
+
+#if 0
+			   Builder()->addInstruction(::hilti::instruction::hook::Run,
+						     ::hilti::builder::id::create(event_name),
+						     args);
+#else
+			   Builder()->addInstruction(c,
+						     ::hilti::instruction::callable::NewHook,
+						     ::hilti::builder::type::create(tc),
+						     ::hilti::builder::id::create(event_name),
+						     args);
+#endif
+
+			   // TODO: This should queue the callable, not directl run it.
+			   Builder()->addInstruction(::hilti::instruction::flow::CallCallableVoid, c);
+
+			   // Clear return value, we don't have any.
+			   Builder()->addInstruction(rval,
+						     ::hilti::instruction::operator_::Assign,
+						     ::hilti::builder::expression::default_(rval->type()));
+
+			   });
+	}
+
 void ModuleBuilder::CompileEvent(const BroFunc* event, bool exported)
 	{
 	DBG_LOG_COMPILER("Compiling event function %s with %d bodies", event->Name(), event->GetBodies().size());
 
-	auto hook_name = Compiler()->HiltiSymbol(event, module());
-	auto stub_name = Compiler()->HiltiStubSymbol(event, module(), false);
+	auto event_name = Compiler()->HiltiSymbol(event, module());
 	auto type = HiltiFunctionType(event->FType());
 
 	for ( auto b : event->GetBodies() )
@@ -313,7 +356,7 @@ void ModuleBuilder::CompileEvent(const BroFunc* event, bool exported)
 		if ( b.priority )
 			attrs.push_back(::hilti::builder::hook::hook_attribute("&priority", b.priority));
 
-		auto hook = pushHook(::hilti::builder::id::node(hook_name),
+		auto hook = pushHook(::hilti::builder::id::node(event_name),
 			 ast::checkedCast<::hilti::type::Hook>(type),
 			 nullptr, attrs);
 
@@ -324,37 +367,7 @@ void ModuleBuilder::CompileEvent(const BroFunc* event, bool exported)
 		popHook();
 		}
 
-	// If there's no body, make sure the hook is declared.
-	if ( event->GetBodies().empty() )
-		DeclareEvent(event);
-
-	CreateFunctionStub(event, [&](ModuleBuilder* mbuilder, shared_ptr<::hilti::Expression> rval, shared_ptr<::hilti::Expression> args)
-			   {
-			   auto tc = ::hilti::builder::callable::type(::hilti::builder::void_::type());
-			   auto rtc = ::hilti::builder::reference::type(tc);
-			   auto c = addTmp("c", rtc);
-
-#if 0
-			   Builder()->addInstruction(::hilti::instruction::hook::Run,
-						     ::hilti::builder::id::create(hook_name),
-						     args);
-#else
-			   Builder()->addInstruction(c,
-						     ::hilti::instruction::callable::NewHook,
-						     ::hilti::builder::type::create(tc),
-						     ::hilti::builder::id::create(hook_name),
-						     args);
-#endif
-
-			   // TODO: This should queue the callable, not directl run it.
-			   Builder()->addInstruction(::hilti::instruction::flow::CallCallableVoid, c);
-
-			   // Clear return value, we don't have any.
-			   Builder()->addInstruction(rval,
-						     ::hilti::instruction::operator_::Assign,
-						     ::hilti::builder::expression::default_(rval->type()));
-
-			   });
+	CompileEventStub(event);
 	}
 
 void ModuleBuilder::CompileHook(const BroFunc* brohook, bool exported)

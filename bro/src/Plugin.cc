@@ -118,10 +118,17 @@ void plugin::Bro_Hilti::Plugin::AddEvent(const string& name)
 
 Val* plugin::Bro_Hilti::Plugin::CallFunction(const Func* func, val_list* args)
 	{
-	if ( ! BifConst::Hilti::compile_scripts )
-		return nullptr;
+	if ( BifConst::Hilti::compile_scripts )
+		return _manager->RuntimeCallFunction(func, args);
 
-	return _manager->RuntimeCallFunction(func, args);
+	if ( func->FType()->Flavor() == FUNC_FLAVOR_EVENT &&
+	     _manager->HaveCustomHandler(func) )
+		{
+		auto v = _manager->RuntimeCallFunction(func, args);
+		Unref(v);
+		}
+
+	return nullptr;
 	}
 
 bool plugin::Bro_Hilti::Plugin::QueueEvent(Event* event)
