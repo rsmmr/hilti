@@ -509,7 +509,6 @@ public:
     /// func: The referenced function.
     Function(Expression* target, shared_ptr<AIFunction> func) : __EXPRESSION_MIXIN(target, this) {
        _func = func;
-       target->addChild(_func);
     }
 
     virtual ~Function() { }
@@ -524,7 +523,7 @@ public:
     bool _isConstant() const /* override */ { return true; }
 
 private:
-    node_ptr<AIFunction> _func;
+    shared_ptr<AIFunction> _func; // No node pointer, so that we don't traverse in there from an expression.
 };
 
 /// A mix-in class to define an expression referencing an ID. Normally, these
