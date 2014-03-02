@@ -312,6 +312,9 @@ void TypeBuilder::visit(type::Unit* u)
             if ( _deps )
                 _deps->push_back(uid);
         }
+
+        else if ( u->anonymous() && _deps )
+            _deps->push_back(uid);
     }
 
     TypeInfo ti;

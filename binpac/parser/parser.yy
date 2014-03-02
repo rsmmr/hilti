@@ -69,6 +69,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %}
 
 %token <sval>  SCOPED_IDENT   "scoped identifier"
+%token <sval>  DOLLAR_IDENT   "$-identifier"
 %token <sval>  PATH_IDENT     "path"
 %token <sval>  IDENT          "identifier"
 %token <sval>  ATTRIBUTE      "attribute"
@@ -182,7 +183,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <declarations>     opt_global_decls opt_local_decls
 %type <expression>       expr expr2 opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr opt_unit_vector_len
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
-%type <id>               local_id scoped_id path_id hook_id opt_unit_field_name opt_hilti_id
+%type <id>               local_id scoped_id dollar_id path_id hook_id opt_unit_field_name opt_hilti_id
 %type <statement>        stmt block
 %type <statements>       stmts opt_stmts
 %type <type>             base_type type enum_ bitset unit atomic_type container_type bitfield
@@ -210,6 +211,8 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <types>            types
 %type <map_element>      map_elem
 %type <map_elements>     map_elems opt_map_elems
+%type <unit_ctor_item>   unit_ctor_item
+%type <unit_ctor_items>  unit_ctor_items opt_unit_ctor_items
 %%
 
 %token PREC_HIGH;
@@ -251,6 +254,8 @@ path_id       : IDENT                            { $$ = std::make_shared<ID>($1,
 
 hook_id       : scoped_id                        { $$ = $1; }
               | PROPERTY                         { $$ = std::make_shared<ID>($1, loc(@$)); } /* for %init/%done */
+
+dollar_id     : DOLLAR_IDENT                     { $$ = std::make_shared<ID>($1, loc(@$)); }
 
 property      : PROPERTY ';'                     { $$ = std::make_shared<Attribute>($1, nullptr, loc(@$)); }
               | PROPERTY '=' expr ';'            { $$ = std::make_shared<Attribute>($1, $3, loc(@$)); }
@@ -646,6 +651,8 @@ ctor          : CBYTES                           { $$ = std::make_shared<ctor::B
               | VECTOR              '(' opt_exprs ')' { $$ = std::make_shared<ctor::Vector>(nullptr, $3, loc(@$)); }
               | VECTOR '<' type '>' '(' opt_exprs ')' { $$ = std::make_shared<ctor::Vector>($3, $6, loc(@$)); }
 
+              | UNIT                '(' opt_unit_ctor_items ')'
+                                                 { $$ = std::make_shared<ctor::Unit>($3, loc(@$)); }
               ;
 
 opt_map_elems : map_elems                        { $$ = $1; }
@@ -655,6 +662,18 @@ map_elems     : map_elems ',' map_elem           { $$ = $1; $$.push_back($3); }
               | map_elem                         { $$ = ctor::Map::element_list(); $$.push_back($1); }
 
 map_elem      : expr ':' expr                    { $$ = ctor::Map::element($1, $3); }
+
+opt_unit_ctor_items :
+                unit_ctor_items                  { $$ = $1; }
+              | /* empty */                      { $$ = ctor::Unit::item_list(); }
+
+unit_ctor_items
+              : unit_ctor_items ',' unit_ctor_item  { $$ = $1; $$.push_back($3); }
+              | unit_ctor_item                      { $$ = ctor::Unit::item_list(); $$.push_back($1); }
+
+unit_ctor_item
+              : dollar_id '=' expr               { $$ = ctor::Unit::item($1, $3); }
+              | expr                             { $$ = ctor::Unit::item(nullptr, $1); }
 
 re_patterns   : re_patterns '|' re_pattern       { $$ = $1; $$.push_back($3); }
               | re_pattern                       { $$ = ctor::RegExp::pattern_list(); $$.push_back($1); }

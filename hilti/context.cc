@@ -210,7 +210,7 @@ void CompilerContext::_endPass()
     _passes.pop_back();
 }
 
-bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
+bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
 {
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Finalizing module %s ...", module->id()->pathAsString()) << std::endl;
@@ -314,7 +314,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _beginPass(module, validator);
 
-    if ( options().verify && ! validator.run(module) )
+    if ( verify && ! validator.run(module) )
         return false;
 
     _endPass();
@@ -335,7 +335,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     _beginPass(module, validator);
 
-    if ( options().verify && ! validator.run(module) )
+    if ( verify && ! validator.run(module) )
         return false;
 
     _endPass();
@@ -384,6 +384,25 @@ void CompilerContext::addModule(shared_ptr<Module> module)
 
 bool CompilerContext::finalize(shared_ptr<Module> module)
 {
+    return _finalize(module, options().verify);
+}
+
+bool CompilerContext::resolveTypes(shared_ptr<Module> module)
+{
+    passes::GlobalTypeResolver resolver;
+
+    _beginPass(module, resolver);
+
+    if ( ! resolver.run(module) )
+        return false;
+
+    _endPass();
+
+    return true;
+}
+
+bool CompilerContext::_finalize(shared_ptr<Module> module, bool verify)
+{
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Finalizing context...") << std::endl;
 
@@ -430,7 +449,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module)
     for ( auto m : _modules ) {
         auto module = m.second;
 
-        if ( ! CompilerContext::_finalizeModule(module) )
+        if ( ! CompilerContext::_finalizeModule(module, verify) )
             goto error;
     }
 

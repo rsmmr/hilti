@@ -34,6 +34,10 @@ namespace hilti {
 	}
 }
 
+namespace binpac {
+	class Type;
+}
+
 namespace plugin {
     namespace Bro_Hilti {
         class Plugin;
@@ -339,7 +343,7 @@ public:
 	 * @return An expression referencing the converted value, which
 	 * correspond to a pointer to a Bro Val.
 	 */
-	std::shared_ptr<::hilti::Expression> RuntimeHiltiToVal(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
+	std::shared_ptr<::hilti::Expression> RuntimeHiltiToVal(std::shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::binpac::Type> pac_type = nullptr);
 
 	/**
 	 * XXX

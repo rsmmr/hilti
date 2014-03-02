@@ -516,6 +516,10 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiFunctionNew(shared_ptr<type::U
 {
     string name = util::fmt("__binpac_new_%s", unit->id()->name());
 
+    // TODO: For anymouns types, and/or maybe generally types having only
+    // variables, we should simplify the layout of the struct and its
+    // initialization.
+
     auto func_expr = ast::tryCast<hilti::Expression>(cg()->moduleBuilder()->lookupNode("parser-new-func", name));
 
     if ( func_expr )
@@ -1307,7 +1311,7 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiSelf()
 
 shared_ptr<hilti::Expression> ParserBuilder::hiltiCookie()
 {
-    return state()->cookie;
+    return _states.size() ? state()->cookie : hilti::builder::reference::createNull();
 }
 
 shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar)

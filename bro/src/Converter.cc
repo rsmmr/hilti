@@ -253,6 +253,24 @@ void TypeConverter::visit(::hilti::type::Set* t)
 	setResult(result);
 	}
 
+void TypeConverter::visit(::hilti::type::Struct* u)
+	{
+	auto btype = ast::checkedCast<binpac::type::Unit>(arg1());
+
+	auto tdecls = new ::type_decl_list;
+
+	for ( auto item : btype->items() )
+		{
+		auto name = item->id()->name();
+		auto htype = u->lookup(std::make_shared<::hilti::ID>(name))->type();
+		auto td = new ::TypeDecl(Convert(htype, item->type()), copy_string(name.c_str()), 0, true);
+		tdecls->append(td);
+		}
+
+	auto result = new ::RecordType(tdecls);
+	setResult(result);
+        }
+
 void ValueConverter::visit(::hilti::type::Reference* b)
 	{
 	bool set = false;
@@ -464,6 +482,26 @@ void ValueConverter::visit(::hilti::type::Set* t)
 	auto result = mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, btype);
 
 	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, result);
+	setResult(true);
+	}
+
+void ValueConverter::visit(::hilti::type::Struct* s)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+	auto ttype = ast::checkedCast<binpac::type::Unit>(arg3());
+
+	BroType* btype = nullptr;
+
+	if ( _bro_type_hints.back() )
+		btype = _bro_type_hints.back()->AsRecordType();
+
+	else
+		btype = type_converter->Convert(s->sharedPtr<::hilti::Type>(), ttype);
+
+	auto hval = mbuilder->RuntimeHiltiToVal(val, btype, ttype);
+	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, hval);
+
 	setResult(true);
 	}
 

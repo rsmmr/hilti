@@ -177,6 +177,7 @@ add_library (hilti STATIC
     passes/block-normalizer.cc
     passes/collector.cc
     passes/id-resolver.cc
+    passes/global-type-resolver.cc
     passes/instruction-resolver.cc
     passes/instruction-normalizer.cc
     passes/printer.cc

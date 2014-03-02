@@ -3,6 +3,7 @@
 #undef List
 
 #include <hilti/hilti.h>
+#include <binpac/binpac++.h>
 #include <util/util.h>
 
 #include "ConversionBuilder.h"
@@ -65,8 +66,10 @@ shared_ptr<::hilti::Expression> ConversionBuilder::ConvertBroToHilti(shared_ptr<
 	return nullptr;
 	}
 
-shared_ptr<::hilti::Expression> ConversionBuilder::ConvertHiltiToBro(shared_ptr<::hilti::Expression> val, const ::BroType* type)
+shared_ptr<::hilti::Expression> ConversionBuilder::ConvertHiltiToBro(shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::binpac::Type> pac_type)
 	{
+	_pac_type = pac_type;
+
 	switch ( type->Tag() ) {
 	case TYPE_ADDR:
 	case TYPE_ANY:
@@ -1043,10 +1046,27 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromStruct(sha
 	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 				  ::hilti::builder::id::create("LibBro::bro_record_new"), args);
 
+	bool no_names = false;
+	::hilti::type::Struct::field_list sfields;
+
+	// Can be either ref<struct> or still unknown here.
+	if ( auto rstype = ast::tryCast<::hilti::type::Reference>(val->type()) )
+		{
+		auto sfields = ast::checkedCast<::hilti::type::Struct>(rstype->argType())->fields();
+		auto utype = ast::tryCast<::binpac::type::Unit>(_pac_type);
+		no_names = (utype && utype->ctorNoNames());
+		}
+
+	auto sf = sfields.begin();
+
 	for ( int i = 0; i < type->NumFields(); i++ )
 		{
 		auto hidx = ::hilti::builder::integer::create(i);
-		auto field = ::hilti::builder::string::create(type->FieldName(i));
+		auto field = no_names
+			? ::hilti::builder::string::create((*sf)->id()->name())
+			: ::hilti::builder::string::create(type->FieldName(i));
+
+		++sf;
 
 		auto is_set = Builder()->addTmp("is_set", ::hilti::builder::boolean::type());
 

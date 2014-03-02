@@ -105,6 +105,13 @@ public:
     /// Returns: True if no error occured.
     bool finalize(shared_ptr<Module> module);
 
+    /// Attempt to resolve as many unknown type bindings as possible.
+    ///
+    /// node: The root node of the branch to resolve.
+    ///
+    /// Returns: True if the partial resolving proceeded as expected.
+    bool resolveTypes(shared_ptr<Module> module);
+
     /// Compiles an AST into a LLVM module. This is the main interface to the
     /// code generater. The AST must have passed through finalize(). After
     /// compilation, it needs to be linked with linkModules(). If caching is
@@ -323,6 +330,9 @@ private:
     /// Returns: True if successful.
     bool _optimize(llvm::Module* module, bool is_linked);
 
+    // Backend for finalize().
+    bool _finalize(shared_ptr<Module> module, bool verify);
+
     /// Finalizes an AST before it can be used for compilation. This checks
     /// for correctness, resolves any unknown bindings, and builds a set of
     /// internal data structures.
@@ -331,7 +341,7 @@ private:
     ///
     /// Returns: True if no errors were found.
     ///
-    bool _finalizeModule(shared_ptr<Module> module);
+    bool _finalizeModule(shared_ptr<Module> module, bool verify);
 
     /// If debugging stream cg-passes is set, log the beginning of a pass. If timing is requested,
     ///

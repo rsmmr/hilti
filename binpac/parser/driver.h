@@ -30,6 +30,8 @@ struct yystype_binpac {
 
     binpac::ctor::Map::element map_element;
     binpac::ctor::Map::element_list map_elements;
+    binpac::ctor::Unit::item unit_ctor_item;
+    binpac::ctor::Unit::item_list unit_ctor_items;
 #if 0
     binpac::ctor::RegExp::pattern re_pattern;
     binpac::ctor::RegExp::pattern_list re_patterns;

@@ -178,9 +178,9 @@ std::shared_ptr<::hilti::Expression> BuilderBase::HiltiStructField(const char* f
 	return ::hilti::builder::string::create(fname);
 	}
 
-shared_ptr<::hilti::Expression> BuilderBase::RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, const ::BroType* type)
+shared_ptr<::hilti::Expression> BuilderBase::RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::binpac::Type> pac_type)
 	{
-	return mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, type);
+	return mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, type, pac_type);
 	}
 
 shared_ptr<::hilti::Expression> BuilderBase::RuntimeValToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type)

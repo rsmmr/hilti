@@ -234,6 +234,20 @@ public:
 	 */
 	bool HaveCustomHandler(const ::Func* ev);
 
+	/**
+	 * Returns true if either there's at least one handler defined for
+	 * the given event, or we're otherwise told to generate the code for
+	 * it even if not
+	 */
+	bool WantEvent(shared_ptr<Pac2EventInfo> ev);
+
+	/**
+	 * Returns true if either there's at least one handler defined for
+	 * the given event, or we're otherwise told to generate the code for
+	 * it even if not
+	 */
+	bool WantEvent(Pac2EventInfo* ev);
+
 	/** Dumps a summary all BinPAC++/HILTI analyzers/events/code to standard error.
 	 */
 	void DumpDebug();

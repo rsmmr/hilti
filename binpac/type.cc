@@ -979,6 +979,11 @@ void unit::Item::setUnit(type::Unit* unit)
     _unit = unit;
 }
 
+shared_ptr<ID> unit::Item::id() const
+{
+    return _id;
+}
+
 bool unit::Item::anonymous() const
 {
     return _anonymous;
@@ -989,9 +994,14 @@ void unit::Item::setAnonymous()
     _anonymous = true;
 }
 
-shared_ptr<ID> unit::Item::id() const
+void unit::Item::setCtorNoName()
 {
-    return _id;
+    _ctor_no_name = true;
+}
+
+bool unit::Item::ctorNoName() const
+{
+    return _ctor_no_name;
 }
 
 shared_ptr<Type> unit::Item::type()
@@ -1523,7 +1533,6 @@ unit_item_list Unit::items() const
     return items;
 }
 
-
 static void _flatten(shared_ptr<type::unit::Item> i, unit_item_list* dst)
 {
     // If it's a switch, descend.
@@ -1659,7 +1668,7 @@ shared_ptr<unit::item::Property> Unit::property(const string& prop) const
 shared_ptr<unit::Item> Unit::item(shared_ptr<ID> id) const
 {
     for ( auto i : flattenedItems() ) {
-        if ( i->id()->name() == id->name() )
+        if ( i->id() && i->id()->name() == id->name() )
             return i;
     }
 
@@ -1761,6 +1770,28 @@ bool Unit::exported() const
 void Unit::setExported()
 {
     _exported = true;
+}
+
+bool Unit::anonymous() const
+{
+    return _anonymous;
+}
+
+void Unit::setAnonymous()
+{
+    _anonymous = true;
+    auto name = util::fmt("anon_unit_%p", this);
+    setID(std::make_shared<ID>(name));
+}
+
+bool Unit::ctorNoNames() const
+{
+    for ( auto i : _items ) {
+        if ( ! i->ctorNoName() )
+            return false;
+    }
+
+    return true;
 }
 
 Sink::Sink(const Location& l) : PacType(l)

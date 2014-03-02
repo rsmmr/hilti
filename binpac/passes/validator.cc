@@ -182,6 +182,21 @@ void Validator::visit(ctor::Set* s)
 {
 }
 
+void Validator::visit(ctor::Unit* u)
+{
+    int cnt = 0;
+
+    auto utype = ast::checkedCast<type::Unit>(u->type());
+
+    for ( auto i : utype->items() ) {
+        if ( i->ctorNoName() )
+            ++cnt;
+    }
+
+    if ( cnt > 0 && cnt < u->items().size() )
+        error(u, "in union ctor either all fields or none must have a name");
+}
+
 void Validator::visit(ctor::Vector* v)
 {
 }

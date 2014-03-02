@@ -308,6 +308,12 @@ void Printer::visit(ctor::Map* m)
     p << "<ctor::Map>";
 }
 
+void Printer::visit(ctor::Unit* m)
+{
+    Printer& p = *this;
+    p << "<ctor::Unit>";
+}
+
 void Printer::visit(ctor::RegExp* r)
 {
     Printer& p = *this;

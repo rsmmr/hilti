@@ -25,6 +25,10 @@ namespace hilti {
 	class Type;
 }
 
+namespace binpac {
+	class Type;
+}
+
 namespace bro {
 namespace hilti {
 namespace compiler {
@@ -58,10 +62,14 @@ public:
 	 *
 	 * @param type The target Bro type to convert into.
 	 *
+	 * @param pac_type An optional BinPAC++ type that the value
+	 * corresponds to. If given, this might change some specifics of the
+	 * conversion.
+	 *
 	 * @return An expression referencing the converted value, which
 	 * correspond to a pointer to a Bro Val.
 	 */
-	shared_ptr<::hilti::Expression> ConvertHiltiToBro(shared_ptr<::hilti::Expression> val, const ::BroType* type);
+	shared_ptr<::hilti::Expression> ConvertHiltiToBro(shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::binpac::Type> pac_type = nullptr);
 
 	/**
 	 * XXX
@@ -182,6 +190,7 @@ private:
 	typedef std::list<const ::BroType*> type_builder_list;
 
 	type_builder_map postponed_types;
+	shared_ptr<::binpac::Type> _pac_type;
 };
 
 }

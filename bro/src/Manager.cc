@@ -571,7 +571,6 @@ bool Manager::PopulateEvent(shared_ptr<Pac2EventInfo> ev)
 	if ( ! CreateExpressionAccessors(ev) )
 		return false;
 
-	BuildBroEventSignature(ev);
 	return true;
 	}
 
@@ -584,9 +583,6 @@ bool Manager::Compile()
 
 	if ( ! CompileBroScripts() )
 		return false;
-
-	for ( auto ev : pimpl->pac2_events )
-		RegisterBroEvent(ev);
 
 	for ( auto a : pimpl->pac2_analyzers )
 		{
@@ -642,10 +638,6 @@ bool Manager::Compile()
 	// Create the pac2 hooks and accessor functions.
 	for ( auto ev : pimpl->pac2_events )
 		{
-		if ( ! ev->bro_event_handler && ! pimpl->compile_all )
-			// No handler for this event defined.
-			continue;
-
 		if ( ! CreatePac2Hook(ev.get()) )
 			return false;
 		}
@@ -724,7 +716,15 @@ bool Manager::Compile()
 			pimpl->pac2_context->print(m->pac2_module, out);
 			out.close();
 			}
+
+		AddHiltiTypesForModule(m);
 		}
+
+	for ( auto ev : pimpl->pac2_events )
+		AddHiltiTypesForEvent(ev);
+
+    for ( auto minfo : pimpl->pac2_modules )
+		minfo->hilti_context->resolveTypes(minfo->hilti_mbuilder->module());
 
 	// Create the HILTi raise functions().
 	for ( auto ev : pimpl->pac2_events )
@@ -732,11 +732,8 @@ bool Manager::Compile()
 		if ( ev->minfo->cached )
 			continue;
 
-		AddHiltiTypesForEvent(ev);
-
-		if ( ! ev->bro_event_handler && ! pimpl->compile_all )
-			// No handler for this event defined.
-			continue;
+		BuildBroEventSignature(ev);
+		RegisterBroEvent(ev);
 
 		if ( ! CreateHiltiEventFunction(ev.get()) )
 			return false;
@@ -1849,9 +1846,24 @@ void Manager::BuildBroEventSignature(shared_ptr<Pac2EventInfo> ev)
 
 	EventHandlerPtr handler = event_registry->Lookup(ev->name.c_str());
 
+	if ( handler )
+		{
+		// To enable scoped event names, export their IDs implicitly. For the
+		// lookup we pretend to be in the right module so that Bro doesn't
+		// tell us the ID isn't exported (doh!).
+		auto n = ::util::strsplit(ev->name, "::");
+		auto mod = n.size() > 1 ? n.front() : GLOBAL_MODULE_NAME;
+		auto id = lookup_ID(ev->name.c_str(), mod.c_str());
+
+		if ( id )
+			id->SetExport();
+		}
+
+#if 0
 	ODesc d;
 	if ( handler )
 		handler->FType()->Describe(&d);
+#endif
 
 	int i = 0;
 
@@ -1958,16 +1970,6 @@ void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
 
 	if ( handler )
 		{
-		// To enable scoped event names, export their IDs implicitly. For the
-		// lookup we pretend to be in the right module so that Bro doesn't
-		// tell us the ID isn't exported (doh!).
-		auto n = ::util::strsplit(ev->name, "::");
-		auto mod = n.size() > 1 ? n.front() : GLOBAL_MODULE_NAME;
-		auto id = lookup_ID(ev->name.c_str(), mod.c_str());
-
-		if ( id )
-			id->SetExport();
-
 		if ( handler->FType() )
 			{
 			// Check if the event types are compatible. Also,
@@ -2046,6 +2048,9 @@ static shared_ptr<::binpac::Expression> id_expr(const string& id)
 
 bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 	{
+	if ( ! WantEvent(ev) )
+		return true;
+
 	// Find the pac2 module that this event belongs to.
 	PLUGIN_DBG_LOG(HiltiPlugin, "Adding pac2 hook %s for event %s", ev->hook.c_str(), ev->name.c_str());
 
@@ -2163,7 +2168,7 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
 			continue;
 
 		acc->btype = acc->pac2_func ? acc->pac2_func->function()->type()->result()->type() : nullptr;
-		acc->htype = acc->btype ? pimpl->pac2_context->hiltiType(acc->btype, &ev->minfo->dep_types) : nullptr; // QQQ
+		acc->htype = acc->btype ? pimpl->pac2_context->hiltiType(acc->btype, &ev->minfo->dep_types) : nullptr;
 		acc->hlt_func = DeclareHiltiExpressionAccessor(ev, acc->nr, acc->htype);
 		}
 
@@ -2254,7 +2259,7 @@ void Manager::AddHiltiTypesForModule(shared_ptr<Pac2ModuleInfo> minfo)
 	for ( auto id : minfo->dep_types )
 		{
 		if ( minfo->hilti_mbuilder->declared(id) )
-			return;
+			continue;
 
 		assert(minfo->pac2_hilti_module);
 		auto t = minfo->pac2_hilti_module->body()->scope()->lookup(id, true);
@@ -2282,6 +2287,9 @@ void Manager::AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev)
 
 bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 	{
+	if ( ! WantEvent(ev) )
+		return true;
+
 	string fname = ::util::fmt("raise_%s_%p", ::util::strreplace(ev->name, "::", "_"), ev);
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Adding HILTI function %s for event %s", fname.c_str(), ev->name.c_str());
@@ -2337,6 +2345,8 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
 	{
 	auto mbuilder = ev->minfo->hilti_mbuilder;
+
+	pimpl->hilti_context->resolveTypes(mbuilder->module());
 
 	::hilti::builder::tuple::element_list vals;
 
@@ -2738,6 +2748,17 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		Unref((*args)[i]);
 
 	return result ? result : new ::Val(0, ::TYPE_VOID);
+	}
+
+bool Manager::WantEvent(Pac2EventInfo* ev)
+	{
+	EventHandlerPtr handler = event_registry->Lookup(ev->name.c_str());
+	return handler || pimpl->compile_all;
+	}
+
+bool Manager::WantEvent(shared_ptr<Pac2EventInfo> ev)
+	{
+	return WantEvent(ev.get());
 	}
 
 void Manager::DumpDebug()

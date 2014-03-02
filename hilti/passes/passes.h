@@ -4,6 +4,7 @@
 
 #include "printer.h"
 #include "id-resolver.h"
+#include "global-type-resolver.h"
 #include "instruction-resolver.h"
 #include "instruction-normalizer.h"
 #include "scope-builder.h"

@@ -1116,8 +1116,12 @@ public:
     shared_ptr<ID> id() const;
 
     /// Returns the item's type. If not overridden, this returns the type
-    /// passed into the constructor.
+    /// passed into the constructor, or set later via setType().
     virtual shared_ptr<binpac::Type> type();
+
+    /// Overrides the type passed into the constructor. Note that this one
+    /// will be returned by type() only if that method wasn't overridden.
+    void setType(shared_ptr<binpac::Type> type);
 
     /// Return's the item's type as used inside the parse object. This is by
     /// default the type()'s fieldType() but may be adapted with, e.g., \a
@@ -1133,6 +1137,15 @@ public:
     /// Marks this field as an anonymos one (i.e., as if no ID has been
     /// passed to the ctor). Primarily for internal use.
     void setAnonymous();
+
+    /// Marks this item as created a by a ctor expression that didn't give it
+    /// a name. Variables marked as such might treated differently when
+    /// coercion union types.
+    void setCtorNoName();
+
+    /// Returns true if this item has been marked as created a by ctor
+    /// expression.
+    bool ctorNoName() const;
 
     /// Returns the item's scope. The scope may define identifier's local to
     /// expressions and hooks associated with the item. This method will
@@ -1167,15 +1180,13 @@ protected:
     /// resolve the AST.
     void addHook(shared_ptr<binpac::Hook> hook);
 
-    /// Changes the item's type.
-    void setType(shared_ptr<binpac::Type> type);
-
     /// Sets the unit this item is part of. Only the unit itself should call
     /// this.
     void setUnit(type::Unit* unit);
 
 private:
     bool _anonymous = false;
+    bool _ctor_no_name = false;
     int _do_hooks = 1;
     node_ptr<ID> _id;
     node_ptr<binpac::Type> _type;
@@ -1771,6 +1782,18 @@ public:
     /// Marks the type as being exported. Mainly for internal use.
     void setExported();
 
+    /// Returns true if this unit type has been marked anonymous. This is
+    /// typically the case for types construced implictly on the fly, like
+    /// with a unit ctor.
+    bool anonymous() const;
+
+    /// Marks the unit type as anonymous.
+    void setAnonymous();
+
+    /// Returns true if all items have ctorNoName() set. As that must be the
+    /// case for either all items or none, returning false means the latter.
+    bool ctorNoNames() const;
+
     bool _equal(shared_ptr<binpac::Type> other) const override;
 
     ACCEPT_VISITOR(Type);
@@ -1786,6 +1809,7 @@ protected:
 private:
     bool _buffering = false;
     bool _exported = false;
+    bool _anonymous = false;
 
     std::list<node_ptr<type::function::Parameter>> _params;
     std::list<node_ptr<unit::Item>> _items;

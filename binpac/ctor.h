@@ -89,7 +89,7 @@ public:
     /// Returns the type of the constructed object. If the container has
     /// elements, the type will infered from those. If not, it will be a
     /// wildcard type.
-    shared_ptr<Type> type() const;
+    shared_ptr<Type> type() const override;
 
     ACCEPT_VISITOR(Ctor);
 
@@ -118,7 +118,7 @@ public:
     /// Returns the type of the constructed object. If the container has
     /// elements, the type will infered from those. If not, it will be a
     /// wildcard type.
-    shared_ptr<Type> type() const;
+    shared_ptr<Type> type() const override;
 
     ACCEPT_VISITOR(Ctor);
 
@@ -147,7 +147,7 @@ public:
     /// Returns the type of the constructed object. If the container has
     /// elements, the type will infered from those. If not, it will be a
     /// wildcard type.
-    shared_ptr<Type> type() const;
+    shared_ptr<Type> type() const override;
 
     ACCEPT_VISITOR(Ctor);
 
@@ -182,7 +182,7 @@ public:
     /// Returns the type of the constructed object. If the container has
     /// elements, the type will infered from those. If not, it will be a
     /// wildcard type.
-    shared_ptr<Type> type() const;
+    shared_ptr<Type> type() const override;
 
     ACCEPT_VISITOR(Ctor);
 
@@ -221,7 +221,7 @@ public:
     /// Returns the type of the constructed object. Pattern constants are
     /// always of type \c regexp<>. To add further type attributes, they need
     /// to be coerced to a regexp type that has them.
-    shared_ptr<Type> type() const;
+    shared_ptr<Type> type() const override;
 
     ACCEPT_VISITOR(Ctor);
 
@@ -230,6 +230,37 @@ private:
     pattern_list _patterns;
 };
 
+/// AST node for a unit constructor.
+class Unit : public Ctor
+{
+public:
+    typedef std::pair<shared_ptr<ID>, shared_ptr<Expression>> item;
+    typedef std::list<item> item_list;
+
+    /// Constructor.
+    ///
+    /// elems: The union's items with init expressions. The ID can be null
+    /// for an unnamed field. The init expression must not be null but it is
+    /// allowed to throw a BinPAC::AttributeNotSet exception to evaluation to
+    /// indicate an optional field not set (it must still have a type
+    /// though!).
+    ///
+    /// l: An associated location.
+    Unit(const item_list& items, const Location& l=Location::None);
+
+    /// Returns the initialization value.
+    item_list items() const;
+
+    /// Returns the type of the constructed object. This will be a union type
+    /// marked as anonymous.
+    shared_ptr<Type> type() const override;
+
+    ACCEPT_VISITOR(Ctor);
+
+private:
+    node_ptr<Type> _type;
+    std::list<std::pair<node_ptr<ID>,node_ptr<Expression>>> _items;
+};
 
 }
 
