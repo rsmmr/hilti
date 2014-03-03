@@ -578,6 +578,10 @@ void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
         p << "|" << op1 << "|";
         break;
 
+     case operator_::TryAttribute:
+        p << op1 << ".?" << op2;
+        break;
+
      default:
         internalError(util::fmt("unknown operator %d in Printer::visit", kind));
     }

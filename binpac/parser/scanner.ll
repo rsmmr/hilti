@@ -147,6 +147,7 @@ __clear               return token::CLEAR;
 \>=                   return token::GEQ;
 \>\>                  return token::SHIFTRIGHT;
 \?\.                  return token::HASATTR;
+\.\?                  return token::TRYATTR;
 \*\*                  return token::POW;
 \+\+                  return token::PLUSPLUS;
 \|\|                  return token::OR;

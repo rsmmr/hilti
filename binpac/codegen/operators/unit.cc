@@ -60,6 +60,44 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
     setResult(has);
 }
 
+void CodeBuilder::visit(binpac::expression::operator_::unit::TryAttribute* i)
+{
+    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+
+    auto item = unit->item(attr->id());
+    assert(item && item->type());
+
+    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->fieldType()), nullptr, false);
+    auto has = cg()->builder()->addTmp("has", hilti::builder::boolean::type());
+
+    cg()->builder()->addInstruction(has,
+                                    hilti::instruction::struct_::IsSet,
+                                    cg()->hiltiExpression(i->op1()),
+                                    hilti::builder::string::create(attr->id()->name()));
+
+    auto branches = cg()->builder()->addIfElse(has);
+    auto attr_set = std::get<0>(branches);
+    auto attr_not_set = std::get<1>(branches);
+    auto done = std::get<2>(branches);
+
+    cg()->moduleBuilder()->pushBuilder(attr_set);
+    cg()->builder()->addInstruction(ival,
+                                    hilti::instruction::struct_::Get,
+                                    cg()->hiltiExpression(i->op1()),
+                                    hilti::builder::string::create(attr->id()->name()));
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());                                    ;
+    cg()->moduleBuilder()->popBuilder(attr_set);
+
+    cg()->moduleBuilder()->pushBuilder(attr_not_set);
+    cg()->builder()->addThrow("BinPACHilti::AttributeNotSet", hilti::builder::string::create(attr->id()->name()));
+    cg()->moduleBuilder()->popBuilder(attr_not_set);
+
+    cg()->moduleBuilder()->pushBuilder(done);
+
+    setResult(ival);
+}
+
 void CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
 {
     auto ttype = ast::checkedCast<type::TypeType>(i->op1()->type());
