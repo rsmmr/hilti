@@ -29,7 +29,7 @@ on TupleEnum::Message -> event enum_message( (self.a, cast<uint64>(self.b)) );
 
 module TupleEnum;
 
-type TestEnum = enum {
+export type TestEnum = enum {
     A = 83, B = 84, C = 85
 };
 
