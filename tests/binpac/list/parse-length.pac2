@@ -13,7 +13,7 @@ type Item = unit {
 };
 
 export type Test = unit {
-    lines: list<Item> &length=5;
+    lines: list<Item> &count=5;
     last: LINE;
 
     on %done {
