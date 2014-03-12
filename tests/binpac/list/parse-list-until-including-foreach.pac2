@@ -10,4 +10,5 @@ export type test = unit {
     ints: list< int<8> > &until_including($$ == 4)
     foreach { print $$; }
 
+    on %done { print self.ints; }
 };
