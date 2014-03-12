@@ -23,10 +23,10 @@ type RRType = enum {
 
 export type Message = unit {
     header:     Header;
-    question:   list<Question(self)>                       &length=self.header.qdcount;
-    answer:     list<ResourceRecord(self, RRType::ANSWER)> &length=self.header.ancount;
-    authority:  list<ResourceRecord(self, RRType::AUTH)>   &length=self.header.nscount if ( ! (dns_skip_all_auth || dns_skip_all_addl) );
-    additional: list<ResourceRecord(self, RRType::ADDL)>   &length=self.header.arcount if ( ! dns_skip_all_addl );
+    question:   list<Question(self)>                       &count=self.header.qdcount;
+    answer:     list<ResourceRecord(self, RRType::ANSWER)> &count=self.header.ancount;
+    authority:  list<ResourceRecord(self, RRType::AUTH)>   &count=self.header.nscount if ( ! (dns_skip_all_auth || dns_skip_all_addl) );
+    additional: list<ResourceRecord(self, RRType::ADDL)>   &count=self.header.arcount if ( ! dns_skip_all_addl );
 
     on %done {
         Bro::dpd_confirm();

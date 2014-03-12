@@ -14,10 +14,10 @@ type RDType = enum {
 
 export type Message = unit {
     header:     Header;
-    question:   list<Question(self)>       &length=self.header.qdcount;
-    answer:     list<ResourceRecord(self)> &length=self.header.ancount;
-    authority:  list<ResourceRecord(self)> &length=self.header.nscount;
-    additional: list<ResourceRecord(self)> &length=self.header.arcount;
+    question:   list<Question(self)>       &count=self.header.qdcount;
+    answer:     list<ResourceRecord(self)> &count=self.header.ancount;
+    authority:  list<ResourceRecord(self)> &count=self.header.nscount;
+    additional: list<ResourceRecord(self)> &count=self.header.arcount;
 };
 
 type Header = unit {

@@ -816,6 +816,7 @@ std::list<trait::Parseable::ParseAttribute> List::parseAttributes() const
 {
     return {
         { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
+        { "count", std::make_shared<type::Integer>(64, false), nullptr, false },
         { "until", std::make_shared<type::Bool>(), nullptr, false },
         { "until_including", std::make_shared<type::Bool>(), nullptr, false },
         { "while", std::make_shared<type::Bool>(), nullptr, false }

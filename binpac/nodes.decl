@@ -67,6 +67,7 @@ expression::Variable
 
 Production
 production::Boolean
+production::ByteBlock
 production::ChildGrammar
 production::Counter
 production::Epsilon

@@ -2443,6 +2443,43 @@ void ParserBuilder::visit(production::Counter* c)
     // Leave builder on stack.
 }
 
+void ParserBuilder::visit(production::ByteBlock* c)
+{
+    auto field = c->pgMeta()->field;
+
+    _startingProduction(c->sharedPtr<Production>(), field);
+
+    // We parse it as a "bytes &length=N" first.
+
+    auto length = cg()->hiltiExpression(c->expression(), std::make_shared<type::Integer>(64, false));
+    auto end = cg()->builder()->addTmp("end", _hiltiTypeIteratorBytes(), nullptr, true);
+
+    cg()->builder()->addInstruction(end, hilti::instruction::iterBytes::End, state()->data);
+
+    auto op1 = hilti::builder::tuple::create({ state()->cur, end });
+    auto op2 = hilti::builder::id::create("Hilti::Packed::BytesFixed");
+    auto data = hiltiUnpack(std::make_shared<type::Bytes>(), op1, op2, length);
+
+    cg()->builder()->addInstruction(hilti::instruction::bytes::Freeze, data);
+
+    // Now parse that with the given production.
+
+    auto cur = cg()->builder()->addTmp("parse_cur", _hiltiTypeIteratorBytes());
+    auto lah = cg()->builder()->addTmp("parse_lahead", _hiltiTypeLookAhead(), _hiltiLookAheadNone());
+    auto lahstart = cg()->builder()->addTmp("parse_lahstart", _hiltiTypeIteratorBytes());
+
+    cg()->builder()->addInstruction(cur, hilti::instruction::iterBytes::Begin, data);
+
+    auto false_ = hilti::builder::boolean::create(false);
+    auto pstate = std::make_shared<ParserState>(state()->unit, state()->self, data, cur, lah, lahstart, false_, state()->cookie);
+
+    pushState(pstate);
+    processOne(c->body());
+    popState();
+
+    _finishedProduction(c->sharedPtr<Production>());
+}
+
 void ParserBuilder::visit(production::Epsilon* e)
 {
 }
@@ -2770,6 +2807,24 @@ void ParserBuilder::visit(production::Loop* l)
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
 
     cg()->moduleBuilder()->pushBuilder(loop);
+
+    if ( l->eodOk() ) {
+        auto eod = cg()->moduleBuilder()->addTmp("eod", _hiltiTypeIteratorBytes());
+        cg()->builder()->addInstruction(eod, hilti::instruction::iterBytes::End, state()->data);
+
+        auto eod_reached = cg()->moduleBuilder()->addTmp("eod_reached", hilti::builder::boolean::type());
+        cg()->builder()->addInstruction(eod_reached, hilti::instruction::operator_::Equal, state()->cur, eod);
+
+        auto frozen = cg()->moduleBuilder()->addTmp("frozen", hilti::builder::boolean::type());
+        cg()->builder()->addInstruction(frozen, hilti::instruction::bytes::IsFrozenIterBytes, state()->cur);
+
+        cg()->builder()->addInstruction(eod_reached, hilti::instruction::boolean::And, eod_reached, frozen);
+
+        auto loop2 = cg()->moduleBuilder()->newBuilder("loop2");
+        cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, eod_reached, done->block(), loop2->block());
+
+        cg()->moduleBuilder()->pushBuilder(loop2);
+    }
 
     disableStoringValues();
     shared_ptr<hilti::Expression> value;

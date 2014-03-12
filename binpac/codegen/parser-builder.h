@@ -150,6 +150,7 @@ protected:
     void visit(production::ChildGrammar* c) override;
     void visit(production::Enclosure* e) override;
     void visit(production::Counter* c) override;
+    void visit(production::ByteBlock* c) override;
     void visit(production::Epsilon* e) override;
     void visit(production::Literal* l) override;
     void visit(production::LookAhead* l) override;
