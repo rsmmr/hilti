@@ -1,0 +1,98 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  bash -c "echo RUN\ 1 > output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 2 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 3 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 4 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 5 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void tf(ref<channel<int<64>>> ch) {
+    local string s
+    local int<64> vid
+    vid = thread.id
+
+    s = call Hilti::fmt("timer -> %d", (vid))
+    call Hilti::print (s, True)
+
+    channel.write ch vid
+}
+
+void i(ref<channel<int<64>>> ch) {
+    local ref<timer> t
+    local int<64> vid
+    local time vidt
+    local string s
+    local double d
+
+    vid = thread.id
+    d = int.as_udouble vid
+    vidt = time.from_double d
+    s = call Hilti::fmt("init -> %d at %s", (vid, vidt))
+    call Hilti::print (s, True)
+
+    t = new timer tf(ch)
+    timer_mgr.schedule vidt t
+
+    return.void
+}
+
+void get_one(ref<channel<int<64>>> ch) {
+    local int<64> vid
+    local string s
+    local bool b
+
+@loop:
+    try {
+        vid = channel.read_try ch
+    }
+
+    catch {
+        # call Hilti::print("waiting ...")
+        call Hilti::sleep(0.1)
+    }
+
+    b = equal vid 0
+    if.else b @loop @gotit
+
+@gotit:
+    s = call Hilti::fmt("rcvd -> %d", (vid))
+    call Hilti::print (s, True)
+}
+
+void run() {
+    local ref<channel<int<64>>> ch
+
+    ch = new channel<int<64>>
+
+    thread.schedule i(ch) 1
+    thread.schedule i(ch) 2
+    thread.schedule i(ch) 3
+    thread.schedule i(ch) 4
+    thread.schedule i(ch) 5
+
+    timer_mgr.advance_global time(1.0)
+    call get_one(ch)
+    timer_mgr.advance_global time(2.0)
+    call get_one(ch)
+    timer_mgr.advance_global time(5.0)
+    call get_one(ch)
+    call get_one(ch)
+    call get_one(ch)
+
+}
+

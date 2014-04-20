@@ -244,6 +244,19 @@ int64_t hlt_timer_to_int64(const hlt_type_info* type, const void* obj, int32_t o
     return hlt_time_to_int64(&hlt_type_info_hlt_time, &t->time, options, excpt, ctx);
 }
 
+void hlt_timer_mgr_advance_global(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( ctx->vid != HLT_VID_MAIN ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        return;
+    }
+
+    hlt_timer_mgr_advance(ctx->tmgr, t, excpt, ctx);
+
+    if ( t > __hlt_globals()->global_time )
+        __hlt_globals()->global_time = t;
+}
+
 hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_timer_mgr* mgr = GC_NEW(hlt_timer_mgr);
@@ -260,15 +273,13 @@ hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_context* c
 
 void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! mgr ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return;
-    }
-
     if ( timer->mgr ) {
         hlt_set_exception(excpt, &hlt_exception_timer_already_scheduled, 0);
         return;
     }
+
+    if ( ! mgr )
+        mgr = ctx->tmgr;
 
     timer->mgr = mgr; // Not memory managed to avoid cycles.
     timer->time = t;
@@ -287,10 +298,10 @@ void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hl
 
 int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! mgr ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! mgr )
+        mgr = ctx->tmgr;
+
+    assert(mgr);
 
     int32_t count = 0;
 
@@ -314,10 +325,8 @@ int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** ex
 
 hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! mgr ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! mgr )
+        mgr = ctx->tmgr;
 
     return mgr->time;
 }
@@ -325,9 +334,8 @@ hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt, hlt_ex
 void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! mgr ) {
-        assert(excpt);
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return;
+        assert(ctx);
+        mgr = ctx->tmgr;
     }
 
     while ( 1 ) {

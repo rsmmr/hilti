@@ -36,7 +36,7 @@ struct __hlt_list {
     __hlt_list_node* tail;       // Last list element. Not memory-managed to avoid cycles.
     int64_t size;                // Current list size.
     const hlt_type_info* type;   // Element type.
-    hlt_timer_mgr* tmgr;         // The timer manager or null.
+    hlt_timer_mgr* tmgr;         // The timer manager, or null if not used.
     hlt_interval timeout;        // The timeout value, or 0 if disabled.
     hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
 };
@@ -263,13 +263,11 @@ const hlt_type_info* hlt_list_type(hlt_list* l, hlt_exception** excpt, hlt_execu
 
 void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! l->tmgr ) {
-        hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);
-        return;
-    }
-
     l->timeout = timeout;
     l->strategy = strategy;
+
+    if ( ! l->tmgr )
+        GC_ASSIGN(l->tmgr, ctx->tmgr, hlt_timer_mgr);
 }
 
 void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx)

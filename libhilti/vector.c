@@ -29,7 +29,7 @@ struct __hlt_vector {
     hlt_vector_idx capacity;    // Number of element we have physically allocated in elems.
     const hlt_type_info* type;  // Type information for our elements.
     void* def;                  // Default element for not yet initialized fields.
-    hlt_timer_mgr* tmgr;        // The timer manager or null if none.
+    hlt_timer_mgr* tmgr;        // The timer manager, or null if not used.
     hlt_interval timeout;       // The timeout value, or 0 if disabled.
     hlt_enum strategy;          // Expiration strategy if set; zero otherwise.
 };
@@ -205,13 +205,11 @@ void hlt_vector_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hl
 
 void hlt_vector_timeout(hlt_vector* v, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! v->tmgr ) {
-        hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);
-        return;
-    }
-
     v->timeout = timeout;
     v->strategy = strategy;
+
+    if ( ! v->tmgr )
+        GC_ASSIGN(v->tmgr, ctx->tmgr, hlt_timer_mgr);
 }
 
 void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt, hlt_execution_context* ctx)

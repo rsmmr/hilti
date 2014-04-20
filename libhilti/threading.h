@@ -7,6 +7,7 @@
 #include "types.h"
 #include "tqueue.h"
 #include "fiber.h"
+#include "time_.h"
 
 struct __kh_blocked_jobs_t;
 
@@ -74,6 +75,7 @@ typedef struct __hlt_worker_thread {
     hlt_thread_mgr* mgr;          // The manager this thread is part of.
     hlt_execution_context** ctxs; // Execution contexts indexed by virtual thread id.
     hlt_vthread_id max_vid;       // Largest vid allocated space for in ctxs.
+    hlt_time global_time;         // Last global time all virtual threads have been advanced to.
 
     // This can be *read* from different threads without further locking.
     int id;                       // ID of this worker thread in the range 1..*num_workers*.

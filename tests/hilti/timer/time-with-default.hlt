@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+
+    local time t
+    
+    timer_mgr.advance time(5.0)
+
+    t = timer_mgr.current
+    call Hilti::print(t)
+
+    return.void
+}
+
+

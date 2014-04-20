@@ -36,7 +36,7 @@ typedef hlt_hash khint_t;
 
 typedef struct {
     hlt_string tag;           // The hash tag.
-    hlt_timer_mgr* tmgr;      // Timer manager attached, or NULL.
+    hlt_timer_mgr* tmgr;      // Timer manager attached.
     hlt_timer* timer;         // Snapshot timer if installed, or NULL. Not memory-managed to avoid cycles.
     hlt_enum style;           // The profile style.
     uint64_t param;           // Parameter for the profile style.
@@ -299,11 +299,11 @@ static void write_record(int8_t rtype, __hlt_profiler* p, hlt_exception** excpt,
     hlt_profiler_record rec;
 
     uint64_t cwall = hlt_time_wall(excpt, ctx);
-    uint64_t ctime = p->tmgr ? hlt_timer_mgr_current(p->tmgr, excpt, ctx) : 0;
+    uint64_t ctime = hlt_timer_mgr_current(p->tmgr, excpt, ctx);
 
     rec.ctime = hlt_hton64(ctime);
     rec.cwall = hlt_hton64(cwall);
-    rec.time = hlt_hton64(p->tmgr ? ctime - p->time : 0);
+    rec.time = hlt_hton64(ctime - p->time);
     rec.wall = hlt_hton64(cwall - p->wall);
 
     rec.updates = hlt_hton64(p->updates);
@@ -470,13 +470,13 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
         __hlt_profiler* p = hlt_calloc(1, sizeof(__hlt_profiler));
         p->tag = tag;
         GC_CCTOR(p->tag, hlt_string);
-        p->tmgr = tmgr;
+        p->tmgr = tmgr ? tmgr : ctx->tmgr;
         GC_CCTOR(p->tmgr, hlt_timer_mgr);
         p->timer = 0;
         p->style = style;
         p->param = param;
 
-        p->time = p->tmgr ? hlt_timer_mgr_current(p->tmgr, excpt, ctx) : 0;
+        p->time = hlt_timer_mgr_current(p->tmgr, excpt, ctx);
         p->wall = hlt_time_wall(excpt, ctx);
         p->heap = hlt_util_memory_usage();
 

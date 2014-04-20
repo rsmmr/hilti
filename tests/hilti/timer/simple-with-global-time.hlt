@@ -15,18 +15,9 @@ void foo(int<32> n) {
 void run() {
 
     local ref<timer> t
-    local ref<timer_mgr> mgr
-    local ref<timer_mgr> mgr2
-
-    mgr = new timer_mgr
-    mgr2 = new timer_mgr
-
     t = new timer foo (42)
-
-    timer_mgr.schedule time(10.0) t mgr
-    timer_mgr.schedule time(10.0) t mgr2
-
-    call Hilti::print("not reached")
+    timer_mgr.schedule time(10.0) t
+    timer_mgr.advance_global time(20.0)
 
     return.void
 }

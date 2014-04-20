@@ -251,6 +251,7 @@ declare "C-HILTI" void timer_cancel(ref<timer> t)
 declare "C-HILTI" ref<timer_mgr> timer_mgr_new()
 declare "C-HILTI" void timer_mgr_schedule(ref<timer_mgr> mgr, time t, ref<timer> t)
 declare "C-HILTI" int<32> timer_mgr_advance(ref<timer_mgr> mgr, time tim)
+declare "C-HILTI" void timer_mgr_advance_global(time tim)
 declare "C-HILTI" time timer_mgr_current(ref<timer_mgr> mgr)
 declare "C-HILTI" void timer_mgr_expire(ref<timer_mgr> mgr, bool fire)
 #

@@ -50,8 +50,8 @@ struct __hlt_timer_mgr;
 ///
 /// value: The type for the map's values.
 ///
-/// tmgr: A timer manager to be associated with the map. Can be null if
-/// expiration is not going to be used.
+/// tmgr: A timer manager to be associated with the map. Set to null for
+/// using the context's manager.
 ///
 /// excpt: &
 extern hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -240,8 +240,8 @@ extern int8_t hlt_iterator_map_eq(hlt_iterator_map i1, hlt_iterator_map i2, hlt_
 ///
 /// key: The type for the set's keys.
 ///
-/// tmgr: A timer manager to be associated with the set. Can be null if
-/// expiration is not going to be used.
+/// tmgr: A timer manager to be associated with the map. Set to null for
+/// using the context's manager.
 ///
 /// excpt: &
 extern hlt_set* hlt_set_new(const hlt_type_info* key, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx);

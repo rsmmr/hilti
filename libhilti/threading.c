@@ -505,8 +505,38 @@ static void* _worker(void* worker_thread_ptr)
             finished = 1;
         }
 
-        for ( int i = 0; i < mgr->num_workers; ++i )
-            hlt_thread_queue_writer_update(mgr->workers[i]->jobs, thread->id);
+        hlt_time gt = __hlt_globals()->global_time;
+
+        for ( int i = 0; i < mgr->num_workers; ++i ) {
+            hlt_worker_thread* worker = mgr->workers[i];
+
+            hlt_thread_queue_writer_update(worker->jobs, thread->id);
+
+            // Advance all the virtual threads' time if the global one has
+            // changed.
+
+            if ( worker->global_time >= gt )
+                continue;
+
+            for ( int j = 1; j <= worker->max_vid; j++ ) {
+                hlt_execution_context* tctx = worker->ctxs[j];
+                hlt_exception* excpt = 0;
+
+                if ( ! tctx )
+                    continue;
+
+                DBG_LOG(DBG_STREAM, "advancing vid %" PRIu64 "'s time to %" PRIu64, tctx->vid, gt);
+
+                hlt_timer_mgr_advance(tctx->tmgr, gt, &excpt, tctx);
+
+                if ( excpt ) {
+                    __hlt_thread_mgr_uncaught_exception_in_thread(excpt, tctx);
+                    GC_DTOR(excpt, hlt_exception);
+                }
+            }
+
+            worker->global_time = gt;
+        }
 
 #ifdef DEBUG
         hlt_thread_queue_size(thread->jobs);
@@ -688,6 +718,7 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
         thread->jobs = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 5000, 0);
         thread->ctxs = hlt_calloc(3, sizeof(hlt_execution_context*));
         thread->max_vid = 2;
+        thread->global_time = 0;
         thread->id = i + 1; // We leave zero for the main thread so that we can use that as its writer id.
         thread->idle = 0;
         thread->jobs_blocked = kh_init(blocked_jobs);
@@ -801,7 +832,7 @@ void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, 
 #ifdef DEBUG
     pthread_t self = pthread_self();
     DBG_LOG(DBG_STREAM, "native thread %p assigned name '%s'", self, name);
-#endif    
+#endif
 
     // Set core affinity if specified for this thread.
     int core = -1;
