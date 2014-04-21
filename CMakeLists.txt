@@ -28,6 +28,8 @@ include_directories( ${LLVM_INCLUDE_DIR})
 
 include(DefaultCompilerSettings)
 
+include(HiltiConfig)
+
 add_subdirectory(hilti)
 add_subdirectory(ast)
 add_subdirectory(binpac)

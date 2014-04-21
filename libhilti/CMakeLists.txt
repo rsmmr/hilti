@@ -23,6 +23,7 @@ include(FindRequiredPackage)
 include(EnableLLVMBitcode)
 include(EnableClangDebugging)
 include(CheckFunctionExists)
+include(HiltiConfig)
 
 FindRequiredPackage(FLEX)
 FindRequiredPackage(BISON)

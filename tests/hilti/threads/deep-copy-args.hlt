@@ -1,0 +1,41 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out | sort  >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void func_with_globals(ref<bytes> b1) {
+    local string s
+    local ref<bytes> b2
+    local int<64> vid
+
+    vid = thread.id
+    s = call Hilti::fmt("%d", (vid))
+    b2 = string.encode s Hilti::Charset::ASCII
+    bytes.append b1 b2
+    call Hilti::print (b1)
+}
+
+void run() {
+    local ref<bytes> b = b""
+
+    thread.schedule func_with_globals(b) 1
+    thread.schedule func_with_globals(b) 2
+    thread.schedule func_with_globals(b) 3
+    thread.schedule func_with_globals(b) 4
+    thread.schedule func_with_globals(b) 5
+    thread.schedule func_with_globals(b) 1
+    thread.schedule func_with_globals(b) 2
+    thread.schedule func_with_globals(b) 3
+    thread.schedule func_with_globals(b) 4
+    thread.schedule func_with_globals(b) 5
+    thread.schedule func_with_globals(b) 1
+    thread.schedule func_with_globals(b) 2
+    thread.schedule func_with_globals(b) 3
+    thread.schedule func_with_globals(b) 4
+    thread.schedule func_with_globals(b) 5
+}
+

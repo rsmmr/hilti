@@ -87,6 +87,8 @@ declare "C-HILTI" caddr struct_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  struct_clone_init(caddr dst, any src, caddr cstate)
 declare "C-HILTI" caddr tuple_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  tuple_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr channel_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  channel_clone_init(caddr dst, any src, caddr cstate)
 
 ###
 

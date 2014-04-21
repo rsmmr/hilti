@@ -1077,13 +1077,13 @@ public:
    /// the same as with the corresponding llvmCall() method.
    ///
    /// Returns: The callable, which can be executed with llvmCallableRun().
-   llvm::Value* llvmCallableBind(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true);
+   llvm::Value* llvmCallableBind(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true, bool deep_copy_args=false);
 
    /// Creates a new callable insance and binds the execution of a hook to
    /// it.
    ///
    /// Returns: The callable, which can be executed with llvmCallableRun().
-   llvm::Value* llvmCallableBind(shared_ptr<Hook> hook, const expr_list args);
+   llvm::Value* llvmCallableBind(shared_ptr<Hook> hook, const expr_list args, bool deep_copy_args=false);
 
    /// Executes a previously bound callable.
    ///
@@ -2218,7 +2218,7 @@ private:
    llvm::Value* llvmCurrentLocation(const string& addl="");
 
    // Helper that implements the llvmCallableBind() methods.
-   llvm::Value* llvmDoCallableBind(llvm::Value* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true);
+   llvm::Value* llvmDoCallableBind(llvm::Value* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true, bool deep_copy_args=false);
 
    // Helpers for llvmCallableBind() that builds the hlt.callable.func
    // object.

@@ -19,6 +19,7 @@
 
 #include "channel.h"
 #include "string_.h"
+#include "clone.h"
 
 #define INITIAL_CHUNK_SIZE (1<<8)
 #define MAX_CHUNK_SIZE (1<<14)
@@ -32,8 +33,9 @@ typedef struct __hlt_channel_chunk {
     struct __hlt_channel_chunk* next; /* Pointer to the next chunk. */
 } hlt_channel_chunk;
 
-struct __hlt_channel {
-    __hlt_gchdr __gchdr;    // Header for memory management.
+// State shared across channel instances originating from the same root
+// value.
+typedef struct {
     const hlt_type_info* type;      /* Type information of the channel's data type. */
     hlt_channel_capacity capacity;      /* Maximum number of channel items. */
     volatile hlt_channel_capacity size; /* Current number of channel items. */
@@ -44,21 +46,41 @@ struct __hlt_channel {
     void* head;                     /* Pointer to the next item to read. */
     void* tail;                     /* Pointer to the first empty slot for writing. */
 
+    uint64_t ref_cnt;               /* Self-managed ref count for the shared state. */
+
     pthread_mutex_t mutex;          /* Synchronizes access to the channel. */
     pthread_cond_t empty_cv;        /* Condition variable for an empty channel. */
     pthread_cond_t full_cv;         /* Condition variable for a full channel. */
+} __hlt_channel_shared;
+
+struct __hlt_channel {
+    __hlt_gchdr __gchdr;            /* Header for memory management. */
+    __hlt_channel_shared* shared;   /* Shared implementation state. */
 };
 
 static void* _hlt_channel_read_item(hlt_channel* ch);
 
-void hlt_channel_dtor(hlt_type_info* ti, hlt_channel* c)
+void hlt_channel_dtor(hlt_type_info* ti, hlt_channel* ch)
 {
-    while ( c->size ) {
-        void* item = _hlt_channel_read_item(c);
-        GC_DTOR_GENERIC(item, c->type);
+    __hlt_channel_shared* shared = ch->shared;
+
+    pthread_mutex_lock(&shared->mutex);
+
+    if ( --shared->ref_cnt > 0 ) {
+        pthread_mutex_unlock(&shared->mutex);
+        return;
     }
 
-    hlt_channel_chunk* rc = c->rc;
+    // Delete, we're the last one holding a reference to the shared state.
+
+    pthread_mutex_unlock(&shared->mutex);
+
+    while ( shared->size ) {
+        void* item = _hlt_channel_read_item(ch);
+        GC_DTOR_GENERIC(item, shared->type);
+    }
+
+    hlt_channel_chunk* rc = shared->rc;
 
     while ( rc ) {
         hlt_channel_chunk* next = rc->next;
@@ -67,9 +89,11 @@ void hlt_channel_dtor(hlt_type_info* ti, hlt_channel* c)
         rc = next;
     }
 
-    pthread_mutex_destroy(&c->mutex);
-    pthread_cond_destroy(&c->empty_cv);
-    pthread_cond_destroy(&c->full_cv);
+    pthread_mutex_destroy(&shared->mutex);
+    pthread_cond_destroy(&shared->empty_cv);
+    pthread_cond_destroy(&shared->full_cv);
+
+    hlt_free(shared);
 }
 
 static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -97,18 +121,20 @@ static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, 
 // Internal helper function performing a read operation.
 static inline void* _hlt_channel_read_item(hlt_channel* ch)
 {
-    if ( ch->rc->rcnt == ch->rc->capacity ) {
-        assert(ch->rc->next);
+    __hlt_channel_shared* shared = ch->shared;
 
-        ch->rc = ch->rc->next;
-        ch->head = ch->rc->data;
+    if ( shared->rc->rcnt == shared->rc->capacity ) {
+        assert(shared->rc->next);
+
+        shared->rc = shared->rc->next;
+        shared->head = shared->rc->data;
     }
 
-    void* item = ch->head;
-    ++ch->rc->rcnt;
+    void* item = shared->head;
+    ++shared->rc->rcnt;
 
-    ch->head += ch->type->size;
-    --ch->size;
+    shared->head += shared->type->size;
+    --shared->size;
 
     return item;
 }
@@ -116,32 +142,58 @@ static inline void* _hlt_channel_read_item(hlt_channel* ch)
 // Internal helper function performing a write operation.
 static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ch->wc->wcnt == ch->wc->capacity ) {
-        if ( ch->capacity )
-            while ( ch->chunk_cap > ch->capacity - ch->size )
-                ch->chunk_cap /= 2;
-        else if ( ch->chunk_cap < MAX_CHUNK_SIZE )
-            ch->chunk_cap *= 2;
+    __hlt_channel_shared* shared = ch->shared;
 
-        ch->wc->next = _hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt, ctx);
-        if ( ! ch->wc->next ) {
+    if ( shared->wc->wcnt == shared->wc->capacity ) {
+        if ( shared->capacity )
+            while ( shared->chunk_cap > shared->capacity - shared->size )
+                shared->chunk_cap /= 2;
+        else if ( shared->chunk_cap < MAX_CHUNK_SIZE )
+            shared->chunk_cap *= 2;
+
+        shared->wc->next = _hlt_chunk_create(shared->chunk_cap, shared->type->size, excpt, ctx);
+        if ( ! shared->wc->next ) {
             hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
             return 1;
         }
 
-        ch->wc = ch->wc->next;
-        ch->tail = ch->wc->data;
+        shared->wc = shared->wc->next;
+        shared->tail = shared->wc->data;
     }
 
-    memcpy(ch->tail, data, ch->type->size);
-    GC_CCTOR_GENERIC(ch->tail, ch->type);
+#ifdef HLT_DEEP_COPY_VALUES_ACROSS_THREADS
+    hlt_clone_deep(shared->tail, shared->type, data, excpt, ctx);
+#else
+    memcpy(shared->tail, data, shared->type->size);
+    GC_CCTOR_GENERIC(shared->tail, shared->type);
+#endif
 
-    ++ch->wc->wcnt;
+    ++shared->wc->wcnt;
 
-    ch->tail += ch->type->size;
-    ++ch->size;
+    shared->tail += shared->type->size;
+    ++shared->size;
 
     return 0;
+}
+
+void* hlt_channel_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return GC_NEW(hlt_channel);
+}
+
+void hlt_channel_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_channel* src = *(hlt_channel**)srcp;
+    hlt_channel* dst = *(hlt_channel**)dstp;
+
+    __hlt_channel_shared* shared = src->shared;
+
+    pthread_mutex_lock(&shared->mutex);
+
+    ++shared->ref_cnt;
+    dst->shared = shared;
+
+    pthread_mutex_unlock(&shared->mutex);
 }
 
 hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -152,45 +204,53 @@ hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacit
         return 0;
     }
 
-    ch->type = item_type;
-    ch->capacity = capacity;
-    ch->size = 0;
+    __hlt_channel_shared* shared = hlt_malloc(sizeof(__hlt_channel_shared));
+    ch->shared = shared;
 
-    ch->chunk_cap = INITIAL_CHUNK_SIZE;
-    ch->rc = ch->wc = _hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt, ctx);
-    if ( ! ch->rc ) {
+    shared->ref_cnt = 1;
+    shared->type = item_type;
+    shared->capacity = capacity;
+    shared->size = 0;
+
+    shared->chunk_cap = INITIAL_CHUNK_SIZE;
+    shared->rc = shared->wc = _hlt_chunk_create(shared->chunk_cap, shared->type->size, excpt, ctx);
+    if ( ! shared->rc ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return 0;
     }
 
-    ch->head = ch->tail = ch->rc->data;
+    shared->head = shared->tail = shared->rc->data;
 
-    pthread_mutex_init(&ch->mutex, NULL);
-    pthread_cond_init(&ch->empty_cv, NULL);
-    pthread_cond_init(&ch->full_cv, NULL);
+    pthread_mutex_init(&shared->mutex, NULL);
+    pthread_cond_init(&shared->empty_cv, NULL);
+    pthread_cond_init(&shared->full_cv, NULL);
 
     return ch;
 }
 
 void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    pthread_mutex_lock(&ch->mutex);
+    __hlt_channel_shared* shared = ch->shared;
+
+    pthread_mutex_lock(&shared->mutex);
 
     if ( _hlt_channel_write_item(ch, data, excpt, ctx) )
         goto unlock_exit;
 
-    pthread_cond_signal(&ch->empty_cv);
+    pthread_cond_signal(&shared->empty_cv);
 
 unlock_exit:
-    pthread_mutex_unlock(&ch->mutex);
+    pthread_mutex_unlock(&shared->mutex);
     return;
 }
 
 void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    pthread_mutex_lock(&ch->mutex);
+    __hlt_channel_shared* shared = ch->shared;
 
-    if ( ch->capacity && ch->size == ch->capacity ) {
+    pthread_mutex_lock(&shared->mutex);
+
+    if ( shared->capacity && shared->size == shared->capacity ) {
         hlt_set_exception(excpt, &hlt_exception_would_block, 0);
         goto unlock_exit;
     }
@@ -198,51 +258,57 @@ void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, void* dat
     if ( _hlt_channel_write_item(ch, data, excpt, ctx) )
         goto unlock_exit;
 
-    pthread_cond_signal(&ch->empty_cv);
+    pthread_cond_signal(&shared->empty_cv);
 
 unlock_exit:
-    pthread_mutex_unlock(&ch->mutex);
+    pthread_mutex_unlock(&shared->mutex);
     return;
 }
 
 void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    pthread_mutex_lock(&ch->mutex);
+    __hlt_channel_shared* shared = ch->shared;
 
-    while ( ch->size == 0 )
-        pthread_cond_wait(&ch->empty_cv, &ch->mutex);
+    pthread_mutex_lock(&shared->mutex);
+
+    while ( shared->size == 0 )
+        pthread_cond_wait(&shared->empty_cv, &shared->mutex);
 
     void *item = _hlt_channel_read_item(ch);
 
-    pthread_cond_signal(&ch->full_cv);
+    pthread_cond_signal(&shared->full_cv);
 
-    pthread_mutex_unlock(&ch->mutex);
+    pthread_mutex_unlock(&shared->mutex);
     return item;
 }
 
 void* hlt_channel_read_try(hlt_channel* ch, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    pthread_mutex_lock(&ch->mutex);
+    __hlt_channel_shared* shared = ch->shared;
+
+    pthread_mutex_lock(&shared->mutex);
 
     void *item = 0;
 
-    if ( ch->size == 0 ) {
+    if ( shared->size == 0 ) {
         hlt_set_exception(excpt, &hlt_exception_would_block, 0);
         goto unlock_exit;
     }
 
     item = _hlt_channel_read_item(ch);
 
-    pthread_cond_signal(&ch->full_cv);
+    pthread_cond_signal(&shared->full_cv);
 
 unlock_exit:
-    pthread_mutex_unlock(&ch->mutex);
+    pthread_mutex_unlock(&shared->mutex);
     return item;
 }
 
 hlt_channel_capacity hlt_channel_size(hlt_channel* ch, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return ch->size;
+    __hlt_channel_shared* shared = ch->shared;
+
+    return shared->size;
 }
 
 hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)

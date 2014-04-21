@@ -11,6 +11,10 @@
 #include "rtti.h"
 #include "debug.h"
 
+#ifndef HLT_DEEP_COPY_VALUES_ACROSS_THREADS
+#define HLT_ATOMIC_REF_COUNTING
+#endif
+
 #ifdef DEBUG
 
 const char* __hlt_make_location(const char* file, int line)
@@ -197,7 +201,12 @@ void __hlt_object_ref(const hlt_type_info* ti, void* obj)
 #ifdef DEBUG
     int64_t new_ref_cnt =
 #endif
+
+#ifdef HLT_ATOMIC_REF_COUNTING
     __atomic_add_fetch(&hdr->ref_cnt, 1, __ATOMIC_SEQ_CST);
+#else
+    ++hdr->ref_cnt;
+#endif
 
 #ifdef DEBUG
     if ( new_ref_cnt <= 0 ) {
@@ -227,7 +236,11 @@ void __hlt_object_unref(const hlt_type_info* ti, void* obj)
     }
 #endif
 
+#ifdef HLT_ATOMIC_REF_COUNTING
     int64_t new_ref_cnt = __atomic_sub_fetch(&hdr->ref_cnt, 1, __ATOMIC_SEQ_CST);
+#else
+    int64_t new_ref_cnt = --hdr->ref_cnt;
+#endif
 
 #ifdef DEBUG
     const char* aux = 0;
@@ -321,9 +334,8 @@ void* hlt_stack_alloc(size_t size)
 #ifndef DARWIN
     void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
 #else
-    void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+    void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
 #endif
-
 
     if ( stack == MAP_FAILED ) {
         fprintf(stderr, "mmap failed: %s\n", strerror(errno));

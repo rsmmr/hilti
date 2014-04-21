@@ -1,0 +1,4 @@
+
+# If enabled, deep-copy values exchanged between threads.
+set(CMAKE_C_FLAGS    "${CMAKE_C_FLAGS}   -DHLT_DEEP_COPY_VALUES_ACROSS_THREADS")
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DHLT_DEEP_COPY_VALUES_ACROSS_THREADS")

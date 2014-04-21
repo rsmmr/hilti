@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
 # @TEST-EXEC:  ./a.out 2>&1 | sort >output
 # @TEST-EXEC:  btest-diff output
 

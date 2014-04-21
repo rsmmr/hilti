@@ -17,7 +17,7 @@ wrong-args.hlt:18-19: error, operands do not match instruction new
     new: map<*>, [ ref<timer_mgr> ] -> ref<map<*>>
     new: regexp<> -> ref<regexp<>>
     new: set<*>, [ ref<timer_mgr> ] -> ref<set<*>>
-    new: struct { } , [ ref<timer_mgr> ] -> ref<struct { } >
+    new: struct { }  -> ref<struct { } >
     new: timer, function() -> void, tuple<*> -> ref<timer>
     new: timer_mgr -> ref<timer_mgr>
     new: vector<*>, [ ref<timer_mgr> ] -> ref<vector<*>>

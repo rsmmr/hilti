@@ -2736,17 +2736,17 @@ void CodeGen::llvmFiberYield(llvm::Value* fiber, shared_ptr<Type> blockable_ty, 
     llvmCallC("hlt_fiber_yield", args2, false, false);
 }
 
-llvm::Value* CodeGen::llvmCallableBind(shared_ptr<Hook> hook, const expr_list args)
+llvm::Value* CodeGen::llvmCallableBind(shared_ptr<Hook> hook, const expr_list args, bool deep_copy_args)
 {
-    return llvmDoCallableBind(nullptr, hook, hook->type(), args, true);
+    return llvmDoCallableBind(nullptr, hook, hook->type(), args, true, deep_copy_args);
 }
 
-llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
+llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check, bool deep_copy_args)
 {
-    return llvmDoCallableBind(llvm_func_val, nullptr, ftype, args, excpt_check);
+    return llvmDoCallableBind(llvm_func_val, nullptr, ftype, args, excpt_check, deep_copy_args);
 }
 
-llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
+llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check, bool deep_copy_args)
 {
     auto llvm_func = llvm_func_val ? llvm::cast<llvm::Function>(llvm_func_val) : nullptr;
     auto result = ftype->result();
@@ -2784,8 +2784,24 @@ llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<
 
     for ( int i = 0; i < args.size(); ++i ) {
         auto val = llvmValue(args[i]);
+
+        if ( deep_copy_args ) {
+            auto ti = llvmRtti(args[i]->type());
+            auto src = llvmCreateAlloca(val->getType());
+            auto dst = llvmCreateAlloca(val->getType());
+            auto src_casted = builder()->CreateBitCast(src, llvmTypePtr());
+            auto dst_casted = builder()->CreateBitCast(dst, llvmTypePtr());
+
+            llvmCreateStore(val, src);
+            value_list vals = { dst_casted, ti, src_casted };
+            llvmCallC("hlt_clone_deep", vals, true, true);
+            val = builder()->CreateLoad(dst);
+        }
+
+        else
+            llvmCctor(val, args[i]->type(), false, "callable.call");
+
         s = llvmInsertValue(s, val, arg_start + i);
-        llvmCctor(val, args[i]->type(), false, "callable.call");
     }
 
     llvmCreateStore(s, c);
