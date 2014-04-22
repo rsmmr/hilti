@@ -76,17 +76,35 @@ void StatementBuilder::visit(statement::instruction::classifier::Add* i)
     auto rtype = ast::as<type::Classifier>(referencedType(i->op1()))->ruleType();
 
     // op2 can be a tuple (ref<struct>, prio) or a just a rule ref<struct>
-    auto ttype = ast::as<type::Tuple>(i->op2()->type());
-    assert(ttype);
+    //
+    // TODO: The separations for the cases below isn't fool-proof but should
+    // be good enough for now.
+    auto ttype = ast::tryCast<type::Tuple>(i->op2()->type());
 
-    auto op2 = cg()->llvmValue(i->op2());
-    auto rule = cg()->llvmExtractValue(op2, 0);
-    auto prio = cg()->builder()->CreateZExt(cg()->llvmExtractValue(op2, 1), cg()->llvmTypeInt(64));
-    auto stype = ast::as<type::Reference>(ttype->typeList().front())->argType();
+    if ( ttype ) {
+        auto op2 = cg()->llvmValue(i->op2());
+        auto rule = cg()->llvmExtractValue(op2, 0);
+        auto prio = cg()->builder()->CreateZExt(cg()->llvmExtractValue(op2, 1), cg()->llvmTypeInt(64));
+        auto reftype = ast::tryCast<type::Reference>(ttype->typeList().front());
+
+        if ( reftype ) {
+            auto stype = reftype->argType();
+            auto fields = _llvmFields(cg(), rtype, stype, rule, i->location());
+            CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields),
+                builder::codegen::create(builder::integer::type(64), prio), i->op3() };
+            cg()->llvmCall("hlt::classifier_add", args);
+
+            return;
+        }
+    }
+
+    auto rval = i->op2()->coerceTo(builder::reference::type(rtype));
+    auto rule = cg()->llvmValue(rval);
+    auto reftype = ast::checkedCast<type::Reference>(rval->type());
+    auto stype = reftype->argType();
     auto fields = _llvmFields(cg(), rtype, stype, rule, i->location());
-    CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields),
-        builder::codegen::create(builder::integer::type(64), prio), i->op3() };
-    cg()->llvmCall("hlt::classifier_add", args);
+    CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields), i->op3() };
+    cg()->llvmCall("hlt::classifier_add_no_prio", args);
 }
 
 void StatementBuilder::visit(statement::instruction::classifier::Compile* i)
