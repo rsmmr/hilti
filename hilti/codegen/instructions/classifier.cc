@@ -84,11 +84,11 @@ void StatementBuilder::visit(statement::instruction::classifier::Add* i)
     if ( ttype ) {
         auto op2 = cg()->llvmValue(i->op2());
         auto rule = cg()->llvmExtractValue(op2, 0);
-        auto prio = cg()->builder()->CreateZExt(cg()->llvmExtractValue(op2, 1), cg()->llvmTypeInt(64));
         auto reftype = ast::tryCast<type::Reference>(ttype->typeList().front());
 
         if ( reftype ) {
             auto stype = reftype->argType();
+            auto prio = cg()->builder()->CreateZExt(cg()->llvmExtractValue(op2, 1), cg()->llvmTypeInt(64));
             auto fields = _llvmFields(cg(), rtype, stype, rule, i->location());
             CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields),
                 builder::codegen::create(builder::integer::type(64), prio), i->op3() };
