@@ -1,0 +1,447 @@
+diff --git a/hilti2/bro/pac2/dns.pac2 b/hilti2/bro/pac2/dns.pac2
+index fab3a95..c8bc0d2 100644
+--- a/hilti2/bro/pac2/dns.pac2
++++ b/hilti2/bro/pac2/dns.pac2
+@@ -9,8 +9,11 @@ module DNS;
+ 
+ import Bro;
+ 
+-global dns_skip_all_auth = Bro::get_const_bool("dns_skip_all_auth");
+-global dns_skip_all_addl = Bro::get_const_bool("dns_skip_all_addl");
++# FIXME: Wrong when threaded.
++# Bro::get_const_bool("dns_skip_all_auth");
++# Bro::get_const_bool("dns_skip_all_addl");
++# global dns_skip_all_auth = True;
++# global dns_skip_all_addl = True;
+ 
+ type RDType = enum {
+     A = 1, NS = 2, MD = 3, MF = 4, CNAME = 5, SOA = 6, MB = 7, MG = 8, MR = 9,
+@@ -25,8 +28,8 @@ export type Message = unit {
+     header:     Header;
+     question:   list<Question(self)>                       &transient &count=self.header.qdcount;
+     answer:     list<ResourceRecord(self, RRType::ANSWER)> &transient &count=self.header.ancount;
+-    authority:  list<ResourceRecord(self, RRType::AUTH)>   &transient &count=self.header.nscount if ( ! (dns_skip_all_auth || dns_skip_all_addl) );
+-    additional: list<ResourceRecord(self, RRType::ADDL)>   &transient &count=self.header.arcount if ( ! dns_skip_all_addl );
++    # authority:  list<ResourceRecord(self, RRType::AUTH)>   &transient &count=self.header.nscount if ( ! (dns_skip_all_auth || dns_skip_all_addl) );
++    # additional: list<ResourceRecord(self, RRType::ADDL)>   &transient &count=self.header.arcount if ( ! dns_skip_all_addl );
+ 
+     on %done {
+         Bro::dpd_confirm();
+diff --git a/hilti2/bro/scripts/bro/hilti/base/main.bro b/hilti2/bro/scripts/bro/hilti/base/main.bro
+index e7de979..0ed4fd7 100644
+--- a/hilti2/bro/scripts/bro/hilti/base/main.bro
++++ b/hilti2/bro/scripts/bro/hilti/base/main.bro
+@@ -55,7 +55,7 @@ export {
+ 	const pac2_to_compiler = T &redef;
+ 
+ 	## Number of HILTI worker threads to spawn.
+-	const hilti_workers = 2 &redef;
++	const hilti_workers: int = 2 &redef;
+ }
+ 
+ 
+diff --git a/hilti2/bro/src/Manager.cc b/hilti2/bro/src/Manager.cc
+index 1540413..f55d1b7 100644
+--- a/hilti2/bro/src/Manager.cc
++++ b/hilti2/bro/src/Manager.cc
+@@ -201,7 +201,7 @@ struct Manager::PIMPL
+ 	bool save_llvm;		// Saves the final linked LLVM code into a file, set from BifConst::Hilti::save_llvm.
+ 	bool pac2_to_compiler;  // If compiling scripts, raise event hooks from BinPAC++ code directly.
+ 	unsigned int profile;	// True to enable run-time profiling.
+-	unsigned int hilti_workers;	// Number of HILTI worker threads to spawn.
++	int hilti_workers;	// Number of HILTI worker threads to spawn.
+ 
+ 	std::list<string> import_paths;
+ 	Pac2AST* pac2_ast;
+@@ -927,6 +927,12 @@ bool Manager::CompileHiltiModule(std::shared_ptr<::hilti::Module> m)
+ 	return true;
+ 	}
+ 
++typedef void (*paradns_schedule_packet_type)(hlt_bytes* b, int64_t hash, hlt_exception** excpt, hlt_execution_context* ctx);
++void (*paradns_schedule_packet)(hlt_bytes* b, int64_t hash, hlt_exception** excpt, hlt_execution_context* ctx);
++
++typedef void* (*dns_parse_message_type)(hlt_bytes* b, int64_t hash, hlt_exception** excpt, hlt_execution_context* ctx);
++void* (*dns_parse_message)(hlt_bytes* b, int64_t hash, hlt_exception** excpt, hlt_execution_context* ctx);
++
+ bool Manager::RunJIT(llvm::Module* llvm_module)
+ 	{
+ 	PLUGIN_DBG_LOG(HiltiPlugin, "Running JIT on LLVM module");
+@@ -946,9 +952,9 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
+ 	PLUGIN_DBG_LOG(HiltiPlugin, "Initializing HILTI runtime");
+ 
+ 	hlt_config cfg = *hlt_config_get();
+-	cfg.fiber_stack_size = 5000 * 1024;
++	cfg.fiber_stack_size = 500 * 1024;
+ 	cfg.profiling = pimpl->profile;
+-	cfg.num_workers = pimpl->hilti_workers;
++	cfg.num_workers = pimpl->hilti_workers >= 0 ? pimpl->hilti_workers : 0;
+ 	hlt_config_set(&cfg);
+ 
+ 	hlt_init_jit(hilti_context, llvm_module, ee);
+@@ -962,6 +968,9 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
+ 	typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
+ 	auto binpac_parsers = (binpac_parsers_func)hilti_context->nativeFunction(llvm_module, ee, "binpac_parsers");
+ 
++	paradns_schedule_packet = (paradns_schedule_packet_type)hilti_context->nativeFunction(llvm_module, ee, "paradns_schedule_packet");
++	dns_parse_message = (dns_parse_message_type)hilti_context->nativeFunction(llvm_module, ee, "dns_parse_Message");
++
+ 	profile_update(PROFILE_JIT_LAND, PROFILE_STOP);
+ 
+ 	if ( ! binpac_parsers )
+@@ -2442,6 +2451,7 @@ bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
+ 
+ 	::hilti::builder::tuple::element_list vals;
+ 
++#if 0
+ 	int i = 0;
+ 
+ 	for ( auto e : ev->expr_accessors )
+@@ -2501,6 +2511,7 @@ bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
+ 		vals.push_back(val);
+ 		i++;
+ 		}
++#endif
+ 
+ 	auto canon_name = ::util::strreplace(ev->name, "::", "_");
+ 	auto handler = mbuilder->addGlobal(util::fmt("__bro_handler_%s_%p", canon_name, ev),
+diff --git a/hilti2/bro/src/Pac2Analyzer.cc b/hilti2/bro/src/Pac2Analyzer.cc
+index 651d69c..28be41f 100644
+--- a/hilti2/bro/src/Pac2Analyzer.cc
++++ b/hilti2/bro/src/Pac2Analyzer.cc
+@@ -8,6 +8,8 @@ extern "C" {
+ #include <libbinpac/libbinpac++.h>
+ }
+ 
++#include "consts.bif.h"
++
+ #undef DBG_LOG
+ 
+ #include "Pac2Analyzer.h"
+@@ -371,13 +373,90 @@ void Pac2_UDP_Analyzer::Done()
+ 	Pac2_Analyzer::Done();
+ 	}
+ 
++extern "C" {
++    extern void (*paradns_schedule_packet)(hlt_bytes* b, void* c, int64_t hash, hlt_exception** excpt, hlt_execution_context* ctx);
++    extern void* (*dns_parse_message)(hlt_bytes* b, void* c, hlt_exception** excpt, hlt_execution_context* ctx);
++}
++
+ void Pac2_UDP_Analyzer::DeliverPacket(int len, const u_char* data, bool is_orig,
+ 				    int seq, const IP_Hdr* ip, int caplen)
+ 	{
+ 	Analyzer::DeliverPacket(len, data, is_orig, seq, ip, caplen);
+ 
+-	FeedChunk(len, data, is_orig, true);
+-	Pac2_Analyzer::Done();
++	if ( is_orig )
++		return;
++
++	Endpoint* endp = is_orig ? &orig : &resp;
++
++	if ( ! endp->parser )
++		{
++		endp->parser = HiltiPlugin.Mgr()->ParserForAnalyzer(endp->cookie.protocol_cookie.analyzer->GetAnalyzerTag(), is_orig);
++
++		if ( ! endp->parser )
++			{
++			debug_msg(endp->cookie.protocol_cookie.analyzer, "no unit specificed for parsing", 0, 0, is_orig);
++			return;
++			}
++
++		GC_CCTOR(endp->parser, hlt_BinPACHilti_Parser);
++		}
++
++	hlt_exception* excpt = 0;
++	hlt_execution_context* ctx = hlt_global_execution_context();
++
++	hlt_bytes* b = hlt_bytes_new_from_data_copy((const int8_t*)data, len, &excpt, ctx);
++	hlt_bytes_freeze(b, 1, &excpt, ctx);
++
++	if ( BifConst::Hilti::hilti_workers < 0 )
++		{
++		// Do nothing for benchmarking.
++		}
++
++	else if ( BifConst::Hilti::hilti_workers == 0 )
++		{
++		if ( ! dns_parse_message )
++			{
++			fprintf(stderr, "no function dns_parse_message\n");
++			exit(1);
++			}
++
++		void* pobj = (*dns_parse_message)(b, &endp->cookie, &excpt, ctx);
++
++		if ( pobj )
++			GC_DTOR_GENERIC(&pobj, endp->parser->type_info);
++
++		if ( excpt )
++			{
++			GC_DTOR(excpt, hlt_exception);
++			}
++		}
++	else
++		{
++		assert(Conn()->Key());
++		if ( ! paradns_schedule_packet )
++			{
++			fprintf(stderr, "no function paradns_schedule_packet\n");
++			exit(1);
++			}
++
++		uint64_t hash = (uint16_t)Conn()->Key()->Hash();
++		(*paradns_schedule_packet)(b, &endp->cookie, hash, &excpt, ctx);
++
++		static int i = 0;
++
++#if 1
++		if ( (uint64_t)__hlt_globals()->num_stacks > (uint64_t)30000 )
++			hlt_util_nanosleep(1000);
++
++		if ( (uint64_t)__hlt_globals()->num_stacks > (uint64_t)40000 )
++			hlt_util_nanosleep(1000);
++
++		if ( (uint64_t)__hlt_globals()->num_stacks > (uint64_t)50000 )
++			hlt_util_nanosleep(1000);
++#endif
++		}
++
++	GC_DTOR(b, hlt_bytes);
+ 	}
+ 
+ void Pac2_UDP_Analyzer::Undelivered(int seq, int len, bool is_orig)
+diff --git a/hilti2/bro/src/Pac2Analyzer.h b/hilti2/bro/src/Pac2Analyzer.h
+index e817662..cc29048 100644
+--- a/hilti2/bro/src/Pac2Analyzer.h
++++ b/hilti2/bro/src/Pac2Analyzer.h
+@@ -35,7 +35,7 @@ public:
+ protected:
+ 	virtual void ParseError(const string& msg, bool is_orig);
+ 
+-private:
++public:
+ 	struct Endpoint {
+ 		__binpac_parser* parser;
+ 		__hlt_bytes* data;
+diff --git a/hilti2/bro/src/Plugin.cc b/hilti2/bro/src/Plugin.cc
+index 743f829..a4b17be 100644
+--- a/hilti2/bro/src/Plugin.cc
++++ b/hilti2/bro/src/Plugin.cc
+@@ -11,6 +11,19 @@
+ #include "Event.h"
+ #include "RuntimeInterface.h"
+ 
++extern "C" 
++	{
++	// From Runtime.cc
++	extern _Atomic(uint_fast64_t) event_cnt;
++	}
++
++
++#undef DBG_LOG
++extern "C" {
++#include <libbinpac/libbinpac++.h>
++}
++
++
+ plugin::Bro_Hilti::Plugin HiltiPlugin;
+ 
+ namespace BifConst { namespace Hilti { extern int compile_scripts; } }
+@@ -53,7 +66,7 @@ void plugin::Bro_Hilti::Plugin::InitPreScript()
+ 		exit(1);
+ 	}
+ 
+-#if 0
++#if 1
+ #include <google/heap-checker.h>
+ 
+ static HeapLeakChecker* heap_checker = nullptr;
+@@ -74,7 +87,7 @@ void plugin::Bro_Hilti::Plugin::InitPostScript()
+ 	if ( ! _manager->Compile() )
+ 		exit(1);
+ 
+-#if 0
++#if 1
+ 	if ( getenv("HEAPCHECK") )
+ 	     heap_checker = new HeapLeakChecker("bro-hilti");
+ #endif
+@@ -85,7 +98,7 @@ void plugin::Bro_Hilti::Plugin::InitPostScript()
+ 
+ void plugin::Bro_Hilti::Plugin::Done()
+ 	{
+-#if 0
++#if 1
+ 	if ( heap_checker )
+ 		{
+ 		fprintf(stderr, "#! Done with leak checking\n");
+@@ -98,6 +111,11 @@ void plugin::Bro_Hilti::Plugin::Done()
+ 		delete heap_checker;
+ 		}
+ #endif
++
++	fprintf(stderr, "Bro plugin: Waiting for threads ...\n");
++	hilti_wait_for_threads();
++	fprintf(stderr, "Bro plugin: Done with threads ...\n");
++	fprintf(stderr, "#c events-raised %lu ...\n", event_cnt);
+ 	}
+ 
+ bool plugin::Bro_Hilti::Plugin::LoadFile(const char* file)
+diff --git a/hilti2/bro/src/Runtime.cc b/hilti2/bro/src/Runtime.cc
+index 05eae17..38cfa30 100644
+--- a/hilti2/bro/src/Runtime.cc
++++ b/hilti2/bro/src/Runtime.cc
+@@ -386,6 +386,9 @@ void* libbro_get_event_handler(hlt_bytes* name, hlt_exception** excpt, hlt_execu
+ 	return ev && ev.Ptr() ? ev.Ptr() : &no_handler;
+ 	}
+ 
++static uint64_t event_cnts[1000];
++_Atomic(uint_fast64_t) event_cnt = 0;
++
+ void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+ 	{
+ 	EventHandler* ev = (EventHandler*) hdl;
+@@ -393,6 +396,17 @@ void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple,
+ 	if ( ev == &no_handler )
+ 		return;
+ 
++    // fprintf(stderr, "vid %lu %s\n", ctx->vid, ev->Name());
++
++	uint64_t vid = ctx->vid;
++	if ( ++event_cnts[vid] % 25000 == 0 )
++		fprintf(stderr, "vid %lu at %lu\n", ctx->vid, event_cnts[vid]);
++
++	if ( ++event_cnt % 50000 == 0 )
++		fprintf(stderr, "total events %lu\n", event_cnt);
++
++	return;
++
+ 	int16_t* offsets = (int16_t *)type->aux;
+ 
+ 	val_list* vals = new val_list(type->num_params);
+@@ -848,12 +862,14 @@ void bro_file_begin(void* cookie, hlt_exception** excpt, hlt_execution_context*
+ 
+ void bro_file_set_size(uint64_t size, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+ 	{
++	return;
+ 	auto c = get_protocol_cookie(cookie, "file_set_size()");
+ 	file_mgr->SetSize(size, c->tag, c->analyzer->Conn(), c->is_orig);
+ 	}
+ 
+ void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+ 	{
++	return;
+ 	auto c = get_protocol_cookie(cookie, "file_data_in()");
+ 
+ 	hlt_bytes_block block;
+@@ -882,6 +898,7 @@ void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_
+ 
+ void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+ 	{
++	return;
+ 	auto c = get_protocol_cookie(cookie, "file_data_in_at_offset()");
+ 
+ 	hlt_bytes_block block;
+@@ -913,24 +930,28 @@ void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie,
+ 
+ void bro_file_gap(uint64_t offset, uint64_t len, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+ 	{
++	return;
+ 	auto c = get_protocol_cookie(cookie, "file_gap()");
+ 	file_mgr->Gap(offset, len, c->tag, c->analyzer->Conn(), c->is_orig);
+ 	}
+ 
+ void bro_file_end(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+ 	{
++	return;
+ 	auto c = get_protocol_cookie(cookie, "file_end()");
+ 	file_mgr->EndOfFile(c->tag, c->analyzer->Conn(), c->is_orig);
+ 	}
+ 
+ void bro_dpd_confirm(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+ 	{
++	return;
+ 	auto c = get_protocol_cookie(cookie, "dpd_confirm()");
+ 	c->analyzer->ProtocolConfirmation(c->tag);
+ 	}
+ 
+ void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t eol, int8_t clear, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+ 	{
++	return;
+ 	auto c = get_protocol_cookie(cookie, "rule_match()");
+ 
+ 	Rule::PatternType bro_type = Rule::TYPES;
+diff --git a/hilti2/bro/src/consts.bif b/hilti2/bro/src/consts.bif
+index 7293e78..47610f9 100644
+--- a/hilti2/bro/src/consts.bif
++++ b/hilti2/bro/src/consts.bif
+@@ -53,4 +53,4 @@ const compile_scripts: bool;
+ const pac2_to_compiler: bool;
+ 
+ ## Number of HILTI worker threads to spawn.
+-const hilti_workers: count;
++const hilti_workers: int;
+diff --git a/hilti2/libhilti/memory_.c b/hilti2/libhilti/memory_.c
+index 4483863..5bd8adb 100644
+--- a/hilti2/libhilti/memory_.c
++++ b/hilti2/libhilti/memory_.c
+@@ -11,9 +11,9 @@
+ #include "rtti.h"
+ #include "debug.h"
+ 
+-#ifndef HLT_DEEP_COPY_VALUES_ACROSS_THREADS
++//#ifndef HLT_DEEP_COPY_VALUES_ACROSS_THREADS
+ #define HLT_ATOMIC_REF_COUNTING
+-#endif
++//#endif
+ 
+ #ifdef DEBUG
+ 
+@@ -373,10 +373,8 @@ void* hlt_stack_alloc(size_t size)
+         exit(1);
+     }
+ 
+-#ifdef DEBUG
+     ++__hlt_globals()->num_stacks;
+     __hlt_globals()->size_stacks += size;
+-#endif
+ 
+     return stack;
+ }
+@@ -396,10 +394,8 @@ void hlt_stack_free(void* stack, size_t size)
+         exit(1);
+     }
+ 
+-#ifdef DEBUG
+     --__hlt_globals()->num_stacks;
+     __hlt_globals()->size_stacks -= size;
+-#endif
+ }
+ 
+ hlt_free_list* hlt_free_list_new(size_t size)
+diff --git a/hilti2/libhilti/threading.c b/hilti2/libhilti/threading.c
+index 131040b..4fe9b11 100644
+--- a/hilti2/libhilti/threading.c
++++ b/hilti2/libhilti/threading.c
+@@ -545,8 +545,8 @@ static void* _worker(void* worker_thread_ptr)
+ 
+         ++cnt;
+ 
+-#if 0
+-        if ( thread->id == 1 && cnt % 5000 == 0 )
++#if 1
++        if ( thread->id == 1 && cnt % 500 == 0 )
+             _debug_print_job_summary(mgr);
+ #endif
+ 
+@@ -791,6 +791,11 @@ void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_call
+ 
+     hlt_worker_thread* thread = _vthread_to_worker(mgr, vid);
+     _worker_schedule(ctx->worker, thread, vid, func, 0, 0, ctx);
++
++    static int xcnt = 0;
++
++    if ( ++xcnt % 50000 == 0 )
++       fprintf(stderr, "%lu/%lu\n", __hlt_globals()->num_stacks, __hlt_globals()->size_stacks);
+ }
+ 
+ void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, hlt_type_info* type, void* tcontext, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
