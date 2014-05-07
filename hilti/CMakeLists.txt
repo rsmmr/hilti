@@ -28,6 +28,8 @@ if ( NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
 
     if ("${GOOGLEPERFTOOLS_FOUND}" STREQUAL "TRUE" )
         set(HAVE_PERFTOOLS "1")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_PERFTOOLS")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_PERFTOOLS")
     endif ()
 endif ()
 

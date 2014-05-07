@@ -39,8 +39,8 @@ struct yystype_hilti {
     ctor::Map::element_list map_elements;
     ctor::RegExp::pattern re_pattern;
     ctor::RegExp::pattern_list re_patterns;
-    Hook::attribute hook_attribute;
-    Hook::attribute_list hook_attributes;
+    function::attribute function_attribute;
+    function::attribute_list function_attributes;
 
     shared_ptr<hilti::Declaration> decl;
     shared_ptr<hilti::Statement> stmt;

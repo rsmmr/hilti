@@ -64,13 +64,6 @@ void hlt_init()
 
 void __hlt_init_from_state(__hlt_global_state* state)
 {
-#if 0
-   if ( __hlt_globals() ) {
-        fprintf(stderr, "internal error: __hlt_init_from_state() called when globals are already initialized\n");
-        abort();
-    }
-#endif
-
     __hlt_init_common();
     __hlt_globals_set(state);
 

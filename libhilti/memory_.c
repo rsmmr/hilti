@@ -91,6 +91,23 @@ void* __hlt_malloc(uint64_t size, const char* type, const char* location)
     return p;
 }
 
+void* __hlt_malloc_no_init(uint64_t size, const char* type, const char* location)
+{
+    void *p = malloc(size);
+
+    if ( ! p ) {
+        fputs("out of memory in hlt_malloc_no_init, aborting", stderr);
+        exit(1);
+    }
+
+#ifdef DEBUG
+    ++__hlt_globals()->num_allocs;
+    _dbg_mem_raw("malloc_no_init", p, size, type, location, 0);
+#endif
+
+    return p;
+}
+
 void* __hlt_realloc(void* p, uint64_t size, uint64_t old_size, const char* type, const char* location)
 {
 #ifdef DEBUG
@@ -178,6 +195,20 @@ void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* locat
     assert(size);
 
     __hlt_gchdr* hdr = (__hlt_gchdr*)__hlt_malloc(size, ti->tag, location);
+    hdr->ref_cnt = 1;
+
+#ifdef DEBUG
+    _dbg_mem_gc("new", ti, hdr, location, 0);
+#endif
+
+    return hdr;
+}
+
+void* __hlt_object_new_no_init(const hlt_type_info* ti, uint64_t size, const char* location)
+{
+    assert(size);
+
+    __hlt_gchdr* hdr = (__hlt_gchdr*)__hlt_malloc_no_init(size, ti->tag, location);
     hdr->ref_cnt = 1;
 
 #ifdef DEBUG
@@ -396,9 +427,8 @@ void* hlt_free_list_alloc(hlt_free_list* list)
         list->pool = list->pool->next;
         bzero(b, list->size); // Make contents consistent.
     }
-    else {
+    else
         b = (__hlt_free_list_block*) hlt_malloc(list->size);
-    }
 
     return ((char *)b) + __data_offset;
 }
@@ -422,6 +452,65 @@ void hlt_free_list_delete(hlt_free_list* list)
     }
 
     hlt_free(list);
+}
+
+void hlt_memory_pool_init(hlt_memory_pool* p, size_t size)
+{
+    p->last = &p->first;
+
+    p->first.next = 0;
+    p->first.cur = &p->first.data[0];
+    p->first.end = &p->first.data[0] + size;
+}
+
+void hlt_memory_pool_dtor(hlt_memory_pool* p)
+{
+    __hlt_memory_pool_block* b;
+    __hlt_memory_pool_block* n;
+
+    for ( b = p->first.next; b; b = n ) { // Don't delete first.
+        n = b->next;
+        hlt_free(b);
+    }
+}
+
+void* hlt_memory_pool_malloc(hlt_memory_pool* p, size_t n)
+{
+    return hlt_memory_pool_calloc(p, 1, n);
+}
+
+void* hlt_memory_pool_calloc(hlt_memory_pool* p, size_t count, size_t n)
+{
+    size_t avail = p->last->end - p->last->cur;
+
+#ifdef DEBUG
+    if ( p->last->cur == &p->first.data[0] && n > avail )
+        fprintf(stderr, "libhilti debug warning: memory pool block size cannot even fit first alloc");
+#endif
+
+    if ( n > avail ) {
+        // Need to alloc a new block.
+        size_t dsize = p->first.end - &p->first.data[0];
+        size_t bsize = n < dsize ? n : dsize;
+        __hlt_memory_pool_block* b = hlt_calloc(1, sizeof(__hlt_memory_pool_block) + bsize);
+
+        b->cur = &b->data[0];
+        b->end = &b->data[0] + bsize;
+        b->next = 0;
+
+        p->last->next = b;
+        p->last = b;
+    }
+
+    // Bump pointer to allocate.
+    void* ptr = p->last->cur;
+    p->last->cur += n;
+    return ptr;
+}
+
+void  hlt_memory_pool_free(hlt_memory_pool* p, void* b)
+{
+    // Do nothing.
 }
 
 hlt_memory_stats hlt_memory_statistics()

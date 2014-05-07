@@ -1245,6 +1245,13 @@ public:
    /// Returns: Whatever the intrinsic returns.
    llvm::CallInst* llvmCallIntrinsic(llvm::Intrinsic::ID intr, std::vector<llvm::Type*> tys, const value_list& args);
 
+   /// Generates an llvm.expect intrinsic.
+   ///
+   /// v: The actual value.
+   ///
+   /// e: The expected value.
+   llvm::Value* llvmExpect(llvm::Value* v, llvm::Value* e);
+
    ///i = llvm.core.Function.intrinsic(self._llvm.module, intr, types)
    ///return self.llvmSafeCall(i, args)
 
@@ -1254,7 +1261,7 @@ public:
    ///
    /// excpt: The value where the \c C-HILTI function would have stored its
    /// exception (i.e., usually the \c excpt parameter).
-   void llvmCheckCException(llvm::Value* excpt);
+   void llvmCheckCException(llvm::Value* excpt, bool raise = true);
 
    /// Creates a new exception instance.
    ///
@@ -2022,6 +2029,17 @@ public:
    ///
    /// n: The number of bytes to copy from \a src to \a dst.
    void llvmMemcpy(llvm::Value *dst, llvm::Value *src, llvm::Value *n);
+
+   /// Generates code that compares to equally sized chunks of memory.
+   ///
+   /// p1: Pointer to 1st memory block.
+   ///
+   /// p2: Pointer to 2nd memory block.
+   ///
+   /// n: The number of bytes to cmp.
+   ///
+   /// Returns: An LLVM i1 that's true if the two blocks are byte-equivalent.
+   llvm::Value* llvmMemEqual(llvm::Value *p1, llvm::Value *p2, llvm::Value *n);
 
    /// Converts an LLVM integer value from host to network bytes order. This
    /// methods suports 8/16/32/64 values.

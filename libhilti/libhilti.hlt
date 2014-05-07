@@ -51,6 +51,8 @@ declare "C-HILTI" double timer_mgr_to_double(any d)
 declare "C-HILTI" double time_to_double(any d)
 declare "C-HILTI" double interval_to_double(any d)
 
+declare "C-HILTI" int<64> hash_object(any s)
+
 declare "C-HILTI" int<64> default_hash(any s)
 declare "C-HILTI" bool    default_equal(any s1, any s2)
 declare "C-HILTI" int<64> string_hash(any s)

@@ -119,11 +119,13 @@ type Packed = enum {
     # %doc-packed-bytes-start
     BytesRunLength,    # A series of bytes preceded by an uint indicating its length; the argument must be one of Packed::UInt*.
     BytesFixed,        # A series of bytes of fixed length specified by an additional integer argument
+    BytesFixedOrEod,   # A series of bytes of fixed length specified by an additional integer argument, or reaching end-of-data if the input is frozen, whatever comes first.
     BytesDelim,        # A series of bytes delimited by a final byte-sequence specified by an additional argument.
 
     # Variants just advancing the iterator but not returning any value.
     SkipBytesRunLength,
     SkipBytesFixed,
+    SkipBytesFixedOrEod,
     SkipBytesDelim
 
     # %doc-packed-bytes-end

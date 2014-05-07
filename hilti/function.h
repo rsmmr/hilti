@@ -17,12 +17,19 @@ typedef type::function::Result Result;
 typedef type::function::Parameter Parameter;
 typedef type::function::parameter_list parameter_list;
 
+typedef std::pair<string, int64_t> attribute;
+typedef std::list<attribute> attribute_list;
+
 }
+
 
 /// AST node for a function.
 class Function : public ast::Function<AstInfo>
 {
 public:
+   typedef function::attribute      attribute;
+   typedef function::attribute_list attribute_list;
+
    /// Constructor.
    ///
    /// id: A non-scoped ID with the function's name.
@@ -36,7 +43,9 @@ public:
    /// body: A statement with the function's body. Typically, the statement type will be that of a block of statements.
    ///
    /// l: Location associated with the node.
-   Function(shared_ptr<ID> id, shared_ptr<hilti::type::Function> ftype, shared_ptr<Module> module, shared_ptr<Type> scope = nullptr, shared_ptr<Statement> body = nullptr, const Location& l=Location::None);
+   Function(shared_ptr<ID> id, shared_ptr<hilti::type::Function> ftype, shared_ptr<Module> module, shared_ptr<Type> scope = nullptr,
+            const attribute_list& attrs = attribute_list(),
+            shared_ptr<Statement> body = nullptr, const Location& l=Location::None);
 
    /// Returns the function's scheduling scope. Returns null if not set.
    shared_ptr<type::Scope> scope() const;
@@ -51,25 +60,21 @@ public:
    /// They must not take any parameters and nor return a value.
    bool initFunction() { return _init; }
 
+   /// Returns true if the function was marked as one that won't yield.
+   bool noYield() const { return _noyield; }
+
    ACCEPT_VISITOR_ROOT();
 
 private:
    node_ptr<Type> _scope;
    bool _init = false;
+   bool _noyield = false;
 };
-
-namespace hook {
-   typedef std::pair<string, int64_t> attribute;
-   typedef std::list<attribute> attribute_list;
-}
 
 /// AST node for a hook.
 class Hook : public Function
 {
 public:
-   typedef hook::attribute      attribute;
-   typedef hook::attribute_list attribute_list;
-
    /// id: A non-scoped ID with the hook's name.
    ///
    /// module: The module the hook is part of. Note that it will not
@@ -92,7 +97,7 @@ public:
         shared_ptr<Type> scope = nullptr, uint64_t priority = 0, uint64_t group = 0,
         shared_ptr<Statement> body = nullptr,
         const Location& l=Location::None)
-       : Function(id, ftype, module, scope, body, l) { _priority = priority; _group = group; }
+       : Function(id, ftype, module, scope, attribute_list(), body, l) { _priority = priority; _group = group; }
 
    Hook(shared_ptr<ID> id, shared_ptr<hilti::type::Hook> ftype, shared_ptr<Module> module,
         shared_ptr<Type> scope = nullptr, const attribute_list& attrs = attribute_list(),

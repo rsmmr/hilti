@@ -237,6 +237,7 @@ public:
                                                   const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                   hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
                                                   shared_ptr<Type> scope = nullptr,
+                                                  const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
                                                   bool no_body = false,
                                                   const Location& l=Location::None);
 
@@ -259,6 +260,7 @@ public:
    shared_ptr<hilti::declaration::Function> pushFunction(shared_ptr<ID> id,
 						  std::shared_ptr<hilti::type::Function> ftype,
                                                   shared_ptr<Type> scope = nullptr,
+                                                  const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
                                                   bool no_body = false,
                                                   const Location& l=Location::None);
 
@@ -310,6 +312,7 @@ public:
                                                   const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                   hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
                                                   shared_ptr<Type> scope = nullptr,
+                                                  const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
                                                   bool no_body = false,
                                                   const Location& l=Location::None);
 
@@ -343,7 +346,7 @@ public:
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
-                                              const hilti::hook::attribute_list& attrs = hilti::hook::attribute_list(),
+                                              const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
                                               bool no_body = false,
                                               const Location& l=Location::None);
 
@@ -369,7 +372,7 @@ public:
    shared_ptr<hilti::declaration::Function> pushHook(shared_ptr<ID> id,
 					      std::shared_ptr<hilti::type::Hook> type,
                                               shared_ptr<Type> scope = nullptr,
-                                              const hilti::hook::attribute_list& attrs = hilti::hook::attribute_list(),
+                                              const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
                                               bool no_body = false,
                                               const Location& l=Location::None);
 
@@ -399,7 +402,7 @@ public:
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
-                                              const hilti::hook::attribute_list& attrs = hilti::hook::attribute_list(),
+                                              const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
                                               bool no_body = false,
                                               const Location& l=Location::None);
 

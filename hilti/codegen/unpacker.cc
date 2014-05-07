@@ -46,7 +46,7 @@ void Unpacker::visit(type::Reference* t)
     call(t->argType());
 }
 
-static void _bytesUnpackFixed(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool skip)
+static void _bytesUnpackFixed(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool skip, bool eod_ok)
 {
     auto iter_type = builder::iterator::typeBytes();
     auto begin = builder::codegen::create(iter_type, args.begin);
@@ -64,20 +64,34 @@ static void _bytesUnpackFixed(CodeGen* cg, const UnpackArgs& args, const UnpackR
     params = { next, builder::codegen::create(iter_type, end) };
     auto is_end = cg->llvmCall("hlt::iterator_bytes_eq", params );
 
-    auto block_end = cg->newBuilder("unpack-end");
+    auto block_end_size = cg->newBuilder("unpack-end-check-size");
+    auto block_end_eod = cg->newBuilder("unpack-end-check-eod");
     auto block_done = cg->newBuilder("unpack-done");
     auto block_insufficient = cg->newBuilder("unpack-out-of-input");
-    cg->llvmCreateCondBr(is_end, block_end, block_done);
+    cg->llvmCreateCondBr(is_end, block_end_size, block_done);
 
     // When we've reached the end, we must check whether we got enough bytes
-    // or not.
-    cg->pushBuilder(block_end);
+    // or not if eod is not ok or the object isn't frozen.
+    cg->pushBuilder(block_end_size);
 
     params = { begin, next };
     auto diff = cg->llvmCall("hlt::iterator_bytes_diff", params);
     auto len = cg->builder()->CreateZExt(diff, cg->llvmTypeInt(64));
     auto enough = cg->builder()->CreateICmpULT(len, llvm_arg);
-    cg->llvmCreateCondBr(enough, block_insufficient, block_done);
+    cg->llvmCreateCondBr(enough, block_end_eod, block_done);
+
+    cg->pushBuilder(block_end_eod);
+
+    if ( eod_ok ) {
+        params = { begin };
+        auto frozen = cg->llvmCall("hlt::iterator_bytes_is_frozen", params);
+        cg->llvmCreateCondBr(frozen, block_done, block_insufficient);
+    }
+
+    else
+        cg->llvmCreateBr(block_insufficient);
+
+    cg->popBuilder();
 
     cg->popBuilder();
 
@@ -115,7 +129,7 @@ static void _bytesUnpackRunLength(CodeGen* cg, const UnpackArgs& args, const Unp
     nargs.arg = len.first;
     nargs.begin = len.second;
 
-    _bytesUnpackFixed(cg, nargs, result, skip);
+    _bytesUnpackFixed(cg, nargs, result, skip, false);
 
     cg->llvmDtor(nargs.begin, iter_type, false, "unpack.bytes.runlength");
 }
@@ -216,7 +230,13 @@ void Unpacker::visit(type::Bytes* t)
     cases.push_back(CodeGen::SwitchCase(
         "bytes-fixed",
         cg()->llvmEnum("Hilti::Packed::BytesFixed"),
-        [&] (CodeGen* cg) -> llvm::Value* { _bytesUnpackFixed(cg, args, result, false); return nullptr; }
+        [&] (CodeGen* cg) -> llvm::Value* { _bytesUnpackFixed(cg, args, result, false, false); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "bytes-fixed-or-eod",
+        cg()->llvmEnum("Hilti::Packed::BytesFixedOrEod"),
+        [&] (CodeGen* cg) -> llvm::Value* { _bytesUnpackFixed(cg, args, result, false, true); return nullptr; }
     ));
 
     cases.push_back(CodeGen::SwitchCase(
@@ -233,8 +253,14 @@ void Unpacker::visit(type::Bytes* t)
 
     cases.push_back(CodeGen::SwitchCase(
         "bytes-fixed-skip",
-        cg()->llvmEnum("Hilti::Packed::SkipBytesRunLength"),
-        [&] (CodeGen* cg) -> llvm::Value* { _bytesUnpackFixed(cg, args, result, true); return nullptr; }
+        cg()->llvmEnum("Hilti::Packed::SkipBytesFixed"),
+        [&] (CodeGen* cg) -> llvm::Value* { _bytesUnpackFixed(cg, args, result, true, false); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "bytes-fixed-skip-or-eod",
+        cg()->llvmEnum("Hilti::Packed::SkipBytesFixed"),
+        [&] (CodeGen* cg) -> llvm::Value* { _bytesUnpackFixed(cg, args, result, true, true); return nullptr; }
     ));
 
     cases.push_back(CodeGen::SwitchCase(

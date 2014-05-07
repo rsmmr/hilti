@@ -168,11 +168,21 @@ uint16_t hlt_ntoh16(uint16_t v)
     return ntohs(v);
 }
 
+int8_t hlt_bcmp(void* p1, void* p2, int64_t n)
+{
+    return memcmp(p1, p2, n) == 0;
+}
+
 void hlt_abort()
 {
     __hlt_debug_print("hilti-mem", "hlt_abort() called");
     fprintf(stderr, "internal HILTI error: hlt_abort() called");
     abort();
+}
+
+hlt_hash hlt_hash_object(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return (*type->hash)(type, obj, excpt, ctx);
 }
 
 hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len, hlt_hash prev_hash)
@@ -248,7 +258,7 @@ void __hlt_pointer_stack_push_back(__hlt_pointer_stack* set, const void *ptr)
 
     if ( set->size >= set->capacity ) {
         size_t new_capacity = set->capacity * 2;
-        set->ptrs = hlt_realloc(set->ptrs, sizeof(void *) * new_capacity, sizeof(void *) * set->capacity);
+        set->ptrs = hlt_realloc_no_init(set->ptrs, sizeof(void *) * new_capacity); // , sizeof(void *) * set->capacity);
         set->capacity = new_capacity;
     }
 
@@ -277,7 +287,7 @@ void  __hlt_pointer_map_insert(__hlt_pointer_map* map, const void *key, const vo
 
     if ( map->size >= map->capacity ) {
         size_t new_capacity = map->capacity * 2;
-        map->ptrs = hlt_realloc(map->ptrs, sizeof(void *) * new_capacity * 2, sizeof(void *) * map->capacity);
+        map->ptrs = hlt_realloc_no_init(map->ptrs, sizeof(void *) * new_capacity * 2); // , sizeof(void *) * map->capacity);
         map->capacity = new_capacity;
     }
 

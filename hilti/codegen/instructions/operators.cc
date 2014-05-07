@@ -96,3 +96,12 @@ void StatementBuilder::visit(statement::instruction::operator_::Clone* i)
     auto result = cg()->builder()->CreateLoad(dst);
     cg()->llvmStore(i, result);
 }
+
+void StatementBuilder::visit(statement::instruction::operator_::Hash* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    auto result = cg()->llvmCall("hlt::hash_object", args);
+    cg()->llvmStore(i, result);
+}
+

@@ -83,6 +83,7 @@ using namespace hilti;
 %token <sval>  ATTR_PRIORITY  "'&priority'"
 %token <sval>  ATTR_SCOPE     "'&scope'"
 %token <sval>  ATTR_DTOR      "'&libhilti_dtor'"
+%token <sval>  ATTR_NOYIELD   "'&noyield'"
 
 %token         ADDR           "'addr'"
 %token         AFTER          "'after'"
@@ -155,8 +156,8 @@ using namespace hilti;
 %type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor opt_expr
 %type <exprs>            exprs opt_exprs
 %type <exprs2>           opt_tuple_elem_list tuple_elem_list tuple
-%type <hook_attribute>   hook_attr
-%type <hook_attributes>  opt_hook_attrs
+%type <function_attribute>   func_attr
+%type <function_attributes>  opt_func_attrs
 %type <id>               local_id scoped_id mnemonic label scope_field
 %type <map_element>      map_elem
 %type <map_elements>     map_elems opt_map_elems
@@ -519,8 +520,8 @@ export_       : EXPORT scoped_id eol              { driver.moduleBuilder()->expo
               | EXPORT base_type eol             { driver.moduleBuilder()->exportType($2); }
               ;
 
-function      : opt_init opt_cc result local_id '(' opt_param_list ')' opt_scope_ref
-                                                 {  auto func = driver.moduleBuilder()->pushFunction($4, $3, $6, $2, $8, true, loc(@$));
+function      : opt_init opt_cc result local_id '(' opt_param_list ')' opt_scope_ref opt_func_attrs
+                                                 {  auto func = driver.moduleBuilder()->pushFunction($4, $3, $6, $2, $8, $9, true, loc(@$));
                                                     if ( $1 ) func->function()->setInitFunction();
                                                  }
                 body opt_nl                      {  auto func = driver.moduleBuilder()->popFunction(); }
@@ -540,7 +541,7 @@ opt_init      : INIT                             { $$ = true; }
 opt_scope_ref : ATTR_SCOPE '=' local_id          { $$ = builder::type::byName($3, loc(@$)); }
               | /* empty */                      { $$ = nullptr; }
 
-hook          : HOOK result scoped_id '(' opt_param_list ')' opt_scope_ref opt_hook_attrs
+hook          : HOOK result scoped_id '(' opt_param_list ')' opt_scope_ref opt_func_attrs
                                                  {  driver.moduleBuilder()->pushHook($3, $2, $5, $7, $8, true, loc(@$)); }
 
                 body opt_nl                      {  driver.moduleBuilder()->popHook(); }
@@ -550,11 +551,12 @@ hook          : HOOK result scoped_id '(' opt_param_list ')' opt_scope_ref opt_h
                                                  {  driver.moduleBuilder()->declareHook($4, $3, $6, loc(@$)); }
               ;
 
-opt_hook_attrs : hook_attr opt_hook_attrs        { $$ = $2; $$.push_back($1); }
-               | /* empty */                     { $$ = builder::hook::attributes(); }
+opt_func_attrs : func_attr opt_func_attrs        { $$ = $2; $$.push_back($1); }
+               | /* empty */                     { $$ = builder::function::attributes(); }
 
-hook_attr     : ATTR_PRIORITY '=' CINTEGER       { $$ = builder::hook::attribute($1, $3); }
-              | ATTR_GROUP '=' CINTEGER          { $$ = builder::hook::attribute($1, $3); }
+func_attr     : ATTR_PRIORITY '=' CINTEGER       { $$ = builder::function::attribute($1, $3); }
+              | ATTR_GROUP '=' CINTEGER          { $$ = builder::function::attribute($1, $3); }
+              | ATTR_NOYIELD                     { $$ = builder::function::attribute($1, 0); }
 
 opt_cc        : CSTRING                          { if ( $1 == "HILTI" ) $$ = type::function::HILTI;
                                                    else if ( $1 == "C-HILTI" ) $$ = type::function::HILTI_C;

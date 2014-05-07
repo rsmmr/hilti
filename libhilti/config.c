@@ -20,6 +20,8 @@ hlt_config* __hlt_default_config()
     if ( ! dbg )
         dbg = "";
 
+    const char* profile = getenv("HILTI_PROFILE");
+
     // Set defaults.
     cfg->num_workers = 2;
     cfg->time_idle = 0.1;
@@ -29,7 +31,7 @@ hlt_config* __hlt_default_config()
     cfg->fiber_max_pool_size = 1000;
     cfg->debug_out = "hlt-debug.log";
     cfg->debug_streams = dbg;
-    cfg->profiling = 0;
+    cfg->profiling = (profile && *profile);
     cfg->vid_schedule_min = 1;
     cfg->vid_schedule_max = 101;
     cfg->core_affinity = "DEFAULT";

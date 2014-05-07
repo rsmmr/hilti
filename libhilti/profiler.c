@@ -519,7 +519,7 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
 
         if ( ! hlt_enum_equal(style, p->style, excpt, ctx) ||
              param != p->param ||
-             tmgr != p->tmgr ) {
+             (tmgr && tmgr != p->tmgr) ) {
             hlt_set_exception(excpt, &hlt_exception_profiler_mismatch, 0);
             return;
         }

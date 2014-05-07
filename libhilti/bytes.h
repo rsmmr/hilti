@@ -40,21 +40,18 @@
 
 typedef int64_t hlt_bytes_size;     ///< Size of a ~~hlt_bytes instance, and also used for offsets.
 typedef struct __hlt_bytes hlt_bytes; ///< Type for representing a HILTI ~~bytes object.
-typedef struct __hlt_bytes_chunk __hlt_bytes_chunk;
 
 /// A position with a ~~hlt_bytes instance.
 typedef struct hlt_iterator_bytes {
-    __hlt_bytes_chunk *chunk;  // Current chunk.
-    int8_t* cur;               // Current position in chunk.
+    hlt_bytes* bytes;  // Current *chunk*. Ref counted.
+    int8_t* cur;       // Current position in chunk.
 
-    // Note: Initially, there was a 3rd pointer, end, pointing to chunk->end
-    // to allow for quicker checks whether the end of the block has been
-    // removed. However, LLVM has trouble passing struct with three pointers
-    // by value are return value, on Darwin at least. However, even if it
-    // could, it seems that the Darwin ABI specifies only two registers for
-    // return values and so a larger struct would require memory allocation;
-    // that's probably not worth the gain we get by having chunk->end
-    // available directly.
+    // Note: At some point there was a 3rd pointer.  However, LLVM has
+    // trouble passing struct with three pointers by value as return value,
+    // on Darwin at least. However, even if it could, it seems that the
+    // Darwin ABI specifies only two registers for return values and so a
+    // larger struct would require memory allocation; that's probably not
+    // worth the gain we get by having chunk->end available directly.
 } hlt_iterator_bytes;
 
 /// A pair of bytes instances.
@@ -102,7 +99,7 @@ extern hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_siz
 /// Returns: The number of bytes stored in *b*.
 ///
 /// Note: Calculating the length can potentially be expensive; it's not O(1).
-extern hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes_size hlt_bytes_len(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Tests whether a bytes object is empty.
 ///
@@ -114,7 +111,7 @@ extern hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt, h
 /// ~~hlt_bytes_len() to zero.
 ///
 /// Returns: True if the object is empty.
-extern int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_empty(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Compares the content of two bytes objects.
 ///
@@ -125,7 +122,7 @@ extern int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception** excpt, hlt_exe
 ///
 /// Returns: 0 if the two are equal; -1 if *b1* is lexicographically smaller
 /// than *b2*, and 1 if *b2* is lexicographically smaller than *b1*.
-extern int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_cmp(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Appends the contents of a bytes object to another. The two objects must not be the same.
 ///
@@ -135,10 +132,10 @@ extern int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_except
 ///
 /// Raises: ValueError - If the two objects are the same, or *b* has been
 /// frozen.
-extern void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
-extern hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Appends a sequence of raw bytes in memory to a bytes object. After
 /// appending, the memory by the raw bytes must not be modified or freed as
@@ -246,7 +243,7 @@ extern hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execut
 /// Returns: A pointer to continuous memory containing the bytes.  Passed
 /// ownership, the memory must be freed with hlt_free(). Only
 /// ``hlt_bytes_len(b)`` number of bytes are valid.
-extern int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t* hlt_bytes_to_raw(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts a bytes object into a raw C buffer provided by the user.
 ///
@@ -262,7 +259,7 @@ extern int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt, hlt_e
 /// Returns: A pointer to one beyond the last byte written, or null if the
 /// buffer did not have sufficient size (in which case it will still have
 /// been filled upto its mac.).
-extern int8_t* hlt_bytes_to_raw_buffer(const hlt_bytes* b, int8_t* buffer, hlt_bytes_size buffer_size, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t* hlt_bytes_to_raw_buffer(hlt_bytes* b, int8_t* buffer, hlt_bytes_size buffer_size, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns one byte from a bytes object.
 ///
@@ -300,7 +297,7 @@ extern int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_byte
 /// Note: Determing the length can be expensive; it's not O(1).
 ///
 /// Raises: ValueError - If *offset* is found to be out of range.
-extern hlt_iterator_bytes hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size offset, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size offset, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns a position representing the first element of a bytes object.
 ///
@@ -308,7 +305,7 @@ extern hlt_iterator_bytes hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size of
 /// \hlt_c
 ///
 /// Returns: The position.
-extern hlt_iterator_bytes hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_begin(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns a position representing the end of any bytes object.
 ///
@@ -316,7 +313,7 @@ extern hlt_iterator_bytes hlt_bytes_begin(const hlt_bytes* b, hlt_exception** ex
 /// \hlt_c
 ///
 /// Returns: The position.
-extern hlt_iterator_bytes hlt_bytes_end(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_end(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns a position representing the end of *any* bytes object.
 ///
@@ -349,7 +346,7 @@ extern void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt,
 /// \hlt_c
 ///
 /// Returns: 1 if frozen, 0 otherwise..
-extern int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_is_frozen(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Trims a bytes object at the beginning by removing data up to a given
 /// position. The iterator will remain valid afterwards and still point to the
@@ -447,7 +444,7 @@ struct hlt_bytes_block {
     const int8_t* start; ///< Pointer to first data byte of block
     const int8_t* end;   ///< Pointer to one beyond last data byte of block.
 
-    __hlt_bytes_chunk* next; // Pointer to next chunk.
+    hlt_bytes* next;     // Pointer to next chunk.
     };
 
 typedef struct hlt_bytes_block hlt_bytes_block;

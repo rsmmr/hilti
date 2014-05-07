@@ -875,7 +875,7 @@ llvm::Constant* CodeGen::llvmRtti(shared_ptr<hilti::Type> type)
 
     llvm::Constant* tival = _type_builder->llvmRtti(type);
     ti->setInitializer(tival);
-    ti->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+    ti->setLinkage(llvm::GlobalValue::WeakODRLinkage);
 
     return casted;
 }
@@ -2214,21 +2214,35 @@ llvm::Value* CodeGen::llvmClearCurrentFiber()
 #endif
 
 
-void CodeGen::llvmCheckCException(llvm::Value* excpt)
+void CodeGen::llvmCheckCException(llvm::Value* excpt, bool reraise)
 {
     if ( _in_build_exit )
         // Can't handle exeptions in exit block.
         return;
 
     auto eval = builder()->CreateLoad(excpt);
-    auto is_null = llvmCreateIsNull(eval);
+    auto is_null = llvmExpect(llvmCreateIsNull(eval), llvmConstInt(1, 1));
     auto cont = newBuilder("no-excpt");
     auto raise = newBuilder("excpt-c");
 
     llvmCreateCondBr(is_null, cont, raise);
 
     pushBuilder(raise);
-    llvmRaiseException(eval, true);
+
+    if ( reraise )
+        llvmRaiseException(eval, true);
+
+    else {
+        value_list args;
+        args.push_back(llvmExecutionContext());
+        args.push_back(builder()->CreateLoad(excpt));
+        llvmCallC("__hlt_context_set_exception", args, false, false);
+
+        auto ty = builder::reference::type(builder::exception::typeAny());
+        llvmDtor(excpt, ty, true, "llvmDoCall/excpt");
+        llvmCreateBr(cont);
+    }
+
     popBuilder();
 
     pushBuilder(cont); // leave on stack.
@@ -2250,7 +2264,7 @@ void CodeGen::llvmCheckException()
     llvmBuildInstructionCleanup(false);
 
     auto excpt = llvmCurrentException();
-    auto is_null = llvmCreateIsNull(excpt);
+    auto is_null = llvmExpect(llvmCreateIsNull(excpt), llvmConstInt(1, 1));
     auto cont = newBuilder("no-excpt");
     auto abort = newBuilder("excpt-abort");
 
@@ -2305,7 +2319,7 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
     if ( ! known_exception ) {
         catch_ = newBuilder("excpt-catch");
         current = llvmCurrentException();
-        auto is_null = llvmCreateIsNull(current);
+        auto is_null = llvmExpect(llvmCreateIsNull(current), llvmConstInt(1, 1));
         llvmCreateCondBr(is_null, cont, catch_);
         pushBuilder(catch_);
     }
@@ -2476,10 +2490,8 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     auto rf1 = lookupCachedValue("c-wrappers", "entry-" + name);
     auto rf2 = lookupCachedValue("c-wrappers", "resume-" + name);
 
-    if ( rf1 ) {
-        assert(rf2);
+    if ( rf1 )
         return std::make_pair(rf1, rf2);
-    }
 
     auto ftype = func->type();
     auto rtype = ftype->result()->type();
@@ -2509,9 +2521,19 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     for ( auto a : ftype->parameters() )
         params.push_back(builder::codegen::create(a->type(), arg++));
 
-    llvmDebugPrint("hilti-flow", ::util::fmt("entering entry fiber for %s", func->id()->pathAsString()));
-    auto result = llvmCallInNewFiber(llvmFunction(func), ftype, params);
-    llvmDebugPrint("hilti-flow", ::util::fmt("left entry fiber for %s", func->id()->pathAsString()));
+    llvm::Value* result = 0;
+
+    if ( func->noYield() ) {
+        llvmDebugPrint("hilti-flow", ::util::fmt("entering entry wrapper for %s", func->id()->pathAsString()));
+        result = llvmCall(func, params, false);
+        llvmDebugPrint("hilti-flow", ::util::fmt("left entry wrapper for %s", func->id()->pathAsString()));
+    }
+
+    else {
+        llvmDebugPrint("hilti-flow", ::util::fmt("entering entry fiber for %s", func->id()->pathAsString()));
+        result = llvmCallInNewFiber(llvmFunction(func), ftype, params);
+        llvmDebugPrint("hilti-flow", ::util::fmt("left entry fiber for %s", func->id()->pathAsString()));
+    }
 
     // Copy exception over.
     auto ctx_excpt = llvmCurrentException();
@@ -2524,6 +2546,9 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
         llvmReturn(rtype, result, true);
 
     popFunction();
+
+    if ( func->noYield() )
+        return std::make_pair(rf1, nullptr);
 
     // Build the resume function.
 
@@ -3230,22 +3255,9 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
     }
 
     switch ( cc ) {
-     case type::function::HILTI_C: {
-         if ( excpt_check )
-             llvmCheckCException(excpt);
-
-         else {
-             value_list args;
-             args.push_back(llvmExecutionContext());
-             args.push_back(builder()->CreateLoad(excpt));
-             llvmCallC("__hlt_context_set_exception", args, false, false);
-
-             auto ty = builder::reference::type(builder::exception::typeAny());
-             llvmDtor(excpt, ty, true, "llvmDoCall/excpt");
-         }
-
+     case type::function::HILTI_C:
+         llvmCheckCException(excpt, excpt_check);
          break;
-     }
 
      default:
         if ( excpt_check )
@@ -3405,12 +3417,18 @@ void CodeGen::llvmDebugPrint(const string& stream, const string& msg)
 
 void CodeGen::llvmDebugPushIndent()
 {
+    if ( ! options().debug )
+        return;
+
     value_list args = { llvmExecutionContext() };
     llvmCallC("__hlt_debug_push_indent", args, false, false);
 }
 
 void CodeGen::llvmDebugPopIndent()
 {
+    if ( ! options().debug )
+        return;
+
     value_list args = { llvmExecutionContext() };
     llvmCallC("__hlt_debug_pop_indent", args, false, false);
 }
@@ -3986,6 +4004,25 @@ void CodeGen::llvmMemcpy(llvm::Value *dst, llvm::Value *src, llvm::Value *n)
     std::vector<llvm::Type *> tys = { llvmTypePtr(), llvmTypePtr(), llvmTypeInt(64) };
 
     llvmCallIntrinsic(llvm::Intrinsic::memcpy, tys, args);
+}
+
+llvm::Value* CodeGen::llvmMemEqual(llvm::Value* p1, llvm::Value* p2, llvm::Value *n)
+{
+    p1 = builder()->CreateBitCast(p1, llvmTypePtr());
+    p2 = builder()->CreateBitCast(p2, llvmTypePtr());
+    n = builder()->CreateZExt(n, llvmTypeInt(64));
+
+    CodeGen::value_list args = { p1, p2, n };
+    auto result = llvmCallC("hlt_bcmp", args, false, false);
+    return builder()->CreateTrunc(result, llvmTypeInt(1));
+}
+
+
+llvm::Value* CodeGen::llvmExpect(llvm::Value* v, llvm::Value* e)
+{
+    CodeGen::value_list args = { v, e };
+    std::vector<llvm::Type *> tys = { v->getType() };
+    return llvmCallIntrinsic(llvm::Intrinsic::expect, tys, args);
 }
 
 void CodeGen::llvmInstruction(shared_ptr<Instruction> instr, shared_ptr<Expression> op1, shared_ptr<Expression> op2, shared_ptr<Expression> op3, const Location& l)

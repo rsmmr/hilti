@@ -30,7 +30,7 @@ void StatementBuilder::llvmStatement(shared_ptr<Statement> stmt, bool cleanup)
             auto name = instr->instruction()->id()->name();
             if ( ! ::util::startsWith(name, "profiler.") &&
                  ! ::util::startsWith(name, "call") )
-                // tag = ::util::fmt("instr/%s#%s", name, string(stmt->location()));
+                // tag = ::util::fmt("instr/%s#%p", name, stmt.get());
                 tag = ::util::fmt("instr/%s", name);
         }
     }
@@ -142,7 +142,9 @@ void StatementBuilder::visit(statement::Block* b)
                 c +=  + ": " + comment.str();
 
                 // Send it also to the hilti-trace debug stream.
-                cg()->llvmDebugPrint("hilti-trace", c);
+                auto ins = ast::tryCast<statement::instruction::Resolved>(s);
+                if ( ins && ! ins->instruction()->hideInDebugTrace() )
+                    cg()->llvmDebugPrint("hilti-trace", c);
             }
         }
 

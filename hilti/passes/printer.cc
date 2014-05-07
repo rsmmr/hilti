@@ -257,6 +257,8 @@ static void printInstruction(Printer& p, statement::Instruction* i)
     if ( i->internal() && ! p.includeFlow() )
         return;
 
+    //  p << util::fmt("# %p\n", i);
+
     for ( auto c : i->comments() ) {
         if ( c.size() )
             p << "# " << c << endl;

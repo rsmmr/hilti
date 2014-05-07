@@ -205,3 +205,6 @@ declare void @__hlt_clone(i8*, %hlt.type_info*, i8*, i8*, %hlt.exception**, %hlt
 
 ;;; libc
 declare double @pow(double, double)
+
+;;; Misc
+declare i1 @hlt_bcmp(i8*, i8*, i64)
