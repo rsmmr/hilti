@@ -54,10 +54,6 @@ void hlt_init()
     __hlt_global_state_init(1);
 
     hlt_execution_context* ctx = hlt_global_execution_context();
-    __hlt_modules_init(ctx);
-
-    if ( ctx->excpt )
-        __hlt_exception_print_uncaught_abort(ctx->excpt, ctx);
 
     atexit(__hlt_done);
 }

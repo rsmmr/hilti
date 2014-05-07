@@ -46,6 +46,10 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
     ctx->vid = vid;
 
     __hlt_globals_init(ctx);
+    __hlt_modules_init(ctx);
+
+    if ( ctx->excpt )
+        __hlt_exception_print_uncaught_abort(ctx->excpt, ctx);
 
     ctx->excpt = 0;
     ctx->fiber = 0;
