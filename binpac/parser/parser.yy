@@ -126,6 +126,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         NET
 %token         ON
 %token         PORT
+%token         PRIORITY
 %token         REGEXP
 %token         SET
 %token         SINK
@@ -213,6 +214,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <map_elements>     map_elems opt_map_elems
 %type <unit_ctor_item>   unit_ctor_item
 %type <unit_ctor_items>  unit_ctor_items opt_unit_ctor_items
+%type <ival>             opt_priority
 %%
 
 %token PREC_HIGH;
@@ -590,8 +592,9 @@ opt_unit_vector_len
 unit_hooks    : unit_hook unit_hooks             { $$ = $2; $2.push_front($1); }
               | unit_hook                        { $$ = { $1 }; }
 
-unit_hook     : opt_debug opt_foreach            { driver.pushScope(std::make_shared<Scope>(driver.module()->body()->scope())); }
-                block                            { $$ = std::make_shared<Hook>($4, 0, $1, $2, loc(@$)); driver.popScope(); }
+unit_hook     : opt_debug opt_priority opt_foreach
+                                                 { driver.pushScope(std::make_shared<Scope>(driver.module()->body()->scope())); }
+                block                            { $$ = std::make_shared<Hook>($5, $2, $1, $3, loc(@$)); driver.popScope(); }
 
 opt_debug     : PROPERTY                         { $$ = ($1 == "%debug");
                                                    if ( ! $$ ) error(@$, "unexpected property, only %debug permitted");
@@ -599,6 +602,10 @@ opt_debug     : PROPERTY                         { $$ = ($1 == "%debug");
 
               | /* empty */                      { $$ = false; }
 
+
+opt_priority  : PRIORITY '=' CINTEGER            { $$ = $3; };
+
+              | /* empty */                      { $$ = 0; }
 
 opt_foreach   : FOREACH                          { $$ = true; }
               | /* empty */                      { $$ = false; }

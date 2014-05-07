@@ -111,6 +111,7 @@ new                   return token::NEW;
 on                    return token::ON;
 port                  return token::PORT;
 print                 return token::PRINT;
+priority              return token::PRIORITY;
 property              return token::PROPERTY;
 regexp                return token::REGEXP;
 return                return token::RETURN;

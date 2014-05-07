@@ -6,6 +6,7 @@
 #include "expression.h"
 #include "statement.h"
 #include "scope.h"
+#include "grammar.h"
 #include "passes/printer.h"
 
 using namespace binpac;
@@ -1761,6 +1762,12 @@ bool Unit::buffering() const
 void Unit::enableBuffering()
 {
     _buffering = true;
+}
+
+bool Unit::trackLookAhead() const
+{
+    assert(_grammar);
+    return _grammar->needsLookAhead();
 }
 
 bool Unit::exported() const

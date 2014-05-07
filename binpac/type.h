@@ -1774,6 +1774,11 @@ public:
     /// for internal use.
     void enableBuffering();
 
+    /// Returns true if parsing this unit type requires to track a look-ahead
+    /// symbol. This is initially always false, but it may be enabled if the
+    /// look-ahead is determined to be needed.
+    bool trackLookAhead() const;
+
     /// Returns true if this unit type has been exported. This is initially
     /// always false, but the normalizer pass will set it as neccessary based
     /// on the operations that are performed with the type.

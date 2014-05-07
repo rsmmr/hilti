@@ -35,6 +35,11 @@ const Location& Grammar::location() const
     return _location;
 }
 
+bool Grammar::needsLookAhead() const
+{
+    return _needs_look_ahead;
+}
+
 const Grammar::parameter_list& Grammar::parameters() const
 {
     return _params;
@@ -195,6 +200,12 @@ void Grammar::_addProduction(shared_ptr<Production> p)
             for ( auto rhs : rhss )
                 _addProduction(rhs);
     }
+
+    if ( std::dynamic_pointer_cast<production::LookAhead>(p) )
+        _needs_look_ahead = true;
+
+    if ( std::dynamic_pointer_cast<production::Literal>(p) )
+        _needs_look_ahead = true;
 }
 
 void Grammar::_computeClosure(shared_ptr<Production> root, std::set<string>* used)
