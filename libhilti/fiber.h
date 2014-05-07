@@ -3,15 +3,13 @@
 #define LIBHILTI_FIBER_H
 
 #include <stdint.h>
+#include "types.h"
 
 struct __hlt_execution_context;
 
 /// A fiber instance. This essentially capture the current execution state
 /// and allow resumption at a later time.
 typedef struct __hlt_fiber hlt_fiber;
-
-/// An internal type for managing a pool of available fibers.
-typedef struct __hlt_fiber_pool __hlt_fiber_pool;
 
 typedef void (*hlt_fiber_func)(hlt_fiber* fiber, void* p);
 
@@ -20,19 +18,23 @@ typedef void (*hlt_fiber_func)(hlt_fiber* fiber, void* p);
 /// func: The function to run inside the fiber. It receives two arguments:
 /// the fiber and the pointer passed to hlt_fiber_create.
 ///
-/// ctx: The context the fiber will run with.
+/// fctx: The context the fiber will run with.
 ///
 /// p: A pointer that will be passed to the fiber's function.
 ///
+/// ctx: The current context.
+///
 /// Returns: The new fiber.
-extern hlt_fiber* hlt_fiber_create(hlt_fiber_func func, struct __hlt_execution_context* ctx, void* p);
+extern hlt_fiber* hlt_fiber_create(hlt_fiber_func func, struct __hlt_execution_context* fctx, void* p, struct __hlt_execution_context* ctx);
 
 /// Destroys a fiber. This release the stack, but note that it doesn't free
 /// any pointers the stack may still hold. That must already have been done
 /// to avoid leaks.
 ///
 /// fiber: The fiber to destroy.
-extern void hlt_fiber_delete(hlt_fiber* fiber);
+///
+/// ctx: The current execution context.
+extern void hlt_fiber_delete(hlt_fiber* fiber, hlt_execution_context* ctx);
 
 /// Starts (or resumes) processing inside a fiber. If the fiber is freshly
 /// created with hlt_fiber_create, processing will be kicked off; if it has
@@ -43,7 +45,7 @@ extern void hlt_fiber_delete(hlt_fiber* fiber);
 /// fiber: The fiber
 ///
 /// Returns: 1: fiber has finished. 0: fiber has yielded.
-extern int8_t hlt_fiber_start(hlt_fiber* fiber);
+extern int8_t hlt_fiber_start(hlt_fiber* fiber, hlt_execution_context* ctx);
 
 /// Exits processing regularly from within a fiber, like a top-level return
 /// statement.
@@ -85,5 +87,9 @@ extern __hlt_fiber_pool* __hlt_fiber_pool_new();
 
 /// Internal function to delete a pool of available fibers.
 extern void __hlt_fiber_pool_delete(__hlt_fiber_pool* pool);
+
+void __hlt_fiber_init();
+void __hlt_files_done();
+
 
 #endif

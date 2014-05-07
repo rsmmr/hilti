@@ -24,7 +24,7 @@ void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
     GC_DTOR(ctx->excpt, hlt_exception);
 
     if ( ctx->fiber )
-        hlt_fiber_delete(ctx->fiber);
+        hlt_fiber_delete(ctx->fiber, ctx);
 
     if ( ctx->pstate )
         __hlt_profiler_state_delete(ctx->pstate);

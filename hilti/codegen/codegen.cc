@@ -2688,7 +2688,7 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
     auto funcp = builder()->CreateBitCast(func, llvmTypePtr());
     auto svalp = builder()->CreateBitCast(tmp, llvmTypePtr());
 
-    value_list cargs { funcp, llvmExecutionContext(), svalp };
+    value_list cargs { funcp, llvmExecutionContext(), svalp, llvmExecutionContext() };
     auto fiber = llvmCallC("hlt_fiber_create", cargs, false, false);
 
     llvmProfilerStop("fiber/create");
@@ -2710,8 +2710,8 @@ llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
         llvmCallC("hlt_fiber_set_result_ptr", { fiber, rptr_casted }, false, false);
     }
 
-    value_list cargs { fiber };
-    auto result = llvmCallC("hlt_fiber_start", { fiber }, false, false);
+    value_list cargs { fiber, llvmExecutionContext() };
+    auto result = llvmCallC("hlt_fiber_start", cargs, false, false);
 
     auto is_null = llvmCreateIsNull(result);
     auto done = newBuilder("done");

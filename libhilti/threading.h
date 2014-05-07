@@ -76,6 +76,7 @@ typedef struct __hlt_worker_thread {
     hlt_execution_context** ctxs; // Execution contexts indexed by virtual thread id.
     hlt_vthread_id max_vid;       // Largest vid allocated space for in ctxs.
     hlt_time global_time;         // Last global time all virtual threads have been advanced to.
+    __hlt_fiber_pool* fiber_pool; // The pool of available fiber objects for this worker.
 
     // This can be *read* from different threads without further locking.
     int id;                       // ID of this worker thread in the range 1..*num_workers*.
