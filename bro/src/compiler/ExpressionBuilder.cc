@@ -1,5 +1,6 @@
 
 #include <Expr.h>
+#include "consts.bif.h"
 #undef List
 
 #include "ASTDumper.h"
@@ -80,6 +81,23 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::NotSupported(const ::Bin
 
 shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, const ::BroType* target_type)
 	{
+#if 0
+	// Add expression source to "bro" debugging stream. (Noisy)
+	if ( BifConst::Hilti::debug )
+		{
+		ODesc d;
+		d.SetShort(1);
+		expr->Describe(&d);
+		auto s = ::util::strreplace(d.Description(), "\n", " ");
+
+		if ( s.size() )
+				{
+				Builder()->addComment(s);
+				Builder()->addDebugMsg("bro", string("* " + s));
+				}
+		}
+#endif
+
 	shared_ptr<::hilti::Expression> e = nullptr;
 
 	target_types.push_back(target_type);
@@ -645,7 +663,7 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)
 		Builder()->addInstruction(pos, ::hilti::instruction::regexp::FindBytes, op1, begin);
 
 		auto zero = ::hilti::builder::integer::create(0);
-		Builder()->addInstruction(result, ::hilti::instruction::integer::Sgeq, pos, zero);
+		Builder()->addInstruction(result, ::hilti::instruction::integer::Sgt, pos, zero);
 
 		return result;
 		}

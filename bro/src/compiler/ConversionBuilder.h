@@ -49,10 +49,12 @@ public:
 	 * at runtime.
 	 *
 	 * @param val The value to convert.
+     *
+     * @param constant Should be true if it's guaramteed that \a val refers to a constant Bro value.
 	 *
 	 * @return An expression referencing the converted value.
 	 */
-	shared_ptr<::hilti::Expression> ConvertBroToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type);
+	shared_ptr<::hilti::Expression> ConvertBroToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type, bool constant);
 
 	/**
 	 * Generates code to convert a HILTI expression into a corresponding
@@ -106,6 +108,16 @@ public:
 	 * XXX
 	 */
 	void MapType(const ::BroType* from, const ::BroType* to);
+
+	/**
+	 * XXX
+	 */
+	void BroRef(std::shared_ptr<::hilti::Expression> val);
+
+	/**
+	 * XXX
+	 */
+	void BroUnref(std::shared_ptr<::hilti::Expression> val);
 
 	/**
 	 * XXX
@@ -189,6 +201,7 @@ private:
 	typedef std::map<const ::BroType*, std::pair<string, build_create_type_callback>> type_builder_map;
 	typedef std::list<const ::BroType*> type_builder_list;
 
+    bool _constant;
 	type_builder_map postponed_types;
 	shared_ptr<::binpac::Type> _pac_type;
 };

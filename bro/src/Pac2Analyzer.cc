@@ -14,6 +14,7 @@ extern "C" {
 #include "Plugin.h"
 #include "Manager.h"
 #include "LocalReporter.h"
+#include "profile.h"
 
 using namespace bro::hilti;
 using namespace binpac;
@@ -126,7 +127,9 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 		if ( eod )
 			hlt_bytes_freeze(endp->data, 1, &excpt, ctx);
 
+        profile_update(PROFILE_HILTI_LAND, PROFILE_START);
 		void* pobj = (*endp->parser->parse_func)(endp->data, &endp->cookie, &excpt, ctx);
+        profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
 		GC_DTOR_GENERIC(&pobj, endp->parser->type_info);
 		}
 
@@ -143,7 +146,9 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 		if ( eod )
 			hlt_bytes_freeze(endp->data, 1, &excpt, ctx);
 
+        profile_update(PROFILE_HILTI_LAND, PROFILE_START);
 		void* pobj = (*endp->parser->resume_func)(endp->resume, &excpt, ctx);
+        profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
 		GC_DTOR_GENERIC(&pobj, endp->parser->type_info);
 		endp->resume = 0;
 		}
@@ -232,6 +237,9 @@ void Pac2_TCP_Analyzer::Done()
 	{
 	TCP_ApplicationAnalyzer::Done();
 	Pac2_Analyzer::Done();
+
+	EndOfData(true);
+	EndOfData(false);
 	}
 
 void Pac2_TCP_Analyzer::DeliverStream(int len, const u_char* data, bool is_orig)
@@ -273,11 +281,33 @@ void Pac2_TCP_Analyzer::DeliverStream(int len, const u_char* data, bool is_orig)
 void Pac2_TCP_Analyzer::Undelivered(int seq, int len, bool is_orig)
 	{
 	TCP_ApplicationAnalyzer::Undelivered(seq, len, is_orig);
+
+	// This mimics the (modified) Bro HTTP analyzer.
+	// Otherwise stop parsing the connection
+	if ( is_orig )
+		{
+		debug_msg(this, "undelivered data, skipping further originator payload", 0, 0, is_orig);
+		skip_orig = 1;
+		}
+	else
+		{
+		debug_msg(this, "undelivered data, skipping further originator payload", 0, 0, is_orig);
+		skip_resp = 1;
+		}
 	}
 
 void Pac2_TCP_Analyzer::EndOfData(bool is_orig)
 	{
 	TCP_ApplicationAnalyzer::EndOfData(is_orig);
+
+	if ( is_orig && skip_orig )
+		return;
+
+	if ( (! is_orig) && skip_resp )
+		return;
+
+	if ( TCP() && TCP()->IsPartial() )
+		return;
 
 	FeedChunk(0, (const u_char*)"", is_orig, true);
 	}
@@ -291,29 +321,23 @@ void Pac2_TCP_Analyzer::FlipRoles()
 void Pac2_TCP_Analyzer::EndpointEOF(bool is_orig)
 	{
 	TCP_ApplicationAnalyzer::EndpointEOF(is_orig);
-	FeedChunk(0, (const u_char*)"", is_orig, true);
+	//FeedChunk(0, (const u_char*)"", is_orig, true);
 	}
 
 void Pac2_TCP_Analyzer::ConnectionClosed(analyzer::tcp::TCP_Endpoint* endpoint,
 					 analyzer::tcp::TCP_Endpoint* peer, int gen_event)
 	{
 	TCP_ApplicationAnalyzer::ConnectionClosed(endpoint, peer, gen_event);
-	FeedChunk(0, (const u_char*)"", true, true);
-	FeedChunk(0, (const u_char*)"", false, true);
 	}
 
 void Pac2_TCP_Analyzer::ConnectionFinished(int half_finished)
 	{
 	TCP_ApplicationAnalyzer::ConnectionFinished(half_finished);
-	FeedChunk(0, (const u_char*)"", true, true);
-	FeedChunk(0, (const u_char*)"", false, true);
 	}
 
 void Pac2_TCP_Analyzer::ConnectionReset()
 	{
 	TCP_ApplicationAnalyzer::ConnectionReset();
-	FeedChunk(0, (const u_char*)"", true, true);
-	FeedChunk(0, (const u_char*)"", false, true);
 	}
 
 void Pac2_TCP_Analyzer::PacketWithRST()

@@ -23,6 +23,7 @@ extern "C" {
 #include <net_util.h>
 #include <analyzer/Analyzer.h>
 #include <analyzer/Manager.h>
+#include "profile.h"
 
 #undef List
 
@@ -157,6 +158,7 @@ struct bro::hilti::Pac2EventInfo
 	string condition;	// Condition that must be true for the event to trigger.
 	std::list<string> exprs;	// The argument expressions.
 	string hook;		// The name of the hook triggering the event.
+	int priority;           // Event/hook priority.
 	string location;	// Location string where event is defined.
 
 	// Computed information.
@@ -199,6 +201,7 @@ struct Manager::PIMPL
 	bool save_llvm;		// Saves the final linked LLVM code into a file, set from BifConst::Hilti::save_llvm.
 	bool pac2_to_compiler;  // If compiling scripts, raise event hooks from BinPAC++ code directly.
 	unsigned int profile;	// True to enable run-time profiling.
+	unsigned int hilti_workers;	// Number of HILTI worker threads to spawn.
 
 	std::list<string> import_paths;
 	Pac2AST* pac2_ast;
@@ -233,6 +236,9 @@ struct Manager::PIMPL
 
 	// The execution engine used for JITing llvm_linked_module.
 	llvm::ExecutionEngine* llvm_execution_engine;
+
+	// Pointers to compiled script functions indxed by their unique ID.
+	std::vector<void *> native_functions;
 	};
 
 Manager::Manager()
@@ -324,6 +330,7 @@ bool Manager::InitPostScripts()
 	pimpl->save_hilti = BifConst::Hilti::save_hilti;
 	pimpl->save_llvm = BifConst::Hilti::save_llvm;
 	pimpl->pac2_to_compiler = BifConst::Hilti::pac2_to_compiler;
+	pimpl->hilti_workers = BifConst::Hilti::hilti_workers;
 
 	pimpl->hilti_options->jit = true;
 	pimpl->hilti_options->debug = BifConst::Hilti::debug;
@@ -671,10 +678,18 @@ bool Manager::Compile()
 			continue;
 
 		// Compile the *.pac2 module itself.
-		auto llvm_module = m->context->compile(m->module);
+        shared_ptr<::hilti::Module> hilti_module_out;
+		auto llvm_module = m->context->compile(m->module, &hilti_module_out);
 
 		if ( ! llvm_module )
 			return false;
+
+		if ( pimpl->save_hilti && hilti_module_out )
+			{
+			ofstream out(::util::fmt("bro.pac2.%s.hlt", hilti_module_out->id()->name()));
+			pimpl->hilti_context->print(hilti_module_out, out);
+			out.close();
+			}
 
 		pimpl->llvm_modules.push_back(llvm_module);
 		m->llvm_modules.push_back(llvm_module);
@@ -933,6 +948,7 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 	hlt_config cfg = *hlt_config_get();
 	cfg.fiber_stack_size = 5000 * 1024;
 	cfg.profiling = pimpl->profile;
+	cfg.num_workers = pimpl->hilti_workers;
 	hlt_config_set(&cfg);
 
 	hlt_init_jit(hilti_context, llvm_module, ee);
@@ -941,8 +957,12 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Retrieving binpac_parsers() function");
 
+	profile_update(PROFILE_JIT_LAND, PROFILE_START);
+
 	typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
 	auto binpac_parsers = (binpac_parsers_func)hilti_context->nativeFunction(llvm_module, ee, "binpac_parsers");
+
+	profile_update(PROFILE_JIT_LAND, PROFILE_STOP);
 
 	if ( ! binpac_parsers )
 		{
@@ -959,6 +979,34 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 
 	// Record them with our analyzers.
 	ExtractParsers(parsers);
+
+	// Cache the native functions for compiled script code.
+	if ( pimpl->compile_scripts )
+		{
+		PLUGIN_DBG_LOG(HiltiPlugin, "Caching native script functions");
+		profile_update(PROFILE_JIT_LAND, PROFILE_START);
+
+		for ( auto i : pimpl->compiler->HiltiFunctionSymbolMap() )
+			{
+			auto symbol = i.first;
+			auto func = i.second;
+
+			auto native = pimpl->hilti_context->nativeFunction(pimpl->llvm_linked_module,
+									 pimpl->llvm_execution_engine,
+									 symbol);
+
+			auto id = func->GetUniqueFuncID();
+
+			if ( pimpl->native_functions.size() <= id )
+				pimpl->native_functions.resize(id + 1);
+
+			pimpl->native_functions[id] = native;
+
+			PLUGIN_DBG_LOG(HiltiPlugin, "    %s -> %s at %p", func->Name(), symbol.c_str(), native);
+			}
+
+		profile_update(PROFILE_JIT_LAND, PROFILE_STOP);
+		}
 
 	// Done, print out debug summary if requested.
 
@@ -1170,6 +1218,34 @@ static bool extract_path(const string& chunk, size_t* i, string* id)
 
 error:
 	reporter::error(::util::fmt("expected path"));
+	return false;
+	}
+
+static bool extract_int(const string& chunk, size_t* i, int* integer)
+	{
+	string sint;
+
+	eat_spaces(chunk, i);
+
+	size_t j = *i;
+
+	if ( j < chunk.size() && (chunk[j] == '-' || chunk[j] == '+') )
+		++j;
+
+	while ( j < chunk.size() && isdigit(chunk[j]) )
+		++j;
+
+	if ( *i == j )
+		goto error;
+
+	sint = chunk.substr(*i, j - *i);
+	*i = j;
+	::util::atoi_n(sint.begin(), sint.end(), 10, integer);
+
+	return true;
+
+error:
+	reporter::error(::util::fmt("expected integer"));
 	return false;
 	}
 
@@ -1738,6 +1814,10 @@ shared_ptr<Pac2EventInfo> Manager::ParsePac2EventSpec(const string& chunk)
 	string expr;
 	string cond;
 
+	// We use a quite negative hook here to make sure these run last
+	// after anything the grammar defines by default.
+	int prio = -1000;
+
 	size_t i = 0;
 
 	if ( ! eat_token(chunk, &i, "on") )
@@ -1798,6 +1878,18 @@ shared_ptr<Pac2EventInfo> Manager::ParsePac2EventSpec(const string& chunk)
 		first = false;
 		}
 
+	if ( looking_at(chunk, i, "&priority") )
+		{
+		eat_token(chunk, &i, "&priority");
+
+		if ( ! eat_token(chunk, &i, "=") )
+			return 0;
+
+		if ( ! extract_int(chunk, &i, &prio) )
+			return 0;
+
+		}
+
 	if ( ! eat_token(chunk, &i, ";") )
 		return 0;
 
@@ -1814,6 +1906,7 @@ shared_ptr<Pac2EventInfo> Manager::ParsePac2EventSpec(const string& chunk)
 	ev->path = path;
 	ev->exprs = exprs;
 	ev->condition = cond;
+	ev->priority = prio;
 	ev->location = reporter::current_location();
 
 	// These are set later.
@@ -2099,8 +2192,7 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 
 	body->addStatement(stmt);
 
-    // We use a quite negative hook here to make sure these run last after anything the grammar defines.
-	auto hook = std::make_shared<::binpac::Hook>(body, -1000);
+	auto hook = std::make_shared<::binpac::Hook>(body, ev->priority);
 	auto hdecl = std::make_shared<::binpac::declaration::Hook>(std::make_shared<::binpac::ID>(ev->hook), hook);
 
 	auto raise_result = std::make_shared<::binpac::type::function::Result>(std::make_shared<::binpac::type::Void>(), true);
@@ -2465,7 +2557,7 @@ bool Manager::CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev)
 							    ::hilti::builder::id::create("LibBro::cookie_to_conn_val"),
 							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
 
-			auto arg = conversion_builder->ConvertBroToHilti(conn_val, ::connection_type);
+			auto arg = conversion_builder->ConvertBroToHilti(conn_val, ::connection_type, false);
 			args.push_back(arg);
 			}
 
@@ -2478,7 +2570,7 @@ bool Manager::CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev)
 							    ::hilti::builder::id::create("LibBro::cookie_to_file_val"),
 							    ::hilti::builder::tuple::create( { ::hilti::builder::id::create("cookie") } ));
 
-			auto arg = conversion_builder->ConvertBroToHilti(fa_val, ::fa_file_type);
+			auto arg = conversion_builder->ConvertBroToHilti(fa_val, ::fa_file_type, false);
 			args.push_back(arg);
 			}
 
@@ -2651,8 +2743,7 @@ analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
 		// point in the plugin API?
 		return new Val(0, TYPE_VOID);
 
-	auto symbol = pimpl->compiler->HiltiStubSymbol(func, nullptr, true);
-	return RuntimeCallFunctionInternal(symbol, args);
+	return RuntimeCallFunctionInternal(func, args);
 	}
 
 bool Manager::HaveCustomHandler(const ::Func* ev)
@@ -2666,8 +2757,7 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 
 	if ( efunc && (efunc->HasBodies() || HaveCustomHandler(efunc)) )
 		{
-		auto symbol = pimpl->compiler->HiltiStubSymbol(efunc, nullptr, true);
-		auto result = RuntimeCallFunctionInternal(symbol, event->Args());
+		auto result = RuntimeCallFunctionInternal(efunc, event->Args());
 		Unref(result);
 		}
 
@@ -2675,7 +2765,7 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 	return true;
 	}
 
-::Val* Manager::RuntimeCallFunctionInternal(const string& symbol, val_list* args)
+::Val* Manager::RuntimeCallFunctionInternal(const ::Func* func, val_list* args)
 	{
 	// TODO: We should cache the nativeFunction() lookup here between
 	// calls to speed it up, unless that method itself is already as fast
@@ -2683,13 +2773,13 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 
 	assert(pimpl->llvm_linked_module && pimpl->llvm_execution_engine);
 
-	auto func = pimpl->hilti_context->nativeFunction(pimpl->llvm_linked_module,
-							 pimpl->llvm_execution_engine,
-							 symbol);
+	auto id = func->GetUniqueFuncID();
+	auto native = pimpl->native_functions[id];
 
-	if ( ! func )
+	if ( ! native )
 		{
-		reporter::warning(::util::fmt("unknown HILTI function %s", symbol));
+		auto symbol = pimpl->compiler->HiltiStubSymbol(func, nullptr, true);
+		reporter::warning(::util::fmt("no HILTI function %s for %s", symbol, func->Name()));
 		return new ::Val(0, ::TYPE_ERROR);
 		}
 
@@ -2697,49 +2787,53 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 	hlt_execution_context* ctx = hlt_global_execution_context();
 	__hlt_context_clear_exception(ctx); // TODO: HILTI should take care of this.
 
+	profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+
 	::Val* result = nullptr;
 
 	switch ( args->length() ) {
 	case 0:
 		typedef ::Val* (*e0)(hlt_exception**, hlt_execution_context*);
-		result = (*(e0)func)(&excpt, ctx);
+		result = (*(e0)native)(&excpt, ctx);
 		break;
 
 	case 1:
 		typedef ::Val* (*e1)(Val*, hlt_exception**, hlt_execution_context*);
-		result = (*(e1)func)((*args)[0], &excpt, ctx);
+		result = (*(e1)native)((*args)[0], &excpt, ctx);
 		break;
 
 	case 2:
 		typedef ::Val* (*e2)(Val*, Val*, hlt_exception**, hlt_execution_context*);
-		result = (*(e2)func)((*args)[0], (*args)[1], &excpt, ctx);
+		result = (*(e2)native)((*args)[0], (*args)[1], &excpt, ctx);
 		break;
 
 	case 3:
 		typedef ::Val* (*e3)(Val*, Val*, Val*, hlt_exception**, hlt_execution_context*);
-		result = (*(e3)func)((*args)[0], (*args)[1], (*args)[2], &excpt, ctx);
+		result = (*(e3)native)((*args)[0], (*args)[1], (*args)[2], &excpt, ctx);
 		break;
 
 	case 4:
 		typedef ::Val* (*e4)(Val*, Val*, Val*, Val*, hlt_exception**, hlt_execution_context*);
-		result = (*(e4)func)((*args)[0], (*args)[1], (*args)[2], (*args)[3], &excpt, ctx);
+		result = (*(e4)native)((*args)[0], (*args)[1], (*args)[2], (*args)[3], &excpt, ctx);
 		break;
 
 	case 5:
 		typedef ::Val* (*e5)(Val*, Val*, Val*, Val*, Val*, hlt_exception**, hlt_execution_context*);
-		result = (*(e5)func)((*args)[0], (*args)[1], (*args)[2], (*args)[3], (*args)[4], &excpt, ctx);
+		result = (*(e5)native)((*args)[0], (*args)[1], (*args)[2], (*args)[3], (*args)[4], &excpt, ctx);
 		break;
 
 	default:
-		reporter::error(::util::fmt("function/event %s with %d parameters not yet supported in RuntimeCallFunction()", symbol, args->length()));
+		reporter::error(::util::fmt("function/event %s with %d parameters not yet supported in RuntimeCallFunction()", func->Name(), args->length()));
 		return new ::Val(0, ::TYPE_ERROR);
 	}
+
+	profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
 
 	if ( excpt )
 		{
 		hlt_exception* etmp = 0;
 		char* e = hlt_exception_to_asciiz(excpt, &etmp, ctx);
-		reporter::error(::util::fmt("event/function %s raised exception: %s", symbol, e));
+		reporter::error(::util::fmt("event/function %s raised exception: %s", func->Name(), e));
 		hlt_free(e);
 		GC_DTOR(excpt, hlt_exception);
 		}
@@ -2749,6 +2843,12 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 
 	return result ? result : new ::Val(0, ::TYPE_VOID);
 	}
+
+void Manager::RegisterNativeFunction(const ::Func* func, void* native)
+	{
+	auto id = func->GetUniqueFuncID();
+	pimpl->native_functions[id] = native;
+    }
 
 bool Manager::WantEvent(Pac2EventInfo* ev)
 	{

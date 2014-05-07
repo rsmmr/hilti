@@ -34,6 +34,7 @@ public:
 	void DrainEvents() override;
 	void NewConnection(const ::Connection* c) override;
 	void ConnectionStateRemove(const ::Connection* c) override;
+	void BroObjDtor(const BroObj* obj) override;
 
 protected:
 	// Overridden from Bro's Plugin.

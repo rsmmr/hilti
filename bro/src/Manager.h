@@ -232,6 +232,11 @@ public:
 	/**
 	 * XXX
 	 */
+	void RegisterNativeFunction(const ::Func* func, void* native);
+
+	/**
+	 * XXX
+	 */
 	bool HaveCustomHandler(const ::Func* ev);
 
 	/**
@@ -478,7 +483,7 @@ protected:
 
 private:
 	void InitMembers();
-	::Val* RuntimeCallFunctionInternal(const string& symbol, val_list* args);
+	::Val* RuntimeCallFunctionInternal(const ::Func* func, val_list* args);
 	void InstallTypeMappings(shared_ptr<compiler::ModuleBuilder> mbuilder, ::BroType* t1, ::BroType* t2);
 
 	bool pre_scripts_init_run;

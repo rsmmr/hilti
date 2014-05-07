@@ -53,6 +53,14 @@ void plugin::Bro_Hilti::Plugin::InitPreScript()
 		exit(1);
 	}
 
+#if 0
+#include <google/heap-checker.h>
+
+static HeapLeakChecker* heap_checker = nullptr;
+#endif
+
+extern int time_bro;
+
 void plugin::Bro_Hilti::Plugin::InitPostScript()
 	{
 	plugin::Plugin::InitPostScript();
@@ -65,10 +73,31 @@ void plugin::Bro_Hilti::Plugin::InitPostScript()
 
 	if ( ! _manager->Compile() )
 		exit(1);
+
+#if 0
+	if ( getenv("HEAPCHECK") )
+	     heap_checker = new HeapLeakChecker("bro-hilti");
+#endif
+
+	if ( time_bro )
+		fprintf(stderr, "#! Processing starting ...\n");
 	}
 
 void plugin::Bro_Hilti::Plugin::Done()
 	{
+#if 0
+	if ( heap_checker )
+		{
+		fprintf(stderr, "#! Done with leak checking\n");
+
+		if ( ! heap_checker->NoLeaks() )
+			fprintf(stderr, "#! Leaks found\n");
+		else
+			fprintf(stderr, "#! Leaks NOT found\n");
+
+		delete heap_checker;
+		}
+#endif
 	}
 
 bool plugin::Bro_Hilti::Plugin::LoadFile(const char* file)
@@ -157,8 +186,9 @@ void plugin::Bro_Hilti::Plugin::NewConnection(const ::Connection* c)
 
 void plugin::Bro_Hilti::Plugin::ConnectionStateRemove(const ::Connection* c)
 	{
-	::Val* v = c->ConnValIfAvailable();
+	}
 
-	if ( v )
-		lib_bro_object_mapping_unregister_bro(v);
+void plugin::Bro_Hilti::Plugin::BroObjDtor(const BroObj* obj)
+	{
+	lib_bro_object_mapping_unregister_bro(obj);
 	}

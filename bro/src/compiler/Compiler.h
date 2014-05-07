@@ -192,6 +192,19 @@ public:
 	std::string HiltiODescSymbol(const ::BroObj* obj);
 
 	/**
+	 * Registers a function as having been compiled.
+	 */
+	void RegisterCompiledFunction(const ::Func* func);
+
+	typedef std::map<std::string, const ::Func*> function_symbol_map;
+
+	/**
+	 * Returns a map mapping the HILTI symbols of all compiled scripts
+	 * functions to their corresponding Bro functions.
+	 */
+	const function_symbol_map& HiltiFunctionSymbolMap() const;
+
+	/**
 	 * Checks if a built-in Bro function is available at HILTI-level.
 	 *
 	 * @param The fully-qualified Bro-level name of the function.
@@ -249,6 +262,7 @@ private:
 	std::shared_ptr<CollectorCallback> collector_callback;
 
 	std::map<const BroType*, std::pair<shared_ptr<::hilti::Type>, std::string>> cached_custom_types;
+	function_symbol_map hilti_function_symbol_map;
 
 	std::list<std::string> external_modules; // Custom modules loaded from external files.
 

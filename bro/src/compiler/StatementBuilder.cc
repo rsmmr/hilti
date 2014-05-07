@@ -1,6 +1,7 @@
 
 #include <Stmt.h>
 #include <Func.h>
+#include "consts.bif.h"
 #undef List
 
 #include <hilti/hilti.h>
@@ -64,7 +65,7 @@ shared_ptr<::hilti::Expression> StatementBuilder::CurrentFlowState(FlowState fst
 void StatementBuilder::Compile(const Stmt* stmt)
 	{
 	// Add statement source to "bro" debugging stream.
-	if ( stmt->Tag() != STMT_LIST )
+	if ( stmt->Tag() != STMT_LIST && BifConst::Hilti::debug )
 		{
 		ODesc d;
 		d.SetShort(1);
@@ -517,7 +518,8 @@ void StatementBuilder::Compile(const ::ReturnStmt* stmt)
 
 void StatementBuilder::Compile(const ::StmtList* stmt)
 	{
-	Builder()->debugPushIndent();
+	if ( BifConst::Hilti::debug )
+		Builder()->debugPushIndent();
 
 	loop_over_list(stmt->Stmts(), i)
 		{
@@ -525,7 +527,8 @@ void StatementBuilder::Compile(const ::StmtList* stmt)
 		Compile(s);
 		}
 
-	Builder()->debugPopIndent();
+	if ( BifConst::Hilti::debug )
+		Builder()->debugPopIndent();
 	}
 
 void StatementBuilder::Compile(const ::SwitchStmt* stmt)

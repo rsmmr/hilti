@@ -22,14 +22,23 @@ BroType* lib_bro_get_indexed_type(uint64_t idx)
 	return type_table[idx];
 	}
 
-extern void libbro_object_mapping_unregister_bro(::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void libbro_object_mapping_unregister_bro(const ::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void libbro_object_mapping_invalidate_bro(const ::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx);
 
-void lib_bro_object_mapping_unregister_bro(::BroObj* obj)
+void lib_bro_object_mapping_unregister_bro(const ::BroObj* obj)
 	{
 	hlt_exception* excpt = 0;
 	hlt_execution_context* ctx = hlt_global_execution_context();
 
 	return libbro_object_mapping_unregister_bro(obj, &excpt, ctx);
+	}
+
+void lib_bro_object_mapping_invalidate_bro(const ::BroObj* obj)
+	{
+	hlt_exception* excpt = 0;
+	hlt_execution_context* ctx = hlt_global_execution_context();
+
+	return libbro_object_mapping_invalidate_bro(obj, &excpt, ctx);
 	}
 
 }

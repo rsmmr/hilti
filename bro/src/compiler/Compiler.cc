@@ -228,6 +228,17 @@ std::list<const ::Func *> CollectorCallback::Functions(const string& ns)
 	return functions;
 	}
 
+void Compiler::RegisterCompiledFunction(const Func* func)
+	{
+	auto symbol = HiltiStubSymbol(func, nullptr, true);
+	hilti_function_symbol_map.insert(std::make_pair(symbol, func));
+	}
+
+const bro::hilti::compiler::Compiler::function_symbol_map& Compiler::HiltiFunctionSymbolMap() const
+	{
+	return hilti_function_symbol_map;
+	}
+
 std::list<const ::ID *> CollectorCallback::Globals(const string& ns)
 	{
 	std::list<const ::ID *> globals;

@@ -14,6 +14,7 @@ extern "C" {
 #include "Plugin.h"
 #include "Manager.h"
 #include "LocalReporter.h"
+#include "profile.h"
 
 using namespace bro::hilti;
 using namespace binpac;
@@ -121,7 +122,9 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 		if ( eod )
 			hlt_bytes_freeze(data, 1, &excpt, ctx);
 
+        profile_update(PROFILE_HILTI_LAND, PROFILE_START);
 		void* pobj = (*parser->parse_func)(data, &cookie, &excpt, ctx);
+        profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
 		GC_DTOR_GENERIC(&pobj, parser->type_info);
 		}
 
@@ -138,7 +141,9 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 		if ( eod )
 			hlt_bytes_freeze(data, 1, &excpt, ctx);
 
+        profile_update(PROFILE_HILTI_LAND, PROFILE_START);
 		void* pobj = (*parser->resume_func)(resume, &excpt, ctx);
+        profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
 		GC_DTOR_GENERIC(&pobj, parser->type_info);
 		resume = 0;
 		}

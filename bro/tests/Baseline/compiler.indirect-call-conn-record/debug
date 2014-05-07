@@ -1,0 +1,7 @@
+00001142 [hilti-trace/main-thread]      <no location>:: __tmp_val = call LibBro::object_mapping_lookup_bro (c)
+00001143 [hilti-trace/main-thread]      end-of-call-result
+00001144 [hilti-trace/main-thread]      <no location>:: if.else __tmp_val @if_true @if_false
+00001145 [hilti-trace/main-thread]      begin-instr-cleanup in .hlt.GLOBAL.global_connection_established
+00001146 [hilti-trace/main-thread]      end-instr-cleanup
+00001147 [hilti-trace/main-thread]      <no location>:: jump @if_cont
+00001148 [hilti-trace/main-thread]      <no location>:: __tmp_rval = call LibBro::call_legacy_result (f, (__tmp_val))

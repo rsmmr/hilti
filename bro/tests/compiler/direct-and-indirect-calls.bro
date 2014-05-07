@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC: bro -b %INPUT Hilti::compile_scripts=T Hilti::save_hilti=T >output
+# @TEST-EXEC: bro -b %INPUT Hilti::compile_scripts=T Hilti::save_hilti=T Hilti::debug=T >output
 # @TEST-EXEC: btest-diff output
 #
 # Make sure that the calls are indeed direct and indirect, respectively:

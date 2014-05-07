@@ -66,6 +66,15 @@ ValueConverter::ValueConverter(compiler::ModuleBuilder* arg_mbuilder,
 
 bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value, shared_ptr<::hilti::Expression> dst, std::shared_ptr<::binpac::Type> btype, BroType* hint)
 	{
+	::hilti::builder::tuple::element_list eight;
+	eight.push_back(::hilti::builder::integer::create(8));
+
+	auto profile_hilti_land_compiled_stubs = ::hilti::builder::tuple::create(eight);
+
+	Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+				  ::hilti::builder::id::create("LibBro::profile_start"),
+				  profile_hilti_land_compiled_stubs);
+
 	_bro_type_hints.push_back(hint);
 	setArg1(value);
 	setArg2(dst);
@@ -75,6 +84,11 @@ bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value, shared_ptr<:
 	assert(set);
 	_arg3 = nullptr;
 	_bro_type_hints.pop_back();
+
+	Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+				  ::hilti::builder::id::create("LibBro::profile_stop"),
+				  profile_hilti_land_compiled_stubs);
+
 	return success;
 	}
 

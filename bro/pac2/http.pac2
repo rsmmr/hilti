@@ -98,7 +98,7 @@ on ReplyLine::reason %debug {
 type Message = unit(body_default: bool, is_request: bool) {
     headers:    list<Header(self)>;
     end_of_hdr: NewLine;
-    body:       Body(self, self.delivery_mode) if ( self.has_body );
+    body:       Body(self, self.delivery_mode, is_request) if ( self.has_body );
 
     var content_length: uint64;
 	var content_encoding: bytes;
@@ -111,6 +111,7 @@ type Message = unit(body_default: bool, is_request: bool) {
     var is_request: bool;
 	var use_content_length: bool = True;
     var delivery_mode: DeliveryMode;
+    var body_len: uint64;
 
     on %init {
         self.has_body = body_default;
@@ -120,7 +121,7 @@ type Message = unit(body_default: bool, is_request: bool) {
         }
 
     on end_of_hdr {
-        if ( self?.content_length && self.content_length > 0 )
+        if ( self?.content_length )
             self.delivery_mode = DeliveryMode::Length;
 
         if ( self.content_type[0] == b"MULTIPART" ) {
@@ -178,13 +179,13 @@ type Header = unit(msg: Message) {
         }
 };
 
-type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
+type Body = unit(msg: Message, delivery_mode: DeliveryMode, is_request: bool) {
 
     switch ( delivery_mode ) {
 
       DeliveryMode::EndOfData -> : bytes &eod &chunked -> self.data;
 
-      DeliveryMode::Length    -> : bytes &length=msg.content_length &chunked -> self.data;
+      DeliveryMode::Length    -> : bytes &length=msg.content_length &eod &chunked -> self.data;
 
       DeliveryMode::Multipart -> : list<FullLine> &transient &until($$ == msg.multipart_boundary)
                                    foreach { self.data.write($$); }
@@ -193,10 +194,9 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
     };
 
     var data: sink;
-    var data_len: uint64;
     var content: Content;
 
-    on %init {
+    on %init priority=20 {
         if ( msg.content_type[0] != b"" && msg.content_type[1] != b"" )
             self.data.connect_mime_type(msg.content_type[0] + b"/" + msg.content_type[1]);
 
@@ -214,13 +214,47 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
 
         self.content = new Content(msg);
         self.data.connect(self.content);
+
     }
 
-	on %done {
+     on %init priority=10 {
+        Bro::file_begin();
+
+        if ( msg?.content_length && msg.use_content_length )
+            Bro::file_set_size(msg.content_length);
+
+        rule_match(msg,
+                   Bro::PatternType::HTTP_REQUEST_BODY,
+                   Bro::PatternType::HTTP_REPLY_BODY,
+                   b"", True, False, True);
+    }
+
+	on %done priority=15 {
 	    # FIXME: Currently the sink becomes invalid after parsing for
 		# the current instance finished. That's not great. See
 		# ParserBuilder::_finalizeParseObject() to fix.
-		self.data_len = |self.data|;
+		msg.body_len = |self.data|;
+
+        Bro::file_end();
+
+        rule_match(msg,
+                   Bro::PatternType::HTTP_REQUEST_BODY,
+                   Bro::PatternType::HTTP_REPLY_BODY,
+                   b"", False, True, False);
+		}
+
+	on %error priority=15 {
+	    # FIXME: Currently the sink becomes invalid after parsing for
+		# the current instance finished. That's not great. See
+		# ParserBuilder::_finalizeParseObject() to fix.
+		msg.body_len = |self.data|;
+
+        Bro::file_end();
+
+        rule_match(msg,
+                   Bro::PatternType::HTTP_REQUEST_BODY,
+                   Bro::PatternType::HTTP_REPLY_BODY,
+                   b"", False, True, False);
 		}
 };
 
@@ -237,28 +271,6 @@ export type Content = unit(msg: Message) {
                    self.data, False, False, False);
 	}
 
-    on %init {
-        Bro::file_begin();
-
-        if ( msg?.content_length && msg.use_content_length )
-            Bro::file_set_size(msg.content_length);
-
-        rule_match(msg,
-                   Bro::PatternType::HTTP_REQUEST_BODY,
-                   Bro::PatternType::HTTP_REPLY_BODY,
-                   b"", True, False, True);
-	}
-
-    on %done {
-        if ( self.have_content )
-            Bro::file_end();
-
-        rule_match(msg,
-                   Bro::PatternType::HTTP_REQUEST_BODY,
-                   Bro::PatternType::HTTP_REPLY_BODY,
-                   b"", False, True, False);
-        }
-
     var have_content: bool = False;
 };
 
@@ -274,6 +286,15 @@ type Chunk = unit(body: Body) {
     :          OptionalWhiteSpace;
     extension: RestOfLine;
     :          NewLine;
-    :          bytes &length=self.length &chunked -> body.data;
+    :          bytes &length=self.length &eod &chunked -> body.data;
     :          NewLine if ( self.length != 0 );
 };
+
+# Create an http_message_state.
+# TODO: We only set the fields we happen to know Bro using in the
+# configuration we use.
+tuple<time, bool, bytes, uint64, uint64, uint64>
+bro_http_message_stats(msg: Message)
+{
+    return (cast<time>(0), False, b"", (msg.has_body ? msg.body_len : 0), 0 , 0);
+}
