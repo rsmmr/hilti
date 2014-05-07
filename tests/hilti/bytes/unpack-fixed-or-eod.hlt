@@ -1,0 +1,67 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local ref<bytes> sub
+    local tuple<ref<bytes>,iterator<bytes>> t
+    local iterator<bytes> first
+    local iterator<bytes> last
+    local iterator<bytes> nfirst
+    local int<64> diff
+    local string out
+
+    b = b"\x00\x05\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+    bytes.freeze b
+
+    first = begin b
+    last = end b
+
+    t = unpack (first,last) Hilti::Packed::BytesFixedOrEod 5
+    sub = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+
+    ####
+
+    t = unpack (first,last) Hilti::Packed::BytesFixedOrEod 50
+    sub = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+
+    ####
+
+    b = b"\x00\x01\x02"
+    first = begin b
+    last = end b
+
+    t = unpack (first,last) Hilti::Packed::BytesFixedOrEod 3
+    sub = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+
+    ####
+
+    t = unpack (first,last) Hilti::Packed::BytesFixedOrEod 0
+    sub = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+
+}

@@ -1,0 +1,37 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out | sort | uniq -c | sort -n -k 2 | awk '{print $1, $2}' >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global int<64> i1
+global int<64> i2
+
+int<64> init_val()
+{
+    return.result 20
+}
+
+init void init_func()
+{
+    i1 = 10
+    i2 = call init_val()
+}
+
+void func() {
+    call Hilti::print (i1)
+    call Hilti::print (i2)
+}
+
+void run() {
+    call func()
+    thread.schedule func() 1
+    thread.schedule func() 2
+    thread.schedule func() 3
+    thread.schedule func() 4
+    thread.schedule func() 5
+}
+

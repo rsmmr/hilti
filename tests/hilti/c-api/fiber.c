@@ -13,7 +13,9 @@
 
 void fiber_yielded(hlt_fiber* f)
 {
-    switch ( hlt_fiber_start(f) ) {
+    hlt_execution_context* ctx = hlt_global_execution_context();
+
+    switch ( hlt_fiber_start(f, ctx) ) {
      case 0:
         fprintf(stderr, "Fiber yielded again\n");
         fiber_yielded(f);
@@ -42,11 +44,12 @@ int main(int argc, char** argv)
 {
     hlt_init();
 
-    hlt_fiber* fiber = hlt_fiber_create(fiber_func, hlt_global_execution_context(), (void*)0x1234567890);
+    hlt_execution_context* ctx = hlt_global_execution_context();
+    hlt_fiber* fiber = hlt_fiber_create(fiber_func, ctx, (void*)0x1234567890, ctx);
 
     fprintf(stderr, "Init\n");
 
-    switch ( hlt_fiber_start(fiber) ) {
+    switch ( hlt_fiber_start(fiber, ctx) ) {
      case 0:
         // Fiber yielded.
         fprintf(stderr, "Fiber yielded\n");

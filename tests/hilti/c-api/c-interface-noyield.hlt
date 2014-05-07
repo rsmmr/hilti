@@ -1,0 +1,34 @@
+#
+# @TEST-EXEC:  hilti-build -P %INPUT
+# @TEST-EXEC:  hiltic -l %INPUT >a.ll
+# @TEST-EXEC:  hilti-build -d %DIR/c-interface-noyield-host.c %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output
+# @TEST-EXEC:  btest-diff output
+# @TEST-EXEC-FAIL:  grep -v "= type" a.ll | grep fiber
+#
+# Testing calls tp noyield functions from C. These shouldn't be
+# generating any fiber glue.
+
+module Foo
+
+import Hilti
+
+export foo1
+export foo2
+export foo3
+
+void foo1(int<32> a, bool b) &noyield {
+    call Hilti::print(a)
+    call Hilti::print(b)
+}
+
+int<32> foo2(int<32> a) &noyield  {
+    a = int.add a a
+    return.result a
+}
+
+string foo3(string a) &noyield  {
+    a = string.concat a a
+    return.result a
+}
+
