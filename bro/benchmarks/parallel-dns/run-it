@@ -1,0 +1,27 @@
+#! /usr/bin/env bash
+
+if [ "$1" == "" ]; then
+   echo "usage: `basename $0` <trace>"
+   exit 1
+fi
+
+rm -f times.log;
+
+for i in -1 0 1 2 3 4 5 6 7 8 9 10; do
+    echo === Workers: $i
+
+    rm -f hlt-debug.log
+
+    /bin/time -ao times.log -f "#u utime $i %U\n#u rtime $i %e\n" \
+        bro -C -Q -b -r $1 base/protocols/dns dns.evt Hilti::hilti_workers=$i ../parallel-dns/schedule-dns.hlt 2>&1 \
+        Hilti::debug=F Hilti::optimize=T  \
+        | cat >para-dns.$i.log
+
+    if [ -e hlt-debug.log ]; then
+        mv hlt-debug.log hlt-debug.$i.log
+    fi
+
+    cat para-dns.$i.log | grep events-raised
+    cat para-dns.$i.log | grep net-run
+    cat times.log | grep "rtime $i"
+done

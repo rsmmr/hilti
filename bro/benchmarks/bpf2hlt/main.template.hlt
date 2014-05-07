@@ -1,0 +1,43 @@
+module Main
+
+import filter_tmp
+import Hilti
+
+void run() {
+    local int<64> count
+    local time a
+    local bool match
+    local ref<bytes> data
+
+    local ref<iosrc<Hilti::IOSrc::PcapOffline>> psrc
+    local tuple<time,ref<bytes>> pkt
+
+    call Hilti::print("start")
+
+    try {
+
+            psrc = new iosrc<Hilti::IOSrc::PcapOffline> "$TRACE"
+
+    @loop:
+        pkt = iosrc.read psrc
+
+        a = tuple.index pkt 0
+        data = tuple.index pkt 1
+
+        match = call bpf2hlt::filter(data)
+
+        if.else match @increment @loop
+
+    @increment:
+        count = incr count
+        jump @loop
+
+    }
+
+    catch {
+        call Hilti::print("packets ", False)
+        call Hilti::print(count)
+    }
+
+    return.void
+}

@@ -1,0 +1,93 @@
+
+Log diffs
+=========
+
+
+- http-compiler-logs:
+
+    * http.log:
+
+        - For two connections, the compiled version doesn't record
+          their MIME type. However, when extracting the corresponding
+          connections from the trace and running just on those, the
+          MIME type *is* logged correctly. Not sure what that is, but
+          seems neglible.
+
+    * files.log:
+
+        - The two missing MIME types from above show up here too.
+
+        - The various byte counters and last_seens fields aren't set
+          right because that's something the core updates in the
+          background. Ignoring.
+
+        - One additional entry shows up. Not sure why.
+
+        - The "source" UID lists are recorded in different order;
+          that's expected.
+
+- dns-compiler-logs:
+
+    * dns.log:
+
+         - Tiny nit: One response address gets logged a IPv6 in Bro
+           but IPv4 in HILTI. But it's same address (0.0.0.1 vs ::::1)
+
+        (- [FIXED] The compiled version is logging some more DNS
+                   entries. It seems that's actually correct and they
+                   are missing in the original log file. Upon closer
+                   inspection, Bro's DNS logs seems non-deterministc
+                   in some cases (even after merging in the
+                   soon-to-be-2.3 DNS script). See ticket BIT-1153.)
+
+- dns-pac-logs:
+
+    * dns.log:
+
+        - BinPAC++ logs some unmatched queries more than once because
+          it doesn't install an dns_timeout timer; which in turn skips
+          some connection_state_remove events that would otherwise
+          flush the state so that it doesn't get logged again.
+
+          Potential fix: let BinPAC++ analyzer install a similar
+          timer. But doesn't seem crucial.
+
+        - A small number of requests are marked as rejected by the
+          standard anayzers, but not by BinPAC. These are actually NTP
+          sessions that seem to trigger a difference somewhere.
+          Doesn't matter. (This is traffic between UDP ports 53 and
+          123. Confirmed NTP in tshark).
+
+        - BinPAC++ logs things like "qclass-1479" and "query-50217"
+          when it doesn't recognize something, legacy doesn't.
+
+        - Tiny nit: One response address gets logged a IPv6 in Bro but
+          IPv4 with BinPAC. But it's same address (0.0.0.1 vs ::::1)
+
+        - Bro's DNS analyzer extracts only the first CharacterString
+          out of a TXT record; BinPAC++ all.
+
+- http-pac2-logs:
+
+    Changes to http/main.bro:
+        - Use script-level URI deciding function.
+
+    * http.log
+
+        Normalizations TODO:
+            - Equalize "<empty>" and "(empty")"
+
+    * TODO: Diffs to checout
+          - request_body_len/response_body_len empty
+          - URL decryption
+
+Script changes:
+===============
+
+    dns/main.bro:
+
+    * Pulled in 2.3 version as the 2.2 version yields
+      non-deterministic output.
+
+    * Changed a "vector of Info" to "vector of Any"; then had to
+      disable the dns_unmatched_msg weirds.

@@ -383,269 +383,144 @@ datafile=${datadir}/benchmark.dat
 rm -f ${logfile}
 rm -f ${datafile}
 
-## Hello world.
-
-enabled=0
-scripts=${benchmarks}/scripts/hello-world.bro
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox hello_world
-    run_bro_without_trace std ${scripts} Log::disable_logging=T
-    run_bro_without_trace hlt ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
-    compare_output stdout.std stdout.hlt
-    compare_output stderr.std stderr.hlt
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## Fibonacci numbers.
-
-enabled=0
-scripts=${benchmarks}/scripts/fibo.bro
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox fibo
-    run_bro_without_trace std ${scripts} Log::disable_logging=T
-    run_bro_without_trace hlt ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
-    compare_output stdout.std stdout.hlt
-    compare_output stderr.std stderr.hlt
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## Connection counting.
-
-enabled=0
-scripts=${benchmarks}/scripts/conn-count.bro
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox conn-count
-    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
-    compare_output stdout.std stdout.hlt
-    compare_output stderr.std stderr.hlt
-    record_timing std hlt
-    finish_sandbox
-fi
-
-### HTTP ##########################################################################
-
-## BinPAC++ HTTP analyzer, standard interpreter.
-
-enabled=0
-scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2
-    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
-    compare_output stderr.std stderr.hlt # Should be empty.
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## BinPAC++ HTTP analyzer, standard interpreter, with logs
-
-enabled=0
-scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2-logs
-    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=F
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
-    compare_output stderr.std stderr.hlt # Should be empty.
-    compare_logs http.std.log http.hlt.log  "request_body_len response_body_len"
-    compare_logs files.std.log files.hlt.log "conn_uids duration seen_bytes missing_bytes total_bytes timedout overflow_bytes"
-    check_baseline http.hlt.log
-    check_baseline files.hlt.log
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## Standard HTTP analyzer, compiled scripts.
-
-enabled=0
-scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox http-compiler
-    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
-    compare_output stderr.std stderr.hlt # Should be empty.
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## Standard HTTP analyzer, compiled scripts, with logs.
-
-enabled=0
-scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox http-compiler-logs
-    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=F
-    run_bro_with_trace hlt ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=T
-    compare_output stderr.std stderr.hlt # Should be empty.
-    compare_logs http.std.log http.hlt.log
-    compare_logs files.std.log files.hlt.log "duration seen_bytes total_bytes missing_bytes total_bytes timedout overflow_bytes"
-    check_baseline http.hlt.log
-    check_baseline files.hlt.log
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## DEBUG VERSION: Standard HTTP analyzer, compiled scripts.
-
-enabled=0
-scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox http-compiler-debug
-    HILTI_DEBUG=hilti-trace:hilti-flow:bro run_bro_with_trace hlt ${trace_http} ${scripts} Hilti::debug=T Hilti::compile_scripts=T
-    finish_sandbox
-fi
-
-## BinPAC++ HTTP analyzer, compiled scripts, but direct connection for events disabled.
-
-enabled=0
-scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2-compiler-indirect
-    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
-    compare_output stderr.std stderr.hlt
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## BinPAC++ HTTP analyzer, compiled scripts, with direct connection for events enabled.
-
-enabled=0
-scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2-compiler-direct
-    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
-    compare_output stderr.std stderr.hlt
-    record_timing std hlt
-    finish_sandbox
-fi
-
-### DNS ##########################################################################
-
-## BinPAC++ DNS analyzer, standard interpreter.
-
-enabled=0
-scripts=base/protocols/dns
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2
-    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
-    compare_output stderr.std stderr.hlt # Should be empty.
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## Standard DNS analyzer, compiled scripts.
-
-enabled=0
-scripts=base/protocols/dns
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox dns-compiler
-    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
-    compare_output stderr.std stderr.hlt # Should be empty.
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## BinPAC++ DNS analyzer, compiled scripts, but direct connection for events disabled.
-
-enabled=0
-scripts=base/protocols/dns
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2-compiler-indirect
-    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
-    compare_output stderr.std stderr.hlt
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## BinPAC++ DNS analyzer, compiled scripts, with direct connection for events enabled.
-
-enabled=0
-scripts=base/protocols/dns
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2-compiler-direct
-    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
-    compare_output stderr.std stderr.hlt
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## BinPAC++ DNS analyzer, standard interpreter, with logs.
-
-enabled=0
-scripts=base/protocols/dns
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2-logs
-    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=F
-    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
-    compare_output stderr.std stderr.hlt # Should be empty.
-    compare_logs dns.std.log dns.hlt.log
-    check_baseline dns.hlt.log
-    record_timing std hlt
-    finish_sandbox
-fi
-
-## Standard DNS analyzer, compiled scripts, with logs.
-
-enabled=0
-scripts=base/protocols/dns
-
-if [ ${enabled} == 1 ]; then
-    create_sandbox dns-compiler-logs
-    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=F
-    run_bro_with_trace hlt ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=T
-    compare_output stderr.std stderr.hlt # Should be empty.
-    compare_logs dns.std.log dns.hlt.log
-    check_baseline dns.hlt.log
-    record_timing std hlt
-    finish_sandbox
-fi
-
-### Other Apps ##########################################################################
+#### HTTP, Pac2
 
 enabled=1
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
 if [ ${enabled} == 1 ]; then
-    create_sandbox bpf2hlt
-    ${benchmarks}/bpf2hlt/bpf-benchmark ${trace_http} "host 169.229.216.200 or src net 169.229.108.0/24"
-    compare_output counts.std.log counts.hlt.log
-    check_baseline counts.hlt.log
-    check_baseline counts.std.log
+    create_sandbox http-pac2-variants
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-default ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=2
+    run_bro_with_trace std-default-qq ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default-qq ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=1; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-ramdisk ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-ramdisk ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
     finish_sandbox
 fi
 
-enabled=0
+#### DNS, Pac2
+
+enabled=1
+scripts=base/protocols/dns
+
 if [ ${enabled} == 1 ]; then
-    create_sandbox acl2hlt
-    ${benchmarks}/acl2hlt/acl-benchmark ${trace_dns}
-    compare_output counts.py.log counts.hlt.log
-    check_baseline counts.hlt.log
-    check_baseline counts.py.log
+    create_sandbox dns-pac2-variants
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-default ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=2
+    run_bro_with_trace std-default-qq ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default-qq ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=1; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-ramdisk ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-ramdisk ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
     finish_sandbox
 fi
 
-## End
+#### HTTP, Compiler
+
+enabled=1
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox http-compiler-variants
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-default ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=2
+    run_bro_with_trace std-default-qq ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default-qq ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=1; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-ramdisk ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-ramdisk ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    finish_sandbox
+fi
+
+#### DNS, Compiler
+
+enabled=1
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-compiler-variants
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-default ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=2
+    run_bro_with_trace std-default-qq ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default-qq ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=1; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-ramdisk ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-ramdisk ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    finish_sandbox
+fi
+
+#### HTTP, BinPAC++ plus Compiler
+
+enabled=1
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox http-pac2-to-compiler-variants
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+
+    finish_sandbox
+fi
+
+#### DNS, BinPAC++ plus Compiler
+
+enabled=1
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-pac2-to-compiler-variants
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+
+    finish_sandbox
+fi
+
 
 ${benchmarks}/dat2tex ${datadir} >${datadir}/benchmark.tex
 

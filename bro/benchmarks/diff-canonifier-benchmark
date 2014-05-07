@@ -1,0 +1,9 @@
+#! /usr/bin/env bash
+
+broscripts=$1/testing/scripts
+
+${broscripts}/diff-remove-timestamps \
+    | sed 's/<empty>/(empty)/g' \
+    | ${broscripts}/diff-remove-uids \
+    | ${broscripts}/diff-remove-file-ids \
+    | grep -v ^# | sort -s -T $TMPDIR
