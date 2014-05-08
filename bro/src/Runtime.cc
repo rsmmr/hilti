@@ -786,7 +786,6 @@ void libbro_object_mapping_unregister_bro(const ::BroObj* obj, hlt_exception** e
 	if ( m == objects_b2h.end() )
 		return;
 
-	const ::BroObj* bobj = m->first;
 	const hlt_type_info* ti = m->second.first;
 	void* hobj = m->second.second;
 

@@ -150,12 +150,11 @@ static inline void __normalize_iter_hilti(hlt_iterator_bytes* pos)
 // c already ref'ed.
 static void __add_chunk(hlt_bytes* tail, hlt_bytes* c)
 {
-    assert(b);
     assert(c);
     assert(tail);
     assert(! tail->next);
     assert(! c->next);
-    assert(! b->frozen);
+    assert(! tail->frozen);
 
     tail->next = c; // Consumes ref cnt.
 }
@@ -249,6 +248,8 @@ void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt
 {
     hlt_bytes* src = *(hlt_bytes**)srcp;
     hlt_bytes* dst = *(hlt_bytes**)dstp;
+
+    assert(src && dst);
 
     int8_t* p = dst->start;
 
@@ -883,6 +884,9 @@ int8_t* hlt_bytes_to_raw_buffer(hlt_bytes* b, int8_t* buffer, hlt_bytes_size buf
 
 int8_t __hlt_bytes_extract_one_slowpath(hlt_iterator_bytes* p, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    assert(p);
+    assert(p->bytes);
+
     __normalize_iter_hilti(p);
     __normalize_iter(&end);
 
@@ -933,24 +937,28 @@ hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size p, hlt_exceptio
         return GenericEndPos;
     }
 
+    if ( ! p )
+        return hlt_bytes_begin(b, excpt, ctx);
+
     if ( p < 0 )
         p += hlt_bytes_len(b, excpt, ctx);
 
     if ( p < 0 )
         return hlt_bytes_end(b, excpt, ctx);
 
-    for ( ; b && p >= (b->end - b->start); b = b->next ) {
-        p -= (b->end - b->start);
+    hlt_bytes* c;
+    for ( c = b; c && p >= (c->end - c->start); c = c->next ) {
+        p -= (c->end - c->start);
     }
 
-    if ( ! b ) {
+    if ( ! c ) {
         // Position is out range, return end().
         return hlt_bytes_end(b, excpt, ctx);
     }
 
     hlt_iterator_bytes i;
-    GC_INIT(i.bytes, b, hlt_bytes);
-    i.cur = b->start + p;
+    GC_INIT(i.bytes, c, hlt_bytes);
+    i.cur = c->start + p;
     return i;
 }
 

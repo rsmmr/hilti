@@ -2774,13 +2774,31 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 	assert(pimpl->llvm_linked_module && pimpl->llvm_execution_engine);
 
 	auto id = func->GetUniqueFuncID();
-	auto native = pimpl->native_functions[id];
+
+	void* native = 0;
+
+	if ( pimpl->native_functions.size() <= id )
+		pimpl->native_functions.resize(id + 1);
+
+	native = pimpl->native_functions[id];
 
 	if ( ! native )
 		{
+		// First try again to get it, it could be a custom user
+		// function that we haven't used yet.
 		auto symbol = pimpl->compiler->HiltiStubSymbol(func, nullptr, true);
-		reporter::warning(::util::fmt("no HILTI function %s for %s", symbol, func->Name()));
-		return new ::Val(0, ::TYPE_ERROR);
+		native = pimpl->hilti_context->nativeFunction(pimpl->llvm_linked_module,
+							      pimpl->llvm_execution_engine,
+							      symbol);
+
+		if ( native )
+			pimpl->native_functions[id] = native;
+
+		else
+			{
+			reporter::warning(::util::fmt("no HILTI function %s for %s", symbol, func->Name()));
+			return new ::Val(0, ::TYPE_ERROR);
+			}
 		}
 
 	hlt_exception* excpt = 0;
