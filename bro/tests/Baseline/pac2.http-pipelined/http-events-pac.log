@@ -76,8 +76,6 @@ pac, 1258577884.967431, file_new, m1D1wMxW9y8, 0
 pac, 1258577884.967431, file_over_new_connection, UWkUyAuUGXf, m1D1wMxW9y8, 0, F
 pac, 1258577884.967441, get_file_handle, UWkUyAuUGXf, Analyzer::ANALYZER_HTTP, F
 pac, 1258577884.967449, get_file_handle, UWkUyAuUGXf, Analyzer::ANALYZER_HTTP, F
-pac, 1258577884.967449, get_file_handle, UWkUyAuUGXf, Analyzer::ANALYZER_HTTP, F
-pac, 1258577884.967465, get_file_handle, UWkUyAuUGXf, Analyzer::ANALYZER_HTTP, F
 pac, 1258577884.967465, get_file_handle, UWkUyAuUGXf, Analyzer::ANALYZER_HTTP, F
 pac, 1258577884.96748, get_file_handle, UWkUyAuUGXf, Analyzer::ANALYZER_HTTP, F
 pac, 1258577884.967489, get_file_handle, UWkUyAuUGXf, Analyzer::ANALYZER_HTTP, F

@@ -1,4 +1,4 @@
-    120 pac, 1258577884.86299, get_file_handle, UWkUyAuUGXf, Analyzer::ANALYZER_HTTP, F
+    118 pac, 1258577884.86299, get_file_handle, UWkUyAuUGXf, Analyzer::ANALYZER_HTTP, F
      10 pac, 1258577884.86299, http_reply, [orig_h=192.168.1.104, orig_p=1673/tcp, resp_h=63.245.209.11, resp_p=80/tcp], 1.1, 200, OK
      10 pac, 1258577884.86299, http_header, UWkUyAuUGXf, F, VIA, NS-CACHE-6.0:   4
      10 pac, 1258577884.86299, http_header, UWkUyAuUGXf, F, CONNECTION, Keep-Alive
