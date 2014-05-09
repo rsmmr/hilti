@@ -153,6 +153,10 @@ Val* plugin::Bro_Hilti::Plugin::CallFunction(const Func* func, val_list* args)
 	if ( func->FType()->Flavor() == FUNC_FLAVOR_EVENT &&
 	     _manager->HaveCustomHandler(func) )
 		{
+		// We don't own the arguments so ref them all once more.
+		loop_over_list(*args, i)
+			Ref((*args)[i]);
+
 		auto v = _manager->RuntimeCallFunction(func, args);
 		Unref(v);
 		}
