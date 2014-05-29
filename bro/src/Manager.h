@@ -141,9 +141,9 @@ public:
 	bool FinishLoading();
 
 	/**
-	 * Marks an *.pac2 or *.evt for loading. Note that it won't necessarily
-	 * load them all immediately, but may queue some for later compilation
-	 * via LoadAll().
+	 * Marks an *.pac2, *.evt, or *.hlt file for loading. Note that it
+	 * won't necessarily load them all immediately, but may queue some
+	 * for later compilation via LoadAll().
 	 */
 	bool LoadFile(const std::string& file);
 
@@ -238,6 +238,11 @@ public:
 	 * XXX
 	 */
 	bool HaveCustomHandler(const ::Func* ev);
+
+	/**
+	 * XXX
+	 */
+	bool HaveCustomHiltiCode();
 
 	/**
 	 * Returns true if either there's at least one handler defined for

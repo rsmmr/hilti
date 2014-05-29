@@ -127,9 +127,16 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 		if ( eod )
 			hlt_bytes_freeze(endp->data, 1, &excpt, ctx);
 
-        profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+		profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+#endif
+
 		void* pobj = (*endp->parser->parse_func)(endp->data, &endp->cookie, &excpt, ctx);
-        profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
+
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+		profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
+#endif
+
 		GC_DTOR_GENERIC(&pobj, endp->parser->type_info);
 		}
 
@@ -146,9 +153,16 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 		if ( eod )
 			hlt_bytes_freeze(endp->data, 1, &excpt, ctx);
 
-        profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+		profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+#endif
+
 		void* pobj = (*endp->parser->resume_func)(endp->resume, &excpt, ctx);
-        profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
+
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+		profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
+#endif
+
 		GC_DTOR_GENERIC(&pobj, endp->parser->type_info);
 		endp->resume = 0;
 		}
@@ -278,7 +292,7 @@ void Pac2_TCP_Analyzer::DeliverStream(int len, const u_char* data, bool is_orig)
 		}
 	}
 
-void Pac2_TCP_Analyzer::Undelivered(int seq, int len, bool is_orig)
+void Pac2_TCP_Analyzer::Undelivered(uint64 seq, int len, bool is_orig)
 	{
 	TCP_ApplicationAnalyzer::Undelivered(seq, len, is_orig);
 
@@ -372,7 +386,7 @@ void Pac2_UDP_Analyzer::Done()
 	}
 
 void Pac2_UDP_Analyzer::DeliverPacket(int len, const u_char* data, bool is_orig,
-				    int seq, const IP_Hdr* ip, int caplen)
+				      uint64 seq, const IP_Hdr* ip, int caplen)
 	{
 	Analyzer::DeliverPacket(len, data, is_orig, seq, ip, caplen);
 
@@ -380,7 +394,7 @@ void Pac2_UDP_Analyzer::DeliverPacket(int len, const u_char* data, bool is_orig,
 	Pac2_Analyzer::Done();
 	}
 
-void Pac2_UDP_Analyzer::Undelivered(int seq, int len, bool is_orig)
+void Pac2_UDP_Analyzer::Undelivered(uint64 seq, int len, bool is_orig)
 	{
 	Analyzer::Undelivered(seq, len, is_orig);
 	}

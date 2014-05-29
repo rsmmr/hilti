@@ -506,8 +506,14 @@ Compiler::module_list Compiler::CompileExternalModules()
 		modules.push_back(m);
 
 		// See if any events have handlers defined in this HILTI code.
-		for ( auto e : ::event_registry->EventHandlers() )
+
+		EventRegistry::string_list* handlers = ::event_registry->AllHandlers();
+
+		for ( int i = 0; i < handlers->length(); ++i )
 			{
+			auto e = event_registry->Lookup((*handlers)[i]);
+			assert(e);
+
 			auto ev = e->LocalHandler();
 
 			if ( ! ev )
@@ -540,6 +546,9 @@ Compiler::module_list Compiler::CompileExternalModules()
 				popModuleBuilder();
 				}
 			}
+
+		delete handlers;
+
 		}
 
 	return modules;
@@ -727,8 +736,8 @@ std::string Compiler::normalizeSymbol(const std::string sym, const std::string p
 
 std::string Compiler::HiltiSymbol(const ::BroType* t)
 	{
-	if ( t->GetTypeID() )
-		return ::util::strreplace(t->GetTypeID(), "::", "_");
+	if ( t->GetName().size() )
+		return ::util::strreplace(t->GetName(), "::", "_");
 
 	return HiltiODescSymbol(t);
 	}

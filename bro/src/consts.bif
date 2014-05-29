@@ -1,56 +1,56 @@
 
 module Hilti;
 
-## Dump debug information about analyzers to stderr (for debugging only). 
+# DumpVV debug information about analyzers to stderr (for debugging only). 
 const dump_debug: bool;
 
-## Dump generated HILTI/BinPAC++ code to stderr (for debugging only).
+# Dump generated HILTI/BinPAC++ code to stderr (for debugging only).
 const dump_code: bool;
 
-## Dump all HILTI/BinPAC++ code to stderr (for debugging only).
+# Dump all HILTI/BinPAC++ code to stderr (for debugging only).
 const dump_code_all: bool;
 
-## Dump generated HILTI/BinPAC++ code to stderr before finalizing the modules. (for
-## debugging only). 
+# Dump generated HILTI/BinPAC++ code to stderr before finalizing the modules. (for
+# debugging only). 
 const dump_code_pre_finalize: bool;
 
-## Disable code verification (for debugging only).
+# Disable code verification (for debugging only).
 const no_verify: bool;
 
-## Generate code for all events no matter if they have a handler
-## defined or not.
+# Generate code for all events no matter if they have a handler
+# defined or not.
 const compile_all: bool;
 
-## Enable debug mode for code generation.
+# Enable debug mode for code generation.
 const debug: bool;
 
-## Enable optimization for code generation.
+# Enable optimization for code generation.
 const optimize: bool;
 
-## Profiling level for code generation.
+# Profiling level for code generation.
 const profile: count;
 
-## Tags for codegen debug output as colon-separated string.
+# Tags for codegen debug output as colon-separated string.
 const cg_debug: string;
 
-## Save all generated BinPAC++ modules into "bro.<X>.pac2"
+# Save all generated BinPAC++ modules into "bro.<X>.pac2"
 const save_pac2: bool;
 
-## Save all HILTI modules into "bro.<X>.hlt"
+# Save all HILTI modules into "bro.<X>.hlt"
 const save_hilti: bool;
 
-## Save final linked LLVM assembly into "bro.ll"
+# Save final linked LLVM assembly into "bro.ll"
 const save_llvm: bool;
 
-## Use on-disk cache for compiled modules.
+# Use on-disk cache for compiled modules.
 const use_cache: bool;
 
-## Activate the Bro script compiler.
+# Activate the Bro script compiler.
 const compile_scripts: bool;
 
-## If we're compiling scripts, interface the BinPAC++ directly  with the compiled
-## events (rather than queuening them through Bro's core.) 
+# If we're compiling scripts, interface the BinPAC++ directly  with the compiled
+# events (rather than queuening them through Bro's core.) 
 const pac2_to_compiler: bool;
 
-## Number of HILTI worker threads to spawn.
+# Number of HILTI worker threads to spawn.
 const hilti_workers: count;

@@ -56,7 +56,7 @@ public:
 	void Init() override;
 	void Done() override;
 	void DeliverStream(int len, const u_char* data, bool orig) override;
-	void Undelivered(int seq, int len, bool orig) override;
+	void Undelivered(uint64 seq, int len, bool orig) override;
 	void EndOfData(bool is_orig) override;
 	void FlipRoles() override;
 
@@ -84,8 +84,8 @@ public:
 	void Init() override;
 	void Done() override;
 	void DeliverPacket(int len, const u_char* data, bool orig,
-			   int seq, const IP_Hdr* ip, int caplen) override;
-	void Undelivered(int seq, int len, bool orig) override;
+			   uint64 seq, const IP_Hdr* ip, int caplen) override;
+	void Undelivered(uint64 seq, int len, bool orig) override;
 	void EndOfData(bool is_orig) override;
 	void FlipRoles() override;
 

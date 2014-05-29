@@ -78,7 +78,7 @@ shared_ptr<::hilti::Expression> ValueBuilder::TypeVal(const ::BroType* type)
 	// TODO: Unify with ConversionBuilder. We shouldn't really
 	// look up the type by name each time we need, but precompute
 	// and sotre in a global.
-	if ( ! type->GetTypeID() )
+	if ( type->GetName().empty() )
 		{
 		ODesc d;
 		type->Describe(&d);
@@ -87,7 +87,7 @@ shared_ptr<::hilti::Expression> ValueBuilder::TypeVal(const ::BroType* type)
 
 	auto tmp = Builder()->addTmp("ttype", ::hilti::builder::type::byName("LibBro::BroType"));
 	auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type_as_val");
-	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(type->GetTypeID()) } );
+	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(type->GetName()) } );
 	Builder()->addInstruction(tmp, ::hilti::instruction::flow::CallResult, f, args);
 	return tmp;
 	}
@@ -106,7 +106,7 @@ shared_ptr<::hilti::Expression> ValueBuilder::BroType(const ::BroType* type)
 	// TODO: Unify with ConversionBuilder. We shouldn't really
 	// look up the type by name each time we need, but precompute
 	// and sotre in a global.
-	if ( ! type->GetTypeID() )
+	if ( type->GetName().empty() )
 		{
 		ODesc d;
 		type->Describe(&d);
@@ -115,7 +115,7 @@ shared_ptr<::hilti::Expression> ValueBuilder::BroType(const ::BroType* type)
 
 	auto tmp = Builder()->addTmp("ttype", ::hilti::builder::type::byName("LibBro::BroType"));
 	auto f = ::hilti::builder::id::create("LibBro::bro_lookup_type");
-	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(type->GetTypeID()) } );
+	auto args = ::hilti::builder::tuple::create( { ::hilti::builder::string::create(type->GetName()) } );
 	Builder()->addInstruction(tmp, ::hilti::instruction::flow::CallResult, f, args);
 	return tmp;
 	}

@@ -19,7 +19,7 @@ You currently need a topic branch of Bro that adds support for
 dynamically loaded plugins. To get it, use git::
 
     > git clone --recursive git://git.bro.org/bro
-    > git checkout topic/robin/dynamic-plugins
+    > git checkout topic/robin/dynamic-plugins-2.3
 
 Now you need to build Bro with the same C++ compiler (and C++ standard
 library) that you also use for compiling HILTI/BinPAC++ with. If

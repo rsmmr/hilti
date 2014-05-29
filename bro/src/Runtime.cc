@@ -432,12 +432,16 @@ extern void profile_stop(int64_t t);
 
 void libbro_profile_start(int64_t ty)
 	{
+#ifdef BRO_PLUGIN_HAVE_PROFILING
 	profile_start(ty);
+#endif
 	}
 
 void libbro_profile_stop(int64_t ty)
 	{
+#ifdef BRO_PLUGIN_HAVE_PROFILING
 	profile_stop(ty);
+#endif
 	}
 
 void libbro_object_ref(::BroObj* obj)
@@ -760,13 +764,13 @@ void libbro_bro_enum_type_add_name(::EnumType* etype, hlt_string module, hlt_str
 	return new FuncType(args->AsRecordType(), ytype, (::function_flavor)flavor);
 	}
 
-typedef std::map<const ::BroObj *, std::pair<const hlt_type_info*, void*> > object_map_b2h;
+typedef std::map<void *, std::pair<const hlt_type_info*, void*> > object_map_b2h;
 static object_map_b2h objects_b2h;
 
-typedef std::map<void*, const ::BroObj *> object_map_h2b;
+typedef std::map<void *, void *> object_map_h2b;
 static object_map_h2b objects_h2b;
 
-void libbro_object_mapping_register(const ::BroObj* bobj, hlt_type_info* ti, void** hobj, hlt_exception** excpt, hlt_execution_context* ctx)
+void libbro_object_mapping_register(void* bobj, hlt_type_info* ti, void** hobj, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	assert(bobj);
 
@@ -779,7 +783,7 @@ void libbro_object_mapping_register(const ::BroObj* bobj, hlt_type_info* ti, voi
 	objects_h2b[*hobj] = bobj;
 	}
 
-void libbro_object_mapping_unregister_bro(const ::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+void libbro_object_mapping_unregister_bro(void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto m = objects_b2h.find(obj);
 
@@ -795,7 +799,7 @@ void libbro_object_mapping_unregister_bro(const ::BroObj* obj, hlt_exception** e
 	GC_DTOR_GENERIC(&hobj, ti);
 	}
 
-void libbro_object_mapping_invalidate_bro(const ::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+void libbro_object_mapping_invalidate_bro(void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	libbro_object_mapping_unregister_bro(obj, excpt, ctx);
 	}
@@ -812,7 +816,7 @@ const ::BroObj* libbro_object_mapping_lookup_bro(hlt_type_info* ti, void** obj, 
 	if ( m == objects_h2b.end() )
 		return 0;
 
-	const ::BroObj* bobj = m->second;
+    const ::BroObj* bobj = static_cast<BroObj*>(m->second);
 	Ref(const_cast<::BroObj*>(bobj));
 	return bobj;
 	}

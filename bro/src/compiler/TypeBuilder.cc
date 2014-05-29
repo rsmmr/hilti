@@ -128,8 +128,8 @@ std::shared_ptr<::hilti::Type> TypeBuilder::CompileBaseType(const ::BroType* typ
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::EnumType* type)
 	{
-	auto idx = type->GetTypeID() ? string(type->GetTypeID())
-				     : ::util::fmt("enum_%p", type);
+	auto idx = type->GetName().size() ? string(type->GetName())
+					  : ::util::fmt("enum_%p", type);
 
 	auto sm = ::extract_module_name(idx.c_str());
 	auto sv = ::extract_var_name(idx.c_str());
@@ -219,8 +219,8 @@ std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::OpaqueType* type)
 
 std::shared_ptr<::hilti::Type> TypeBuilder::Compile(const ::RecordType* type)
 	{
-	auto idx = type->GetTypeID() ? string(type->GetTypeID())
-				     : ::util::fmt("struct_%p", type);
+	auto idx = type->GetName().size() ? string(type->GetName())
+					  : ::util::fmt("record_%p", type);
 
 	auto sm = ::extract_module_name(idx.c_str());
 	auto sv = ::extract_var_name(idx.c_str());

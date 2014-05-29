@@ -374,9 +374,6 @@ bool Manager::InitPostScripts()
 			}
 		}
 
-	if ( ! pimpl->compile_scripts && ! pimpl->hlt_files.size() )
-		HiltiPlugin.DisableInterpreterPlugin();
-
 	post_scripts_init_run = true;
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Done with post-script initialization");
@@ -957,12 +954,16 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Retrieving binpac_parsers() function");
 
+#ifdef BRO_PLUGIN_HAVE_PROFILING
 	profile_update(PROFILE_JIT_LAND, PROFILE_START);
+#endif
 
 	typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
 	auto binpac_parsers = (binpac_parsers_func)hilti_context->nativeFunction(llvm_module, ee, "binpac_parsers");
 
+#ifdef BRO_PLUGIN_HAVE_PROFILING
 	profile_update(PROFILE_JIT_LAND, PROFILE_STOP);
+#endif
 
 	if ( ! binpac_parsers )
 		{
@@ -984,7 +985,10 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 	if ( pimpl->compile_scripts )
 		{
 		PLUGIN_DBG_LOG(HiltiPlugin, "Caching native script functions");
+
+#ifdef BRO_PLUGIN_HAVE_PROFILING
 		profile_update(PROFILE_JIT_LAND, PROFILE_START);
+#endif
 
 		for ( auto i : pimpl->compiler->HiltiFunctionSymbolMap() )
 			{
@@ -1005,7 +1009,9 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 			PLUGIN_DBG_LOG(HiltiPlugin, "    %s -> %s at %p", func->Name(), symbol.c_str(), native);
 			}
 
+#ifdef BRO_PLUGIN_HAVE_PROFILING
 		profile_update(PROFILE_JIT_LAND, PROFILE_STOP);
+#endif
 		}
 
 	// Done, print out debug summary if requested.
@@ -1055,7 +1061,7 @@ util::cache::FileCache::Key Manager::CacheKeyForLinkedModule()
 	auto path = HiltiPlugin.PluginPath();
 	auto dir = HiltiPlugin.PluginDirectory();
 
-	assert(path && dir);
+	assert(path.size() && dir.size());
 
 	key.files.insert(path);
 	key.dirs.insert(dir);
@@ -2751,6 +2757,11 @@ bool Manager::HaveCustomHandler(const ::Func* ev)
 	return pimpl->compiler->HaveCustomHandler(ev);
 	}
 
+bool Manager::HaveCustomHiltiCode()
+	{
+	return pimpl->hlt_files.size();
+	}
+
 bool Manager::RuntimeRaiseEvent(Event* event)
 	{
 	auto efunc = event->Handler()->LocalHandler();
@@ -2761,7 +2772,13 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		Unref(result);
 		}
 
+	val_list* args = event->Args();
+
+	loop_over_list(*args, i)
+		Unref((*args)[i]);
+
 	Unref(event);
+
 	return true;
 	}
 
@@ -2805,7 +2822,9 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 	hlt_execution_context* ctx = hlt_global_execution_context();
 	__hlt_context_clear_exception(ctx); // TODO: HILTI should take care of this.
 
+#ifdef BRO_PLUGIN_HAVE_PROFILING
 	profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+#endif
 
 	::Val* result = nullptr;
 
@@ -2845,7 +2864,9 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		return new ::Val(0, ::TYPE_ERROR);
 	}
 
+#ifdef BRO_PLUGIN_HAVE_PROFILING
 	profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
+#endif
 
 	if ( excpt )
 		{
@@ -2855,9 +2876,6 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		hlt_free(e);
 		GC_DTOR(excpt, hlt_exception);
 		}
-
-	loop_over_list(*args, i)
-		Unref((*args)[i]);
 
 	return result ? result : new ::Val(0, ::TYPE_VOID);
 	}

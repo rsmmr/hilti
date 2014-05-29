@@ -735,7 +735,7 @@ shared_ptr<::hilti::Expression> ModuleBuilder::HiltiCallBuiltinFunctionHilti(con
 
 	const ::BroType* ytype = ftype->YieldType();
 
-	if ( ytype->Tag() == TYPE_ANY )
+	if ( ytype->Tag() == TYPE_ANY && target_type->Tag() != TYPE_VOID )
 		{
 		assert(target_type);
 		ytype = target_type;

@@ -27,15 +27,15 @@ static inline void debug_msg(file_analysis::Analyzer* analyzer, const char* msg,
 	if ( data )
 		{
 		PLUGIN_DBG_LOG(HiltiPlugin, "[%s/%lu/file] %s: |%s|",
-            file_mgr->GetComponentName(analyzer->Tag()), analyzer->GetID(), msg,
-			fmt_bytes((const char*) data, min(40, len)), len > 40 ? "..." : "");
+			       file_mgr->GetComponentName(analyzer->Tag()).c_str(), analyzer->GetID(), msg,
+			       fmt_bytes((const char*) data, min(40, len)), len > 40 ? "..." : "");
 		}
 
 	else
 		{
 		PLUGIN_DBG_LOG(HiltiPlugin, "[%s/%lu/file] %s",
-			file_mgr->GetComponentName(analyzer->Tag()), analyzer->GetID(),
-			msg);
+			       file_mgr->GetComponentName(analyzer->Tag()).c_str(), analyzer->GetID(),
+			       msg);
 		}
 #endif
 	}
@@ -122,9 +122,16 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 		if ( eod )
 			hlt_bytes_freeze(data, 1, &excpt, ctx);
 
-        profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+		profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+#endif
+
 		void* pobj = (*parser->parse_func)(data, &cookie, &excpt, ctx);
-        profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
+
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+		profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
+#endif
+
 		GC_DTOR_GENERIC(&pobj, parser->type_info);
 		}
 
@@ -141,9 +148,15 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 		if ( eod )
 			hlt_bytes_freeze(data, 1, &excpt, ctx);
 
-        profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+		profile_update(PROFILE_HILTI_LAND, PROFILE_START);
+#endif
+
 		void* pobj = (*parser->resume_func)(resume, &excpt, ctx);
-        profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
+
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+		profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
+#endif
 		GC_DTOR_GENERIC(&pobj, parser->type_info);
 		resume = 0;
 		}

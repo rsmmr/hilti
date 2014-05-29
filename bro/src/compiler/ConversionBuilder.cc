@@ -237,13 +237,13 @@ void ConversionBuilder::FinalizeTypes()
 
 bool ConversionBuilder::IsShadowedType(const BroType* type) const
 	{
-	if ( ! type->GetTypeID() )
+	if ( type->GetName().empty() )
 		return false;
 
 	// When adding a type here, make sure to sets its
 	// notify_plugins_on_dtor flag in Bro.
 
-	auto name = ::extract_var_name(type->GetTypeID());
+	auto name = ::extract_var_name(type->GetName().c_str());
 	return name == "connection"
 		|| name == "dns_msg"
 		|| name == "dns_answer"
@@ -280,7 +280,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildCreateBroType(const
 									   const ::BroType* type,
 									   build_create_type_callback cb)
 	{
-	if ( auto id = type->GetTypeID() )
+	auto id = type->GetName();
+	if ( id.size() )
 		// We don't need to actually build it, can just look it up.
 		return BuildCreateBroTypeInternal(tag, type,
 			[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
@@ -335,7 +336,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::PostponeBuildCreateBroTy
 										   const ::BroType* type,
 										   build_create_type_callback cb)
 	{
-	if ( type->GetTypeID() )
+	if ( type->GetName().size() )
 		// As we can just look these up, we don't need to postpone.
 		return BuildCreateBroType(tag, type, cb);
 
@@ -1446,9 +1447,9 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::AnyConversionFunction(co
 	{
 	string idx;;
 
-	if ( type->GetTypeID() )
+	if ( type->GetName().size() )
 		{
-		idx = type->GetTypeID();
+		idx = type->GetName();
 		auto sm = ::extract_module_name(idx.c_str());
 		auto sv = ::extract_var_name(idx.c_str());
 		idx = ::util::fmt("%s::%s", sm, sv);
@@ -1617,7 +1618,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::En
 	return BuildCreateBroType("enum", type,
 		[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
 		{
-		auto name = ::hilti::builder::string::create(type->AsEnumType()->Name());
+		auto name = ::hilti::builder::string::create(type->GetName());
 		auto module = ::hilti::builder::string::create(ModuleBuilder()->module()->id()->name());
 
 		Builder()->addInstruction(dst,

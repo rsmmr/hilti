@@ -59,7 +59,7 @@ int64_t global_clear_table_bif(hlt_LibBro_BroAny* any, hlt_exception** excpt, hl
 // FIXME: This is a hack because the compiler qualifies the name wrong...
 int64_t dns_clear_table_bif(hlt_LibBro_BroAny* any, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-    return global_clear_table_bif(any, excpt, ctx);
+	return global_clear_table_bif(any, excpt, ctx);
 	}
 
 // The following function are for testing purposes only.
