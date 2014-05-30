@@ -125,6 +125,7 @@ shared_ptr<hilti::Expression> ExpressionBuilder::Compile(const ::Expr* expr, con
 
 	case EXPR_CLONE:
 		e = Compile(static_cast<const ::CloneExpr*>(expr));
+		break;
 
 	case EXPR_COND:
 		e = Compile(static_cast<const ::CondExpr*>(expr));
@@ -560,7 +561,10 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CallExpr* exp
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CloneExpr* expr)
 	{
-	return NotSupported(expr, "CloneExpr");
+	auto e = HiltiExpression(expr->Op());
+	auto result = Builder()->addTmp("copy", HiltiType(expr->Type()));
+	Builder()->addInstruction(result, ::hilti::instruction::operator_::Clone, e);
+	return result;
 	}
 
 shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::CondExpr* expr)

@@ -62,6 +62,11 @@ void plugin::Bro_Hilti::Plugin::InitPreScript()
 
 	if ( ! _manager->InitPreScripts() )
 		exit(1);
+	}
+
+void plugin::Bro_Hilti::Plugin::InitPostScript()
+	{
+	plugin::Plugin::InitPostScript();
 
 	if ( BifConst::Hilti::compile_scripts || _manager->HaveCustomHiltiCode() )
 		{
@@ -71,11 +76,6 @@ void plugin::Bro_Hilti::Plugin::InitPreScript()
 		EnableHook(plugin::HOOK_DRAIN_EVENTS);
 		EnableHook(plugin::HOOK_BRO_OBJ_DTOR);
 		}
-	}
-
-void plugin::Bro_Hilti::Plugin::InitPostScript()
-	{
-	plugin::Plugin::InitPostScript();
 
 	if ( ! _manager->InitPostScripts() )
 		exit(1);
