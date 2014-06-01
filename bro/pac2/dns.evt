@@ -67,7 +67,7 @@ on DNS::ResourceRecord if ( self.ty == DNS::RDType::SOA )
     -> event dns_SOA_reply($conn, DNS::bro_msg(msg.header), DNS::bro_answer(self, rrtype), DNS::bro_soa(self.soa));
 
 on DNS::ResourceRecord if ( self.ty == DNS::RDType::TXT )
-    -> event dns_TXT_reply($conn, DNS::bro_msg(msg.header), DNS::bro_answer(self, rrtype), b";".join([i.data for i in self.txt]));
+    -> event dns_TXT_reply($conn, DNS::bro_msg(msg.header), DNS::bro_answer(self, rrtype), [i.data for i in self.txt]);
 
 on DNS::ResourceRecord if ( self.ty == DNS::RDType::WKS )
     -> event dns_WKS_reply($conn, DNS::bro_msg(msg.header), DNS::bro_answer(self, rrtype));
