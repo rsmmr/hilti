@@ -1,0 +1,6 @@
+#! /usr/bin/env bash
+#
+# Canonifies a test's output before running test-diff.
+
+sed 's#(from [^)]\{1,\})#(from XXX)#g'
+
