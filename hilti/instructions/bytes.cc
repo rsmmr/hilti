@@ -59,19 +59,6 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Copy) {
-        auto ty_target = as<type::Bytes>(target->type());
-        auto ty_op1 = as<type::Bytes>(op1->type());
-
-    }
-
-    iDocCC(Copy ,R"(
-        Copy the contents of *op1* into a new byte instance.
-    )")
-
-iEndCC
-
-iBeginCC(bytes)
     iValidateCC(Diff) {
     }
 
@@ -282,6 +269,38 @@ iBeginCC(bytes)
 
     iDocCC(Join, R"(
          Renders each of the elements in list *op2* into a bytes object (as if one printed it), and then concatenates them using *op1* as the separator.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(AppendObject) {
+    }
+
+    iDocCC(AppendObject, R"(Inserts a separator object *op2* to the end of the bytes object *op1*. When iterating over a bytes object, reaching the object will generally be treated as if the end has been reached. However, the  instructions ``retrieve_object``/``at_object``/``skip_object`` may be used to operate on the inserted objects.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(RetrieveObject) {
+    }
+
+    iDocCC(RetrieveObject, R"(Retrieves a separator object at a iterator position *op1*. The object's type must match the target type, otherwise will throw a ``TypeError``. If no separator object at the position, throws a \c ValuesError.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(AtObject) {
+    }
+
+    iDocCC(AtObject, R"(Checks if there's a separator object located at the iterator position *op1*. If *op2* is given, confirms that the object is of the corresponding type as well.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(SkipObject) {
+    }
+
+    iDocCC(SkipObject, R"(Advances iterator *op1* past an object, returning the new iterator. Throws ``ValueError`` if there's no object at the location.
     )")
 iEndCC
 

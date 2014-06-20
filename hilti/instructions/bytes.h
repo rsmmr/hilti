@@ -55,11 +55,6 @@ iBeginH(bytes, Equal, "equal")
     iOp2(optype::refBytes, true);
 iEndH
 
-iBeginH(bytes, Copy, "bytes.copy")
-    iTarget(optype::refBytes)
-    iOp1(optype::refBytes, true);
-iEndH
-
 iBeginH(bytes, Diff, "bytes.diff")
     iTarget(optype::int64);
     iOp1(optype::iterBytes, true);
@@ -174,6 +169,27 @@ iBeginH(bytes, Join, "bytes.join")
     iTarget(optype::refBytes)
     iOp1(optype::refBytes, true);
     iOp2(optype::refList, true);
+iEndH
+
+iBeginH(bytes, AppendObject, "bytes.append_object")
+    iOp1(optype::refBytes, false);
+    iOp2(optype::any, true);
+iEndH
+
+iBeginH(bytes, RetrieveObject, "bytes.retrieve_object")
+    iTarget(optype::any)
+    iOp1(optype::iterBytes, true);
+iEndH
+
+iBeginH(bytes, AtObject, "bytes.at_object")
+    iTarget(optype::boolean)
+    iOp1(optype::iterBytes, true);
+    iOp2(optype::optional(optype::typeAny), true);
+iEndH
+
+iBeginH(bytes, SkipObject, "bytes.skip_object")
+    iTarget(optype::iterBytes)
+    iOp1(optype::iterBytes, true);
 iEndH
 
 iBeginH(iterBytes, Begin, "begin")

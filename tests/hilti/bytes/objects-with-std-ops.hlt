@@ -1,0 +1,238 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global ref<list<int<32>>> gl1 = list<int<32>>(1, 2, 3)
+
+void p_bytes(string prefix, ref<bytes> b) {
+    local string s
+    s = call Hilti::fmt("|    %s -> %s", (prefix, b))
+    call Hilti::print(s)
+}
+
+void p_bool(string prefix, bool b) {
+    local string s
+    s = call Hilti::fmt("|    %s -> %s", (prefix, b))
+    call Hilti::print(s)
+}
+
+void p_i8(string prefix, int<8> b) {
+    local string s
+    s = call Hilti::fmt("|    %s -> %s", (prefix, b))
+    call Hilti::print(s)
+}
+
+void p_i64(string prefix, int<64> b) {
+    local string s
+    s = call Hilti::fmt("|    %s -> %s", (prefix, b))
+    call Hilti::print(s)
+}
+
+void p_str(string prefix, string b) {
+    local string s
+    s = call Hilti::fmt("|    %s -> %s", (prefix, b))
+    call Hilti::print(s)
+}
+
+void f(int<64> idx, ref<bytes> b) {
+    local ref<bytes> x
+    local int<64> i64
+    local int<8> i8
+    local bool bl
+
+    call Hilti::print("--- ", False)
+    call Hilti::print(idx)
+
+    call Hilti::print(b)
+
+    x = bytes.lower b
+    call p_bytes("lower", x)
+
+    x = bytes.upper b
+    call p_bytes("upper", x)
+
+    x = bytes.strip b
+    call p_bytes("strip", x)
+
+    i64 = bytes.length b
+    call p_i64("length", i64)
+
+    try {
+        i64 = bytes.to_int b 10
+        call p_i64("to_int", i64)
+    }
+    catch {
+        call p_str("to_int", "value error")
+    }
+
+    bl = bytes.is_frozen b
+    call p_bool("is_frozen", bl)
+
+    bl = bytes.empty b
+    call p_bool("empty", bl)
+}
+
+void g(int<64> idx, ref<bytes> b1, ref<bytes> b2) {
+    local ref<bytes> x
+    local bool b
+    local int<8> i8
+    local string s
+    local ref<vector<ref<bytes>>> v
+    local tuple<ref<bytes>,ref<bytes>> t
+    local iterator<bytes> iter
+    local iterator<bytes> end
+
+    call Hilti::print("--- ", False)
+    call Hilti::print(idx)
+
+    call Hilti::print(b1)
+    call Hilti::print(b2)
+
+    x = bytes.concat b1 b2
+    call p_bytes("concat", x)
+
+    x = clone b1
+    bytes.append x b2
+    call p_bytes("clone+append", x)
+
+    b = bytes.contains b1 b2
+    call p_bool("contains", b)
+
+    b = bytes.startswith b1 b2
+    call p_bool("startswith", b)
+
+    iter = bytes.find b1 b2
+    end = end b1
+    x = bytes.sub iter end
+    call p_bytes("find+sub", x)
+
+    i8 = bytes.cmp b1 b2
+    call p_i8("cmp", i8)
+
+    v = bytes.split b1 b2
+    s = call Hilti::fmt("%s", (v))
+    call p_str("split", s)
+
+    t = bytes.split1 b1 b2
+    s = call Hilti::fmt("%s", (t))
+    call p_str("split1", s)
+}
+
+void run() {
+    local ref<bytes> b1
+    local ref<bytes> b2
+    local ref<bytes> x
+    local ref<bytes> x2
+    local string s
+    local int<8> i8
+    local int<64> i64
+
+    local iterator<bytes> i1
+    local iterator<bytes> i2
+    local iterator<bytes> i3
+
+    b1 = b"abc"
+    bytes.append_object b1 "string"
+    bytes.append b1 b"def"
+
+    b2 = b"ABC"
+    bytes.append_object b2 42
+    bytes.append b2 b"DEF"
+    bytes.append_object b2 43
+
+    call g(1, b1, b2)
+    call f(2, b1)
+
+    ##
+
+    b1 = new bytes
+    bytes.append_object b1 42
+    bytes.append b1 b"DEF"
+
+    call g(3, b1, b2)
+    call f(4, b1)
+
+    ###
+
+    b1 = new bytes
+    bytes.append b1 b"DEF"
+    bytes.append_object b1 42
+
+    call g(5, b1, b2)
+    call f(6, b1)
+
+    ###
+
+    b1 = b"abcd"
+    bytes.append_object b1 "string"
+    bytes.append b1 b"def"
+
+    b2 = b"b"
+
+    call g(7, b1, b2)
+
+    ###
+
+    b1 = b"abc"
+    bytes.append_object b1 "string"
+    bytes.append b1 b"def"
+
+    b2 = b"e"
+
+    call g(8, b1, b2)
+
+    ###
+
+    b1 = b"abc"
+    bytes.append_object b1 "string"
+    bytes.append b1 b"def"
+
+    call Hilti::print("--- last")
+    call Hilti::print(b1)
+
+    i1 = begin b1
+    i2 = end b1
+
+    i64 = bytes.diff i1 i2
+    call p_i64("diff begin-to-end", i64)
+
+    x = clone b1
+    i2 = bytes.offset x 2
+    bytes.trim x i2
+    call p_bytes("clone+offset(2)+trim", x)
+
+    x = clone b1
+    i2 = bytes.offset x 4
+    bytes.trim x i2
+    call p_bytes("clone+offset(4)+trim", x)
+
+    x = clone b1
+    i2 = begin x
+    i2 = incr_by i2 2
+    bytes.trim x i2
+    call p_bytes("clone+incr_by(2)+trim", x)
+
+    x2 = clone b1
+    i2 = begin x
+    i2 = incr_by i2 4
+    bytes.trim x i2
+    call p_bytes("clone+incr_by(4)+trim", x)
+
+    ###
+
+    b1 = b"abcd"
+    bytes.append_object b1 "string"
+    bytes.append b1 b"def"
+
+    call Hilti::print("--- last2")
+    call Hilti::print(gl1)
+    call Hilti::print(b1)
+
+    x = bytes.join b1 gl1
+    call p_bytes("join", x)
+
+}

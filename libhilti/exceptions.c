@@ -50,6 +50,7 @@ hlt_exception_type hlt_exception_no_thread_context = { "NoThreadContext", &hlt_e
 hlt_exception_type hlt_exception_conversion_error = { "ConversionError", &hlt_exception_unspecified, &hlt_type_info_hlt_string};
 hlt_exception_type hlt_exception_termination = { "Termination", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_cloning_not_supported = { "CloningNotSupported", &hlt_exception_unspecified, &hlt_type_info_hlt_string};
+hlt_exception_type hlt_exception_type_error = { "TypeError", &hlt_exception_unspecified, &hlt_type_info_hlt_string };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}; // FIXME: &hlt_type_info_hlt_int_32 };

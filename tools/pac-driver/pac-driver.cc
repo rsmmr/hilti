@@ -376,7 +376,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
         done = hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx);
 
         chunk1 = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
-        chunk2 = hlt_bytes_copy(chunk1, &excpt, ctx); // FIXME: Need?
+        chunk2 = hlt_bytes_clone(chunk1, &excpt, ctx); // FIXME: Need?
         hlt_bytes_append(incr_input, chunk1, &excpt, ctx);
         GC_DTOR(chunk1, hlt_bytes);
         GC_DTOR(chunk2, hlt_bytes);

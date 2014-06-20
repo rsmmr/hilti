@@ -20,12 +20,12 @@ void run() {
     b2 = string.encode "DuDa" Hilti::Charset::ASCII
     bytes.append b1 b2
 
-    b4 = bytes.copy b1
-    b5 = bytes.copy b1
+    b4 = clone b1
+    b5 = clone b1
 
     bytes.append b4 b5
 
-    b6 = bytes.copy b4
+    b6 = clone b4
 
     call Hilti::print (b6)
 }
