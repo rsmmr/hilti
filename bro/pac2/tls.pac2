@@ -5,7 +5,8 @@ type ContentType = enum {
   change_cipher_spec = 20,
   alert = 21,
   handshake = 22,
-  application_data = 23
+  application_data = 23,
+	heartbeat = 24
 };
 
 type HandshakeType = enum {
@@ -164,11 +165,12 @@ type RecordFragment = unit(handshakesink: sink, alertsink: sink, record_version:
     ContentType::handshake -> : bytes &length=self.length -> handshakesink;
     ContentType::alert -> : bytes &length=self.length -> alertsink;
     ContentType::change_cipher_spec -> : bytes &length=self.length {
-      # everything in this connection will be encrypted from now on. 
+      # everything in this connection will be encrypted from now on.
       # close all sinks
-      handshakesink.close(); 
+      handshakesink.close();
       alertsink.close();
     }
+#		ContentType::heartbeat -> : bytes &length=self.length -> heartbeatsink;
     ContentType::application_data -> : bytes &length=self.length; # encrypted application data.
     * -> : bytes &length=self.length { print "unhandled type", self.content_type; }
   } if ( self.encrypted == False );
@@ -269,6 +271,21 @@ type ClientHello = unit(len: uint64) {
 };
 
 type Extension = unit {
+	var data: sink;
+
+  var extension_type: Extensions;
+  extension_code: uint16 -> self.data {
+    self.extension_type = Extensions(self.extension_code);
+  }
+  extension_length: uint16 -> self.data;
+	extension_data: bytes &length=self.extension_length -> self.data;
+
+	on %init {
+		self.data.connect(new Extension_Parse);
+	}
+};
+
+export type Extension_Parse = unit {
   var extension_type: Extensions;
   extension_code: uint16 {
     self.extension_type = Extensions(self.extension_code);
