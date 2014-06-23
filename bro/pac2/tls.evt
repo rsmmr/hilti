@@ -15,12 +15,12 @@ on TLS::ServerHello::compression_method -> event tls_server_hello($conn, self.se
 
 # Fixme: we have neither chain_idx nor chain_len at the moment. We do not know the length when parsing and we do not keep track of the index.
 # Also - we do not parse the certificate yet and only pass the der certificate up.
-on TLS::certificate_message -> event x509_certificate($conn, $is_orig, self.cert);
+on TLS::certificate_message -> event tls_certificate($conn, $is_orig, self.cert);
 
 on TLS::NewSessionTicket -> event tls_session_ticket_handshake($conn, cast<uint64>(self.ticket_lifetime_hint), self.ticket);
 
-# TLS extensions. In the original parser, we only have one message for this 
-# (that just returns the binary content of all extension). In this parser, we do 
+# TLS extensions. In the original parser, we only have one message for this
+# (that just returns the binary content of all extension). In this parser, we do
 # this a bit differently and have a number of different messages for all kinds of
 # extensions. And a catchall just in case nothing fits...
 
