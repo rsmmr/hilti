@@ -22,7 +22,7 @@ type HandshakeType = enum {
   finished = 20
 };
 
-type Extensions = enum {
+export type Extensions = enum {
   server_name = 0,
   max_fragment_length = 1,
   client_certificate_url = 2,
@@ -54,7 +54,7 @@ type Extensions = enum {
 };
 
 type ECPointFormat = enum {
- uncompressed = 0, 
+ uncompressed = 0,
  ansiX962_compressed_prime = 1,
  ansiX962_compressed_char2 =2
 };
@@ -73,7 +73,7 @@ type NamedCurve = enum {
   arbitrary_explicit_char2_curves = 0xFF02
 };
 
-type HeartbeatMode = enum {
+export type HeartbeatMode = enum {
  peer_allowed_to_send = 1,
  peer_not_allowed_to_send = 2
 };
@@ -114,17 +114,17 @@ type AlertDescription = enum {
   unsupported_extension = 110
 };
 
-type HashAlgorithm = enum {
+export type HashAlgorithm = enum {
   none = 0, md5= 1, sha1= 2, sha224= 3, sha256= 4, sha384= 5,
-  sha512 = 6 
+  sha512 = 6
 };
 
-type SignatureAlgorithm = enum {
+export type SignatureAlgorithm = enum {
   anonymous = 0, rsa= 1, dsa= 2, ecdsa= 3
 };
 
-type TLSVersion = enum {
-  UNDEF = -1, # out of range, only used internally 
+export type TLSVersion = enum {
+  UNDEF = -1, # out of range, only used internally
   SSLv2  = 0x0002,
   SSLv3  = 0x0300,
   TLSv10 = 0x0301,
@@ -185,7 +185,7 @@ type Alert_message = unit {
 };
 
 export type Handshake = unit(version: TLSVersion) {
-  handshakes: list<Handshake_message(version)>;  
+  handshakes: list<Handshake_message(version)>;
 };
 
 type Handshake_message = unit(version: TLSVersion) {
@@ -326,7 +326,7 @@ type ProtocolNameList = unit {
 type ServerName = unit {
   var total_length: uint64;
   name_type: uint8 &convert=NameType($$);
-  
+
   switch ( self.name_type ) {
     NameType::host_name -> {
      host_name_length: uint16;
