@@ -3,13 +3,13 @@ module BACnet;
 import Bro;
 
 # This module implements a BACnet parser.
-# 
+#
 # When used on IP, BACnet is a protocol, which is layered on top
 # of UDP.
 # When used with IP, the outmost layer of a BACnet packet is the
 # BACnet Virtual Link Layer (BVLL), which supports a number of different
 # Virtual Link Control Functions (BVLC).
-# 
+#
 # When the BVLL layer is used to sent a higher level message, it wraps
 # a BACnet Network Protocol Data Unit (NPDU). This layer concerns itself
 # with the routing (and so on) of BACnet messages. A NPDU message can either
@@ -996,7 +996,7 @@ type BACnetPropertyIdentifier = enum {
   power = 384,
   prescale = 185,
   present-value = 85,
-  priority = 86,
+  bacnet-priority = 86,
   priority-array = 87,
   priority-for-writing = 88,
   process-identifier = 89,
@@ -1331,7 +1331,7 @@ type BACnetReliability = enum {
 ## in Clause 23.
 };
 
-type BVLC_function = enum {
+export type BVLC_function = enum {
   # message distribution
   Original-Unicast-NPDU = 0x0A,
   Original-Broadcast-NPDU = 0x0B,
@@ -1376,7 +1376,7 @@ export type Message = unit {
   };
 };
 
-type BVLC_result = enum {
+export type BVLC_result = enum {
   Success = 0x0000,
   Write-BDT-NAK = 0x0010,
   Read-BDT-NAK = 0x0020,
@@ -1434,7 +1434,7 @@ type BBMD = unit (func: BVLC_function, len: uint16) {
   };
 };
 
-type NPDU_type = enum {
+export type NPDU_type = enum {
   Who-Is-Router-To-Network = 0x00,
   I-Am-Router-To-Network = 0x01,
   I-Could-Be-Router-To-Network = 0x02,
@@ -1457,7 +1457,7 @@ type NPDU_type = enum {
   Network-Numer-Is = 0x13
 };
 
-type NPDU_priority = enum {
+export type NPDU_priority = enum {
   Normal = 0,
   Urgent = 1,
   Critical = 2,
@@ -1470,15 +1470,15 @@ tuple<NPDU_priority, uint64, bytes, uint64, bytes, uint64, NPDU_type> bro_npdu_i
 # Fixme: since nearly all of these are optionals, we cannot return them
 # at the moment..
 
-  return (npdu.priority, 0, b"", 0, b"", 0, npdu.message_type);
+  return (npdu.bacnet-priority, 0, b"", 0, b"", 0, npdu.message_type);
 }
 
 type NPDU = unit(len: uint16) {
-  var priority: NPDU_priority;
+  var bacnet-priority: NPDU_priority;
 
   version: uint8; # should be 0x1, but wireshark trace also has 10?
   control : bitfield(8) {
-    priority: 0..1;
+    bacnet-priority: 0..1;
     der: 2;
     source: 3;
     reserved1: 4;
@@ -1486,7 +1486,7 @@ type NPDU = unit(len: uint16) {
     reserved2: 6;
     nlmessage: 7;
   } {
-    self.priority = NPDU_priority(self.control.priority);
+    self.bacnet-priority = NPDU_priority(self.control.bacnet-priority);
   }
 
   dnet: uint16 if ( self.control.destination == 1 );
@@ -1504,7 +1504,7 @@ type NPDU = unit(len: uint16) {
   apdu: APDU( len - cast<uint16>(self.offset()) ) if ( self.control.nlmessage == 0 );
 };
 
-type NPDU_Reject_reason = enum {
+export type NPDU_Reject_reason = enum {
   Other = 0,
   No_route = 1,
   Router_busy = 2,
@@ -1519,7 +1519,7 @@ type NPDU_message = unit(len: uint16, t: NPDU_type) {
   switch ( t ) {
     NPDU_type::Who-Is-Router-To-Network,
     NPDU_type::Disconnect-Connection-To-Network -> dnets: list<uint16> &length=1 if ( len >= 2 );
-    NPDU_type::I-Am-Router-To-Network, 
+    NPDU_type::I-Am-Router-To-Network,
     NPDU_type::Router-Busy-To-Network,
     NPDU_type::Router-Available-To-Network -> dnets: list<uint16> &length=len / 2;
     NPDU_type::I-Could-Be-Router-To-Network -> {
@@ -1550,7 +1550,7 @@ type NPDU_message = unit(len: uint16, t: NPDU_type) {
 # convert a NPDU routing entry into a Bro tuple
 tuple<uint64, uint64, bytes> bro_npdu_routing_entry(entry: NPDU_routing_entry) {
   return ( cast<uint64>(entry.dnet), cast<uint64>(entry.portId), entry.portInfo );
-} 
+}
 
 type NPDU_routing_entry = unit {
   dnet: uint16;
@@ -1677,12 +1677,12 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
       #print "First segment, invokeID", self.invokeID;
     } else if ( ( self.head1.segmented-message == 1 ) && ( self.sequence_number > 0 ) ) {
     # segment other than the first.
-    # look if we already know the invokeID and the right sequence number is following. Otherwise - abort or 
+    # look if we already know the invokeID and the right sequence number is following. Otherwise - abort or
     # ignore
       if ( self.invokeID in confirmedReq_status ) {
         if ( confirmedReq_status[self.invokeID] >= self.sequence_number ) {
           # we already have this one, skip...
-          #print "Skipped fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", confirmedReq_status[self.invokeID];          
+          #print "Skipped fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", confirmedReq_status[self.invokeID];
         } else if ( confirmedReq_status[self.invokeID] == ( self.sequence_number - 1 ) ) {
           # add fragment
           #print "Added fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", confirmedReq_status[self.invokeID];
@@ -1752,7 +1752,7 @@ type ReadRange_Request = unit(len: uint16) {
   ## 4 and 5 are deprecated
   ## bySequenceNumber - 6
   ## byTime - 7
-  
+ 
   # types vary by range choice.
   reference: BACnetMessage if ( len > self.offset() );
   count: BACnetMessage if ( len > self.offset() ); # integer16 optional
@@ -1780,9 +1780,9 @@ type ConfirmedEventNotification_Request = unit(len: uint16) {
   timeStamp: BACnetTimeStamp;
   : BACnetTag if ( self.timeStamp_tag.lvt == 6 ); # end tag, has to have tag == 3
   notificationClass: BACnetContextMessage(BACnetType::UnsignedInteger, 4, self.timeStamp_tag);
-  priority: BACnetContextMessage(BACnetType::UnsignedInteger, 5, self.notificationClass.tag);
+  bacnet-priority: BACnetContextMessage(BACnetType::UnsignedInteger, 5, self.notificationClass.tag);
   var eventType: BACnetEventType;
-  eventType_raw: BACnetContextMessage(BACnetType::Enumerated, 6, self.priority.tag) { # BACnetEventType
+  eventType_raw: BACnetContextMessage(BACnetType::Enumerated, 6, self.bacnet-priority.tag) { # BACnetEventType
     self.eventType = BACnetEventType(self.eventType_raw.unsigned);
   }
   messageText: BACnetContextMessage(BACnetType::CharacterString, 7, self.eventType_raw.tag); # optional
@@ -1824,7 +1824,7 @@ type AtomicReadFile_Request = unit {
   # streamAccess
     fileStartPosition: BACnetMessage if ( self.open_tag.tag == 0 ); # integer
     requestedOctetCount: BACnetMessage if ( self.open_tag.tag == 0 ); # unsigned
-  
+ 
   # recordAccess
     fileStartRecord: BACnetMessage if ( self.open_tag.tag == 1 ); # integer
     requestedRecordCount: BACnetMessage if ( self.open_tag.tag == 1 ); # unsigned
@@ -1840,7 +1840,7 @@ type AtomicWriteFile_Request = unit {
   # streamAccess
   	fileStartPosition: BACnetMessage if ( self.open_tag.tag == 0 ); # integer
 	FileData: BACnetMessage if ( self.open_tag.tag == 0 ); # octet string
-  
+ 
   # recordAccess
   	fileStartRecord: BACnetMessage if ( self.open_tag.tag == 1 ); # integer
 	recordCount: BACnetMessage if ( self.open_tag.tag == 1 ); # unsigned
@@ -1868,7 +1868,7 @@ type WriteProperty_Request = unit(len: uint16) {
   propertyArrayIndex: BACnetContextMessage(BACnetType::UnsignedInteger, 2, self.propertyIdentifier_tag);
   propertyValue_tag: BACnetTag if ( self.propertyArrayIndex.tag.tag != 3 ); # check if previous tag was optional. This tag = 3
   propertyValue: BACnetArray_Partial(3);
-  priority: BACnetContextMessage(BACnetType::UnsignedInteger, 4, self.first_tag) if ( len > self.offset() );
+  bacnet-priority: BACnetContextMessage(BACnetType::UnsignedInteger, 4, self.first_tag) if ( len > self.offset() );
 };
 
 type BACnetUnconfirmedServiceChoice = enum {
@@ -1890,9 +1890,9 @@ type PDU_unconfirmedRequest = unit(len: uint16) {
 
   switch ( self.service_choice ) {
     BACnetUnconfirmedServiceChoice::i-Am -> i_am: I_Am_Request;
-    BACnetUnconfirmedServiceChoice::unconfirmedCOVNotification -> unconfirmedCOVNotification: UnconfirmedCOVNotification_Request(len - 2);    
-#    BACnetUnconfirmedServiceChoice::unconfirmedEventNotification -> unconfirmedEventNotification: PDU_UnconfirmedEventNotification(len - 2);    
-    BACnetUnconfirmedServiceChoice::unconfirmedPrivateTransfer -> unconfirmedPrivateTransfer: UnconfirmedPrivateTransfer_Request(len - 2);    
+    BACnetUnconfirmedServiceChoice::unconfirmedCOVNotification -> unconfirmedCOVNotification: UnconfirmedCOVNotification_Request(len - 2);
+#    BACnetUnconfirmedServiceChoice::unconfirmedEventNotification -> unconfirmedEventNotification: PDU_UnconfirmedEventNotification(len - 2);
+    BACnetUnconfirmedServiceChoice::unconfirmedPrivateTransfer -> unconfirmedPrivateTransfer: UnconfirmedPrivateTransfer_Request(len - 2);
     BACnetUnconfirmedServiceChoice::who-Is -> who_is: Who_Is_Request(len - 2);
     BACnetUnconfirmedServiceChoice::who-Has -> who_has: Who_Has_Request(len - 2);
     * -> : void { print "unhandled unconfirmedconfirmedrequest", self.service_choice; }
@@ -1916,15 +1916,15 @@ type Who_Has_Request = unit(len: uint16) {
 };
 
 type I_Am_Request = unit {
-  iAmDeviceIdentifier: BACnetMessage; # oid 
-  maxAPDULengthAccepted: BACnetMessage; # unsigned 
+  iAmDeviceIdentifier: BACnetMessage; # oid
+  maxAPDULengthAccepted: BACnetMessage; # unsigned
   segmentationSupported: BACnetMessage; # BACnetSegmentation
   var vendorID: BACnetVendorIDs;
   vendorID_raw: BACnetMessage { # unsigned16
     self.vendorID = BACnetVendorIDs(self.vendorID_raw.unsigned);
     #print "vendorID i_am_request", self.vendorID;
   }
-  
+
 };
 
 type UnconfirmedPrivateTransfer_Request = unit(len: uint16) {
@@ -2007,12 +2007,12 @@ type BACnet_ComplexACK_PDU = unit(head_raw: bytes, len: uint16) {
       #print "First segment, invokeID", self.invokeID;
     } else if ( ( self.head.segmented-message == 1 ) && ( self.sequence_number > 0 ) ) {
     # segment other than the first.
-    # look if we already know the invokeID and the right sequence number is following. Otherwise - abort or 
+    # look if we already know the invokeID and the right sequence number is following. Otherwise - abort or
     # ignore
       if ( self.invokeID in complexAck_status ) {
         if ( complexAck_status[self.invokeID] >= self.sequence_number ) {
           # we already have this one, skip...
-          #print "Skipped fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", complexAck_status[self.invokeID];          
+          #print "Skipped fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", complexAck_status[self.invokeID];
         } else if ( complexAck_status[self.invokeID] == ( self.sequence_number - 1 ) ) {
           # add fragment
           #print "Added fragment, invokeID", self.invokeID, "got", self.sequence_number, "last seen", complexAck_status[self.invokeID];
@@ -2103,12 +2103,12 @@ type AtomicReadFile_ACK = unit {
   # streamAccess
     fileStartPosition: BACnetMessage if ( self.open_tag.tag == 0 ); # integer
     fileData: BACnetMessage if ( self.open_tag.tag == 0 ); # octet String
-  
+
   # recordAccess
     fileStartRecord: BACnetMessage if ( self.open_tag.tag == 1 ); # integer
     fileRecordCount: BACnetMessage if ( self.open_tag.tag == 1 ); # unsigned
     # sequence of octet string
-    fileRecordData: BACnetArray if ( self.open_tag.tag == 1 );	
+    fileRecordData: BACnetArray if ( self.open_tag.tag == 1 );
   # close tag
    : BACnetTag;
 };
@@ -2220,7 +2220,7 @@ type BACnetTag = unit {
   # The close tag needs to be context-specific too and have the same tag-value
   # as the opening tag.
 
-  on %done { 
+  on %done {
     if ( self.data.tag != 0xF ) {
       self.tag = self.data.tag;
     }
@@ -2240,7 +2240,7 @@ type BACnetTag = unit {
 # tag again. Otherwhise it reads the tag from the wire.
 # type OptionalBACnetTag = unit(tag: BACnetTag, expect: uint8) {
 #  var tag: BACnetTag;
-#  
+# 
 #  tag_raw: BACnetTag if ( tag.tag != expect );
 #
 #  on %done {
@@ -2358,11 +2358,11 @@ type BACnetMessage = unit {
     BACnetType::Date -> date: BACnetDate;
     BACnetType::Time -> btime: BACnetTime;
     BACnetType::BACnetObjectIdentifier -> oid: BACnetObjectIdentifier;
-    
+
     # Fixme: Real, double. I don't think Binpac++ can read those from wire yet.
     BACnetType::Real -> : bytes &length = 4;
     BACnetType::Double -> : bytes &length = 8;
-  } if ( self.tag.class == ASN1Class::APPLICATION); 
+  } if ( self.tag.class == ASN1Class::APPLICATION);
   # skip parsing if we do not have an application tag. Usually, this should only happen when we are parsing
   # arrays. There the last tag will be context-specific and we use it to abort.
 };
@@ -2439,7 +2439,7 @@ type BACnetDate = unit {
 
   month: uint8;
   day: uint8;
-  weekday: uint8; # monday = 1 
+  weekday: uint8; # monday = 1
 };
 
 type BACnetTime = unit {
@@ -2464,16 +2464,16 @@ type BACnetCharacterString = unit(len: uint16) {
 
   switch ( self.tpe ) {
     # LE and BE could be switched, not quite sure...
-    BACnetCharacterStringType::UTF8 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF8); 
-    BACnetCharacterStringType::UCS2 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF16BE); 
-    BACnetCharacterStringType::UCS4 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF32BE); 
+    BACnetCharacterStringType::UTF8 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF8);
+    BACnetCharacterStringType::UCS2 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF16BE);
+    BACnetCharacterStringType::UCS4 -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::UTF32BE);
     * -> value: bytes &length=(len - 1) &convert=$$.decode(BinPAC::Charset::ASCII); # Fixme: DBCS, JOSX0208, ISO885901
   };
-  
+
 };
 
 type BACnetBitString = unit(len: uint16) {
-   # We have cases where the length is 0. I do not think this is legal, but... 
+   # We have cases where the length is 0. I do not think this is legal, but...
    unused_bits: uint8 if ( len > 0 );
    value_bits: bytes &length=(len - 1) if ( len > 1 );
 };
