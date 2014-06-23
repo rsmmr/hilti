@@ -13,7 +13,7 @@ export type test = unit {
 
        a: bytes &length=1;       # Remains uninitialized.
        b: int8;                  # Remains uninitialized.
-       c: list<int8> &length=1;  # Remains uninitialized.
+       c: list<int8> &count=1;  # Remains uninitialized.
 
        var d: bytes;        # Remains uninitialized.
        var e: list<bytes>;  # Initialized to empty list.

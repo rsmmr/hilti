@@ -16,17 +16,15 @@ void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
     hlt_exception* excpt = 0;
 
     // Do this first, it may still need the context.
-    if ( ctx->tmgr ) {
-        hlt_timer_mgr_expire(ctx->tmgr, 0, &excpt, ctx);
-        GC_DTOR(ctx->tmgr, hlt_timer_mgr);
-    }
+    hlt_timer_mgr_expire(ctx->tmgr, 0, &excpt, ctx);
+    GC_DTOR(ctx->tmgr, hlt_timer_mgr);
 
     __hlt_globals_dtor(ctx);
 
     GC_DTOR(ctx->excpt, hlt_exception);
 
     if ( ctx->fiber )
-        hlt_fiber_delete(ctx->fiber);
+        hlt_fiber_delete(ctx->fiber, ctx);
 
     if ( ctx->pstate )
         __hlt_profiler_state_delete(ctx->pstate);
@@ -48,6 +46,10 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
     ctx->vid = vid;
 
     __hlt_globals_init(ctx);
+    __hlt_modules_init(ctx);
+
+    if ( ctx->excpt )
+        __hlt_exception_print_uncaught_abort(ctx->excpt, ctx);
 
     ctx->excpt = 0;
     ctx->fiber = 0;

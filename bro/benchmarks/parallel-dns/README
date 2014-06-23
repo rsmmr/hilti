@@ -1,0 +1,3 @@
+Needs lisa:topic/robin//parallel-dns-hack branch, or the
+parallel-dns-hack.diff in this directory. Check the latter though, it
+might have some more stuff in there that should be applied.

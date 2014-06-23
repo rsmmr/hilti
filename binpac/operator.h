@@ -55,6 +55,7 @@ enum Kind {
     SignNeg,
     SignPos,
     Size,
+    TryAttribute,
 };
 
 enum OpType { UNARY_PREFIX, UNARY_POSTFIX, BINARY, BINARY_COMMUTATIVE, OTHER };
@@ -116,6 +117,7 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(IndexAssign, "<IndexAssign>", OTHER),
     _OP(MethodCall, "<MethodCall>", OTHER),
     _OP(Size, "<Size>", OTHER),
+    _OP(TryAttribute, "<TryAttribute>", OTHER),
 };
 
 }

@@ -23,11 +23,11 @@ echo === Running standard Bro ...
 bro -Q -r ${trace} ${scripts} HTTPEvents::log_events=T HTTPEvents::pac2=F
 
 echo === Comparing events ....
-cat http-events-std.log http-events-pac.log | sort -k 3 | uniq -c -f 2 | sort -rn >results.events.txt
+cat http-events-std.log http-events-pac.log | sort -k 3 | uniq -c -f 2 | sort -rn | sed 's/^ *//g' >results.events.txt
 
 echo === Comparing event types ...
 for i in events-std.bst events-pac.bst; do
-    bro -x ${i} ${scripts} | sed 's/^[^]]*\] //g' | sed 's/(.*//g' | sort | uniq -c | sort -rn >types-${i}.txt
+    bro -x ${i} ${scripts} | sed 's/^[^]]*\] //g' | sed 's/(.*//g' | sort | uniq -c | sort -rn | sed 's/^ *//g' >types-${i}.txt
 done
 
 diff -u types-events-std.bst.txt types-events-pac.bst.txt >results.events-types.txt

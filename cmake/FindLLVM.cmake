@@ -104,6 +104,7 @@ else ()
       STRING(REGEX REPLACE "${f}" "" LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
   endforeach()
 
+  # This needs oprofile support in LLVM: oprofilejit
   set(llvm_libs "object core bitreader bitwriter linker asmparser interpreter executionengine jit mcjit runtimedyld nativecodegen ipo irreader x86asmparser")
   exec_program(${LLVM_CONFIG_EXEC} ARGS --libs ${llvm_libs} OUTPUT_VARIABLE LLVM_LIBS)
 

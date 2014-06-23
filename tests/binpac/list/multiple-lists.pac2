@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  printf '\x01\x00' pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  printf '\x01\x00' pac-driver-test %INPUT >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
 # @TEST-KNOWN-FAILURE: Triggers parse failure
@@ -12,9 +12,9 @@ type Entry = unit {
 };
 
 export type Test = unit {
-  routing_entries: list<Entry> &length=1; 
+  routing_entries: list<Entry> &count=1;
 
-  dnets: list<uint8> &length=1;
+  dnets: list<uint8> &count=1;
 
   on %done { print self; }
 };

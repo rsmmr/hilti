@@ -1,1 +1,1 @@
-hilti: uncaught exception, NulLReference (from /Users/robin/work/binpacpp/hilti2/libhilti/timer.c:254)
+hilti: uncaught exception, TimerAlreadyScheduled (from /home/robin/work/binpacpp/hilti2/libhilti/timer.c:277)

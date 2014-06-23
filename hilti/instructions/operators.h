@@ -151,3 +151,13 @@ iBegin(operator_, Clone, "clone")
         Returns a deep copy of *op1*.
     )")
 iEnd
+
+iBegin(operator_, Hash, "hash")
+    iTarget(optype::int64);
+    iOp1(optype::any, true)
+    iValidate {
+    }
+    iDoc(R"(
+        Returns an integer hash of *op1*.
+    )")
+iEnd

@@ -14,7 +14,7 @@ Version = 0.2
 Target = "<unknown>"
 
 Cc           = "clang -gfull"                    # Note, we really need clang.
-CcOptSpec    = "-O3"                             # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
+CcOptSpec    = "-O2"                             # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
 OptOptSpec   = "-std-compile-opts -std-link-opts -disable-internalize"
 
 # Search file in shell PATH. Returns None if not found.

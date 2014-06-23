@@ -74,8 +74,14 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
 
     auto func = cg()->llvmValue(i->op1());
     auto ftype = ast::as<type::Function>(i->op1()->type());
-    auto job = cg()->llvmCallableBind(func, ftype, params);
 
+#ifdef HLT_DEEP_COPY_VALUES_ACROSS_THREADS
+    bool deep_copy = true;
+#else
+    bool deep_copy = false;
+#endif
+
+    auto job = cg()->llvmCallableBind(func, ftype, params, true, deep_copy);
     auto mgr = cg()->llvmThreadMgr();
 
     if ( i->op3() ) {

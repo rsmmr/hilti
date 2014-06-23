@@ -51,6 +51,8 @@ declare "C-HILTI" double timer_mgr_to_double(any d)
 declare "C-HILTI" double time_to_double(any d)
 declare "C-HILTI" double interval_to_double(any d)
 
+declare "C-HILTI" int<64> hash_object(any s)
+
 declare "C-HILTI" int<64> default_hash(any s)
 declare "C-HILTI" bool    default_equal(any s1, any s2)
 declare "C-HILTI" int<64> string_hash(any s)
@@ -87,6 +89,8 @@ declare "C-HILTI" caddr struct_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  struct_clone_init(caddr dst, any src, caddr cstate)
 declare "C-HILTI" caddr tuple_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  tuple_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr channel_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  channel_clone_init(caddr dst, any src, caddr cstate)
 
 ###
 
@@ -251,6 +255,7 @@ declare "C-HILTI" void timer_cancel(ref<timer> t)
 declare "C-HILTI" ref<timer_mgr> timer_mgr_new()
 declare "C-HILTI" void timer_mgr_schedule(ref<timer_mgr> mgr, time t, ref<timer> t)
 declare "C-HILTI" int<32> timer_mgr_advance(ref<timer_mgr> mgr, time tim)
+declare "C-HILTI" void timer_mgr_advance_global(time tim)
 declare "C-HILTI" time timer_mgr_current(ref<timer_mgr> mgr)
 declare "C-HILTI" void timer_mgr_expire(ref<timer_mgr> mgr, bool fire)
 #

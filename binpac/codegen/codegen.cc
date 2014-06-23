@@ -323,7 +323,7 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
         moduleBuilder()->exportID(name);
 
     if ( func->body() && ! declare_only ) {
-        auto decl = moduleBuilder()->pushFunction(name, result, params, cc, nullptr, false, func->location());
+        auto decl = moduleBuilder()->pushFunction(name, result, params, cc, nullptr, hilti::builder::function::attributes(), false, func->location());
         hiltiStatement(func->body());
         moduleBuilder()->popFunction();
         return decl;

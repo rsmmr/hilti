@@ -96,6 +96,17 @@ extern uint32_t hlt_flip32(uint32_t v);
 /// v: The value to convert.
 extern uint64_t hlt_flip64(uint64_t v);
 
+/// Calculates a hash value for a HILTI object.
+///
+/// ti: Type information for the value.
+///
+/// obj: A pointer to the object.
+///
+/// \hlt_c
+///
+/// Returns: The hash value.
+extern hlt_hash hlt_hash_object(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Calculates a hash value for a sequence of bytes.
 ///
 /// s: The bytes.

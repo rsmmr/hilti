@@ -5,6 +5,10 @@ function abspath
     (cd "$1" && pwd)
 }
 
+# Note these limits apply to vsize and we exceed that with the 30GB trace.
+# ulimit -m 20485760 # 20G
+# ulimit -d 20485760
+
 base=`dirname $0`/../..
 base=`abspath $base`
 brobase=`cat $base/build/CMakeCache.txt | grep BRO_DIST: | cut -d = -f 2`
@@ -12,17 +16,52 @@ brobase=`abspath $brobase`
 benchmarks=`dirname $0`
 benchmarks=`abspath $benchmarks`
 
-bro_addl_args="-bQ"
-hilti_optimize="Hilti::optimize=F"
+bro_addl_args="-b Hilti::hilti_workers=0 ${benchmarks}/scripts/run-benchmark.bro"
+use_bro_q=2 # 1 -> -Q; 2: -QQ; 0: -> ""
+
+hilti_optimize="Hilti::optimize=T"
 
 trace_dns="${brobase}/testing/external/bro-testing/Traces/2009-M57-day11-18.trace.gz"
 trace_http="${brobase}/testing/external/bro-testing/Traces/2009-M57-day11-18.trace.gz"
+baselines=""
+
+if [ $# != 1 ]; then
+    echo "usage: `basename $0` <data-dir>"
+    exit 1
+fi
+
+benchmark_tag=$1
+datadir=`pwd`/${benchmark_tag}
+
+if [ -e "${datadir}" ]; then
+    echo "${datadir} already exists"
+    exit 1
+fi
 
 # The config file can override the traces.
 cfg=`basename $0`.cfg
 
 if [ -e $cfg ]; then
+    echo Reading $cfg ...
     source $cfg
+fi
+
+if [ "$TMPDIR" = "" ]; then
+    export TMPDIR=/tmp
+fi
+
+if [ "${ramdisk}" == "" ]; then
+    echo "No \${ramdisk} specified"
+    exit 1
+fi
+
+if ! mount | grep -q ^tmpfs.*${ramdisk}; then
+    echo "No ramdisk mounted under ${ramdisk}"
+    exit 1
+fi
+
+if [ "${profile}" == "1" ]; then
+    bro_addl_args="${bro_addl_args} Hilti::profile=2 Hilti::save_hilti=T Hilti::save_llvm=T"
 fi
 
 function log_stdin
@@ -31,6 +70,11 @@ function log_stdin
     cat >${tmp}
     cat ${tmp} >>${logfile}
     cat ${tmp} >/dev/tty
+
+    if [ "$benchmark" != "" ]; then
+        cat ${tmp} >>${benchmark}.log
+    fi
+
     rm -f ${tmp}
 }
 
@@ -38,6 +82,10 @@ function log
 {
     echo "$@" >>${logfile}
     echo "$@" >/dev/tty
+
+    if [ "$benchmark" != "" ]; then
+        echo "$@" >>${benchmark}.log
+    fi
 }
 
 function warning
@@ -62,7 +110,7 @@ function execute
 function create_sandbox
 {
     export name=$1
-    sandbox=${benchmarks}/.tmp/${name}
+    sandbox=${datadir}/${name}
     rm -rf ${sandbox}
     mkdir -p ${sandbox}
     cd ${sandbox}
@@ -81,6 +129,10 @@ function finish_sandbox
     if find . -name 'core*' | grep -q .; then
        warning "There's a core file."
     fi
+
+    rm -f *.tmp
+
+    export benchmark=
 }
 
 function rename_logs
@@ -123,7 +175,7 @@ function record_timing_helper
         return;
     fi
 
-  labels=`cat ${file1} ${file2} | awk '/^# / && NF==4 { print $2}' | sort | uniq`
+  labels=`cat ${file1} ${file2} | grep '#t' | awk 'NF==4 { print $2 }' | sort | uniq`
 
   if [ ${first_timing} == 1 ]; then
        first_timing=0
@@ -142,7 +194,7 @@ function record_timing_helper
   fi
 
   for label in ${labels}; do
-      cat ${file1} ${file2} | grep "${label}" | sed 's#/# #g' | sed 's#M\( \|$\)# #g' | awk -vprefix="${benchmark} ${label}" '
+      cat ${file1} ${file2} | grep "${label} " | sed 's#/# #g' | sed 's#M\( \|$\)# #g' | awk -vprefix="${benchmark} ${label}" '
          # core-init 2.256844 5871992554 175 67
          # core-init 2.123967 5800516230 174 67
          BEGIN { order[0] = 4; # (*) Adapt with above.
@@ -161,7 +213,7 @@ function record_timing_helper
                    r2 = v[i][2];
 
                    if ( r2 )
-                       printf("%.1f ", 100.0 * r1 / r2);
+                       printf("%.4f ", r1 / r2);
                    else
                        printf("- ");
 
@@ -171,15 +223,6 @@ function record_timing_helper
              }
          '
   done
-
-
-    # core-init 2.228996/5876525117 174M/67M
-# bro_init 0.000486/611385 0M/0M
-# net-processing 0.000000/0 0M/0M
-# total-processing 0.000559/724971 0M/0M
-# total-script 0.000465/594113 0M/0M
-# total-protocols 0.000000/0 0M/0M
-# total-bro 2.229978/5877633531 176M/68M
 }
 
 function run_bro_without_trace
@@ -190,10 +233,26 @@ function run_bro_without_trace
 
     args="${args} ${bro_addl_args}"
 
+    if [ "${use_bro_q}" == "1" ]; then
+        args="${args} -Q"
+    elif [ "${use_bro_q}" == "2" ]; then
+        args="${args} -QQ"
+    fi
+
     stderr="stderr.${tag}"
     stdout="stdout.${tag}"
 
-    execute bro ${args} >${stdout} 2>${stderr}
+    if [ "${use_jemalloc}" == "1" ]; then
+        log "Using jemalloc ..."
+        export LD_PRELOAD=/local/lib/libjemalloc.so.1
+        export MALLOC_CONF=stats_print:true
+    fi
+
+    BRO_SEED_FILE=${brobase}/testing/btest/random.seed TZ=UTC LC_ALL=C \
+        execute bro ${args} >${stdout} 2>${stderr}
+
+    export LD_PRELOAD=
+    export MALLOC_CONF=
 
     rename_logs ${tag}
 }
@@ -214,13 +273,42 @@ function run_bro_with_trace
         cmd=cat
     fi
 
-    eval ${cmd} ${trace} | run_bro_without_trace ${tag} -r - ${args}
+    # Prime cache.
+    if [ "${use_ramdisk}" == "1" ]; then
+        log "Using RAM disk ..."
+        ram_trace="${ramdisk}/`basename ${trace}`.tmp"
+        if [ ! -e ${ram_trace} ]; then
+            log "Copying trace to RAM disk ..."
+            cp ${trace} ${ram_trace}
+        fi
+
+        eval ${cmd} ${ram_trace} | run_bro_without_trace ${tag} -r - ${args}
+
+        rm -f ${ram_trace}
+
+    else
+        log "Priming cache ..."
+        cat ${trace} | cat >/dev/null
+        eval ${cmd} ${trace} | run_bro_without_trace ${tag} -r - ${args}
+    fi
 }
 
 function normalize_output
 {
-    cat $1 | grep -v "^# " | cat >$1.diff.tmp
+    cat $1 | grep -v "^#" | grep -v HEAPCHECK | grep -v "Heap checker" | cat >$1.diff.tmp
     echo $1.diff.tmp
+}
+
+function normalize_log
+{
+    log=$1
+    exclude=$2
+
+    cat $log | \
+        eval bro-cut -c -n $exclude | \
+        ${benchmarks}/diff-canonifier-benchmark ${brobase} >$log.normalized
+
+    echo $log.normalized
 }
 
 function compare_output
@@ -231,26 +319,79 @@ function compare_output
     diff -u `normalize_output $file1` `normalize_output $file2` | log_stdin || error "=== ${file1} and ${file2} differ"
 }
 
+function compare_logs
+{
+    log1=$1
+    log2=$2
+    exclude=$3
+
+    nlog1=`normalize_log $log1 "$exclude"`
+    nlog2=`normalize_log $log2 "$exclude"`
+
+    cat $nlog1 | grep -v '^#' | sort -T $TMPDIR | uniq >$nlog1.uniq
+    cat $nlog2 | grep -v '^#' | sort -T $TMPDIR | uniq >$nlog2.uniq
+
+    for i in $log1 $log2 $nlog1 $nlog2 $nlog1.uniq $nlog2.uniq; do
+        cat $i | grep -v '^#' | wc -l >$i.lines
+    done
+
+    diff -u $nlog1 $nlog2 >$log2.diff
+
+    tmp=$log1.$log2.count.tmp
+    cat $nlog1.uniq $nlog2.uniq | sort -T $TMPDIR | uniq -c >$tmp
+
+    # If changing these three values in any way, adapt dat2latex!
+    cat $tmp | awk '$1 == 1' | wc -l >>$log2.diff.count
+    cat $tmp | awk '$1 == 2' | wc -l >>$log2.diff.count
+    cat $tmp | awk '$1 > 2' | wc -l >>$log2.diff.count
+}
+
+function check_baseline
+{
+    if [ "${baselines}" = "" ]; then
+        log "No baseline directory configured"
+        return
+    fi
+
+    baseline="${baselines}/${benchmark_tag}/${benchmark}/$1"
+    log=$1
+
+    if [ ! -e "${baseline}" ]; then
+        warning "Baseline ${baseline} does not exist."
+        return
+    fi
+
+    diff -u `normalize_log $baseline` `normalize_log $log` >$log.baseline.diff
+
+    if [ $? == 0 ]; then
+        log "Output in $log matches baseline."
+    else
+        warning "Output in $log does not match baseline."
+    fi
+}
+
 #### Main
 
 source $brobase/build/bro-path-dev.sh
 export BRO_PLUGINS=$base/build/bro
 ulimit -c unlimited
 
-logfile=`pwd`/benchmark.$$.log
-datafile=`pwd`/benchmark.$$.dat
+mkdir ${datadir}
+
+logfile=${datadir}/benchmark.log
+datafile=${datadir}/benchmark.dat
 rm -f ${logfile}
 rm -f ${datafile}
 
 ## Hello world.
 
-enabled=1
+enabled=0
 scripts=${benchmarks}/scripts/hello-world.bro
 
 if [ ${enabled} == 1 ]; then
     create_sandbox hello_world
-    run_bro_without_trace std ${scripts}
-    run_bro_without_trace hlt ${scripts} ${hilti_optimize} Hilti::compile_scripts=T
+    run_bro_without_trace std ${scripts} Log::disable_logging=T
+    run_bro_without_trace hlt ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
     compare_output stdout.std stdout.hlt
     compare_output stderr.std stderr.hlt
     record_timing std hlt
@@ -259,13 +400,13 @@ fi
 
 ## Fibonacci numbers.
 
-enabled=1
+enabled=0
 scripts=${benchmarks}/scripts/fibo.bro
 
 if [ ${enabled} == 1 ]; then
     create_sandbox fibo
-    run_bro_without_trace std ${scripts}
-    run_bro_without_trace hlt ${scripts} ${hilti_optimize} Hilti::compile_scripts=T
+    run_bro_without_trace std ${scripts} Log::disable_logging=T
+    run_bro_without_trace hlt ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
     compare_output stdout.std stdout.hlt
     compare_output stderr.std stderr.hlt
     record_timing std hlt
@@ -274,42 +415,105 @@ fi
 
 ## Connection counting.
 
-enabled=1
+enabled=0
 scripts=${benchmarks}/scripts/conn-count.bro
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox fibo
-    run_bro_without_trace std ${scripts}
-    run_bro_without_trace hlt ${scripts} ${hilti_optimize} Hilti::compile_scripts=T
+    create_sandbox conn-count
+    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
     compare_output stdout.std stdout.hlt
     compare_output stderr.std stderr.hlt
     record_timing std hlt
     finish_sandbox
 fi
 
+### HTTP ##########################################################################
+
 ## BinPAC++ HTTP analyzer, standard interpreter.
 
-enabled=1
-scripts=base/protocols/http
+enabled=0
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
 
 if [ ${enabled} == 1 ]; then
     create_sandbox http-pac2
-    run_bro_with_trace std ${trace_http} ${scripts}
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
     compare_output stderr.std stderr.hlt # Should be empty.
     record_timing std hlt
     finish_sandbox
 fi
 
+## BinPAC++ HTTP analyzer, standard interpreter, with logs
+
+enabled=0
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox http-pac2-logs
+    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=F
+    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    compare_output stderr.std stderr.hlt # Should be empty.
+    compare_logs http.std.log http.hlt.log  "request_body_len response_body_len"
+    compare_logs files.std.log files.hlt.log "conn_uids duration seen_bytes missing_bytes total_bytes timedout overflow_bytes"
+    check_baseline http.hlt.log
+    check_baseline files.hlt.log
+    record_timing std hlt
+    finish_sandbox
+fi
+
+## Standard HTTP analyzer, compiled scripts.
+
+enabled=0
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox http-compiler
+    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
+    compare_output stderr.std stderr.hlt # Should be empty.
+    record_timing std hlt
+    finish_sandbox
+fi
+
+## Standard HTTP analyzer, compiled scripts, with logs.
+
+enabled=0
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox http-compiler-logs
+    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=F
+    run_bro_with_trace hlt ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=T
+    compare_output stderr.std stderr.hlt # Should be empty.
+    compare_logs http.std.log http.hlt.log
+    compare_logs files.std.log files.hlt.log "duration seen_bytes total_bytes missing_bytes total_bytes timedout overflow_bytes"
+    check_baseline http.hlt.log
+    check_baseline files.hlt.log
+    record_timing std hlt
+    finish_sandbox
+fi
+
+## DEBUG VERSION: Standard HTTP analyzer, compiled scripts.
+
+enabled=0
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox http-compiler-debug
+    HILTI_DEBUG=hilti-trace:hilti-flow:bro run_bro_with_trace hlt ${trace_http} ${scripts} Hilti::debug=T Hilti::compile_scripts=T
+    finish_sandbox
+fi
+
 ## BinPAC++ HTTP analyzer, compiled scripts, but direct connection for events disabled.
 
-enabled=1
-scripts=base/protocols/http
+enabled=0
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
 
 if [ ${enabled} == 1 ]; then
     create_sandbox http-pac2-compiler-indirect
-    run_bro_with_trace std ${trace_http} ${scripts}
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
     compare_output stderr.std stderr.hlt
     record_timing std hlt
     finish_sandbox
@@ -317,25 +521,135 @@ fi
 
 ## BinPAC++ HTTP analyzer, compiled scripts, with direct connection for events enabled.
 
-enabled=1
-scripts=base/protocols/http
+enabled=0
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
 
 if [ ${enabled} == 1 ]; then
     create_sandbox http-pac2-compiler-direct
-    run_bro_with_trace std ${trace_http} ${scripts}
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+    run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
     compare_output stderr.std stderr.hlt
     record_timing std hlt
     finish_sandbox
 fi
 
+### DNS ##########################################################################
+
+## BinPAC++ DNS analyzer, standard interpreter.
+
+enabled=0
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-pac2
+    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    compare_output stderr.std stderr.hlt # Should be empty.
+    record_timing std hlt
+    finish_sandbox
+fi
+
+## Standard DNS analyzer, compiled scripts.
+
+enabled=0
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-compiler
+    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T
+    compare_output stderr.std stderr.hlt # Should be empty.
+    record_timing std hlt
+    finish_sandbox
+fi
+
+## BinPAC++ DNS analyzer, compiled scripts, but direct connection for events disabled.
+
+enabled=0
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-pac2-compiler-indirect
+    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    compare_output stderr.std stderr.hlt
+    record_timing std hlt
+    finish_sandbox
+fi
+
+## BinPAC++ DNS analyzer, compiled scripts, with direct connection for events enabled.
+
+enabled=0
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-pac2-compiler-direct
+    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+    compare_output stderr.std stderr.hlt
+    record_timing std hlt
+    finish_sandbox
+fi
+
+## BinPAC++ DNS analyzer, standard interpreter, with logs.
+
+enabled=0
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-pac2-logs
+    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=F
+    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    compare_output stderr.std stderr.hlt # Should be empty.
+    compare_logs dns.std.log dns.hlt.log
+    check_baseline dns.hlt.log
+    record_timing std hlt
+    finish_sandbox
+fi
+
+## Standard DNS analyzer, compiled scripts, with logs.
+
+enabled=0
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-compiler-logs
+    run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=F
+    run_bro_with_trace hlt ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=T
+    compare_output stderr.std stderr.hlt # Should be empty.
+    compare_logs dns.std.log dns.hlt.log
+    check_baseline dns.hlt.log
+    record_timing std hlt
+    finish_sandbox
+fi
+
+### Other Apps ##########################################################################
+
+enabled=1
+if [ ${enabled} == 1 ]; then
+    create_sandbox bpf2hlt
+    ${benchmarks}/bpf2hlt/bpf-benchmark ${trace_http} "host 169.229.216.200 or src net 169.229.108.0/24"
+    compare_output counts.std.log counts.hlt.log
+    check_baseline counts.hlt.log
+    check_baseline counts.std.log
+    finish_sandbox
+fi
+
+enabled=0
+if [ ${enabled} == 1 ]; then
+    create_sandbox acl2hlt
+    ${benchmarks}/acl2hlt/acl-benchmark ${trace_dns}
+    compare_output counts.py.log counts.hlt.log
+    check_baseline counts.hlt.log
+    check_baseline counts.py.log
+    finish_sandbox
+fi
+
 ## End
 
-log ""
-log "Timing information in ${datafile}"
-log ""
+${benchmarks}/dat2tex ${datadir} >${datadir}/benchmark.tex
 
 echo
-echo === `basename ${logfile}`
-echo === `basename ${datafile}`
+echo === `basename ${datadir}/${logfile}`
+echo === `basename ${datadir}/${datafile}`
 echo

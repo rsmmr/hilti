@@ -757,6 +757,8 @@ void TypeBuilder::visit(type::Channel* t)
     ti->dtor = "hlt::channel_dtor";
     ti->lib_type = "hlt.channel";
     ti->to_string = "hlt::channel_to_string";
+    ti->clone_alloc = "hlt::channel_clone_alloc";
+    ti->clone_init = "hlt::channel_clone_init";
     setResult(ti);
 }
 

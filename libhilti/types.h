@@ -23,6 +23,7 @@ typedef struct __hlt_file_info __hlt_file_info;
 typedef struct __hlt_pointer_stack __hlt_pointer_stack;
 typedef struct __hlt_pointer_map __hlt_pointer_map;
 typedef struct __hlt_clone_state __hlt_clone_state;
+typedef struct __hlt_fiber_pool __hlt_fiber_pool;
 
 /// Type for hash values.
 typedef uint64_t hlt_hash;

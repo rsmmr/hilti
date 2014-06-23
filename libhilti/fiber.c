@@ -10,6 +10,8 @@
 #include "config.h"
 #include "memory_.h"
 #include "context.h"
+#include "threading.h"
+#include "globals.h"
 
 #include "3rdparty/libtask/taskimpl.h"
 
@@ -75,6 +77,29 @@ static void _fiber_trampoline(unsigned int y, unsigned int x)
     abort();
 }
 
+static void fatal_error(const char* msg)
+{
+    fprintf(stderr, "fibers: %s\n", msg);
+    exit(1);
+}
+
+
+static inline void acqire_lock(int* i)
+{
+    hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, i);
+
+    if ( pthread_mutex_lock(&__hlt_globals()->synced_fiber_pool_lock) != 0 )
+        fatal_error("cannot lock mutex");
+}
+
+static inline void release_lock(int i)
+{
+    if ( pthread_mutex_unlock(&__hlt_globals()->synced_fiber_pool_lock) != 0 )
+        fatal_error("cannot unlock mutex");
+
+    hlt_pthread_setcancelstate(i, NULL);
+}
+
 // Internal version that really creates a fiber (vs. the external version
 // that might recycle a previously created on from a fiber pool). Note that
 // this function does not intialize the "run" and "cookie" fields.
@@ -137,50 +162,133 @@ void __hlt_fiber_pool_delete(__hlt_fiber_pool* pool)
     hlt_free(pool);
 }
 
-hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* ctx, void* p)
+hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* fctx, void* p, hlt_execution_context* ctx)
 {
-    // If there's a fiber available in the pool, use that. Otherwise create a
-    // new one.
+    assert(ctx);
+
+    // If there's a fiber available in the local pool, use that. Otherwise
+    // check the global. Otherwise, create one.
+
+    __hlt_fiber_pool* fiber_pool = ctx->worker ? ctx->worker->fiber_pool : ctx->fiber_pool;
+
+    assert(fiber_pool);
 
     hlt_fiber* fiber = 0;
 
-    if ( ctx->fiber_pool->head ) {
-        fiber = ctx->fiber_pool->head;
-        ctx->fiber_pool->head = ctx->fiber_pool->head->next;
-        --ctx->fiber_pool->size;
+    if ( ! fiber_pool->head && hlt_is_multi_threaded() ) {
+        __hlt_fiber_pool* global_pool = __hlt_globals()->synced_fiber_pool;
+
+        // We do this without locking first, should be fine to encounter a
+        // race.
+        if ( global_pool->size ) {
+            int s = 0;
+            acqire_lock(&s);
+
+            int n = hlt_config_get()->fiber_max_pool_size / 5; // 20%
+
+            while ( global_pool->head && n-- ) {
+                fiber = global_pool->head;
+
+                global_pool->head = fiber->next;
+                --global_pool->size;
+
+                fiber->next = fiber_pool->head;
+                fiber_pool->head = fiber;
+                ++fiber_pool->size;
+            }
+
+            // fprintf(stderr, "vid %lu took %lu from global, that now at %lu\n", ctx->vid, hlt_config_get()->fiber_max_pool_size / 10, global_pool->size);
+
+            release_lock(s);
+        }
+    }
+
+    if ( fiber_pool->head ) {
+        fiber = fiber_pool->head;
+        fiber_pool->head = fiber_pool->head->next;
+        --fiber_pool->size;
         fiber->next = 0;
         assert(fiber->state == IDLE);
     }
 
     else
-        fiber = __hlt_fiber_create(ctx);
+        fiber = __hlt_fiber_create(fctx);
 
     fiber->run = func;
+    fiber->context = fctx;
     fiber->cookie = p;
 
     return fiber;
 }
 
-void hlt_fiber_delete(hlt_fiber* fiber)
+void hlt_fiber_delete(hlt_fiber* fiber, hlt_execution_context* ctx)
 {
     assert(! fiber->next);
 
-    // Return the fiber to the pool as long as we haven't reached us maximum
-    // pool size yet.
-
-    if ( fiber->context->fiber_pool->size >= hlt_config_get()->fiber_max_pool_size ) {
+    if ( ! ctx ) {
         __hlt_fiber_delete(fiber);
         return;
     }
 
+    __hlt_fiber_pool* fiber_pool = ctx->worker ? ctx->worker->fiber_pool : ctx->fiber_pool;
+
+    // Return the fiber to the local pool as long as we haven't reached us
+    // maximum pool size yet. If we have, return the pool to the global pool first.
+
+    if ( fiber_pool->size >= hlt_config_get()->fiber_max_pool_size ) {
+        if ( hlt_is_multi_threaded() ) {
+            __hlt_fiber_pool* global_pool = __hlt_globals()->synced_fiber_pool;
+
+            // We do this without locking, should be fine to encounter a
+            // race.
+            if ( global_pool->size <= 10 * hlt_config_get()->fiber_max_pool_size ) {
+                int s = 0;
+                acqire_lock(&s);
+
+                // Check again.
+                if ( global_pool->size <= 10 * hlt_config_get()->fiber_max_pool_size ) {
+
+                    // fprintf(stderr, "vid %lu gives %lu to global, that then at %lu\n", ctx->vid, fiber_pool->size, global_pool->size + fiber_pool->size);
+
+                    hlt_fiber* tail;
+
+                    for ( tail = global_pool->head; tail && tail->next; tail = tail->next )
+                        ;
+
+                    if ( tail )
+                        tail->next = fiber_pool->head;
+                    else
+                        global_pool->head = fiber_pool->head;
+
+                    global_pool->size += fiber_pool->size;
+
+                    fiber_pool->head = 0;
+                    fiber_pool->size = 0;
+
+                    release_lock(s);
+
+                    goto return_to_local;
+                }
+
+                release_lock(s);
+            }
+        }
+
+        // Local and global have reached their size, just return.
+        __hlt_fiber_delete(fiber);
+        return;
+    }
+
+return_to_local:
+
     hlt_stack_invalidate(fiber->uctx.uc_stack.ss_sp, fiber->uctx.uc_stack.ss_size);
 
-    fiber->next = fiber->context->fiber_pool->head;
-    fiber->context->fiber_pool->head = fiber;
-    ++fiber->context->fiber_pool->size;
+    fiber->next = fiber_pool->head;
+    fiber_pool->head = fiber;
+    ++fiber_pool->size;
 }
 
-int8_t hlt_fiber_start(hlt_fiber* fiber)
+int8_t hlt_fiber_start(hlt_fiber* fiber, hlt_execution_context* ctx)
 {
     int init = (fiber->state == INIT);
 
@@ -203,7 +311,7 @@ int8_t hlt_fiber_start(hlt_fiber* fiber)
 
      case IDLE:
         __hlt_context_set_fiber(fiber->context, 0);
-        hlt_fiber_delete(fiber);
+        hlt_fiber_delete(fiber, ctx);
         return 1;
 
      default:
@@ -244,4 +352,28 @@ void* hlt_fiber_get_cookie(hlt_fiber* fiber)
 extern hlt_execution_context* hlt_fiber_context(hlt_fiber* fiber)
 {
     return fiber->context;
+}
+
+void __hlt_fiber_init()
+{
+    if ( ! hlt_is_multi_threaded() ) {
+        __hlt_globals()->synced_fiber_pool = 0;
+        return;
+    }
+
+    if ( pthread_mutex_init(&__hlt_globals()->synced_fiber_pool_lock, 0) != 0 )
+        fatal_error("cannot init mutex");
+
+    __hlt_globals()->synced_fiber_pool = __hlt_fiber_pool_new();
+}
+
+void __hlt_fiber_done()
+{
+    if ( ! hlt_is_multi_threaded() )
+        return;
+
+    __hlt_fiber_pool_delete(__hlt_globals()->synced_fiber_pool);
+
+    if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&__hlt_globals()->synced_fiber_pool_lock) != 0 )
+        fatal_error("cannot destroy mutex");
 }

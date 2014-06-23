@@ -111,6 +111,7 @@ new                   return token::NEW;
 on                    return token::ON;
 port                  return token::PORT;
 print                 return token::PRINT;
+priority              return token::PRIORITY;
 property              return token::PROPERTY;
 regexp                return token::REGEXP;
 return                return token::RETURN;
@@ -147,6 +148,7 @@ __clear               return token::CLEAR;
 \>=                   return token::GEQ;
 \>\>                  return token::SHIFTRIGHT;
 \?\.                  return token::HASATTR;
+\.\?                  return token::TRYATTR;
 \*\*                  return token::POW;
 \+\+                  return token::PLUSPLUS;
 \|\|                  return token::OR;
@@ -177,9 +179,10 @@ b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strle
 {id}                   yylval->sval = yytext; return token::IDENT;
 {id}(::{id}){1,}(::{property})?       yylval->sval = yytext; return token::SCOPED_IDENT;
 {id}(::{property})?    yylval->sval = yytext; return token::SCOPED_IDENT;
+\${id}                 yylval->sval = yytext + 1; return token::DOLLAR_IDENT;
 
 
-[][?.,=:;<>(){}/|*/&^%!+-] return (token_type) yytext[0];
+[][$?.,=:;<>(){}/|*/&^%!+-] return (token_type) yytext[0];
 
 .                     driver.error("invalid character", *yylloc);
 

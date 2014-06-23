@@ -59,14 +59,15 @@ bool Optimizer::optimize(llvm::Module* module, bool is_linked)
     to.JITEmitDebugInfo = false;
     to.JITEmitDebugInfoToDisk = false;
 
-    auto tm = target->createTargetMachine(triple, llvm::sys::getHostCPUName(), "" /* CPU features */, to, llvm::Reloc::Default, llvm::CodeModel::Default, llvm::CodeGenOpt::Aggressive);
+    auto tm = target->createTargetMachine(triple, llvm::sys::getHostCPUName(), "" /* CPU features */, to, llvm::Reloc::Default, llvm::CodeModel::Default, llvm::CodeGenOpt::Default);
 
     tm->addAnalysisPasses(passes);
 
     llvm::PassManagerBuilder builder;
-    builder.Inliner = llvm::createFunctionInliningPass(255);
+    builder.Inliner = llvm::createFunctionInliningPass();
+    // builder.Inliner = llvm::createAlwaysInlinerPass();
     builder.LibraryInfo = new llvm::TargetLibraryInfo(llvm::Triple(module->getTargetTriple()));
-    builder.OptLevel = 3;
+    builder.OptLevel = 2;
     builder.SizeLevel = 0;
     builder.DisableUnitAtATime = false;
     builder.DisableUnrollLoops = false;

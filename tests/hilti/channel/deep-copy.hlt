@@ -1,0 +1,33 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = struct {
+    int<64> i &default=100,
+    bool b,
+    string test &default="Hurz",
+    double d
+    }
+
+void run() {
+    local ref<channel<ref<A>>> ch
+    local ref<A> a1
+    local ref<A> a2
+
+    ch = new channel<ref<A>>
+
+    a1 = new A
+    channel.write_try ch a1
+
+    struct.set a1 "test" "Bla"
+
+    a2 = channel.read_try ch
+
+    call Hilti::print(a1)
+    call Hilti::print(a2)
+}

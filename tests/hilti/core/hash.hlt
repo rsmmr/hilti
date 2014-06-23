@@ -1,0 +1,37 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Make sure empty functions works.
+
+module Main
+
+import Hilti
+
+type A = struct {
+    int<64> i &default=100,
+    bool b,
+    string test,
+    double d,
+    double e &default=3.41
+    }
+
+void run() {
+    local string foo = "foo"
+    local tuple<int<8>, int<32>> t = (1, 2)
+    local ref<A> a1
+
+    a1 = (101, True, "Abrakadraba", 3.14, *)
+
+    local int<64> i
+
+    i = hash foo
+    call Hilti::print(i)
+
+    i = hash t
+    call Hilti::print(i)
+
+    i = hash a1
+    call Hilti::print(i)
+}

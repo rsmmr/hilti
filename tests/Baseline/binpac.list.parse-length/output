@@ -1,1 +1,3 @@
-<lines=[<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>, <line=EEE\x0a>], last=XXX\x0a>
+<a=2, b=\x01\x02>
+<a=3, b=\x04\x05\x06>
+<list_entries=[<a=2, b=\x01\x02>, <a=3, b=\x04\x05\x06>], b=7>

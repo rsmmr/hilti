@@ -308,6 +308,12 @@ void Printer::visit(ctor::Map* m)
     p << "<ctor::Map>";
 }
 
+void Printer::visit(ctor::Unit* m)
+{
+    Printer& p = *this;
+    p << "<ctor::Unit>";
+}
+
 void Printer::visit(ctor::RegExp* r)
 {
     Printer& p = *this;
@@ -576,6 +582,10 @@ void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
 
      case operator_::Size:
         p << "|" << op1 << "|";
+        break;
+
+     case operator_::TryAttribute:
+        p << op1 << ".?" << op2;
         break;
 
      default:

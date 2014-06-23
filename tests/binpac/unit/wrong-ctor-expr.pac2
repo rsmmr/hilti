@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC-FAIL:  pac-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+type test = unit {
+    a: bytes;
+    b: bytes &default=b"foo";
+};
+
+global t: test;
+
+t = new test;
+
+print unit(1, "string", $x=4545, t.?b);

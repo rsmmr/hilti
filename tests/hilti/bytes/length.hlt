@@ -46,7 +46,7 @@ void run() {
     call Hilti::print (len)
     b = bytes.empty b2
     call Hilti::print (b2)
-    b = bytes.empty b1
+    b = bytes.empty b2
     call Hilti::print (b)
 
 }

@@ -1,0 +1,109 @@
+
+Log diffs with /da/robin/data/trace.blade15.port80.c.30g
+========================================================
+
+- dns-pac-logs:
+
+    * dns.log: (All insignificant, by far the most match completely).
+
+        - Legacy analyzer splits queries with SERVFAIL response into
+          two entries, BinPAC++ keeps them together. Not sure why.
+
+        - BinPAC++ logs things like "qclass-1479" and "query-50217"
+          when it doesn't recognize something, legacy doesn't.
+
+        - A response address can get logged as IPv6 in Bro but
+          IPv4 with BinPAC. But it's same address (0.0.0.1 vs ::::1)
+
+        - Bro's DNS analyzer extracts only the first CharacterString
+          out of a TXT record; BinPAC++ all.
+
+        - Some sessions that aren't actually DNS get parsed by the two
+          analyzers to different degrees. Seems the legacy one aborts
+          more easily.
+
+- dns-compiler-log:
+
+    * dns.log
+        - A response address can get logged as IPv6 in Bro but
+          IPv4 with BinPAC. But it's same address (0.0.0.1 vs ::::1)
+
+- http-compiler-log:
+
+    * http.log:
+
+        - Proxy headers can get recorded in a different order because of
+          set ordering.
+
+        - For one case, we get a MIME type wrong:
+          application/octet-stream rather than msword.
+
+    * files.log:
+
+        - The "source" UIDs can get recorded in a different order
+           because of set ordering.
+
+        - We get one application/x-dosexec entry more, not sure why.
+
+        - seen_bytes and missing_bytes aren't right because we don't
+          extract that information and/or the core updates that in the
+          background. Ignoring by removing before comparision.
+
+        - duration isn't set because the core updates that in the
+          background.  Ignoring by removing before comparision.
+
+Script changes:
+===============
+
+    Compared to 2982abe752 (last merge with origin/master)
+
+    base/protocols/dns/main.bro:
+
+    * Pulled in 2.3 version as the 2.2 version yields
+      non-deterministic output.
+
+    * Changed a "vector of Info" to "vector of Any"; then had to
+      disable the dns_unmatched_msg weirds.
+
+    base/files/hash/main.bro
+
+    * Rewrote code to not use "switch" because compiler does not yet
+      support that.
+
+    base/frameworks/logging/main.bro
+
+    * Added option to disable logging.
+
+    base/init-bare.bro
+
+    * Set udp_inactivity_timeout to 9secs to mimic DNS session
+      timeout, which we have disabled. This compensates for the DNS pac2
+      analyzer how having that session timeout.
+
+    base/protocols/dns/http.*
+
+    * Moved get_file_handle() into main.bro to have access to some
+      record fields.
+
+    * Track trans_depth separately for originator and responder, and
+      use for generating file handle.
+
+    * Use unescape_URI() for unescaping URIs, not the event's parameter.
+
+    base/utils/queue.bro:
+
+    * Do a manual deep copy to avoid using copy().
+
+Source changes:
+==============
+
+ - Added profiler.
+
+ - Plugin interface.
+
+ - DNS: Disable expire timer when dns_session_timeout is zero.
+
+ - HTTP: Disabled the potential recovery from content gaps with
+   bodies. The pac2 analyzer doesn't support that yet, so it would be
+   unfaor to have standard Bro keep crunching (these conns can be
+   huge, see http.e.trace).

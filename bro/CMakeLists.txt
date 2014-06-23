@@ -4,6 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 if ( BRO_DIST )
 
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${BRO_DIST}/cmake)
+    set(BRO_PLUGIN_BASE "${CMAKE_CURRENT_BINARY_DIR}")
 
     include(BroPlugin)
 
@@ -55,11 +56,6 @@ if ( BRO_DIST )
         set(hiltic "XXX")
     endif ()
 
-    # Make sure the library ends up in the right directory where Bro
-    # will find it.
-    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dylib")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dylib")
-
     # Autogenerate bro.pac2 C prototypes.
     add_custom_command(
         OUTPUT   ${autogen}/bro.pac2.h
@@ -77,8 +73,7 @@ if ( BRO_DIST )
     # Autogenerate the type information for libbro.hlt.
     add_custom_command(
         OUTPUT   ${autogen}/libbro.hlt.o
-        COMMAND  ${hiltic} -b
-        ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt -C -o ${autogen}/libbro.hlt.bc && llc -relocation-model=pic -filetype=obj -o ${autogen}/libbro.hlt.o ${autogen}/libbro.hlt.bc
+        COMMAND  ${hiltic} -b ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt -C -o ${autogen}/libbro.hlt.bc && llc -relocation-model=pic -filetype=obj -o ${autogen}/libbro.hlt.o ${autogen}/libbro.hlt.bc
         DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt ${hiltic}
         )
 
@@ -137,7 +132,6 @@ if ( BRO_DIST )
 
     # Turn the build directory into a plugin.
     add_custom_command(TARGET ${_plugin_lib} POST_BUILD
-                       COMMAND touch ${CMAKE_CURRENT_BINARY_DIR}/__bro_plugin__
                        COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/scripts ${CMAKE_CURRENT_BINARY_DIR}/scripts
                        COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/pac2 ${CMAKE_CURRENT_BINARY_DIR}/pac2
                        )

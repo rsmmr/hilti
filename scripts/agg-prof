@@ -3,9 +3,22 @@
 import sys
 import operator
 
+import re
+
 tags = {}
 
+pattern_cycles = 0
 total_cycles = 0
+
+if len(sys.argv) > 1:
+	pattern = re.compile(sys.argv[1])
+else:
+	pattern = None
+
+if len(sys.argv) > 2:
+	custom_total_cycles = int(sys.argv[2])
+else:
+	custom_total_cycles = -1
 
 for line in sys.stdin:
 
@@ -42,7 +55,20 @@ for line in sys.stdin:
 		tags[tag] = tags.get(tag, 0) + cycles
 		total_cycles = total_cycles + cycles
 
+		if pattern and pattern.match(tag):
+			pattern_cycles += cycles
+
+if custom_total_cycles >= 0:
+	total_cycles = custom_total_cycles
 
 for (tag, val) in sorted(tags.iteritems(), key=operator.itemgetter(1), reverse=True):
-	print "%10.2f%%   %s" % (100.0 * val / total_cycles, tag)
 
+	match = "+" if (pattern and pattern.match(tag)) else " "
+
+	if total_cycles:
+		print "%s %10.2f%%   %s" % (match, 100.0 * val / total_cycles, tag)
+	else:
+		print "%s %13s   %s" % (match, "N/A", tag)
+
+if pattern:
+	print "Cycles matching pattern: %10.2f%% (%lu)" % (100.0 * pattern_cycles / total_cycles, pattern_cycles)

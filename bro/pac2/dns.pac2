@@ -23,10 +23,10 @@ type RRType = enum {
 
 export type Message = unit {
     header:     Header;
-    question:   list<Question(self)>                       &length=self.header.qdcount;
-    answer:     list<ResourceRecord(self, RRType::ANSWER)> &length=self.header.ancount;
-    authority:  list<ResourceRecord(self, RRType::AUTH)>   &length=self.header.nscount if ( ! (dns_skip_all_auth || dns_skip_all_addl) );
-    additional: list<ResourceRecord(self, RRType::ADDL)>   &length=self.header.arcount if ( ! dns_skip_all_addl );
+    question:   list<Question(self)>                       &transient &count=self.header.qdcount;
+    answer:     list<ResourceRecord(self, RRType::ANSWER)> &transient &count=self.header.ancount;
+    authority:  list<ResourceRecord(self, RRType::AUTH)>   &transient &count=self.header.nscount if ( ! (dns_skip_all_auth || dns_skip_all_addl) );
+    additional: list<ResourceRecord(self, RRType::ADDL)>   &transient &count=self.header.arcount if ( ! dns_skip_all_addl );
 
     on %done {
         Bro::dpd_confirm();
@@ -86,7 +86,7 @@ type ResourceRecord = unit(msg: Message, rrtype: RRType) {
         RDType::AAAA -> a:       addr &ipv6;
         RDType::MX   -> mx:      RDataMX(msg);
         RDType::SOA  -> soa:     RDataSOA(msg);
-        RDType::TXT  -> txt:     list<CharacterString(msg)>;
+        RDType::TXT  -> txt:     list<CharacterString(msg)> &length=self.rdlen;
 
         *            -> rdata:   bytes &length=self.rdlen;
     };
@@ -113,10 +113,10 @@ type CharacterString = unit(msg: Message) {
 };
 
 type Name = unit(msg: Message) {
-    : list<Label(msg, self)> &until($$.len == 0 || $$.len.compressed != 0);
+    : list<Label(msg, self)> &transient &until($$.len == 0 || $$.len.compressed != 0);
 
     # Parsed labels are collected in this list.
-    var labels: list<bytes>;
+    var labels: bytes = b"";
 };
 
 type Pointer = unit(msg: Message, label: Label) {
@@ -135,7 +135,8 @@ type Label = unit(msg: Message, name: Name) {
 
     switch ( self.len.compressed ) {
         0 ->    label: bytes &length=self.len {
-                    name.labels.push_back(self.label);
+                    name.labels += b".";
+                    name.labels += self.label;
                     }
 
         3 ->    ptr: Pointer(msg, self) &parse(self.input()) {
@@ -155,7 +156,7 @@ type Label = unit(msg: Message, name: Name) {
 # Joins the labels in a name into a bytes object.
 bytes bro_name(name: Name)
 {
-    return b".".join(name.labels).strip(BinPAC::Side::Both, b".").lower();
+    return name.labels.strip(BinPAC::Side::Both, b".").lower();
 }
 
 # Converts a DNS::Message into a Bro dns_msg.

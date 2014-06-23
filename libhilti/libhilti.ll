@@ -172,9 +172,9 @@ declare void @__hlt_free(i8*, i8*, i8*)
 
 declare void @hlt_abort()
 
-declare %hlt.fiber* @hlt_fiber_create(i8*, %hlt.execution_context*, i8*)
-declare void        @hlt_fiber_delete(%hlt.fiber*)
-declare i8          @hlt_fiber_start(%hlt.fiber*)
+declare %hlt.fiber* @hlt_fiber_create(i8*, %hlt.execution_context*, i8*, %hlt.execution_context*)
+declare void        @hlt_fiber_delete(%hlt.fiber*, %hlt.execution_context*)
+declare i8          @hlt_fiber_start(%hlt.fiber*, %hlt.execution_context*)
 declare void        @hlt_fiber_return(%hlt.fiber*)
 declare void        @hlt_fiber_yield(%hlt.fiber*)
 declare i8*         @hlt_fiber_get_result_ptr(%hlt.fiber*)
@@ -205,3 +205,6 @@ declare void @__hlt_clone(i8*, %hlt.type_info*, i8*, i8*, %hlt.exception**, %hlt
 
 ;;; libc
 declare double @pow(double, double)
+
+;;; Misc
+declare i1 @hlt_bcmp(i8*, i8*, i64)

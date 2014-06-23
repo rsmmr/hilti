@@ -15,13 +15,13 @@ void foo(time n) {
 void advance(ref<timer_mgr> mgr, time t) {
     call Hilti::print ("Advance to ", False)
     call Hilti::print (t)
-    timer_mgr.advance mgr t
+    timer_mgr.advance t mgr
 }
 
 void create(ref<timer_mgr> mgr, time t) {
     local ref<timer> tim
     tim = new timer foo (t)
-    timer_mgr.schedule mgr t tim
+    timer_mgr.schedule t tim mgr
 
     call Hilti::print (tim)
 

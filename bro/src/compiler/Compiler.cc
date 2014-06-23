@@ -7,6 +7,9 @@
 #include <Hash.h>
 #include <Func.h>
 #include <Obj.h>
+#include <EventRegistry.h>
+#include <analyzer/Tag.h>
+#include <file_analysis/Tag.h>
 #undef List
 
 #include <util/util.h>
@@ -14,8 +17,10 @@
 #include "Compiler.h"
 #include "ModuleBuilder.h"
 #include "../LocalReporter.h"
+#include "../Plugin.h"
 
 namespace BifConst { namespace Hilti {  extern int save_hilti;  }  }
+namespace BifConst { namespace Hilti {  extern int compile_scripts;  }  }
 
 using namespace bro::hilti::compiler;
 
@@ -223,6 +228,17 @@ std::list<const ::Func *> CollectorCallback::Functions(const string& ns)
 	return functions;
 	}
 
+void Compiler::RegisterCompiledFunction(const Func* func)
+	{
+	auto symbol = HiltiStubSymbol(func, nullptr, true);
+	hilti_function_symbol_map.insert(std::make_pair(symbol, func));
+	}
+
+const bro::hilti::compiler::Compiler::function_symbol_map& Compiler::HiltiFunctionSymbolMap() const
+	{
+	return hilti_function_symbol_map;
+	}
+
 std::list<const ::ID *> CollectorCallback::Globals(const string& ns)
 	{
 	std::list<const ::ID *> globals;
@@ -424,8 +440,16 @@ void Compiler::popModuleBuilder()
 
 extern ::Stmt* stmts;
 
-Compiler::module_list Compiler::CompileAll()
+bool Compiler::CompileScripts()
 	{
+	if ( ! BifConst::Hilti::compile_scripts )
+		{
+		DBG_LOG_COMPILER("Script compilation disabled");
+		return true;
+		}
+
+	DBG_LOG_COMPILER("Compiling Bro scripts ...");
+
 	collector_callback = std::make_shared<CollectorCallback>(this);
 
 	if ( ::stmts )
@@ -437,11 +461,9 @@ Compiler::module_list Compiler::CompileAll()
 		traverse_all(collector_callback.get());
 		}
 
-	Compiler::module_list modules;
-
 	for ( auto ns : GetNamespaces() )
 		{
-		auto mbuilder = new class ModuleBuilder(this, hilti_context, ns);
+		auto mbuilder = moduleBuilderForNamespace(ns);
 
 		pushModuleBuilder(mbuilder);
 
@@ -450,9 +472,7 @@ Compiler::module_list Compiler::CompileAll()
 			auto module = mbuilder->Compile();
 
 			if ( ! module )
-				return Compiler::module_list();
-
-			modules.push_back(module);
+				return false;
 			}
 
 		catch ( std::exception& e )
@@ -462,11 +482,105 @@ Compiler::module_list Compiler::CompileAll()
 			}
 
 		popModuleBuilder();
+		}
 
-		delete mbuilder;
+	return true;
+	}
+
+Compiler::module_list Compiler::CompileExternalModules()
+	{
+	Compiler::module_list modules;
+
+	for ( auto path : external_modules )
+		{
+		DBG_LOG_COMPILER("Loading %s ...", path.c_str());
+
+		auto m = hilti_context->loadModule(path);
+
+		if ( ! m )
+			{
+			reporter::error(::util::fmt("loading external module %s failed", path));
+			return Compiler::module_list();
+			}
+
+		modules.push_back(m);
+
+		// See if any events have handlers defined in this HILTI code.
+
+		EventRegistry::string_list* handlers = ::event_registry->AllHandlers();
+
+		for ( int i = 0; i < handlers->length(); ++i )
+			{
+			auto e = event_registry->Lookup((*handlers)[i]);
+			assert(e);
+
+			auto ev = e->LocalHandler();
+
+			if ( ! ev )
+				continue;
+
+			auto mod = ::extract_module_name(ev->Name());
+			auto name = ::extract_var_name(ev->Name());
+			auto symbol = HiltiSymbol(::util::fmt("%s::%s", mod, name), true, m->id()->name(), false);
+
+			if ( ! m->body()->scope()->has(std::make_shared<::hilti::ID>(symbol)) )
+				continue;
+
+			DBG_LOG_COMPILER("Found custom implementation of %s in %s", ev->Name(), symbol.c_str());
+
+			HiltiPlugin.RequestEvent(e);
+
+			auto id = ev->GetUniqueFuncID();
+
+			if ( id >= custom_event_handlers.size() )
+				custom_event_handlers.resize(id + 1);
+
+			custom_event_handlers[id] = true;
+
+			// Compile the stub if it has zero bodies because then the compiler won't do it.
+			if ( ev->GetBodies().size() == 0 || ! BifConst::Hilti::compile_scripts )
+				{
+				auto mbuilder = moduleBuilderForNamespace(mod);
+				pushModuleBuilder(mbuilder);
+				mbuilder->CompileEventStub(static_cast<const ::BroFunc*>(ev));
+				popModuleBuilder();
+				}
+			}
+
+		delete handlers;
+
 		}
 
 	return modules;
+	}
+
+Compiler::module_list Compiler::CompileAll()
+	{
+	Compiler::module_list modules;
+
+	if ( ! CompileScripts() )
+		return modules;
+
+	for ( auto m : CompileExternalModules() )
+		modules.push_back(m);
+
+	for ( auto m : mbuilders_by_ns )
+		modules.push_back(m.second->module());
+
+	for ( auto m : modules )
+		{
+		// TODO: Not sure why we need to import this here again.
+		hilti_context->importModule(std::make_shared<::hilti::ID>("LibBro"));
+		hilti_context->finalize(m);
+		}
+
+	return modules;
+	}
+
+bool Compiler::LoadExternalHiltiCode(const std::string& path)
+	{
+	external_modules.push_back(path);
+	return true;
 	}
 
 std::shared_ptr<::hilti::Module> Compiler::FinalizeGlueBuilder()
@@ -483,6 +597,21 @@ std::shared_ptr<::hilti::Module> Compiler::FinalizeGlueBuilder()
 ::hilti::builder::ModuleBuilder* Compiler::GlueModuleBuilder() const
 	{
 	return glue_module_builder.get();
+	}
+
+class ModuleBuilder* Compiler::moduleBuilderForNamespace(const std::string& ns)
+	{
+	auto i = mbuilders_by_ns.find(ns);
+
+	if ( i != mbuilders_by_ns.end() )
+		return i->second.get();
+
+	auto mb = std::make_shared<class ModuleBuilder>(this, hilti_context, ns);
+
+	mb->importModule("LibBro");
+
+	mbuilders_by_ns.insert(std::make_pair(ns, mb));
+	return mb.get();
 	}
 
 std::list<string> Compiler::GetNamespaces() const
@@ -607,8 +736,8 @@ std::string Compiler::normalizeSymbol(const std::string sym, const std::string p
 
 std::string Compiler::HiltiSymbol(const ::BroType* t)
 	{
-	if ( t->GetTypeID() )
-		return ::util::strreplace(t->GetTypeID(), "::", "_");
+	if ( t->GetName().size() )
+		return ::util::strreplace(t->GetName(), "::", "_");
 
 	return HiltiODescSymbol(t);
 	}
@@ -692,4 +821,14 @@ std::pair<shared_ptr<::hilti::Type>, std::string> Compiler::LookupCachedCustomBr
 	{
 	auto i = cached_custom_types.find(btype);
 	return i != cached_custom_types.end() ? i->second : std::make_pair(nullptr, "");
+	}
+
+bool Compiler::HaveCustomHandler(const ::Func* ev)
+	{
+	auto id = ev->GetUniqueFuncID();
+
+	if ( id >= custom_event_handlers.size() )
+		return false;
+
+	return custom_event_handlers[id];
 	}

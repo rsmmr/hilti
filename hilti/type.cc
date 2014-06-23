@@ -307,13 +307,16 @@ type::trait::Unpackable::Format _unpack_formats_bytes[] = {
     { "BytesFixed", std::make_shared<type::Integer>(64), nullptr, false,
       "A series of bytes of fixed length specified by an additional integer argument" },
 
+    { "BytesFixedOrEod", std::make_shared<type::Integer>(64), nullptr, false,
+      "A series of bytes of fixed length specified by an additional integer argument, or until end-of-data if the input is frozen, whatever comes first." },
+
     { "BytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), nullptr, false,
       "A series of bytes delimited by a final byte-sequence specified by an additional argument." },
 
     { "SkipBytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "Like BytesRunLength, but does not return unpacked value." },
 
-    { "SkipBytesFixed", std::make_shared<type::Integer>(64), nullptr, false,
+    { "SkipBytesFixedOrEod", std::make_shared<type::Integer>(64), nullptr, false,
       "Like BytesFixed, but does not return unpacked value." },
 
     { "SkipBytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), nullptr, false,

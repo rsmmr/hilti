@@ -1,0 +1,384 @@
+#! /usr/bin/env python
+#
+# % -*- mode: python; -*-
+#
+# A proof-of-concept BPF-filter to HILTI compiler.
+
+import re
+import sys
+
+def _compile_host(state, node):
+    def one(tag, state, node):
+
+        if not _ip.match(node.val):
+            _error("%s is not an IP address" % node.val)
+
+        addr = state.addOp("addr", "overlay.get IP::Header \"%s\" packet" % (tag))
+        return state.addOp("bool", "equal %s %s" % (addr, node.val))
+
+    if node.qualifier:
+        return one(node.qualifier, state, node)
+
+    src = one("src", state, node)
+    dst = one("dst", state, node)
+
+    state.doneWith(src)
+    state.doneWith(dst)
+
+    return state.addOp("bool", "bool.or %s %s" % (src, dst), False)
+
+def _compile_net(state, node):
+    def one(tag, state, node):
+
+        if not _net.match(node.val):
+            _error("%s is not an network mask" % node.val)
+
+        net = state.addOp("addr", "overlay.get IP::Header \"%s\" packet" % (tag))
+        return state.addOp("bool", "equal %s %s" % (node.val, state.last))
+
+    if node.qualifier:
+        return one(node.qualifier, state, node)
+
+    src = one("src", state, node)
+    dst = one("dst", state, node)
+    return state.addOp("bool", "bool.or %s %s" % (src, dst), False)
+
+def _compile_proto(state, node):
+
+    if node.qualifier != "ip":
+        _error("only '*ip* proto' supoprted currently")
+
+    proto = state.addOp("int<8>", "overlay.get IP::Header \"proto\"")
+    return state.addOp("bool", "equal %s %s" % (proto, node.val))
+
+_types = {
+    'host': _compile_host,
+    'net': _compile_net,
+    'proto': _compile_proto,
+    }
+
+_qualifiers  = {
+    'src': True,
+    'dst': True,
+    'ip': True,
+    }
+
+_protos = {
+    'tcp': True,
+    'udp': True,
+    }
+
+_operators = {
+    'or': True,
+    'and': True,
+    'not': True,
+    }
+
+_TOK_EOI = 0
+_TOK_LITERAL = 1
+_TOK_TYPE = 2
+_TOK_QUALIFIER = 3
+_TOK_PROTO = 4
+_TOK_NUM = 5
+_TOK_ID = 6
+_TOK_OP = 7
+
+_literals = "()"
+_number = re.compile('[0-9]+')
+_id = re.compile('[a-zA-Z.-]+')
+
+_ip = re.compile('[0-9]{1,3}(.[0-9]{1,3}){3}')
+_net = re.compile('[0-9]{1,3}(.[0-9]{1,3}){3}/[0-9]{1,3}')
+
+def _error(msg, location=""):
+    print >>sys.stderr, "error: %s%s" % (msg, str(location) and (" (at %s)" % location) or "")
+    sys.exit(1)
+
+# Poor-man's lexer.
+def _nextToken(filter):
+
+    token = ""
+
+    while filter:
+        next = filter[0]
+
+        if not next:
+            break
+
+        if next.isspace():
+            if token:
+                break
+            else:
+                filter = filter[1:]
+                continue
+
+        if next in _literals:
+            if token:
+                break
+            else:
+                filter = filter[1:]
+                token = next
+                break
+
+        token += next
+        filter = filter[1:]
+
+    if not filter and not token:
+        # End reached
+        return ((_TOK_EOI, ""), "")
+
+    if not token:
+        _error("parser error", filter)
+
+    if token in _literals:
+        token = (_TOK_LITERAL, token)
+
+    elif token in _types:
+        token = (_TOK_TYPE, token)
+
+    elif token in _qualifiers:
+        token = (_TOK_QUALIFIER, token)
+
+    elif token in _protos:
+        token = (_TOK_PROTO, token)
+
+    elif token in _operators:
+        token = (_TOK_OP, token)
+
+    elif _number.match(token):
+        token = (_TOK_NUM, token)
+
+    elif _id.match(token):
+        token = (_TOK_ID, token)
+
+    return (token, filter)
+
+class Clause:
+    def __init__(self):
+        # Leafs.
+        self.val = ""
+        self.type = ""
+        self.qualifier = ""
+        self.proto = ""
+        self.clause = 1
+
+    def check(self):
+        if not self.val:
+            _error("no value in clause", self)
+
+        if not self.type:
+            _error("no type in clause", self.val)
+
+    def __str__(self):
+        def add(dst, s):
+            if not s:
+                return dst
+
+            if not dst:
+                return s
+
+            return dst + " " + s
+
+        return add(self.qualifier, add(self.proto, add(self.type, self.val)))
+
+class Node:
+    def __init__(self):
+        # Leafs.
+        self.left = None
+        self.right = None
+        self.op = None
+        self.clause = 0
+        self.qualifier = None
+
+    def check(self):
+        pass
+
+    def __str__(self):
+        if self.right:
+            return "(%s %s %s)" % (self.left, self.op.upper(), self.right)
+        else:
+            return "(%s %s)" % (self.op.upper(), self.left)
+
+# Poor-man's parser.
+def parse(filter):
+
+    clause = Clause()
+
+    while True:
+
+        ((type, token), filter) = _nextToken(filter)
+        if type == _TOK_EOI:
+            clause.check()
+            return (clause, filter)
+
+        if type in (_TOK_ID, _TOK_NUM):
+            if clause.clause and not clause.val:
+                clause.val = token
+            else:
+                _error("syntax error", token)
+
+        if type == _TOK_TYPE:
+            if not clause.type:
+                clause.type = token
+            else:
+                _error("syntax error", token)
+
+        if type == _TOK_QUALIFIER:
+            if not clause.qualifier:
+                clause.qualifier = token
+            else:
+                _error("syntax error", token)
+
+        if type == _TOK_PROTO:
+            if not clause.proto:
+                clause.proto = token
+            else:
+                _error("syntax error", token)
+
+        if type == _TOK_OP:
+            node = Node()
+
+            if token != "not":
+                clause.check()
+                node.left = clause
+                (node.right, filter) = parse(filter)
+            else:
+                (node.left, filter) = parse(filter)
+
+            node.op = token
+            return (node, filter)
+
+        if type == _TOK_LITERAL:
+
+            if token == '(':
+                (clause, filter) = parse(filter)
+
+            if token == ')':
+                return (clause, filter)
+
+class State:
+    cache = {}
+
+    def __init__(self):
+        self.cnts = {}
+        self.vars = {}
+        self.reuse = {}
+        self.code = []
+        self.last = "<no-target>"
+
+    def addVar(self, type):
+        for v in self.reuse:
+            if self.vars[v] == type:
+                del self.reuse[v]
+
+                for (ck, cv) in State.cache.items():
+                    if v == cv:
+                        del State.cache[ck]
+
+                return v
+
+        try:
+            cnt = self.cnts[type]
+        except KeyError:
+            cnt = 0
+
+        cnt += 1
+        self.cnts[type] = cnt
+
+        name = "%s%d" % (type[0], cnt)
+        self.vars[name] = type
+        return name
+
+    def doneWith(self, var):
+        self.reuse[var] = 1
+
+    def addOp(self, target_type, op, cache=True):
+        if cache and str(op) in State.cache:
+            self.last = State.cache[str(op)]
+            return self.last
+
+        target = self.addVar(target_type)
+        self.code += ["%s = %s" % (target, op)]
+        self.last = target
+        State.cache[str(op)] = target
+        return target
+
+    def generateProgram(self, filter, module):
+
+        p = """
+module %s
+
+import Hilti
+import IP
+
+export filter
+export filter_noop
+
+bool filter_noop(ref<bytes> packet) &noyield {
+    return.result False
+}
+
+bool filter(ref<bytes> packet) &noyield {
+    # local IP::Header iphdr
+    # local iterator<bytes> start
+"""  % module
+
+        for (name, type) in self.vars.items():
+            p += "    local %s %s\n" % (type, name)
+
+        p += """
+    # start = begin packet
+    # overlay.attach iphdr start
+
+"""
+
+        for line in self.code:
+            p += "    " + line + "\n"
+
+        p += "    return.result %s\n" % self.last
+        p += "    }\n"
+        p += "\n"
+        p += "# %s\n" % filter
+
+        return p
+
+def compile(state, node):
+    if node.clause:
+        return _types[node.type](state, node)
+
+    if node.right:
+        assert node.op in ("and", "or")
+
+        left = compile(state, node.left)
+        right = compile(state, node.right)
+
+        var = state.addOp("bool", "bool.%s %s %s" % (node.op, left, right), False)
+        return var
+
+    else:
+        assert node.op == "not"
+
+        child = compile(state, node.left)
+
+        var = state.addVar()
+        state.addOp(var, "bool.not %s" % (child), False)
+        return var
+
+### Main
+
+if len(sys.argv) <= 1:
+    print >>sys.stderr, "usage: bpf2hlt <filter string>"
+    sys.exit(1)
+
+expr = " ".join(sys.argv[1:])
+(ast, filter) = parse(expr)
+
+state = State()
+compile(state, ast)
+prog = state.generateProgram(expr, "bpf2hlt")
+
+print prog
+
+
+
+

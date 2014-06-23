@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 
     hlt_fiber* fiber = 0;
 
-    int rounds = 10000000;
+    int rounds = 100000000;
     int cnt = rounds;
     double start = current_time();
 

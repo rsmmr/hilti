@@ -1,0 +1,30 @@
+#! /usr/bin/env bash
+
+if [ $# != 1 ]; then
+    echo "usage: `basename $0` <trace>"
+    exit 1
+fi
+
+trace=$1
+filter=$2
+base=`dirname $0`
+
+hilti_build=${base}/../../../tools/hilti-build
+hiltic=${base}/../../../build/tools/hiltic
+ipsumdump="ipsumdump -q -t -s -d"
+
+( cat ${base}/core.hlt; cat ${base}/acl.txt | ${base}//acl2hlt ) >acl.tmp.hlt
+
+${hiltic} -P   acl.tmp.hlt >acl.tmp.h
+${hilti_build} ${base}/acl.tmp.hlt ${base}/driver.c -o a.out.tmp
+
+# Prime the cache.
+cat $trace | cat >/dev/null
+
+rm -f times.log counts.py.log counts.hlt.log
+
+for i in 1 2 3; do
+    cat ${trace} | ${ipsumdump} | /bin/time -f "py utime %U" ${base}/pyacl ${base}/acl.txt >>counts.py.log 2>>times.log
+    cat ${trace} | ${ipsumdump} | /bin/time -f "hlt utime %U"  ./a.out.tmp >>counts.hlt.log 2>>times.log
+done
+

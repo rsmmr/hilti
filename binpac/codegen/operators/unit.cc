@@ -1,9 +1,55 @@
 
 #include "cg-operator-common.h"
+#include "../../attribute.h"
 #include <binpac/autogen/operators/unit.h>
 
 using namespace binpac;
 using namespace binpac::codegen;
+
+void CodeBuilder::visit(ctor::Unit* m)
+{
+    auto unit = ast::checkedCast<type::Unit>(m->type());
+    auto func = cg()->hiltiFunctionNew(unit);
+    auto hunit = cg()->hiltiTypeParseObject(unit);
+
+    auto result = cg()->builder()->addTmp("obj", ::hilti::builder::reference::type(hunit));
+
+    std::list<shared_ptr<hilti::Expression>> hparams;
+    hparams.push_back(hilti::builder::reference::createNull());
+    hparams.push_back(hilti::builder::reference::createNull());
+    hparams.push_back(cg()->hiltiCookie());
+
+    cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, func, hilti::builder::tuple::create(hparams));
+
+    auto hfields = ast::checkedCast<hilti::type::Struct>(hunit)->fields();
+    auto vars = unit->variables();
+    auto hfield = hfields.begin();
+    auto var = vars.begin();
+
+    for ( auto i : m->items() ) {
+        auto id = (*hfield++)->id();
+        auto init = i.second;
+        auto itype = (*var++)->type();
+
+        auto field = hilti::builder::string::create(id->name());
+
+        cg()->builder()->beginTryCatch();
+        auto val = hiltiExpression(init, itype);
+        cg()->builder()->addInstruction(hilti::instruction::struct_::Set, result, field, val);
+
+        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::AttributeNotSet")),
+                                   hilti::builder::id::node("e"));
+        // Nothing to do in catch.
+        cg()->builder()->popCatch();
+
+        cg()->builder()->endTryCatch();
+    }
+
+    // Ensure we emit the unit type itself.
+    cg()->moduleBuilder()->addType(cg()->hiltiID(unit->id()), hunit, false, unit->location());
+
+    setResult(result);
+}
 
 void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
 {
@@ -58,6 +104,56 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
                                     hilti::builder::string::create(attr->id()->name()));
 
     setResult(has);
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::unit::TryAttribute* i)
+{
+    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+
+    auto item = unit->item(attr->id());
+    assert(item && item->type());
+
+    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->fieldType()), nullptr, false);
+    setResult(ival);
+
+    // If there's a default, the attribute access will always succeed.
+    bool have_default = item->attributes()->has("default");
+
+    if ( have_default ) {
+        cg()->builder()->addInstruction(ival,
+                                        hilti::instruction::struct_::Get,
+                                        cg()->hiltiExpression(i->op1()),
+                                        hilti::builder::string::create(attr->id()->name()));
+
+        return;
+    }
+
+    auto has = cg()->builder()->addTmp("has", hilti::builder::boolean::type());
+
+    cg()->builder()->addInstruction(has,
+                                    hilti::instruction::struct_::IsSet,
+                                    cg()->hiltiExpression(i->op1()),
+                                    hilti::builder::string::create(attr->id()->name()));
+
+    auto branches = cg()->builder()->addIfElse(has);
+    auto attr_set = std::get<0>(branches);
+    auto attr_not_set = std::get<1>(branches);
+    auto done = std::get<2>(branches);
+
+    cg()->moduleBuilder()->pushBuilder(attr_set);
+    cg()->builder()->addInstruction(ival,
+                                    hilti::instruction::struct_::Get,
+                                    cg()->hiltiExpression(i->op1()),
+                                    hilti::builder::string::create(attr->id()->name()));
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());                                    ;
+    cg()->moduleBuilder()->popBuilder(attr_set);
+
+    cg()->moduleBuilder()->pushBuilder(attr_not_set);
+    cg()->builder()->addThrow("BinPACHilti::AttributeNotSet", hilti::builder::string::create(attr->id()->name()));
+    cg()->moduleBuilder()->popBuilder(attr_not_set);
+
+    cg()->moduleBuilder()->pushBuilder(done);
 }
 
 void CodeBuilder::visit(binpac::expression::operator_::unit::New* i)

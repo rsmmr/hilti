@@ -54,23 +54,12 @@ void hlt_init()
     __hlt_global_state_init(1);
 
     hlt_execution_context* ctx = hlt_global_execution_context();
-    __hlt_modules_init(ctx);
-
-    if ( ctx->excpt )
-        __hlt_exception_print_uncaught_abort(ctx->excpt, ctx);
 
     atexit(__hlt_done);
 }
 
 void __hlt_init_from_state(__hlt_global_state* state)
 {
-#if 0
-   if ( __hlt_globals() ) {
-        fprintf(stderr, "internal error: __hlt_init_from_state() called when globals are already initialized\n");
-        abort();
-    }
-#endif
-
     __hlt_init_common();
     __hlt_globals_set(state);
 

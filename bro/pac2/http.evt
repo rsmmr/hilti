@@ -7,12 +7,17 @@ protocol analyzer pac2::HTTP over TCP:
     port 80/tcp,
     replaces HTTP;
 
-on HTTP::Message::%done        -> event http_end_entity($conn, $is_orig);
-on HTTP::Message::%init        -> event http_begin_entity($conn, $is_orig);
+on HTTP::Message::%init        -> event http_begin_entity($conn, $is_orig) &priority=5;
+on HTTP::Message::%done        -> event http_end_entity($conn, $is_orig)   &priority=5;
+on HTTP::Message::%error       -> event http_end_entity($conn, $is_orig)   &priority=5;
+
+on HTTP::Message::%done        -> event http_message_done($conn, $is_orig, HTTP::bro_http_message_stats(self));
+on HTTP::Message::%error       -> event http_message_done($conn, $is_orig, HTTP::bro_http_message_stats(self));
+
+on HTTP::Message::end_of_hdr   -> event http_content_type($conn, $is_orig, self.content_type[0], self.content_type[1]);
+
 on HTTP::Content::data         -> event http_entity_data($conn, $is_orig, |self.data|, self.data);
 on HTTP::Header                -> event http_header($conn, $is_orig, self.name, self.content);
-on HTTP::Message               -> event http_message_done_pac2($conn, $is_orig, (self.has_body ? self.body.data_len : 0));
-on HTTP::Message::end_of_hdr   -> event http_content_type($conn, $is_orig, self.content_type[0], self.content_type[1]);
 on HTTP::ReplyLine             -> event http_reply($conn, self.version.number, self.status, self.reason);
 on HTTP::RequestLine           -> event http_request($conn, self.method, self.uri, self.uri, self.version.number);
 

@@ -29,7 +29,7 @@ typedef struct __hlt_map {
     __hlt_gchdr __gchdr;    // Header for memory management.
     const hlt_type_info* tkey;   // Key type.
     const hlt_type_info* tvalue; // Value type.
-    hlt_timer_mgr* tmgr;         // The timer manager or null.
+    hlt_timer_mgr* tmgr;         // The timer manager, or null if not used.
     hlt_interval timeout;        // The timeout value, or 0 if disabled
     hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
     enum MapDefaultType default_type; // Type of the map's default.
@@ -51,7 +51,7 @@ typedef struct __hlt_map {
 typedef struct __hlt_set {
     __hlt_gchdr __gchdr;    // Header for memory management.
     const hlt_type_info* tkey;   // Key type.
-    hlt_timer_mgr* tmgr;         // The timer manager or null.
+    hlt_timer_mgr* tmgr;         // The timer manager, or null if not used.
     hlt_interval timeout;        // The timeout value, or 0 if disabled
     hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
 
@@ -545,13 +545,11 @@ void hlt_map_default_callable(hlt_map* m, hlt_callable* func, hlt_exception** ex
 
 void hlt_map_timeout(hlt_map* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! m->tmgr ) {
-        hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);
-        return;
-    }
-
     m->timeout = timeout;
     m->strategy = strategy;
+
+    if ( ! m->tmgr )
+        GC_ASSIGN(m->tmgr, ctx->tmgr, hlt_timer_mgr);
 }
 
 hlt_iterator_map hlt_map_begin(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -894,13 +892,11 @@ void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx
 
 void hlt_set_timeout(hlt_set* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! m->tmgr ) {
-        hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);
-        return;
-    }
-
     m->timeout = timeout;
     m->strategy = strategy;
+
+    if ( ! m->tmgr )
+        GC_ASSIGN(m->tmgr, ctx->tmgr, hlt_timer_mgr);
 }
 
 hlt_iterator_set hlt_set_begin(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx)

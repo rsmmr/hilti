@@ -58,9 +58,11 @@ hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* dat
     __binpac_filter_zlib* filter = (__binpac_filter_zlib *)filter_gen;
 
     if ( ! filter->zip ) {
-        hlt_string fname = hlt_string_from_asciiz("more inflate data after close", excpt, ctx);
-        hlt_set_exception(excpt, &binpac_exception_filtererror, fname);
-        return 0;
+        // hlt_string fname = hlt_string_from_asciiz("more inflate data after close", excpt, ctx);
+        // hlt_set_exception(excpt, &binpac_exception_filtererror, fname);
+
+        // TODO: This can happen at least with our HTTP parser right now?
+        return hlt_bytes_new(excpt, ctx);
     }
 
     void* cookie = 0;

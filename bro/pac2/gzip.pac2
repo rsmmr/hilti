@@ -31,7 +31,7 @@ type Member = unit {
     crc16  : uint<16>                 if ( self.flags.fhrcr != 0 );
 };
 
-type OS = enum {
+export type OS = enum {
     FAT = 0,
     AMIGA = 1,
     VMS = 2,
@@ -47,3 +47,4 @@ type OS = enum {
     QDOS = 12,
     ACORD = 13
     };
+

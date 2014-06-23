@@ -23,7 +23,7 @@ __HLT_DECLARE_RTTI_GC_TYPE(__hlt_set_timer_cookie)
 struct __hlt_timer_mgr {
     __hlt_gchdr __gchdr; // Header for memory management.
     hlt_time time;       // The current time.
-    pqueue_t* timers;    // Priority list of all timers.
+    priority_queue_t* timers;    // Priority list of all timers.
 };
 
 void hlt_timer_dtor(hlt_type_info* ti, hlt_timer* timer)
@@ -61,7 +61,7 @@ void hlt_timer_dtor(hlt_type_info* ti, hlt_timer* timer)
 void hlt_timer_mgr_dtor(hlt_type_info* ti, hlt_timer_mgr* mgr)
 {
     hlt_timer_mgr_expire(mgr, 0, 0, 0);
-    pqueue_free(mgr->timers);
+    priority_queue_free(mgr->timers);
 }
 
 static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -181,11 +181,11 @@ void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt, hlt_e
 
     if ( t > timer->mgr->time ) {
         timer->time = t;
-        pqueue_change_priority(timer->mgr->timers, t, timer);
+        priority_queue_change_priority(timer->mgr->timers, t, timer);
     }
 
     else {
-        pqueue_remove(timer->mgr->timers, timer);
+        priority_queue_remove(timer->mgr->timers, timer);
         __hlt_timer_fire(timer, excpt, ctx);
     }
 }
@@ -197,7 +197,7 @@ void hlt_timer_cancel(hlt_timer* timer, hlt_exception** excpt, hlt_execution_con
         return;
     }
 
-    pqueue_remove(timer->mgr->timers, timer);
+    priority_queue_remove(timer->mgr->timers, timer);
     GC_DTOR(timer, hlt_timer);
 
     timer->mgr = 0;
@@ -244,11 +244,24 @@ int64_t hlt_timer_to_int64(const hlt_type_info* type, const void* obj, int32_t o
     return hlt_time_to_int64(&hlt_type_info_hlt_time, &t->time, options, excpt, ctx);
 }
 
+void hlt_timer_mgr_advance_global(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( ctx->vid != HLT_VID_MAIN ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        return;
+    }
+
+    hlt_timer_mgr_advance(ctx->tmgr, t, excpt, ctx);
+
+    if ( t > __hlt_globals()->global_time )
+        __hlt_globals()->global_time = t;
+}
+
 hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_timer_mgr* mgr = GC_NEW(hlt_timer_mgr);
 
-    mgr->timers = pqueue_init(100);
+    mgr->timers = priority_queue_init(100);
 
     if ( ! mgr->timers ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
@@ -260,15 +273,13 @@ hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_context* c
 
 void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! mgr ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return;
-    }
-
     if ( timer->mgr ) {
         hlt_set_exception(excpt, &hlt_exception_timer_already_scheduled, 0);
         return;
     }
+
+    if ( ! mgr )
+        mgr = ctx->tmgr;
 
     timer->mgr = mgr; // Not memory managed to avoid cycles.
     timer->time = t;
@@ -279,7 +290,7 @@ void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hl
         return;
     }
 
-    if ( pqueue_insert(mgr->timers, timer) != 0 ) {
+    if ( priority_queue_insert(mgr->timers, timer) != 0 ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return;
     }
@@ -287,22 +298,22 @@ void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hl
 
 int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! mgr ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! mgr )
+        mgr = ctx->tmgr;
+
+    assert(mgr);
 
     int32_t count = 0;
 
     mgr->time = t;
 
     while ( 1 ) {
-        hlt_timer* timer = (hlt_timer*) pqueue_peek(mgr->timers);
+        hlt_timer* timer = (hlt_timer*) priority_queue_peek(mgr->timers);
 
         if ( ! timer || timer->time > t )
             break;
 
-        pqueue_pop(mgr->timers);
+        priority_queue_pop(mgr->timers);
 
         __hlt_timer_fire(timer, excpt, ctx);
 
@@ -314,10 +325,8 @@ int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** ex
 
 hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! mgr ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return 0;
-    }
+    if ( ! mgr )
+        mgr = ctx->tmgr;
 
     return mgr->time;
 }
@@ -325,13 +334,12 @@ hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt, hlt_ex
 void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! mgr ) {
-        assert(excpt);
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return;
+        assert(ctx);
+        mgr = ctx->tmgr;
     }
 
     while ( 1 ) {
-        hlt_timer* timer = (hlt_timer*) pqueue_pop(mgr->timers);
+        hlt_timer* timer = (hlt_timer*) priority_queue_pop(mgr->timers);
         if ( ! timer )
             break;
 
@@ -350,7 +358,7 @@ hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, i
     if ( ! mgr )
         return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
-    int64_t size = pqueue_size(mgr->timers);
+    int64_t size = priority_queue_size(mgr->timers);
 
     hlt_string size_str = hlt_int_to_string(&hlt_type_info_hlt_int_64, &size, options, excpt, ctx);
     hlt_string time_str = hlt_time_to_string(&hlt_type_info_hlt_time, &mgr->time, options, excpt, ctx);

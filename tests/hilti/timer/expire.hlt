@@ -15,7 +15,7 @@ void foo(time n) {
 void create(ref<timer_mgr> mgr, time t) {
     local ref<timer> tim
     tim = new timer foo (t)
-    timer_mgr.schedule mgr t tim
+    timer_mgr.schedule t tim mgr
 
     call Hilti::print (tim)
 }
@@ -31,7 +31,7 @@ void run() {
     call create(mgr, time(3.0))
     call create(mgr, time(4.0))
 
-    timer_mgr.expire mgr False
+    timer_mgr.expire False mgr
 
     call create(mgr, time(1.5))
     call create(mgr, time(5.5))
@@ -39,7 +39,7 @@ void run() {
     call create(mgr, time(3.5))
     call create(mgr, time(4.5))
 
-    timer_mgr.expire mgr True
+    timer_mgr.expire True mgr
 
     return.void
 }

@@ -1,0 +1,55 @@
+#
+# @TEST-EXEC: bro -b -r ${TRACES}/ssh-single-conn.trace %INPUT Hilti::compile_scripts=T >output
+# @TEST-EXEC: btest-diff output
+#
+# Note: We need the Bro handler at the end sohat Bro actually generates the event,
+# otherwise our custom HILTI hook would never be raised.
+
+module MyCustomCode
+
+import Hilti
+
+type GLOBAL::conn_id = struct {
+  addr orig_h,
+  port orig_p,
+  addr resp_h,
+  port resp_p
+}
+
+type GLOBAL::endpoint = struct {
+  int<64> size,
+  int<64> state,
+  int<64> num_pkts,
+  int<64> num_bytes_ip,
+  int<64> flow_label
+}
+
+type GLOBAL::Tunnel::Type = enum { Tunnel_AYIYA = 2, Tunnel_GTPv1 = 5, Tunnel_IP = 1, Tunnel_NONE = 0, Tunnel_SOCKS = 4, Tunnel_TEREDO = 3 }
+
+type GLOBAL::Tunnel::EncapsulatingConn = struct {
+  ref<GLOBAL::conn_id> cid &default=(),
+  GLOBAL::Tunnel::Type tunnel_type,
+  ref<bytes> uid
+}
+
+type GLOBAL::connection = struct {
+  ref<GLOBAL::conn_id> id &default=(),
+  ref<GLOBAL::endpoint> orig &default=(),
+  ref<GLOBAL::endpoint> resp &default=(),
+  time start_time,
+  interval duration,
+  ref<set<ref<bytes>>> service &default=set<ref<bytes>>(),
+  ref<bytes> addl,
+  int<64> hot,
+  ref<bytes> history,
+  ref<bytes> uid,
+  ref<vector<ref<GLOBAL::Tunnel::EncapsulatingConn>>> tunnel
+}
+
+hook void GLOBAL::connection_established(ref<GLOBAL::connection> c)
+{
+    local ref<GLOBAL::conn_id> __tmp_field
+    __tmp_field = struct.get c "id"
+    call Hilti::print ("From HILTI: ", False)
+    call Hilti::print (__tmp_field)
+}

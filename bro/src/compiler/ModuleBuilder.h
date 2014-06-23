@@ -175,6 +175,11 @@ public:
 	 */
 	void FinalizeGlueCode();
 
+	/**
+	 * XXX
+	 */
+	void CompileEventStub(const BroFunc* event);
+
 protected:
 	/**
 	 * Compiles a single function. This branches out into the other

@@ -56,7 +56,7 @@ static inline int8_t __kh_ptr_equal_func(const void* p1, const void* p2, const v
 KHASH_INIT(blocked_jobs, const void*, hlt_blocked_job*, 1, __kh_ptr_hash_func, __kh_ptr_equal_func)
 
 // Batch size for the jobs queues.
-#define QUEUE_BATCH_SIZE 5000
+#define QUEUE_BATCH_SIZE 100
 
 // Number of pending elements across all job qeueus that correspond to the
 // maximum load of 1.0.
@@ -68,14 +68,14 @@ static void _fatal_error(const char* msg)
     exit(1);
 }
 
-static void _hlt_job_delete(hlt_job* j)
+static void _hlt_job_delete(hlt_job* j, hlt_execution_context* ctx)
 {
     DBG_LOG(DBG_STREAM, "deleting job %lu", j->id);
 
     if ( j->fiber ) {
         hlt_callable* func = hlt_fiber_get_cookie(j->fiber);
         GC_DTOR(func, hlt_callable);
-        hlt_fiber_delete(j->fiber);
+        hlt_fiber_delete(j->fiber, ctx);
     }
 
     GC_DTOR_GENERIC(&j->tcontext, j->tcontext_type);
@@ -87,9 +87,9 @@ static void _hlt_worker_thread_delete(hlt_worker_thread* t)
     DBG_LOG(DBG_STREAM, "deleting worker thread %s", t->name);
 
     while ( hlt_thread_queue_size(t->jobs) ) {
-        hlt_job* job = hlt_thread_queue_read(t->jobs, -1);
+        hlt_job* job = hlt_thread_queue_read(t->jobs, 10);
         assert(job);
-        _hlt_job_delete(job);
+        _hlt_job_delete(job, 0);
     }
 
     hlt_thread_queue_delete(t->jobs);
@@ -102,7 +102,7 @@ static void _hlt_worker_thread_delete(hlt_worker_thread* t)
 
         while ( bjob ) {
             hlt_blocked_job* next = bjob->next;
-            _hlt_job_delete(bjob->job);
+            _hlt_job_delete(bjob->job, 0);
             hlt_free(bjob);
             bjob = next;
         }
@@ -119,6 +119,8 @@ static void _hlt_worker_thread_delete(hlt_worker_thread* t)
 
     hlt_free(t->ctxs);
     hlt_free(t->name);
+    __hlt_fiber_pool_delete(t->fiber_pool);
+
     hlt_free(t);
 }
 
@@ -349,7 +351,7 @@ static void _worker_schedule(hlt_worker_thread* current, hlt_worker_thread* targ
     }
 
     hlt_job* job = hlt_malloc(sizeof(hlt_job));
-    job->fiber = hlt_fiber_create(_worker_fiber_entry, _worker_get_ctx(target, vid), func);
+    job->fiber = hlt_fiber_create(_worker_fiber_entry, _worker_get_ctx(target, vid), func, ctx);
     job->vid = vid;
     job->tcontext_type = tcontext_type;
     job->tcontext = tcontext;
@@ -425,7 +427,7 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
     __hlt_context_set_fiber(ctx, job->fiber);
     __hlt_context_set_thread_context(ctx, job->tcontext_type, job->tcontext);
 
-    if ( hlt_fiber_start(job->fiber) == 0 ) {
+    if ( hlt_fiber_start(job->fiber, ctx) == 0 ) {
         // Yield.
         DBG_LOG(DBG_STREAM, "vid %d is yielding", ctx->vid);
 
@@ -446,7 +448,7 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
         __hlt_context_set_thread_context(ctx, job->tcontext_type, 0);
 
         job->fiber = 0; // This is deleted already.
-        _hlt_job_delete(job);
+        _hlt_job_delete(job, ctx);
     }
 }
 
@@ -505,8 +507,38 @@ static void* _worker(void* worker_thread_ptr)
             finished = 1;
         }
 
-        for ( int i = 0; i < mgr->num_workers; ++i )
-            hlt_thread_queue_writer_update(mgr->workers[i]->jobs, thread->id);
+        hlt_time gt = __hlt_globals()->global_time;
+
+        for ( int i = 0; i < mgr->num_workers; ++i ) {
+            hlt_worker_thread* worker = mgr->workers[i];
+
+            hlt_thread_queue_writer_update(worker->jobs, thread->id);
+
+            // Advance all the virtual threads' time if the global one has
+            // changed.
+
+            if ( worker->global_time >= gt )
+                continue;
+
+            for ( int j = 1; j <= worker->max_vid; j++ ) {
+                hlt_execution_context* tctx = worker->ctxs[j];
+                hlt_exception* excpt = 0;
+
+                if ( ! tctx )
+                    continue;
+
+                DBG_LOG(DBG_STREAM, "advancing vid %" PRIu64 "'s time to %" PRIu64, tctx->vid, gt);
+
+                hlt_timer_mgr_advance(tctx->tmgr, gt, &excpt, tctx);
+
+                if ( excpt ) {
+                    __hlt_thread_mgr_uncaught_exception_in_thread(excpt, tctx);
+                    GC_DTOR(excpt, hlt_exception);
+                }
+            }
+
+            worker->global_time = gt;
+        }
 
 #ifdef DEBUG
         hlt_thread_queue_size(thread->jobs);
@@ -685,9 +717,11 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
         // We must not give a size limit for the queue here as otherwise the
         // scheduler will deadlock when blocking because each thread is both
         // reader and writer.
-        thread->jobs = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 5000, 0);
+        thread->jobs = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, QUEUE_BATCH_SIZE, 0);
         thread->ctxs = hlt_calloc(3, sizeof(hlt_execution_context*));
         thread->max_vid = 2;
+        thread->global_time = 0;
+        thread->fiber_pool = __hlt_fiber_pool_new();
         thread->id = i + 1; // We leave zero for the main thread so that we can use that as its writer id.
         thread->idle = 0;
         thread->jobs_blocked = kh_init(blocked_jobs);
@@ -717,6 +751,11 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
 
 void hlt_thread_mgr_set_state(hlt_thread_mgr* mgr, const hlt_thread_mgr_state new_state)
 {
+    if ( ! hlt_is_multi_threaded() )
+        return;
+
+    assert(mgr);
+
     // If we're not making a change, do nothing.
     if ( mgr->state == new_state )
         return;
@@ -801,7 +840,7 @@ void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, 
 #ifdef DEBUG
     pthread_t self = pthread_self();
     DBG_LOG(DBG_STREAM, "native thread %p assigned name '%s'", self, name);
-#endif    
+#endif
 
     // Set core affinity if specified for this thread.
     int core = -1;

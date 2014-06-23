@@ -172,7 +172,7 @@ Map::element_list Map::elements() const
     return elems;
 }
 
-RegExp::RegExp(const string& regexp, const string& flags, const attribute_list& attrs, const Location& l)
+RegExp::RegExp(const string& regexp, const string& flags, const attribute_list& attrs, const Location& l) : Ctor(l)
 {
     _patterns = { pattern(regexp, flags) };
     _type = std::make_shared<type::RegExp>(attrs, l);
@@ -193,4 +193,67 @@ shared_ptr<Type> RegExp::type() const
 Ctor::pattern_list RegExp::patterns() const
 {
     return _patterns;
+}
+
+Unit::Unit(const item_list& items, const Location& l) : Ctor(l)
+{
+    for ( auto i : items ) {
+        node_ptr<ID> id = i.first;
+        node_ptr<ID> init = i.second;
+        _items.push_back(std::make_pair(id, init));
+        addChild(id);
+        addChild(init);
+    }
+
+    unit_item_list uitems;
+
+    int cnt = 0;
+
+    for ( auto i : _items ) {
+        auto id = i.first;
+        auto type = i.second->type();
+        auto def = nullptr;
+
+        bool no_id = (id == nullptr);
+
+        if ( no_id )
+            id = std::make_shared<ID>(::util::fmt("_i%d", ++cnt));
+
+        auto ui = std::make_shared<type::unit::item::Variable>(id, type, def, hook_list(), location());
+
+        if ( no_id )
+            ui->setCtorNoName();
+
+        uitems.push_back(ui);
+    }
+
+    auto utype = std::make_shared<type::Unit>(parameter_list(), uitems);
+    utype->setAnonymous();
+
+    _type = utype;
+    addChild(_type);
+}
+
+ctor::Unit::item_list Unit::items() const
+{
+    item_list items;
+
+    for ( auto i : _items )
+        items.push_back(i);
+
+    return items;
+}
+
+shared_ptr<Type> Unit::type() const
+{
+    auto utype = ast::checkedCast<type::Unit>(_type);
+
+    // See if we have resolved some expression types in the meantime.
+    for ( auto i : util::zip2(_items, utype->variables()) ) {
+        auto type = i.first.second->type();
+        auto var = i.second;
+        var->setType(type);
+    }
+
+    return _type;
 }

@@ -1,0 +1,86 @@
+#! /usr/bin/env python
+#
+# Python-based reference implementation.
+#
+# ipsumdump -t -s -d | ...
+
+import sys
+import netaddr
+
+rules = []
+state = {}
+
+timeout = 300
+
+def match_packet(t, src, dst):
+
+    # Simulate timers.
+    delete = []
+    for (pair, expire) in state.items():
+        if t >= expire:
+            delete += [pair]
+
+    for pair in delete:
+        #print "X expiring", pair, "at", t
+        del state[pair]
+
+    # Do matching.
+
+    if (src, dst) in state:
+        # Update timer.
+        state[(src, dst)] = t + timeout
+        return True
+
+    for (snet, dnet, action) in rules:
+        sip = netaddr.IPAddress(src)
+        dip = netaddr.IPAddress(dst)
+
+        if sip in snet and dip in dnet:
+
+            if action:
+                state[(src, dst)] = t + timeout
+                state[(dst, src)] = t + timeout
+
+            return action
+
+    return False
+
+for line in open(sys.argv[1]):
+    line = line.strip()
+    if not line or line.startswith("#"):
+        continue
+
+    (src, dst, action) = line.split()
+
+    if dst == "*":
+        dst = "0/0"
+
+    action = (action == "allow")
+
+    rules += [(netaddr.IPNetwork(src), netaddr.IPNetwork(dst), action)]
+
+cnt_yes = 0
+cnt_no = 0
+
+for line in sys.stdin:
+
+    if line.startswith("!"):
+        continue
+
+    (t, src, dst) = line.split()
+
+    if src == "-" or dst == "-":
+        continue
+
+    result = match_packet(float(t), src, dst)
+
+    # print "|%s|%s|%s| -> %d" % (t, src, dst, result)
+
+    if result:
+        cnt_yes += 1
+    else:
+        cnt_no += 1
+
+
+print "yes:", cnt_yes
+print "no :", cnt_no

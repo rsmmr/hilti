@@ -188,6 +188,10 @@ public:
    /// Returns true if the instruction is a block terminator.
    bool terminator() const { return __terminator(); }
 
+   /// Returns true if the \c hilti-trace output in \c hlt-debug.log should
+   /// not show this instruction.
+   bool hideInDebugTrace() const { return __hideInDebugTrace(); }
+
    /// Returns the instructions successors blocks. For non-terminators, it
    /// will always returns an empty set.
    ///
@@ -445,6 +449,8 @@ protected:
 
    // For internal use only. Will be overridden automagically via macros.
    virtual shared_ptr<Expression> __defaultOp3() const { return nullptr; }
+
+   virtual bool __hideInDebugTrace() const { return false; }
 
    // For internal use only. Will be overridden automagically via macros.
    virtual std::set<shared_ptr<Expression>> __successors(const hilti::instruction::Operands& ops) const { return std::set<shared_ptr<Expression>>(); }

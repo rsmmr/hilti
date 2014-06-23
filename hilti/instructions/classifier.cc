@@ -7,6 +7,12 @@
 
 static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, shared_ptr<Expression> op)
 {
+    // FIXME: The logic below currently doesn't support the simplified case
+    // where one skips the priority.
+
+    return;
+
+#if 0
     shared_ptr<Type> stype = nullptr;
     auto ttype = ast::as<type::Tuple>(op->type());
 
@@ -76,6 +82,7 @@ static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, sha
             return;
         }
     }
+#endif
 }
 
 iBeginCC(classifier)

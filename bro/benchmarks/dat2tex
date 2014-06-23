@@ -1,0 +1,123 @@
+#! /usr/bin/env bash
+
+function average()
+{
+    prefix=$1
+    tag1=$2
+    tag2=$3
+    val=$4
+
+    awk -v prefix=${prefix} -v tag1=${tag1} -v tag2=${tag2} -v val=${val} '
+        {
+        t1=$tag1
+        t2=$tag2
+        t1 = substr(toupper(t1), 1,1) substr(t1, 2)
+        t2 = substr(toupper(t2), 1,1) substr(t2, 2)
+        idx=(t2 t1);
+        totals[idx] += $val;
+        cnts[idx] += 1;
+        }
+
+    END {
+        for ( t in totals ) {
+            prefix = substr(toupper(prefix), 1,1) substr(prefix, 2)
+            gsub("[0-9_-]", "", prefix);
+            avg = totals[t] / cnts[t];
+            printf("\\newcommand{\\%sAvg%s}{%s}\n", prefix, t, avg);
+        }
+        }
+    '
+}
+
+if [ $# != 1 ]; then
+    echo "usage: `basename $0` <benchmark-directory>"
+    exit 1
+fi
+
+datadir=$1
+
+if [ ! -d "${datadir}" ]; then
+    echo ${datadir} does not exist
+    exit 1
+fi
+
+echo "% Automatically generated, do not edit."
+echo "%"
+printf "%% "; date
+echo
+
+# Turn benchmark dat into Latex.
+
+test -e ${datadir}/benchmark.dat && cat ${datadir}/benchmark.dat | awk '
+
+    function normTag(t) {
+           while ( 1 ) {
+               j = index(t, "-");
+               t = substr(t, 1, j - 1) toupper(substr(t, j + 1, 1)) substr(t, j + 2);
+               if ( j == 0 )
+                  break;
+           }
+
+           while ( 1 ) {
+               j = index(t, "_");
+               t = substr(t, 1, j - 1) toupper(substr(t, j + 1, 1)) substr(t, j + 2);
+               if ( j == 0 )
+                  break;
+           }
+
+        gsub("[0-9]", "", t);
+        return substr(toupper(t), 1,1) substr(t, 2)
+    }
+
+    NR == 1 {
+        for ( i = 1; i <= NF; i++ )
+            field[i] = normTag($i);
+    }
+
+    NR > 1  {
+        for ( i = 3; i <= NF; i++ ) {
+            printf("\\newcommand{\\%s%s%s}{%s}\n", normTag($1), normTag($2), normTag(field[i]), $i);
+        }
+    }
+
+'
+
+# Add some additional numbers.
+
+cd ${datadir}
+
+for i in `find . -name '*.diff.count'`; do
+    sandbox=`echo $i | sed 's#^./\([^/]*\)/.*#\1#' | sed 's/[._-]\([^._-]*\)/\u\1/g' | sed 's/^./\u&/' | sed 's/[0-9]//g'`
+    file=`echo $i | sed 's#.*/\([^/]*\).diff.count#\1#' | sed 's/[._-]\([^._-]*\)/\u\1/g' | sed 's/^./\u&/' | sed 's/[0-9]//g'`
+
+    mismatches=`cat $i | awk 'NR==1'`
+    matches=`cat $i  | awk 'NR==2'`
+    other=`cat $i  | awk 'NR==3'`
+
+    echo "\\newcommand{\\${sandbox}DiffMatches${file}}{${matches}}"
+    echo "\\newcommand{\\${sandbox}DiffMismatches${file}}{${mismatches}}"
+done
+
+for i in `find . -name '*.lines'`; do
+    sandbox=`echo $i | sed 's#^./\([^/]*\)/.*#\1#' | sed 's/[._-]\([^._-]*\)/\u\1/g' | sed 's/^./\u&/' | sed 's/[0-9]//g'`
+    file=`echo $i | sed 's#.*/\([^/]*\).lines#\1#' | sed 's/[._-]\([^._-]*\)/\u\1/g' | sed 's/^./\u&/' | sed 's/[0-9]//g'`
+
+    lines=`cat $i | awk 'NR==1'`
+    echo "\\newcommand{\\${sandbox}Lines${file}}{${lines}}"
+done
+
+file=bpf2hlt/times.log
+
+if [ -e $file ]; then
+    cat $file | average BpfHlt 1 2 3
+else
+    echo "note: $file does not exist" >&2
+fi
+
+file=acl2hlt/times.log
+
+if [ -e $file ]; then
+    cat $file | average AclHlt 1 2 3
+else
+    echo "note: $file does not exist" >&2
+fi

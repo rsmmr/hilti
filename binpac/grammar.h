@@ -65,6 +65,9 @@ public:
     /// Returns the root production.
     shared_ptr<Production> root() const;
 
+    /// Returns true if the grammar needs look-ahead for parsing.
+    bool needsLookAhead() const;
+
     /// Prints the grammar in a (somewhat) human readable form. This is for
     /// debugging. In *verbose* mode, the grammar and all the internal
     /// nullable/first/follow tables are printed.
@@ -90,6 +93,7 @@ private:
     string _productionLocation(shared_ptr<Production> p) const;
 
     string _name;
+    bool _needs_look_ahead = false;
     parameter_list _params;
     parameter_list _attrs;
     Location _location;

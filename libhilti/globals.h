@@ -56,6 +56,13 @@ struct __hlt_global_state {
     int8_t papi_available;
     int papi_set;
 
+    // timer.c
+    _Atomic(uint_fast64_t) global_time;
+
+    // fiber.c
+    __hlt_fiber_pool* synced_fiber_pool; // Global fiber pool.
+    pthread_mutex_t synced_fiber_pool_lock; // Lock to protect access to pool.
+
     // The following are for debugging only. However, we can't compile them
     // out in the non-debugging version because a host application might link
     // to a different runtime version that compiled code, but both may still

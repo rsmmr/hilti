@@ -111,7 +111,7 @@ extern hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_con
 /// with one timer manager at a time. It needs to be canceled before it can
 /// be rescheduled.
 ///
-/// mgr: The timer manager.
+/// mgr: The timer manager. If null, uses the context's manager.
 ///
 /// t: The time when the timer is to be executed.  If *t* exceeds the
 /// manager's current time, it will fire immediately.
@@ -124,10 +124,21 @@ extern hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_con
 /// another timer manager.
 extern void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Advances a the global notion of time that's synchronized across all
+/// contexts. All timers scheduled for a time smaller or equal the new time
+/// will fire.
+///
+/// This function must be called only from the main thread.
+///
+/// t: The new global point of time.
+///
+/// excpt: &
+extern void hlt_timer_mgr_advance_global(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Advances a timer manager's notion of time. All timers scheduled for a
 /// time smaller or equal the new time will fire.
 ///
-/// mgr: The timer manager.
+/// mgr: The timer manager. If null, uses the context's manager.
 ///
 /// t: The new point of time. If it's smaller than the current time, the
 /// function call is ignored.
@@ -139,7 +150,7 @@ extern int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_excepti
 
 /// Returns the timer managers current time.
 ///
-/// mgr: The timer manager.
+/// mgr: The timer manager. If null, uses the context's manager.
 ///
 /// excpt: &
 ///
@@ -148,7 +159,7 @@ extern hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt,
 
 /// Cancels all scheduled timer, optionally firing them all.
 ///
-/// mgr: The timer manager.
+/// mgr: The timer manager. If null, uses the context's manager.
 ///
 /// fire: If true, all timers are executed.
 ///

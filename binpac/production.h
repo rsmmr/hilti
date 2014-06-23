@@ -587,6 +587,40 @@ private:
     node_ptr<Production> _body;
 };
 
+/// A production that parses a byte block of a given length with another production.
+class ByteBlock : public NonTerminal
+{
+public:
+    /// Constructor.
+    ///
+    /// expr: An expression of an integer type that specifies the number of
+    /// bytes to parse.
+    ///
+    /// body: The production to be parse the byte block with.
+    ///
+    /// symbol: A symbol associated with the production. The symbol must be
+    /// unique within the grammar the production is (or will be) part of.
+    ///
+    /// l: Associated location.
+    ByteBlock(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l = Location::None);
+
+    /// Returns the length expression.
+    shared_ptr<binpac::Expression> expression() const;
+
+    /// Returns the counter body production.
+    shared_ptr<Production> body() const;
+
+    ACCEPT_VISITOR(NonTerminal);
+
+protected:
+    string renderProduction() const override;
+    alternative_list rhss() const override;
+
+private:
+    shared_ptr<Expression> _expr;
+    node_ptr<Production> _body;
+};
+
 /// A production executing as long as condition is true.
 class While : public NonTerminal
 {
@@ -631,11 +665,16 @@ public:
     /// symbol: A symbol associated with the production. The symbol must be
     /// unique within the grammar the production is (or will be) part of.
     ///
+    /// eod_ok: True if running out of data while being about to enter the
+    /// next iteration is ok.
+    ///
     /// l: Associated location.
-    Loop(const string& symbol, shared_ptr<Production> body, const Location& l = Location::None);
+    Loop(const string& symbol, shared_ptr<Production> body, bool eod_ok, const Location& l = Location::None);
 
     /// Returns the loop body production.
     shared_ptr<Production> body() const;
+
+    bool eodOk() const override;
 
     ACCEPT_VISITOR(NonTerminal);
 
@@ -645,6 +684,7 @@ protected:
 
 private:
     node_ptr<Production> _body;
+    bool _eod_ok;
 };
 
 /// Alternatives between which we decide based on which value out of a set of

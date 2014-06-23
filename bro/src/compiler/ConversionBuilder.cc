@@ -3,6 +3,7 @@
 #undef List
 
 #include <hilti/hilti.h>
+#include <binpac/binpac++.h>
 #include <util/util.h>
 
 #include "ConversionBuilder.h"
@@ -16,8 +17,10 @@ ConversionBuilder::ConversionBuilder(class ModuleBuilder* mbuilder)
 	{
 	}
 
-shared_ptr<::hilti::Expression> ConversionBuilder::ConvertBroToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type)
+shared_ptr<::hilti::Expression> ConversionBuilder::ConvertBroToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type, bool constant)
 	{
+	_constant = constant;
+
 	switch ( type->Tag() ) {
 	case TYPE_ADDR:
 	case TYPE_ANY:
@@ -65,8 +68,10 @@ shared_ptr<::hilti::Expression> ConversionBuilder::ConvertBroToHilti(shared_ptr<
 	return nullptr;
 	}
 
-shared_ptr<::hilti::Expression> ConversionBuilder::ConvertHiltiToBro(shared_ptr<::hilti::Expression> val, const ::BroType* type)
+shared_ptr<::hilti::Expression> ConversionBuilder::ConvertHiltiToBro(shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::binpac::Type> pac_type)
 	{
+	_pac_type = pac_type;
+
 	switch ( type->Tag() ) {
 	case TYPE_ADDR:
 	case TYPE_ANY:
@@ -232,11 +237,18 @@ void ConversionBuilder::FinalizeTypes()
 
 bool ConversionBuilder::IsShadowedType(const BroType* type) const
 	{
-	if ( ! type->GetTypeID() )
+	if ( type->GetName().empty() )
 		return false;
 
-	auto name = ::extract_var_name(type->GetTypeID());
-	return name == "connection";
+	// When adding a type here, make sure to sets its
+	// notify_plugins_on_dtor flag in Bro.
+
+	auto name = ::extract_var_name(type->GetName().c_str());
+	return name == "connection"
+		|| name == "dns_msg"
+		|| name == "dns_answer"
+		|| name == "fa_file"
+		;
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiGlobalForType(const char* tag,
@@ -268,7 +280,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildCreateBroType(const
 									   const ::BroType* type,
 									   build_create_type_callback cb)
 	{
-	if ( auto id = type->GetTypeID() )
+	auto id = type->GetName();
+	if ( id.size() )
 		// We don't need to actually build it, can just look it up.
 		return BuildCreateBroTypeInternal(tag, type,
 			[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
@@ -312,20 +325,26 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BuildCreateBroTypeIntern
 	if ( ! mbuilder->declared(qualified_tname) )
 		mbuilder->declareGlobal(qualified_tname, btype);
 
-	return mbuilder != glue_mbuilder ? ::hilti::builder::id::create(qualified_tname)
-					 : ::hilti::builder::id::create(tname);
+	auto t = (mbuilder != glue_mbuilder ? ::hilti::builder::id::create(qualified_tname)
+					    : ::hilti::builder::id::create(tname));
+
+	BroRef(t);
+	return t;
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::PostponeBuildCreateBroType(const char* tag,
 										   const ::BroType* type,
 										   build_create_type_callback cb)
 	{
-	if ( type->GetTypeID() )
+	if ( type->GetName().size() )
 		// As we can just look these up, we don't need to postpone.
 		return BuildCreateBroType(tag, type, cb);
 
 	postponed_types.insert(std::make_pair(type, std::make_pair(string(tag), cb)));
-	return HiltiGlobalForType(tag, type);
+
+	auto t = HiltiGlobalForType(tag, type);
+	BroRef(t);
+	return t;
 	}
 
 std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHiltiBaseType(shared_ptr<::hilti::Expression> val, const ::BroType* type)
@@ -394,10 +413,34 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHiltiBaseType(share
 
 	case TYPE_PATTERN:
 		{
+		static int cnt = 0;
+
+		auto mbuilder = Builder()->moduleBuilder();
+		auto idx = val->render();
+
+		if ( ! _constant )
+			{
+			auto args = ::hilti::builder::tuple::create( { val } );
+			Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+						  ::hilti::builder::id::create("LibBro::b2h_pattern"), args);
+			return dst;
+			}
+
+		if ( auto cached = mbuilder->lookupNode("b2h_pattern", idx) )
+			return ast::checkedCast<::hilti::Expression>(cached);
+
+		mbuilder->pushModuleInit();
+
+		auto glob = mbuilder->addGlobal(::hilti::builder::id::node(::util::fmt("__b2h_pattern%d", ++cnt)), dst->type());
+
 		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
-					  ::hilti::builder::id::create("LibBro::b2h_pattern"), args);
-		return dst;
+		Builder()->addInstruction(glob, ::hilti::instruction::flow::CallResult,
+				     ::hilti::builder::id::create("LibBro::b2h_pattern"), args);
+
+		mbuilder->popModuleInit();
+
+		mbuilder->cacheNode("b2h_pattern", idx, glob);
+		return glob;
 		}
 
 	case TYPE_PORT:
@@ -537,6 +580,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 		ModuleBuilder()->pushBuilder(is_set);
 
 		auto val = RuntimeValToHilti(tmp, type->FieldType(i));
+		BroUnref(tmp);
 
 		Builder()->addInstruction(::hilti::instruction::struct_::Set,
 					  dst,
@@ -638,6 +682,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 				index_type = (*itypes->Types())[0];
 
 			auto k = RuntimeValToHilti(kval, index_type);
+			BroUnref(kval);
 
 			Builder()->addInstruction(::hilti::instruction::set::Insert, dst, k);
 			Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
@@ -703,6 +748,9 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 
 			auto k = RuntimeValToHilti(kval, index_type);
 			auto v = RuntimeValToHilti(vval, type->AsTableType()->YieldType());
+
+			BroUnref(kval);
+			BroUnref(vval);
 
 			Builder()->addInstruction(::hilti::instruction::map::Insert, dst, k, v);
 			Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
@@ -775,6 +823,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::BroToHilti(shared_ptr<::
 		mbuilder->pushBuilder(have);
 
 		auto e = RuntimeValToHilti(eval, type->YieldType());
+		BroUnref(eval);
+
 		Builder()->addInstruction(::hilti::instruction::vector::PushBack, dst, e);
 		Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
 
@@ -875,10 +925,45 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroBaseType(share
 
 	case TYPE_PATTERN:
 		{
+		static int cnt = 0;
+
+		auto mbuilder = Builder()->moduleBuilder();
+		auto idx = val->render();
+
+		auto is_const = ast::isA<expression::Ctor>(val);
+
+		if ( ! is_const )
+			{
+			auto args = ::hilti::builder::tuple::create( { val } );
+			Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					     ::hilti::builder::id::create("LibBro::h2b_regexp"), args);
+			return dst;
+			}
+
+		if ( auto cached = mbuilder->lookupNode("h2b_regexp", idx) )
+			{
+			auto obj = ast::checkedCast<::hilti::Expression>(cached);
+			auto args = ::hilti::builder::tuple::create( { obj } );
+			Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+						  ::hilti::builder::id::create("LibBro::object_ref"), args);
+			return obj;
+			}
+
+		auto init = mbuilder->pushModuleInit();
+
+		auto glob = mbuilder->addGlobal(::hilti::builder::id::node(::util::fmt("__h2b_regexp%d", ++cnt)), vtype);
 		auto args = ::hilti::builder::tuple::create( { val } );
-		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+		Builder()->addInstruction(glob, ::hilti::instruction::flow::CallResult,
 					  ::hilti::builder::id::create("LibBro::h2b_regexp"), args);
-		return dst;
+
+		mbuilder->popModuleInit();
+
+		auto args2 = ::hilti::builder::tuple::create( { glob } );
+		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+					  ::hilti::builder::id::create("LibBro::object_ref"), args2);
+
+		mbuilder->cacheNode("h2b_regexp", idx, glob);
+		return glob;
 		}
 
 	case TYPE_PORT:
@@ -1028,6 +1113,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromTuple(shar
 		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
 					  ::hilti::builder::id::create("LibBro::bro_record_assign"),
 					  ::hilti::builder::tuple::create({ dst, hidx, tmp_h2b }));
+
+		BroUnref(tmp_h2b);
 		}
 
 	return dst;
@@ -1038,15 +1125,51 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromStruct(sha
 	auto vtype = ::hilti::builder::type::byName("LibBro::BroVal");
 	auto dst = Builder()->addTmp("val", vtype);
 
+	std::shared_ptr<::hilti::builder::BlockBuilder> cached = nullptr;
+	std::shared_ptr<::hilti::builder::BlockBuilder> not_cached = nullptr;
+	std::shared_ptr<::hilti::builder::BlockBuilder> done = nullptr;
+
+	if ( IsShadowedType(type) )
+		{
+		// Check runtime object registry first.
+		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
+					  ::hilti::builder::id::create("LibBro::object_mapping_lookup_bro"),
+					  ::hilti::builder::tuple::create( { val } ));
+
+		auto b = Builder()->addIfElse(dst);
+		cached = std::get<0>(b);
+		not_cached = std::get<1>(b);
+		done = std::get<2>(b);
+
+		ModuleBuilder()->pushBuilder(not_cached);
+		}
+
 	auto rtype = CreateBroType(type);
 	auto args = ::hilti::builder::tuple::create( { rtype } );
 	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 				  ::hilti::builder::id::create("LibBro::bro_record_new"), args);
 
+	bool no_names = false;
+	::hilti::type::Struct::field_list sfields;
+
+	// Can be either ref<struct> or still unknown here.
+	if ( auto rstype = ast::tryCast<::hilti::type::Reference>(val->type()) )
+		{
+		auto sfields = ast::checkedCast<::hilti::type::Struct>(rstype->argType())->fields();
+		auto utype = ast::tryCast<::binpac::type::Unit>(_pac_type);
+		no_names = (utype && utype->ctorNoNames());
+		}
+
+	auto sf = sfields.begin();
+
 	for ( int i = 0; i < type->NumFields(); i++ )
 		{
 		auto hidx = ::hilti::builder::integer::create(i);
-		auto field = ::hilti::builder::string::create(type->FieldName(i));
+		auto field = no_names
+			? ::hilti::builder::string::create((*sf)->id()->name())
+			: ::hilti::builder::string::create(type->FieldName(i));
+
+		++sf;
 
 		auto is_set = Builder()->addTmp("is_set", ::hilti::builder::boolean::type());
 
@@ -1074,11 +1197,29 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromStruct(sha
 					  ::hilti::builder::id::create("LibBro::bro_record_assign"),
 					  ::hilti::builder::tuple::create({ dst, hidx, tmp_h2b }));
 
+		BroUnref(tmp_h2b);
+
 		Builder()->addInstruction(::hilti::instruction::flow::Jump, bcont->block());
 
 		ModuleBuilder()->popBuilder(bis_set);
 
 		ModuleBuilder()->pushBuilder(bcont);
+		}
+
+	if ( IsShadowedType(type) )
+		{
+		// We don't register it this way, only when going from Val to HILTI.
+		Builder()->addInstruction(::hilti::instruction::flow::Jump,
+					  done->block());
+
+		ModuleBuilder()->popBuilder(not_cached);
+
+		ModuleBuilder()->pushBuilder(cached);
+		Builder()->addInstruction(::hilti::instruction::flow::Jump,
+					  done->block());
+		ModuleBuilder()->popBuilder(cached);
+
+		ModuleBuilder()->pushBuilder(done);
 		}
 
 	return dst;
@@ -1156,6 +1297,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 						  ::hilti::builder::id::create("LibBro::bro_table_insert"),
 						  ::hilti::builder::tuple::create({ dst, kval, null }));
 
+			BroUnref(kval);
+
 			Builder()->addInstruction(cur, ::hilti::instruction::operator_::Incr, cur);
 
 			Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
@@ -1228,6 +1371,9 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 						  ::hilti::builder::id::create("LibBro::bro_table_insert"),
 						  ::hilti::builder::tuple::create({ dst, kval, vval }));
 
+			BroUnref(kval);
+			BroUnref(vval);
+
 			Builder()->addInstruction(cur, ::hilti::instruction::operator_::Incr, cur);
 
 			Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
@@ -1285,6 +1431,8 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBro(shared_ptr<::
 				  ::hilti::builder::id::create("LibBro::bro_vector_append"),
 				  ::hilti::builder::tuple::create({ dst, eval }));
 
+	BroUnref(eval);
+
 	Builder()->addInstruction(cur, ::hilti::instruction::operator_::Incr, cur);
 
 	Builder()->addInstruction(::hilti::instruction::flow::Jump, loop->block());
@@ -1299,9 +1447,9 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::AnyConversionFunction(co
 	{
 	string idx;;
 
-	if ( type->GetTypeID() )
+	if ( type->GetName().size() )
 		{
-		idx = type->GetTypeID();
+		idx = type->GetName();
 		auto sm = ::extract_module_name(idx.c_str());
 		auto sv = ::extract_var_name(idx.c_str());
 		idx = ::util::fmt("%s::%s", sm, sv);
@@ -1470,7 +1618,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::En
 	return BuildCreateBroType("enum", type,
 		[&] (shared_ptr<::hilti::Expression> dst, const ::BroType* type)
 		{
-		auto name = ::hilti::builder::string::create(type->AsEnumType()->Name());
+		auto name = ::hilti::builder::string::create(type->GetName());
 		auto module = ::hilti::builder::string::create(ModuleBuilder()->module()->id()->name());
 
 		Builder()->addInstruction(dst,
@@ -1511,6 +1659,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::Ty
 			Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
 						  ::hilti::builder::id::create("LibBro::bro_list_type_append"),
 						  ::hilti::builder::tuple::create({ dst, t }));
+			BroUnref(t);
 			}
 		});
 	}
@@ -1639,4 +1788,22 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::CreateBroType(const ::Fu
 					  ::hilti::builder::id::create("LibBro::bro_function_type_new"),
 					  ::hilti::builder::tuple::create({ args, yield, flavor }));
 		});
+	}
+
+void ConversionBuilder::BroRef(std::shared_ptr<::hilti::Expression> val)
+	{
+	::hilti::builder::tuple::element_list args = { val };
+
+	Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+				  ::hilti::builder::id::create("LibBro::object_ref"),
+				  ::hilti::builder::tuple::create(args));
+	}
+
+void ConversionBuilder::BroUnref(std::shared_ptr<::hilti::Expression> val)
+	{
+	::hilti::builder::tuple::element_list args = { val };
+
+	Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+				  ::hilti::builder::id::create("LibBro::object_unref"),
+				  ::hilti::builder::tuple::create(args));
 	}

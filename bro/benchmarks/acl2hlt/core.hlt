@@ -1,0 +1,59 @@
+
+module acl2hlt
+
+import Hilti
+
+# Data type for a single filter rule. We only support filtering by address pairs.
+type Rule = struct { net src, net dst }
+
+# The classifier storing the rules.
+global ref<classifier<Rule, bool>> rules
+
+# A set recording decisions for tuples (src-ip, dst-ip).
+global ref< set< tuple<addr, addr> > > state
+
+# This function initializes the firewall rules at startup.
+void init_classifier() {
+    # Create the classifier.
+    rules = new classifier<Rule, bool>
+    call init_rules(rules)
+    classifier.compile rules
+
+    # Create the state set with an inactivity timeout of 5mins.
+    state = new set<tuple<addr, addr>>
+    set.timeout state Hilti::ExpireStrategy::Access interval(300)
+}
+
+export init_classifier
+
+bool match_packet(time t, addr src, addr dst) {
+    local bool action
+
+    # Advance global time.
+    timer_mgr.advance_global t
+
+    # See if we have a state entry for this pair.
+    action = set.exists state (src, dst)
+    if.else action @return_action @lookup
+
+@lookup:
+    # Unknown pair, look up rule.
+    try {
+        action = classifier.get rules (src, dst)
+    }
+    catch ( ref<Hilti::IndexError> e ) {
+        # No match found, default deny.
+        return.result False
+    }
+
+    if.else action @add_state @return_action
+
+@add_state:
+    set.insert state (src, dst)
+    set.insert state (dst, src)
+
+@return_action:
+    return.result action
+}
+
+export match_packet

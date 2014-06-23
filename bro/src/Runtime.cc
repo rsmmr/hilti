@@ -66,7 +66,10 @@ static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char *
 	{
 	auto c = get_file_cookie(cookie, "$conn");
 	auto f = c->analyzer->GetFile()->GetVal();
-	Ref(f);
+
+	if ( f )
+		Ref(f);
+
 	return f;
 	}
 
@@ -130,6 +133,9 @@ int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt
 
 ::Val* libbro_h2b_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+	if ( ! b )
+		return new StringVal("<NULL-thats-an-error>"); // FIXME
+
 	int len = hlt_bytes_len(b, excpt, ctx);
 	char data[len];
 	hlt_bytes_to_raw_buffer(b, (int8_t*)data, len, excpt, ctx);
@@ -148,12 +154,14 @@ int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt
 
 ::Val* libbro_h2b_type(Val* t, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+	assert(t);
 	Ref(t); // TODO: Not sure if we need this.
 	return t;
 	}
 
 ::Val* libbro_h2b_function(Val* t, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+	assert(t);
 	Ref(t); // TODO: Not sure if we need this.
 	return t;
 	}
@@ -200,9 +208,6 @@ int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt
 
 ::Val* libbro_h2b_regexp(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	// TODO: We should cache the matchers here. Bro's regexps are static,
-	// so that should be fine.
-
 	// We cheat a bit by knowing that this call will do the right thing
 	// in our case of having just one pattern for which the type info
 	// doesn't matter here.
@@ -336,20 +341,16 @@ hlt_port libbro_b2h_port(Val *val, hlt_exception** excpt, hlt_execution_context*
 
 ::Val* libbro_b2h_type(Val* t, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	Ref(t); // TODO: Not sure if we need this.
 	return t;
 	}
 
 ::Val* libbro_b2h_function(Val* t, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	Ref(t); // TODO: Not sure if we need this.
 	return t;
 	}
 
 hlt_regexp* libbro_b2h_pattern(Val *val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	// TODO: We should cache compiled regexps. Bro's pattern are static,
-	// so that should be fine.
 	auto pattern = val->AsPattern()->PatternText();
 	auto s = hlt_string_from_asciiz(pattern, excpt, ctx);
 
@@ -407,20 +408,6 @@ void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple,
 
 ::Val* libbro_call_legacy_result(::Val* val, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-#if 0
-	hlt_bytes_size len = hlt_bytes_len(name, excpt, ctx);
-	char fname[len + 1];
-	hlt_bytes_to_raw_buffer(name, (int8_t*)fname, len, excpt, ctx);
-	fname[len] = '\0';
-
-	::ID* fid = global_scope()->Lookup(fname);
-
-	if ( ! fid )
-		bro::hilti::reporter::internal_error(::util::fmt("unknown bif '%s' called in libbro_call_bif_result", string(fname)));
-
-	assert(fid->ID_Val());
-	auto func = fid->ID_Val()->AsFunc();
-#endif
 	auto func = val->AsFunc();
 
 	int16_t* offsets = (int16_t *)type->aux;
@@ -438,6 +425,34 @@ void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple,
 	delete vals;
 
 	return result;
+	}
+
+extern void profile_start(int64_t t);
+extern void profile_stop(int64_t t);
+
+void libbro_profile_start(int64_t ty)
+	{
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+	profile_start(ty);
+#endif
+	}
+
+void libbro_profile_stop(int64_t ty)
+	{
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+	profile_stop(ty);
+#endif
+	}
+
+void libbro_object_ref(::BroObj* obj)
+	{
+	if ( obj )
+		::Ref(obj);
+	}
+
+void libbro_object_unref(::BroObj* obj)
+	{
+	::Unref(obj);
 	}
 
 void libbro_call_legacy_void(::Val* func, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -479,13 +494,22 @@ bro_table_iterate_result libbro_bro_table_iterate(::TableVal* val, ::IterCookie*
 
 	auto k = val->RecoverIndex(h);
 	if ( k->Length() == 1 )
+		{
+		k->Index(0)->Ref();
 		kval = k->Index(0);
+		Unref(k);
+		}
 	else
 		kval = k;
 
 	delete h;
 
-	return { cookie, kval, v->Value() };
+	auto yval = v->Value();
+
+	if ( yval )
+		yval->Ref();
+
+	return { cookie, kval, yval };
 	}
 
 ::BroType* libbro_bro_base_type(uint64_t tag, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -548,6 +572,9 @@ bro_table_iterate_result libbro_bro_table_iterate(::TableVal* val, ::IterCookie*
 
 void libbro_bro_table_insert(::TableVal* val, ::Val* k, ::Val* v, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+	if ( v )
+		Ref(v);
+
 	val->Assign(k, v);
 	}
 
@@ -558,12 +585,20 @@ void libbro_bro_table_insert(::TableVal* val, ::Val* k, ::Val* v, hlt_exception*
 
 void libbro_bro_list_append(::ListVal* lval, ::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+	if ( val )
+		Ref(val);
+
 	lval->Append(val);
 	}
 
 ::Val* libbro_bro_list_index(::ListVal* lval, uint64_t idx)
 	{
-	return lval->Index(idx);
+	Val* v = lval->Index(idx);
+
+	if ( v )
+		Ref(v);
+
+	return v;
 	}
 
 ::TypeList* libbro_bro_list_type_new(::BroType* pure_type, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -573,25 +608,34 @@ void libbro_bro_list_append(::ListVal* lval, ::Val* val, hlt_exception** excpt, 
 
 void libbro_bro_list_type_append(::TypeList* t, ::BroType* ntype, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+        assert(ntype);
+	Ref(ntype);
 	t->Append(ntype);
 	}
 
 ::RecordVal* libbro_bro_record_new(::RecordType* rtype, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+	// Ref(rtype);  // Should be ref'ed by dtor doesn't Unref ...
 	return new RecordVal(rtype);
 	}
 
 void libbro_bro_record_assign(::RecordVal* rval, uint64_t idx, ::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	if ( ! val )
-			return;
+		return;
 
+	Ref(val);
 	rval->Assign(idx, val);
 	}
 
 ::Val* libbro_bro_record_index(::RecordVal* rval, uint64_t idx)
 	{
-	return rval->Lookup(idx);
+	auto v = rval->Lookup(idx);
+
+	if ( v )
+		Ref(v);
+
+	return v;
 	}
 
 ::RecordType* libbro_bro_record_type_new(hlt_list* fields, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -620,7 +664,10 @@ void libbro_bro_record_assign(::RecordVal* rval, uint64_t idx, ::Val* val, hlt_e
 ::TypeDecl* libbro_bro_record_typedecl_new(hlt_string fname, ::BroType* ftype, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto n = hlt_string_to_native(fname, excpt, ctx);
-	return new TypeDecl(ftype, n, 0, true);
+	auto id = copy_string(n);
+	auto td = new TypeDecl(ftype, id, 0, true); // Takes ownershio of id, deletes[] it.
+	hlt_free(n);
+	return td;
 	}
 
 ::VectorVal* libbro_bro_vector_new(::VectorType* vtype, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -630,7 +677,9 @@ void libbro_bro_record_assign(::RecordVal* rval, uint64_t idx, ::Val* val, hlt_e
 
 void libbro_bro_vector_append(::VectorVal* vval, ::Val* val, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	val->Ref();
+	if ( val )
+		Ref(val);
+
 	vval->Assign(vval->Size(), val);
 	}
 
@@ -706,34 +755,53 @@ void libbro_bro_enum_type_add_name(::EnumType* etype, hlt_string module, hlt_str
 
 ::FuncType* libbro_bro_function_type_new(::BroType* args, ::BroType* ytype, int64_t flavor, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
+	if ( args )
+		Ref(args);
+
+	if ( ytype )
+		Ref(ytype);
+
 	return new FuncType(args->AsRecordType(), ytype, (::function_flavor)flavor);
 	}
 
-typedef std::map<BroObj *, std::pair<const hlt_type_info*, void*> > object_map_b2h;
+typedef std::map<void *, std::pair<const hlt_type_info*, void*> > object_map_b2h;
 static object_map_b2h objects_b2h;
 
-void libbro_object_mapping_register(::BroObj* bobj, hlt_type_info* ti, void** hobj, hlt_exception** excpt, hlt_execution_context* ctx)
+typedef std::map<void *, void *> object_map_h2b;
+static object_map_h2b objects_h2b;
+
+void libbro_object_mapping_register(void* bobj, hlt_type_info* ti, void** hobj, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	Ref(bobj);
+	assert(bobj);
+
+	auto m = objects_b2h.find(bobj);
+	if ( m != objects_b2h.end() )
+		abort();
+
 	GC_CCTOR_GENERIC(hobj, ti);
 	objects_b2h[bobj] = std::make_pair(ti, *hobj);
+	objects_h2b[*hobj] = bobj;
 	}
 
-void libbro_object_mapping_unregister_bro(::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+void libbro_object_mapping_unregister_bro(void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto m = objects_b2h.find(obj);
 
 	if ( m == objects_b2h.end() )
 		return;
 
-	::BroObj* bobj = m->first;
 	const hlt_type_info* ti = m->second.first;
 	void* hobj = m->second.second;
 
 	objects_b2h.erase(m);
+	objects_h2b.erase(hobj);
 
-	Unref(bobj);
-    GC_DTOR_GENERIC(&hobj, ti);
+	GC_DTOR_GENERIC(&hobj, ti);
+	}
+
+void libbro_object_mapping_invalidate_bro(void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+	{
+	libbro_object_mapping_unregister_bro(obj, excpt, ctx);
 	}
 
 void libbro_object_mapping_unregister_hilti(hlt_type_info* ti, void** hobj, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -741,15 +809,21 @@ void libbro_object_mapping_unregister_hilti(hlt_type_info* ti, void** hobj, hlt_
 	assert(false);
 	}
 
-::BroObj* libbro_object_mapping_lookup_bro(hlt_type_info* ti, void** obj, hlt_exception** excpt, hlt_execution_context* ctx)
+const ::BroObj* libbro_object_mapping_lookup_bro(hlt_type_info* ti, void** obj, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	assert(false);
-	return 0;
+	auto m = objects_h2b.find(*obj);
+
+	if ( m == objects_h2b.end() )
+		return 0;
+
+    const ::BroObj* bobj = static_cast<BroObj*>(m->second);
+	Ref(const_cast<::BroObj*>(bobj));
+	return bobj;
 	}
 
 void* libbro_object_mapping_lookup_hilti(::BroObj* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-    static void* null_ = 0;
+	static const void* null_ = 0;
 
 	auto m = objects_b2h.find(obj);
 
@@ -938,6 +1012,7 @@ typedef Val* (*to_val_func_t)(struct hlt_LibBro_BroAny*, hlt_exception** excpt, 
 
 // This must match HILTI's struct layout.
 // TODO: hiltic -P should be the one generating this.
+// TODO: There's a copy of this in Bif.cc
 struct hlt_LibBro_BroAny {
 	__hlt_gchdr __gchdr;
 	int32_t mask;

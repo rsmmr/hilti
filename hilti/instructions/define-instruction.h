@@ -156,6 +156,8 @@
 /// constant: True if the operand is declared as constant.
 #define iOp3(ty, constant)  __implementOp(3, ty, constant)
 
+#define iHideInDebugTrace() bool __hideInDebugTrace() const override { return true; }
+
 /// Defines a default for an instruction's 1st operand.
 ///
 /// def: The default Expression for the operand.

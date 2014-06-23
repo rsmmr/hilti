@@ -7,6 +7,7 @@
 #define BRO_PLUGIN_HILTI_COMPILER_COMPILER_H
 
 #include <list>
+#include <vector>
 #include <set>
 #include <memory>
 
@@ -30,6 +31,7 @@ namespace hilti {
 namespace compiler {
 
 class CollectorCallback;
+class ModuleBuilder;
 
 class Compiler {
 public:
@@ -52,6 +54,15 @@ public:
 	 * @return A list of compiled modules.
 	 */
 	module_list CompileAll();
+
+	/**
+	 * Loads one external *.hlt file.
+	 *
+	 * @param path The full path to load the file from.
+	 *
+	 * @return True if successfull.
+	 */
+	bool LoadExternalHiltiCode(const std::string& path);
 
 	/**
 	 * Returns all of a Bro namespace's function that need to be
@@ -96,6 +107,11 @@ public:
 	 * TODO: We should move the glue builder over to the manager.
 	 */
 	::hilti::builder::ModuleBuilder* GlueModuleBuilder() const;
+
+	/**
+	 * XXXX
+	 */
+	class ModuleBuilder* moduleBuilderForNamespace(const std::string& ns);
 
 	/**
 	 * XXXX
@@ -176,6 +192,19 @@ public:
 	std::string HiltiODescSymbol(const ::BroObj* obj);
 
 	/**
+	 * Registers a function as having been compiled.
+	 */
+	void RegisterCompiledFunction(const ::Func* func);
+
+	typedef std::map<std::string, const ::Func*> function_symbol_map;
+
+	/**
+	 * Returns a map mapping the HILTI symbols of all compiled scripts
+	 * functions to their corresponding Bro functions.
+	 */
+	const function_symbol_map& HiltiFunctionSymbolMap() const;
+
+	/**
 	 * Checks if a built-in Bro function is available at HILTI-level.
 	 *
 	 * @param The fully-qualified Bro-level name of the function.
@@ -212,9 +241,15 @@ public:
 	 */
 	std::pair<shared_ptr<::hilti::Type>, std::string> LookupCachedCustomBroType(const BroType* btype);
 
+	/**
+	 * XXX
+	 */
+	bool HaveCustomHandler(const ::Func* ev);
+
 private:
 	std::string normalizeSymbol(const std::string sym, const std::string prefix, const std::string postfix, const std::string& module, bool global, bool include_module = false);
-
+	bool CompileScripts();
+	Compiler::module_list CompileExternalModules();
 	std::list<std::string> GetNamespaces() const;
 
 	std::shared_ptr<::hilti::CompilerContext> hilti_context;
@@ -227,6 +262,14 @@ private:
 	std::shared_ptr<CollectorCallback> collector_callback;
 
 	std::map<const BroType*, std::pair<shared_ptr<::hilti::Type>, std::string>> cached_custom_types;
+	function_symbol_map hilti_function_symbol_map;
+
+	std::list<std::string> external_modules; // Custom modules loaded from external files.
+
+	typedef std::map<string, std::shared_ptr<class ModuleBuilder>> mbuilder_map;
+	mbuilder_map mbuilders_by_ns;
+
+	std::vector<bool> custom_event_handlers;
 };
 
 }

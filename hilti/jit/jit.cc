@@ -5,6 +5,7 @@
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/ExecutionEngine/ObjectCache.h>
+#include <llvm/ExecutionEngine/JITEventListener.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Support/Host.h>
@@ -25,6 +26,39 @@ extern void* __hlt_internal_global_globals;
 using namespace hilti;
 using namespace hilti::jit;
 
+class HiltiJITEventListener : public llvm::JITEventListener
+{
+public:
+    HiltiJITEventListener();
+    virtual ~HiltiJITEventListener();
+
+    void NotifyFunctionEmitted(const llvm::Function &, void *, size_t, const EmittedFunctionDetails &) override;
+
+private:
+    FILE* _mapping;
+};
+
+
+HiltiJITEventListener::HiltiJITEventListener()
+{
+    _mapping = fopen(".functions.map", "w");
+
+    if ( ! _mapping )
+        fprintf(stderr, "HILTI jit warning: cannot open function mappings file\n");
+}
+
+HiltiJITEventListener::~HiltiJITEventListener()
+{
+    if ( _mapping )
+        fclose(_mapping);
+}
+
+void HiltiJITEventListener::NotifyFunctionEmitted(const llvm::Function& f, void *ptr, size_t size, const EmittedFunctionDetails& d)
+{
+    fprintf(_mapping, "%s %p %p %lu\n", f.getName().str().c_str(), ptr, (char *)ptr + size - 1, size);
+    fflush(_mapping);
+}
+
 // This is a proxy class that forwards most method calls directly to LLVM's
 // DefaultJITMemoryManager. This is necessary because that class is not
 // exposed for reasons I don't understand.
@@ -32,6 +66,7 @@ class hilti::jit::MemoryManager : public llvm::JITMemoryManager
 {
 public:
     MemoryManager(llvm::JITMemoryManager *mm);
+    virtual ~MemoryManager();
 
     void installFunctionTable(const JIT::FunctionMapping* functions);
     void* lookupFunctionInTable(const std::string& name);
@@ -90,6 +125,10 @@ private:
 hilti::jit::MemoryManager::MemoryManager(llvm::JITMemoryManager *mm)
 {
     _mm = mm;
+}
+
+hilti::jit::MemoryManager::~MemoryManager()
+{
 }
 
 void MemoryManager::installFunctionTable(const JIT::FunctionMapping* functions)
@@ -229,7 +268,7 @@ llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
 #endif
 
     auto opt = _ctx->options().optimize;
-    auto opt_level = opt ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
+    auto opt_level = opt ? llvm::CodeGenOpt::Default : llvm::CodeGenOpt::None;
 
     string errormsg;
 
@@ -271,6 +310,9 @@ llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
     ee->DisableLazyCompilation(true);
     ee->runStaticConstructorsDestructors(false);
     ee->setObjectCache(_cache);
+
+    ee->RegisterJITEventListener(llvm::JITEventListener::createOProfileJITEventListener());
+    ee->RegisterJITEventListener(new HiltiJITEventListener());
 
     return ee;
 }

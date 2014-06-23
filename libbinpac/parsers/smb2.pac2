@@ -326,7 +326,7 @@ type negotiate_request = unit(header: Header) {
 	client_guid       : SMB2_guid;       # guid if client implements SMB 2.1 dialect, otherwise set to 0
 	client_start_time : timestamp;       # must be set to 0
 	# TODO: fix this...
-	#dialects          : list<uint16> &length=self.dialect_count;
+	#dialects          : list<uint16> &count=self.dialect_count;
 	dialects          : bytes &length=self.dialect_count * 2;
 };
 
@@ -613,7 +613,7 @@ type lock_request = unit(header: Header) {
 	lock_count        : uint16;
 	lock_seq          : uint32;
 	file_id           : file_id_t;
-	locks             : list<SMB2_lock> &length = self.lock_count;
+	locks             : list<SMB2_lock> &count = self.lock_count;
 };
 
 type lock_response = unit(header: Header) {
@@ -732,7 +732,7 @@ type change_notify_response = unit(header: Header) {
 	output_buffer_offset : uint16;
 	output_buffer_len    : uint32;
 	pad                  : bytes &length = self.output_buffer_offset - (self.offset() + header.head_length);
-	buffer               : list<File_Notify_Information> &length = self.output_buffer_len;
+	buffer               : list<File_Notify_Information> &count = self.output_buffer_len;
 };
 
 type query_info_request = unit(header: Header) {

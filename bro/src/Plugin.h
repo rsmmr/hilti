@@ -7,6 +7,9 @@
 #include <file_analysis/Tag.h>
 #include <net_util.h>
 
+// #define BRO_PLUGIN_CHECK_LEAKS
+// #define BRO_PLUGIN_HAVE_PROFILING
+
 namespace bro { namespace hilti  {
 
 struct Pac2AnalyzerInfo;
@@ -16,7 +19,7 @@ class Manager;
 
 namespace plugin { namespace Bro_Hilti {
 
-class Plugin : public plugin::InterpreterPlugin {
+class Plugin : public ::plugin::Plugin {
 public:
 	Plugin();
 	virtual ~Plugin();
@@ -28,19 +31,27 @@ public:
 
 	void AddEvent(const std::string& name);
 
-	Val* CallFunction(const Func* func, val_list* args) override;
-	bool QueueEvent(Event* event) override;
-	void UpdateNetworkTime(double network_time) override;
-	void DrainEvents() override;
-	void NewConnection(const ::Connection* c) override;
-	void ConnectionStateRemove(const ::Connection* c) override;
+	// Forwards to Plugin::RequestEvents(), which is protectd.
+	void RequestEvent(EventHandlerPtr handler);
 
 protected:
-	// Overridden from Bro's Plugin.
-	void InitPreScript() override;
+	// Overriden methods from Bro's plugin API.
+
+	plugin::Configuration Configure() override;
 	void InitPostScript() override;
-	bool LoadFile(const char* file) override;
+	void InitPreScript() override;
 	void Done() override;
+
+	// We always use this hook.
+	int HookLoadFile(const std::string& file, const std::string& ext) override;
+
+	// We activate these hooks only when compiling scripts or injecting
+	// custom HILTI code.
+	Val* HookCallFunction(const Func* func, val_list* args) override;
+	bool HookQueueEvent(Event* event) override;
+	void HookUpdateNetworkTime(double network_time) override;
+	void HookDrainEvents() override;
+	void HookBroObjDtor(void* obj) override;
 
 private:
 	bro::hilti::Manager* _manager;

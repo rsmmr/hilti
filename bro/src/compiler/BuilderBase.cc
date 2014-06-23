@@ -178,14 +178,14 @@ std::shared_ptr<::hilti::Expression> BuilderBase::HiltiStructField(const char* f
 	return ::hilti::builder::string::create(fname);
 	}
 
-shared_ptr<::hilti::Expression> BuilderBase::RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, const ::BroType* type)
+shared_ptr<::hilti::Expression> BuilderBase::RuntimeHiltiToVal(shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::binpac::Type> pac_type)
 	{
-	return mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, type);
+	return mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, type, pac_type);
 	}
 
-shared_ptr<::hilti::Expression> BuilderBase::RuntimeValToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type)
+shared_ptr<::hilti::Expression> BuilderBase::RuntimeValToHilti(shared_ptr<::hilti::Expression> val, const ::BroType* type, bool constant)
 	{
-	return mbuilder->ConversionBuilder()->ConvertBroToHilti(val, type);
+	return mbuilder->ConversionBuilder()->ConvertBroToHilti(val, type, constant);
 	}
 
 std::shared_ptr<::hilti::Expression> BuilderBase::HiltiFromAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type)
@@ -231,6 +231,16 @@ std::pair<bool, ::Func*> BuilderBase::BroExprToFunc(const ::Expr* func)
 shared_ptr<::hilti::Expression> BuilderBase::HiltiCallFunction(const ::Expr* func, ::FuncType* ftype, ListExpr* args, const BroType* target_type)
 	{
 	return mbuilder->HiltiCallFunction(func, ftype, args, target_type);
+	}
+
+void BuilderBase::BroRef(std::shared_ptr<::hilti::Expression> val)
+	{
+	return mbuilder->ConversionBuilder()->BroRef(val);
+	}
+
+void BuilderBase::BroUnref(std::shared_ptr<::hilti::Expression> val)
+	{
+	return mbuilder->ConversionBuilder()->BroUnref(val);
 	}
 
 void BuilderBase::MapType(const ::BroType* from, const ::BroType* to)

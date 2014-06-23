@@ -532,15 +532,15 @@ static hlt_match_token_state* _match_token_init(hlt_regexp* re, hlt_exception** 
     return state;
 }
 
-extern void __bytes_normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt);
+extern void __hlt_bytes_normalize_iter(hlt_iterator_bytes* pos);
 
 static int _match_token_advance(hlt_match_token_state* state,
                                 hlt_iterator_bytes begin, hlt_iterator_bytes end,
                                 int8_t final,
                                 hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __bytes_normalize_pos(&begin, 0);
-    __bytes_normalize_pos(&end, 0);
+    __hlt_bytes_normalize_iter(&begin);
+    __hlt_bytes_normalize_iter(&end);
 
     hlt_bytes_block block;
     void *cookie = 0;

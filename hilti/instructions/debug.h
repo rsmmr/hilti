@@ -2,6 +2,7 @@
 iBegin(debug, Assert, "debug.assert")
     iOp1(optype::boolean, true)
     iOp2(optype::optional(optype::string), true)
+    iHideInDebugTrace()
 
     iValidate {
     }
@@ -11,6 +12,7 @@ iBegin(debug, Assert, "debug.assert")
         an ~~AssertionError exception with *op2* as its value if given. A no-op
         in release mode.
     )")
+
 
 iEnd
 
@@ -32,6 +34,7 @@ iBegin(debug, Msg, "debug.msg")
     iOp1(optype::string, true)
     iOp2(optype::string, true)
     iOp3(optype::tuple, true)
+    iHideInDebugTrace()
 
     iValidate {
     }
@@ -46,6 +49,7 @@ iBegin(debug, Msg, "debug.msg")
 iEnd
 
 iBegin(debug, PopIndent, "debug.pop_indent")
+    iHideInDebugTrace()
 
     iValidate {
 
@@ -60,6 +64,7 @@ iBegin(debug, PopIndent, "debug.pop_indent")
 iEnd
 
 iBegin(debug, PushIndent, "debug.push_indent")
+    iHideInDebugTrace()
 
     iValidate {
     }

@@ -43,7 +43,6 @@ static shared_ptr<type::struct_::Field> _structField(const Instruction* i, share
 iBegin(struct_, New, "new")
     iTarget(optype::refStruct)
     iOp1(optype::typeStruct, true)
-    iOp2(optype::optional(optype::refTimerMgr), true)
 
     iValidate {
         equalTypes(referencedType(target), typedType(op1));

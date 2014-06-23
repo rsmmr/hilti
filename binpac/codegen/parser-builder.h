@@ -150,6 +150,7 @@ protected:
     void visit(production::ChildGrammar* c) override;
     void visit(production::Enclosure* e) override;
     void visit(production::Counter* c) override;
+    void visit(production::ByteBlock* c) override;
     void visit(production::Epsilon* e) override;
     void visit(production::Literal* l) override;
     void visit(production::LookAhead* l) override;
@@ -201,6 +202,9 @@ private:
     // Returns: An expression referencing the function.
     shared_ptr<hilti::Expression> _newParseFunction(const string& name, shared_ptr<type::Unit> unit, shared_ptr<hilti::Type> value_type = nullptr);
 
+    // Finishes a functions tarted with _newParseFunction().
+    void _finishParseFunction(bool finalize_pobj);
+
     /// Generates the body code for parsing a given node. Same parameters as
     /// parse().
     bool _hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result, shared_ptr<type::unit::item::Field> f);
@@ -213,7 +217,7 @@ private:
     void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> cur, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
 
     // Finalizes the current parser when the parsing process has finished.
-    void _finalizeParseObject();
+    void _finalizeParseObject(bool success);
 
     // Called just before a production is being parsed.
     void _startingProduction(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field);
@@ -234,6 +238,9 @@ private:
 
     // Creates the init function that registers a parser with the binpac runtime.
     void _hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> parse_host, shared_ptr<hilti::Expression> parse_sink);
+
+    // Calls a parse function with the current parsing state.
+    shared_ptr<hilti::Expression> _hiltiCallParseFunction(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func, bool catch_parse_error, shared_ptr<hilti::Type> presult_value_type);
 
     // Returns the BinPAC::Parser instance for a unit.
     shared_ptr<hilti::Expression> _hiltiParserDefinition(shared_ptr<type::Unit> unit);
@@ -303,6 +310,9 @@ private:
 
     // Raises a ParseError exception.
     void _hiltiParseError(const string& msg);
+
+    // Raises a ParseError exception given an existing exception.
+    void _hiltiParseError(shared_ptr<hilti::Expression> excpt);
 
     // Gnerates the HILTI code to handle an out-of-input situation by
     // retrying next time if possible.

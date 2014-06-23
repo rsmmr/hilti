@@ -1,0 +1,17 @@
+# @TEST-EXEC:  printf '\x02\x01\x02\x03\x04\x05\x06\x07' | pac-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+export type Test = unit {
+  # list of byte-length 5
+  list_entries: list<Entry> &length=0;
+  b: uint8;
+
+  on %done { print self; }
+};
+
+type Entry = unit {
+  a: uint8;
+  b: bytes &length=self.a;
+};

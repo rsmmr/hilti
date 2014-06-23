@@ -34,6 +34,10 @@ namespace hilti {
 	}
 }
 
+namespace binpac {
+	class Type;
+}
+
 namespace plugin {
     namespace Bro_Hilti {
         class Plugin;
@@ -254,7 +258,7 @@ public:
 	 * @param type The Bro type.
 	 *
 	 * @return An HILTI expression to refer to the type, of type
-	 * LibBro::BroVal.
+	 * LibBro::BroVal. This is returned at Bro reference count +1.
 	 */
 	shared_ptr<::hilti::Expression> HiltiBroVal(const ::BroType* type);
 
@@ -263,7 +267,8 @@ public:
 	 *
 	 * @param type The Bro type.
 	 *
-	 * @return An HILTI expression to refer to the type, of type LibBro::BroType.
+	 * @return An HILTI expression to refer to the type, of type
+	 * LibBro::BroType. This is returned at Bro reference count +1.
 	 */
 	shared_ptr<::hilti::Expression> HiltiBroType(const ::BroType* type);
 
@@ -274,7 +279,7 @@ public:
 	 * @param type The Bro type.
 	 *
 	 * @return An HILTI expression to refer to the type, of type
-	 * LibBro::BroVal.
+	 * LibBro::BroVal. This is returned at Bro reference count +1.
 	 */
 	shared_ptr<::hilti::Expression> HiltiBroVal(const ::Func* type);
 
@@ -322,10 +327,13 @@ public:
 	 * corresponding Convert() method.
 	 *
 	 * @param val The value to convert.
+     *
+     * @param constant Should be true if it's guaramteed that \a val refers
+     * to a constant Bro value.
 	 *
 	 * @return An expression referencing the converted value.
 	 */
-	std::shared_ptr<::hilti::Expression> RuntimeValToHilti(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
+	std::shared_ptr<::hilti::Expression> RuntimeValToHilti(std::shared_ptr<::hilti::Expression> val, const ::BroType* type, bool constant = false);
 
 	/**
 	 * Conerts a HILTI expression into a Bro \a Val dynamically at
@@ -337,9 +345,10 @@ public:
 	 * @param type The target Bro type to convert into.
 	 *
 	 * @return An expression referencing the converted value, which
-	 * correspond to a pointer to a Bro Val.
+	 * correspond to a pointer to a Bro Val. This is returned at Bro
+	 * reference count +1.
 	 */
-	std::shared_ptr<::hilti::Expression> RuntimeHiltiToVal(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
+	std::shared_ptr<::hilti::Expression> RuntimeHiltiToVal(std::shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::binpac::Type> pac_type = nullptr);
 
 	/**
 	 * XXX
@@ -348,6 +357,8 @@ public:
 
 	/**
 	 * XXX
+	 *
+	 *  This is returned at Bro reference count +1.
 	 */
 	std::shared_ptr<::hilti::Expression> HiltiToAny(std::shared_ptr<::hilti::Expression> val, const ::BroType* type);
 
@@ -425,6 +436,16 @@ public:
 	 * XXXX
 	 */
 	void MapType(const ::BroType* from, const ::BroType* to);
+
+	/**
+	 * XXX
+	 */
+	void BroRef(std::shared_ptr<::hilti::Expression> val);
+
+	/**
+	 * XXX
+	 */
+	void BroUnref(std::shared_ptr<::hilti::Expression> val);
 
 	/**
 	 * Returns a string with location information for a BroObj.

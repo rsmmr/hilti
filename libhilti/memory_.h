@@ -59,6 +59,9 @@ hlt_memory_stats hlt_memory_statistics();
 /// hlt_malloc instead.
 extern void* __hlt_malloc(uint64_t size, const char* type, const char* location);
 
+/// XXX
+extern void* __hlt_malloc_no_init(uint64_t size, const char* type, const char* location);
+
 /// Allocates a number of unmanaged memory elements of a given size. This
 /// operates pretty much like calloc but it will always return a valid
 /// address. If it can't allocate sufficient memory, the function will
@@ -153,6 +156,7 @@ extern void hlt_stack_free(void* stack, size_t size);
 extern void hlt_stack_invalidate(void* stack, size_t size);
 
 #define hlt_malloc(size)                 __hlt_malloc(size, "-", __hlt_make_location(__FILE__,__LINE__))
+#define hlt_malloc_no_init(size)         __hlt_malloc_no_init(size, "-", __hlt_make_location(__FILE__,__LINE__))
 #define hlt_calloc(count, size)          __hlt_calloc(count, size, "-", __hlt_make_location(__FILE__,__LINE__))
 #define hlt_realloc(ptr, size, old_size) __hlt_realloc(ptr, size, old_size, "-", __hlt_make_location(__FILE__,__LINE__))
 #define hlt_realloc_no_init(ptr, size)   __hlt_realloc_no_init(ptr, size, "-", __hlt_make_location(__FILE__,__LINE__))
@@ -174,6 +178,9 @@ extern void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* l
 
 /// XXX
 extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* location);
+
+/// XXX
+extern void* __hlt_object_new_no_init(const hlt_type_info* ti, uint64_t size, const char* location);
 
 /// XXX
 #define GC_ASSIGN(obj, val, tag) \
@@ -204,8 +211,16 @@ extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char
    __hlt_object_new(&hlt_type_info_##tag, sizeof(tag), __hlt_make_location(__FILE__,__LINE__));
 
 /// XXX
+#define GC_NEW_NO_INIT(tag) \
+   __hlt_object_new_no_init(&hlt_type_info_##tag, sizeof(tag), __hlt_make_location(__FILE__,__LINE__));
+
+/// XXX
 #define GC_NEW_CUSTOM_SIZE(tag, size) \
    __hlt_object_new(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__,__LINE__));
+
+/// XXX
+#define GC_NEW_CUSTOM_SIZE_NO_INIT(tag, size) \
+   __hlt_object_new_no_init(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__,__LINE__));
 
 /// XXX
 #define GC_NEW_CUSTOM_SIZE_GENERIC(ti, size) \
@@ -288,5 +303,35 @@ void hlt_free_list_free(hlt_free_list* list, void* p);
 ///
 /// list: The list to destroy.
 void hlt_free_list_deletes(hlt_free_list* list);
+
+/// XXX
+
+#define HLT_MEMORY_POOL_INLINE(name, size) \
+   hlt_memory_pool mpool;           \
+   char __ ## name ## _data[size];
+
+#define HLT_MEMORY_POOL_INLINE_INIT(obj, name) \
+   hlt_memory_pool_init(&obj->name, sizeof(obj->__ ## name ## _data))
+
+typedef struct __hlt_memory_pool_block {
+    struct __hlt_memory_pool_block* next;
+    char* cur;
+    char* end;
+    char data[0];
+} __hlt_memory_pool_block;
+
+typedef struct {
+    __hlt_memory_pool_block first; // We store the first inline.
+    __hlt_memory_pool_block* last;
+} hlt_memory_pool;
+
+
+// XXX Allocations are fast. All allocations part of a pool will be released
+// on dtor.
+void  hlt_memory_pool_init(hlt_memory_pool* p, size_t size);
+void  hlt_memory_pool_dtor(hlt_memory_pool* p);
+void* hlt_memory_pool_malloc(hlt_memory_pool* p, size_t n);
+void* hlt_memory_pool_calloc(hlt_memory_pool* p, size_t count, size_t n);
+void  hlt_memory_pool_free(hlt_memory_pool* p, void* b); // just a hint, not mandatory
 
 #endif

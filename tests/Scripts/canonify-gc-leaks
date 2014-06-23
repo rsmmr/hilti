@@ -5,4 +5,4 @@
 # see. For input/grammars where memory should be released frequently,
 # there should only be a small number of values.
 
-grep allocations | sed 's/.*alloced, //g' | sed 's/ allocations.*//g' | sort | uniq | wc -l
+grep allocations | sed 's/.*alloced, //g' | sed 's/ allocations.*//g' | sort | uniq | wc -l | awk '{print $1;}'

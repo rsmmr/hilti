@@ -141,9 +141,9 @@ public:
 	bool FinishLoading();
 
 	/**
-	 * Marks an *.pac2 or *.evt for loading. Note that it won't necessarily
-	 * load them all immediately, but may queue some for later compilation
-	 * via LoadAll().
+	 * Marks an *.pac2, *.evt, or *.hlt file for loading. Note that it
+	 * won't necessarily load them all immediately, but may queue some
+	 * for later compilation via LoadAll().
 	 */
 	bool LoadFile(const std::string& file);
 
@@ -228,6 +228,35 @@ public:
 	 * XXX
 	 */
 	::Val* RuntimeCallFunction(const Func* func, val_list* args);
+
+	/**
+	 * XXX
+	 */
+	void RegisterNativeFunction(const ::Func* func, void* native);
+
+	/**
+	 * XXX
+	 */
+	bool HaveCustomHandler(const ::Func* ev);
+
+	/**
+	 * XXX
+	 */
+	bool HaveCustomHiltiCode();
+
+	/**
+	 * Returns true if either there's at least one handler defined for
+	 * the given event, or we're otherwise told to generate the code for
+	 * it even if not
+	 */
+	bool WantEvent(shared_ptr<Pac2EventInfo> ev);
+
+	/**
+	 * Returns true if either there's at least one handler defined for
+	 * the given event, or we're otherwise told to generate the code for
+	 * it even if not
+	 */
+	bool WantEvent(Pac2EventInfo* ev);
 
 	/** Dumps a summary all BinPAC++/HILTI analyzers/events/code to standard error.
 	 */
@@ -459,7 +488,7 @@ protected:
 
 private:
 	void InitMembers();
-	::Val* RuntimeCallFunctionInternal(const string& symbol, val_list* args);
+	::Val* RuntimeCallFunctionInternal(const ::Func* func, val_list* args);
 	void InstallTypeMappings(shared_ptr<compiler::ModuleBuilder> mbuilder, ::BroType* t1, ::BroType* t2);
 
 	bool pre_scripts_init_run;

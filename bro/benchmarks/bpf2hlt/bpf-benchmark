@@ -1,0 +1,34 @@
+#! /usr/bin/env bash
+
+if [ $# != 2 ]; then
+    echo "usage: `basename $0` <trace> <filter>"
+    exit 1
+fi
+
+trace=$1
+filter=$2
+base=`dirname $0`
+
+hilti_build=${base}/../../../tools/hilti-build
+
+${base}/bpf2hlt $filter >filter_tmp.hlt
+cat ${base}/main.template.hlt | sed "s#\$TRACE#${trace}#g" >main.tmp.hlt
+
+# ${hilti_build} -O main.tmp.hlt filter_tmp.hlt -o a.out
+${hilti_build} -O filter_tmp.hlt ${base}/pktcnt-hilti.cc -o pktcnt-hilti
+${hilti_build} -O ${base}/pktcnt-pcap.cc -o pktcnt-pcap
+
+# Prime the cache.
+cat $trace | cat >/dev/null
+
+rm -f times.log counts.std.log counts.hlt.log
+
+for i in 1 2 3; do
+    echo Run ${i} ...
+    /bin/time -f "std utime %U\nstd rss %M"                            ./pktcnt-pcap  -r $trace -f "$filter" >>counts.std.log 2>>times.log
+    /bin/time -f "stdnofilter utime %U\nstdnofilter rss %M"            ./pktcnt-pcap  -r $trace -dd -f "$filter" >/dev/null 2>>times.log
+    /bin/time -f "hlt utime %U\nhlt rss %M"                            ./pktcnt-hilti -r $trace    >>counts.hlt.log 2>>times.log
+    /bin/time -f "hltemptyfilter utime %U\nhltemptyfilter rss %M"      ./pktcnt-hilti -r $trace -d  >/dev/null 2>>times.log
+    /bin/time -f "hltnofilter utime %U\nhltnofilter rss %M"            ./pktcnt-hilti -r $trace -dd >/dev/null 2>>times.log
+done
+

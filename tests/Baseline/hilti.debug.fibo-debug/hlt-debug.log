@@ -1,6 +1,6 @@
-00000001 [hilti-trace/<no-threading>]   Reminder: hilti-trace requires compiling with debugging level > 1.
-00000002 [hilti-flow/<no-threading>]    Reminder: hilti-flow requires compiling with debugging level > 1.
-00000003 [hilti-trace/main-thread]      <no location>:: block.end
+00000001 [hilti-trace/-]                <no location>:: block.end
+00000002 [hilti-trace/<no-threading>]   Reminder: hilti-trace requires compiling with debugging level > 1.
+00000003 [hilti-flow/<no-threading>]    Reminder: hilti-flow requires compiling with debugging level > 1.
 00000004 [hilti-flow/main-thread]       entering entry fiber for run
 00000005 [hilti-flow/main-thread]       entering Main::run
 00000006 [hilti-trace/main-thread]      fibo-debug.hlt:35-37: f = call fibo (10)

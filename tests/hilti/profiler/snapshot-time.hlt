@@ -22,25 +22,25 @@ void run() {
     profiler.update "test"
     profiler.update "test"
 
-    timer_mgr.advance mgr time(5.0)
+    timer_mgr.advance time(5.0) mgr
 
     profiler.update "test"
 
-    timer_mgr.advance mgr time(6.0)
+    timer_mgr.advance time(6.0) mgr
     profiler.update "test"
-    timer_mgr.advance mgr time(7.0)
+    timer_mgr.advance time(7.0) mgr
     profiler.update "test"
-    timer_mgr.advance mgr time(8.0)
+    timer_mgr.advance time(8.0) mgr
     profiler.update "test"
-    timer_mgr.advance mgr time(9.0)
+    timer_mgr.advance time(9.0) mgr
 
     profiler.update "test"
 
-    timer_mgr.advance mgr time(12.0)
+    timer_mgr.advance time(12.0) mgr
 
     profiler.update "test"
 
-    timer_mgr.advance mgr time(15.0)
+    timer_mgr.advance time(15.0) mgr
 
     profiler.stop "test"
 

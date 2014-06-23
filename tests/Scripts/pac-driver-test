@@ -108,7 +108,7 @@ if [ "$mode" == "hilti-build" ]; then
     execute ./a.out $runtime_opts || exit 1
 
 elif [ "$mode" == "jit" ]; then
-    execute $pac_driver_jit $build_opts $runtime_opts || exit 1
+    execute $pac_driver_jit $runtime_opts $build_opts || exit 1
 
 else
     echo "unknown pac-driver-test mode '$mode'" >&2

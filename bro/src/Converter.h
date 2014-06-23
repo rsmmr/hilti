@@ -66,6 +66,7 @@ protected:
 	void visit(::hilti::type::List* b) override;
 	void visit(::hilti::type::Vector* b) override;
 	void visit(::hilti::type::Set* b) override;
+	void visit(::hilti::type::Struct* u) override;
 
 private:
 	string CacheIndex(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype);
@@ -131,6 +132,7 @@ private:
 	void visit(::hilti::type::List* b) override;
 	void visit(::hilti::type::Vector* b) override;
 	void visit(::hilti::type::Set* b) override;
+	void visit(::hilti::type::Struct* u) override;
 
 	compiler::ModuleBuilder* mbuilder;
 	TypeConverter* type_converter;

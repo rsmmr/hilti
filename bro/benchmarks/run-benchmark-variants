@@ -1,0 +1,530 @@
+#! /usr/bin/env bash
+
+function abspath
+{
+    (cd "$1" && pwd)
+}
+
+# Note these limits apply to vsize and we exceed that with the 30GB trace.
+# ulimit -m 20485760 # 20G
+# ulimit -d 20485760
+
+base=`dirname $0`/../..
+base=`abspath $base`
+brobase=`cat $base/build/CMakeCache.txt | grep BRO_DIST: | cut -d = -f 2`
+brobase=`abspath $brobase`
+benchmarks=`dirname $0`
+benchmarks=`abspath $benchmarks`
+
+bro_addl_args="-b Hilti::hilti_workers=0 ${benchmarks}/scripts/run-benchmark.bro"
+use_bro_q=2 # 1 -> -Q; 2: -QQ; 0: -> ""
+
+hilti_optimize="Hilti::optimize=T"
+
+trace_dns="${brobase}/testing/external/bro-testing/Traces/2009-M57-day11-18.trace.gz"
+trace_http="${brobase}/testing/external/bro-testing/Traces/2009-M57-day11-18.trace.gz"
+baselines=""
+
+if [ $# != 1 ]; then
+    echo "usage: `basename $0` <data-dir>"
+    exit 1
+fi
+
+benchmark_tag=$1
+datadir=`pwd`/${benchmark_tag}
+
+if [ -e "${datadir}" ]; then
+    echo "${datadir} already exists"
+    exit 1
+fi
+
+# The config file can override the traces.
+cfg=`basename $0`.cfg
+
+if [ -e $cfg ]; then
+    echo Reading $cfg ...
+    source $cfg
+fi
+
+if [ "$TMPDIR" = "" ]; then
+    export TMPDIR=/tmp
+fi
+
+if [ "${ramdisk}" == "" ]; then
+    echo "No \${ramdisk} specified"
+    exit 1
+fi
+
+if ! mount | grep -q ^tmpfs.*${ramdisk}; then
+    echo "No ramdisk mounted under ${ramdisk}"
+    exit 1
+fi
+
+if [ "${profile}" == "1" ]; then
+    bro_addl_args="${bro_addl_args} Hilti::profile=2 Hilti::save_hilti=T Hilti::save_llvm=T"
+fi
+
+function log_stdin
+{
+    tmp=stdin.$$.tmp
+    cat >${tmp}
+    cat ${tmp} >>${logfile}
+    cat ${tmp} >/dev/tty
+
+    if [ "$benchmark" != "" ]; then
+        cat ${tmp} >>${benchmark}.log
+    fi
+
+    rm -f ${tmp}
+}
+
+function log
+{
+    echo "$@" >>${logfile}
+    echo "$@" >/dev/tty
+
+    if [ "$benchmark" != "" ]; then
+        echo "$@" >>${benchmark}.log
+    fi
+}
+
+function warning
+{
+    log "WARNING: $1"
+}
+
+function error
+{
+    log "$1"
+    exit 1
+}
+
+function execute
+{
+    cmdline="$@"
+    log "Command:   ${cmdline}"
+    eval ${cmdline}
+    log "Exit code: $?"
+}
+
+function create_sandbox
+{
+    export name=$1
+    sandbox=${datadir}/${name}
+    rm -rf ${sandbox}
+    mkdir -p ${sandbox}
+    cd ${sandbox}
+
+    log ""
+    log "===="
+    log "==== ${name}"
+    log "===="
+    log ""
+
+    export benchmark=${name}
+}
+
+function finish_sandbox
+{
+    if find . -name 'core*' | grep -q .; then
+       warning "There's a core file."
+    fi
+
+    rm -f *.tmp
+
+    export benchmark=
+}
+
+function rename_logs
+{
+    tag=$1
+
+    for i in `find . -regex '.*/[^.]*.log$'`; do
+        mv ${i} `echo ${i} | sed "s#\.log#.${tag}.log#g"`
+    done
+}
+
+# record_timing <tag-for-baseline> <tag-for-hilti>
+function record_timing
+{
+    tmp=timing.$$.tmp
+    record_timing_helper $@ >${tmp}
+    cat ${tmp} >>${datafile}
+    log ""
+    cat ${tmp} | log_stdin
+}
+
+first_timing=1
+
+function record_timing_helper
+{
+    # ${benchmark} has benchmark name
+    tag1=$1
+    tag2=$2
+
+    file1="stderr.${tag1}"
+    file2="stderr.${tag2}"
+
+    if [ ! -e ${file1} ]; then
+        warning "no ${file1} for getting timing information"
+        return;
+    fi
+
+    if [ ! -e ${file2} ]; then
+        warning "no ${file2} for getting timing information"
+        return;
+    fi
+
+  labels=`cat ${file1} ${file2} | grep '#t' | awk 'NF==4 { print $2 }' | sort | uniq`
+
+  if [ ${first_timing} == 1 ]; then
+       first_timing=0
+       first_labels=$labels
+
+       printf "benchmark type ";
+       for label in cycles time rss malloc; do #  (*) Adapt with below.
+           printf "${label}-ratio ${label}-base ${label}-new   ";
+       done
+       printf "\n";
+
+  else
+       if [ "${first_labels}" != "${labels}" ]; then
+           warning "Labels differ, data will be mixed up (${first_labels}/ ${labels})"
+       fi
+  fi
+
+  for label in ${labels}; do
+      cat ${file1} ${file2} | grep "${label} " | sed 's#/# #g' | sed 's#M\( \|$\)# #g' | awk -vprefix="${benchmark} ${label}" '
+         # core-init 2.256844 5871992554 175 67
+         # core-init 2.123967 5800516230 174 67
+         BEGIN { order[0] = 4; # (*) Adapt with above.
+                 order[1] = 3;
+                 order[2] = 5;
+                 order[3] = 6;
+               }
+
+         { for ( i = 0; i < length(order); i++ )
+               v[i][NR] = $(order[i]);
+         }
+
+         END { printf( "%-30s ", prefix);
+               for ( i = 0; i < length(order); i++ ) {
+                   r1 = v[i][1];
+                   r2 = v[i][2];
+
+                   if ( r2 )
+                       printf("%.4f ", r1 / r2);
+                   else
+                       printf("- ");
+
+                   printf("%f %f   ", r1, r2);
+                   }
+               printf( "\n", label);
+             }
+         '
+  done
+}
+
+function run_bro_without_trace
+{
+    tag=$1
+    shift
+    args=$@
+
+    args="${args} ${bro_addl_args}"
+
+    if [ "${use_bro_q}" == "1" ]; then
+        args="${args} -Q"
+    elif [ "${use_bro_q}" == "2" ]; then
+        args="${args} -QQ"
+    fi
+
+    stderr="stderr.${tag}"
+    stdout="stdout.${tag}"
+
+    if [ "${use_jemalloc}" == "1" ]; then
+        log "Using jemalloc ..."
+        export LD_PRELOAD=/local/lib/libjemalloc.so.1
+        export MALLOC_CONF=stats_print:true
+    fi
+
+    BRO_SEED_FILE=${brobase}/testing/btest/random.seed TZ=UTC LC_ALL=C \
+        execute bro ${args} >${stdout} 2>${stderr}
+
+    export LD_PRELOAD=
+    export MALLOC_CONF=
+
+    rename_logs ${tag}
+}
+
+function run_bro_with_trace
+{
+    tag=$1
+    trace=$2
+    shift
+    shift
+    args=$@
+
+    log "Trace:     ${trace}"
+
+    if echo ${trace} | grep -q '\.gz$'; then
+        cmd=zcat
+    else
+        cmd=cat
+    fi
+
+    # Prime cache.
+    if [ "${use_ramdisk}" == "1" ]; then
+        log "Using RAM disk ..."
+        ram_trace="${ramdisk}/`basename ${trace}`.tmp"
+        if [ ! -e ${ram_trace} ]; then
+            log "Copying trace to RAM disk ..."
+            cp ${trace} ${ram_trace}
+        fi
+
+        eval ${cmd} ${ram_trace} | run_bro_without_trace ${tag} -r - ${args}
+
+        rm -f ${ram_trace}
+
+    else
+        log "Priming cache ..."
+        cat ${trace} | cat >/dev/null
+        eval ${cmd} ${trace} | run_bro_without_trace ${tag} -r - ${args}
+    fi
+}
+
+function normalize_output
+{
+    cat $1 | grep -v "^#" | grep -v HEAPCHECK | grep -v "Heap checker" | cat >$1.diff.tmp
+    echo $1.diff.tmp
+}
+
+function normalize_log
+{
+    log=$1
+    exclude=$2
+
+    cat $log | \
+        eval bro-cut -c -n $exclude | \
+        ${benchmarks}/diff-canonifier-benchmark ${brobase} >$log.normalized
+
+    echo $log.normalized
+}
+
+function compare_output
+{
+    file1=$1
+    file2=$2
+
+    diff -u `normalize_output $file1` `normalize_output $file2` | log_stdin || error "=== ${file1} and ${file2} differ"
+}
+
+function compare_logs
+{
+    log1=$1
+    log2=$2
+    exclude=$3
+
+    nlog1=`normalize_log $log1 "$exclude"`
+    nlog2=`normalize_log $log2 "$exclude"`
+
+    cat $nlog1 | grep -v '^#' | sort -T $TMPDIR | uniq >$nlog1.uniq
+    cat $nlog2 | grep -v '^#' | sort -T $TMPDIR | uniq >$nlog2.uniq
+
+    for i in $log1 $log2 $nlog1 $nlog2 $nlog1.uniq $nlog2.uniq; do
+        cat $i | grep -v '^#' | wc -l >$i.lines
+    done
+
+    diff -u $nlog1 $nlog2 >$log2.diff
+
+    tmp=$log1.$log2.count.tmp
+    cat $nlog1.uniq $nlog2.uniq | sort -T $TMPDIR | uniq -c >$tmp
+
+    # If changing these three values in any way, adapt dat2latex!
+    cat $tmp | awk '$1 == 1' | wc -l >>$log2.diff.count
+    cat $tmp | awk '$1 == 2' | wc -l >>$log2.diff.count
+    cat $tmp | awk '$1 > 2' | wc -l >>$log2.diff.count
+}
+
+function check_baseline
+{
+    if [ "${baselines}" = "" ]; then
+        log "No baseline directory configured"
+        return
+    fi
+
+    baseline="${baselines}/${benchmark_tag}/${benchmark}/$1"
+    log=$1
+
+    if [ ! -e "${baseline}" ]; then
+        warning "Baseline ${baseline} does not exist."
+        return
+    fi
+
+    diff -u `normalize_log $baseline` `normalize_log $log` >$log.baseline.diff
+
+    if [ $? == 0 ]; then
+        log "Output in $log matches baseline."
+    else
+        warning "Output in $log does not match baseline."
+    fi
+}
+
+#### Main
+
+source $brobase/build/bro-path-dev.sh
+export BRO_PLUGINS=$base/build/bro
+ulimit -c unlimited
+
+mkdir ${datadir}
+
+logfile=${datadir}/benchmark.log
+datafile=${datadir}/benchmark.dat
+rm -f ${logfile}
+rm -f ${datafile}
+
+#### HTTP, Pac2
+
+enabled=1
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox http-pac2-variants
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-default ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=2
+    run_bro_with_trace std-default-qq ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default-qq ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=1; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-ramdisk ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-ramdisk ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    finish_sandbox
+fi
+
+#### DNS, Pac2
+
+enabled=1
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-pac2-variants
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-default ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=2
+    run_bro_with_trace std-default-qq ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default-qq ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    use_ramdisk=1; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-ramdisk ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-ramdisk ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+
+    finish_sandbox
+fi
+
+#### HTTP, Compiler
+
+enabled=1
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox http-compiler-variants
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-default ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=2
+    run_bro_with_trace std-default-qq ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default-qq ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=1; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-ramdisk ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-ramdisk ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    finish_sandbox
+fi
+
+#### DNS, Compiler
+
+enabled=1
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-compiler-variants
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-default ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=0; use_bro_q=2
+    run_bro_with_trace std-default-qq ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-default-qq ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    use_ramdisk=1; use_jemalloc=0; use_bro_q=1
+    run_bro_with_trace std-ramdisk ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-ramdisk ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+
+    finish_sandbox
+fi
+
+#### HTTP, BinPAC++ plus Compiler
+
+enabled=1
+scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox http-pac2-to-compiler-variants
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_http} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+
+    finish_sandbox
+fi
+
+#### DNS, BinPAC++ plus Compiler
+
+enabled=1
+scripts=base/protocols/dns
+
+if [ ${enabled} == 1 ]; then
+    create_sandbox dns-pac2-to-compiler-variants
+
+    use_ramdisk=0; use_jemalloc=1; use_bro_q=1
+    run_bro_with_trace std-jemalloc ${trace_dns} ${scripts} Log::disable_logging=T
+    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+
+    finish_sandbox
+fi
+
+
+${benchmarks}/dat2tex ${datadir} >${datadir}/benchmark.tex
+
+echo
+echo === `basename ${datadir}/${logfile}`
+echo === `basename ${datadir}/${datafile}`
+echo

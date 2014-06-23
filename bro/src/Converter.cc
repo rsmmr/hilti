@@ -66,6 +66,15 @@ ValueConverter::ValueConverter(compiler::ModuleBuilder* arg_mbuilder,
 
 bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value, shared_ptr<::hilti::Expression> dst, std::shared_ptr<::binpac::Type> btype, BroType* hint)
 	{
+	::hilti::builder::tuple::element_list eight;
+	eight.push_back(::hilti::builder::integer::create(8));
+
+	auto profile_hilti_land_compiled_stubs = ::hilti::builder::tuple::create(eight);
+
+	Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+				  ::hilti::builder::id::create("LibBro::profile_start"),
+				  profile_hilti_land_compiled_stubs);
+
 	_bro_type_hints.push_back(hint);
 	setArg1(value);
 	setArg2(dst);
@@ -75,6 +84,11 @@ bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value, shared_ptr<:
 	assert(set);
 	_arg3 = nullptr;
 	_bro_type_hints.pop_back();
+
+	Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+				  ::hilti::builder::id::create("LibBro::profile_stop"),
+				  profile_hilti_land_compiled_stubs);
+
 	return success;
 	}
 
@@ -252,6 +266,24 @@ void TypeConverter::visit(::hilti::type::Set* t)
 	auto result = new ::TableType(types, 0);
 	setResult(result);
 	}
+
+void TypeConverter::visit(::hilti::type::Struct* u)
+	{
+	auto btype = ast::checkedCast<binpac::type::Unit>(arg1());
+
+	auto tdecls = new ::type_decl_list;
+
+	for ( auto item : btype->items() )
+		{
+		auto name = item->id()->name();
+		auto htype = u->lookup(std::make_shared<::hilti::ID>(name))->type();
+		auto td = new ::TypeDecl(Convert(htype, item->type()), copy_string(name.c_str()), 0, true);
+		tdecls->append(td);
+		}
+
+	auto result = new ::RecordType(tdecls);
+	setResult(result);
+        }
 
 void ValueConverter::visit(::hilti::type::Reference* b)
 	{
@@ -464,6 +496,26 @@ void ValueConverter::visit(::hilti::type::Set* t)
 	auto result = mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, btype);
 
 	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, result);
+	setResult(true);
+	}
+
+void ValueConverter::visit(::hilti::type::Struct* s)
+	{
+	auto val = arg1();
+	auto dst = arg2();
+	auto ttype = ast::checkedCast<binpac::type::Unit>(arg3());
+
+	BroType* btype = nullptr;
+
+	if ( _bro_type_hints.back() )
+		btype = _bro_type_hints.back()->AsRecordType();
+
+	else
+		btype = type_converter->Convert(s->sharedPtr<::hilti::Type>(), ttype);
+
+	auto hval = mbuilder->RuntimeHiltiToVal(val, btype, ttype);
+	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, hval);
+
 	setResult(true);
 	}
 

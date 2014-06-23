@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void foo(int<32> n) {
+    call Hilti::print ("Yippie!")
+    call Hilti::print (n)
+}
+
+void run() {
+
+    local ref<timer> t
+    t = new timer foo (42)
+    timer_mgr.schedule time(10.0) t
+    timer_mgr.advance_global time(20.0)
+
+    return.void
+}
+
+

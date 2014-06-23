@@ -20,30 +20,30 @@ void run() {
     set.insert m "A-0"
     set.insert m "B-0"
 
-    timer_mgr.advance t time(5.0)
+    timer_mgr.advance time(5.0) t
     set.insert m "C-5"
     set.insert m "D-5"
 
-    timer_mgr.advance t time(10.0)
+    timer_mgr.advance time(10.0) t
     set.insert m "E-10"
     set.insert m "F-10"
 
     call Hilti::print(m)
     call Hilti::print("")
 
-    timer_mgr.advance t time(10.0)
+    timer_mgr.advance time(10.0) t
     call Hilti::print(m)
     call Hilti::print(t)
     call Hilti::print("")
 
     b = set.exists m "B-0"
 
-    timer_mgr.advance t time(20.0)
+    timer_mgr.advance time(20.0) t
     call Hilti::print(m)
     call Hilti::print(t)
     call Hilti::print("")
 
-    timer_mgr.advance t time(25.0)
+    timer_mgr.advance time(25.0) t
     call Hilti::print(m)
     call Hilti::print(t)
     call Hilti::print("")
@@ -53,7 +53,7 @@ void run() {
     call Hilti::print(t)
     call Hilti::print("")
 
-    timer_mgr.advance t time(50.0)
+    timer_mgr.advance time(50.0) t
     call Hilti::print(m)
     call Hilti::print(t)
     call Hilti::print("")

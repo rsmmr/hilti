@@ -629,6 +629,9 @@ namespace function {
 
 typedef hilti::function::parameter_list parameter_list;
 
+typedef Function::attribute function_attribute;
+typedef std::list<function_attribute> attribute_list;
+
 /// Instantiates an AST node representating the declaration of a function.
 ///
 /// id: The name of the function.
@@ -658,14 +661,33 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
                                                 shared_ptr<Type> scope = nullptr,
                                                 shared_ptr<statement::Block> body = nullptr,
                                                 shared_ptr<Module> module = nullptr,
+                                                const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
                                                 const Location& l=Location::None) {
 
     if ( ! result )
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
-    auto func = std::make_shared<Function>(id, ftype, module, scope, body, l);
+    auto func = std::make_shared<Function>(id, ftype, module, scope, attrs, body, l);
     return std::make_shared<declaration::Function>(func, l);
+}
+
+/// Returns a function attribute list for use with create().
+inline attribute_list attributes()
+{
+    return attribute_list();
+}
+
+/// Returns a function attribute for use with create().
+///
+/// name: The name of attributes, which must be \c &priority or \c &group.
+///
+/// val: The attributes value.
+///
+/// Returns: The attribute.
+inline function_attribute attribute(const ::string& name, int64_t val)
+{
+    return std::make_pair(name, val);
 }
 
 /// Instantiates an AST node representing a function parameter for its type description.
@@ -754,9 +776,6 @@ namespace hook {
 
 typedef hilti::function::parameter_list parameter_list;
 
-typedef Hook::attribute hook_attribute;
-typedef std::list<hook_attribute> attribute_list;
-
 /// Instantiates an AST node representating the declaration of a hook implementation.
 ///
 /// id: The name of the hook.
@@ -819,30 +838,12 @@ inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
                                             shared_ptr<Module> module,
                                             shared_ptr<statement::Block> body,
                                             shared_ptr<Type> scope,
-                                            const attribute_list& attrs,
+                                            const hilti::function::attribute_list& attrs,
                                             const Location& l=Location::None)
 {
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
     auto func = std::make_shared<Hook>(id, ftype, module, scope, attrs, body, l);
     return std::make_shared<declaration::Hook>(func, l);
-}
-
-/// Returns a hook attribute list for use with create().
-inline attribute_list attributes()
-{
-    return attribute_list();
-}
-
-/// Returns a hook attribute for use with create().
-///
-/// name: The name of attributes, which must be \c &priority or \c &group.
-///
-/// val: The attributes value.
-///
-/// Returns: The attribute.
-inline hook_attribute attribute(const ::string& name, int64_t val)
-{
-    return std::make_pair(name, val);
 }
 
 /// Instantiates an type::Hook type.

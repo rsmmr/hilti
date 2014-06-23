@@ -69,6 +69,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %}
 
 %token <sval>  SCOPED_IDENT   "scoped identifier"
+%token <sval>  DOLLAR_IDENT   "$-identifier"
 %token <sval>  PATH_IDENT     "path"
 %token <sval>  IDENT          "identifier"
 %token <sval>  ATTRIBUTE      "attribute"
@@ -125,6 +126,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         NET
 %token         ON
 %token         PORT
+%token         PRIORITY
 %token         REGEXP
 %token         SET
 %token         SINK
@@ -157,6 +159,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         EQ
 %token         CADDR
 %token         HASATTR
+%token         TRYATTR
 %token         PRINT
 %token         AND
 %token         CAST
@@ -181,7 +184,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <declarations>     opt_global_decls opt_local_decls
 %type <expression>       expr expr2 opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr opt_unit_vector_len
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
-%type <id>               local_id scoped_id path_id hook_id opt_unit_field_name opt_hilti_id
+%type <id>               local_id scoped_id dollar_id path_id hook_id opt_unit_field_name opt_hilti_id
 %type <statement>        stmt block
 %type <statements>       stmts opt_stmts
 %type <type>             base_type type enum_ bitset unit atomic_type container_type bitfield
@@ -209,6 +212,9 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <types>            types
 %type <map_element>      map_elem
 %type <map_elements>     map_elems opt_map_elems
+%type <unit_ctor_item>   unit_ctor_item
+%type <unit_ctor_items>  unit_ctor_items opt_unit_ctor_items
+%type <ival>             opt_priority
 %%
 
 %token PREC_HIGH;
@@ -250,6 +256,8 @@ path_id       : IDENT                            { $$ = std::make_shared<ID>($1,
 
 hook_id       : scoped_id                        { $$ = $1; }
               | PROPERTY                         { $$ = std::make_shared<ID>($1, loc(@$)); } /* for %init/%done */
+
+dollar_id     : DOLLAR_IDENT                     { $$ = std::make_shared<ID>($1, loc(@$)); }
 
 property      : PROPERTY ';'                     { $$ = std::make_shared<Attribute>($1, nullptr, loc(@$)); }
               | PROPERTY '=' expr ';'            { $$ = std::make_shared<Attribute>($1, $3, loc(@$)); }
@@ -584,8 +592,9 @@ opt_unit_vector_len
 unit_hooks    : unit_hook unit_hooks             { $$ = $2; $2.push_front($1); }
               | unit_hook                        { $$ = { $1 }; }
 
-unit_hook     : opt_debug opt_foreach            { driver.pushScope(std::make_shared<Scope>(driver.module()->body()->scope())); }
-                block                            { $$ = std::make_shared<Hook>($4, 0, $1, $2, loc(@$)); driver.popScope(); }
+unit_hook     : opt_debug opt_priority opt_foreach
+                                                 { driver.pushScope(std::make_shared<Scope>(driver.module()->body()->scope())); }
+                block                            { $$ = std::make_shared<Hook>($5, $2, $1, $3, loc(@$)); driver.popScope(); }
 
 opt_debug     : PROPERTY                         { $$ = ($1 == "%debug");
                                                    if ( ! $$ ) error(@$, "unexpected property, only %debug permitted");
@@ -593,6 +602,10 @@ opt_debug     : PROPERTY                         { $$ = ($1 == "%debug");
 
               | /* empty */                      { $$ = false; }
 
+
+opt_priority  : PRIORITY '=' CINTEGER            { $$ = $3; };
+
+              | /* empty */                      { $$ = 0; }
 
 opt_foreach   : FOREACH                          { $$ = true; }
               | /* empty */                      { $$ = false; }
@@ -645,6 +658,8 @@ ctor          : CBYTES                           { $$ = std::make_shared<ctor::B
               | VECTOR              '(' opt_exprs ')' { $$ = std::make_shared<ctor::Vector>(nullptr, $3, loc(@$)); }
               | VECTOR '<' type '>' '(' opt_exprs ')' { $$ = std::make_shared<ctor::Vector>($3, $6, loc(@$)); }
 
+              | UNIT                '(' opt_unit_ctor_items ')'
+                                                 { $$ = std::make_shared<ctor::Unit>($3, loc(@$)); }
               ;
 
 opt_map_elems : map_elems                        { $$ = $1; }
@@ -654,6 +669,18 @@ map_elems     : map_elems ',' map_elem           { $$ = $1; $$.push_back($3); }
               | map_elem                         { $$ = ctor::Map::element_list(); $$.push_back($1); }
 
 map_elem      : expr ':' expr                    { $$ = ctor::Map::element($1, $3); }
+
+opt_unit_ctor_items :
+                unit_ctor_items                  { $$ = $1; }
+              | /* empty */                      { $$ = ctor::Unit::item_list(); }
+
+unit_ctor_items
+              : unit_ctor_items ',' unit_ctor_item  { $$ = $1; $$.push_back($3); }
+              | unit_ctor_item                      { $$ = ctor::Unit::item_list(); $$.push_back($1); }
+
+unit_ctor_item
+              : dollar_id '=' expr               { $$ = ctor::Unit::item($1, $3); }
+              | expr                             { $$ = ctor::Unit::item(nullptr, $1); }
 
 re_patterns   : re_patterns '|' re_pattern       { $$ = $1; $$.push_back($3); }
               | re_pattern                       { $$ = ctor::RegExp::pattern_list(); $$.push_back($1); }
@@ -694,6 +721,7 @@ expr2         : scoped_id                        { $$ = std::make_shared<express
               | expr '.' member_expr             { $$ = makeOp(operator_::Attribute, { $1, $3 }, loc(@$)); }
               | expr '.' member_expr '=' expr    { $$ = makeOp(operator_::AttributeAssign, { $1, $3, $5 }, loc(@$)); }
               | expr HASATTR member_expr         { $$ = makeOp(operator_::HasAttribute, { $1, $3 }, loc(@$)); }
+              | expr TRYATTR member_expr         { $$ = makeOp(operator_::TryAttribute, { $1, $3 }, loc(@$)); }
               | expr PLUSPLUS                    { $$ = makeOp(operator_::IncrPostfix, { $1 }, loc(@$)); }
               | PLUSPLUS expr                    { $$ = makeOp(operator_::IncrPrefix, { $2 }, loc(@$)); }
               | expr MINUSMINUS                  { $$ = makeOp(operator_::DecrPostfix, { $1 }, loc(@$)); }

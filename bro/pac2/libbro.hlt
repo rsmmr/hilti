@@ -2,6 +2,7 @@
 module LibBro
 
 type BroVal = caddr
+type BroObj = caddr
 type BroType = caddr
 type BroTypeDecl = caddr
 type BroEventHandler = caddr
@@ -46,6 +47,10 @@ declare "C-HILTI" BroEventHandler get_event_handler(const ref<bytes> name)
 declare "C-HILTI" void            raise_event(BroEventHandler hdl, tuple<*> vals)
 declare "C-HILTI" void            call_legacy_void(BroVal func, tuple<*> vals)
 declare "C-HILTI" BroVal          call_legacy_result(BroVal func, tuple<*> vals)
+declare "C-HILTI" void            profile_start(int<64> ty)
+declare "C-HILTI" void            profile_stop(int<64> ty)
+declare "C-HILTI" void            object_ref(BroObj obj)
+declare "C-HILTI" void            object_unref(BroObj obj)
 
 declare "C-HILTI" BroType                      bro_table_type_new(BroType key, BroType value)
 declare "C-HILTI" tuple<caddr, BroVal, BroVal> bro_table_iterate(BroVal tbl, caddr cookie)
@@ -69,11 +74,14 @@ declare "C-HILTI" net         b2h_subnet(BroVal val)
 declare "C-HILTI" port        b2h_port(BroVal val)
 declare "C-HILTI" ref<regexp> b2h_pattern(BroVal val)
 declare "C-HILTI" ref<file>   b2h_file(BroVal val)
+declare "C-HILTI" BroVal      b2h_type(BroVal val)
+declare "C-HILTI" BroVal      b2h_function(BroVal val)
 
 declare "C-HILTI" BroVal      h2b_network(net val)
 declare "C-HILTI" BroVal      h2b_interval(interval b)
 declare "C-HILTI" BroVal      h2b_regexp(const ref<regexp> re)
 declare "C-HILTI" BroVal      h2b_port(port val)
+declare "C-HILTI" BroVal      h2b_file(ref<file> f)
 declare "C-HILTI" BroVal      h2b_file(const ref<file> f)
 declare "C-HILTI" BroVal      b2h_type(BroVal val)
 declare "C-HILTI" BroVal      b2h_function(BroVal val)

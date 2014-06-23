@@ -527,6 +527,34 @@ NonTerminal::alternative_list Counter::rhss() const
     return { { _body } };
 }
 
+ByteBlock::ByteBlock(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l)
+    : NonTerminal(symbol, nullptr, l)
+{
+    _expr = expr;
+    _body = body;
+    addChild(_body);
+}
+
+shared_ptr<Expression> ByteBlock::expression() const
+{
+    return _expr;
+}
+
+shared_ptr<Production> ByteBlock::body() const
+{
+    return _body;
+}
+
+string ByteBlock::renderProduction() const
+{
+    return util::fmt("byte-block(%s): %s", _expr->render().c_str(), _body->symbol().c_str());
+}
+
+NonTerminal::alternative_list ByteBlock::rhss() const
+{
+    return { { _body } };
+}
+
 While::While(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
@@ -555,10 +583,11 @@ NonTerminal::alternative_list While::rhss() const
     return { { _body } };
 }
 
-Loop::Loop(const string& symbol, shared_ptr<Production> body, const Location& l)
+Loop::Loop(const string& symbol, shared_ptr<Production> body, bool eod_ok, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
     _body = body;
+    _eod_ok = eod_ok;
     addChild(_body);
 }
 
@@ -575,6 +604,11 @@ string Loop::renderProduction() const
 NonTerminal::alternative_list Loop::rhss() const
 {
     return { { _body } };
+}
+
+bool Loop::eodOk() const
+{
+    return _eod_ok ? true : nullable();
 }
 
 Switch::Switch(const string& symbol, shared_ptr<Expression> expr, const case_list& cases, shared_ptr<Production> default_, const Location& l)

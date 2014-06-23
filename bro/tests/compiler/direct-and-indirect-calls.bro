@@ -1,10 +1,10 @@
 #
-# @TEST-EXEC: bro -b %INPUT Hilti::compile_scripts=T Hilti::save_hilti=T >output
+# @TEST-EXEC: bro -b %INPUT Hilti::compile_scripts=T Hilti::save_hilti=T Hilti::debug=T >output
 # @TEST-EXEC: btest-diff output
 #
 # Make sure that the calls are indeed direct and indirect, respectively:
-#
-# @TEST-EXEC: cat bro.GLOBAL.hlt | sed -n '/^hook void bro_init/,/^}/p'| egrep -1 'call.*(foo|legacy)' >code
+# 
+# @TEST-EXEC: cat bro.GLOBAL.hlt | sed -n '/^hook void bro_init/,/^}/p'| egrep -1 'call.*(foo|legacy)' | awk '/^--/ { if ( c == 0 ) print; ++c; next; } {c=0; print;}' >code
 # @TEST-EXEC: cat bro.GLOBAL.hlt | egrep 'global.*_ctor_' >>code
 # @TEST-EXEC: btest-diff code
 #

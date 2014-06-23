@@ -53,6 +53,9 @@ export {
 	## with the compiled events (rather than queuening them through Bro's
 	## core.) 
 	const pac2_to_compiler = T &redef;
+
+	## Number of HILTI worker threads to spawn.
+	const hilti_workers = 2 &redef;
 }
 
 

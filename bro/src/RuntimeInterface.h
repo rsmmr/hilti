@@ -24,7 +24,10 @@ uint64_t lib_bro_add_indexed_type(BroType* type);
 BroType* lib_bro_get_indexed_type(uint64_t idx);
 
 // XXX Forward to libbro_object_mapping_unregister_bro, which has HILTI-C calling convention.
-void lib_bro_object_mapping_unregister_bro(::BroObj* obj);
+void lib_bro_object_mapping_unregister_bro(void* obj);
+
+// XXX Forward to libbro_object_mapping_invalidate_bro, which has HILTI-C calling convention.
+void lib_bro_object_mapping_invalidate_bro(void* obj);
 
 
 }

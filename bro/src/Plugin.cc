@@ -11,6 +11,15 @@
 #include "Event.h"
 #include "RuntimeInterface.h"
 
+#ifdef BRO_PLUGIN_CHECK_LEAKS
+#include <google/heap-checker.h>
+static HeapLeakChecker* heap_checker = nullptr;
+#endif
+
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+extern int time_bro;
+#endif
+
 plugin::Bro_Hilti::Plugin HiltiPlugin;
 
 namespace BifConst { namespace Hilti { extern int compile_scripts; } }
@@ -18,7 +27,6 @@ namespace BifConst { namespace Hilti { extern int compile_scripts; } }
 using namespace bro::hilti;
 
 plugin::Bro_Hilti::Plugin::Plugin()
-	: ::plugin::InterpreterPlugin(100)
 	{
 	_manager = new bro::hilti::Manager();
 	}
@@ -33,18 +41,21 @@ bro::hilti::Manager* plugin::Bro_Hilti::Plugin::Mgr() const
 	return _manager;
 	}
 
+plugin::Configuration plugin::Bro_Hilti::Plugin::Configure()
+	{
+	plugin::Configuration config;
+	config.name = "Bro::Hilti";
+	config.description = "Dynamically compiled HILTI/BinPAC++ functionality (*.pac2, *.evt, *.hlt)";
+	config.version.major = 0;
+	config.version.minor = 1;
+
+	EnableHook(plugin::HOOK_LOAD_FILE);
+
+	return config;
+	}
+
 void plugin::Bro_Hilti::Plugin::InitPreScript()
 	{
-	SetName("Bro::Hilti");
-	SetDynamicPlugin(true);
-	SetFileExtensions("pac2:evt");
-
-	BRO_PLUGIN_VERSION(1);
-	BRO_PLUGIN_DESCRIPTION("Dynamically compiled HILTI/BinPAC++ functionality");
-	BRO_PLUGIN_BIF_FILE(consts);
-	BRO_PLUGIN_BIF_FILE(events);
-	BRO_PLUGIN_BIF_FILE(functions);
-
 	string dir = HiltiPlugin.PluginDirectory();
 	dir += "/pac2";
 	_manager->AddLibraryPath(dir.c_str());
@@ -57,6 +68,15 @@ void plugin::Bro_Hilti::Plugin::InitPostScript()
 	{
 	plugin::Plugin::InitPostScript();
 
+	if ( BifConst::Hilti::compile_scripts || _manager->HaveCustomHiltiCode() )
+		{
+		EnableHook(plugin::HOOK_CALL_FUNCTION);
+		EnableHook(plugin::HOOK_QUEUE_EVENT);
+		EnableHook(plugin::HOOK_UPDATE_NETWORK_TIME);
+		EnableHook(plugin::HOOK_DRAIN_EVENTS);
+		EnableHook(plugin::HOOK_BRO_OBJ_DTOR);
+		}
+
 	if ( ! _manager->InitPostScripts() )
 		exit(1);
 
@@ -65,15 +85,33 @@ void plugin::Bro_Hilti::Plugin::InitPostScript()
 
 	if ( ! _manager->Compile() )
 		exit(1);
+
+#ifdef BRO_PLUGIN_CHECK_LEAKS
+	if ( getenv("HEAPCHECK") )
+	     heap_checker = new HeapLeakChecker("bro-hilti");
+#endif
+
+#ifdef BRO_PLUGIN_HAVE_PROFILING
+	if ( time_bro )
+		fprintf(stderr, "#! Processing starting ...\n");
+#endif
 	}
 
 void plugin::Bro_Hilti::Plugin::Done()
 	{
-	}
+#ifdef BRO_PLUGIN_CHECK_LEAKS
+	if ( heap_checker )
+		{
+		fprintf(stderr, "#! Done with leak checking\n");
 
-bool plugin::Bro_Hilti::Plugin::LoadFile(const char* file)
-	{
-	return _manager->LoadFile(file);
+		if ( ! heap_checker->NoLeaks() )
+			fprintf(stderr, "#! Leaks found\n");
+		else
+			fprintf(stderr, "#! Leaks NOT found\n");
+
+		delete heap_checker;
+		}
+#endif
 	}
 
 analyzer::Tag plugin::Bro_Hilti::Plugin::AddAnalyzer(const string& name, TransportProto proto, analyzer::Tag::subtype_t stype)
@@ -94,64 +132,84 @@ analyzer::Tag plugin::Bro_Hilti::Plugin::AddAnalyzer(const string& name, Transpo
 		return analyzer::Tag();
 	}
 
-	auto c = new analyzer::Component(name.c_str(), factory, stype);
-
-#if 0
-	components.push_back(c);
-#endif
-
+	auto c = new ::analyzer::Component(name, factory, stype);
 	AddComponent(c);
+
 	return c->Tag();
 	}
 
 file_analysis::Tag plugin::Bro_Hilti::Plugin::AddFileAnalyzer(const string& name, file_analysis::Tag::subtype_t stype)
 	{
-	auto c = new file_analysis::Component(name.c_str(), Pac2_FileAnalyzer::InstantiateAnalyzer, stype);
+	auto c = new ::file_analysis::Component(name, Pac2_FileAnalyzer::InstantiateAnalyzer, stype);
 	AddComponent(c);
 	return c->Tag();
 	}
 
 void plugin::Bro_Hilti::Plugin::AddEvent(const string& name)
 	{
-	AddBifItem(name.c_str(), plugin::BifItem::EVENT);
+	AddBifItem(name, plugin::BifItem::EVENT);
 	}
 
-Val* plugin::Bro_Hilti::Plugin::CallFunction(const Func* func, val_list* args)
+void plugin::Bro_Hilti::Plugin::RequestEvent(EventHandlerPtr handler)
 	{
-	if ( ! BifConst::Hilti::compile_scripts )
-		return nullptr;
-
-	return _manager->RuntimeCallFunction(func, args);
+	plugin::Plugin::RequestEvent(handler);
 	}
 
-bool plugin::Bro_Hilti::Plugin::QueueEvent(Event* event)
+int plugin::Bro_Hilti::Plugin::HookLoadFile(const std::string& file, const std::string& ext)
+	{
+	if ( ext == "pac2" || ext == "evt" || ext == "hlt" )
+		return _manager->LoadFile(file) ? 1 : 0;
+
+	return -1;
+	}
+
+Val* plugin::Bro_Hilti::Plugin::HookCallFunction(const Func* func, val_list* args)
+	{
+	if ( BifConst::Hilti::compile_scripts )
+		return _manager->RuntimeCallFunction(func, args);
+
+	if ( func->FType()->Flavor() == FUNC_FLAVOR_EVENT &&
+	     _manager->HaveCustomHandler(func) )
+		{
+		// We don't own the arguments so ref them all once more.
+		loop_over_list(*args, i)
+			Ref((*args)[i]);
+
+		auto v = _manager->RuntimeCallFunction(func, args);
+		Unref(v);
+		}
+
+	return nullptr;
+	}
+
+bool plugin::Bro_Hilti::Plugin::HookQueueEvent(Event* event)
 	{
 	if ( ! BifConst::Hilti::compile_scripts )
 		return false;
 
 	if ( ! _manager->RuntimeRaiseEvent(event) )
+		{
+		val_list* args = event->Args();
+
+		loop_over_list(*args, i)
+			Unref((*args)[i]);
+
 		Unref(event);
+		}
 
 	// We always say we handled it.
 	return true;
 	}
 
-void plugin::Bro_Hilti::Plugin::UpdateNetworkTime(double network_time)
+void plugin::Bro_Hilti::Plugin::HookUpdateNetworkTime(double network_time)
 	{
 	}
 
-void plugin::Bro_Hilti::Plugin::DrainEvents()
+void plugin::Bro_Hilti::Plugin::HookDrainEvents()
 	{
 	}
 
-void plugin::Bro_Hilti::Plugin::NewConnection(const ::Connection* c)
+void plugin::Bro_Hilti::Plugin::HookBroObjDtor(void* obj)
 	{
-	}
-
-void plugin::Bro_Hilti::Plugin::ConnectionStateRemove(const ::Connection* c)
-	{
-	::Val* v = c->ConnValIfAvailable();
-
-	if ( v )
-		lib_bro_object_mapping_unregister_bro(v);
+	lib_bro_object_mapping_unregister_bro(obj);
 	}

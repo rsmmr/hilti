@@ -25,6 +25,7 @@ void __hlt_global_state_init(int init)
     globals->multi_threaded = (__hlt_globals()->config->num_workers != 0);
 
     __hlt_debug_init();
+    __hlt_fiber_init();
     __hlt_cmd_queue_init();
     __hlt_hooks_init();
     __hlt_threading_init();
@@ -36,7 +37,7 @@ void __hlt_global_state_init(int init)
 void __hlt_global_state_done()
 {
     hlt_exception* excpt = 0;
-
+  
     __hlt_threading_done(&excpt);
     __hlt_profiler_done(); // Must come after threading is done.
 
@@ -47,6 +48,7 @@ void __hlt_global_state_done()
 
     __hlt_hooks_done();
     __hlt_cmd_queue_done();
+    __hlt_fiber_done();
     __hlt_debug_done();
 
     GC_DTOR(globals->context, hlt_execution_context);

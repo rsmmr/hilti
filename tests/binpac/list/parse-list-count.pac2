@@ -8,7 +8,7 @@ module Mini;
 export type test = unit {
     a: int8;
 
-    ints: list< int<8> > &length=2
+    ints: list< int<8> > &count=2
       { print self; }
 
     b: int8;

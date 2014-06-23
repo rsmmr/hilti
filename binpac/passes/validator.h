@@ -103,6 +103,7 @@ protected:
     void visit(ctor::Map* m) override;
     void visit(ctor::RegExp* r) override;
     void visit(ctor::Set* s) override;
+    void visit(ctor::Unit* u) override;
     void visit(ctor::Vector* v) override;
     void visit(declaration::Constant* c) override;
     void visit(declaration::Function* f) override;

@@ -62,7 +62,7 @@ void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt)
     }
 
     if ( excpt->fiber )
-        hlt_fiber_delete(excpt->fiber);
+        hlt_fiber_delete(excpt->fiber, 0);
 }
 
 hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)

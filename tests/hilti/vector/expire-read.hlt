@@ -21,11 +21,11 @@ void run() {
     vector.push_back m "A-0"
     vector.push_back m "B-0"
 
-    timer_mgr.advance t time(5.0)
+    timer_mgr.advance time(5.0) t
     vector.push_back m "C-5"
     vector.push_back m "D-5"
 
-    timer_mgr.advance t time(10.0)
+    timer_mgr.advance time(10.0) t
     vector.push_back m "E-10"
     vector.push_back m "F-10"
     vector.push_back m "G-10"
@@ -33,11 +33,11 @@ void run() {
     call Hilti::print(m)
 
     call Hilti::print("Advance to 10")
-    timer_mgr.advance t time(10.0)
+    timer_mgr.advance time(10.0) t
     call Hilti::print(m)
 
     call Hilti::print("Advance to 20")
-    timer_mgr.advance t time(20.0)
+    timer_mgr.advance time(20.0) t
     call Hilti::print(m)
 
     call Hilti::print("Reading G")
@@ -45,11 +45,11 @@ void run() {
     str = vector.get m 6
 
     call Hilti::print("Advance to 30")
-    timer_mgr.advance t time(30.0)
+    timer_mgr.advance time(30.0) t
     call Hilti::print(m)
 
     call Hilti::print("Advance to 50")
-    timer_mgr.advance t time(50.0)
+    timer_mgr.advance time(50.0) t
     call Hilti::print(m)
 
     call Hilti::print(t)

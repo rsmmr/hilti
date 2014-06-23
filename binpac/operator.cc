@@ -499,6 +499,9 @@ string Operator::render() const
      case operator_::Size:
         return util::fmt("|%s|", op1->render());
 
+     case operator_::TryAttribute:
+        return util::fmt("%s.?%s", op1->render(), op2->render());
+
      default:
         fprintf(stderr, "unknown operator %d in Operator::render()", (int)op.kind);
         assert(false);

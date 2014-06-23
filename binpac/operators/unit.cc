@@ -46,6 +46,34 @@ opBegin(unit::HasAttribute)
     }
 opEnd
 
+opBegin(unit::TryAttribute)
+    opOp1(std::make_shared<type::Unit>())
+    opOp2(std::make_shared<type::MemberAttribute>())
+
+    opDoc("Returns the value of a unit field if it's set; otherwise throws an BinPAC::AttributeNotSet exception.")
+
+    opValidate() {
+        auto unit = ast::checkedCast<type::Unit>(op1()->type());
+        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+
+        if ( ! unit->item(attr->id()) )
+            error(op2(), "unknown unit item");
+    }
+
+    opResult() {
+        auto unit = ast::checkedCast<type::Unit>(op1()->type());
+        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+
+        auto i = unit->item(attr->id());
+        if ( ! i )
+            // Error will be reported by validation.
+            return std::make_shared<type::Unknown>();
+
+        assert(i->fieldType());
+        return i->fieldType();
+    }
+opEnd
+
 opBegin(unit::AttributeAssign)
     opOp1(std::make_shared<type::Unit>())
     opOp2(std::make_shared<type::MemberAttribute>())

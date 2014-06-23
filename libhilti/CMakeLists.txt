@@ -23,12 +23,13 @@ include(FindRequiredPackage)
 include(EnableLLVMBitcode)
 include(EnableClangDebugging)
 include(CheckFunctionExists)
+include(HiltiConfig)
 
 FindRequiredPackage(FLEX)
 FindRequiredPackage(BISON)
 find_package(PAPI)
 
-if (${PAPI_FOUND} STREQUAL "TRUE" )
+if ( PAPI_FOUND )
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_PAPI")
 endif ()
 

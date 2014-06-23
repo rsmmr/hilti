@@ -11,6 +11,7 @@ type ParseError = exception<string>
 type UnitAlreadyConnected = exception
 type FilterError = exception<string>
 type FilterUnsupported = exception<string>
+type AttributeNotSet = exception<string>
 
 type Parser = struct {
     string name,                  # Short descriptive name.
