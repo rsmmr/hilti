@@ -1,8 +1,6 @@
 #
 # @TEST-EXEC: bro ./dtest.evt %INPUT
 #
-# @TEST-KNOWN-FAILURE: enum convert problem. Comment line 16 to toggle error.
-#
 # @TEST-START-FILE dtest.evt
 
 grammar dtest.pac2;
