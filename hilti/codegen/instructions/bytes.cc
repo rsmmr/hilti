@@ -53,16 +53,6 @@ void StatementBuilder::visit(statement::instruction::bytes::Equal* i)
     cg()->llvmStore(i, result);
 }
 
-void StatementBuilder::visit(statement::instruction::bytes::Copy* i)
-{
-    CodeGen::expr_list args;
-    args.push_back(i->op1());
-
-    auto result = cg()->llvmCall("hlt::bytes_copy", args);
-
-    cg()->llvmStore(i, result);
-}
-
 void StatementBuilder::visit(statement::instruction::bytes::Diff* i)
 {
     CodeGen::expr_list args;
@@ -270,6 +260,44 @@ void StatementBuilder::visit(statement::instruction::bytes::Join* i)
     args.push_back(i->op1());
     args.push_back(i->op2());
     auto result = cg()->llvmCall("hlt::bytes_join", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::AppendObject* i)
+{
+    CodeGen::expr_list args = { i->op1(), i->op2() };
+    cg()->llvmCall("hlt::bytes_append_object", args);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::RetrieveObject* i)
+{
+    auto t = i->target()->type();
+
+    CodeGen::expr_list args = { i->op1(), builder::type::create(t) };
+    auto voidp = cg()->llvmCall("hlt::bytes_retrieve_object", args);
+    auto casted = cg()->builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(t)));
+    cg()->llvmStore(i, cg()->builder()->CreateLoad(casted));
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::AtObject* i)
+{
+    if ( ! i->op2() ) {
+        CodeGen::expr_list args = { i->op1() };
+        auto result = cg()->llvmCall("hlt::bytes_at_object", args);
+        cg()->llvmStore(i, result);
+    }
+
+    else {
+        CodeGen::expr_list args = { i->op1(), i->op2() };
+        auto result = cg()->llvmCall("hlt::bytes_at_object_of_type", args);
+        cg()->llvmStore(i, result);
+    }
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::SkipObject* i)
+{
+    CodeGen::expr_list args = { i->op1() };
+    auto result = cg()->llvmCall("hlt::bytes_skip_object", args);
     cg()->llvmStore(i, result);
 }
 

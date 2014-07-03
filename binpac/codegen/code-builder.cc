@@ -466,7 +466,13 @@ void CodeBuilder::visit(variable::Local* v)
 
 void CodeBuilder::visit(variable::Global* v)
 {
-    auto result = hilti::builder::id::create(cg()->hiltiID(v->id()));
+    auto result = hilti::builder::id::create(cg()->hiltiID(v->id(), true));
+
+    auto hid = result->id();
+
+    if ( hid->isScoped() && ! cg()->moduleBuilder()->declared(hid) )
+        moduleBuilder()->declareGlobal(hid, cg()->hiltiType(v->type()));
+
     setResult(result);
 }
 

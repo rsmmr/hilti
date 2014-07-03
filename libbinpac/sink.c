@@ -275,7 +275,7 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
         if ( ! s->data ) {
             // First chunk.
             DBG_LOG("binpac-sinks", "- start writing to sink %p for parser %p", sink, s->pobj);
-            s->data = hlt_bytes_copy(data, excpt, ctx);
+            s->data = hlt_bytes_clone(data, excpt, ctx);
 
             if ( hlt_bytes_is_frozen(data, excpt, ctx) )
                 hlt_bytes_freeze(s->data, 1, excpt, ctx);

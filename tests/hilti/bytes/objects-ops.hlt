@@ -1,0 +1,103 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local ref<bytes> x
+    local iterator<bytes> i
+    local iterator<bytes> i2
+    local bool bl
+    local string s
+
+    b = b"abc"
+    bytes.append_object b "string"
+    bytes.append b b"def"
+
+    call Hilti::print(b)
+
+    i = begin b
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    i = incr i
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    i = incr i
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    i = incr i
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    i = incr i
+    bl = bytes.at_object i string
+    call Hilti::print(bl)
+
+    i = incr i
+    bl = bytes.at_object i int<64>
+    call Hilti::print(bl)
+
+    i2 = end b
+    x = bytes.sub i i2
+    call Hilti::print(x)
+
+    ###
+
+    s = bytes.retrieve_object i
+    call Hilti::print(s)
+
+    i = incr i
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    i = bytes.skip_object i
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    bytes.trim b i
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    i2 = end b
+    x = bytes.sub i i2
+    call Hilti::print(x)
+
+    i = incr i
+    i = incr i
+    i = incr i
+    x = bytes.sub i i2
+    call Hilti::print(x)
+
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    ###
+
+    bytes.append_object b "42"
+    call Hilti::print(b)
+
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    i = bytes.skip_object i
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    bytes.trim b i
+    bl = bytes.at_object i
+    call Hilti::print(bl)
+
+    i2 = end b
+    x = bytes.sub i i2
+    call Hilti::print(x)
+
+
+}
+

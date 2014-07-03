@@ -226,14 +226,16 @@ extern hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end
 /// Raises: ValueError - If any position is found to be out of range.
 extern int8_t* hlt_bytes_sub_raw(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
 
-/// Copies a byte object into a new instance.
+/// Clones a byte object into a new instance. This preserves all embedded separator objects.
+///
+/// The function is just a short-cut to using the generic clone operator.
 ///
 /// b: The bytes object to duplicate.
 ///
 /// \hlt_c
 ///
 /// Returns: The new object.
-extern hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_clone(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts a bytes object into a raw C array.
 ///
@@ -500,6 +502,67 @@ extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* p, hlt
 
 /// XXX
 extern hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Inserts a separator objects of arbitrary type to the end of the bytes
+/// objects. When iterating over a bytes object, reaching the object will
+/// generally be treated as if the end has been reached. However, the other
+/// \c hlt_bytes_*_object() functions allow to check for, extract, and move
+/// over the object.
+///
+/// b: The bytes object to insert the object into.
+///
+/// type: The type of the object.
+///
+/// obj: A pointer to the object.
+///
+/// \hlt_c
+extern void hlt_bytes_append_object(hlt_bytes* b, const hlt_type_info* type, void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Retrieves a separator object at a given iterator position. The object's
+/// expected type must be specified. If there's no object at the position,
+/// throws a \c ValuesError. If there is an object, but of the wrong type,
+/// throws a \c TypeError.
+///
+/// i: The position where to expect the object.
+///
+/// type: The expecyed type of the object.
+///
+/// \hlt_c
+///
+/// Returns: A pointer to the retrieved object.
+extern void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Checks if there's a separator object located at a given iterator position.
+///
+/// i: The position where to check for an object.
+///
+/// \hlt_c
+///
+/// Returns: 1 if there's an object (of any type); 0 otherwise.
+extern int8_t hlt_bytes_at_object(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Checks if there's a separator object of a specified type located at a
+/// given iterator position.
+///
+/// i: The position where to check for an object.
+///
+/// type: The type the object has to have.
+///
+/// \hlt_c
+///
+/// Returns: 1 if there's an object of the given type; if so,
+/// hlt_bytes_retrieve_object will succeed if given the same type. 0
+/// otherwise, including when there's an object but not of the type specified
+/// by \c type.
+extern int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Moves the iterator past an object. Throws \a ValueError if there's no
+/// object at the location.
+///
+/// i: The position where to move over the object.
+///
+/// Returns: The advanced iterator.
+extern hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
 

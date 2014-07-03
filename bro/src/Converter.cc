@@ -31,10 +31,13 @@ BroType* TypeConverter::Convert(std::shared_ptr<::hilti::Type> type, std::shared
 
 string TypeConverter::CacheIndex(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype)
 	{
-	auto s1 = type->id()  ? ::util::fmt("%s", type->id()->pathAsString())  : ::util::fmt("%p", type);
-	auto s2 = btype->id() ? ::util::fmt("%s", btype->id()->pathAsString()) : ::util::fmt("%p", btype);
+	if ( btype->id() )
+		return btype->id()->name();
 
-	return ::util::fmt("%s-%s", s1, s2);
+	auto s1 = type->id()  ? ::util::fmt("%s", type->id()->pathAsString())  : ::util::fmt("%p", type);
+	auto s2 = ::util::fmt("%p", btype);
+
+	return ::util::fmt("%p", s1, s2);
         }
 BroType* TypeConverter::LookupCachedType(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype)
 	{

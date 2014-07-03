@@ -1,8 +1,6 @@
 #
 # @TEST-EXEC: bro ./dtest.evt %INPUT
 #
-# @TEST-KNOWN-FAILURE: enum convert problem. Comment line 16 to toggle error.
-
 # @TEST-START-FILE dtest.evt
 
 grammar dtest.pac2;
@@ -13,18 +11,20 @@ protocol analyzer pac2::dtest over UDP:
 
 on dtest::Message -> event dtest_message(self.func);
 
-on dtest::Message -> event dtest_result (self.sub.result);
+on dtest::Message -> event dtest_result(self.sub.result);
+
+on dtest::Message -> event dtest_result_tuple(dtest::bro_result(self));
 
 # @TEST-END-FILE
 # @TEST-START-FILE dtest.pac2
 
 module dtest;
 
-type FUNCS = enum {
- A, B, C, D, E, F
+export type FUNCS = enum {
+ A=0, B=1, C=2, D=3, E=4, F=5
 };
 
-type RESULT = enum {
+export type RESULT = enum {
  A, B, C, D, E, F
 };
 
@@ -36,5 +36,9 @@ export type Message = unit {
 type SubMessage = unit {
   result: uint8 &convert=RESULT($$);
 };
+
+tuple<FUNCS, RESULT> bro_result(entry: Message) {
+	return (entry.func, entry.sub.result);
+}
 
 # @TEST-END-FILE
