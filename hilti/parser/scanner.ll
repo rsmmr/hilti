@@ -121,15 +121,6 @@ False                 yylval->bval = 0; return token::CBOOL;
 Null                  return token::CNULL;
 True                  yylval->bval = 1; return token::CBOOL;
 
-&default              yylval->sval = yytext; return token::ATTR_DEFAULT;
-&group                yylval->sval = yytext; return token::ATTR_GROUP;
-&libhilti             yylval->sval = yytext; return token::ATTR_LIBHILTI;
-&nosub                yylval->sval = yytext; return token::ATTR_NOSUB;
-&priority             yylval->sval = yytext; return token::ATTR_PRIORITY;
-&scope                yylval->sval = yytext; return token::ATTR_SCOPE;
-&libhilti_dtor        yylval->sval = yytext; return token::ATTR_DTOR;
-&noyield              yylval->sval = yytext; return token::ATTR_NOYIELD;
-
 {digits}\/(tcp|udp|icmp) yylval->sval = yytext; return token::CPORT;
 {address}             yylval->sval = yytext; return token::CADDRESS;
 
@@ -143,6 +134,7 @@ b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strle
 @{id}                 yylval->sval = yytext; return token::LABEL_IDENT;
 {id}(\.{id}){1,}      yylval->sval = yytext; return token::DOTTED_IDENT;
 {id}(::{id}){1,}      yylval->sval = yytext; return token::SCOPED_IDENT;
+&{id}                 yylval->sval = yytext; return token::ATTRIBUTE;
 
 [*,=:;<>(){}/|]       return (token_type) yytext[0];
 

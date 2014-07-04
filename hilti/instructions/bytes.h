@@ -147,7 +147,7 @@ iEndH
 
 iBeginH(bytes, Strip, "bytes.strip")
     iTarget(optype::refBytes)
-    iOp1(optype::refBytes, false);
+    iOp1(optype::refBytes, true);
     iOp2(optype::optional(optype::enum_), true);
     iOp3(optype::optional(optype::refBytes), true);
 iEndH

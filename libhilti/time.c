@@ -17,7 +17,7 @@ hlt_time hlt_time_value(uint64_t secs, uint64_t nsecs)
 
 extern const hlt_type_info hlt_type_info_double;
 
-hlt_string hlt_time_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_time_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIME);
     hlt_time val = *((hlt_time *)obj);
@@ -64,7 +64,7 @@ hlt_time hlt_time_wall(hlt_exception** excpt, hlt_execution_context* ctx)
 
     if ( gettimeofday(&tv, NULL) != 0 ) {
         // Don't think this can ever fail ...
-        hlt_set_exception(excpt, &hlt_exception_internal_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_internal_error, 0, ctx);
         return 0;
     }
 

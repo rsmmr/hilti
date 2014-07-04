@@ -16,5 +16,9 @@ clean:
 	rm -rf build
 	( cd doc && $(MAKE) clean )
 
+test:
+	( cd tests && btest -j -f diag.log )
+	( cd bro/tests && btest -j -f diag.log )
+
 tags:
 	update-tags

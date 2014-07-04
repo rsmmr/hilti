@@ -125,6 +125,11 @@ string statement::Instruction::signature() const
     return util::fmt("%s: %s%s", _id->name().c_str(), util::strjoin(ops, ", ").c_str(), target.c_str());
 }
 
+bool statement::Instruction::hoisted() const
+{
+    return _ops[0] && _ops[0]->type()->attributes().has(attribute::HOIST);
+}
+
 void statement::Block::addStatement(shared_ptr<Statement> stmt)
 {
     _addComment(stmt);

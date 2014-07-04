@@ -28,6 +28,7 @@ include(HiltiConfig)
 FindRequiredPackage(FLEX)
 FindRequiredPackage(BISON)
 find_package(PAPI)
+FindRequiredPackage(Unwind)
 
 if ( PAPI_FOUND )
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_PAPI")

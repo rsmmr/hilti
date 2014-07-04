@@ -53,8 +53,6 @@ void hlt_init()
 
     __hlt_global_state_init(1);
 
-    hlt_execution_context* ctx = hlt_global_execution_context();
-
     atexit(__hlt_done);
 }
 

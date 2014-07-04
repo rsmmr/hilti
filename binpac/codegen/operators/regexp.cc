@@ -10,8 +10,8 @@ void CodeBuilder::visit(ctor::RegExp* r)
     hilti::builder::regexp::re_pattern_list patterns;
 
     for ( auto p : r->patterns() )
-        patterns.push_back(std::make_tuple(p.first, p.second));
+        patterns.push_back(p);
 
-    auto result = hilti::builder::regexp::create(patterns, r->location());
+    auto result = hilti::builder::regexp::create(patterns, hilti::AttributeSet(), r->location());
     setResult(result);
 }

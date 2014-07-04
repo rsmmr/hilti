@@ -24,6 +24,7 @@
     i8*,                          ; tcontext_type
     %hlt.blockable*,              ; blockable
     i8*,                          ; tmgr
+    i8*,
     i8*,                          ; profiling state
     i64,                          ; debug_indent
     i8*  ;; Start of globals (right here, pointer content isn't used.)
@@ -104,8 +105,29 @@
     [0 x i8]
 }
 
+; A bytes object. The layoyt must match with bytes.c, however we
+; don't need to define the fields further, size is all that matters.
+%hlt.bytes_ = type {
+    %hlt.gchdr,
+    %hlt.blockable*,
+    i8,
+    i8*,
+    i8*,
+    i8*,
+    i8*,
+    i8*,
+    [0 x i8]
+}
+
+; A hoisted bytes object. The layoyt must match with bytes.c. Note
+; that we name this "hlt.bytes" to not run into type name trouble.
+; For non-hoisted references we work with pointers only anyways.
+%hlt.bytes = type {
+    %hlt.bytes_,
+    [32 x i8]
+}
+
 ; Types we don't specify further at the LLVM level.
-%hlt.bytes = type {};
 %hlt.exception = type {};
 %hlt.timer = type {};
 %hlt.timer_mgr = type {};
@@ -126,11 +148,15 @@
 
 ;;; libhilti functions that don't fit the normal calling conventions.
 
-declare void @__hlt_object_ref(%hlt.type_info*, i8 *)
-declare void @__hlt_object_unref(%hlt.type_info*, i8 *)
-declare void @__hlt_object_dtor(%hlt.type_info*, i8 *, i8*)
-declare void @__hlt_object_cctor(%hlt.type_info*, i8 *, i8*)
-declare i8* @__hlt_object_new(%hlt.type_info*, i64, i8*)
+declare void @__hlt_object_ref(%hlt.type_info*, i8 *, %hlt.execution_context*)
+declare void @__hlt_object_unref(%hlt.type_info*, i8 *, %hlt.execution_context*)
+declare void @__hlt_object_dtor(%hlt.type_info*, i8 *, i8*, %hlt.execution_context*)
+declare void @__hlt_object_cctor(%hlt.type_info*, i8 *, i8*, %hlt.execution_context*)
+declare void @__hlt_object_destroy(%hlt.type_info*, i8 *, i8*, %hlt.execution_context*)
+declare i8*  @__hlt_object_new_ref(%hlt.type_info*, i64, i8*, %hlt.execution_context*)
+declare i8*  @__hlt_object_new(%hlt.type_info*, i64, i8*, %hlt.execution_context*)
+
+declare void @__hlt_memory_safepoint(%hlt.execution_context*, i8*)
 
 declare %hlt.blockable* @__hlt_object_blockable(%hlt.type_info*, i8*, %hlt.exception**, %hlt.execution_context*)
 
@@ -140,15 +166,18 @@ declare void @__hlt_debug_pop_indent(%hlt.execution_context*)
 declare void @__hlt_debug_print_str(i8*, %hlt.execution_context*)
 declare void @__hlt_debug_print_ptr(i8*, i8*, %hlt.execution_context*)
 
+declare %hlt.string* @hlt_string_from_data_ref(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 declare %hlt.string* @hlt_string_from_data(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 declare %hlt.bytes*  @hlt_bytes_new_from_data_copy(i8*, i64, %hlt.exception**, %hlt.execution_context*)
+declare void         @hlt_bytes_new_from_data_copy_hoisted(%hlt.bytes*, i8*, i64, %hlt.exception**, %hlt.execution_context*)
+declare i8*          @hlt_bytes_to_raw(i8*, i64, %hlt.bytes*, %hlt.exception**, %hlt.execution_context*)
 
 declare i8 @__hlt_bytes_extract_one(%hlt.iterator.bytes*, %hlt.iterator.bytes, %hlt.exception**, %hlt.execution_context*)
 
 declare void            @__hlt_exception_print_uncaught_abort(%hlt.exception*, %hlt.execution_context*)
 declare i8              @__hlt_exception_match(%hlt.exception*, %hlt.exception.type*)
-declare %hlt.exception* @hlt_exception_new(%hlt.exception.type*, i8*, i8*)
-declare %hlt.exception* @hlt_exception_new_yield(%hlt.fiber*, i8*)
+declare %hlt.exception* @hlt_exception_new(%hlt.exception.type*, i8*, i8*, %hlt.execution_context*)
+declare %hlt.exception* @hlt_exception_new_yield(%hlt.fiber*, i8*, %hlt.execution_context*)
 declare i8*             @hlt_exception_arg(%hlt.exception*)
 declare %hlt.fiber*     @__hlt_exception_fiber(%hlt.exception*)
 declare void            @__hlt_exception_clear_fiber(%hlt.exception*)

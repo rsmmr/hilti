@@ -4,6 +4,7 @@
 
 namespace hilti {
 
+class AttributeSet;
 class Constant;
 class Ctor;
 class Declaration;
@@ -205,6 +206,7 @@ public:
 
    virtual void visit(ID* s)                {}
    virtual void visit(Module* m)            {}
+   virtual void visit(AttributeSet* a)      {}
 
    // Functions.
    virtual void visit(Function* f)          {}

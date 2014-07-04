@@ -50,7 +50,7 @@ typedef enum {
 
 /// Type for representing the ID of a virtual thread.
 #define HLT_VID_MAIN -1
-#define HLT_VID_QUEUE -2
+#define HLT_VID_CMDQUEUE -2
 
 struct __hlt_thread_mgr_blockable {
     uint64_t num_blocked;	// Number of jobs waiting for this resource.
@@ -205,7 +205,7 @@ extern hlt_thread_mgr_state hlt_thread_mgr_get_state(const hlt_thread_mgr* mgr);
 ///
 /// vid: The ID of the virtual target thread.
 ///
-/// cont: The continuation representing a bound function.
+/// cont: The continuation representing a bound function, at +1. (!)
 ///
 /// ctx: The caller's execution context.
 ///
@@ -226,7 +226,7 @@ extern void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, h
 ///
 /// tcontext: The thread context for the job, per its module's ``context`` definition.
 ///
-/// cont: The continuation representing a bound function.
+/// cont: The continuation representing a bound function, at +1. (!)
 ///
 /// ctx: The caller's execution context.
 ///

@@ -106,9 +106,16 @@ else ()
 
   # This needs oprofile support in LLVM: oprofilejit
   set(llvm_libs "object core bitreader bitwriter linker asmparser interpreter executionengine jit mcjit runtimedyld nativecodegen ipo irreader x86asmparser")
-  exec_program(${LLVM_CONFIG_EXEC} ARGS --libs ${llvm_libs} OUTPUT_VARIABLE LLVM_LIBS)
+  exec_program(${LLVM_CONFIG_EXEC} ARGS --libs        OUTPUT_VARIABLE LLVM_LIBS)
+
+  # --system-libs exists since LLVM 3.5.
+  execute_process(COMMAND ${LLVM_CONFIG_EXEC} --system-libs OUTPUT_VARIABLE LLVM_SYSTEM_LIBS ERROR_QUIET)
+  LIST(APPEND LLVM_LIBS ${LLVM_SYSTEM_LIBS})
 
   set(LLVM_LDFLAGS "${LLVM_LDFLAGS} -Wl,-rpath,${LLVM_LIB_DIR}")
+
+  string(STRIP "${LLVM_LDFLAGS}" LLVM_LDFLAGS)
+  string(STRIP "${LLVM_LIBS}" LLVM_LIBS)
 
   # FIND_LLVM_LIBS( ${LLVM_CONFIG_EXEC} "jit native" LLVM_LIBS_JIT LLVM_LIBS_JIT_OBJECTS )
   # STRING(REPLACE " -lLLVMCore -lLLVMSupport -lLLVMSystem" "" LLVM_LIBS_JIT ${LLVM_LIBS_JIT_RAW})

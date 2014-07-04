@@ -40,6 +40,7 @@
 
 typedef int64_t hlt_bytes_size;     ///< Size of a ~~hlt_bytes instance, and also used for offsets.
 typedef struct __hlt_bytes hlt_bytes; ///< Type for representing a HILTI ~~bytes object.
+typedef struct __hlt_bytes_hoisted __hlt_bytes_hoisted; ///< Type for representing a HILTI ~~bytes object.
 
 /// A position with a ~~hlt_bytes instance.
 typedef struct hlt_iterator_bytes {
@@ -213,18 +214,23 @@ extern hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end
 
 /// Returns a subsequence of a bytes object as a raw C array.
 ///
+/// dst: Buffer where to copy the raw C arrat to.
+///
+/// dst_len: Maximum number of bytes available in dst. Must be large or equal
+/// the size of the subsequence to be extracted.
+///
 /// start: The start of the subsequence.
 /// end: The end of the subsequence; *end* itself is not included anymore.
 /// \hlt_c
 ///
-/// Returns: A pointer to continuous memory containing the subsequence.
-/// Passed ownership, the memory must be freed with hlt_free(). Only
+/// Returns: Returns \a dst if successful. In that case
 /// ``hlt_iterator_bytes_diff(start, end)`` number of bytes are valid. In
 /// particular, if *start* equals *end* no byte must be read from the
-/// returned pointer.
+/// returned pointer. Returns 0 if dst is too small; in that case, the
+/// content of \a dst will now be undefined.
 ///
 /// Raises: ValueError - If any position is found to be out of range.
-extern int8_t* hlt_bytes_sub_raw(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t* hlt_bytes_sub_raw(int8_t* dst, size_t dst_len, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Copies a byte object into a new instance.
 ///
@@ -237,29 +243,18 @@ extern hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execut
 
 /// Converts a bytes object into a raw C array.
 ///
+/// dst: Buffer where to copy the raw C arrat to.
+///
+/// dst_len: Maximum number of bytes available in dst. Must be large or equal
+/// the size of the bytes object.
+///
 /// b: The object to convert.
 /// \hlt_c
 ///
-/// Returns: A pointer to continuous memory containing the bytes.  Passed
-/// ownership, the memory must be freed with hlt_free(). Only
-/// ``hlt_bytes_len(b)`` number of bytes are valid.
-extern int8_t* hlt_bytes_to_raw(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
-
-/// Converts a bytes object into a raw C buffer provided by the user.
-///
-/// b: The object to convert.
-///
-/// buffer: The buffer to copy the raw data into.
-///
-/// buffer_size: The number of bytes available in \a buffer. If not
-/// sufficient, no more will be written into it.
-///
-/// \hlt_c
-///
-/// Returns: A pointer to one beyond the last byte written, or null if the
-/// buffer did not have sufficient size (in which case it will still have
-/// been filled upto its mac.).
-extern int8_t* hlt_bytes_to_raw_buffer(hlt_bytes* b, int8_t* buffer, hlt_bytes_size buffer_size, hlt_exception** excpt, hlt_execution_context* ctx);
+/// Returns: Returns \a dst if successful. In that case ``hlt_bytes_size(b)``
+/// number of bytes are valid. Returns 0 if dst is too small; in that case,
+/// the content of \a dst will now be undefined.
+extern int8_t* hlt_bytes_to_raw(int8_t* dst, size_t dst_len, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns one byte from a bytes object.
 ///
@@ -437,7 +432,7 @@ extern hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_itera
 /// Include: include-to-string-sig.txt
 ///
 /// Note: The conversion can be expensive.
-hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
 ///< A block used for iteration by ~~hlt_bytes_iterate_raw.
 struct hlt_bytes_block {
@@ -500,6 +495,17 @@ extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* p, hlt
 
 /// XXX
 extern hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Hoisted versions.
+extern void hlt_bytes_new_hoisted(__hlt_bytes_hoisted* dst, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_new_from_data_copy_hoisted(__hlt_bytes_hoisted* dst, const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_concat_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_sub_hoisted(__hlt_bytes_hoisted* dst, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_copy_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_lower_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_upper_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_strip_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_enum side, hlt_bytes* p, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_join_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
 

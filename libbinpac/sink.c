@@ -4,7 +4,6 @@
 
 void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx);
 
-
 typedef struct __parser_state {
     binpac_parser* parser;
     void* pobj;
@@ -23,7 +22,27 @@ struct binpac_sink {
 
 __HLT_RTTI_GC_TYPE(binpac_sink, HLT_TYPE_BINPAC_SINK);
 
-static void __unlink_state(binpac_sink* sink, __parser_state* state)
+static void __cctor_state(__parser_state* state, hlt_execution_context* ctx)
+{
+    for ( ; state; state = state->next ) {
+        GC_CCTOR(state->parser, hlt_BinPACHilti_Parser, ctx);
+        GC_CCTOR_GENERIC(&state->pobj, state->parser->type_info, ctx);
+        GC_CCTOR(state->data, hlt_bytes, ctx);
+        GC_CCTOR(state->resume, hlt_exception, ctx);
+    }
+}
+
+static void __dtor_state(__parser_state* state, hlt_execution_context* ctx)
+{
+    for ( ; state; state = state->next ) {
+        GC_DTOR(state->parser, hlt_BinPACHilti_Parser, ctx);
+        GC_DTOR_GENERIC(&state->pobj, state->parser->type_info, ctx);
+        GC_DTOR(state->data, hlt_bytes, ctx);
+        GC_DTOR(state->resume, hlt_exception, ctx);
+    }
+}
+
+static void __unlink_state(binpac_sink* sink, __parser_state* state, hlt_execution_context* ctx)
 {
     __parser_state* prev = 0;
     __parser_state* s = sink->head;
@@ -44,11 +63,11 @@ static void __unlink_state(binpac_sink* sink, __parser_state* state)
     else
         sink->head = state->next;
 
-    GC_CLEAR(state->data, hlt_bytes);
-    GC_CLEAR(state->resume, hlt_exception);
-    GC_DTOR_GENERIC(&state->pobj, state->parser->type_info);
+    GC_CLEAR(state->data, hlt_bytes, ctx);
+    GC_CLEAR(state->resume, hlt_exception, ctx);
+    GC_DTOR_GENERIC(&state->pobj, state->parser->type_info, ctx);
     state->pobj = 0;
-    GC_CLEAR(state->parser, hlt_BinPACHilti_Parser);
+    GC_CLEAR(state->parser, hlt_BinPACHilti_Parser, ctx);
     hlt_free(state);
 }
 
@@ -62,8 +81,17 @@ static void __finish_parser(binpac_sink* sink, __parser_state* state, hlt_except
         hlt_fiber* saved_fiber = ctx->fiber;
         ctx->fiber = 0;
         hlt_exception* sink_excpt = 0;
+
+        // We may trigger a safepoint so make sure we refcount our locoal.
+        GC_CCTOR(sink, binpac_sink, ctx);
+        __cctor_state(state, ctx);
+
         (state->parser->resume_func_sink)(state->resume, &sink_excpt, ctx);
-        GC_CLEAR(state->resume, hlt_exception);
+
+        GC_DTOR(sink, binpac_sink, ctx);
+        __dtor_state(state, ctx);
+
+        GC_CLEAR(state->resume, hlt_exception, ctx);
         __hlt_context_clear_exception(ctx);
         ctx->fiber = saved_fiber;
 
@@ -85,10 +113,10 @@ static void __finish_parser(binpac_sink* sink, __parser_state* state, hlt_except
             *excpt = sink_excpt;
     }
 
-    __unlink_state(sink, state);
+    __unlink_state(sink, state, ctx);
 }
 
-void binpac_sink_dtor(hlt_type_info* ti, binpac_sink* sink)
+void binpac_sink_dtor(hlt_type_info* ti, binpac_sink* sink, hlt_execution_context* ctx)
 {
     // TODO: This is not consistnely called because HILTI is actually using
     // its own type info for the dummy struct type. We should unify that, but
@@ -97,13 +125,13 @@ void binpac_sink_dtor(hlt_type_info* ti, binpac_sink* sink)
     while ( sink->head )
         __unlink_state(sink, sink->head);
 
-    GC_CLEAR(sink->filter, binpac_filter);
+    GC_CLEAR(sink->filter, binpac_filter, ctx);
 #endif
 }
 
 binpac_sink* binpachilti_sink_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    binpac_sink* sink = GC_NEW(binpac_sink);
+    binpac_sink* sink = GC_NEW(binpac_sink, ctx);
     sink->head = 0;
     sink->filter = 0;
     sink->size = 0;
@@ -119,9 +147,9 @@ void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* ty
 {
     __parser_state* state = hlt_malloc(sizeof(__parser_state));
     state->parser = parser;
-    GC_CCTOR(state->parser, hlt_BinPACHilti_Parser);
+    GC_CCTOR(state->parser, hlt_BinPACHilti_Parser, ctx);
     state->pobj = *pobj;
-    GC_CCTOR_GENERIC(&state->pobj, type);
+    GC_CCTOR_GENERIC(&state->pobj, type, ctx);
     state->data = 0;
     state->resume = 0;
     state->disconnected = 0;
@@ -139,7 +167,6 @@ void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* ty
 
         hlt_free(r1);
         hlt_free(r2);
-        GC_DTOR(s, hlt_string);
     }
     else {
         char* p = hlt_string_to_native(parser->name, excpt, ctx);
@@ -203,9 +230,7 @@ void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* fi
         if ( i >= sizeof(buffer) - 1 )
             break;
 
-        hlt_iterator_bytes q = p;
         p = hlt_iterator_bytes_incr(p, excpt, ctx);
-        GC_DTOR(q, hlt_iterator_bytes);
     }
 
     buffer[i] = '\0';
@@ -217,8 +242,6 @@ void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* fi
     else
         DBG_LOG("binpac-sinks", "    filtered by %s: |%s%s|", filter->def->name, buffer, dots);
 
-    GC_DTOR(p, hlt_iterator_bytes);
-    GC_DTOR(end, hlt_iterator_bytes);
 #endif
 }
 
@@ -238,15 +261,12 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
 
     binpac_dbg_print_data(sink, data, 0, excpt, ctx);
 
-    GC_CCTOR(data, hlt_bytes);
-
     if ( sink->filter ) {
-        hlt_bytes* decoded = binpachilti_filter_decode(sink->filter, data, excpt, ctx);
+        hlt_bytes* decoded = binpachilti_filter_decode(sink->filter, data, excpt, ctx); // &noref!
 
         if ( ! decoded )
             goto exit;
 
-        GC_DTOR(data, hlt_bytes);
         data = decoded;
     }
 
@@ -276,11 +296,21 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
             // First chunk.
             DBG_LOG("binpac-sinks", "- start writing to sink %p for parser %p", sink, s->pobj);
             s->data = hlt_bytes_copy(data, excpt, ctx);
+            GC_CCTOR(s->data, hlt_bytes, ctx);
 
             if ( hlt_bytes_is_frozen(data, excpt, ctx) )
                 hlt_bytes_freeze(s->data, 1, excpt, ctx);
 
+            // We may trigger a safepoint so make sure we refcount our locoal.
+            GC_CCTOR(sink, binpac_sink, ctx);
+            GC_CCTOR(data, hlt_bytes, ctx);
+            __cctor_state(s, ctx);
+
             (s->parser->parse_func_sink)(s->pobj, s->data, user, &sink_excpt, ctx);
+
+            GC_DTOR(sink, binpac_sink, ctx);
+            GC_DTOR(data, hlt_bytes, ctx);
+            __dtor_state(s, ctx);
         }
 
         else {
@@ -300,8 +330,18 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
             if ( hlt_bytes_is_frozen(data, excpt, ctx) )
                 hlt_bytes_freeze(s->data, 1, excpt, ctx);
 
+            // We may trigger a safepoint so make sure we refcount our locoal.
+            GC_CCTOR(sink, binpac_sink, ctx);
+            GC_CCTOR(data, hlt_bytes, ctx);
+            __cctor_state(s, ctx);
+
             (s->parser->resume_func_sink)(s->resume, &sink_excpt, ctx);
-            GC_CLEAR(s->resume, hlt_exception);
+
+            GC_DTOR(sink, binpac_sink, ctx);
+            GC_DTOR(data, hlt_bytes, ctx);
+            __dtor_state(s, ctx);
+
+            GC_CLEAR(s->resume, hlt_exception, ctx);
         }
 
         // Clear any left-over exceptions.
@@ -310,7 +350,7 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
         if ( sink_excpt && sink_excpt->type == &hlt_exception_yield ) {
             // Suspended.
             DBG_LOG("binpac-sinks", "- writing to sink %p suspended for parser %p", sink, s->pobj);
-            GC_CCTOR(sink_excpt, hlt_exception);
+            GC_CCTOR(sink_excpt, hlt_exception, ctx);
             s->resume = sink_excpt;
             s = s->next;
             sink_excpt = 0;
@@ -320,7 +360,7 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
             DBG_LOG("binpac-sinks", "- writing to sink %p finished for parser %p", sink, s->pobj);
             __parser_state* next = s->next;
             // This guy is finished, remove.
-            __unlink_state(sink, s);
+            __unlink_state(sink, s, ctx);
             s = next;
         }
 
@@ -344,7 +384,7 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
                 __finish_parser(sink, s, &ignore_excpt, ctx);
 
                 if ( ignore_excpt )
-                    GC_DTOR(ignore_excpt, hlt_exception);
+                    GC_DTOR(ignore_excpt, hlt_exception, ctx);
 
                 done = 0;
                 break;
@@ -353,8 +393,6 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
     }
 
 exit:
-    GC_DTOR(data, hlt_bytes);
-
     ctx->fiber = saved_fiber;
     ctx->blockable = saved_blockable;
 
@@ -367,7 +405,7 @@ void binpachilti_sink_close(binpac_sink* sink, hlt_exception** excpt, hlt_execut
 
     if ( sink->filter ) {
         binpachilti_filter_close(sink->filter, excpt, ctx);
-        GC_CLEAR(sink->filter, binpac_filter);
+        GC_CLEAR(sink->filter, binpac_filter, ctx);
     }
 
     while( sink->head )
@@ -380,7 +418,8 @@ void binpachilti_sink_add_filter(binpac_sink* sink, hlt_enum ftype, hlt_exceptio
 {
     binpac_filter* old_filter = sink->filter;
     sink->filter = binpachilti_filter_add(sink->filter, ftype, excpt, ctx);
-    GC_DTOR(old_filter, binpac_filter);
+    GC_CCTOR(sink->filter, binpac_filter, ctx);
+    GC_DTOR(old_filter, binpac_filter, ctx);
 
     DBG_LOG("binpac-sinks", "attached filter %s to sink %p", sink->filter->def->name, sink);
 }

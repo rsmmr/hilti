@@ -250,6 +250,20 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
     for ( auto i : _bcs ) {
         string err;
 
+#ifdef HAVE_LLVM_35
+        std::unique_ptr<llvm::MemoryBuffer> buffer;
+
+        if ( llvm::MemoryBuffer::getFile(i.c_str(), buffer) )
+            fatalError("reading bitcode failed", i);
+
+        auto bc = llvm::parseBitcodeFile(buffer.get(), llvm::getGlobalContext());
+
+        if ( ! bc )
+            fatalError("parsing bitcode failed", i, bc.getError().message());
+
+        linkInModule(&linker, *bc);
+
+#else
         llvm::OwningPtr<llvm::MemoryBuffer> buffer;
 
         if ( llvm::MemoryBuffer::getFile(i.c_str(), buffer) )
@@ -261,6 +275,7 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
             fatalError("parsing bitcode failed", i, err);
 
         linkInModule(&linker, bc);
+#endif
     }
 
     // Link native library.

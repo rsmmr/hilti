@@ -174,7 +174,7 @@ inline static void _safe_write(const void* data, int len, hlt_exception** excpt,
             char buffer[128];
             strerror_r(errno, buffer, sizeof(buffer));
             hlt_string err = hlt_string_from_asciiz(buffer, excpt, ctx);
-            hlt_set_exception(excpt, &hlt_exception_io_error, err);
+            hlt_set_exception(excpt, &hlt_exception_io_error, err, ctx);
             return;
         }
 
@@ -366,7 +366,7 @@ static void output_record(__hlt_profiler* p, int8_t record_type, hlt_exception**
         if ( fd < 0 ) {
             strerror_r(errno, buffer, sizeof(buffer));
             hlt_string err = hlt_string_from_asciiz(buffer, excpt, ctx);
-            hlt_set_exception(excpt, &hlt_exception_io_error, err);
+            hlt_set_exception(excpt, &hlt_exception_io_error, err, ctx);
             return;
         }
 
@@ -374,7 +374,7 @@ static void output_record(__hlt_profiler* p, int8_t record_type, hlt_exception**
 
         write_header(excpt, ctx);
 
-        if ( *excpt )
+        if ( excpt && hlt_check_exception(excpt) )
             return;
         }
 
@@ -390,7 +390,7 @@ static void install_timer(__hlt_profiler* p, hlt_exception** excpt, hlt_executio
     hlt_time t = (hlt_timer_mgr_current(p->tmgr, excpt, ctx) / p->param ) * p->param + p->param;
 
     hlt_timer_mgr_schedule(p->tmgr, t, p->timer, excpt, ctx);
-    GC_DTOR(p->timer, hlt_timer); // Not memory-managed on our end.
+    GC_DTOR(p->timer, hlt_timer, ctx); // Not memory-managed on our end.
 }
 
 void __hlt_profiler_state_delete(__hlt_profiler_state* state)
@@ -462,16 +462,16 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
         if ( tag->len > HLT_PROFILER_MAX_TAG_LENGTH - 1 ) {
             // We keep the tags short enough to store their length in a
             // single byte. Note that we really want the *raw* length here.
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return;
         }
 
         // We don't know this profiler yet.
         __hlt_profiler* p = hlt_calloc(1, sizeof(__hlt_profiler));
         p->tag = tag;
-        GC_CCTOR(p->tag, hlt_string);
+        GC_CCTOR(p->tag, hlt_string, ctx);
         p->tmgr = tmgr ? tmgr : ctx->tmgr;
-        GC_CCTOR(p->tmgr, hlt_timer_mgr);
+        GC_CCTOR(p->tmgr, hlt_timer_mgr, ctx);
         p->timer = 0;
         p->style = style;
         p->param = param;
@@ -513,14 +513,14 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
         __hlt_profiler* p = kh_value(ctx->pstate->profilers, i);
 
         if ( ! p ) {
-            hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
+            hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag, ctx);
             return;
         }
 
         if ( ! hlt_enum_equal(style, p->style, excpt, ctx) ||
              param != p->param ||
              (tmgr && tmgr != p->tmgr) ) {
-            hlt_set_exception(excpt, &hlt_exception_profiler_mismatch, 0);
+            hlt_set_exception(excpt, &hlt_exception_profiler_mismatch, 0, ctx);
             return;
         }
 
@@ -534,21 +534,21 @@ void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** ex
         return;
 
     if ( ! ctx->pstate->profilers ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag, ctx);
         return;
     }
 
     khiter_t i = kh_get_table(ctx->pstate->profilers, tag, 0);
 
     if ( i == kh_end(ctx->pstate->profilers) ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag, ctx);
         return;
     }
 
     __hlt_profiler* p = kh_value(ctx->pstate->profilers, i);
 
     if ( ! p ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag, ctx);
         return;
     }
 
@@ -574,7 +574,7 @@ void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** ex
     }
 
     else
-        hlt_set_exception(excpt, &hlt_exception_not_implemented, 0);
+        hlt_set_exception(excpt, &hlt_exception_not_implemented, 0, ctx);
 
     if ( do_record )
         output_record(p, HLT_PROFILER_UPDATE, excpt, ctx);
@@ -587,21 +587,21 @@ void hlt_profiler_stop(hlt_string tag, hlt_exception** excpt, hlt_execution_cont
         return;
 
     if ( ! ctx->pstate->profilers ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag, ctx);
         return;
     }
 
     khiter_t i = kh_get_table(ctx->pstate->profilers, tag, 0);
 
     if ( i == kh_end(ctx->pstate->profilers) ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag, ctx);
         return;
     }
 
     __hlt_profiler* p = kh_value(ctx->pstate->profilers, i);
 
     if ( ! p ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag, ctx);
         return;
     }
 
@@ -614,8 +614,8 @@ void hlt_profiler_stop(hlt_string tag, hlt_exception** excpt, hlt_execution_cont
             p->timer = 0;
         }
 
-        GC_DTOR(p->tag, hlt_string);
-        GC_DTOR(p->tmgr, hlt_timer_mgr);
+        GC_DTOR(p->tag, hlt_string, ctx);
+        GC_DTOR(p->tmgr, hlt_timer_mgr, ctx);
         hlt_free(p);
         kh_del_table(ctx->pstate->profilers, i);
     }

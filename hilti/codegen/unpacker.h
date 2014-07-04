@@ -68,8 +68,8 @@ public:
    ///
    /// Returns: A pair in which the first value is the unpacked value, and
    /// the second a byte iterator pointing one beyond the last consumed input
-   /// byte (which can't be further than *end*). Both tuples elements will
-   /// have their cctor applied.
+   /// byte (which can't be further than *end*). None of the tuples elements
+   /// will have their cctor applied.
    UnpackResult llvmUnpack(const UnpackArgs& args);
 
 protected:

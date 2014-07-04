@@ -27,6 +27,9 @@ struct yystype_hilti {
     std::string sval;
     hilti::type::function::CallingConvention cc;
 
+    Attribute attribute;
+    AttributeSet attributes;
+
     type::Enum::label_list enum_labels;
     type::Enum::Label enum_label;
     type::Bitset::label_list bitset_labels;
@@ -37,10 +40,7 @@ struct yystype_hilti {
     type::Overlay::field_list overlay_fields;
     ctor::Map::element map_element;
     ctor::Map::element_list map_elements;
-    ctor::RegExp::pattern re_pattern;
     ctor::RegExp::pattern_list re_patterns;
-    function::attribute function_attribute;
-    function::attribute_list function_attributes;
 
     shared_ptr<hilti::Declaration> decl;
     shared_ptr<hilti::Statement> stmt;

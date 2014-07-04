@@ -324,7 +324,7 @@ void Printer::visit(ctor::RegExp* r)
         if ( ! first )
             p << " | ";
 
-        p << "/" << pat.first << "/";
+        p << "/" << pat << "/";
         first = false;
     }
 }

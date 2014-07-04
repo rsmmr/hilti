@@ -4,6 +4,8 @@
 
 #include "../common.h"
 #include "../visitor.h"
+#include "../statement.h"
+#include "../passes/liveness.h"
 
 #include <hilti/autogen/instructions.h>
 
@@ -26,7 +28,7 @@ public:
 
    /// Generates the code for a statement.
    ///
-   /// stmt: The statement.
+    /// stmt: The statement.
    ///
    /// cleanup: If true, all temporaries creates are deleted after the
    /// statement.
@@ -53,6 +55,9 @@ public:
 
    // Computes the LLVM arguments for a HILTI function call.
    void prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call);
+
+   // XXX Forwards to the liveness pass for the current statement.
+   passes::Liveness::LivenessSets liveness();
 
 protected:
    void preAccept(shared_ptr<ast::NodeBase> node) override;

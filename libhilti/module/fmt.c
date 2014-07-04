@@ -31,7 +31,7 @@ static void _add_char(int8_t c, int8_t* buffer, hlt_string_size* bpos, hlt_strin
         if ( *excpt )
             return;
 
-        *dst = hlt_string_concat_and_unref(*dst, new_dst, excpt, ctx);
+        *dst = hlt_string_concat(*dst, new_dst, excpt, ctx);
         buffer[0] = c;
         *bpos = 1;
     }
@@ -80,7 +80,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
             _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return;
         }
         break;
@@ -95,7 +95,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
             _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return;
         }
 
@@ -111,7 +111,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
             _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return;
         }
 
@@ -127,7 +127,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
             _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return;
         }
 
@@ -155,10 +155,8 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
             if ( *excpt )
                 return;
 
-            if ( str ) {
+            if ( str )
                 _add_chars(str->bytes, str->len, buffer, bpos, dst, excpt, ctx);
-                GC_DTOR(str, hlt_string);
-            }
         }
 
         else
@@ -168,12 +166,12 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
 
       default:
         // Unknown format character.
-        hlt_set_exception(excpt, &hlt_exception_wrong_arguments, 0);
+        hlt_set_exception(excpt, &hlt_exception_wrong_arguments, 0, ctx);
     }
 
 }
 
-hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx) //
 {
     assert(type->type == HLT_TYPE_TUPLE);
 
@@ -189,7 +187,7 @@ hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tupl
 
         if ( p[i] == '%' ) {
             if ( ++i == fmt->len ) {
-                hlt_set_exception(excpt, &hlt_exception_wrong_arguments, 0);
+                hlt_set_exception(excpt, &hlt_exception_wrong_arguments, 0, ctx);
                 return 0;
             }
 
@@ -215,7 +213,7 @@ hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tupl
         return 0;
 
     if ( dst )
-        result = hlt_string_concat_and_unref(dst, result, excpt, ctx);
+        result = hlt_string_concat(dst, result, excpt, ctx);
 
     return result;
 }

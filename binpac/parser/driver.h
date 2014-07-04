@@ -72,7 +72,6 @@ struct yystype_binpac {
     binpac::type::unit::item::field::Switch::case_list switch_cases;
     binpac::type::Integer::bits_list bits;
     binpac::ctor::RegExp::pattern_list re_patterns;
-    binpac::ctor::RegExp::pattern re_pattern;
     binpac::type::function::CallingConvention cc;
 
     std::list<string> strings;

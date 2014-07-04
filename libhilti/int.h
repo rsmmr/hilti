@@ -52,7 +52,7 @@ extern int64_t hlt_int_from_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_
 /// Converts a HILTI tuple into a HILTI string.
 ///
 /// \hlt_to_string
-extern hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts a HILTI tuple into a HILTI string.
 ///

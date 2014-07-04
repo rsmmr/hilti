@@ -207,7 +207,6 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <switch_case>      unit_switch_case
 %type <switch_cases>     unit_switch_cases
 %type <re_patterns>      re_patterns
-%type <re_pattern>       re_pattern
 %type <sval>             re_pattern_constant
 %type <types>            types
 %type <map_element>      map_elem
@@ -682,11 +681,8 @@ unit_ctor_item
               : dollar_id '=' expr               { $$ = ctor::Unit::item($1, $3); }
               | expr                             { $$ = ctor::Unit::item(nullptr, $1); }
 
-re_patterns   : re_patterns '|' re_pattern       { $$ = $1; $$.push_back($3); }
-              | re_pattern                       { $$ = ctor::RegExp::pattern_list(); $$.push_back($1); }
-
-re_pattern    : re_pattern_constant              { $$ = std::make_pair($1, ""); }
-              | re_pattern_constant IDENT        { $$ = std::make_pair($1, $2); }
+re_patterns   : re_patterns '|' re_pattern_constant { $$ = $1; $$.push_back($3); }
+              | re_pattern_constant                 { $$ = ctor::RegExp::pattern_list(); $$.push_back($1); }
 
 re_pattern_constant
               : '/' { driver.enablePatternMode(); } CREGEXP { driver.disablePatternMode(); } '/' { $$ = $3; }

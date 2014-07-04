@@ -35,7 +35,7 @@ struct __hlt_addr {
 ///
 /// excpt: &
 /// ctx: & 
-extern hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns true for an address of IPv6 family and false for IPv4.
 ///

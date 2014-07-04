@@ -138,6 +138,7 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-define.cc  PROPERTIES GENERA
 ### Build libhilti.
 
 add_library (hilti STATIC
+    attribute.cc
     coercer.cc
     constant-coercer.cc
     constant.cc

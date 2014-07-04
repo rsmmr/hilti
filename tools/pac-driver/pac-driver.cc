@@ -78,9 +78,9 @@ static void check_exception(hlt_exception* excpt)
         if ( hlt_exception_is_yield(excpt) || hlt_exception_is_termination(excpt) )
             exit(0);
         else {
-            GC_DTOR(excpt, hlt_exception);
-            GC_DTOR(request, hlt_BinPACHilti_Parser);
-            GC_DTOR(reply, hlt_BinPACHilti_Parser);
+            GC_DTOR(excpt, hlt_exception, ctx);
+            GC_DTOR(request, hlt_BinPACHilti_Parser, ctx);
+            GC_DTOR(reply, hlt_BinPACHilti_Parser, ctx);
             exit(1);
         }
     }
@@ -174,18 +174,13 @@ void listParsers()
                     fputs(", ", stderr);
 
                 hlt_port p = *(hlt_port*) hlt_iterator_list_deref(j, &excpt, ctx);
-                hlt_string s = hlt_port_to_string(&hlt_type_info_hlt_port, &p, 0, &excpt, ctx);
+                hlt_string s = hlt_object_to_string(&hlt_type_info_hlt_port, &p, 0, &excpt, ctx);
                 hlt_string_print(stderr, s, 0, &excpt, ctx);
-                GC_DTOR(s, hlt_string);
 
-                hlt_iterator_list j2 = j;
                 j = hlt_iterator_list_incr(j, &excpt, ctx);
-                GC_DTOR(j2, hlt_iterator_list);
                 first = 0;
             }
 
-            GC_DTOR(j, hlt_iterator_list);
-            GC_DTOR(end2, hlt_iterator_list);
         }
 
         if ( p->mime_types ) {
@@ -200,16 +195,11 @@ void listParsers()
 
                 hlt_string s = *(hlt_string*) hlt_iterator_list_deref(j, &excpt, ctx);
                 hlt_string_print(stderr, s, 0, &excpt, ctx);
-                GC_DTOR(s, hlt_string);
 
-                hlt_iterator_list j2 = j;
                 j = hlt_iterator_list_incr(j, &excpt, ctx);
-                GC_DTOR(j2, hlt_iterator_list);
                 first = 0;
             }
 
-            GC_DTOR(j, hlt_iterator_list);
-            GC_DTOR(end2, hlt_iterator_list);
         }
 
         if ( ! first )
@@ -217,15 +207,8 @@ void listParsers()
 
         fputc('\n', stderr);
 
-        GC_DTOR(p, hlt_BinPACHilti_Parser);
-
-        hlt_iterator_list i2 = i;
         i = hlt_iterator_list_incr(i, &excpt, ctx);
-        GC_DTOR(i2, hlt_iterator_list);
     }
-
-    GC_DTOR(i, hlt_iterator_list);
-    GC_DTOR(end, hlt_iterator_list);
 
     check_exception(excpt);
 
@@ -233,8 +216,6 @@ void listParsers()
         fprintf(stderr, "    None.\n");
 
     fputs("\n", stderr);
-
-    GC_DTOR(parsers, hlt_list);
 }
 
 static binpac_parser* findParser(const char* name)
@@ -259,18 +240,8 @@ static binpac_parser* findParser(const char* name)
             break;
         }
 
-        GC_DTOR(p, hlt_BinPACHilti_Parser);
-
-        hlt_iterator_list j = i;
         i = hlt_iterator_list_incr(i, &excpt, ctx);
-        GC_DTOR(j, hlt_iterator_list);
     }
-
-
-    GC_DTOR(i, hlt_iterator_list);
-    GC_DTOR(end, hlt_iterator_list);
-    GC_DTOR(parsers, hlt_list);
-    GC_DTOR(hname, hlt_string);
 
     check_exception(excpt);
 
@@ -284,7 +255,7 @@ hlt_bytes* readAllInput()
     hlt_bytes* input = hlt_bytes_new(&excpt, ctx);
     check_exception(excpt);
 
-    int8_t buffer[256];
+    int8_t buffer[4096];
 
     while ( ! excpt ) {
         size_t n = fread(buffer, 1, sizeof(buffer), stdin);
@@ -318,14 +289,18 @@ static void dump_memstats()
     uint64_t alloced = stats.size_alloced / 1024 / 1024;
     uint64_t total_refs = stats.num_refs;
     uint64_t current_allocs = stats.num_allocs - stats.num_deallocs;
+    uint64_t num_nullbuffer = stats.num_nullbuffer;
+    uint64_t max_nullbuffer = stats.max_nullbuffer;
 
     fprintf(stderr, "--- pac-driver stats: "
                     "%" PRIu64 "M heap, "
                     "%" PRIu64 "M alloced, "
                     "%" PRIu64 " allocations, "
-                    "%" PRIu64 " totals refs"
+                    "%" PRIu64 " totals refs "
+                    "%" PRIu64 " in nullbuffer "
+                    "%" PRIu64 " max nullbuffer"
                     "\n",
-            heap, alloced, current_allocs, total_refs);
+            heap, alloced, current_allocs, total_refs, num_nullbuffer, max_nullbuffer);
 }
 
 void parseSingleInput(binpac_parser* p, int chunk_size)
@@ -350,9 +325,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
         if ( driver_debug )
             fprintf(stderr, "--- pac-driver: done parsing single input chunk.\n");
 
-        GC_DTOR_GENERIC(&pobj, p->type_info);
-        GC_DTOR(input, hlt_bytes);
-        GC_DTOR(cur, hlt_iterator_bytes);
+        GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
         check_exception(excpt);
         dump_memstats();
         return;
@@ -378,8 +351,6 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
         chunk1 = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
         chunk2 = hlt_bytes_copy(chunk1, &excpt, ctx); // FIXME: Need?
         hlt_bytes_append(incr_input, chunk1, &excpt, ctx);
-        GC_DTOR(chunk1, hlt_bytes);
-        GC_DTOR(chunk2, hlt_bytes);
 
         if ( done )
             hlt_bytes_freeze(incr_input, 1, &excpt, ctx);
@@ -388,12 +359,15 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
 
         check_exception(excpt);
 
+        // Ref count the persistent locals, we may trigger safepoints.
+        GC_CCTOR(cur_end, hlt_iterator_bytes, ctx);
+
         if ( ! resume ) {
             if ( driver_debug )
                 fprintf(stderr, "--- pac-driver: starting parsing (eod=%d).\n", frozen);
 
             void *pobj = (*p->parse_func)(incr_input, 0, &excpt, ctx);
-            GC_DTOR_GENERIC(&pobj, p->type_info);
+            GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
         }
 
         else {
@@ -401,8 +375,10 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
                 fprintf(stderr, "--- pac-driver: resuming parsing (eod=%d, excpt=%p).\n", frozen, resume);
 
             void *pobj = (*p->resume_func)(resume, &excpt, ctx);
-            GC_DTOR_GENERIC(&pobj, p->type_info);
+            GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
         }
+
+        GC_DTOR(cur_end, hlt_iterator_bytes, ctx);
 
         if ( driver_debug )
             dump_memstats();
@@ -416,32 +392,19 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
                 excpt = 0;
             }
 
-            else {
-                GC_DTOR(cur, hlt_iterator_bytes);
-                GC_DTOR(cur_end, hlt_iterator_bytes);
-                GC_DTOR(end, hlt_iterator_bytes);
-                GC_DTOR(input, hlt_bytes);
-                GC_DTOR(incr_input, hlt_bytes);
+            else
                 check_exception(excpt);
-            }
         }
 
         else if ( ! done ) {
             if ( driver_debug )
                 fprintf(stderr, "pac-driver: end of input reached even though more could be parsed.");
 
-            GC_DTOR(cur_end, hlt_iterator_bytes);
             break;
         }
 
-        GC_DTOR(cur, hlt_iterator_bytes);
         cur = cur_end;
     }
-
-    GC_DTOR(end, hlt_iterator_bytes);
-    GC_DTOR(input, hlt_bytes);
-    GC_DTOR(incr_input, hlt_bytes);
-    GC_DTOR(cur, hlt_iterator_bytes);
 }
 
 #ifdef PAC_DRIVER_JIT
@@ -625,17 +588,13 @@ int main(int argc, char** argv)
             hlt_iterator_list i = hlt_list_begin(parsers, &excpt, ctx);
             request = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
             assert(request);
-            GC_CCTOR(request, hlt_BinPACHilti_Parser);
             reply = request;
-            GC_DTOR(i, hlt_iterator_list);
-            GC_DTOR(parsers, hlt_list);
         }
 
         else {
             // If we don't have any parsers, we do nothing and just exit
             // normally.
             int64_t size = hlt_list_size(parsers, &excpt, ctx);
-            GC_DTOR(parsers, hlt_list);
 
             if ( size == 0 )
                 exit(0);
@@ -666,19 +625,19 @@ int main(int argc, char** argv)
             }
         }
 
-        else {
-            GC_CCTOR(request, hlt_BinPACHilti_Parser);
+        else
             reply = request;
-        }
     }
 
     assert(request && reply);
+
+    GC_CCTOR(request, hlt_BinPACHilti_Parser, ctx);
+    GC_CCTOR(reply, hlt_BinPACHilti_Parser, ctx);
 
     if ( options->profile ) {
         hlt_exception* excpt = 0;
         hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
         hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt, hlt_global_execution_context());
-        GC_DTOR(profiler_tag, hlt_string);
     }
 
     parseSingleInput(request, chunk_size);
@@ -687,11 +646,10 @@ int main(int argc, char** argv)
         hlt_exception* excpt = 0;
         hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
         hlt_profiler_stop(profiler_tag, &excpt, hlt_global_execution_context());
-        GC_DTOR(profiler_tag, hlt_string);
     }
 
-    GC_DTOR(request, hlt_BinPACHilti_Parser);
-    GC_DTOR(reply, hlt_BinPACHilti_Parser);
+    GC_DTOR(request, hlt_BinPACHilti_Parser, ctx);
+    GC_DTOR(reply, hlt_BinPACHilti_Parser, ctx);
 
     exit(0);
 }

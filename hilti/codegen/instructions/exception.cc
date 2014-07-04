@@ -15,6 +15,7 @@ void StatementBuilder::visit(statement::instruction::exception::New* i)
     args.push_back(cg()->llvmExceptionTypeObject(etype));
     args.push_back(cg()->llvmConstNull());
     args.push_back(cg()->llvmLocationString(i->location()));
+    args.push_back(cg()->llvmExecutionContext());
     auto result = cg()->llvmCallC("hlt_exception_new", args, false, false);
     cg()->llvmStore(i, result);
 }
@@ -31,6 +32,7 @@ void StatementBuilder::visit(statement::instruction::exception::NewWithArg* i)
     args.push_back(cg()->llvmExceptionTypeObject(etype));
     args.push_back(arg);
     args.push_back(cg()->llvmLocationString(i->location()));
+    args.push_back(cg()->llvmExecutionContext());
     auto result = cg()->llvmCallC("hlt_exception_new", args, false, false);
     cg()->llvmStore(i, result);
 }
@@ -68,7 +70,6 @@ void StatementBuilder::visit(statement::instruction::exception::__EndHandler* i)
 void StatementBuilder::visit(statement::instruction::exception::__GetAndClear* i)
 {
     auto result = cg()->llvmCurrentException();
-    cg()->llvmCctor(result, i->target()->type(), false, "exception/get-and-clear");
     cg()->llvmClearException();
     cg()->llvmStore(i, result);
 }

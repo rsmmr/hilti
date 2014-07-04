@@ -14,7 +14,7 @@ struct __binpac_filter_definition;
 struct binpac_filter;
 
 typedef struct binpac_filter* (*__binpac_filter_allocate)(hlt_exception** excpt, hlt_execution_context* ctx);
-typedef void                  (*__binpac_filter_dtor)(hlt_type_info* ti, struct binpac_filter*);
+typedef void                  (*__binpac_filter_dtor)(hlt_type_info* ti, struct binpac_filter*, hlt_execution_context* ctx);
 typedef hlt_bytes*            (*__binpac_filter_decode)(struct binpac_filter*, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx);
 typedef void                  (*__binpac_filter_close)(struct binpac_filter*, hlt_exception** excpt, hlt_execution_context* ctx);
 
@@ -100,6 +100,6 @@ extern void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt,
 ///
 /// Raises: FilterError - If there's a problem with the filtering process.
 /// After raising this error, this filter must not be used again. 
-extern hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx); // ref!
 
 #endif

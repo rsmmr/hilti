@@ -21,7 +21,7 @@ void __hlt_global_state_init(int init)
     if ( globals_initialized || ! init )
         return;
 
-    globals->context = __hlt_execution_context_new(HLT_VID_MAIN);
+    globals->context = __hlt_execution_context_new_ref(HLT_VID_MAIN, 1);
     globals->multi_threaded = (__hlt_globals()->config->num_workers != 0);
 
     __hlt_debug_init();
@@ -37,13 +37,13 @@ void __hlt_global_state_init(int init)
 void __hlt_global_state_done()
 {
     hlt_exception* excpt = 0;
-  
+
     __hlt_threading_done(&excpt);
     __hlt_profiler_done(); // Must come after threading is done.
 
     if ( excpt ) {
         hlt_exception_print_uncaught(excpt, globals->context);
-        GC_DTOR(excpt, hlt_exception);
+        GC_DTOR(excpt, hlt_exception, globals->context);
     }
 
     __hlt_hooks_done();
@@ -51,7 +51,7 @@ void __hlt_global_state_done()
     __hlt_fiber_done();
     __hlt_debug_done();
 
-    GC_DTOR(globals->context, hlt_execution_context);
+    hlt_execution_context_delete(globals->context);
 
     if ( globals->debug_streams )
         free(globals->debug_streams);

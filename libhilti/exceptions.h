@@ -43,7 +43,7 @@ struct __hlt_exception {
 ///
 /// Returns: The new exception. Note that this is a garbage collected value
 /// that must be released with hlt_exception_unref().
-extern hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location);
+extern hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location, hlt_execution_context* ctx);
 
 /// Instantiates a new yield exception.
 ///
@@ -54,7 +54,7 @@ extern hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, con
 ///
 /// Returns: The new exception. Note that this is a garbage collected value
 /// that must be released with hlt_exception_unref().
-extern hlt_exception* hlt_exception_new_yield(hlt_fiber* fiber, const char* location);
+extern hlt_exception* hlt_exception_new_yield(hlt_fiber* fiber, const char* location, hlt_execution_context* ctx);
 
 /// Returns the exception's argument.
 extern void* hlt_exception_arg(hlt_exception* excpt);
@@ -115,7 +115,7 @@ extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context*
 /// Converts an exception into a string.
 ///
 /// Include: include-to-string-sig.txt
-hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts an exception into a null-terminated C string.
 ///
@@ -145,12 +145,14 @@ char* hlt_exception_to_asciiz(hlt_exception* e, hlt_exception** excpt, hlt_execu
 /// type: The type of the exception.
 ///
 /// arg: The exception's argument if the type takes any, or null if not.
-#define hlt_set_exception(dst, type, arg) __hlt_set_exception(dst, type, arg, __FILE__ ":" __hlt_stringify(__LINE__))
+#define hlt_set_exception(dst, type, arg, ctx) __hlt_set_exception(dst, type, arg, __FILE__ ":" __hlt_stringify(__LINE__), ctx)
 
 /// Internal function that raises a HILTI exception from C code. This should
 /// not be used directly, but only via the hlt_set_exception() macro.
-extern void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg, const char* location);
+extern void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg, const char* location, hlt_execution_context* ctx);
 
+/// XXX
+#define hlt_check_exception(excpt) (excpt && *excpt)
 
 /// \addtogroup predefined-exceptions
 /// @{

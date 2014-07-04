@@ -92,6 +92,16 @@ bool Printer::printTypeID(Type* t)
     return ::ast::passes::printer::printTypeID(this, t, _module);
 }
 
+void Printer::printAttributes(const AttributeSet& attrs)
+{
+    for ( auto a : attrs.all() ) {
+        (*this) << " &" << Attribute::tagToName(a.tag());
+
+        if ( a.hasValue() )
+            (*this) << "=" << a.value();
+    }
+}
+
 void Printer::visit(Module* m)
 {
     setPrintOriginalIDs(false);
@@ -386,6 +396,8 @@ void Printer::visit(declaration::Variable* v)
         p << " = ";
         p << v->variable()->init();
     }
+
+    printAttributes(v->variable()->type()->attributes());
 }
 
 void Printer::visit(declaration::Type* t)
@@ -455,13 +467,7 @@ void Printer::visit(declaration::Function* f)
 
     p << ')';
 
-    if ( hook ) {
-        if ( hook->priority() != 0 )
-            p << " &priority=" << hook->priority() << " ";
-
-        if ( hook->group() != 0 )
-            p << " &group=" << hook->group() << " ";
-    }
+    printAttributes(ftype->attributes());
 
     p << endl;
 
@@ -1007,7 +1013,7 @@ void Printer::visit(type::RegExp* t)
         return;
 
     Printer& p = *this;
-    p << "regexp<" << util::strjoin(t->attributes(), ",") << ">";
+    p << "regexp";
 }
 
 void Printer::visit(type::MatchTokenState* t)
@@ -1058,8 +1064,7 @@ void Printer::visit(type::Struct* t)
 
         p << f->type() << ' ' << f->id();
 
-        if ( f->default_() )
-            p << " &default=" << f->default_();
+        printAttributes(f->type()->attributes());
 
         if ( ! last )
             p << ",";
@@ -1316,8 +1321,7 @@ void Printer::visit(ctor::Map* c)
 
     p << ")";
 
-    if ( c->default_() )
-        p << " &default=" << c->default_();
+    printAttributes(c->type()->attributes());
 }
 
 void Printer::visit(ctor::Set* c)
@@ -1350,9 +1354,12 @@ void Printer::visit(ctor::RegExp* c)
     std::list<string> patterns;
 
     for ( auto p : c->patterns() )
-        patterns.push_back(string("/") + p.first + string("/") + p.second);
+        patterns.push_back(string("/") + p + string("/"));
 
     printList(patterns, " | ");
+
+    auto rtype = ast::checkedCast<hilti::type::Reference>(c->type())->argType();
+    printAttributes(c->attributes());
 }
 
 void Printer::visit(ctor::Callable* c)

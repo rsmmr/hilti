@@ -463,6 +463,7 @@ llvm::Function* TypeBuilder::_makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, b
     CodeGen::llvm_parameter_list params;
     params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
     params.push_back(std::make_pair("tuple", cg->llvmTypePtr(llvm_type)));
+    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg->llvmTypePtr(cg->llvmTypeExecutionContext())));
 
     auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
     func->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
@@ -874,6 +875,7 @@ llvm::Function* TypeBuilder::_makeOverlayFuncHelper(CodeGen* cg, type::Overlay* 
     CodeGen::llvm_parameter_list params;
     params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
     params.push_back(std::make_pair("overlay", cg->llvmTypePtr(llvm_type)));
+    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg->llvmTypePtr(cg->llvmTypeExecutionContext())));
 
     auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
 
@@ -919,6 +921,17 @@ void TypeBuilder::visit(type::RegExp* t)
     ti->to_string = "hlt::regexp_to_string";
     ti->clone_alloc = "hlt::regexp_clone_alloc";
     ti->clone_init = "hlt::regexp_clone_init";
+
+    // The type-specific aux information is a single int64 corresponding to
+    // hlt_regexp_flags.
+
+    int64_t flags = 0;
+
+    if ( t->attributes().has(attribute::NOSUB) )
+        flags |= 1;
+
+    ti->aux = llvm::ConstantExpr::getIntToPtr(cg()->llvmConstInt(flags, 64), cg()->llvmTypePtr());
+
     setResult(ti);
 }
 
@@ -949,6 +962,7 @@ llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llv
     CodeGen::llvm_parameter_list params;
     params.push_back(std::make_pair("type", cg()->llvmTypePtr(cg()->llvmTypeRtti())));
     params.push_back(std::make_pair("struct", cg()->llvmTypePtr(llvm_type)));
+    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg()->llvmTypePtr(cg()->llvmTypeExecutionContext())));
 
     auto func = cg()->llvmAddFunction(name, cg()->llvmTypeVoid(), params, false);
     func->setLinkage(llvm::GlobalValue::LinkOnceODRLinkage);
@@ -1060,7 +1074,7 @@ void TypeBuilder::visit(type::Struct* t)
 
     if ( ! llvm_type_only ) {
         if ( ! t->wildcard() )
-            ti->dtor_func = _declareStructDtor(t, stype, t->libHiltiDtor());
+            ti->dtor_func = _declareStructDtor(t, stype, t->attributes().getAsString(attribute::LIBHILTI_DTOR, ""));
         else
             // Generic versions working with all tuples.
             ti->dtor = "hlt::struct_dtor";

@@ -52,13 +52,15 @@ void Pac2_Analyzer::Init()
 
 void Pac2_Analyzer::Done()
 	{
-	GC_DTOR(orig.parser, hlt_BinPACHilti_Parser);
-	GC_DTOR(orig.data, hlt_bytes);
-	GC_DTOR(orig.resume, hlt_exception);
+	hlt_execution_context* ctx = hlt_global_execution_context();
 
-	GC_DTOR(resp.parser, hlt_BinPACHilti_Parser);
-	GC_DTOR(resp.data, hlt_bytes);
-	GC_DTOR(resp.resume, hlt_exception);
+	GC_DTOR(orig.parser, hlt_BinPACHilti_Parser, ctx);
+	GC_DTOR(orig.data, hlt_bytes, ctx);
+	GC_DTOR(orig.resume, hlt_exception, ctx);
+
+	GC_DTOR(resp.parser, hlt_BinPACHilti_Parser, ctx);
+	GC_DTOR(resp.data, hlt_bytes, ctx);
+	GC_DTOR(resp.resume, hlt_exception, ctx);
 
 	Init();
 	}
@@ -110,7 +112,7 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 			return 1;
 			}
 
-		GC_CCTOR(endp->parser, hlt_BinPACHilti_Parser);
+		GC_CCTOR(endp->parser, hlt_BinPACHilti_Parser, ctx);
 		}
 
 	int result = 0;
@@ -123,6 +125,7 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 		debug_msg(endp->cookie.protocol_cookie.analyzer, "initial chunk", len, data, is_orig);
 
 		endp->data = hlt_bytes_new_from_data_copy((const int8_t*)data, len, &excpt, ctx);
+        GC_CCTOR(endp->data, hlt_bytes, ctx);
 
 		if ( eod )
 			hlt_bytes_freeze(endp->data, 1, &excpt, ctx);
@@ -137,7 +140,7 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 		profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
 #endif
 
-		GC_DTOR_GENERIC(&pobj, endp->parser->type_info);
+		GC_DTOR_GENERIC(&pobj, endp->parser->type_info, ctx);
 		}
 
 	else
@@ -163,7 +166,7 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 		profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
 #endif
 
-		GC_DTOR_GENERIC(&pobj, endp->parser->type_info);
+		GC_DTOR_GENERIC(&pobj, endp->parser->type_info, ctx);
 		endp->resume = 0;
 		}
 
@@ -181,13 +184,11 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 			{
 			// A parse error.
 			hlt_exception* excpt2 = 0;
-			hlt_string s = hlt_exception_to_string(&hlt_type_info_hlt_exception, &excpt, 0, &excpt2, ctx);
-			char* e = hlt_string_to_native(s, &excpt2, ctx);
+			char* e = hlt_exception_to_asciiz(excpt, &excpt2, ctx);
 			assert(! excpt2);
 			ParseError(e, is_orig);
 			hlt_free(e);
-			GC_DTOR(s, hlt_string);
-			GC_DTOR(excpt, hlt_exception);
+			GC_DTOR(excpt, hlt_exception, ctx);
 			excpt = 0;
 			error = true;
 			result = 0;
@@ -203,10 +204,7 @@ int Pac2_Analyzer::FeedChunk(int len, const u_char* data, bool is_orig, bool eod
 	// TODO: For now we just stop on error, later we might attempt to
 	// restart parsing.
 	if ( eod || done || error )
-		{
-		GC_DTOR(endp->data, hlt_bytes);
-		endp->data = 0; // Marker that we're done parsing.
-		}
+        GC_CLEAR(endp->data, hlt_bytes, ctx);  // Marker that we're done parsing.
 
 	return result;
 	}

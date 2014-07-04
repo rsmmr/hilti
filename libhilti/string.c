@@ -22,7 +22,7 @@
 #include "autogen/hilti-hlt.h"
 #include "3rdparty/convertutf/ConvertUTF.h"
 
-void hlt_string_dtor(hlt_type_info* ti, hlt_string* s)
+void hlt_string_dtor(hlt_type_info* ti, hlt_string* s, hlt_execution_context* ctx)
 {
     // Nothing to do.
 }
@@ -30,7 +30,7 @@ void hlt_string_dtor(hlt_type_info* ti, hlt_string* s)
 void* hlt_string_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string src = *(hlt_string*)srcp;
-    return GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + src->len);
+    return GC_NEW_CUSTOM_SIZE_REF(hlt_string, sizeof(struct __hlt_string) + src->len, ctx);
 }
 
 void hlt_string_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -42,11 +42,9 @@ void hlt_string_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hl
     memcpy(&dst->bytes, src->bytes, src->len);
 }
 
-hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_string s = *((hlt_string*)obj);
-    GC_CCTOR(s, hlt_string);
-    return s ? s : 0;
+    return *((hlt_string*)obj);
 }
 
 hlt_hash hlt_string_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -89,7 +87,7 @@ hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt, hlt_executio
     while ( p < e ) {
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &dummy);
         if ( n < 0 ) {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return 0;
         }
 
@@ -98,7 +96,7 @@ hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt, hlt_executio
     }
 
     if ( p != e ) {
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
         return 0;
     }
 
@@ -115,20 +113,16 @@ hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt
     len1 = s1 ? s1->len : 0;
     len2 = s2 ? s2->len : 0;
 
-    if ( ! len1 ) {
-        GC_CCTOR(s2, hlt_string);
+    if ( ! len1 )
         return s2;
-    }
 
-    if ( ! len2 ) {
-        GC_CCTOR(s1, hlt_string);
+    if ( ! len2 )
         return s1;
-    }
 
-    hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + len1 + len2);
+    hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + len1 + len2, ctx);
 
     if ( ! dst ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0, ctx);
         return 0;
     }
 
@@ -137,16 +131,6 @@ hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt
     memcpy(dst->bytes + len1, s2->bytes, len2);
 
     return dst;
-}
-
-hlt_string hlt_string_concat_and_unref(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_execution_context* ctx)
-{
-    hlt_string s = hlt_string_concat(s1, s2, excpt, ctx);
-
-    GC_DTOR(s1, hlt_string);
-    GC_DTOR(s2, hlt_string);
-
-    return s;
 }
 
 hlt_string hlt_string_substr(hlt_string s, hlt_string_size pos, hlt_string_size len, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -168,7 +152,7 @@ hlt_string hlt_string_substr(hlt_string s, hlt_string_size pos, hlt_string_size 
     while ( p < e && pos ) {
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &dummy);
         if ( n < 0 ) {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return 0;
         }
 
@@ -181,7 +165,7 @@ hlt_string hlt_string_substr(hlt_string s, hlt_string_size pos, hlt_string_size 
     while ( p < e && len ) {
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &dummy);
         if ( n < 0 ) {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return 0;
         }
 
@@ -257,13 +241,13 @@ int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_e
 
         n1 = utf8proc_iterate((uint8_t *)p1, s1->len - i, &cp1);
         if ( n1 < 0 ) {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return 0;
         }
 
         n2 = utf8proc_iterate((uint8_t *)p2, s2->len - i, &cp2);
         if ( n2 < 0 ) {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return 0;
         }
 
@@ -303,7 +287,7 @@ hlt_string hlt_string_copy(hlt_string src, hlt_exception** excpt, hlt_execution_
 hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string_size len = strlen(asciiz);
-    hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + len);
+    hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + len, ctx);
     dst->len = len;
     memcpy(&dst->bytes, asciiz, len);
     return dst;
@@ -311,13 +295,13 @@ hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt, hlt
 
 hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + len);
+    hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + len, ctx);
     dst->len = len;
     memcpy(dst->bytes, data, len);
     return dst;
 }
 
-hlt_string hlt_object_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string __hlt_object_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(seen);
 
@@ -339,6 +323,15 @@ hlt_string hlt_object_to_string(const hlt_type_info* type, const void* obj, int3
     if ( type->gc && type->to_string )
         __hlt_pointer_stack_pop_back(seen);
 
+    return s;
+}
+
+extern hlt_string hlt_object_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __hlt_pointer_stack seen;
+    __hlt_pointer_stack_init(&seen);
+    hlt_string s = __hlt_object_to_string(type, obj, options, &seen, excpt, ctx);
+    __hlt_pointer_stack_destroy(&seen);
     return s;
 }
 
@@ -367,7 +360,7 @@ static enum Charset get_charset(hlt_enum charset, hlt_exception** excpt, hlt_exe
         cs = ASCII;
 
     else
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
 
     return cs;
 }
@@ -400,7 +393,7 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_enum charset, hlt_exception** exc
         // fallthrough
     } else {
         hlt_string err = hlt_string_from_asciiz("charset not supported for encode", excpt, ctx);
-        hlt_set_exception(excpt, &hlt_exception_conversion_error, err);
+        hlt_set_exception(excpt, &hlt_exception_conversion_error, err, ctx);
         return 0;
     }
 
@@ -415,8 +408,8 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_enum charset, hlt_exception** exc
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &uc);
 
         if ( n < 0 ) {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
-            GC_DTOR(dst, hlt_bytes);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
+            GC_DTOR(dst, hlt_bytes, ctx);
             return 0;
         }
 
@@ -464,13 +457,16 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_enum charset, hlt_exception** exc
         // Data is already in UTF-8, just need to copy it into a string.
         hlt_iterator_bytes begin = hlt_bytes_begin(b, excpt, ctx);
         hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
-        int8_t* raw = hlt_bytes_sub_raw(begin, end, excpt, ctx);
-        const hlt_string dst = hlt_string_from_data(raw, hlt_bytes_len(b, excpt, ctx), excpt, ctx);
-        hlt_free(raw);
-        GC_DTOR(begin, hlt_iterator_bytes);
-        GC_DTOR(end, hlt_iterator_bytes);
-        return dst;
-    } else if ( ch == UTF16LE || ch == UTF16BE || ch == UTF32LE || ch == UTF32BE ) {
+        hlt_bytes_size len = hlt_iterator_bytes_diff(begin, end, excpt, ctx);
+
+        int8_t buffer[len];
+        int8_t* raw = hlt_bytes_sub_raw(buffer, len, begin, end, excpt, ctx);
+        assert(raw);
+
+        return hlt_string_from_data(raw, hlt_bytes_len(b, excpt, ctx), excpt, ctx);
+    }
+
+    else if ( ch == UTF16LE || ch == UTF16BE || ch == UTF32LE || ch == UTF32BE ) {
         uint8_t do_flip = 0;
 
 #if __BIG_ENDIAN__
@@ -483,7 +479,11 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_enum charset, hlt_exception** exc
 
         hlt_iterator_bytes begin = hlt_bytes_begin(b, excpt, ctx);
         hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
-        int8_t* raw = hlt_bytes_sub_raw(begin, end, excpt, ctx);
+        hlt_bytes_size len = hlt_iterator_bytes_diff(begin, end, excpt, ctx);
+
+        int8_t tmp[len];
+        int8_t* raw = hlt_bytes_sub_raw(tmp, len, begin, end, excpt, ctx);
+        assert(raw);
 
         // Determining UTF-8 sizes is quite difficult due to variable-length characters. If our start-
         // encoding is UTF-16, the worst-case is that the UTF-8 string has double the length of the
@@ -526,36 +526,28 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_enum charset, hlt_exception** exc
                     err = hlt_string_from_asciiz("internal string conversion error", excpt, ctx);
             }
 
-            hlt_set_exception(excpt, &hlt_exception_conversion_error, err);
+            hlt_set_exception(excpt, &hlt_exception_conversion_error, err, ctx);
+            return 0;
         }
 
         hlt_bytes_size final_length = target_start_ptr - buffer; // target_start points to last processed character
-        const hlt_string dst = hlt_string_from_data(buffer, final_length, excpt, ctx);
+        return hlt_string_from_data(buffer, final_length, excpt, ctx);
+    }
 
-        hlt_free(raw);
-        GC_DTOR(begin, hlt_iterator_bytes);
-        GC_DTOR(end, hlt_iterator_bytes);
-        return dst;
-    } else if ( ch == ASCII ) {
+    else if ( ch == ASCII ) {
         // Convert all bytes to 7-bit codepoints.
         hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
         hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
-        hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + hlt_bytes_len(b, excpt, ctx));
+        hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + hlt_bytes_len(b, excpt, ctx), ctx);
         dst->len = len;
         int8_t* p = dst->bytes;
 
         hlt_iterator_bytes i = hlt_bytes_begin(b, excpt, ctx);
-        hlt_iterator_bytes j;
         while ( ! hlt_iterator_bytes_eq(i, end, excpt, ctx) ) {
             char c = hlt_iterator_bytes_deref(i, excpt, ctx);
             *p++ = (c & 0x7f) == c ? c : '?';
-            j = hlt_iterator_bytes_incr(i, excpt, ctx);
-            GC_DTOR(i, hlt_iterator_bytes);
-            i = j;
+            i = hlt_iterator_bytes_incr(i, excpt, ctx);
         }
-
-        GC_DTOR(i, hlt_iterator_bytes);
-        GC_DTOR(end, hlt_iterator_bytes);
 
         return dst;
     }
@@ -582,7 +574,7 @@ void hlt_string_print_n(FILE* file, hlt_string s, int8_t newline, hlt_string_siz
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &cp);
 
         if ( n < 0 ) {
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
             return;
         }
 
@@ -626,16 +618,20 @@ char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_co
     // Add a null terminator.
     hlt_bytes_append_raw_copy(b, (int8_t*)"\0", 1, excpt, ctx);
 
-    if ( *excpt )
+    if ( hlt_check_exception(excpt) )
         return 0;
 
-    const int8_t* raw = hlt_bytes_to_raw(b, excpt, ctx);
-    GC_DTOR(b, hlt_bytes);
+    hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
+    int8_t tmp[len];
+    const int8_t* raw = hlt_bytes_to_raw(tmp, len, b, excpt, ctx);
+    assert(raw);
 
-    if ( *excpt )
+    if ( hlt_check_exception(excpt) )
         return 0;
 
-    return (char*)raw;
+    char* copy = hlt_malloc(len);
+    memcpy(copy, raw, len);
+    return copy;
 }
 
 hlt_string hlt_string_join(hlt_string sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -650,27 +646,14 @@ hlt_string hlt_string_join(hlt_string sep, hlt_list* l, hlt_exception** excpt, h
 
     while ( ! hlt_iterator_list_eq(i, end, excpt, ctx) ) {
 
-        if ( ! first ) {
-            old = s;
+        if ( ! first )
             s = hlt_string_concat(s, sep, excpt, ctx);
-            GC_DTOR(old, hlt_string);
-        }
 
         void* obj = hlt_iterator_list_deref(i, excpt, ctx);
+        hlt_string so = hlt_object_to_string(ti, obj, 0, excpt, ctx);
+        s = hlt_string_concat(s, so, excpt, ctx);
 
-        __hlt_pointer_stack seen;
-        __hlt_pointer_stack_init(&seen);
-        hlt_string so = hlt_object_to_string(ti, obj, 0, &seen, excpt, ctx);
-        __hlt_pointer_stack_destroy(&seen);
-
-        s = hlt_string_concat_and_unref(s, so, excpt, ctx);
-
-        GC_DTOR_GENERIC(obj, ti);
-
-        hlt_iterator_list j = i;
         i = hlt_iterator_list_incr(i, excpt, ctx);
-        GC_DTOR(j, hlt_iterator_list);
-
         first = 0;
     }
 

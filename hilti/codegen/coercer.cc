@@ -15,15 +15,19 @@ codegen::Coercer::~Coercer()
 {
 }
 
-llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst)
+llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst, bool cctor)
 {
+    _cctor = cctor;
+
     if ( src->equal(dst) || dst->equal(src) ) {
-        cg()->llvmCctor(value, src, false, "Coercer::llvmCoerceTo/equal");
+        if ( cctor )
+            cg()->llvmCctor(value, src, false, "Coercer::llvmCoerceTo/equal");
+
         return value;
     }
 
     if ( ast::isA<type::OptionalArgument>(dst) )
-        return llvmCoerceTo(value, src, ast::as<type::OptionalArgument>(dst)->argType());
+        return llvmCoerceTo(value, src, ast::as<type::OptionalArgument>(dst)->argType(), cctor);
 
     setArg1(value);
     setArg2(dst);
@@ -32,7 +36,9 @@ llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti
     bool success = processOne(src, &result);
     assert(success);
 
-    cg()->llvmDtor(value, src, false, "Coercer::llvmCoerceTo");
+    if ( cctor )
+        cg()->llvmDtor(value, src, false, "Coercer::llvmCoerceTo");
+
     return result;
 }
 
@@ -64,7 +70,7 @@ void codegen::Coercer::visit(type::Tuple* t)
         auto stype = ast::as<type::Struct>(rtype->argType());
         assert(stype);
 
-        auto sval = cg()->llvmStructNew(stype);
+        auto sval = cg()->llvmStructNew(stype, _cctor);
         setResult(sval);
 
         // If the tuple is empty, we just return the newly created struct.
@@ -82,9 +88,8 @@ void codegen::Coercer::visit(type::Tuple* t)
             }
 
             auto v = cg()->llvmExtractValue(val, idx);
-            v = cg()->llvmCoerceTo(v, i.first, i.second);
+            v = cg()->llvmCoerceTo(v, i.first, i.second, false);
             cg()->llvmStructSet(stype, sval, idx++, v);
-            cg()->llvmDtor(v, i.second, false, "Coercer::visit-tuple");
         }
 
         return;
@@ -129,7 +134,8 @@ void codegen::Coercer::visit(type::Reference* r)
         if ( ast::isA<type::RegExp>(r->argType()) && ast::isA<type::RegExp>(dst_ref->argType()) ) {
             auto top = dst_ref->argType();
             CodeGen::expr_list args = { builder::type::create(top), builder::codegen::create(dst, val) };
-            auto nregexp = cg()->llvmCall("hlt::regexp_new_from_regexp", args);
+            auto func = _cctor ? "hlt::regexp_new_from_regexp" : "hlt::regexp_new_from_regexp";
+            auto nregexp = cg()->llvmCall(func, args);
             setResult(nregexp);
             return;
         }

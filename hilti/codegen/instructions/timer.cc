@@ -13,11 +13,10 @@ void StatementBuilder::visit(statement::instruction::timer::New* i)
 
     auto func = cg()->llvmValue(i->op2());
     auto ftype = ast::as<type::Function>(i->op2()->type());
-    auto callable = cg()->llvmCallableBind(func, ftype, params);
+    auto callable = cg()->llvmCallableBind(func, ftype, params, false, true);
 
     CodeGen::value_list args = { callable };
     auto timer = cg()->llvmCallC("__hlt_timer_new_function", args, true);
-    cg()->llvmDtor(callable, builder::reference::type(builder::callable::typeAny()), false, "timer.new");
 
     cg()->llvmStore(i->target(), timer);
 

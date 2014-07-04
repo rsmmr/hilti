@@ -73,9 +73,11 @@ void Pac2_FileAnalyzer::Done()
 	{
 	file_analysis::Analyzer::Done();
 
-	GC_DTOR(parser, hlt_BinPACHilti_Parser);
-	GC_DTOR(data, hlt_bytes);
-	GC_DTOR(resume, hlt_exception);
+	hlt_execution_context* ctx = hlt_global_execution_context();
+
+	GC_DTOR(parser, hlt_BinPACHilti_Parser, ctx);
+	GC_DTOR(data, hlt_bytes, ctx);
+	GC_DTOR(resume, hlt_exception, ctx);
 	}
 
 int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
@@ -105,7 +107,7 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 			return 1;
 			}
 
-		GC_CCTOR(parser, hlt_BinPACHilti_Parser);
+		GC_CCTOR(parser, hlt_BinPACHilti_Parser, ctx);
 		}
 
 	int result = 0;
@@ -132,7 +134,7 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 		profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
 #endif
 
-		GC_DTOR_GENERIC(&pobj, parser->type_info);
+		GC_DTOR_GENERIC(&pobj, parser->type_info, ctx);
 		}
 
 	else
@@ -157,7 +159,7 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 #ifdef BRO_PLUGIN_HAVE_PROFILING
 		profile_update(PROFILE_HILTI_LAND, PROFILE_STOP);
 #endif
-		GC_DTOR_GENERIC(&pobj, parser->type_info);
+		GC_DTOR_GENERIC(&pobj, parser->type_info, ctx);
 		resume = 0;
 		}
 
@@ -175,13 +177,11 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 			{
 			// A parse error.
 			hlt_exception* excpt2 = 0;
-			hlt_string s = hlt_exception_to_string(&hlt_type_info_hlt_exception, &excpt, 0, &excpt2, ctx);
-			char* e = hlt_string_to_native(s, &excpt2, ctx);
+			char* e = hlt_exception_to_asciiz(excpt, &excpt2, ctx);
 			assert(! excpt2);
 			ParseError(e);
 			hlt_free(e);
-			GC_DTOR(s, hlt_string);
-			GC_DTOR(excpt, hlt_exception);
+			GC_DTOR(excpt, hlt_exception, ctx);
 			excpt = 0;
 			error = true;
 			result = 0;
@@ -197,10 +197,7 @@ int Pac2_FileAnalyzer::FeedChunk(int len, const u_char* chunk, bool eod)
 	// TODO: For now we just stop on error, later we might attempt to
 	// restart parsing.
 	if ( eod || done || error )
-		{
-		GC_DTOR(data, hlt_bytes);
 		data = 0; // Marker that we're done parsing.
-		}
 
 	return result;
 	}

@@ -11,7 +11,7 @@ void StatementBuilder::visit(statement::instruction::callable::NewFunction* i)
 
     auto func = cg()->llvmValue(i->op2());
     auto ftype = ast::as<type::Function>(i->op2()->type());
-    auto result = cg()->llvmCallableBind(func, ftype, params);
+    auto result = cg()->llvmCallableBind(func, ftype, params, false, true);
 
     cg()->llvmStore(i->target(), result);
 }
@@ -26,7 +26,7 @@ void StatementBuilder::visit(statement::instruction::callable::NewHook* i)
     prepareCall(i->op2(), i->op3(), &params, false);
 
     auto ftype = ast::as<type::Hook>(i->op2()->type());
-    auto result = cg()->llvmCallableBind(hook, params);
+    auto result = cg()->llvmCallableBind(hook, params, false, true);
 
     cg()->llvmStore(i->target(), result);
 }

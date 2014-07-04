@@ -28,7 +28,7 @@ struct __hlt_clone_state {
 /// be null, in which case the cloned value will be so too.
 ///
 /// excpt: &
-/// ctx: & 
+/// ctx: &
 extern void hlt_clone_deep(void* dstp, const hlt_type_info* ti, const void* srcp, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Shallow-copies a HILTI value for use within the same thread.

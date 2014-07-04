@@ -26,8 +26,5 @@ int main()
         printf("%c", s->bytes[i]);
     printf("\n");
 
-    GC_DTOR(s, hlt_string);
-    GC_DTOR(t, hlt_string);
-
     return 0;
 }

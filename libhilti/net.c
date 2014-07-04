@@ -26,7 +26,7 @@ int8_t hlt_net_is_v6(hlt_net net, hlt_exception** excpt, hlt_execution_context* 
 struct in_addr hlt_net_to_in4(hlt_net net, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! is_v4(net) ) {
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
         struct in_addr sa;
         return sa;
     }
@@ -73,7 +73,7 @@ hlt_net hlt_net_from_in6(struct in6_addr in, uint8_t length, hlt_exception** exc
     return net;
 }
 
-hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_NET);
 
@@ -87,7 +87,7 @@ hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t
         struct in_addr sa = { hlt_hton32(a) };
 
         if ( ! inet_ntop(AF_INET, &sa, buffer, 128) ) {
-            hlt_set_exception(excpt, &hlt_exception_os_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_os_error, 0, ctx);
             return 0;
         }
 
@@ -104,7 +104,7 @@ hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t
         memcpy(((char*)&sa) + 8, &a, 8);
 
         if ( ! inet_ntop(AF_INET6, &sa, buffer, 128) ) {
-            hlt_set_exception(excpt, &hlt_exception_os_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_os_error, 0, ctx);
             return 0;
         }
 

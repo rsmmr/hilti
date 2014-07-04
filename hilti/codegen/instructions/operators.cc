@@ -47,8 +47,21 @@ void StatementBuilder::visit(statement::instruction::operator_::Unequal* i)
 
 void StatementBuilder::visit(statement::instruction::operator_::Assign* i)
 {
-    auto op1 = cg()->llvmValue(i->op1(), i->target()->type(), true);
-    cg()->llvmStore(i, op1);
+    if ( ! i->target()->type()->attributes().has(attribute::HOIST) ) {
+        auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
+        cg()->llvmStore(i, op1);
+    }
+
+    else {
+        // Hoist into stack.
+        //
+        // TODO: Not sure we should hard-code local variables here, but
+        // whereelse is a good place to do this?
+        auto texpr = ast::checkedCast<expression::Variable>(i->target());
+        auto tvar  = ast::checkedCast<variable::Local>(texpr->variable());
+        auto dst = cg()->llvmLocal(tvar->internalName());
+        cg()->llvmValueInto(dst, i->op1(), i->target()->type());
+    }
 }
 
 void StatementBuilder::visit(statement::instruction::operator_::Unpack* i)
@@ -92,6 +105,9 @@ void StatementBuilder::visit(statement::instruction::operator_::Clone* i)
 
     CodeGen::value_list vals = { dst_casted, ti, src_casted };
     cg()->llvmCallC("hlt_clone_deep", vals, true, true);
+
+    // Comes back refed.
+    cg()->llvmDtor(dst, t, true, "operator.clone");
 
     auto result = cg()->builder()->CreateLoad(dst);
     cg()->llvmStore(i, result);

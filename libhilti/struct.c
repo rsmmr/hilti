@@ -21,7 +21,7 @@ struct field {
 };
 
 // Generic version working with all struct types.
-void hlt_struct_dtor(hlt_type_info* type, void* obj, const char* location)
+void hlt_struct_dtor(hlt_type_info* type, void* obj, const char* location, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_STRUCT);
 
@@ -39,14 +39,14 @@ void hlt_struct_dtor(hlt_type_info* type, void* obj, const char* location)
         uint32_t is_set = (mask & (1 << i));
 
         if ( is_set )
-            GC_DTOR_GENERIC(obj + array[i].offset, types[i]);
+            GC_DTOR_GENERIC(obj + array[i].offset, types[i], ctx);
     }
 }
 
 // Generic version working with all struct types.
 void* hlt_struct_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return GC_NEW_CUSTOM_SIZE_GENERIC(ti, ti->object_size);
+    return GC_NEW_CUSTOM_SIZE_GENERIC_REF(ti, ti->object_size, ctx);
 }
 
 void hlt_struct_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -55,7 +55,7 @@ void hlt_struct_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hl
     char* dst = *(char**)dstp;
 
     if ( ! src ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return;
     }
 
@@ -71,7 +71,7 @@ void hlt_struct_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hl
         if ( is_set ) {
             int16_t offset = fields[i].offset;
             __hlt_clone(dst + offset, types[i], src + offset, cstate, excpt, ctx);
-            if ( *excpt )
+            if ( hlt_check_exception(excpt) )
                 return;
         }
     }
@@ -93,11 +93,11 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
     hlt_string separator = hlt_string_from_asciiz(", ", excpt, ctx);
     hlt_string equal = hlt_string_from_asciiz("=", excpt, ctx);
 
-    hlt_string s = hlt_string_from_asciiz("<", excpt, ctx);
-
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
 
     int printed = 0;
+
+    hlt_string s = hlt_string_from_asciiz("<", excpt, ctx);
 
     for ( int i = 0; i < type->num_params; i++ ) {
 
@@ -106,16 +106,12 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
             // Don't print internal names.
             continue;
 
-        if ( printed++ >  0 ) {
-            GC_CCTOR(separator, hlt_string)
-            s = hlt_string_concat_and_unref(s, separator, excpt, ctx);
-        }
+        if ( printed++ >  0 )
+            s = hlt_string_concat(s, separator, excpt, ctx);
 
         hlt_string field_s = hlt_string_from_asciiz(array[i].field, excpt, ctx);
-        s = hlt_string_concat_and_unref(s, field_s, excpt, ctx);
-
-        GC_CCTOR(equal, hlt_string);
-        s = hlt_string_concat_and_unref(s, equal, excpt, ctx);
+        s = hlt_string_concat(s, field_s, excpt, ctx);
+        s = hlt_string_concat(s, equal, excpt, ctx);
 
         uint32_t is_set = (mask & (1 << i));
 
@@ -123,32 +119,22 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
 
         if ( ! is_set ) {
             hlt_string not_set = hlt_string_from_asciiz("(not set)", excpt, ctx);
-            s = hlt_string_concat_and_unref(s, not_set, excpt, ctx);
+            s = hlt_string_concat(s, not_set, excpt, ctx);
         }
 
         else {
-            hlt_string t = hlt_object_to_string(types[i], obj + array[i].offset, options, seen, excpt, ctx);
-            s = hlt_string_concat_and_unref(s, t, excpt, ctx);
+            hlt_string t = __hlt_object_to_string(types[i], obj + array[i].offset, options, seen, excpt, ctx);
+            s = hlt_string_concat(s, t, excpt, ctx);
         }
 
-        if ( *excpt )
-            goto error;
+        if ( hlt_check_exception(excpt) )
+            return 0;
     }
 
     hlt_string postfix = hlt_string_from_asciiz(">", excpt, ctx);
-    s = hlt_string_concat_and_unref(s, postfix, excpt, ctx);
-
-    GC_DTOR(separator, hlt_string);
-    GC_DTOR(equal, hlt_string);
+    s = hlt_string_concat(s, postfix, excpt, ctx);
 
     return s;
-
-error:
-    GC_DTOR(separator, hlt_string);
-    GC_DTOR(equal, hlt_string);
-    GC_DTOR(s, hlt_string);
-
-    return 0;
 }
 
 hlt_hash hlt_struct_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)

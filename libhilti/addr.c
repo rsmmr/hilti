@@ -14,7 +14,7 @@ static inline int is_v4(const hlt_addr addr)
     return addr.a1 == 0 && (addr.a2 & 0xffffffff00000000) == 0;
 }
 
-hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_ADDR);
 
@@ -27,7 +27,7 @@ hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_
         char buffer[INET_ADDRSTRLEN];
 
         if ( ! inet_ntop(AF_INET, &sa, buffer, sizeof(buffer)) ) {
-            hlt_set_exception(excpt, &hlt_exception_os_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_os_error, 0, ctx);
             return 0;
         }
 
@@ -46,7 +46,7 @@ hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_
         char buffer[INET6_ADDRSTRLEN];
 
         if ( ! inet_ntop(AF_INET6, &sa, buffer, sizeof(buffer)) ) {
-            hlt_set_exception(excpt, &hlt_exception_os_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_os_error, 0, ctx);
             return 0;
         }
 
@@ -62,7 +62,7 @@ int8_t hlt_addr_is_v6(hlt_addr addr, hlt_exception** excpt, hlt_execution_contex
 struct in_addr hlt_addr_to_in4(hlt_addr addr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! is_v4(addr) ) {
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
         struct in_addr sa;
         return sa;
     }
@@ -134,7 +134,7 @@ hlt_addr hlt_addr_from_asciiz(const char* s, hlt_exception** excpt, hlt_executio
     return a;
 
 error:
-    hlt_set_exception(excpt, &hlt_exception_conversion_error, 0);
+    hlt_set_exception(excpt, &hlt_exception_conversion_error, 0, ctx);
     return a;
 }
 

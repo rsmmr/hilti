@@ -26,7 +26,7 @@ void StatementBuilder::visit(statement::instruction::channel::New* i)
 static llvm::Value* _readTry(CodeGen* cg, statement::Instruction* i)
 {
     CodeGen::expr_list args = { i->op1() };
-    return cg->llvmCall("hlt::channel_read_try", args, false);
+    return cg->llvmCall("hlt::channel_read_try", args, false, false);
 }
 
 static void _readFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* result)
@@ -67,7 +67,7 @@ static llvm::Value* _writeTry(CodeGen* cg, statement::Instruction* i)
     auto etype = ast::checkedCast<type::Channel>(rtype->argType())->argType();
 
     CodeGen::expr_list args = { i->op1(), i->op2()->coerceTo(etype) };
-    return cg->llvmCall("hlt::channel_write_try", args, false);
+    return cg->llvmCall("hlt::channel_write_try", args, false, false);
 }
 
 static void _writeFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* result)

@@ -18,7 +18,7 @@ int main()
     if ( excpt )
         {
         hlt_exception_print(excpt, ctx);
-        GC_DTOR(excpt, hlt_exception);
+        GC_DTOR(excpt, hlt_exception, ctx);
         }
 
     else

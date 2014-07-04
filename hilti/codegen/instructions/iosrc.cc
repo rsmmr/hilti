@@ -13,14 +13,10 @@ static llvm::Value* _makeIterator(CodeGen* cg, llvm::Value* src, llvm::Value* el
 
     if ( ! src )
         src = cg->llvmConstNull(cg->llvmTypePtr(cg->llvmLibType("hlt.iosrc")));
-    else {
-        cg->llvmCctor(src, builder::reference::type(builder::iosource::typeAny()), false, "iosource:_makeIterator");
-    }
 
     if ( elem ) {
         time = cg->llvmExtractValue(elem, 0);
         pkt = cg->llvmExtractValue(elem, 1);
-        cg->llvmCctor(pkt, builder::reference::type(builder::bytes::type()), false, "iosource:_makeIterator");
     }
 
     else {
@@ -133,7 +129,7 @@ static llvm::Value* _readTry(CodeGen* cg, statement::Instruction* i, llvm::Value
         builder::boolean::create(false)
     };
 
-    return cg->llvmCall("hlt::iosrc_read_try", args, false);
+    return cg->llvmCall("hlt::iosrc_read_try", args, false, false);
 }
 
 static void _readFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* result, bool make_iters, llvm::Value* src)

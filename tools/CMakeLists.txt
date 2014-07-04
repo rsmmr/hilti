@@ -19,8 +19,8 @@ if ( NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
 endif ()
 
 
-set(HILTI_LIBS        hilti hilti-jit ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-dbg.bc ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap ${PAPI} ${PERFTOOLS})
-set(HILTI_LIBS_NO_JIT hilti ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap ${PAPI} ${PERFTOOLS})
+set(HILTI_LIBS        hilti hilti-jit ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-dbg.bc ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap unwind ${PAPI} ${PERFTOOLS})
+set(HILTI_LIBS_NO_JIT hilti ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap unwind ${PAPI} ${PERFTOOLS})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti  ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../binpac ${CMAKE_CURRENT_BINARY_DIR}/../binpac)

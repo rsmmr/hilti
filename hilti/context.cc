@@ -514,6 +514,15 @@ std::list<llvm::Module*> CompilerContext::checkCache(const ::util::cache::FileCa
         assert(mb);
 
         string err;
+#ifdef HAVE_LLVM_35
+        if ( auto mod = llvm::parseBitcodeFile(mb, llvm::getGlobalContext()) ) {
+            if ( options().cgDebugging("cache") )
+                std::cerr << util::fmt("Reusing cached module for %s.%s (%d/%d)", key.name, key.scope, ++idx, data.size()) << std::endl;
+
+            _endPass();
+            outputs.push_back(mod.get());
+        }
+#else
         if ( auto mod = llvm::ParseBitcodeFile(mb, llvm::getGlobalContext(), &err) ) {
             if ( options().cgDebugging("cache") )
                 std::cerr << util::fmt("Reusing cached module for %s.%s (%d/%d)", key.name, key.scope, ++idx, data.size()) << std::endl;
@@ -521,7 +530,7 @@ std::list<llvm::Module*> CompilerContext::checkCache(const ::util::cache::FileCa
             _endPass();
             outputs.push_back(mod);
         }
-
+#endif
         else {
             _endPass();
 

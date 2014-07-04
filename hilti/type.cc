@@ -10,6 +10,46 @@
 
 using namespace hilti;
 
+Type::Type(const Location& l) : ast::Type<AstInfo>(l)
+{
+    _attributes = std::make_shared<AttributeSet>();
+    addChild(_attributes);
+}
+
+const AttributeSet& Type::attributes() const
+{
+    auto r = ast::tryCast<type::Reference>(const_cast<Type *>(this));
+
+    if ( r )
+        // Forward to main type.
+        return r->argType()->attributes();
+    else
+        return *_attributes;
+}
+
+
+AttributeSet& Type::attributes()
+{
+    auto r = ast::tryCast<type::Reference>(this);
+
+    if ( r )
+        // Forward to main type.
+        return r->argType()->attributes();
+    else
+        return *_attributes;
+}
+
+void Type::setAttributes(const AttributeSet& attrs)
+{
+    auto r = ast::tryCast<type::Reference>(this);
+
+    if ( r )
+        // Forward to main type.
+        r->argType()->setAttributes(attrs);
+    else
+        *_attributes = attrs;
+}
+
 string Type::render()
 {
     std::ostringstream s;
@@ -65,6 +105,9 @@ type::Unset::~Unset() {}
 type::Vector::~Vector() {}
 type::Void::~Void() {}
 
+type::HiltiType::HiltiType(const Location& l) : Type(l)
+{
+}
 
 bool type::trait::Parameterized::equal(shared_ptr<hilti::Type> other) const
 {
@@ -155,6 +198,39 @@ type::Function::Function(const Location& l)
     _cc = function::CallingConvention::HILTI;
 }
 
+bool type::Function::mayTriggerSafepoint() const
+{
+    if ( attributes().has(attribute::SAFEPOINT) )
+        return true;
+
+    return mayYield();
+}
+
+bool type::Function::mayYield() const
+{
+    switch ( _cc ) {
+     case function::HILTI:
+     case function::HOOK:
+        // Default is may yield.
+        return ! attributes().has(attribute::NOYIELD);
+
+     case function::HILTI_C:
+        // Default is no yield.
+        return attributes().has(attribute::MAYYIELD);
+
+     case function::C:
+        return false;
+
+     case function::CALLABLE:
+        assert(false);
+        return false;
+
+     default:
+        assert(false);
+        return false;
+    }
+}
+
 type::HiltiFunction::~HiltiFunction()
 {
 }
@@ -168,6 +244,13 @@ type::function::Result::Result(shared_ptr<Type> type, bool constant, Location l)
     : ast::type::mixin::function::Result<AstInfo>(type, constant, l)
 {
 }
+
+type::Hook::Hook(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args,
+                 const Location& l) : Function(result, args, function::HOOK, l)
+{
+    setCcPlusOne(false); /* ccPplus is tricky for the linker. */
+}
+
 
 type::Tuple::Tuple(const Location& l) : ValueType(l)
 {
@@ -481,34 +564,16 @@ bool type::Scope::_equal(shared_ptr<Type> other) const
     return true;
 }
 
-type::trait::Parameterized::parameter_list type::RegExp::parameters() const
-{
-    uint64_t flags = 0;
-
-    for ( auto a : _attrs ) {
-        if ( a == "&nosub" )
-            flags |= 1;
-        else {
-            fprintf(stderr, "unknown regexp attribute '%s'", a.c_str());
-            abort();
-        }
-    }
-
-    parameter_list params = { shared_ptr<trait::parameter::Base>(new trait::parameter::Integer(flags)) };
-    return params;
-}
-
-type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_, bool internal, const Location& l)
-    : Node(l), _id(id), _type(type), _default(default_), _internal(internal)
+type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, bool internal, const Location& l)
+    : Node(l), _id(id), _type(type), _internal(internal)
 {
     addChild(_id);
     addChild(_type);
-    addChild(_default);
 }
 
 shared_ptr<Expression> type::struct_::Field::default_() const
 {
-    return _default;
+    return _type->attributes().getAsExpression(attribute::DEFAULT);
 }
 
 type::Struct::Struct(const Location& l) : HeapType(l)
@@ -548,16 +613,6 @@ type::Struct::field_list type::Struct::sortedFields()
         return lhs->id()->name().compare(rhs->id()->name()) < 0; });
 
     return sorted;
-}
-
-void type::Struct::setLibHiltiDtor(const string& dtor)
-{
-    _dtor = dtor;
-}
-
-const string& type::Struct::libHiltiDtor() const
-{
-    return _dtor;
 }
 
 const type::trait::TypeList::type_list type::Struct::typeList() const

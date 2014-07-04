@@ -21,7 +21,7 @@ static string _opToStr(shared_ptr<Expression> op)
 void StatementBuilder::visit(statement::instruction::struct_::New* i)
 {
     auto stype = ast::as<type::Struct>(typedType(i->op1()));
-    auto result = cg()->llvmStructNew(stype);
+    auto result = cg()->llvmStructNew(stype, false);
     cg()->llvmStore(i, result);
 }
 
@@ -53,6 +53,7 @@ void StatementBuilder::visit(statement::instruction::struct_::GetDefault* i)
                                           auto dst = cg->builder()->CreateBitCast(clone, cg->llvmTypePtr());
                                           CodeGen::value_list args = { dst, cg->llvmRtti(i->op3()->type()), src };
                                           cg->llvmCallC("hlt_clone_deep", args, true, false);
+                                          cg->llvmDtor(clone, field->type(), true, "struct.get-default");
                                           return cg->builder()->CreateLoad(clone);
                                       },
 #else

@@ -7,7 +7,7 @@ module Main
 
 import Hilti
 
-global ref<regexp<&nosub>> re = /Foo*/
+global ref<regexp> re = /Foo*/ &nosub
 
 iterator<bytes> do_match(ref<match_token_state> state, iterator<bytes> s, iterator<bytes> e ) {
     local int<32> rc

@@ -10,6 +10,7 @@
 
 #include "common.h"
 #include "scope.h"
+#include "attribute.h"
 #include "visitor-interface.h"
 
 using namespace hilti;
@@ -23,7 +24,7 @@ public:
    /// Constructor.
    ///
    /// l: Associated location.
-   Type(const Location& l=Location::None) : ast::Type<AstInfo>(l) {}
+   Type(const Location& l=Location::None);
 
    /// Returns a readable one-line representation of the type.
    string render() override;
@@ -39,7 +40,20 @@ public:
    /// declaration. The returned scope should not have its parent set.
    virtual shared_ptr<hilti::Scope> typeScope() { return nullptr; }
 
+   /// Returns the attributes associated with the function's type.
+   const AttributeSet& attributes() const;
+
+   /// Returns the attributes associated with the function's type. This may
+   /// be modified to change the attributes.
+   AttributeSet& attributes();
+
+   /// Replaces the current set of attributes with the one given.
+   void setAttributes(const AttributeSet& attrs);
+
    ACCEPT_VISITOR_ROOT();
+
+private:
+   node_ptr<AttributeSet> _attributes;
 };
 
 namespace type {
@@ -126,7 +140,6 @@ private:
    shared_ptr<ID> _label;
 };
 
-/// A type parameter representing an attribute (e.g., \c &abc).
 class Attribute : public Base {
 public:
    /// Constructor.
@@ -317,7 +330,7 @@ public:
    /// Constructor.
    ///
    /// l: Associated location.
-   HiltiType(const Location& l=Location::None) : Type(l) {}
+   HiltiType(const Location& l=Location::None);
 };
 
 /// Base class for types that are stored on the stack and value-copied.
@@ -866,14 +879,6 @@ public:
    /// Returns true if this is the top-level root type.
    bool isRootType() const { return _libtype == "hlt_exception_unspecified"; }
 
-   /// Marks this type as defined by libhilti under the given name. Setting
-   /// an empty name unmarks.
-   void setLibraryType(const string& name) { _libtype = name; }
-
-   /// If the type is defined in libhilti, returns the name of the internal
-   /// global. If not, returns an empty string.
-   string libraryType() const { return _libtype; }
-
    ACCEPT_VISITOR(Type);
 
 private:
@@ -982,6 +987,12 @@ public:
    /// that passes parameters as plus one.
    void setCcPlusOne(bool plusone) { _plusone = plusone; }
 
+   /// Returns true if calling the function may trigger a safepoint.
+   bool mayTriggerSafepoint() const;
+
+   /// Returns true if calling the function may trigger a yield.
+   bool mayYield() const;
+
    bool _equal(shared_ptr<hilti::Type> other) const override;
 
    ACCEPT_VISITOR(HiltiType);
@@ -996,7 +1007,8 @@ protected:
    /// cc: The function's calling convention.
    ///
    /// l: Associated location.
-   Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l=Location::None);
+   Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args,
+            hilti::type::function::CallingConvention cc, const Location& l=Location::None);
 
    /// Constructor for a function type that matches any other function type (i.e., a wildcard type).
    Function(const Location& l=Location::None);
@@ -1017,7 +1029,8 @@ public:
    /// params: The hooks's parameters.
    ///
    /// l: Associated location.
-   HiltiFunction(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l=Location::None)
+   HiltiFunction(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args,
+                 hilti::type::function::CallingConvention cc, const Location& l=Location::None)
        : Function(result, args, cc, l) { }
 
    /// Constructor for a hook type that matches any other hook type (i.e., a
@@ -1040,8 +1053,8 @@ public:
    /// params: The hooks's parameters.
    ///
    /// l: Associated location.
-   Hook(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, const Location& l=Location::None)
-       : Function(result, args, function::HOOK, l) { setCcPlusOne(false); /* ccPplus is tricky for the linker. */ }
+   Hook(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args,
+        const Location& l=Location::None);
 
    /// Constructor for a hook type that matches any other hook type (i.e., a
    /// wildcard type).
@@ -1064,7 +1077,8 @@ public:
    /// params: The callables's parameters.
    ///
    /// l: Associated location.
-   Callable(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args,  const Location& l=Location::None)
+   Callable(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args,
+            const Location& l=Location::None)
        : Function(result, args, function::CALLABLE, l) {}
 
    /// Constructor for wildcard callable type..
@@ -1582,40 +1596,15 @@ private:
 };
 
 /// Type for regexp instances.
-class RegExp : public HeapType, public trait::Parameterized {
+class RegExp : public HeapType {
 public:
-   typedef std::list<string> attribute_list;
-
    /// Constructor.
    ///
-   /// attrs: List of optional attributes controlling specifics of the
-   /// regular expression. Currently, no attributes are defined.
-   ///
    /// l: Associated location.
-   RegExp(const attribute_list& attrs, const Location& l=Location::None) : HeapType(l) {
-       _attrs = attrs;
-       }
-
-   /// Constructore creating an IOSrc type matching any other (i.e., \c regexp<*>).
-   RegExp(const Location& l=Location::None) : HeapType(l) {
-       setWildcard(true);
-   }
-
+   RegExp(const Location& l=Location::None) : HeapType(l) { }
    virtual ~RegExp();
 
-   /// Returns the enum label for the type of RegExp.
-   const attribute_list& attributes() const { return _attrs; }
-
-   bool _equal(shared_ptr<hilti::Type> other) const override {
-       return trait::Parameterized::equal(other);
-   }
-
-   parameter_list parameters() const override;
-
    ACCEPT_VISITOR(Type);
-
-private:
-   attribute_list _attrs;
 };
 
 /// Type for \c match_token_state
@@ -1670,33 +1659,28 @@ public:
    ///
    /// type: The type of the field.
    ///
-   /// default_: An optional default value, null if no default.
-   ///
    /// internal: If true, the field will not be printed when the struct
    /// type is rendered as a string. Internal IDS are also skipped from
    /// ctor expressions and list conversions.
    ///
    /// l: Location associated with the field.
-   Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_=nullptr, bool internal=false, const Location& l=Location::None);
+   Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, bool internal=false, const Location& l=Location::None);
 
    shared_ptr<ID> id() const { return _id; }
    shared_ptr<hilti::Type> type() const { return _type; }
+
+   /// This is a shortcut to querying the corresponding type attribute.
    shared_ptr<Expression> default_() const;
    bool internal() const { return _internal; }
 
    /// Marks the field as internal.
    void setInternal() { _internal = true; }
 
-   /// Marks the field as one the optimizer can remove if it doesn't see it
-   /// in use. This add the \c opt:can-remove meta attribute.
-   void setCanRemove() { metaInfo()->add(std::make_shared<ast::MetaNode>("opt:can-remove")); }
-
    ACCEPT_VISITOR_ROOT();
 
 private:
    node_ptr<ID> _id;
    node_ptr<hilti::Type> _type;
-   node_ptr<Expression> _default;
    bool _internal;
 };
 
@@ -1731,15 +1715,6 @@ public:
 
    /// Returns the field of a given name, or null if no such field.
    shared_ptr<struct_::Field> lookup(shared_ptr<ID> id) const;
-
-   /// Overwrites the default runtime dtor function.
-   ///
-   /// dtor: The linker-level name of the function.
-   void setLibHiltiDtor(const string& dtor);
-
-   /// Returns the struct's custom dtor runtime function name if one has
-   /// been set, or an empty string if not.
-   const string& libHiltiDtor() const;
 
    const trait::TypeList::type_list typeList() const override;
    parameter_list parameters() const override;

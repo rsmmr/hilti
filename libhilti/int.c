@@ -73,7 +73,7 @@ uint64_t hlt_int_pow(uint64_t base, uint64_t exp, hlt_exception** excpt, hlt_exe
     return result;
 }
 
-hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx)
+hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** exception, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_INTEGER);
 
@@ -97,8 +97,7 @@ hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t
     // we should code our own itoa().
     char buffer[128];
     int len = snprintf(buffer, 128, fmt, val);
-    hlt_string s = hlt_string_from_data((int8_t*)buffer, len, exception, ctx);
-    return s;
+    return hlt_string_from_data((int8_t*)buffer, len, exception, ctx);
 }
 
 int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
@@ -126,7 +125,7 @@ int64_t hlt_int_to_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception
         return v;
 #endif
 
-    hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+    hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
     return 0;
 }
 
@@ -145,7 +144,7 @@ int64_t hlt_int_from_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_excepti
         return v;
 #endif
 
-    hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+    hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
     return 0;
 }
 

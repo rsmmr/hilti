@@ -62,9 +62,6 @@ typedef struct __hlt_set {
     __khval_set_t *vals;
 } kh_set_t;
 
-__HLT_RTTI_GC_TYPE(__hlt_map_timer_cookie,  HLT_TYPE_MAP_TIMER_COOKIE)
-__HLT_RTTI_GC_TYPE(__hlt_set_timer_cookie,  HLT_TYPE_SET_TIMER_COOKIE)
-
 static inline hlt_hash _kh_hash_func(const void* obj, const hlt_type_info* type)
 {
     return (*type->hash)(type, obj, 0, 0);
@@ -78,19 +75,19 @@ static inline int8_t _kh_hash_equal(const void* obj1, const void* obj2, const hl
 KHASH_INIT(map, __khkey_t, __khval_map_t, 1, _kh_hash_func, _kh_hash_equal)
 KHASH_INIT(set, __khkey_t, __khval_set_t, 1, _kh_hash_func, _kh_hash_equal)
 
-static inline void _map_clear_default(hlt_map* m)
+static inline void _map_clear_default(hlt_map* m, hlt_execution_context* ctx)
 {
     switch ( m->default_type ) {
      case HLT_MAP_DEFAULT_NONE:
         break;
 
      case HLT_MAP_DEFAULT_VALUE:
-        GC_DTOR_GENERIC(m->default_.value, m->tvalue);
+        GC_DTOR_GENERIC(m->default_.value, m->tvalue, ctx);
         hlt_free(m->default_.value);
         break;
 
      case HLT_MAP_DEFAULT_FUNCTION:
-        GC_DTOR(m->default_.function, hlt_callable);
+        GC_DTOR(m->default_.function, hlt_callable, ctx);
         break;
     }
 
@@ -98,67 +95,74 @@ static inline void _map_clear_default(hlt_map* m)
     memset(&m->default_, 0, sizeof(m->default_)); // Just to help debugging.
 }
 
-void hlt_map_dtor(hlt_type_info* ti, hlt_map* m)
+void hlt_map_dtor(hlt_type_info* ti, hlt_map* m, hlt_execution_context* ctx)
 {
     for ( khiter_t i = kh_begin(m); i != kh_end(m); i++ ) {
         if ( kh_exist(m, i) ) {
-            GC_DTOR_GENERIC(kh_key(m, i), m->tkey);
-            GC_DTOR_GENERIC(kh_value(m, i).val, m->tvalue);
+
+            if ( kh_value(m, i).timer ) {
+                hlt_exception* excpt = 0;
+                hlt_timer_cancel(kh_value(m, i).timer, &excpt, ctx);
+            }
+
+            GC_DTOR_GENERIC(kh_key(m, i), m->tkey, ctx);
+            GC_DTOR_GENERIC(kh_value(m, i).val, m->tvalue, ctx);
             hlt_free(kh_key(m, i));
             hlt_free(kh_value(m, i).val);
         }
     }
 
-    _map_clear_default(m);
+    _map_clear_default(m, ctx);
 
-    GC_DTOR(m->tmgr, hlt_timer_mgr);
+    GC_DTOR(m->tmgr, hlt_timer_mgr, ctx);
     hlt_free(m->cache_result);
     hlt_free(m->cache_default);
 
     kh_destroy_map(m);
 }
 
-void hlt_iterator_map_cctor(hlt_type_info* ti, hlt_iterator_map* i)
+void hlt_iterator_map_cctor(hlt_type_info* ti, hlt_iterator_map* i, hlt_execution_context* ctx)
 {
-    GC_CCTOR(i->map, hlt_map);
+    GC_CCTOR(i->map, hlt_map, ctx);
 }
 
-void hlt_iterator_map_dtor(hlt_type_info* ti, hlt_iterator_map* i)
+void hlt_iterator_map_dtor(hlt_type_info* ti, hlt_iterator_map* i, hlt_execution_context* ctx)
 {
-    GC_DTOR(i->map, hlt_map);
+    GC_DTOR(i->map, hlt_map, ctx);
 }
 
-void __hlt_map_timer_cookie_dtor(hlt_type_info* ti, __hlt_map_timer_cookie* c)
+void __hlt_map_timer_cookie_dtor(hlt_type_info* ti, __hlt_map_timer_cookie* c, hlt_execution_context* ctx)
 {
-    GC_DTOR(c->map, hlt_map);
+    GC_DTOR(c->map, hlt_map, ctx);
 }
 
-void hlt_set_dtor(hlt_type_info* ti, hlt_set* s)
+void hlt_set_dtor(hlt_type_info* ti, hlt_set* s, hlt_execution_context* ctx)
 {
     for ( khiter_t i = kh_begin(s); i != kh_end(s); i++ ) {
         if ( kh_exist(s, i) ) {
-            GC_DTOR_GENERIC(kh_key(s, i), s->tkey);
+
+            if ( kh_value(s, i) ) {
+                hlt_exception* excpt = 0;
+                hlt_timer_cancel(kh_value(s, i), &excpt, ctx);
+            }
+
+            GC_DTOR_GENERIC(kh_key(s, i), s->tkey, ctx);
             hlt_free(kh_key(s, i));
         }
     }
 
-    GC_DTOR(s->tmgr, hlt_timer_mgr);
+    GC_DTOR(s->tmgr, hlt_timer_mgr, ctx);
     kh_destroy_set(s);
 }
 
-void hlt_iterator_set_cctor(hlt_type_info* ti, hlt_iterator_set* i)
+void hlt_iterator_set_cctor(hlt_type_info* ti, hlt_iterator_set* i, hlt_execution_context* ctx)
 {
-    GC_CCTOR(i->set, hlt_set);
+    GC_CCTOR(i->set, hlt_set, ctx);
 }
 
-void hlt_iterator_set_dtor(hlt_type_info* ti, hlt_iterator_set* i)
+void hlt_iterator_set_dtor(hlt_type_info* ti, hlt_iterator_set* i, hlt_execution_context* ctx)
 {
-    GC_DTOR(i->set, hlt_set);
-}
-
-void __hlt_set_timer_cookie_dtor(hlt_type_info* ti, __hlt_set_timer_cookie* c)
-{
-    GC_DTOR(c->set, hlt_set);
+    GC_DTOR(i->set, hlt_set, ctx);
 }
 
 // Does not ref copied element.
@@ -195,10 +199,9 @@ static inline void _access_set(hlt_set* m, khiter_t i, hlt_exception** excpt, hl
 
 //////////// Maps.
 
-hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_map_init(hlt_map* m, const hlt_type_info* key, const hlt_type_info* value, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_map* m = GC_NEW(hlt_map);  // This would normally be kh_init(map); however we need to init the gc header.
-    GC_INIT(m->tmgr, tmgr, hlt_timer_mgr);
+    GC_INIT(m->tmgr, tmgr, hlt_timer_mgr, ctx);
     m->tkey = key;
     m->tvalue = value;
     m->timeout = 0.0;
@@ -206,8 +209,13 @@ hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_t
     m->cache_result = 0;
     m->cache_default = 0;
 
-    _map_clear_default(m);
+    _map_clear_default(m, ctx);
+}
 
+hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_map* m = GC_NEW(hlt_map, ctx);  // This would normally be kh_init(map); however we need to init the gc header.
+    _hlt_map_init(m, key, value, tmgr, excpt, ctx);
     return m;
 }
 
@@ -218,7 +226,7 @@ static void _clone_init_in_thread_map(const hlt_type_info* ti, void* dstp, hlt_e
     // If we arrive here, it can't be a custom timer mgr but only the
     // thread-wide one.
     dst->tmgr = ctx->tmgr;
-    GC_CCTOR(dst->tmgr, hlt_timer_mgr);
+    GC_CCTOR(dst->tmgr, hlt_timer_mgr, ctx);
 
     for ( khiter_t i = kh_begin(dst); i != kh_end(dst); i++ ) {
         if ( ! kh_exist(dst, i) )
@@ -230,13 +238,13 @@ static void _clone_init_in_thread_map(const hlt_type_info* ti, void* dstp, hlt_e
             continue;
 
         hlt_timer_mgr_schedule(dst->tmgr, t->time, t, excpt, ctx);
-        GC_DTOR(t, hlt_timer); // Not memory-managed on our end.
+        GC_DTOR(t, hlt_timer, ctx); // Not memory-managed on our end.
     }
 }
 
 void* hlt_map_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return GC_NEW(hlt_map);
+    return GC_NEW_REF(hlt_map, ctx);
 }
 
 void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -246,7 +254,7 @@ void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
 
     if ( src->tmgr && src->tmgr != ctx->tmgr ) {
         hlt_string msg = hlt_string_from_asciiz("map with non-standard timer mgr cannot be cloned", excpt, ctx);
-        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg);
+        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg, ctx);
         return;
     }
 
@@ -289,7 +297,7 @@ void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
         assert(ret); // Cannot exist yet.
 
         if ( src->tmgr && src->timeout ) {
-            GC_CCTOR(dst, hlt_map);
+            GC_CCTOR(dst, hlt_map, ctx);
             __hlt_map_timer_cookie cookie = { dst, key };
             hlt_timer* t = __hlt_timer_new_map(cookie, excpt, ctx);
             t->time = kh_value(src, i).timer->time;
@@ -309,7 +317,7 @@ void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
 void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return 0;
     }
 
@@ -339,42 +347,36 @@ void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exceptio
 
         }
 
-        hlt_set_exception(excpt, &hlt_exception_index_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_index_error, 0, ctx);
         return 0;
     }
 
     _access_map(m, i, excpt, ctx);
 
-    void* val = kh_value(m, i).val;
-    GC_CCTOR_GENERIC(val, m->tvalue);
-    return val;
+    return kh_value(m, i).val;
 }
 
 void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return 0;
     }
 
     khiter_t i = kh_get_map(m, key, tkey);
 
-    if ( i == kh_end(m) ) {
-        GC_CCTOR_GENERIC(def, tdef);
+    if ( i == kh_end(m) )
         return def;
-    }
 
     _access_map(m, i, excpt, ctx);
 
-    void* val = kh_value(m, i).val;
-    GC_CCTOR_GENERIC(val, m->tvalue);
-    return val;
+    return kh_value(m, i).val;
 }
 
 void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tval, void* value, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return;
     }
 
@@ -392,7 +394,7 @@ void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_
 
         // Delete the old value.
         void* val = kh_value(m, i).val;
-        GC_DTOR_GENERIC(val, m->tvalue);
+        GC_DTOR_GENERIC(val, m->tvalue, ctx);
         hlt_free(val);
 
         // Update timer.
@@ -403,27 +405,26 @@ void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_
         // New entry.
         if ( m->tmgr && m->timeout ) {
             // Create timer.
-            GC_CCTOR(m, hlt_map);
             __hlt_map_timer_cookie cookie = { m, keytmp };
             kh_value(m, i).timer = __hlt_timer_new_map(cookie, excpt, ctx);
             hlt_time t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
             hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i).timer, excpt, ctx);
-            GC_DTOR(kh_value(m, i).timer, hlt_timer); // Not memory-managed on our end.
+            GC_DTOR(kh_value(m, i).timer, hlt_timer, ctx); // Not memory-managed on our end.
         }
         else
             kh_value(m, i).timer = 0;
 
-        GC_CCTOR_GENERIC(keytmp, m->tkey);
+        GC_CCTOR_GENERIC(keytmp, m->tkey, ctx);
     }
 
     kh_value(m, i).val = valtmp;
-    GC_CCTOR_GENERIC(valtmp, m->tvalue);
+    GC_CCTOR_GENERIC(valtmp, m->tvalue, ctx);
 }
 
 int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return 0;
     }
 
@@ -438,7 +439,7 @@ int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exce
 void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return;
     }
 
@@ -451,11 +452,11 @@ void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_except
         }
 
         void* key = kh_key(m, i);
-        GC_DTOR_GENERIC(key, m->tkey);
+        GC_DTOR_GENERIC(key, m->tkey, ctx);
         hlt_free(key);
 
         void* val = kh_value(m, i).val;
-        GC_DTOR_GENERIC(val, m->tvalue);
+        GC_DTOR_GENERIC(val, m->tvalue, ctx);
         hlt_free(val);
 
         kh_del_map(m, i);
@@ -475,11 +476,11 @@ void hlt_map_expire(__hlt_map_timer_cookie cookie, hlt_exception** excpt, hlt_ex
     kh_value(cookie.map, i).timer = 0;
 
     void* key = kh_key(cookie.map, i);
-    GC_DTOR_GENERIC(key, cookie.map->tkey);
+    GC_DTOR_GENERIC(key, cookie.map->tkey, ctx);
     hlt_free(key);
 
     void* val = kh_value(cookie.map, i).val;
-    GC_DTOR_GENERIC(val, cookie.map->tvalue);
+    GC_DTOR_GENERIC(val, cookie.map->tvalue, ctx);
     hlt_free(val);
 
     kh_del_map(cookie.map, i);
@@ -488,7 +489,7 @@ void hlt_map_expire(__hlt_map_timer_cookie cookie, hlt_exception** excpt, hlt_ex
 int64_t hlt_map_size(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return 0;
     }
 
@@ -498,7 +499,7 @@ int64_t hlt_map_size(hlt_map* m, hlt_exception** excpt, hlt_execution_context* c
 void hlt_map_clear(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return;
     }
 
@@ -507,8 +508,8 @@ void hlt_map_clear(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx
             if ( kh_value(m, i).timer )
                 hlt_timer_cancel(kh_value(m, i).timer, excpt, ctx);
 
-            GC_DTOR_GENERIC(kh_key(m, i), m->tkey);
-            GC_DTOR_GENERIC(kh_value(m, i).val, m->tvalue);
+            GC_DTOR_GENERIC(kh_key(m, i), m->tkey, ctx);
+            GC_DTOR_GENERIC(kh_value(m, i).val, m->tvalue, ctx);
             hlt_free(kh_key(m, i));
             hlt_free(kh_value(m, i).val);
         }
@@ -519,7 +520,7 @@ void hlt_map_clear(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx
 
 void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    _map_clear_default(m);
+    _map_clear_default(m, ctx);
 
     if ( tdef->type != HLT_TYPE_CALLABLE )  {
         m->default_type = HLT_MAP_DEFAULT_VALUE;
@@ -530,17 +531,17 @@ void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_excep
     else {
         m->default_type = HLT_MAP_DEFAULT_FUNCTION;
         m->default_.function = *(hlt_callable **)def;
-        GC_CCTOR(m->default_.function, hlt_callable);
+        GC_CCTOR(m->default_.function, hlt_callable, ctx);
     }
 }
 
 void hlt_map_default_callable(hlt_map* m, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    _map_clear_default(m);
+    _map_clear_default(m, ctx);
 
     m->default_type = HLT_MAP_DEFAULT_FUNCTION;
     m->default_.function = func;
-    GC_CCTOR(m->default_.function, hlt_callable);
+    GC_CCTOR(m->default_.function, hlt_callable, ctx);
 }
 
 void hlt_map_timeout(hlt_map* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -549,13 +550,13 @@ void hlt_map_timeout(hlt_map* m, hlt_enum strategy, hlt_interval timeout, hlt_ex
     m->strategy = strategy;
 
     if ( ! m->tmgr )
-        GC_ASSIGN(m->tmgr, ctx->tmgr, hlt_timer_mgr);
+        GC_ASSIGN(m->tmgr, ctx->tmgr, hlt_timer_mgr, ctx);
 }
 
 hlt_iterator_map hlt_map_begin(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return hlt_map_end(excpt, ctx);
     }
 
@@ -563,7 +564,7 @@ hlt_iterator_map hlt_map_begin(hlt_map* m, hlt_exception** excpt, hlt_execution_
 
     for ( i.iter = kh_begin(m); i.iter != kh_end(m); i.iter++ ) {
         if ( kh_exist(m, i.iter) ) {
-            GC_INIT(i.map, m, hlt_map);
+            i.map = m;
             return i;
         }
     }
@@ -585,10 +586,8 @@ hlt_iterator_map hlt_iterator_map_incr(hlt_iterator_map i, hlt_exception** excpt
 
     while ( i.iter != kh_end(i.map) ) {
         ++i.iter; // Don't do that inside kh_exit. It will be evaluated twice ...
-        if ( kh_exist(i.map, i.iter) ) {
-            GC_CCTOR(i, hlt_iterator_map);
+        if ( kh_exist(i.map, i.iter) )
             return i;
-        }
     }
 
     return hlt_map_end(excpt, ctx);
@@ -597,7 +596,7 @@ hlt_iterator_map hlt_iterator_map_incr(hlt_iterator_map i, hlt_exception** excpt
 void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.map ) {
-        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
         return 0;
     }
 
@@ -615,9 +614,6 @@ void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map i, hlt
 
     memcpy(result + offsets[0], key, types[0]->size);
     memcpy(result + offsets[1], val, types[1]->size);
-
-    GC_CCTOR_GENERIC(key, i.map->tkey);
-    GC_CCTOR_GENERIC(val, i.map->tvalue);
 
     return result;
 }
@@ -645,52 +641,41 @@ hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t
         if ( ! kh_exist(m, i) )
             continue;
 
-        if ( ! first ) {
-            hlt_string tmp = s;
+        if ( ! first )
             s = hlt_string_concat(s, separator, excpt, ctx);
-            GC_DTOR(tmp, hlt_string);
-        }
 
-        hlt_string key = hlt_object_to_string(m->tkey, kh_key(m, i), options, seen, excpt, ctx);
-        hlt_string value = hlt_object_to_string(m->tvalue, kh_value(m, i).val, options, seen, excpt, ctx);
+        hlt_string key = __hlt_object_to_string(m->tkey, kh_key(m, i), options, seen, excpt, ctx);
+        hlt_string value = __hlt_object_to_string(m->tvalue, kh_value(m, i).val, options, seen, excpt, ctx);
 
-        s = hlt_string_concat_and_unref(s, key, excpt, ctx);
-
-        hlt_string tmp = s;
+        s = hlt_string_concat(s, key, excpt, ctx);
         s = hlt_string_concat(s, colon, excpt, ctx);
-        GC_DTOR(tmp, hlt_string);
+        s = hlt_string_concat(s, value, excpt, ctx);
 
-        s = hlt_string_concat_and_unref(s, value, excpt, ctx);
-
-        if ( *excpt )
-            goto error;
+        if ( hlt_check_exception(excpt) )
+            return 0;
 
         first = 0;
     }
 
     hlt_string postfix = hlt_string_from_asciiz(" }", excpt, ctx);
-    s = hlt_string_concat_and_unref(s, postfix, excpt, ctx);
-
-    GC_DTOR(colon, hlt_string);
-    GC_DTOR(separator, hlt_string);
+    s = hlt_string_concat(s, postfix, excpt, ctx);
     return s;
-
-error:
-    GC_DTOR(colon, hlt_string);
-    GC_DTOR(separator, hlt_string);
-    GC_DTOR(s, hlt_string);
-    return 0;
 }
 
 //////////// Sets.
 
-hlt_set* hlt_set_new(const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_set_init(hlt_set* m, const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_set* m = GC_NEW(hlt_set);  // This would normally be kh_init(set); however we need to init the gc header.
-    GC_INIT(m->tmgr, tmgr, hlt_timer_mgr);
+    GC_INIT(m->tmgr, tmgr, hlt_timer_mgr, ctx);
     m->tkey = key;
     m->timeout = 0.0;
     m->strategy = hlt_enum_unset(excpt, ctx);
+}
+
+hlt_set* hlt_set_new(const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_set* m = GC_NEW(hlt_set, ctx);  // This would normally be kh_init(set); however we need to init the gc header.
+    _hlt_set_init(m, key, tmgr, excpt, ctx);
     return m;
 }
 
@@ -701,7 +686,7 @@ static void _clone_init_in_thread_set(const hlt_type_info* ti, void* dstp, hlt_e
     // If we arrive here, it can't be a custom timer mgr but only the
     // thread-wide one.
     dst->tmgr = ctx->tmgr;
-    GC_CCTOR(dst->tmgr, hlt_timer_mgr);
+    GC_CCTOR(dst->tmgr, hlt_timer_mgr, ctx);
 
     for ( khiter_t i = kh_begin(dst); i != kh_end(dst); i++ ) {
         if ( ! kh_exist(dst, i) )
@@ -713,13 +698,13 @@ static void _clone_init_in_thread_set(const hlt_type_info* ti, void* dstp, hlt_e
             continue;
 
         hlt_timer_mgr_schedule(dst->tmgr, t->time, t, excpt, ctx);
-        GC_DTOR(t, hlt_timer); // Not memory-managed on our end.
+        GC_DTOR(t, hlt_timer, ctx); // Not memory-managed on our end.
     }
 }
 
 void* hlt_set_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return GC_NEW(hlt_set);
+    return GC_NEW(hlt_set, ctx);
 }
 
 void hlt_set_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -729,7 +714,7 @@ void hlt_set_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
 
     if ( src->tmgr && src->tmgr != ctx->tmgr ) {
         hlt_string msg = hlt_string_from_asciiz("set with non-standard timer mgr cannot be cloned", excpt, ctx);
-        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg);
+        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg, ctx);
         return;
     }
 
@@ -751,7 +736,6 @@ void hlt_set_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
         assert(ret); // Cannot exist yet.
 
         if ( src->tmgr && src->timeout ) {
-            GC_CCTOR(dst, hlt_set);
             __hlt_set_timer_cookie cookie = { dst, key };
             hlt_timer* t = __hlt_timer_new_set(cookie, excpt, ctx);
             t->time = kh_value(src, i)->time;
@@ -769,7 +753,7 @@ void hlt_set_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
 void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return;
     }
 
@@ -789,24 +773,23 @@ void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_except
         // New entry.
         if ( m->tmgr && m->timeout ) {
             // Create timer.
-            GC_CCTOR(m, hlt_set);
             __hlt_set_timer_cookie cookie = { m, keytmp };
             kh_value(m, i) = __hlt_timer_new_set(cookie, excpt, ctx);
             hlt_interval t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
             hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i), excpt, ctx);
-            GC_DTOR(kh_value(m, i), hlt_timer); // Not memory-managed on our end.
+            GC_DTOR(kh_value(m, i), hlt_timer, ctx); // Not memory-managed on our end.
         }
         else
             kh_value(m, i) = 0;
 
-        GC_CCTOR_GENERIC(keytmp, m->tkey);
+        GC_CCTOR_GENERIC(keytmp, m->tkey, ctx);
     }
 }
 
 int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return 0;
     }
 
@@ -821,7 +804,7 @@ int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exce
 void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return;
     }
 
@@ -834,7 +817,7 @@ void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_except
         }
 
         void* key = kh_key(m, i);
-        GC_DTOR_GENERIC(key, m->tkey);
+        GC_DTOR_GENERIC(key, m->tkey, ctx);
         hlt_free(key);
 
         kh_del_set(m, i);
@@ -854,7 +837,7 @@ void hlt_set_expire(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_ex
     kh_value(cookie.set, i) = 0;
 
     void* key = kh_key(cookie.set, i);
-    GC_DTOR_GENERIC(key, cookie.set->tkey);
+    GC_DTOR_GENERIC(key, cookie.set->tkey, ctx);
     hlt_free(key);
 
     kh_del_set(cookie.set, i);
@@ -863,7 +846,7 @@ void hlt_set_expire(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_ex
 int64_t hlt_set_size(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return 0;
     }
 
@@ -873,7 +856,7 @@ int64_t hlt_set_size(hlt_set* m, hlt_exception** excpt, hlt_execution_context* c
 void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return;
     }
 
@@ -882,7 +865,7 @@ void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx
             if ( kh_value(m, i) )
                 hlt_timer_cancel(kh_value(m, i), excpt, ctx);
 
-            GC_DTOR_GENERIC(kh_key(m, i), m->tkey);
+            GC_DTOR_GENERIC(kh_key(m, i), m->tkey, ctx);
             hlt_free(kh_key(m, i));
         }
     }
@@ -896,13 +879,13 @@ void hlt_set_timeout(hlt_set* m, hlt_enum strategy, hlt_interval timeout, hlt_ex
     m->strategy = strategy;
 
     if ( ! m->tmgr )
-        GC_ASSIGN(m->tmgr, ctx->tmgr, hlt_timer_mgr);
+        GC_ASSIGN(m->tmgr, ctx->tmgr, hlt_timer_mgr, ctx);
 }
 
 hlt_iterator_set hlt_set_begin(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return hlt_set_end(excpt, ctx);
     }
 
@@ -910,7 +893,7 @@ hlt_iterator_set hlt_set_begin(hlt_set* m, hlt_exception** excpt, hlt_execution_
 
     for ( i.iter = kh_begin(m); i.iter != kh_end(m); i.iter++ ) {
         if ( kh_exist(m, i.iter) ) {
-            GC_INIT(i.set, m, hlt_set);
+            i.set = m;
             return i;
         }
     }
@@ -932,10 +915,8 @@ hlt_iterator_set hlt_iterator_set_incr(hlt_iterator_set i, hlt_exception** excpt
 
     while ( i.iter != kh_end(i.set) ) {
         ++i.iter; // Don't do that inside kh_exit. It will be evaluated twice ...
-        if ( kh_exist(i.set, i.iter) ) {
-            GC_CCTOR(i, hlt_iterator_set);
+        if ( kh_exist(i.set, i.iter) )
             return i;
-        }
     }
 
     return hlt_set_end(excpt, ctx);
@@ -944,13 +925,11 @@ hlt_iterator_set hlt_iterator_set_incr(hlt_iterator_set i, hlt_exception** excpt
 void* hlt_iterator_set_deref(hlt_iterator_set i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.set ) {
-        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
         return 0;
     }
 
-    void* key = kh_key(i.set, i.iter);
-    GC_CCTOR_GENERIC(key, i.set->tkey);
-    return key;
+    return kh_key(i.set, i.iter);
 }
 
 int8_t hlt_iterator_set_eq(hlt_iterator_set i1, hlt_iterator_set i2, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -975,30 +954,20 @@ hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t
         if ( ! kh_exist(m, i) )
             continue;
 
-        if ( ! first ) {
-            hlt_string tmp = s;
+        if ( ! first )
             s = hlt_string_concat(s, separator, excpt, ctx);
-            GC_DTOR(tmp, hlt_string);
-        }
 
-        hlt_string key = hlt_object_to_string(m->tkey, kh_key(m, i), options, seen, excpt, ctx);
+        hlt_string key = __hlt_object_to_string(m->tkey, kh_key(m, i), options, seen, excpt, ctx);
+        s = hlt_string_concat(s, key, excpt, ctx);
 
-        s = hlt_string_concat_and_unref(s, key, excpt, ctx);
-
-        if ( *excpt )
-            goto error;
+        if ( hlt_check_exception(excpt) )
+            return 0;
 
         first = 0;
     }
 
     hlt_string postfix = hlt_string_from_asciiz(" }", excpt, ctx);
-    s = hlt_string_concat_and_unref(s, postfix, excpt, ctx);
+    s = hlt_string_concat(s, postfix, excpt, ctx);
 
-    GC_DTOR(separator, hlt_string);
     return s;
-
-error:
-    GC_DTOR(separator, hlt_string);
-    GC_DTOR(s, hlt_string);
-    return 0;
 }

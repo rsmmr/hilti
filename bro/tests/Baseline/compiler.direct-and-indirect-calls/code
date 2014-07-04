@@ -21,4 +21,4 @@ global ref<bytes> __opt_ctor_5 = b""
 global ref<bytes> __opt_ctor_6 = b"BRO_LOG_SUFFIX"
 global ref<bytes> __opt_ctor_7 = b"%s.%s"
 global ref<bytes> __opt_ctor_8 = b"|"
-global ref<regexp<>> __opt_ctor_9 = /(~~)/
+global ref<regexp> __opt_ctor_9 = /(~~)/

@@ -1,0 +1,61 @@
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+# @TEST-EXEC:  hiltic -l %INPUT | llvm-extract -func=hlt.main_run /dev/stdin | llvm-dis| grep "call .*@hlt_bytes" >calls
+# @TEST-EXEC:  btest-diff calls
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b &hoist
+    local ref<bytes> c &hoist
+    local iterator<bytes> i1
+    local iterator<bytes> i2
+
+    ###
+
+    b = bytes.concat b"1" b"2"
+    call Hilti::print(b)
+
+    b = bytes.concat b"11111111111111111111111111111111111111111111111111111111111111" b"2"
+    call Hilti::print(b)
+
+    ###
+
+    b = b"123456"
+    i1 = bytes.offset b 2
+    i2 = bytes.offset b 4
+    c = bytes.sub i1 i2
+    call Hilti::print (c)
+
+    ###
+
+    b = bytes.copy b"Foo"
+    call Hilti::print (b)
+
+    ###
+
+    b = bytes.upper b"AbCdE"
+    call Hilti::print (b)
+
+    ###
+
+    b = bytes.lower b"AbCdE"
+    call Hilti::print (b)
+
+    ###
+
+    b = bytes.strip b"  AbCdE  "
+    call Hilti::print (b)
+
+    ###
+
+    b = bytes.join b"." list<int<32>>(1, 2, 3)
+    call Hilti::print (b)
+
+}
+
+
+

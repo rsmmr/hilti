@@ -710,10 +710,10 @@ void Validator::visit(type::Reference* t)
 
 void Validator::visit(type::RegExp* t)
 {
-    for ( auto a : t->attributes() ) {
-        if ( a != "&nosub" )
-            error(t, util::fmt("unknown regexp attribute '%s'", a.c_str()));
-    }
+    string msg;
+
+    if ( ! t->attributes().validate(attribute::REGEXP, &msg) )
+         error(t, msg);
 }
 
 void Validator::visit(type::Set* t)

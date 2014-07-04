@@ -122,10 +122,10 @@ void StatementBuilder::visit(statement::instruction::classifier::Get* i)
     auto fields = _llvmFields(cg(), rtype, rtype, cg()->llvmValue(op2), i->location());
 
     CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields) };
-    auto voidp = cg()->llvmCall("hlt::classifier_get", args, false);
 
-    _freeFields(cg(), rtype, fields, i->location());
-    cg()->llvmCheckException();
+    auto voidp = cg()->llvmCall("hlt::classifier_get", args, false, true, [&](CodeGen* cg) {
+                                _freeFields(cg, rtype, fields, i->location());
+                            });
 
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(vtype)));
     auto result = builder()->CreateLoad(casted);
@@ -141,7 +141,7 @@ void StatementBuilder::visit(statement::instruction::classifier::Matches* i)
     auto fields = _llvmFields(cg(), rtype, rtype, cg()->llvmValue(op2), i->location());
 
     CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields) };
-    auto result = cg()->llvmCall("hlt::classifier_matches", args, false);
+    auto result = cg()->llvmCall("hlt::classifier_matches", args, false, false);
 
     _freeFields(cg(), rtype, fields, i->location());
 

@@ -330,6 +330,9 @@ Input files may be end in one of the following extensions:
     if options.time:
         options.verbose = True
 
+    if options.optimize:
+        options.debug = 0
+
     global Options
     Options = options
 

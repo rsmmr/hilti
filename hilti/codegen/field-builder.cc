@@ -142,13 +142,14 @@ void FieldBuilder::visit(type::Bytes* t)
     auto src_type = arg1();
     auto src_val = arg2();
 
-    CodeGen::expr_list args = { builder::codegen::create(src_type, src_val) };
-    auto data = cg()->llvmCall("hlt::bytes_to_raw", args);
-    auto len = cg()->llvmCall("hlt::bytes_len", args);
+    auto cgb = builder::codegen::create(src_type, src_val);
+    auto len = cg()->llvmCall("hlt::bytes_len", { cgb }, false);
 
+    // Don't used CG's version here, as the length is dynamic and can't be
+    // put into the entry block.
+    auto buffer = cg()->builder()->CreateAlloca(cg()->llvmTypeInt(8), len);
+    auto data = cg()->llvmCallC("hlt_bytes_to_raw", { buffer, len, src_val }, true, true);
     auto result = cg()->llvmClassifierField(data, len);
-
-    cg()->llvmFree(data, "rule-builder-bytes", t->location());
 
     setResult(result);
 }

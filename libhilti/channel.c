@@ -58,9 +58,9 @@ struct __hlt_channel {
     __hlt_channel_shared* shared;   /* Shared implementation state. */
 };
 
-static void* _hlt_channel_read_item(hlt_channel* ch);
+static void* _hlt_channel_read_item(hlt_channel* ch, hlt_execution_context* ctx);
 
-void hlt_channel_dtor(hlt_type_info* ti, hlt_channel* ch)
+void hlt_channel_dtor(hlt_type_info* ti, hlt_channel* ch, hlt_execution_context* ctx)
 {
     __hlt_channel_shared* shared = ch->shared;
 
@@ -75,10 +75,8 @@ void hlt_channel_dtor(hlt_type_info* ti, hlt_channel* ch)
 
     pthread_mutex_unlock(&shared->mutex);
 
-    while ( shared->size ) {
-        void* item = _hlt_channel_read_item(ch);
-        GC_DTOR_GENERIC(item, shared->type);
-    }
+    while ( shared->size )
+        _hlt_channel_read_item(ch, ctx);
 
     hlt_channel_chunk* rc = shared->rc;
 
@@ -100,7 +98,7 @@ static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, 
 {
     hlt_channel_chunk *chunk = hlt_malloc(sizeof(hlt_channel_chunk));
     if ( ! chunk ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0, ctx);
         return 0;
     }
 
@@ -109,7 +107,7 @@ static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, 
 
     chunk->data = hlt_malloc(capacity * item_size);
     if ( ! chunk->data ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0, ctx);
         return 0;
     }
 
@@ -119,7 +117,7 @@ static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, 
 }
 
 // Internal helper function performing a read operation.
-static inline void* _hlt_channel_read_item(hlt_channel* ch)
+static inline void* _hlt_channel_read_item(hlt_channel* ch, hlt_execution_context* ctx)
 {
     __hlt_channel_shared* shared = ch->shared;
 
@@ -135,6 +133,8 @@ static inline void* _hlt_channel_read_item(hlt_channel* ch)
 
     shared->head += shared->type->size;
     --shared->size;
+
+    GC_DTOR_GENERIC(item, shared->type, ctx);
 
     return item;
 }
@@ -153,7 +153,7 @@ static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_excep
 
         shared->wc->next = _hlt_chunk_create(shared->chunk_cap, shared->type->size, excpt, ctx);
         if ( ! shared->wc->next ) {
-            hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
+            hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0, ctx);
             return 1;
         }
 
@@ -165,7 +165,7 @@ static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_excep
     hlt_clone_deep(shared->tail, shared->type, data, excpt, ctx);
 #else
     memcpy(shared->tail, data, shared->type->size);
-    GC_CCTOR_GENERIC(shared->tail, shared->type);
+    GC_CCTOR_GENERIC(shared->tail, shared->type, ctx);
 #endif
 
     ++shared->wc->wcnt;
@@ -178,7 +178,7 @@ static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_excep
 
 void* hlt_channel_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return GC_NEW(hlt_channel);
+    return GC_NEW_REF(hlt_channel, ctx);
 }
 
 void hlt_channel_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -196,14 +196,8 @@ void hlt_channel_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __h
     pthread_mutex_unlock(&shared->mutex);
 }
 
-hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_channel_init(hlt_channel* ch, const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_channel *ch = GC_NEW(hlt_channel);
-    if ( ! ch ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
-
     __hlt_channel_shared* shared = hlt_malloc(sizeof(__hlt_channel_shared));
     ch->shared = shared;
 
@@ -215,8 +209,8 @@ hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacit
     shared->chunk_cap = INITIAL_CHUNK_SIZE;
     shared->rc = shared->wc = _hlt_chunk_create(shared->chunk_cap, shared->type->size, excpt, ctx);
     if ( ! shared->rc ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0, ctx);
+        return;
     }
 
     shared->head = shared->tail = shared->rc->data;
@@ -224,7 +218,12 @@ hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacit
     pthread_mutex_init(&shared->mutex, NULL);
     pthread_cond_init(&shared->empty_cv, NULL);
     pthread_cond_init(&shared->full_cv, NULL);
+}
 
+hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_channel *ch = GC_NEW(hlt_channel, ctx);
+    _hlt_channel_init(ch, item_type, capacity, excpt, ctx);
     return ch;
 }
 
@@ -251,7 +250,7 @@ void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, void* dat
     pthread_mutex_lock(&shared->mutex);
 
     if ( shared->capacity && shared->size == shared->capacity ) {
-        hlt_set_exception(excpt, &hlt_exception_would_block, 0);
+        hlt_set_exception(excpt, &hlt_exception_would_block, 0, ctx);
         goto unlock_exit;
     }
 
@@ -274,7 +273,7 @@ void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt, hlt_execution_con
     while ( shared->size == 0 )
         pthread_cond_wait(&shared->empty_cv, &shared->mutex);
 
-    void *item = _hlt_channel_read_item(ch);
+    void *item = _hlt_channel_read_item(ch, ctx);
 
     pthread_cond_signal(&shared->full_cv);
 
@@ -291,11 +290,11 @@ void* hlt_channel_read_try(hlt_channel* ch, hlt_exception** excpt, hlt_execution
     void *item = 0;
 
     if ( shared->size == 0 ) {
-        hlt_set_exception(excpt, &hlt_exception_would_block, 0);
+        hlt_set_exception(excpt, &hlt_exception_would_block, 0, ctx);
         goto unlock_exit;
     }
 
-    item = _hlt_channel_read_item(ch);
+    item = _hlt_channel_read_item(ch, ctx);
 
     pthread_cond_signal(&shared->full_cv);
 
@@ -330,14 +329,12 @@ hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t o
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
     int i;
     for ( i = 0; i < type->num_params; i++ ) {
-        hlt_string t = hlt_object_to_string(types[i], obj, options, seen, excpt, ctx);
-        s = hlt_string_concat_and_unref(s, t, excpt, ctx);
+        hlt_string t = __hlt_object_to_string(types[i], obj, options, seen, excpt, ctx);
+        s = hlt_string_concat(s, t, excpt, ctx);
 
-        if ( i < type->num_params - 1 ) {
-            GC_CCTOR(separator, hlt_string);
-            s = hlt_string_concat_and_unref(s, separator, excpt, ctx);
-        }
+        if ( i < type->num_params - 1 )
+            s = hlt_string_concat(s, separator, excpt, ctx);
     }
 
-    return hlt_string_concat_and_unref(s, postfix, excpt, ctx);
+    return hlt_string_concat(s, postfix, excpt, ctx);
 }

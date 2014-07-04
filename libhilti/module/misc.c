@@ -13,7 +13,7 @@ void hilti_abort(hlt_exception** excpt)
 
 void hilti_terminate(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_set_exception(excpt, &hlt_exception_termination, 0);
+    hlt_set_exception(excpt, &hlt_exception_termination, 0, ctx);
 }
 
 // A non-yielding sleep.

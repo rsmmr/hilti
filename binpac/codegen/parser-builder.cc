@@ -835,7 +835,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         auto sfield = hilti::builder::struct_::field(name, type, nullptr, false, f->location());
 
         if ( f->anonymous() )
-            sfield->setCanRemove();
+            sfield->type()->attributes().add(hilti::attribute::CANREMOVE);
 
         have.insert(name);
         fields.push_back(sfield);
@@ -909,7 +909,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
 
     for ( auto f : fields ) {
         if ( util::startsWith(f->id()->name(), "__") )
-            f->setCanRemove();
+            f->type()->attributes().add(hilti::attribute::CANREMOVE);
     }
 
     auto s = hilti::builder::struct_::type(fields, u->location());
@@ -1346,7 +1346,7 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::I
     else
         rtype = hilti::builder::void_::type();
 
-    cg()->moduleBuilder()->pushHook(name, hilti::builder::function::result(rtype), p, nullptr, priority, 0, false);
+    cg()->moduleBuilder()->pushHook(name, hilti::builder::function::result(rtype), p, hilti::AttributeSet(), priority, 0, false);
 
     shared_ptr<hilti::builder::BlockBuilder> hook = nullptr;
     shared_ptr<hilti::builder::BlockBuilder> cont = nullptr;
@@ -1708,19 +1708,20 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiMatchTokenInit(const string& 
     auto glob = cg()->moduleBuilder()->lookupNode("match-token", name);
 
     if ( ! glob ) {
-        std::list<std::pair<string, string>> tokens;
+        std::list<string> tokens;
 
         for ( auto t : terms ) {
             // FIXME: Really shouldn't have to do this cast here. Should we
             // pass in a list of Literals instead?
             auto l = ast::checkedCast<production::Literal>(t);
             for ( auto p : l->patterns() )
-                tokens.push_back(std::make_pair(util::fmt("%s{#%d}", p.first, l->tokenID()), ""));
+                tokens.push_back(util::fmt("%s{#%d}", p, l->tokenID()));
         }
 
         auto op = hilti::builder::regexp::create(tokens);
-        auto rty = hilti::builder::reference::type(hilti::builder::regexp::type({"&nosub"}));
-        glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node(name), rty, op);
+        auto re = ast::checkedCast<hilti::ctor::RegExp>(op->ctor());
+        re->attributes().add(attribute::NOSUB);
+        glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node(name), op->type(), op);
 
         cg()->moduleBuilder()->cacheNode("match-token", name, glob);
     }

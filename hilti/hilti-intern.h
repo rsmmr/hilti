@@ -20,6 +20,7 @@
 #include "statement.h"
 #include "type.h"
 #include "variable.h"
+#include "attribute.h"
 
 #include "passes/passes.h"
 #include "builder/builder.h"

@@ -18,7 +18,7 @@
 typedef struct {
     void* run;   // Run function with HILTI linkage.
     void* run_c; // Run function with HILTI-C linkage that can be called from C via HLT_CALLABLE_RUN.
-    void (*dtor)(hlt_callable* callable); // Dtor function.
+    void (*dtor)(hlt_callable* callable, hlt_execution_context* ctx); // Dtor function.
     void (*clone_init)(hlt_callable* dst, hlt_callable* src, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx); // Clone init function.
     int64_t object_size; // Total size of the __hlt_callable object.
 } __hlt_callable_func;

@@ -7,6 +7,9 @@
 #include "../pass.h"
 
 namespace hilti {
+
+class CompilerContext;
+
 namespace passes {
 
 class CFG;

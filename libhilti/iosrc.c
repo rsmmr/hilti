@@ -10,16 +10,16 @@ typedef struct  {
     hlt_bytes* pkt;
 } __hlt_iterator_iosrc;
 
-void hlt_iterator_iosrc_cctor(hlt_type_info* ti, __hlt_iterator_iosrc* i)
+void hlt_iterator_iosrc_cctor(hlt_type_info* ti, __hlt_iterator_iosrc* i, hlt_execution_context* ctx)
 {
-    GC_CCTOR(i->src, hlt_iosrc);
-    GC_CCTOR(i->pkt, hlt_bytes);
+    GC_CCTOR(i->src, hlt_iosrc, ctx);
+    GC_CCTOR(i->pkt, hlt_bytes, ctx);
 }
 
-void hlt_iterator_iosrc_dtor(hlt_type_info* ti, __hlt_iterator_iosrc* i)
+void hlt_iterator_iosrc_dtor(hlt_type_info* ti, __hlt_iterator_iosrc* i, hlt_execution_context* ctx)
 {
-    GC_DTOR(i->src, hlt_iosrc);
-    GC_DTOR(i->pkt, hlt_bytes);
+    GC_DTOR(i->src, hlt_iosrc, ctx);
+    GC_DTOR(i->pkt, hlt_bytes, ctx);
 }
 
 static void _raise_error(hlt_iosrc* src, const char* errbuf, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -30,14 +30,11 @@ static void _raise_error(hlt_iosrc* src, const char* errbuf, hlt_exception** exc
     hlt_string colon = hlt_string_from_asciiz(": ", excpt, ctx);
 
     hlt_string msg = hlt_string_concat(prefix, src->iface, excpt, ctx);
-    GC_DTOR(prefix, hlt_string);
 
-    msg = hlt_string_concat_and_unref(msg, colon, excpt, ctx);
-    msg = hlt_string_concat_and_unref(msg, hlt_string_from_asciiz(err, excpt, ctx), excpt, ctx);
+    msg = hlt_string_concat(msg, colon, excpt, ctx);
+    msg = hlt_string_concat(msg, hlt_string_from_asciiz(err, excpt, ctx), excpt, ctx);
 
-    hlt_set_exception(excpt, &hlt_exception_io_error, msg);
-
-    GC_DTOR(msg, hlt_string);
+    hlt_set_exception(excpt, &hlt_exception_io_error, msg, ctx);
 }
 
 static void _strip_link_layer(hlt_iosrc* src, const char** pkt, int* caplen, int datalink, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -79,15 +76,15 @@ static void _strip_link_layer(hlt_iosrc* src, const char** pkt, int* caplen, int
     *caplen -= hdr_size;
 }
 
-void hlt_iosrc_dtor(hlt_type_info* ti, hlt_iosrc* c)
+void hlt_iosrc_dtor(hlt_type_info* ti, hlt_iosrc* c, hlt_execution_context* ctx)
 {
     if ( c->handle )
         pcap_close(c->handle);
 
-    GC_CLEAR(c->iface, hlt_string);
+    GC_CLEAR(c->iface, hlt_string, ctx);
 }
 
-hlt_string hlt_iosrc_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_iosrc_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_iosrc* src = *((const hlt_iosrc**)obj);
 
@@ -98,21 +95,20 @@ hlt_string hlt_iosrc_to_string(const hlt_type_info* type, const void* obj, int32
     hlt_string postfix = hlt_string_from_asciiz(">", excpt, ctx);
 
     hlt_string str = hlt_string_concat(prefix, src->iface, excpt, ctx);
-    str = hlt_string_concat_and_unref(str, postfix, excpt, ctx);
-
-    GC_DTOR(prefix, hlt_string);
+    str = hlt_string_concat(str, postfix, excpt, ctx);
 
     return str;
 }
 
 hlt_iosrc* hlt_iosrc_new_live(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_iosrc* src = GC_NEW(hlt_iosrc);
+    hlt_iosrc* src = GC_NEW(hlt_iosrc, ctx);
     src->type = Hilti_IOSrc_PcapLive;
     src->iface = hlt_string_copy(interface, excpt, ctx);
+    GC_CCTOR(src->iface, hlt_string, ctx);
 
     char* iface = hlt_string_to_native(interface, excpt, ctx);
-    if ( *excpt )
+    if ( hlt_check_exception(excpt) )
         return 0;
 
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -151,12 +147,13 @@ error:
 
 hlt_iosrc* hlt_iosrc_new_offline(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_iosrc* src = GC_NEW(hlt_iosrc);
+    hlt_iosrc* src = GC_NEW(hlt_iosrc, ctx);
     src->type = Hilti_IOSrc_PcapOffline;
     src->iface = hlt_string_copy(interface, excpt, ctx);
+    GC_CCTOR(src->iface, hlt_string, ctx);
 
     char* iface = hlt_string_to_native(interface, excpt, ctx);
-    if ( *excpt )
+    if ( hlt_check_exception(excpt) )
         return 0;
 
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -192,13 +189,13 @@ hlt_packet hlt_iosrc_read_try(hlt_iosrc* src, int8_t keep_link_layer, hlt_except
         // Got a packet.
         if ( ! keep_link_layer ) {
             _strip_link_layer(src, (const char**)&data, &caplen, pcap_datalink(src->handle), excpt, ctx);
-            if ( *excpt )
+            if ( hlt_check_exception(excpt) )
                 return result;
         }
 
         // We need to copy it to make sure it remains valid.
         hlt_bytes* pkt = hlt_bytes_new_from_data_copy((const int8_t*)data, caplen, excpt, ctx);
-        if ( *excpt )
+        if ( hlt_check_exception(excpt) )
             return result;
 
         // Build the result tuple.
@@ -225,7 +222,7 @@ hlt_packet hlt_iosrc_read_try(hlt_iosrc* src, int8_t keep_link_layer, hlt_except
     assert(! hlt_enum_equal(src->type, Hilti_IOSrc_PcapOffline, excpt, ctx));
 
     // No packet this time.
-    hlt_set_exception(excpt, &hlt_exception_would_block, 0);
+    hlt_set_exception(excpt, &hlt_exception_would_block, 0, ctx);
     return result;
 }
 

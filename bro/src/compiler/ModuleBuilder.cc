@@ -335,24 +335,24 @@ void ModuleBuilder::CompileEventStub(const ::BroFunc* event)
 
 	CreateFunctionStub(event, [&](ModuleBuilder* mbuilder, shared_ptr<::hilti::Expression> rval, shared_ptr<::hilti::Expression> args)
 			   {
-			   auto tc = ::hilti::builder::callable::type(::hilti::builder::void_::type());
-			   auto rtc = ::hilti::builder::reference::type(tc);
-			   auto c = addTmp("c", rtc);
-
 #if 0
 			   Builder()->addInstruction(::hilti::instruction::hook::Run,
 						     ::hilti::builder::id::create(event_name),
 						     args);
 #else
+			   auto tc = ::hilti::builder::callable::type(::hilti::builder::void_::type());
+			   auto rtc = ::hilti::builder::reference::type(tc);
+			   auto c = addTmp("c", rtc);
+
 			   Builder()->addInstruction(c,
 						     ::hilti::instruction::callable::NewHook,
 						     ::hilti::builder::type::create(tc),
 						     ::hilti::builder::id::create(event_name),
 						     args);
-#endif
 
 			   // TODO: This should queue the callable, not directl run it.
 			   Builder()->addInstruction(::hilti::instruction::flow::CallCallableVoid, c);
+#endif
 
 			   // Clear return value, we don't have any.
 			   Builder()->addInstruction(rval,
@@ -367,26 +367,24 @@ void ModuleBuilder::CompileEvent(const BroFunc* event, bool exported)
 	DBG_LOG_COMPILER("Compiling event function %s with %d bodies", event->Name(), event->GetBodies().size());
 
 	auto event_name = Compiler()->HiltiSymbol(event, module());
-	auto type = HiltiFunctionType(event->FType());
 
 	for ( auto b : event->GetBodies() )
 		{
+		// Compile the event body into a hook.
+
 #if LIMIT_COMPILED_SYMBOLS
 		if ( b.priority != 42 )
 			// FIXME: Hack to select which handlers we want to compile.
 			continue;
 #endif
 
-		// Compile the event body into a hook.
-
-		auto attrs = ::hilti::builder::function::attributes();
+		auto type = HiltiFunctionType(event->FType());
+		auto ftype = ast::checkedCast<::hilti::type::Hook>(type);
 
 		if ( b.priority )
-			attrs.push_back(::hilti::builder::function::function_attribute("&priority", b.priority));
+			ftype->attributes().add(::hilti::attribute::PRIORITY, b.priority);
 
-		auto hook = pushHook(::hilti::builder::id::node(event_name),
-			 ast::checkedCast<::hilti::type::Hook>(type),
-			 nullptr, attrs);
+		auto hook = pushHook(::hilti::builder::id::node(event_name), ftype, nullptr);
 
 		hook->addComment(Location(event));
 
@@ -404,18 +402,16 @@ void ModuleBuilder::CompileHook(const BroFunc* brohook, bool exported)
 
 	auto hook_name = Compiler()->HiltiSymbol(brohook, module());
 	auto stub_name = Compiler()->HiltiStubSymbol(brohook, module(), false);
-	auto type = HiltiFunctionType(brohook->FType());
 
 	for ( auto b : brohook->GetBodies() )
 		{
-		auto attrs = ::hilti::builder::function::attributes();
+		auto type = HiltiFunctionType(brohook->FType());
+		auto ftype = ast::checkedCast<::hilti::type::Hook>(type);
 
 		if ( b.priority )
-			attrs.push_back(::hilti::builder::function::function_attribute("&priority", b.priority));
+			ftype->attributes().add(::hilti::attribute::PRIORITY, b.priority);
 
-		auto hook = pushHook(::hilti::builder::id::node(hook_name),
-			 ast::checkedCast<::hilti::type::Hook>(type),
-			 nullptr, attrs);
+		auto hook = pushHook(::hilti::builder::id::node(hook_name), ftype, nullptr);
 
 		hook->addComment(Location(brohook));
 

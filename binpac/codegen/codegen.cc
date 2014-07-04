@@ -318,19 +318,21 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
         internalError("unexpected calling convention in hiltiDefineFunction()");
     }
 
+    hilti::builder::attribute_set attrs;
+
     // TODO: Do we always want to export these?
     if ( ! declare_only )
         moduleBuilder()->exportID(name);
 
     if ( func->body() && ! declare_only ) {
-        auto decl = moduleBuilder()->pushFunction(name, result, params, cc, nullptr, hilti::builder::function::attributes(), false, func->location());
+        auto decl = moduleBuilder()->pushFunction(name, result, params, cc, attrs, false, func->location());
         hiltiStatement(func->body());
         moduleBuilder()->popFunction();
         return decl;
     }
 
     else
-        return moduleBuilder()->declareFunction(name, result, params, cc, func->location());
+        return moduleBuilder()->declareFunction(name, result, params, cc, attrs, func->location());
 }
 
 shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> func, const string& scope)

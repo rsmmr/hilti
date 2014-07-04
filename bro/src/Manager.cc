@@ -2657,13 +2657,8 @@ void Manager::ExtractParsers(hlt_list* parsers)
 		parser_map.insert(std::make_tuple(name, p));
 		hlt_free(name);
 
-		hlt_iterator_list j = i;
 		i = hlt_iterator_list_incr(i, &excpt, ctx);
-		GC_DTOR(j, hlt_iterator_list);
 		}
-
-	GC_DTOR(i, hlt_iterator_list);
-	GC_DTOR(end, hlt_iterator_list);
 
 	for ( auto a : pimpl->pac2_analyzers )
 		{
@@ -2674,7 +2669,7 @@ void Manager::ExtractParsers(hlt_list* parsers)
 				if ( i != parser_map.end() )
 						{
 						a->parser_orig = i->second;
-						GC_CCTOR(a->parser_orig, hlt_BinPACHilti_Parser);
+						GC_CCTOR(a->parser_orig, hlt_BinPACHilti_Parser, ctx);
 						}
 				}
 
@@ -2685,7 +2680,7 @@ void Manager::ExtractParsers(hlt_list* parsers)
 				if ( i != parser_map.end() )
 						{
 						a->parser_resp = i->second;
-						GC_CCTOR(a->parser_resp, hlt_BinPACHilti_Parser);
+						GC_CCTOR(a->parser_resp, hlt_BinPACHilti_Parser, ctx);
 						}
 				}
 		}
@@ -2700,13 +2695,13 @@ void Manager::ExtractParsers(hlt_list* parsers)
 		if ( i != parser_map.end() )
 			{
 			a->parser = i->second;
-			GC_CCTOR(a->parser, hlt_BinPACHilti_Parser);
+			GC_CCTOR(a->parser, hlt_BinPACHilti_Parser, ctx);
 			}
 		}
 
 	for ( auto p : parser_map )
 		{
-		GC_DTOR(p.second, hlt_BinPACHilti_Parser);
+		GC_DTOR(p.second, hlt_BinPACHilti_Parser, ctx);
 		}
 	}
 
@@ -2874,7 +2869,7 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		char* e = hlt_exception_to_asciiz(excpt, &etmp, ctx);
 		reporter::error(::util::fmt("event/function %s raised exception: %s", func->Name(), e));
 		hlt_free(e);
-		GC_DTOR(excpt, hlt_exception);
+		GC_DTOR(excpt, hlt_exception, ctx);
 		}
 
 	return result ? result : new ::Val(0, ::TYPE_VOID);

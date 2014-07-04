@@ -44,9 +44,9 @@ typedef struct __hlt_cmd_file {
     hlt_enum param_mode;       // For type 0: The mode.
 } __hlt_cmd_file;
 
-void hlt_file_dtor(hlt_type_info* ti, hlt_file* f)
+void hlt_file_dtor(hlt_type_info* ti, hlt_file* f, hlt_execution_context* ctx)
 {
-    GC_DTOR(f->path, hlt_string);
+    GC_DTOR(f->path, hlt_string, ctx);
 }
 
 static void fatal_error(const char* msg)
@@ -90,7 +90,7 @@ void __hlt_files_done()
     while ( info ) {
         close(info->fd);
 
-        GC_DTOR(info->path, hlt_string);
+        GC_DTOR(info->path, hlt_string, hlt_global_execution_context());
 
         __hlt_file_info* next = info->next;
         hlt_free(info);
@@ -101,22 +101,22 @@ void __hlt_files_done()
         fatal_error("cannot destroy mutex");
 }
 
-hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_file_init(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_file* file = GC_NEW(hlt_file);
-    if ( ! file ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
-
     file->info = 0;
     file->open = 0;
+}
+
+hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_file* file = GC_NEW(hlt_file, ctx);
+    _hlt_file_init(file, excpt, ctx);
     return file;
 }
 
 void* hlt_file_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return GC_NEW(hlt_file);
+    return GC_NEW_REF(hlt_file, ctx);
 }
 
 void hlt_file_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -148,7 +148,7 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
 {
     if ( file->open ) {
         hlt_string err = hlt_string_from_asciiz("file already open", excpt, ctx);
-        hlt_set_exception(excpt, &hlt_exception_io_error, err);
+        hlt_set_exception(excpt, &hlt_exception_io_error, err, ctx);
         return;
     }
 
@@ -178,6 +178,8 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
     info->prev = 0;
     info->next = __hlt_globals()->files;
 
+    GC_CCTOR(info->path, hlt_string, ctx);
+
     if ( __hlt_globals()->files )
         __hlt_globals()->files->prev = info;
 
@@ -190,7 +192,7 @@ init_instance:
     file->path = path;
     file->open = 1;
 
-    GC_CCTOR(file->path, hlt_string);
+    GC_CCTOR(file->path, hlt_string, ctx);
 
     release_lock(s);
 
@@ -208,8 +210,7 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
 {
     if ( ! file->open ) {
         hlt_string err = hlt_string_from_asciiz("file not open", excpt, ctx);
-        hlt_set_exception(excpt, &hlt_exception_io_error, err);
-        GC_DTOR(err, hlt_string);
+        hlt_set_exception(excpt, &hlt_exception_io_error, err, ctx);
         return;
     }
 
@@ -220,23 +221,21 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
     __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 
     file->open = 0;
-    GC_CLEAR(file->path, hlt_string);
+    GC_CLEAR(file->path, hlt_string, ctx);
 }
 
 hlt_string hlt_file_name(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    GC_CCTOR(file->path, hlt_string);
     return file->path;
 }
 
 void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_string_encode(str, file->charset, excpt, ctx);
-    if ( *excpt )
+    if ( hlt_check_exception(excpt) )
         return;
 
     hlt_file_write_bytes(file, b, excpt, ctx);
-    GC_DTOR(b, hlt_bytes);
 }
 
 static void _add_to_cmd_data(__hlt_cmd_file* cmd, const int8_t* data, int len)
@@ -251,7 +250,7 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt
 {
     if ( ! file->open ) {
         hlt_string err = hlt_string_from_asciiz("file not open", excpt, ctx);
-        hlt_set_exception(excpt, &hlt_exception_io_error, err);
+        hlt_set_exception(excpt, &hlt_exception_io_error, err, ctx);
         return;
     }
 
@@ -315,13 +314,10 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt
     if ( hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx) )
         _add_to_cmd_data(cmd, (int8_t*)"\n", 1);
 
-    GC_DTOR(start, hlt_iterator_bytes);
-    GC_DTOR(end, hlt_iterator_bytes);
-
     __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 }
 
-void __hlt_file_cmd_internal(__hlt_cmd* c)
+void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_execution_context* ctx)
 {
     __hlt_cmd_file* cmd = (__hlt_cmd_file*) c;
 
@@ -340,13 +336,13 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
              // Not open yet.
 
              hlt_exception* excpt = 0;
-             char* fn = hlt_string_to_native(cmd->info->path, &excpt, 0);
+             char* fn = hlt_string_to_native(cmd->info->path, &excpt, ctx);
              if ( excpt ) {
                  release_lock(s);
                  break;
              }
 
-             int8_t append = hlt_enum_equal(cmd->param_mode, Hilti_FileMode_Append, &excpt, 0);
+             int8_t append = hlt_enum_equal(cmd->param_mode, Hilti_FileMode_Append, &excpt, ctx);
              int oflags = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
              int fd = open(fn, oflags, 0666);
 
@@ -418,7 +414,7 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
               if ( ! cur )
                   fatal_error("file to close not found");
 
-              GC_DTOR(cmd->info->path, hlt_string);
+              GC_DTOR(cmd->info->path, hlt_string, hlt_global_execution_context());
               hlt_free(cmd->info);
 
               cmd->info = 0;
@@ -434,7 +430,7 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
     }
 }
 
-hlt_string hlt_file_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_file_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_FILE);
     hlt_file* file = *((hlt_file **)obj);
@@ -445,9 +441,6 @@ hlt_string hlt_file_to_string(const hlt_type_info* type, const void* obj, int32_
     hlt_string prefix = hlt_string_from_asciiz("<file ", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz(">", excpt, ctx);
 
-    GC_CCTOR(file->path, hlt_string);
-    hlt_string s = hlt_string_concat_and_unref(prefix, file->path, excpt, ctx);
-    s = hlt_string_concat_and_unref(s, postfix, excpt, ctx);
-
-    return s;
+    hlt_string s = hlt_string_concat(prefix, file->path, excpt, ctx);
+    return hlt_string_concat(s, postfix, excpt, ctx);
 }

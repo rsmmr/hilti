@@ -26,7 +26,7 @@ struct __hlt_classifier {
     hlt_classifier_rule** rules;
 };
 
-void hlt_classifier_dtor(hlt_type_info* ti, hlt_classifier* c)
+void hlt_classifier_dtor(hlt_type_info* ti, hlt_classifier* c, hlt_execution_context* ctx)
 {
     if ( ! c->rules )
         return;
@@ -38,7 +38,7 @@ void hlt_classifier_dtor(hlt_type_info* ti, hlt_classifier* c)
             hlt_free(r->fields[j]);
 
         hlt_free(r->fields);
-        GC_DTOR_GENERIC(r->value, c->value_type);
+        GC_DTOR_GENERIC(r->value, c->value_type, ctx);
         hlt_free(r->value);
         hlt_free(r);
     }
@@ -46,9 +46,8 @@ void hlt_classifier_dtor(hlt_type_info* ti, hlt_classifier* c)
     hlt_free(c->rules);
 }
 
-hlt_classifier* hlt_classifier_new(int64_t num_fields, const hlt_type_info* rtype, const hlt_type_info* vtype, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_classifier_init(hlt_classifier* c, int64_t num_fields, const hlt_type_info* rtype, const hlt_type_info* vtype, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_classifier* c = GC_NEW(hlt_classifier);
     c->num_fields = num_fields;
     c->rule_type = rtype;
     c->value_type = vtype;
@@ -58,7 +57,12 @@ hlt_classifier* hlt_classifier_new(int64_t num_fields, const hlt_type_info* rtyp
     c->num_rules = 0;
     c->max_rules = 0;
     c->rules = 0;
+}
 
+hlt_classifier* hlt_classifier_new(int64_t num_fields, const hlt_type_info* rtype, const hlt_type_info* vtype, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_classifier* c = GC_NEW(hlt_classifier, ctx);
+    _hlt_classifier_init(c, num_fields, rtype, vtype, excpt, ctx);
     return c;
 }
 
@@ -90,7 +94,7 @@ static inline void* _to_voidp(const hlt_type_info* type, void* data)
 void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_t priority, const hlt_type_info* vtype, void* value, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( c->compiled ) {
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
         return;
     }
 
@@ -98,7 +102,7 @@ void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_
     r->priority = priority;
     r->fields = fields;
     r->value = _to_voidp(vtype, value);
-    GC_CCTOR_GENERIC(r->value, vtype);
+    GC_CCTOR_GENERIC(r->value, vtype, ctx);
 
     if ( c->num_rules >= c->max_rules ) {
         // Grow rule array.
@@ -177,7 +181,7 @@ static int8_t match_single_rule(hlt_classifier* c, hlt_classifier_rule* r, hlt_c
 int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** vals, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! c->compiled ) {
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
         return 0;
     }
 
@@ -200,7 +204,7 @@ int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** vals, hl
 void* hlt_classifier_get(hlt_classifier* c, hlt_classifier_field** vals, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! c->compiled ) {
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
         return 0;
     }
 
@@ -212,14 +216,13 @@ void* hlt_classifier_get(hlt_classifier* c, hlt_classifier_field** vals, hlt_exc
     for ( int i = 0; i < c->num_rules; i++ ) {
         if ( match_single_rule(c, c->rules[i], vals) ) {
             DBG_LOG("hilti-classifier", "%s: match found with rule %p", "classifier_get", c->rules[i]);
-            GC_CCTOR_GENERIC(c->rules[i]->value, c->value_type);
             return c->rules[i]->value;
         }
     }
 
     DBG_LOG("hilti-classifier", "%s: no match", "classifier_get");
 
-    hlt_set_exception(excpt, &hlt_exception_index_error, 0);
+    hlt_set_exception(excpt, &hlt_exception_index_error, 0, ctx);
     return 0;
 }
 

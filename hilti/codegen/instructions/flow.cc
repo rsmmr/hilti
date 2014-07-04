@@ -11,9 +11,9 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
 {
     auto func = current<declaration::Function>();
     auto rtype = as<type::Function>(func->function()->type())->result()->type();
-    auto op1 = cg()->llvmValue(i->op1(), rtype, true);
+    auto op1 = cg()->llvmValue(i->op1(), rtype);
     cg()->llvmBuildInstructionCleanup();
-    cg()->llvmReturn(func->function()->type()->result()->type(), op1, true);
+    cg()->llvmReturn(func->function()->type()->result()->type(), op1, false);
 }
 
 static void _doVoidReturn(StatementBuilder* sbuilder)
@@ -93,7 +93,7 @@ void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
 #endif
 
             // Return a dummy, we'll never get to this code.
-            cg()->llvmReturn(rtype, cg()->llvmConstNull(cg()->llvmType(rtype)), true);
+            cg()->llvmReturn(rtype, cg()->llvmConstNull(cg()->llvmType(rtype)), false);
             return;
         }
 
@@ -169,10 +169,8 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
     auto ftype = ast::as<type::Function>(i->op1()->type());
 
     CodeGen::expr_list params;
-    auto target_old = cg()->llvmValue(i->target());
     prepareCall(i->op1(), i->op2(), &params, true);
     auto result = cg()->llvmCall(func, ftype, params);
-    cg()->llvmDtor(target_old, i->target()->type(), false, "call.result-target-dtor");
 
     auto var = ast::checkedCast<expression::Variable>(i->target());
 
@@ -191,11 +189,6 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
     if ( (! ast::isA<variable::Local>(var->variable())) ||
         cg()->hiltiModule()->liveness()->liveOut(i->sharedPtr<Statement>(), i->target()) )
         cg()->llvmStore(i->target(), result, false);
-
-    else if ( ! cg()->hiltiModule()->liveness()->liveIn(i->sharedPtr<Statement>(), i->target()) )
-        // I'm actually not quite sure why we don't have to dtor otherwise,
-        // but it seems the liveness dead calculation takes care of this ...
-        cg()->llvmDtor(result, i->target()->type(), false, "call.result-unused-dtor");
 
     cg()->llvmDebugPrint("hilti-trace", "end-of-call-result");
 }

@@ -84,7 +84,7 @@ extern void hlt_timer_cancel(hlt_timer* timer, hlt_exception** excpt, hlt_execut
 /// Converts a timer to a string representian.
 ///
 /// This function has the standard RTTI signature.
-extern hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
+extern hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Converts a timer to a double. The returned double is the timer's
 /// expiration time in seconds since the epoch, or HLT_TIME_NONE if none has
@@ -169,7 +169,7 @@ extern void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception*
 /// Converts a timer manager to string representian.
 ///
 /// This function has the standard RTTI signature.
-extern hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
+extern hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Converts a timer manager to a double. The returned double is the
 /// manager's current time in seconds since the epoch.

@@ -172,16 +172,18 @@ Map::element_list Map::elements() const
     return elems;
 }
 
-RegExp::RegExp(const string& regexp, const string& flags, const attribute_list& attrs, const Location& l) : Ctor(l)
+RegExp::RegExp(const string& regexp, const attribute_list& attrs, const Location& l) : Ctor(l)
 {
-    _patterns = { pattern(regexp, flags) };
-    _type = std::make_shared<type::RegExp>(attrs, l);
+    _patterns = { regexp };
+    _attributes = attrs;
+    _type = std::make_shared<type::RegExp>(l);
 }
 
 RegExp::RegExp(const pattern_list& patterns, const attribute_list& attrs, const Location& l)
 {
     _patterns = patterns;
-    _type = std::make_shared<type::RegExp>(attrs, l);
+    _attributes = attrs;
+    _type = std::make_shared<type::RegExp>(l);
     addChild(_type);
 }
 
@@ -193,6 +195,11 @@ shared_ptr<Type> RegExp::type() const
 Ctor::pattern_list RegExp::patterns() const
 {
     return _patterns;
+}
+
+const attribute_list& RegExp::attributes() const
+{
+    return _attributes;
 }
 
 Unit::Unit(const item_list& items, const Location& l) : Ctor(l)
