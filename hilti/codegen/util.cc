@@ -137,11 +137,11 @@ llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const strin
     auto ptype = llvm::cast<llvm::PointerType>(callee->getType());
     auto ftype = llvm::cast<llvm::FunctionType>(ptype->getPointerElementType());
 
-    if ( ftype->getNumParams() != args.size() )
+    if ( ftype->getNumParams() != args.size() && ! ftype->isVarArg() )
         _dumpCall(callee, args, where, ::util::fmt("argument mismatch, LLVM function expects %d but got %d",
                                                  ftype->getNumParams(), args.size()));
 
-    for ( int i = 0; i < args.size(); ++i ) {
+    for ( int i = 0; i < ftype->getNumParams(); ++i ) {
         auto t1 = ftype->getParamType(i);
 
         if ( ! args[i] )

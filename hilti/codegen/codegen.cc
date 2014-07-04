@@ -1800,6 +1800,9 @@ void CodeGen::llvmMemorySafepoint(const std::string& where)
 
 void CodeGen::llvmAdaptStackForSafepoint(bool pre)
 {
+    if ( ! pre )
+        llvmCreateStackmap();
+
     for ( auto l : liveValues() ) {
         auto val = std::get<0>(l);
         auto type = std::get<1>(l);
@@ -1845,6 +1848,10 @@ CodeGen::live_list CodeGen::liveValues()
 
 void CodeGen::llvmCreateStackmap()
 {
+#ifndef HAVE_LLVM_35
+    return;
+#endif
+
     string fid = ::util::fmt("%s:%d", _functions.back()->function->getName().str(), ++_functions.back()->stackmap_id);
     uint64_t pid = ::util::hash(fid);
 
@@ -1852,9 +1859,20 @@ void CodeGen::llvmCreateStackmap()
     CodeGen::value_list args = { llvmConstInt(pid, 32), llvmConstInt(0, 32) };
     std::vector<llvm::Type *> tys = { llvmTypeInt(32), llvmTypeInt(32) };
 #else
-    CodeGen::value_list args = { llvmConstInt(pid, 64), llvmConstInt(0, 64) };
-    std::vector<llvm::Type *> tys = { llvmTypeInt(64), llvmTypeInt(64) };
+    CodeGen::value_list args = { llvmConstInt(pid, 64), llvmConstInt(0, 32) };
+    std::vector<llvm::Type *> tys = { llvmTypeInt(64), llvmTypeInt(32) };
 #endif
+
+    for ( auto l : liveValues() ) {
+        auto val = std::get<0>(l);
+        auto type = std::get<1>(l);
+        auto is_ptr = std::get<2>(l);
+
+        if ( is_ptr )
+            val = builder()->CreateLoad(val);
+
+        args.push_back(val);
+    }
 
     // The normal intrinsic workflow doesn't work here for some reason. Probably the varargs.
     auto stackmap = _module->getOrInsertFunction(llvm::Intrinsic::getName(llvm::Intrinsic::experimental_stackmap),
@@ -2808,7 +2826,6 @@ void CodeGen::llvmFiberYield(llvm::Value* fiber, shared_ptr<Type> blockable_ty, 
 
     CodeGen::value_list args2 = { fiber };
     llvmCallC("hlt_fiber_yield", args2, false, false);
-    CodeGen::llvmCreateStackmap();
 
     llvmAdaptStackForSafepoint(false);
 }

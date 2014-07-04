@@ -30,6 +30,7 @@ void __hlt_global_state_init(int init)
     __hlt_hooks_init();
     __hlt_threading_init();
     __hlt_profiler_init();
+    __hlt_stackmap_init();
 
     globals_initialized = 1;
 }
@@ -38,6 +39,7 @@ void __hlt_global_state_done()
 {
     hlt_exception* excpt = 0;
 
+    __hlt_stackmap_done();
     __hlt_threading_done(&excpt);
     __hlt_profiler_done(); // Must come after threading is done.
 

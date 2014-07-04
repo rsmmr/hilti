@@ -110,7 +110,7 @@ else ()
 
   # --system-libs exists since LLVM 3.5.
   execute_process(COMMAND ${LLVM_CONFIG_EXEC} --system-libs OUTPUT_VARIABLE LLVM_SYSTEM_LIBS ERROR_QUIET)
-  LIST(APPEND LLVM_LIBS ${LLVM_SYSTEM_LIBS})
+  set(LLVM_LIBS "${LLVM_LIBS} ${LLVM_SYSTEM_LIBS}")
 
   set(LLVM_LDFLAGS "${LLVM_LDFLAGS} -Wl,-rpath,${LLVM_LIB_DIR}")
 
