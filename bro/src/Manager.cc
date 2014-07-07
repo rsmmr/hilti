@@ -23,7 +23,10 @@ extern "C" {
 #include <net_util.h>
 #include <analyzer/Analyzer.h>
 #include <analyzer/Manager.h>
+
+#ifdef BRO_PLUGIN_HAVE_PROFILING
 #include "profile.h"
+#endif
 
 #undef List
 
