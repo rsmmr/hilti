@@ -45,8 +45,8 @@ export type Requests = unit {
    : uint8(0x3); # version or something like that
    : bytes &length=1536; # challenge - first step.
    : bytes &length=1536; # challenge - second step.
-  
-  first_packet : rtmp_message; 
+
+  first_packet : rtmp_message;
 };
 
 # At the moment we only parse three amf packets - because the client
@@ -65,7 +65,7 @@ type rtmp_message = unit {
   var submessage_count : uint32;
 
   header : rtmp_header {
-    # The first header has to specify the messave length. And the chunk length. 
+    # The first header has to specify the messave length. And the chunk length.
     # and the type.
     if ( self.header.tpe_raw == b"\x08" ) # audio
       self.chunk_length = 64;
@@ -73,14 +73,14 @@ type rtmp_message = unit {
       self.chunk_length = 128;
 
     self.message_length = self.header.message_length;
-    if ( self.message_length == 0 ) 
+    if ( self.message_length == 0 )
       self.message_length = self.chunk_length;
   }
 
   body : bytes &length=( (self.message_length < self.chunk_length) ? self.message_length : self.chunk_length ) -> self.amfsink {
     if ( self.message_length < self.chunk_length )
       self.message_length = 0;
-    else 
+    else
       self.message_length = self.message_length - self.chunk_length;
 
     self.submessage_count = self.message_length / self.chunk_length;
@@ -90,8 +90,8 @@ type rtmp_message = unit {
 
   # if RTMP does interleaving, I will kill someone...
 
-  submessages : list < rtmp_submessage(self.chunk_length, self.message_length, self.amfsink) > 
-    &length=self.submessage_count
+  submessages : list < rtmp_submessage(self.chunk_length, self.message_length, self.amfsink) >
+    &count=self.submessage_count
     if ( self.message_length > 0 );
 
   on %init {
@@ -114,11 +114,11 @@ type rtmp_header = unit {
     size : 6..7;
     amf_index: 0..5;
   };
- 
+
   ts : bytes &length=3 if ( self.head.size <= 2);
-  
+
   # Todo - parse 3-byte length nicer when syntax is available
-  # len : bytes &length=3 if ( self.head.size == 0 || self.head.size == 1); 
+  # len : bytes &length=3 if ( self.head.size == 0 || self.head.size == 1);
 
   var message_length : uint32 = 0;
   len_first : uint8 if ( self.head.size <= 1 );
@@ -131,7 +131,7 @@ type rtmp_header = unit {
   on %done {
     if ( self.head.size == 0 || self.head.size == 1 ) {
       self.message_length = ( self.len_first << 16 ) | self.len_second;
-    } 
+    }
   }
 };
 

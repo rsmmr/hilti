@@ -749,7 +749,7 @@ type BACnetVendorIDs = enum {
   Entelec = 726
 };
 
-type BACnetPropertyIdentifier = enum { 
+type BACnetPropertyIdentifier = enum {
   absentee-limit = 244,
   accepted-modes = 175,
   access-alarm-events = 245,
@@ -1129,7 +1129,7 @@ type BACnetEventType = enum {
   unsigned-out-of-range = 16,
   change-of-characterstring = 17,
   change-of-status-flags = 18,
-  change-of-reliability = 19,  
+  change-of-reliability = 19,
   none = 20
 ## Enumerated values 0-63 are reserved for definition by ASHRAE. Enumerated values
 ## 64-65535 may be used by others subject to the procedures and constraints described
@@ -1425,12 +1425,12 @@ type BBMD = unit (func: BVLC_function, len: uint16) {
   switch ( func ) {
    BVLC_function::BVLC-Result -> bvlc_result: uint16 &convert=BVLC_result($$);
    BVLC_function::Read-BDT-ACK,
-   BVLC_function::Write-BDT -> bdts: list<BDT_entry> &length=len/10; 
+   BVLC_function::Write-BDT -> bdts: list<BDT_entry> &length=len;
    BVLC_function::Read-FDT,
    BVLC_function::Read-BDT -> : void;
    BVLC_function::Register-FD -> ttl: uint16;
    BVLC_function::Read-FDT-ACK,
-   BVLC_function::Delete-FDT-Entry -> fdts: list<FDT_entry> &length=len/10;
+   BVLC_function::Delete-FDT-Entry -> fdts: list<FDT_entry> &count=len/10;
   };
 };
 
@@ -1518,20 +1518,20 @@ type NPDU_message = unit(len: uint16, t: NPDU_type) {
   # len only is remaining length
   switch ( t ) {
     NPDU_type::Who-Is-Router-To-Network,
-    NPDU_type::Disconnect-Connection-To-Network -> dnets: list<uint16> &length=1 if ( len >= 2 );
+    NPDU_type::Disconnect-Connection-To-Network -> dnets: list<uint16> &count=1 if ( len >= 2 );
     NPDU_type::I-Am-Router-To-Network,
     NPDU_type::Router-Busy-To-Network,
-    NPDU_type::Router-Available-To-Network -> dnets: list<uint16> &length=len / 2;
+    NPDU_type::Router-Available-To-Network -> dnets: list<uint16> &count=len / 2;
     NPDU_type::I-Could-Be-Router-To-Network -> {
-      dnets: list<uint16> &length=1;
+      dnets: list<uint16> &count=1;
       performance_index: uint8;
     }
     NPDU_type::Reject-Message-To-Network -> {
       reason: uint8 &convert=NPDU_Reject_reason($$);
-      dnets: list<uint16> &length=1;
+      dnets: list<uint16> &count=1;
     }
     NPDU_type::Establish-Connection-To-Network -> {
-      dnets: list<uint16> &length=1;
+      dnets: list<uint16> &count=1;
       termination_time: uint8;
     }
     NPDU_type::What-Is-Network-Number -> : void; # empty packet
@@ -1542,7 +1542,7 @@ type NPDU_message = unit(len: uint16, t: NPDU_type) {
     NPDU_type::Initialize-Routing-Table,
     NPDU_type::Initialize-Routing-Table-Ack -> {
       number_ports: uint8 if ( len > 0 );
-      routing_entries: list<NPDU_routing_entry> &length=self.number_ports if ( len > 0 );
+      routing_entries: list<NPDU_routing_entry> &count=self.number_ports if ( len > 0 );
     }
   };
 };
@@ -1703,7 +1703,7 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
       } else {
         #print "Unknown fragment, invokeID", self.invokeID, "sequence number", self.sequence_number;
       }
-    } 
+    }
   }
 
   switch ( self.confirmed_service_choice ) {
@@ -1752,7 +1752,7 @@ type ReadRange_Request = unit(len: uint16) {
   ## 4 and 5 are deprecated
   ## bySequenceNumber - 6
   ## byTime - 7
- 
+
   # types vary by range choice.
   reference: BACnetMessage if ( len > self.offset() );
   count: BACnetMessage if ( len > self.offset() ); # integer16 optional
@@ -1803,7 +1803,7 @@ type ConfirmedEventNotification_Request = unit(len: uint16) {
 };
 #
 # Enums to handle bacnetnotificationparameters:
-# 
+#
 # BACnetPropertyStates,
 # BACnetLifeSafetyState,
 # BACnetLifeSafetyMode,
@@ -1824,7 +1824,7 @@ type AtomicReadFile_Request = unit {
   # streamAccess
     fileStartPosition: BACnetMessage if ( self.open_tag.tag == 0 ); # integer
     requestedOctetCount: BACnetMessage if ( self.open_tag.tag == 0 ); # unsigned
- 
+
   # recordAccess
     fileStartRecord: BACnetMessage if ( self.open_tag.tag == 1 ); # integer
     requestedRecordCount: BACnetMessage if ( self.open_tag.tag == 1 ); # unsigned
@@ -1840,7 +1840,7 @@ type AtomicWriteFile_Request = unit {
   # streamAccess
   	fileStartPosition: BACnetMessage if ( self.open_tag.tag == 0 ); # integer
 	FileData: BACnetMessage if ( self.open_tag.tag == 0 ); # octet string
- 
+
   # recordAccess
   	fileStartRecord: BACnetMessage if ( self.open_tag.tag == 1 ); # integer
 	recordCount: BACnetMessage if ( self.open_tag.tag == 1 ); # unsigned
@@ -1959,7 +1959,7 @@ type UnconfirmedCOVNotification_Request = unit(len: uint16) {
 #  : BACnetTag;
 #  timeStamp: BACnetTimeStamp;
 #  notificationClass_tag: BACnetTag;
-#  notificationClass: bytes &length=notificationClass_tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network); 
+#  notificationClass: bytes &length=notificationClass_tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network);
 #  : BACnetTag;
 #  priority: uint8;
 #  : BACnetTag;
@@ -2033,7 +2033,7 @@ type BACnet_ComplexACK_PDU = unit(head_raw: bytes, len: uint16) {
       } else {
         #print "Unknown fragment, invokeID", self.invokeID, "sequence number", self.sequence_number;
       }
-    } 
+    }
   }
 
   switch ( self.confirmed_service_choice ) {
@@ -2235,12 +2235,12 @@ type BACnetTag = unit {
 # This is a unit to make my live when parsing bacnet a little bit easier.
 # In many cases, we have a number of context-specific tags, of which a few are optional.
 # When a tag is optional, the next tag is only parsed when the optional tag was present, otherwhise
-# it basically is skipped. This unit is used for the tag _after_ an optional tag. 
+# it basically is skipped. This unit is used for the tag _after_ an optional tag.
 # If the tag number of the passed(previous) tag is the tag-number of this tag, it returns the old
 # tag again. Otherwhise it reads the tag from the wire.
 # type OptionalBACnetTag = unit(tag: BACnetTag, expect: uint8) {
 #  var tag: BACnetTag;
-# 
+#
 #  tag_raw: BACnetTag if ( tag.tag != expect );
 #
 #  on %done {
@@ -2272,7 +2272,7 @@ type BACnetArray = unit { #
                                      ( $$.tag.tag == self.begin.tag ) );
 };
 
-type BACnetObjectType = enum { 
+type BACnetObjectType = enum {
   alert-enrollment = 52,
   access-credential = 32,
   access-door = 30,
@@ -2336,7 +2336,7 @@ type BACnetObjectIdentifier = unit {
   data: bitfield(32) {
     instanceNumer: 0..21;
     tpe: 22..31;
-  } { 
+  } {
     self.tpe = BACnetObjectType(self.data.tpe);
   }
 };
@@ -2400,7 +2400,7 @@ type BACnetContextMessage = unit(tpe: BACnetType, tag: uint8, prev_tag: BACnetTa
     BACnetType::Date -> date: BACnetDate;
     BACnetType::Time -> btime: BACnetTime;
     BACnetType::BACnetObjectIdentifier -> oid: BACnetObjectIdentifier;
-    
+
     # Fixme: Real, double. I don't think Binpac++ can read those from wire yet.
     BACnetType::Real -> : bytes &length = 4;
     BACnetType::Double -> : bytes &length = 8;
@@ -2409,7 +2409,7 @@ type BACnetContextMessage = unit(tpe: BACnetType, tag: uint8, prev_tag: BACnetTa
 };
 
 type BACnetDateTime = unit {
-  date: BACnetMessage; 
+  date: BACnetMessage;
   btime: BACnetMessage;
 };
 

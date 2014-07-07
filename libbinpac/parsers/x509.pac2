@@ -53,7 +53,7 @@ type cert_issuer_component = unit {
     self.tpe = self.tpe_data.body.objectidentifier.oidstring;
     self.value = self.value_data.body.asn1string.value;
 
-    self.tpe = BinPAC::fmt(b"%s", (self.tpe, 1)); # bug workaround 
+    self.tpe = BinPAC::fmt(b"%s", (self.tpe, 1)); # bug workaround
 
     self.formatted = BinPAC::fmt("%s: %s", (SubjectOids.get(self.tpe, self.tpe).decode(BinPAC::Charset::ASCII), self.value));
   }
@@ -64,8 +64,8 @@ type cert_issuer = unit {
   var read_length: uint64 = 0;
   var value: string;
 
-  name_components: list<cert_issuer_component> &until_including( self.read_length + $$.head.total_length >= self.head.len.len )
-  foreach { 
+  name_components: list<cert_issuer_component> &length=self.head.len.len
+  foreach {
     if ( self.read_length == 0 ) {
       self.value = $$.formatted;
     } else {
@@ -103,7 +103,7 @@ type tbscertificate = unit {
 
   var version: int64 = 1;
   version_head: ASN1Header;
-  version_data: ASN1Message if (self.version_head.tag.class == ASN1Class::context-specific) {  
+  version_data: ASN1Message if (self.version_head.tag.class == ASN1Class::context-specific) {
     self.version = self.version_data.body.num_value + 1;
   }
   serialnumber_head: ASN1Header if ( self.version_head.tag.class == ASN1Class::context-specific ); # otherwhise we have to use version_head
@@ -127,7 +127,7 @@ type tbscertificate = unit {
   }
   # here there may be extension or other stuff if we have not exceeded the length.
   : bytes &length=( self.tbscertificate_head.len.len - self.read_length); # for now - do not parse it.
-  
+
 };
 
 export type certificate = unit {

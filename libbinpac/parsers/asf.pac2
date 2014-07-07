@@ -50,7 +50,7 @@ type asf_extended_content_description = unit {
   %byteorder = BinPAC::ByteOrder::Little;
 
   descriptors_count : uint16; # no idea why this is big endian
-  descriptors : list<asf_extended_content_description_descriptor> &length=self.descriptors_count;
+  descriptors : list<asf_extended_content_description_descriptor> &count=self.descriptors_count;
 };
 
 type codec_list = unit {
@@ -59,7 +59,7 @@ type codec_list = unit {
   : bytes &length=16; # reserved
   num_codec_entries: uint32;
 
-  codecs : list<codec_list_entry> &length=self.num_codec_entries;
+  codecs : list<codec_list_entry> &count=self.num_codec_entries;
 };
 
 type CodecTypes = enum {
@@ -84,7 +84,7 @@ type stream_bitrate_properties = unit {
   %byteorder = BinPAC::ByteOrder::Little;
 
   num_records: uint16;
-  records: list <bitrate_record> &length=self.num_records;
+  records: list <bitrate_record> &count=self.num_records;
 };
 
 type bitrate_record = unit {
@@ -129,7 +129,7 @@ type stream_properties = unit {
     b"\x50\xCD\xC3\xBF\x8F\x61\xCF\x11\x8B\xB2\x00\xAA\x00\xB4\xE2\x20" -> : void { self.error_correction_type = StreamPropertiesType::ASF_Audio_Spread; }
     *  -> : void { self.error_correction_type = StreamPropertiesType::Unknown; }
   };
-  
+ 
   time_offset: uint64;
   type_specific_length: uint32;
   error_correction_data_length: uint32;
@@ -139,7 +139,7 @@ type stream_properties = unit {
     encrypted_content: 15;
   };
   reserved : uint32;
-  
+ 
   switch ( self.stream_type ) {
     StreamPropertiesType::ASF_Audio -> asf_audio_type : asf_audio_type;
     StreamPropertiesType::ASF_Video -> asf_video_type : asf_video_type;
@@ -173,7 +173,7 @@ type asf_video_type = unit {
 
 type asf_header_extension = unit {
   %byteorder = BinPAC::ByteOrder::Little;
-  
+ 
    : bytes &length=16; #reserved
    : uint16; #reserved, should be 6
   data_length: uint32;
@@ -212,18 +212,18 @@ type asf_header_object = unit {
     b"\x33\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C" -> asf_content_description : asf_content_description;
     * -> : bytes &length=(self.size - 24); # unknown
   };
-  
+
 };
 
 export type AsfFile = unit {
   %byteorder = BinPAC::ByteOrder::Little;
 
-  # ASF begins with a fixed 128-bit guid. 
+  # ASF begins with a fixed 128-bit guid.
    : b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xAA\x00\x62\xCE\x6C";
   size : uint64;
   number_objects : uint32;
    : b"\x01";
    : b"\x02";
 
-  listheader : list <asf_header_object> &length=self.number_objects;
+  listheader : list <asf_header_object> &count=self.number_objects;
 };

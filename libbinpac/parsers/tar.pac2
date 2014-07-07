@@ -40,7 +40,7 @@ type Header = unit {
         * -> : b"" { self.filetype = FileType::REG; self.filelen = self.size; }
     };
 
-    on %done { 
+    on %done {
        self.name = self.name.split1(b"\x00")[0];
        self.linkname = self.linkname.split1(b"\x00")[0];
     }
