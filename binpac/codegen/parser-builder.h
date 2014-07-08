@@ -145,6 +145,7 @@ protected:
 
     void visit(expression::Ctor* c) override;
     void visit(expression::Constant* c) override;
+    void visit(expression::Type* c) override;
 
     void visit(production::Boolean* b) override;
     void visit(production::ChildGrammar* c) override;
@@ -168,6 +169,7 @@ protected:
     void visit(type::Bytes* b) override;
     void visit(type::Double* d) override;
     void visit(type::Enum* e) override;
+    void visit(type::EmbeddedObject* o) override;
     void visit(type::Integer* i) override;
     void visit(type::Interval* i) override;
     void visit(type::List* l) override;

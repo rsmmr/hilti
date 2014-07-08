@@ -1810,3 +1810,13 @@ Sink::Sink(const Location& l) : PacType(l)
 Sink::~Sink()
 {
 }
+
+EmbeddedObject::EmbeddedObject(shared_ptr<Type> etype, const Location& l)
+    : TypedPacType(etype, l)
+{
+}
+
+EmbeddedObject::EmbeddedObject(const Location& l)
+    : TypedPacType(l)
+{
+}

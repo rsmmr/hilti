@@ -1836,6 +1836,23 @@ public:
 
 ////
 
+/// Type representing an object embedded into a data stream.
+class EmbeddedObject : public TypedPacType, public trait::Parseable
+{
+public:
+    /// Constructor.
+    ///
+    /// etype: The type of the embedded object.
+    ///
+    /// l: Associated location.
+    EmbeddedObject(shared_ptr<Type> etype, const Location& l=Location::None);
+
+    /// Constructor for a wildcard type.
+    EmbeddedObject(const Location& l=Location::None);
+
+    ACCEPT_VISITOR(TypedPacType);
+};
+
 }
 
 }

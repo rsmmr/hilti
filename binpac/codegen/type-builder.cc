@@ -139,6 +139,15 @@ void TypeBuilder::visit(type::Enum* e)
     setResult(ti);
 }
 
+void TypeBuilder::visit(type::EmbeddedObject* o)
+{
+    auto etype = hiltiType(o->argType());
+
+    TypeInfo ti;
+    ti.hilti_type = etype;
+    setResult(ti);
+}
+
 void TypeBuilder::visit(type::Exception* e)
 {
 }

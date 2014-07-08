@@ -168,6 +168,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         ELSE
 %token         OR
 %token         STOP
+%token         OBJECT
 
 %token         ATTR_HILTI_ID
 
@@ -435,6 +436,8 @@ atomic_type   : ANY                              { $$ = std::make_shared<type::A
               | REGEXP                           { $$ = std::make_shared<type::RegExp>(attribute_list(), loc(@$)); }
               | TUPLE '<' types '>'              { $$ = std::make_shared<type::Tuple>($3, loc(@$)); }
               | TUPLE '<' '*' '>'                { $$ = std::make_shared<type::Tuple>(loc(@$)); }
+
+              | OBJECT '<' type '>'              { $$ = std::make_shared<type::EmbeddedObject>($3); }
 
               | bitfield                         { $$ = $1; }
               | bitset                           { $$ = $1; }

@@ -73,6 +73,7 @@ production::Counter
 production::Epsilon
 production::Enclosure
 production::Literal
+production::TypeLiteral
 production::LookAhead
 production::NonTerminal
 production::Sequence
@@ -106,6 +107,7 @@ type::Bytes
 type::CAddr
 type::Double
 type::Enum
+type::EmbeddedObject
 type::Exception
 type::File
 type::Function

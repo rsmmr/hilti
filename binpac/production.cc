@@ -224,6 +224,33 @@ Literal::pattern_list production::Ctor::patterns() const
     return _ctor->patterns();
 }
 
+production::TypeLiteral::TypeLiteral(const string& symbol, shared_ptr<binpac::Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+    : Literal(symbol, type, expr, filter, l)
+{
+    _type = type;
+    addChild(_type);
+}
+
+shared_ptr<binpac::Type> production::TypeLiteral::type() const
+{
+    return _type;
+}
+
+string production::TypeLiteral::renderProduction() const
+{
+    return _type->render() + util::fmt(" (%s/id %d)", _type->render(), tokenID());
+}
+
+shared_ptr<Expression> production::TypeLiteral::literal() const
+{
+    return std::make_shared<expression::Type>(_type);
+}
+
+Literal::pattern_list production::TypeLiteral::patterns() const
+{
+    return Literal::pattern_list();
+}
+
 production::Variable::Variable(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
     : Terminal(symbol, type, expr, filter, l)
 {

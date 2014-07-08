@@ -236,6 +236,12 @@ void Printer::visit(constant::Enum* e)
     p << scopedID(&p, expr, e->value());
 }
 
+void Printer::visit(type::EmbeddedObject* e)
+{
+    Printer& p = *this;
+    p << "object<" << e->argType() << ">";
+}
+
 #if 0
 void Printer::visit(constant::Expression* e)
 {

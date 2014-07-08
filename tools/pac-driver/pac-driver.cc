@@ -56,6 +56,11 @@ struct Options {
 
 #endif
 
+typedef struct  {
+    int first;
+    const char* second;
+} Embed;
+
 int driver_debug = 0;
 int debug_hooks = 0;
 
@@ -100,6 +105,7 @@ static void usage(const char* prog)
     fprintf(stderr, "    -g            Enable pac-driver's debug output\n");
     fprintf(stderr, "    -B            Enable BinPAC++ debugging hooks\n");
     fprintf(stderr, "    -i <n>        Feed input incrementally in chunks of size <n>\n");
+    fprintf(stderr, "    -e <off:str>  Embed string <str> at offset <off>; can be given multiple times\n");
     fprintf(stderr, "    -l            Show available parsers\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
@@ -277,7 +283,7 @@ static binpac_parser* findParser(const char* name)
     return result;
 }
 
-hlt_bytes* readAllInput()
+hlt_bytes* readAllInput(Embed* embeds)
 {
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
@@ -286,12 +292,28 @@ hlt_bytes* readAllInput()
 
     int8_t buffer[256];
 
+    if ( embeds->second && embeds->first == 0 ) {
+        hlt_string s = hlt_string_from_asciiz(embeds->second, &excpt, ctx);
+        hlt_bytes_append_object(input, &hlt_type_info_hlt_string, &s, &excpt, ctx);
+        ++embeds;
+    }
+
+    size_t offset = 0;
+
     while ( ! excpt ) {
-        size_t n = fread(buffer, 1, sizeof(buffer), stdin);
+        size_t len = embeds->second ? (embeds->first - offset) : sizeof(buffer);
+        size_t n = fread(buffer, 1, len, stdin);
+        offset += n;
 
         int8_t* copy = (int8_t*) hlt_malloc(n);
         memcpy(copy, buffer, n);
         hlt_bytes_append_raw(input, copy, n, &excpt, ctx);
+
+        if ( embeds->second ) {
+            hlt_string s = hlt_string_from_asciiz(embeds->second, &excpt, ctx);
+            hlt_bytes_append_object(input, &hlt_type_info_hlt_string, &s, &excpt, ctx);
+            ++embeds;
+        }
 
         if ( feof(stdin) )
             break;
@@ -303,6 +325,9 @@ hlt_bytes* readAllInput()
     }
 
     check_exception(excpt);
+
+    // hlt_string s = hlt_bytes_to_string(&hlt_type_info_hlt_bytes, &input, 0, &excpt, ctx);
+    // hlt_string_print(stderr, s, 1, &excpt, ctx);
 
     return input;
 
@@ -328,9 +353,9 @@ static void dump_memstats()
             heap, alloced, current_allocs, total_refs);
 }
 
-void parseSingleInput(binpac_parser* p, int chunk_size)
+void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 {
-    hlt_bytes* input = readAllInput();
+    hlt_bytes* input = readAllInput(embeds);
 
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
@@ -507,6 +532,8 @@ int main(int argc, char** argv)
     int chunk_size = 0;
     int list_parsers = false;
     const char* parser = 0;
+    Embed embeds[256];
+    int embeds_count = 0;
 
     const char* progname = argv[0];
 
@@ -518,7 +545,7 @@ int main(int argc, char** argv)
 #endif
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:")) != -1) {
 
         switch (ch) {
 
@@ -550,6 +577,25 @@ int main(int argc, char** argv)
             list_parsers = true;
             break;
 
+         case 'e': {
+            char* m = strchr(optarg, ':');
+
+            if ( ! m ) {
+                fprintf(stderr, "syntax error for -e argument\n");
+                exit(1);
+            }
+
+            *m = '\0';
+            int offset = atoi(optarg);
+
+            if ( embeds_count < sizeof(embeds) - 1 ) {
+                embeds[embeds_count].first = offset;
+                embeds[embeds_count].second = m + 1;
+                embeds_count++;
+            }
+
+            break;
+         }
 
 #ifdef PAC_DRIVER_JIT
          case 'I':
@@ -578,6 +624,9 @@ int main(int argc, char** argv)
 
     argc -= optind;
     argv += optind;
+
+    embeds[embeds_count].first = 0;
+    embeds[embeds_count].second = 0;
 
     hlt_config cfg = *hlt_config_get();
 
@@ -681,7 +730,7 @@ int main(int argc, char** argv)
         GC_DTOR(profiler_tag, hlt_string);
     }
 
-    parseSingleInput(request, chunk_size);
+    parseSingleInput(request, chunk_size, embeds);
 
     if ( options->profile ) {
         hlt_exception* excpt = 0;

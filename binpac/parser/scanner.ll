@@ -108,6 +108,7 @@ mod                   return token::MOD;
 module                return token::MODULE;
 net                   return token::NET;
 new                   return token::NEW;
+object                return token::OBJECT;
 on                    return token::ON;
 port                  return token::PORT;
 print                 return token::PRINT;

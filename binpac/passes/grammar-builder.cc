@@ -180,8 +180,20 @@ void GrammarBuilder::visit(type::unit::item::field::AtomicType* t)
     if ( ! _in_decl )
         return;
 
-    auto sym = "var:" + t->id()->name();
-    auto prod = std::make_shared<production::Variable>(sym, t->type());
+    shared_ptr<Production> prod;
+
+    if ( ast::isA<type::EmbeddedObject>(t->type()) ) {
+        // Not quite clear if there's a nicer way to present these than
+        // special-casing them here.
+        auto sym = "type:" + t->id()->name();
+        prod = std::make_shared<production::TypeLiteral>(sym, t->type());
+    }
+
+    else {
+        auto sym = "var:" + t->id()->name();
+        prod = std::make_shared<production::Variable>(sym, t->type());
+    }
+
     prod->pgMeta()->field = t->sharedPtr<type::unit::item::Field>();
     setResult(prod);
 }

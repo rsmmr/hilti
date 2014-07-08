@@ -165,7 +165,7 @@ static inline void __normalize_iter(hlt_iterator_bytes* pos)
     // If the pos was previously an end position but now new data has been
     // added, adjust it so that it's pointing to the next byte. Note we do
     // not adjust the reference count in this version.
-    while ( pos->cur >= pos->bytes->end && pos->bytes->next ) {
+    while ( pos->cur >= pos->bytes->end && pos->bytes->next && ! __at_object(*pos) ) {
         pos->bytes = pos->bytes->next;
         pos->cur = pos->bytes->start;
     }
@@ -1944,7 +1944,7 @@ void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info* type,
     __hlt_bytes_object* o = __get_object(i.bytes);
     assert(o && o->type);
 
-    if ( type && type != o->type ) {
+    if ( type && ! hlt_type_equal(type, o->type) ) {
         hlt_set_exception(excpt, &hlt_exception_type_error, 0);
         return 0;
     }

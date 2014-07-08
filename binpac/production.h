@@ -284,6 +284,34 @@ private:
     shared_ptr<binpac::Ctor> _ctor;
 };
 
+/// A literal represented by a type. Note that normally types aren't
+/// literals; they can only if the parsing can for tell that a instance of
+/// the type is coming up, i.e., supports look-ahead (as, e.g., in the case
+/// of embedded objects).
+class TypeLiteral : public Literal
+{
+public:
+    /// Constructor.
+    ///
+    /// type: The type.
+    ///
+    /// l: Associated location.
+    TypeLiteral(const string& symbol, shared_ptr<binpac::Type> type, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+
+    /// Returns the type.
+    shared_ptr<binpac::Type> type() const;
+
+    shared_ptr<Expression> literal() const override;
+    pattern_list patterns() const override;
+
+    ACCEPT_VISITOR(Literal);
+
+protected:
+    string renderProduction() const override;
+
+private:
+    shared_ptr<binpac::Type> _type;
+};
 
 /// A variable. A variable is a terminal that will be parsed from the input
 /// stream according to its type, yet is not recognizable as such in advance

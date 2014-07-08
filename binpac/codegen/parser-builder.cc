@@ -1264,12 +1264,14 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
 
     auto frozen = cg()->builder()->addTmp("is_frozen", hilti::builder::boolean::type());
     auto mode = hilti::builder::string::create(modetag);
+    auto at = cg()->builder()->addTmp("at_obj", ::hilti::builder::boolean::type());
 
     cg()->builder()->addInstruction(frozen, hilti::instruction::bytes::IsFrozenIterBytes, cur);
+    cg()->builder()->addInstruction(at, hilti::instruction::bytes::AtObject, cur);
 
     if ( cg()->options().debug > 0 )
-        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (lit-mode: %s; frozen: %s; trimming %d)",
-                                     hilti::builder::string::create(tag), next, mode, frozen, state()->trim);
+        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (lit-mode: %s; frozen: %s; trimming %d; at object %d)",
+                                     hilti::builder::string::create(tag), next, mode, frozen, state()->trim, at);
 }
 
 void ParserBuilder::_hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type)
@@ -2276,6 +2278,19 @@ void ParserBuilder::visit(expression::Constant* c)
     setResult(value);
 }
 
+void ParserBuilder::visit(expression::Type* t)
+{
+    auto field = arg1();
+    assert(field);
+
+    auto type = ast::checkedCast<type::TypeType>(t->type())->typeType();
+
+    shared_ptr<hilti::Expression> value;
+    processOne(type, &value, field);
+
+    setResult(value);
+}
+
 void ParserBuilder::visit(constant::Address* a)
 {
 }
@@ -3199,6 +3214,57 @@ void ParserBuilder::visit(type::Double* d)
 
 void ParserBuilder::visit(type::Enum* e)
 {
+}
+
+void ParserBuilder::visit(type::EmbeddedObject* o)
+{
+    auto field = arg1();
+    assert(field);
+
+    auto type = o->argType();
+    auto htype = cg()->hiltiType(type);
+
+    cg()->builder()->addComment(util::fmt("EmbeddedObject: %s of type %s", field->id()->name(), type->render()));
+
+    switch ( state()->mode ) {
+     case ParserState::TRY: {
+         auto at = cg()->builder()->addTmp("at_obj", ::hilti::builder::boolean::type());
+         cg()->builder()->addInstruction(at, hilti::instruction::bytes::AtObject, state()->cur, ::hilti::builder::type::create(htype));
+
+         auto branches = cg()->builder()->addIf(at);
+         auto found = std::get<0>(branches);
+         auto cont = std::get<1>(branches);
+
+         cg()->moduleBuilder()->pushBuilder(found);
+         cg()->builder()->addInstruction(state()->cur, hilti::instruction::bytes::SkipObject, state()->cur);
+         cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+         cg()->moduleBuilder()->popBuilder(found);
+
+         cg()->moduleBuilder()->pushBuilder(cont);
+
+         // Leaving iterator untouched as sign that not found. Returning no value.
+         setResult(nullptr);
+         break;
+     }
+
+     case ParserState::DEFAULT:
+     case ParserState::LAHEAD_REPARSE: {
+         cg()->builder()->beginTryCatch();
+         auto obj = cg()->builder()->addTmp("obj", htype);
+         cg()->builder()->addInstruction(obj, hilti::instruction::bytes::RetrieveObject, state()->cur);
+         cg()->builder()->addInstruction(state()->cur, hilti::instruction::bytes::SkipObject, state()->cur);
+
+         cg()->builder()->pushCatchAll();
+         _hiltiParseError(util::fmt("embedded object of type %s expected", type->render()));
+         cg()->builder()->popCatchAll();
+
+         cg()->builder()->endTryCatch();
+
+         setResult(obj);
+         break;
+     }
+
+    }
 }
 
 void ParserBuilder::visit(type::Integer* i)
