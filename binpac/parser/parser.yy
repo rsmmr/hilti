@@ -510,10 +510,10 @@ unit_global_hook : ON hook_id unit_hooks         { $$ = std::make_shared<type::u
 
 unit_prop     : property                         { $$ = std::make_shared<type::unit::item::Property>($1, loc(@$)); }
 
-unit_field    : opt_unit_field_name atomic_type opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::AtomicType>($1, $2, $5, ($3 ? hook_list() : $7), $4, $6, loc(@$));
-                                                   if ( $3 )
-                                                       $$ = makeVectorField($$, $1, $3, $7, loc(@$));
+unit_field    : opt_unit_field_name base_type opt_field_args opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = type::unit::item::Field::createByType($2, $1, $6, ($4 ? hook_list() : $8), $5, $3, $7, loc(@$));
+                                                   if ( $4 )
+                                                       $$ = makeVectorField($$, $1, $4, $8, loc(@$));
                                                  }
 
               | opt_unit_field_name constant opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
@@ -524,13 +524,6 @@ unit_field    : opt_unit_field_name atomic_type opt_unit_vector_len opt_type_att
               | opt_unit_field_name ctor opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::field::Ctor>($1, $2, $5, ($3 ? hook_list() : $7), $4, $6, loc(@$));
                                                    if ( $3 ) $$ = makeVectorField($$, $1, $3, $7, loc(@$));
-                                                 }
-
-              | opt_unit_field_name LIST '<' atomic_type '>' opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 {
-                                                  auto t = std::make_shared<type::unit::item::field::AtomicType>(nullptr, $4, nullptr, hook_list(), attribute_list(), expression_list(), loc(@$));
-                                                  $$ = std::make_shared<type::unit::item::field::container::List>($1, t, $8, ($6 ? hook_list() : $10), $7, $9, loc(@$));
-                                                  if ( $6 ) $$ = makeVectorField($$, $1, $6, $10, loc(@$));
                                                  }
 
               | opt_unit_field_name LIST '<' unit_field_in_container '>' opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks

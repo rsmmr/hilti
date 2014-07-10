@@ -333,15 +333,8 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
     if ( constant )
         nfield = std::make_shared<type::unit::item::field::Constant>(name, constant->constant(), condition, hooks, attributes, sinks, location);
 
-    if ( type ) {
-        auto tval = type->typeValue();
-        auto unit = ast::tryCast<type::Unit>(tval);
-
-        if ( unit )
-            nfield = std::make_shared<type::unit::item::field::Unit>(name, unit, condition, hooks, attributes, params, sinks, location);
-        else
-            nfield = std::make_shared<type::unit::item::field::AtomicType>(name, tval, condition, hooks, attributes, sinks, location);
-    }
+    if ( type )
+        nfield = type::unit::item::Field::createByType(type->typeValue(), name, condition, hooks, attributes, params, sinks, location);
 
     nfield->scope()->setParent(f->scope()->parent());
 
