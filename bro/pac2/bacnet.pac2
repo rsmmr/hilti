@@ -1518,10 +1518,10 @@ type NPDU_message = unit(len: uint16, t: NPDU_type) {
   # len only is remaining length
   switch ( t ) {
     NPDU_type::Who-Is-Router-To-Network,
-    NPDU_type::Disconnect-Connection-To-Network -> dnets: list<uint16> &count=1 if ( len >= 2 );
+    NPDU_type::Disconnect-Connection-To-Network -> dnets: list<uint16> &length=len;
     NPDU_type::I-Am-Router-To-Network,
     NPDU_type::Router-Busy-To-Network,
-    NPDU_type::Router-Available-To-Network -> dnets: list<uint16> &count=len / 2;
+    NPDU_type::Router-Available-To-Network -> dnets: list<uint16> &length=len;
     NPDU_type::I-Could-Be-Router-To-Network -> {
       dnets: list<uint16> &count=1;
       performance_index: uint8;

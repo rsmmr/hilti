@@ -1,8 +1,6 @@
 #
 # @TEST-EXEC: bro -r ${TRACES}/bacnet/NPDU.pcap bacnet.evt ${PAC2}/bacnet.bro %INPUT >output
 # @TEST-EXEC: btest-diff output
-#
-# @TEST-KNOWN-FAILURE: needs work
 
 event bacnet_npdu_network_messages(c: connection, info: BACnet::NPDU_info, dnets: vector of count)
   {
