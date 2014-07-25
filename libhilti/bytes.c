@@ -606,42 +606,6 @@ void __hlt_bytes_find_byte(hlt_iterator_bytes* p, hlt_bytes* b, int8_t chr, hlt_
 
     *p = GenericEndPos;
 }
-// Doesn't ref the iterator.
-
-void __hlt_bytes_find_byte_from(hlt_iterator_bytes* p, hlt_iterator_bytes i, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
-{
-    // First chunk.
-    hlt_bytes* b = i.bytes;
-    int8_t* c = memchr(i.cur, chr, b->end - i.cur);
-
-    if ( ! c ) {
-        // Subsequent chunks.
-        for ( b = i.bytes->next; b && ! __get_object(b); b = b->next ) {
-            int8_t* c = memchr(b->start, chr, b->end - b->start);
-
-            if ( c )
-                break;
-        }
-    }
-
-    if ( c )
-        *p = __create_iterator(b, c);
-    else
-        *p = GenericEndPos;
-}
-
-hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
-{
-    if ( ! b ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return GenericEndPos;
-    }
-
-    hlt_iterator_bytes p;
-    __hlt_bytes_find_byte(&p, b, chr, excpt, ctx);
-    GC_CCTOR(p, hlt_iterator_bytes);
-    return p;
-}
 
 // Doesn't ref the iterator.
 void __hlt_bytes_end(hlt_iterator_bytes* p, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -667,6 +631,42 @@ void __hlt_bytes_begin(hlt_iterator_bytes* p, hlt_bytes* b, hlt_exception** excp
     p->bytes = b;
     p->cur = b->start;
     __normalize_iter(p);
+}
+
+// Doesn't ref the iterator.
+void __hlt_bytes_find_byte_from(hlt_iterator_bytes* p, hlt_iterator_bytes i, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    // First chunk.
+    hlt_bytes* b = i.bytes;
+    int8_t* c = memchr(i.cur, chr, b->end - i.cur);
+
+    if ( ! c ) {
+        // Subsequent chunks.
+        for ( b = i.bytes->next; b && ! __get_object(b); b = b->next ) {
+            int8_t* c = memchr(b->start, chr, b->end - b->start);
+
+            if ( c )
+                break;
+        }
+    }
+
+    if ( c )
+        *p = __create_iterator(b, c);
+    else
+        __hlt_bytes_end(p, i.bytes, excpt, ctx);
+}
+
+hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return GenericEndPos;
+    }
+
+    hlt_iterator_bytes p;
+    __hlt_bytes_find_byte(&p, b, chr, excpt, ctx);
+    GC_CCTOR(p, hlt_iterator_bytes);
+    return p;
 }
 
 void __hlt_iterator_bytes_incr(hlt_iterator_bytes* p, hlt_exception** excpt, hlt_execution_context* ctx, int8_t adj_ref)
@@ -870,6 +870,108 @@ hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exce
     return p;
 }
 
+static int8_t __hlt_bytes_match_at(hlt_iterator_bytes p, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( __is_end(p) )
+        return __is_empty(b, false);
+
+    if ( __is_empty(b, false) )
+        return 0;
+
+    hlt_iterator_bytes c1 = p;
+    hlt_iterator_bytes c2;
+
+    __hlt_bytes_begin(&c2, b, excpt, ctx);
+
+    while ( 1 ) {
+        // Extract bytes.
+        int8_t b1 = *(c1.cur);
+        int8_t b2 = *(c2.cur);
+
+        if ( b1 != b2 )
+            return 0;
+
+        __hlt_iterator_bytes_incr(&c1, excpt, ctx, 0);
+        __hlt_iterator_bytes_incr(&c2, excpt, ctx, 0);
+
+        // End of pattern reached?
+        if ( __is_end(c2) )
+            // Found.
+            return 1;
+
+        // End of input reached?
+        if ( __is_end(c1) )
+            // Not found, but could have if more input available.
+            return -1;
+    }
+
+    // Can't be reached.
+    assert(0);
+}
+
+hlt_bytes_find_at_iter_result hlt_bytes_find_bytes_at_iter(hlt_iterator_bytes i, hlt_bytes* needle, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes_find_at_iter_result r;
+    r.iter = i;
+
+    if ( ! needle ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        r.iter = GenericEndPos;
+        return r;
+    }
+
+    if ( __is_empty(needle, false) ) {
+        // Empty pattern returns start position.
+        r.success = 1;
+        r.iter = i;
+        goto done;
+    }
+
+    hlt_iterator_bytes nbegin;
+    __hlt_bytes_begin(&nbegin, needle, excpt, ctx);
+    int8_t chr = *nbegin.cur;
+
+    __normalize_iter(&r.iter);
+
+    while ( 1 ) {
+        __hlt_bytes_find_byte_from(&r.iter, r.iter, chr, excpt, ctx);
+
+        if ( __is_end(r.iter) ) {
+            // Not found. Leave r.iter at end.
+            r.success = 0;
+            break;
+        }
+
+        int rc = __hlt_bytes_match_at(r.iter, needle, excpt, ctx);
+
+        if ( rc > 0 ) {
+            // Found. Leave r.iter at start position.
+            r.success = 1;
+            break;
+        }
+
+        if ( rc == -1 ) {
+            // Out of input, may still match. Leave r.iter at start position.
+            r.success = 0;
+            break;
+        }
+
+        // Not found, advance.
+
+        __hlt_iterator_bytes_incr(&r.iter, excpt, ctx, 0);
+
+        if ( __is_end(r.iter) ) {
+            // Not found. Leave r.iter at end.
+            r.success = 0;
+            break;
+        }
+    }
+
+done:
+    GC_CCTOR(r.iter, hlt_iterator_bytes);
+    return r;
+}
+
 hlt_bytes* hlt_bytes_clone(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* dst = 0;
@@ -993,41 +1095,7 @@ int8_t hlt_bytes_match_at(hlt_iterator_bytes p, hlt_bytes* b, hlt_exception** ex
 
     __normalize_iter(&p);
 
-    if ( __is_end(p) )
-        return __is_empty(b, false);
-
-    if ( __is_empty(b, false) )
-        return 0;
-
-    hlt_iterator_bytes c1 = p;
-    hlt_iterator_bytes c2;
-
-    __hlt_bytes_begin(&c2, b, excpt, ctx);
-
-    while ( 1 ) {
-        // Extract bytes.
-        int8_t b1 = *(c1.cur);
-        int8_t b2 = *(c2.cur);
-
-        if ( b1 != b2 )
-            return 0;
-
-        __hlt_iterator_bytes_incr(&c1, excpt, ctx, 0);
-        __hlt_iterator_bytes_incr(&c2, excpt, ctx, 0);
-
-        // End of pattern reached?
-        if ( __is_end(c2) )
-            // Found.
-            return 1;
-
-        // End of input reached?
-        if ( __is_end(c1) )
-            // Not found.
-            return 0;
-    }
-
-    // Can't be reached.
-    assert(0);
+    return __hlt_bytes_match_at(p, b, excpt, ctx) > 0;
 }
 
 int8_t* hlt_bytes_to_raw(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)

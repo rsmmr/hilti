@@ -67,8 +67,10 @@ void GrammarBuilder::_resolveUnknown(shared_ptr<Production> production)
         production->replace(n);
     }
 
-    for ( auto c : production->childs() )
-        _resolveUnknown(c->sharedPtr<binpac::Production>());
+    for ( auto c : production->childs() ) {
+        if ( ast::isA<Production>(c) )
+             _resolveUnknown(c->sharedPtr<binpac::Production>());
+    }
 }
 
 string GrammarBuilder::counter(const string& key)

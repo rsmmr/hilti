@@ -1,0 +1,90 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+iterator<bytes> find(iterator<bytes> i, iterator<bytes> end, ref<bytes> needle)
+{
+    local tuple<bool, iterator<bytes>> r
+    local bool success
+    local iterator<bytes> ni
+    local ref<bytes> s
+    local string f
+
+    r = bytes.find i needle
+    success = tuple.index r 0
+    ni = tuple.index r 1
+
+    s = bytes.sub ni end
+    f = call Hilti::fmt("%s: %s at |%s|", (needle, success, s))
+    call Hilti::print (f)
+
+    return.result ni
+}
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> i
+    local iterator<bytes> j
+    local iterator<bytes> m
+    local iterator<bytes> end
+
+    b = b"1234567890"
+    i = begin b
+
+    end = end b
+    j = call find(i, end, b"456")
+    j = call find(i, end, b"xyz")
+    j = call find(i, end, b"123")
+    j = call find(i, end, b"890")
+    j = call find(i, end, b"5")
+    j = call find(i, end, b"")
+
+    call Hilti::print ("")
+
+
+    b = b"12345"
+    i = begin b
+    end = end b
+    j = call find(i, end, b"456")
+    bytes.append b b"678"
+    bytes.trim b j
+    end = end b
+    m = call find(j, end, b"456")
+    j = m
+
+    b = b"12345"
+    i = begin b
+    end = end b
+    j = call find(i, end, b"xyz")
+    bytes.append b b"xyzABC"
+    bytes.trim b j
+    end = end b
+    m = call find(j, end, b"xyz")
+    j = m
+
+    b = b"12345"
+    i = begin b
+    end = end b
+    j = call find(i, end, b"456")
+    bytes.append b b"XYZ"
+    bytes.trim b j
+    end = end b
+    m = call find(j, end, b"456")
+    j = m
+
+    b = b"12345"
+    i = begin b
+    end = end b
+    j = call find(i, end, b"HYU")
+    bytes.append b b"xyzABC"
+    bytes.trim b j
+    end = end b
+    m = call find(j, end, b"HYU")
+    j = m
+
+}

@@ -137,6 +137,17 @@ void StatementBuilder::visit(statement::instruction::bytes::Find* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::FindAtIter* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+
+    auto result = cg()->llvmCall("hlt::bytes_find_bytes_at_iter", args);
+
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::bytes::Offset* i)
 {
     CodeGen::expr_list args;

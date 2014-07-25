@@ -115,7 +115,8 @@ public:
            shared_ptr<hilti::Expression> lahstart = nullptr,
            shared_ptr<hilti::Expression> trim = nullptr,
            shared_ptr<hilti::Expression> cookie = nullptr,
-           LiteralMode mode = DEFAULT
+           LiteralMode mode = DEFAULT,
+           shared_ptr<hilti::Expression> parse_error_handler = nullptr
            );
 
     shared_ptr<hilti::Expression> hiltiArguments() const;
@@ -129,7 +130,8 @@ public:
                                              lahstart,
                                              trim,
                                              cookie,
-                                             mode);
+                                             mode,
+                                             parse_error_handler);
     }
 
     shared_ptr<binpac::type::Unit> unit;
@@ -141,6 +143,7 @@ public:
     shared_ptr<hilti::Expression> trim;
     shared_ptr<hilti::Expression> cookie;
     LiteralMode mode;
+    shared_ptr<hilti::Expression> parse_error_handler = nullptr;
 };
 
 ParserState::ParserState(shared_ptr<binpac::type::Unit> arg_unit,
@@ -151,7 +154,8 @@ ParserState::ParserState(shared_ptr<binpac::type::Unit> arg_unit,
                shared_ptr<hilti::Expression> arg_lahstart,
                shared_ptr<hilti::Expression> arg_trim,
                shared_ptr<hilti::Expression> arg_cookie,
-               LiteralMode arg_mode
+               LiteralMode arg_mode,
+               shared_ptr<hilti::Expression> arg_parse_error_handler
                )
 {
     unit = arg_unit;
@@ -163,6 +167,7 @@ ParserState::ParserState(shared_ptr<binpac::type::Unit> arg_unit,
     trim = (arg_trim ? arg_trim : hilti::builder::id::create("__trim"));
     cookie = (arg_cookie ? arg_cookie : hilti::builder::id::create("__cookie"));
     mode = arg_mode;
+    parse_error_handler = arg_parse_error_handler;
 }
 
 shared_ptr<hilti::Expression> ParserState::hiltiArguments() const
@@ -1800,7 +1805,7 @@ void ParserBuilder::_hiltiParseError(const string& msg)
 
     auto etype = builder::type::byName("BinPACHilti::ParseError");
     auto dst = hilti::builder::id::create("__parse_error_excpt");
-    auto pe = ::hilti::builder::label::create("@__parse_error");
+    auto pe = state()->parse_error_handler ? state()->parse_error_handler : ::hilti::builder::label::create("@__parse_error");
     auto arg = hilti::builder::string::create(msg);
 
     cg()->builder()->addInstruction(dst, ::hilti::instruction::exception::NewWithArg,
@@ -1815,12 +1820,14 @@ void ParserBuilder::_hiltiParseError(shared_ptr<hilti::Expression> excpt)
     _hiltiDebugVerbose("retriggering parse error");
 
     auto dst = ::hilti::builder::id::create("__parse_error_excpt");
-    auto pe = ::hilti::builder::label::create("@__parse_error");
+    auto pe = state()->parse_error_handler ? state()->parse_error_handler : ::hilti::builder::label::create("@__parse_error");
 
     // _finishParseFunction(false); // TODO: doesn't work here - true or false depending on where we're coming from.
     // cg()->builder()->addInstruction(hilti::instruction::exception::Throw, excpt);
 
-    cg()->builder()->addInstruction(dst, hilti::instruction::operator_::Assign, excpt);
+    if ( excpt )
+        cg()->builder()->addInstruction(dst, hilti::instruction::operator_::Assign, excpt);
+
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, pe);
 }
 
@@ -2254,6 +2261,20 @@ void ParserBuilder::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_
                                     hilti::builder::tuple::create( { sink, data, cg()->hiltiCookie() } ));
 }
 
+void ParserBuilder::_hiltiSynchronize(shared_ptr<Production> p)
+{
+    cg()->builder()->addComment(util::fmt("Synchronizing on: %s", p->render()));
+
+    _hiltiDebug("*** resynchronizing ***");
+    _hiltiDebugVerbose(util::fmt("synchronizing on: %s", p->render()));
+    _hiltiDebugShowInput("input pre-sync", state()->cur);
+
+    state()->cur = cg()->hiltiSynchronize(p, state()->data, state()->cur);
+
+    _hiltiDebugShowInput("input post-sync", state()->cur);
+
+}
+
 ////////// Visit methods.
 
 void ParserBuilder::visit(expression::Ctor* c)
@@ -2598,8 +2619,10 @@ void ParserBuilder::visit(production::Counter* c)
     cg()->moduleBuilder()->pushBuilder(parse_one);
 
     disableStoringValues();
+
     shared_ptr<hilti::Expression> value;
     parse(c->body(), &value);
+
     enableStoringValues();
 
     // Run foreach hook.
@@ -3020,10 +3043,46 @@ void ParserBuilder::visit(production::Loop* l)
         cg()->moduleBuilder()->pushBuilder(loop2);
     }
 
+    shared_ptr<hilti::builder::BlockBuilder> try_sync;
+    shared_ptr<hilti::builder::BlockBuilder> after_sync;
+    shared_ptr<hilti::builder::BlockBuilder> syncable;
+
+    if ( l->body()->canSynchronize() ) {
+        try_sync = cg()->moduleBuilder()->newBuilder("try_sync");
+        after_sync = cg()->moduleBuilder()->newBuilder("after_sync");
+        syncable = cg()->moduleBuilder()->newBuilder("syncable");
+
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, syncable->block());
+
+        cg()->moduleBuilder()->pushBuilder(try_sync);
+        // Sync, then continue normally.
+        _hiltiSynchronize(l->body());
+        _hiltiRunHook(state()->unit, state()->self, _hookForUnit(state()->unit, "%sync"), nullptr, false, nullptr);
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, after_sync->block());
+        cg()->moduleBuilder()->popBuilder(try_sync);
+
+//        cg()->moduleBuilder()->pushBuilder(reraise);
+//        // Reraise, can't sync here.
+//        _hiltiParseError(shared_ptr<hilti::Expression>());
+//        cg()->moduleBuilder()->popBuilder(reraise);
+
+        cg()->moduleBuilder()->pushBuilder(after_sync);
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
+        cg()->moduleBuilder()->popBuilder(after_sync);
+
+        pushState(state()->clone());
+        state()->parse_error_handler = try_sync->block();
+
+        cg()->moduleBuilder()->pushBuilder(syncable);
+    }
+
     disableStoringValues();
     shared_ptr<hilti::Expression> value;
     parse(l->body(), &value);
     enableStoringValues();
+
+    if ( l->body()->canSynchronize() )
+        popState();
 
     // Run foreach hook.
     auto stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, true), field, true, value);

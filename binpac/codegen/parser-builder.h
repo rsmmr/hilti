@@ -373,6 +373,9 @@ private:
     // Helper for bytes parsing, implements &chunked.
     void _hiltiCheckChunk(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> length_op);
 
+    // Synchronize parsing with a given production.
+    void _hiltiSynchronize(shared_ptr<Production> p);
+
     std::list<shared_ptr<ParserState>> _states;
     shared_ptr<hilti::Expression> _last_parsed_value;
     shared_ptr<production::Literal> _cur_literal;

@@ -762,7 +762,8 @@ std::list<trait::Parseable::ParseAttribute> Bytes::parseAttributes() const
         { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
         { "chunked", std::make_shared<type::Integer>(64, false), one, false },
         { "until", std::make_shared<type::Bytes>(), nullptr, false },
-        { "eod", nullptr, nullptr, false }
+        { "eod", nullptr, nullptr, false },
+        { "synchronize", nullptr, nullptr, false },
     };
 }
 

@@ -143,6 +143,22 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
+    iValidateCC(FindAtIter) {
+        // TODO: Validate type of target tuple.
+    }
+
+    iDocCC(FindAtIter, R"(
+        Searches *op2* from position *op1* onwards. Returns a tuple of a boolean and an iterator.
+        If *op2* was found, the boolean will be true and the iterator pointing to the first occurance.
+        If *op2* was not found, the boolean will be false and the iterator will point to the last position
+        so that everything before that is guaranteed to not contain even a partial match of *op1* (in other
+        words: one can trim until that position and then restart the search from there if more data gets
+        appended to the underlying bytes object.
+    )")
+
+iEndCC
+
+iBeginCC(bytes)
     iValidateCC(Offset) {
     }
 

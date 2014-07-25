@@ -60,6 +60,12 @@ typedef struct {
     hlt_bytes* second; /// Second element.
 } hlt_bytes_pair;
 
+/// Type for the result of ~~hlt_bytes_find_bytes_at_iter.
+typedef struct {
+    int8_t success;
+    hlt_iterator_bytes iter;
+} hlt_bytes_find_at_iter_result;
+
 /// Instantiates a new bytes object. The bytes object is initially empty.
 ///
 /// Returns: The new bytes object.
@@ -190,6 +196,20 @@ extern int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_excep
 ///
 /// Returns: The position where bytes is found, or ~~hlt_bytes_end if not found.
 extern hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Searches for the first occurance of another bytes object from an iterator position onwards.
+///
+/// i: The position where to start the search.
+///
+/// needle: The bytes to search.
+/// \hlt_c
+///
+/// Returns: If the needle was found, the result struct indicates success and
+/// return the position of the first occurence. If the needle was not found,
+/// the result struct indicates failure and return the last position that
+/// guarantees no overlap with any potential match if the underlying bytes
+/// object were further extended.
+extern hlt_bytes_find_at_iter_result hlt_bytes_find_bytes_at_iter(hlt_iterator_bytes i, hlt_bytes* needle, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Matches a bytes objects against the sequence started by an interator. 
 ///

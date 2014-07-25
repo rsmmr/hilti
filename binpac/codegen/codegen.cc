@@ -8,6 +8,7 @@
 #include "code-builder.h"
 #include "parser-builder.h"
 #include "type-builder.h"
+#include "synchronizer.h"
 #include "../context.h"
 #include "../attribute.h"
 
@@ -46,6 +47,7 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
     _code_builder = unique_ptr<codegen::CodeBuilder>(new codegen::CodeBuilder(this));
     _parser_builder = unique_ptr<codegen::ParserBuilder>(new codegen::ParserBuilder(this));
     _type_builder = unique_ptr<codegen::TypeBuilder>(new codegen::TypeBuilder(this));
+    _synchronizer = unique_ptr<codegen::Synchronizer>(new codegen::Synchronizer(this));
     _coercer = unique_ptr<Coercer>(new Coercer());
 
     try {
@@ -610,4 +612,9 @@ shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(shared_ptr<h
     builder()->addInstruction(result, hilti::instruction::integer::Mask, value, lower, upper);
 
     return result;
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiSynchronize(shared_ptr<Production> p, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur)
+{
+    return _synchronizer->hiltiSynchronize(p, data, cur);
 }

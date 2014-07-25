@@ -60,6 +60,14 @@ public:
     /// instructions.
     virtual bool atomic() const = 0;
 
+    /// Returns true if this production supports being parsed in
+    /// synchronization mode (i.e., after a parser error, or in DPD mode, it
+    /// knows how to find a subsequent point in the input stream where it can
+    /// continue normally).
+    ///
+    /// The default implemementation returns false.
+    virtual bool canSynchronize();
+
     /// If this production corresponds to a container's item field, sets the
     /// container.
     void setContainer(shared_ptr<type::unit::item::field::Container> c);
@@ -227,6 +235,7 @@ public:
     /// Returns a set of regular expressions corresponding to the literal.
     virtual pattern_list patterns() const = 0;
 
+    bool canSynchronize() override;
     string renderTerminal() const override;
 
     ACCEPT_VISITOR(Terminal);
@@ -389,6 +398,9 @@ public:
     /// l: Associated location.
     ChildGrammar(const string& symbol, shared_ptr<Production> child, shared_ptr<type::Unit> type, const Location& l = Location::None);
 
+    /// Returns the child production.
+    shared_ptr<Production> child() const;
+
     /// Returns the child type.
     shared_ptr<type::Unit> childType() const;
 
@@ -410,6 +422,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool canSynchronize() override;
 
 private:
     node_ptr<Production> _child;
@@ -463,7 +476,7 @@ public:
     Sequence(const string& symbol, const production_list& seq, shared_ptr<Type> type = nullptr, const Location& l = Location::None);
 
     /// Returns the production sequence.
-    const production_list& sequence() const;
+    production_list sequence() const;
 
     /// Adds a production to the sequence.
     ///
@@ -475,9 +488,10 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool canSynchronize() override;
 
 private:
-    production_list _seq;
+    std::list<node_ptr<Production>> _seq;
 };
 
 /// A pair of alternatives between which we can decide with one token of
@@ -598,6 +612,9 @@ public:
     /// l: Associated location.
     Counter(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l = Location::None);
 
+    /// Destructor.
+    virtual ~Counter();
+
     /// Returns the counter expression.
     shared_ptr<binpac::Expression> expression() const;
 
@@ -709,6 +726,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool canSynchronize() override;
 
 private:
     node_ptr<Production> _body;

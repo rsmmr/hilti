@@ -97,6 +97,12 @@ iBeginH(bytes, Find, "bytes.find")
     iOp2(optype::refBytes, true);
 iEndH
 
+iBeginH(bytes, FindAtIter, "bytes.find")
+    iTarget(optype::tuple);
+    iOp1(optype::iterBytes, true);
+    iOp2(optype::refBytes, true);
+iEndH
+
 iBeginH(bytes, Offset, "bytes.offset")
     iTarget(optype::iterBytes);
     iOp1(optype::refBytes, true);
