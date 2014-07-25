@@ -169,10 +169,9 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
     auto ftype = ast::as<type::Function>(i->op1()->type());
 
     CodeGen::expr_list params;
-    auto target_old = cg()->llvmValue(i->target());
     prepareCall(i->op1(), i->op2(), &params, true);
     auto result = cg()->llvmCall(func, ftype, params);
-    cg()->llvmDtor(target_old, i->target()->type(), false, "call.result-target-dtor");
+    cg()->llvmDtor(cg()->llvmValue(i->target()), i->target()->type(), false, "call.result-target-dtor");
 
     auto var = ast::checkedCast<expression::Variable>(i->target());
 
