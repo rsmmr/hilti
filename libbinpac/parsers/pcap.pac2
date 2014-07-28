@@ -201,15 +201,12 @@ export type PcapFile = unit {
 type PcapHeader = unit(byteorder: BinPAC::ByteOrder) {
   %byteorder = byteorder;
 
-   version_major: uint16;
+  version_major: uint16;
   version_minor: uint16;
   thiszone: int32;
   sigfigs: uint32;
   snaplen: uint32;
-  network: uint32 &convert=DataLinkType($$) {
-    #print self;
-  }
-
+  network: uint32 &convert=DataLinkType($$);
   # packet data follows
    : list<PcapPacket(byteorder, self.network)> &transient;
 };
@@ -221,20 +218,17 @@ type PcapPacket = unit(byteorder: BinPAC::ByteOrder, network: DataLinkType) {
   ts_usec: uint32;
   incl_len: uint32;
   orig_len: uint32;
-  # packet data
-  # : bytes &length=self.incl_len;
 
   switch ( network ) {
     DataLinkType::DLT_EN10MB -> : EthernetPacket(self.incl_len);
+    * ->: bytes &length=self.incl_len;
   };
 };
 
 type EthernetPacket = unit(len: uint32) {
   destination: bytes &length=6;
   source: bytes &length=6;
-  ethertype: uint16 &convert=EtherType($$) {
-    #print self;
-  }
+  ethertype: uint16 &convert=EtherType($$);
 
   switch ( self.ethertype ) {
     EtherType::IPV4 -> : IPV4Packet(len - self.offset());
@@ -464,6 +458,4 @@ type TCPPacket = unit(len: uint64) {
   options: bytes &length=(self.flags.data_offset - 5)*4;
 
   :bytes &length=(len - self.offset()); # packet content
- on %done { print self; }
-
 };
