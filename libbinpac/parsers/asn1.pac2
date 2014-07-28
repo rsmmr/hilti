@@ -150,10 +150,7 @@ type ASN1Body = unit(head: ASN1Header) {
     ASN1Type::OCTETSTRING -> octetstring: ASN1OCTETSTRING(head.len.len, head.tag.data.constructed);
     ASN1Type::OBJECTIDENTIFIER -> objectidentifier: ASN1OBJECTIDENTIFIER(head.len.len);
     ASN1Type::PrintableString, ASN1Type::GeneralizedTime, ASN1Type::UTCTime, ASN1Type::UTF8String, ASN1Type::BMPString, ASN1Type::UniversalString -> asn1string: ASN1String(head.tag, head.len.len);
-    ASN1Type::SEQUENCE, ASN1Type::SET -> submessages: list < ASN1Message > &until_including ( self.parse_length + $$.head.total_length >= head.len.len )
-      foreach {
-                self.parse_length = self.parse_length + $$.head.total_length;
-              }
+    ASN1Type::SEQUENCE, ASN1Type::SET -> submessages: list < ASN1Message > &length=head.len.len;
     * -> : bytes &length=head.len.len {
       print "Unknown type: ", head.tag.tpe, head.tag.data.constructed, head.tag.data.class;
     }
