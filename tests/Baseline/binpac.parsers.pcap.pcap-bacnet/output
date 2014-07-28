@@ -1,0 +1,8 @@
+<tpe=-127, func=Write-BDT, len=24, npdu=(not set), originator=(not set), originator_port=(not set), bbmd=<bvlc_result=(not set), bdts=[<address=192.168.1.100, address_port=-17728, mask=-1>, <address=192.168.2.200, address_port=-17728, mask=-1>], ttl=(not set), fdts=(not set)>>
+<tpe=-127, func=BVLC-Result, len=6, npdu=(not set), originator=(not set), originator_port=(not set), bbmd=<bvlc_result=Write-BDT-NAK, bdts=(not set), ttl=(not set), fdts=(not set)>>
+<tpe=-127, func=Read-BDT, len=4, npdu=(not set), originator=(not set), originator_port=(not set), bbmd=<bvlc_result=(not set), bdts=(not set), ttl=(not set), fdts=(not set)>>
+<tpe=-127, func=BVLC-Result, len=6, npdu=(not set), originator=(not set), originator_port=(not set), bbmd=<bvlc_result=Read-BDT-NAK, bdts=(not set), ttl=(not set), fdts=(not set)>>
+<tpe=-127, func=Read-FDT, len=4, npdu=(not set), originator=(not set), originator_port=(not set), bbmd=<bvlc_result=(not set), bdts=(not set), ttl=(not set), fdts=(not set)>>
+<tpe=-127, func=BVLC-Result, len=6, npdu=(not set), originator=(not set), originator_port=(not set), bbmd=<bvlc_result=Read-FDT-NAK, bdts=(not set), ttl=(not set), fdts=(not set)>>
+<tpe=-127, func=Register-FD, len=6, npdu=(not set), originator=(not set), originator_port=(not set), bbmd=<bvlc_result=(not set), bdts=(not set), ttl=60, fdts=(not set)>>
+<tpe=-127, func=BVLC-Result, len=6, npdu=(not set), originator=(not set), originator_port=(not set), bbmd=<bvlc_result=Register-FD-NAK, bdts=(not set), ttl=(not set), fdts=(not set)>>

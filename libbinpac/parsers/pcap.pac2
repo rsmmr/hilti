@@ -1,7 +1,6 @@
 module pcap;
 
 import BinPAC;
-#import dns;
 
 type DataLinkType = enum {
   DLT_NULL = 0, #  BSD loopback encapsulation
@@ -413,21 +412,20 @@ type IPV4Packet = unit(len: uint64) {
 
 type UDPPacket = unit(len: uint64) {
   var lower_port: uint16; # used for protocol identification. Kind of cheating...
+  var parser: sink;
 
   source_port: uint16;
   destination_port: uint16 {
     self.lower_port = self.source_port;
     if ( self.destination_port < self.lower_port )
       self.lower_port = self.destination_port;
+
+    self.parser.connect_mime_type(BinPAC::fmt(b"port-udp/%u", (self.lower_port, 1)));
   }
   length: uint16;
   checksum: uint16;
 
-  switch ( self.lower_port ) {
-    #53 -> : DNS::Message;
-    * -> : bytes &length=(len - self.offset());
-  };
-
+  data: bytes &length=(len - self.offset()) -> self.parser;
 };
 
 type TCPPacket = unit(len: uint64) {
