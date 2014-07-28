@@ -1,17 +1,16 @@
 #
-# Work around import issues
-# @TEST-EXEC:  cat ${PARSERS}/asn1.pac2 ${PARSERS}/x509.pac2 > out.pac2
-# @TEST-EXEC:  cat %DIR/v1cert.der | pac-driver-test %INPUT out.pac2 >v1
-# @TEST-EXEC:  cat %DIR/google.der| pac-driver-test %INPUT out.pac2 >google
+# @TEST-EXEC:  cat %DIR/v1cert.der| pac-driver-test %INPUT ${PARSERS}/asn1.pac2 ${PARSERS}/x509.pac2 >v1
+# @TEST-EXEC:  cat %DIR/google.der| pac-driver-test %INPUT ${PARSERS}/asn1.pac2 ${PARSERS}/x509.pac2 >google
 # @TEST-EXEC:  btest-diff v1
-# @TEST-EXEC:  btest-diff google 
+# @TEST-EXEC:  btest-diff google
 #
 
 module Test;
 
-import out; # hacky...
+import parsers/asn1;
+import parsers/x509;
 
-on asn1::tbscertificate::%done {
+on x509::tbscertificate::%done {
   print "Version: ", self.version;
   print "Serial number: ", self.serial;
   print "Valid from: ", self.validity.not_before;
@@ -20,6 +19,6 @@ on asn1::tbscertificate::%done {
   print "Public key algorithm: ", self.subjectPublicKeyInfo.algorithm.algorithm;
 }
 
-on asn1::cert_issuer_component::%done {
+on x509::cert_issuer_component::%done {
   print "Name oid: ", self.tpe, " value: ", self.value;
 }

@@ -54,7 +54,7 @@ type LengthType = unit {
   switch ( self.data.islong ) {
     0 -> : b"" { self.len = self.data.num; self.tag_len = 1; }
     1 -> length_parse: bytes &length=self.data.num &convert=$$.to_uint(BinPAC::ByteOrder::Network) { self.len = self.length_parse; self.tag_len = self.data.num + 1; }
-  }; 
+  };
 };
 
 type ASN1Tag = unit {
@@ -68,7 +68,7 @@ type ASN1Tag = unit {
      class: 6..7;
   };
 
-  on %done { 
+  on %done {
     self.tpe = ASN1Type(self.data.num);
     self.class = ASN1Class(self.data.class);
   }
@@ -119,12 +119,12 @@ type ASN1OBJECTIDENTIFIER = unit(len: uint64) {
   first: uint8 if ( len >= 1) {
     self.temp = self.first / 40;
     self.oid.push_back( self.temp );
-    self.oidstring = BinPAC::fmt (b"%d", (self.temp, 1));    
+    self.oidstring = BinPAC::fmt (b"%d", (self.temp, 1));
     self.temp = self.first mod 40;
     self.oid.push_back( self.temp );
     self.oidstring += BinPAC::fmt(b".%d", (self.temp, 1));
     self.temp = 0;
-  } 
+  }
 
   sublist: list<oidnibble> &length=(len - 1)
     foreach {
@@ -151,10 +151,10 @@ type ASN1Body = unit(head: ASN1Header) {
     ASN1Type::OBJECTIDENTIFIER -> objectidentifier: ASN1OBJECTIDENTIFIER(head.len.len);
     ASN1Type::PrintableString, ASN1Type::GeneralizedTime, ASN1Type::UTCTime, ASN1Type::UTF8String, ASN1Type::BMPString, ASN1Type::UniversalString -> asn1string: ASN1String(head.tag, head.len.len);
     ASN1Type::SEQUENCE, ASN1Type::SET -> submessages: list < ASN1Message > &until_including ( self.parse_length + $$.head.total_length >= head.len.len )
-      foreach { 
+      foreach {
                 self.parse_length = self.parse_length + $$.head.total_length;
               }
-    * -> : bytes &length=head.len.len { 
+    * -> : bytes &length=head.len.len {
       print "Unknown type: ", head.tag.tpe, head.tag.data.constructed, head.tag.data.class;
     }
   };
@@ -162,17 +162,17 @@ type ASN1Body = unit(head: ASN1Header) {
 
 type ASN1Header = unit {
   tag: ASN1Tag;
-  
+
   var total_length: uint64;
-  
-  len: LengthType { 
+
+  len: LengthType {
     self.total_length = self.len.len + self.tag.len + self.len.tag_len;
   }
 };
 
 type ASN1Message = unit {
   head: ASN1Header;
- 
+
   body: ASN1Body(self.head) if ( self.head.tag.class == ASN1Class::UNIVERSAL );
   submessage: ASN1Message if ( self.head.tag.class != ASN1Class::UNIVERSAL ); # assume explicit tagging, otherwise this will go horribly wrong
 
