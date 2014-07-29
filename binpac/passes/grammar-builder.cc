@@ -64,7 +64,8 @@ void GrammarBuilder::_resolveUnknown(shared_ptr<Production> production)
         auto n = unknown->node();
         auto p = _compiled.find(n);
         assert( p != _compiled.end());
-        production->replace(n);
+        if ( ast::isA<Production>(n) )
+            production->replace(n);
     }
 
     for ( auto c : production->childs() ) {
