@@ -1,10 +1,12 @@
 #
-# @TEST-EXEC:  echo 1234567890abcde | pac-driver-test %INPUT -- -p Mini::Main >output
+# @TEST-EXEC:  echo 1234567890abcde | pac-driver-test %INPUT sub.pac2 -- -p Mini::Main >output
 # @TEST-EXEC:  btest-diff output
 #
 # @TEST-KNOWN-FAILURE: Sinks cannot connect across modules at the moment.
 
 module Mini;
+
+import Sub;
 
 export type Main = unit {
     a: bytes &length=2;
@@ -30,7 +32,9 @@ export type Main = unit {
     }
 };
 
-Module Test;
+@TEST-START-FILE sub.pac2
+
+module Test;
 
 export type Sub = unit() {
     s1: bytes &length=10;
@@ -39,3 +43,5 @@ export type Sub = unit() {
         print "Sub ", self;
     }
 };
+
+@TEST-END-FILE

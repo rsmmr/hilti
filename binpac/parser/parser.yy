@@ -766,7 +766,7 @@ expr2         : scoped_id                        { $$ = std::make_shared<express
 opt_expr      : expr                             { $$ = $1; }
               | /* empty */                      { $$ = nullptr; }
 
-id_expr       : local_id                         { $$ = std::make_shared<expression::ID>($1, loc(@$)); }
+id_expr       : scoped_id                        { $$ = std::make_shared<expression::ID>($1, loc(@$)); }
 
 member_expr   : local_id                         { $$ = std::make_shared<expression::MemberAttribute>($1, loc(@$)); }
 

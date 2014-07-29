@@ -1,10 +1,10 @@
 #
-# @TEST-EXEC:  echo 123456666677777 | pac-driver-test %INPUT b.pac2 -- -p A::tA >output
+# @TEST-EXEC:  echo 123456666677777 | pac-driver-test b.pac2 %INPUT -- -p A::tA >output
 # @TEST-EXEC:  btest-diff output
 
 module A;
 
-import b;
+import B;
 
 export type tA = unit {
        a: bytes &length=5;

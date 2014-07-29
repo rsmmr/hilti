@@ -1207,7 +1207,12 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
 
 shared_ptr<hilti::Expression> ParserBuilder::_hiltiParserDefinition(shared_ptr<type::Unit> unit)
 {
-    string name = util::fmt("__binpac_parser_%s", unit->id()->name().c_str());
+    auto unit_module = unit->firstParent<Module>();
+    auto scope = unit_module && unit_module->id()->name() != moduleBuilder()->module()->id()->name()
+        ? unit_module->id()->name() : string();
+
+    string name = scope.size() ? util::fmt("%s::__binpac_parser_%s", scope, unit->id()->name().c_str())
+                               : util::fmt("__binpac_parser_%s", unit->id()->pathAsString().c_str());
 
     auto parser = ast::tryCast<hilti::Expression>(cg()->moduleBuilder()->lookupNode("parser-definition", name));
 
@@ -1215,7 +1220,12 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiParserDefinition(shared_ptr<t
         return parser;
 
     auto t = hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::Parser"));
-    parser = cg()->moduleBuilder()->addGlobal(name, t);
+
+    if ( scope.size() )
+        parser = cg()->moduleBuilder()->declareGlobal(name, t);
+    else
+        parser = cg()->moduleBuilder()->addGlobal(name, t);
+
     cg()->moduleBuilder()->cacheNode("parser-definition", name, parser);
     return parser;
 }
