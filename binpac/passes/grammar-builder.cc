@@ -216,6 +216,7 @@ void GrammarBuilder::visit(type::unit::item::field::Unit* u)
     else
         name = util::fmt("unit%d", _unit_counter++);
 
+    assert(ast::isA<Production>(chprod));
     auto child = std::make_shared<production::ChildGrammar>(name, chprod, ast::checkedCast<type::Unit>(u->type()), u->location());
     child->pgMeta()->field = u->sharedPtr<type::unit::item::field::Unit>();
     setResult(child);

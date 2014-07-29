@@ -1599,12 +1599,12 @@ void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod, const std::l
     // Now iterate through the non-regexps.
 
     shared_ptr<hilti::Expression> try_cur = nullptr;
-    shared_ptr<hilti::Expression> eod = nullptr;
+    // shared_ptr<hilti::Expression> eod = nullptr;
 
     if ( other.size() ) {
         try_cur = cg()->moduleBuilder()->addTmp("try_cur", _hiltiTypeIteratorBytes());
-        eod = cg()->builder()->addTmp("eod", _hiltiTypeIteratorBytes());
-        cg()->builder()->addInstruction(eod, hilti::instruction::iterBytes::End, state()->data);
+        // eod = cg()->builder()->addTmp("eod", _hiltiTypeIteratorBytes());
+        // cg()->builder()->addInstruction(eod, hilti::instruction::iterBytes::End, state()->data);
     }
 
     for ( auto t : other ) {
@@ -2847,10 +2847,42 @@ void ParserBuilder::visit(production::LookAhead* l)
     cg()->builder()->addInternalError("unexpected lahead symbol set");
     cg()->moduleBuilder()->popBuilder(wrong_symbol);
 
+    cg()->moduleBuilder()->pushBuilder(have_lahead);
+
+    // If one alternative has no look-ahead symbols and is just epsilon, then
+    // eod is ok and we go there if we haven't found a look ahead symbol.
+    shared_ptr<hilti::Expression> eod_ok = nullptr;
+
+    if ( l->lookAheads().first.empty() && ast::isA<production::Epsilon>(l->alternatives().first) )
+            eod_ok = found_alt1->block();
+
+    if ( l->lookAheads().second.empty() && ast::isA<production::Epsilon>(l->alternatives().second) )
+            eod_ok = found_alt2->block();
+
+    if ( eod_ok ) {
+        auto have_lah = cg()->moduleBuilder()->addTmp("have_lah", hilti::builder::boolean::type());
+        cg()->builder()->addInstruction(have_lah, hilti::instruction::operator_::Equal, state()->lahead, _hiltiLookAheadNone());
+
+        auto eod = cg()->moduleBuilder()->addTmp("eod", _hiltiTypeIteratorBytes());
+        cg()->builder()->addInstruction(eod, hilti::instruction::iterBytes::End, state()->data);
+
+        auto eod_reached = cg()->moduleBuilder()->addTmp("eod_reached", hilti::builder::boolean::type());
+        cg()->builder()->addInstruction(eod_reached, hilti::instruction::operator_::Equal, state()->cur, eod);
+
+        auto frozen = cg()->moduleBuilder()->addTmp("frozen", hilti::builder::boolean::type());
+        cg()->builder()->addInstruction(frozen, hilti::instruction::bytes::IsFrozenIterBytes, state()->cur);
+
+        cg()->builder()->addInstruction(eod_reached, hilti::instruction::boolean::And, eod_reached, frozen);
+        cg()->builder()->addInstruction(eod_reached, hilti::instruction::boolean::And, eod_reached, have_lah);
+
+        auto have_data = cg()->moduleBuilder()->newBuilder("lah-have-data");
+        cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, eod_reached, eod_ok, have_data->block());
+
+        cg()->moduleBuilder()->pushBuilder(have_data);
+    }
+
     // Now that we for sure have a lahead symbol pending, make sure it's one
     // of those we expect.
-
-    cg()->moduleBuilder()->pushBuilder(have_lahead);
 
     hilti::builder::BlockBuilder::case_list cases;
 

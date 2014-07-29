@@ -317,6 +317,7 @@ ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<Production> child, s
 {
     _child = child;
     addChild(_child);
+    assert(ast::isA<Production>(_child));
 }
 
 shared_ptr<Production> ChildGrammar::child() const
@@ -348,6 +349,7 @@ string ChildGrammar::renderProduction() const
 
 NonTerminal::alternative_list ChildGrammar::rhss() const
 {
+    assert(ast::isA<Production>(_child));
     alternative_list rhss = { { _child } };
     return rhss;
 }
