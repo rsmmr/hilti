@@ -147,6 +147,8 @@ protected:
     void visit(expression::Constant* c) override;
     void visit(expression::Type* c) override;
 
+    void visit(Production* p) override;
+
     void visit(production::Boolean* b) override;
     void visit(production::ChildGrammar* c) override;
     void visit(production::Enclosure* e) override;
@@ -375,6 +377,14 @@ private:
 
     // Synchronize parsing with a given production.
     void _hiltiSynchronize(shared_ptr<Production> p);
+
+    // When parsing a production that can resynchronize on errors, insert
+    // code to prepare for that.
+    void _hiltiPrepareSynchronize(Production* sync_check, shared_ptr<Production> sync_on, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> cont);
+
+    // When parsing a production that can resynchronize on errors, insert
+    // code to finalize that.
+    void _hiltiFinishSynchronize(Production* sync_check);
 
     std::list<shared_ptr<ParserState>> _states;
     shared_ptr<hilti::Expression> _last_parsed_value;

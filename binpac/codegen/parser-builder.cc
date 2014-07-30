@@ -2285,6 +2285,47 @@ void ParserBuilder::_hiltiSynchronize(shared_ptr<Production> p)
 
 }
 
+void ParserBuilder::_hiltiPrepareSynchronize(Production* sync_check, shared_ptr<Production> sync_on, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> cont)
+{
+    if ( ! sync_check->maySynchronize() )
+        return;
+
+    auto try_sync = cg()->moduleBuilder()->newBuilder("try_sync");
+    auto after_sync = cg()->moduleBuilder()->newBuilder("after_sync");
+    auto syncable = cg()->moduleBuilder()->newBuilder("syncable");
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, syncable->block());
+
+    cg()->moduleBuilder()->pushBuilder(try_sync);
+
+    // Sync, then continue normally.
+    _hiltiSynchronize(sync_on);
+    _hiltiRunHook(hook_state->unit, hook_state->self, _hookForUnit(hook_state->unit, "%sync"), nullptr, false, nullptr);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont);
+    cg()->moduleBuilder()->popBuilder(try_sync);
+
+    //  If we ever needed to dynamically decide if we can sync, we would insert
+    //  this back in, along with a condition to do the check.
+    //
+    //  cg()->moduleBuilder()->pushBuilder(reraise);
+    //  // Reraise, can't sync here.
+    //  _hiltiParseError(shared_ptr<hilti::Expression>());
+    //   cg()->moduleBuilder()->popBuilder(reraise);
+
+    pushState(state()->clone());
+    state()->parse_error_handler = try_sync->block();
+
+    cg()->moduleBuilder()->pushBuilder(syncable);
+}
+
+void ParserBuilder::_hiltiFinishSynchronize(Production* sync_check)
+{
+    if ( ! sync_check->maySynchronize() )
+        return;
+
+    popState();
+}
+
 ////////// Visit methods.
 
 void ParserBuilder::visit(expression::Ctor* c)
@@ -2527,6 +2568,16 @@ void ParserBuilder::visit(ctor::RegExp* r)
     setResult(value);
 }
 
+void ParserBuilder::visit(Production* p)
+{
+    // FIXME: This check would be better in the validator but we don't have
+    // access to the productions there. Should add a separate grammar
+    // validator.
+    auto f = p->pgMeta()->field;
+    if ( f && f->attributes()->lookup("synchronize") && ! p->supportsSynchronize() )
+        error(f, "cannot &synchronize on field");
+}
+
 void ParserBuilder::visit(production::Boolean* b)
 {
 }
@@ -2550,6 +2601,7 @@ void ParserBuilder::visit(production::ChildGrammar* c)
         params.push_back(std::make_pair(cg()->hiltiExpression(p.first, t), t));
     }
 
+    auto ostate = state();
     auto pstate = std::make_shared<ParserState>(child, subself, state()->data, state()->cur, state()->lahead, state()->lahstart, state()->trim, state()->cookie);
 
     pushState(pstate);
@@ -2567,7 +2619,16 @@ void ParserBuilder::visit(production::ChildGrammar* c)
         cg()->builder()->debugPushIndent();
     }
 
+    auto sync_loop = cg()->moduleBuilder()->newBuilder("sync-loop");
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, sync_loop->block());
+
+    cg()->moduleBuilder()->pushBuilder(sync_loop);
+
+    _hiltiPrepareSynchronize(c, c->child(), ostate, sync_loop->block());
+
     auto child_result = _hiltiCallParseFunction(child, child_func, true, nullptr);
+
+    _hiltiFinishSynchronize(c);
 
     if ( cg()->options().debug > 0 )
         cg()->builder()->debugPopIndent();
@@ -2598,7 +2659,16 @@ void ParserBuilder::visit(production::Enclosure* c)
 
     _startingProduction(c->sharedPtr<Production>(), field);
 
+    auto sync_loop = cg()->moduleBuilder()->newBuilder("sync-loop");
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, sync_loop->block());
+
+    cg()->moduleBuilder()->pushBuilder(sync_loop);
+
+    _hiltiPrepareSynchronize(c, c->child(), state(), sync_loop->block());
+
     parse(c->child());
+
+    _hiltiFinishSynchronize(c);
 
     _newValueForField(c->sharedPtr<Production>(), field, nullptr);
     _finishedProduction(c->sharedPtr<Production>());
@@ -3003,59 +3073,13 @@ void ParserBuilder::visit(production::Variable* v)
 void ParserBuilder::visit(production::While* w)
 {
     // TODO: Unclear if we need this, but if so, borrow code from
-    // production::Until below.
+    // production::Loop below.
 }
-
-#if 0
-
-// Looks like we don't need this, but may reuse the code for the While (if we need that one ...)
-
-void ParserBuilder::visit(production::Until* w)
-{
-    auto field = w->pgMeta()->field;
-    assert(field);
-
-    _startingProduction(w->sharedPtr<Production>(), field);
-
-    auto done = cg()->moduleBuilder()->newBuilder("until-done");
-    auto cont = cg()->moduleBuilder()->newBuilder("until-cont");
-
-    auto loop = cg()->moduleBuilder()->pushBuilder("until-loop");
-
-    disableStoringValues();
-    shared_ptr<hilti::Expression> value;
-    parse(w->body(), &value);
-    enableStoringValues();
-
-    auto cond = cg()->hiltiExpression(w->expression(), std::make_shared<type::Bool>());
-
-    cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, done->block(), cont->block());
-    cg()->moduleBuilder()->popBuilder(loop);
-
-    cg()->moduleBuilder()->pushBuilder(cont);
-
-    auto stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, true), field, true, value);
-    if ( ! stop )
-        stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, false), field, true, value);
-
-    cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, done->block(), loop->block());
-    cg()->moduleBuilder()->popBuilder(cont);
-
-    // Run foreach hook.
-
-    cg()->moduleBuilder()->pushBuilder(done);
-
-    _newValueForField(w->sharedPtr<Production>(), field, nullptr);
-    _finishedProduction(w->sharedPtr<Production>());
-
-    // Leave builder on stack.
-}
-
-#endif
 
 void ParserBuilder::visit(production::Loop* l)
 {
     auto field = l->pgMeta()->field;
+
     assert(field);
 
     _startingProduction(l->sharedPtr<Production>(), field);
@@ -3085,46 +3109,14 @@ void ParserBuilder::visit(production::Loop* l)
         cg()->moduleBuilder()->pushBuilder(loop2);
     }
 
-    shared_ptr<hilti::builder::BlockBuilder> try_sync;
-    shared_ptr<hilti::builder::BlockBuilder> after_sync;
-    shared_ptr<hilti::builder::BlockBuilder> syncable;
-
-    if ( l->body()->canSynchronize() ) {
-        try_sync = cg()->moduleBuilder()->newBuilder("try_sync");
-        after_sync = cg()->moduleBuilder()->newBuilder("after_sync");
-        syncable = cg()->moduleBuilder()->newBuilder("syncable");
-
-        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, syncable->block());
-
-        cg()->moduleBuilder()->pushBuilder(try_sync);
-        // Sync, then continue normally.
-        _hiltiSynchronize(l->body());
-        _hiltiRunHook(state()->unit, state()->self, _hookForUnit(state()->unit, "%sync"), nullptr, false, nullptr);
-        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, after_sync->block());
-        cg()->moduleBuilder()->popBuilder(try_sync);
-
-//        cg()->moduleBuilder()->pushBuilder(reraise);
-//        // Reraise, can't sync here.
-//        _hiltiParseError(shared_ptr<hilti::Expression>());
-//        cg()->moduleBuilder()->popBuilder(reraise);
-
-        cg()->moduleBuilder()->pushBuilder(after_sync);
-        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
-        cg()->moduleBuilder()->popBuilder(after_sync);
-
-        pushState(state()->clone());
-        state()->parse_error_handler = try_sync->block();
-
-        cg()->moduleBuilder()->pushBuilder(syncable);
-    }
+    _hiltiPrepareSynchronize(l, l->body(), state(), loop->block());
 
     disableStoringValues();
     shared_ptr<hilti::Expression> value;
     parse(l->body(), &value);
     enableStoringValues();
 
-    if ( l->body()->canSynchronize() )
-        popState();
+    _hiltiFinishSynchronize(l);
 
     // Run foreach hook.
     auto stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, true), field, true, value);

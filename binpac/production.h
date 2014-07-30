@@ -60,13 +60,21 @@ public:
     /// instructions.
     virtual bool atomic() const = 0;
 
-    /// Returns true if this production supports being parsed in
+    /// Returns true if this production is flagged by the user as ok to be
+    /// parsed in synchronization mode (i.e., after a parser error, or in DPD
+    /// mode, it knows how to find a subsequent point in the input stream
+    /// where it can continue normally). This is independent of whether the
+    /// production actually supports that.
+    bool maySynchronize();
+
+    /// Returns true if this production in principle supports being parsed in
     /// synchronization mode (i.e., after a parser error, or in DPD mode, it
     /// knows how to find a subsequent point in the input stream where it can
-    /// continue normally).
+    /// continue normally). This is independent of whether the user has
+    /// requested to activate that support.
     ///
     /// The default implemementation returns false.
-    virtual bool canSynchronize();
+    virtual bool supportsSynchronize();
 
     /// If this production corresponds to a container's item field, sets the
     /// container.
@@ -235,7 +243,7 @@ public:
     /// Returns a set of regular expressions corresponding to the literal.
     virtual pattern_list patterns() const = 0;
 
-    bool canSynchronize() override;
+    bool supportsSynchronize() override;
     string renderTerminal() const override;
 
     ACCEPT_VISITOR(Terminal);
@@ -422,7 +430,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
-    bool canSynchronize() override;
+    bool supportsSynchronize() override;
 
 private:
     node_ptr<Production> _child;
@@ -452,6 +460,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool supportsSynchronize() override;
 
 private:
     node_ptr<Production> _child;
@@ -488,7 +497,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
-    bool canSynchronize() override;
+    bool supportsSynchronize() override;
 
 private:
     std::list<node_ptr<Production>> _seq;
@@ -548,6 +557,7 @@ protected:
 
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool supportsSynchronize() override;
 
 private:
     std::pair<look_aheads, look_aheads> _lahs;
@@ -693,6 +703,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool supportsSynchronize() override;
 
 private:
     shared_ptr<Expression> _expr;
@@ -726,7 +737,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
-    bool canSynchronize() override;
+    bool supportsSynchronize() override;
 
 private:
     node_ptr<Production> _body;

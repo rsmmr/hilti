@@ -575,6 +575,9 @@ void Validator::visit(type::unit::item::Field* f)
         if ( attr->key() == "transient" )
             continue;
 
+        if ( attr->key() == "synchronize" )
+            continue;
+
         bool found = false;
 
         for ( auto pattr : parseable->parseAttributes() ) {

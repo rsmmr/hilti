@@ -1188,6 +1188,9 @@ void Printer::visit(type::unit::item::Variable* v)
     if ( v->default_() )
         p << " = " << v->default_();
 
+    if ( v->attributes()->size() )
+        p << " " << v->attributes();
+
     _printUnitHooks(p, v->hooks());
 }
 
@@ -1206,6 +1209,9 @@ void Printer::visit(type::unit::item::field::Ctor* r)
         p << r->id();
 
     p << ": " << r->ctor();
+
+    if ( r->attributes()->size() )
+        p << " " << r->attributes();
 
     _printUnitFieldCommon(p, r);
 }

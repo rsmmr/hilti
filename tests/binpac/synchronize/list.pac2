@@ -9,13 +9,14 @@
 module Mini;
 
 export type test1 = unit {
-    l: list<test2> &while($$.x != b"90");
+    l: list<test2> &while($$.x != b"90") &synchronize;
 
     on %done   { print "%done:", self; }
-    on %sync   { print "%sync:", self; }
+    on %sync   { print "%synced"; }
 };
 
 type test2 = unit {
        : b"abc" &synchronize;
        x: bytes &length=2;
+
 };

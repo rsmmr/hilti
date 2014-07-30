@@ -50,6 +50,8 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
     _synchronizer = unique_ptr<codegen::Synchronizer>(new codegen::Synchronizer(this));
     _coercer = unique_ptr<Coercer>(new Coercer());
 
+    _parser_builder->forwardLoggingTo(this);
+
     try {
         hilti::path_list paths = module->context()->options().libdirs_pac2;
         auto id = hilti::builder::id::node(module->id()->name(), module->id()->location());
@@ -99,6 +101,9 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
         _mbuilder->module()->compilerContext()->print(_mbuilder->module(), std::cerr);
 #endif
         _module = nullptr;
+
+        if ( errors() )
+            return nullptr;
 
         auto m = _mbuilder->finalize();
 

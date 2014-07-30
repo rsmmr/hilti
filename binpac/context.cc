@@ -298,6 +298,9 @@ llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module, shared
 
     auto compiled = codegen.compile(module);
 
+    if ( ! compiled )
+        return nullptr;
+
     if ( hilti_module_out )
         *hilti_module_out = compiled;
 

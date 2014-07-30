@@ -39,7 +39,12 @@ bool Production::nullable() const
     return false;
 }
 
-bool Production::canSynchronize()
+bool Production::maySynchronize()
+{
+    return pgMeta()->field && pgMeta()->field->attributes()->lookup("synchronize");
+}
+
+bool Production::supportsSynchronize()
 {
     return false;
 }
@@ -70,8 +75,13 @@ string Production::render()
     string can_sync = "";
     string sync_at = "";
 
-    if ( canSynchronize() )
-        can_sync = " (can synchronize here)";
+    bool have_sync = pgMeta()->field && pgMeta()->field->attributes()->lookup("synchronize");
+
+    if ( maySynchronize() || supportsSynchronize() || have_sync )
+        can_sync = util::fmt(" (sync %c/%c/%c)",
+                             maySynchronize() ? '+' : '-',
+                             supportsSynchronize() ? '+' : '-',
+                             have_sync ? '+' : '-');
 
     return util::fmt("%10s: %-3s -> %s%s%s", ++name, _symbol.c_str(), renderProduction().c_str(),
                      location.c_str(), can_sync);
@@ -178,9 +188,9 @@ Literal::Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Express
 {
 }
 
-bool Literal::canSynchronize()
+bool Literal::supportsSynchronize()
 {
-    return pgMeta()->field && pgMeta()->field->attributes()->lookup("synchronize");
+    return maySynchronize();
 }
 
 string Literal::renderTerminal() const
@@ -354,9 +364,9 @@ NonTerminal::alternative_list ChildGrammar::rhss() const
     return rhss;
 }
 
-bool ChildGrammar::canSynchronize()
+bool ChildGrammar::supportsSynchronize()
 {
-    return _child->canSynchronize();
+    return _child->supportsSynchronize();
 }
 
 Enclosure::Enclosure(const string& symbol, shared_ptr<Production> child, const Location& l)
@@ -375,6 +385,11 @@ NonTerminal::alternative_list Enclosure::rhss() const
 {
     alternative_list rhss = { { _child } };
     return rhss;
+}
+
+bool Enclosure::supportsSynchronize()
+{
+    return _child->supportsSynchronize();
 }
 
 string Enclosure::renderProduction() const
@@ -429,9 +444,9 @@ NonTerminal::alternative_list Sequence::rhss() const
     return l;
 }
 
-bool Sequence::canSynchronize()
+bool Sequence::supportsSynchronize()
 {
-    return _seq.size() ? _seq.front()->canSynchronize() : false;
+    return _seq.size() ? _seq.front()->supportsSynchronize() : false;
 }
 
 LookAhead::LookAhead(const string& symbol, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l)
@@ -531,6 +546,21 @@ string LookAhead::renderProduction() const
 NonTerminal::alternative_list LookAhead::rhss() const
 {
     return { { _alt1 }, { _alt2 } };
+}
+
+bool LookAhead::supportsSynchronize()
+{
+    for ( auto t : _lahs.first ) {
+        if ( ! t->supportsSynchronize() )
+            return false;
+    }
+
+    for ( auto t : _lahs.second ) {
+        if ( ! t->supportsSynchronize() )
+            return false;
+    }
+
+    return true;
 }
 
 Boolean::Boolean(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l)
@@ -658,6 +688,11 @@ NonTerminal::alternative_list While::rhss() const
     return { { _body } };
 }
 
+bool While::supportsSynchronize()
+{
+    return _body->supportsSynchronize();
+}
+
 Loop::Loop(const string& symbol, shared_ptr<Production> body, bool eod_ok, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
@@ -686,9 +721,9 @@ bool Loop::eodOk() const
     return _eod_ok ? true : nullable();
 }
 
-bool Loop::canSynchronize()
+bool Loop::supportsSynchronize()
 {
-    return _body->canSynchronize();
+    return _body->supportsSynchronize();
 }
 
 Switch::Switch(const string& symbol, shared_ptr<Expression> expr, const case_list& cases, shared_ptr<Production> default_, const Location& l)

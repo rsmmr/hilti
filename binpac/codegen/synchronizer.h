@@ -53,6 +53,7 @@ protected:
     void visit(production::Literal* l) override;
     void visit(production::Sequence* l) override;
     void visit(production::ChildGrammar* l) override;
+    void visit(production::LookAhead* l) override;
 
 private:
     // Wrapper around processOne().

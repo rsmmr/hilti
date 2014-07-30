@@ -169,3 +169,7 @@ void Synchronizer::visit(production::ChildGrammar* l)
     _hiltiSynchronizeOne(l->child());
 }
 
+void Synchronizer::visit(production::LookAhead* l)
+{
+    internalError("sync on look-ahead not yet supported");
+}

@@ -1,7 +1,7 @@
-%sync: <l=[<x=12>, <x=34>]>
+%synced
 %done: <l=[<x=12>, <x=34>, <x=78>]>
-%sync: <l=[]>
+%synced
 %done: <l=[<x=78>]>
-%sync: <l=[<x=12>, <x=34>]>
+%synced
 %done: <l=[<x=12>, <x=34>]>
 hilti: uncaught exception, BinPACHilti::ParseError with argument 'synchronization error: end of input reached without finding bytes' (from <no location>:)
