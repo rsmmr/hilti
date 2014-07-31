@@ -78,7 +78,7 @@ void Synchronizer::_hiltiSynchronizeOnBytes(const string& data)
 
     if ( state()->type == SynchronizeAfter )
         // Skip pattern.
-        cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Incr, state()->cur, hilti::builder::integer::create(data.size()));
+        cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::IncrBy, state()->cur, hilti::builder::integer::create(data.size()));
 
     cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
@@ -93,6 +93,125 @@ void Synchronizer::_hiltiSynchronizeOnBytes(const string& data)
     _hiltiNotYetFound(loop);
 
     cg()->moduleBuilder()->popBuilder(not_found);
+
+    // Continue after finding pattern.
+
+    cg()->moduleBuilder()->pushBuilder(done);
+}
+
+static shared_ptr<hilti::Type> _hiltiTypeMatchTokenState()
+{
+    return hilti::builder::reference::type(hilti::builder::match_token_state::type());
+}
+
+static shared_ptr<hilti::Type> _hiltiTypeMatchResult()
+{
+    auto i32 = hilti::builder::integer::type(32);
+    auto iter = hilti::builder::iterator::type(hilti::builder::bytes::type());
+    return hilti::builder::tuple::type({i32, iter});
+}
+
+void Synchronizer::_hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pattern_list& patterns)
+{
+    auto mtype = hilti::builder::tuple::type({ hilti::builder::boolean::type(), hilti::builder::iterator::typeBytes() });
+
+    auto mstate = cg()->builder()->addTmp("match", _hiltiTypeMatchTokenState());
+    auto mresult = cg()->builder()->addTmp("match_result", _hiltiTypeMatchResult());
+    auto eob = cg()->builder()->addTmp("eob", hilti::builder::iterator::typeBytes());
+    auto rc = cg()->builder()->addTmp("rc", hilti::builder::integer::type(32));
+    auto b = cg()->builder()->addTmp("b", hilti::builder::boolean::type());
+    auto i = cg()->builder()->addTmp("i", hilti::builder::iterator::typeBytes());
+
+    auto loop_inner = cg()->moduleBuilder()->newBuilder("loop_inner");
+    auto loop_outer = cg()->moduleBuilder()->newBuilder("loop_outer");
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop_outer->block());
+
+    ////
+
+    cg()->moduleBuilder()->pushBuilder(loop_outer);
+
+    // match_token_init
+    auto op = hilti::builder::regexp::create(patterns);
+    auto rty = hilti::builder::reference::type(hilti::builder::regexp::type({"&nosub"}));
+    auto glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node("__sync"), rty, op);
+    auto pattern = ast::checkedCast<hilti::Expression>(glob);
+
+    cg()->builder()->addInstruction(mstate, hilti::instruction::regexp::MatchTokenInit, pattern);
+    cg()->builder()->addInstruction(i, hilti::instruction::operator_::Assign, state()->cur);
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop_inner->block());
+
+    cg()->moduleBuilder()->popBuilder(loop_outer);
+
+    ////
+
+    cg()->moduleBuilder()->pushBuilder(loop_inner);
+
+    // match_token_advance
+    cg()->builder()->addInstruction(eob, hilti::instruction::iterBytes::End, state()->data);
+    cg()->builder()->addInstruction(mresult, hilti::instruction::regexp::MatchTokenAdvanceBytes, mstate, i, eob);
+    cg()->builder()->addInstruction(rc, hilti::instruction::tuple::Index, mresult, hilti::builder::integer::create(0));
+    cg()->builder()->addInstruction(b, hilti::instruction::integer::Slt, rc, hilti::builder::integer::create(0));
+
+    auto branches = cg()->builder()->addIf(b);
+    auto not_yet_found = std::get<0>(branches);
+    auto cont = std::get<1>(branches);
+
+    cg()->moduleBuilder()->popBuilder(loop_inner);
+
+    cg()->moduleBuilder()->pushBuilder(cont);
+
+    cg()->builder()->addInstruction(b, hilti::instruction::integer::Sgt, rc, hilti::builder::integer::create(0));
+    auto branches2 = cg()->builder()->addIfElse(b);
+    auto found = std::get<0>(branches2);
+    auto not_found = std::get<1>(branches2);
+    auto done = std::get<2>(branches2);
+
+    cg()->moduleBuilder()->popBuilder(cont);
+
+    ////
+
+    // Not yet found the pattern, but more input could change that.
+    cg()->moduleBuilder()->pushBuilder(not_yet_found);
+    cg()->builder()->addInstruction(i, hilti::instruction::operator_::Assign, eob);
+    _hiltiNotYetFound(loop_inner);
+    cg()->moduleBuilder()->popBuilder(not_yet_found);
+
+    // For sure not found at this position, try next.
+    cg()->moduleBuilder()->pushBuilder(not_found);
+
+    cg()->builder()->addInstruction(eob, hilti::instruction::iterBytes::End, state()->data);
+    cg()->builder()->addInstruction(b, hilti::instruction::operator_::Equal, state()->cur, eob);
+
+    cg()->moduleBuilder()->popBuilder(not_found);
+
+    auto branches3 = cg()->builder()->addIf(b);
+    auto end_of_data = std::get<0>(branches3);
+    auto increment = std::get<1>(branches3);
+
+    // Not found and end of input reached.
+    cg()->moduleBuilder()->pushBuilder(end_of_data);
+    _hiltiNotYetFound(not_found);
+    cg()->moduleBuilder()->popBuilder(end_of_data);
+
+    cg()->moduleBuilder()->pushBuilder(increment);
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Incr, state()->cur);
+    cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop_outer->block());
+    cg()->moduleBuilder()->popBuilder(increment);
+
+    // Found the pattern.
+    cg()->moduleBuilder()->pushBuilder(found);
+
+    if ( state()->type == SynchronizeAfter )
+        // Skip pattern.
+        cg()->builder()->addInstruction(state()->cur, hilti::instruction::tuple::Index, mresult, hilti::builder::integer::create(1));
+
+    cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+
+    cg()->moduleBuilder()->popBuilder(found);
 
     // Continue after finding pattern.
 
@@ -166,7 +285,24 @@ void Synchronizer::visit(production::Sequence* l)
 
 void Synchronizer::visit(production::ChildGrammar* l)
 {
-    _hiltiSynchronizeOne(l->child());
+    auto utype = ast::checkedCast<type::Unit>(l->type());
+
+    for ( auto p : utype->properties() ) {
+        auto attr = p->property();
+
+        if ( attr->key() == "synchronize-after" ) {
+            _state.type = SynchronizeAfter;
+            _hiltiSynchronizeOne(attr->value());
+        }
+
+        if ( attr->key() == "synchronize-at" ) {
+            _state.type = SynchronizeAt;
+            _hiltiSynchronizeOne(attr->value());
+        }
+    }
+
+    if ( l->child()->supportsSynchronize() )
+        _hiltiSynchronizeOne(l->child());
 }
 
 void Synchronizer::visit(production::LookAhead* l)

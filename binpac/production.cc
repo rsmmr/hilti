@@ -366,7 +366,15 @@ NonTerminal::alternative_list ChildGrammar::rhss() const
 
 bool ChildGrammar::supportsSynchronize()
 {
-    return _child->supportsSynchronize();
+    if ( _child->supportsSynchronize() )
+        return true;
+
+    auto utype = ast::checkedCast<type::Unit>(type());
+
+    if ( utype->property("synchronize-after") || utype->property("synchronize-at") )
+        return true;
+
+    return false;
 }
 
 Enclosure::Enclosure(const string& symbol, shared_ptr<Production> child, const Location& l)
