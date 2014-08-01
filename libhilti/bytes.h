@@ -584,6 +584,14 @@ extern int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_i
 /// Returns: The advanced iterator.
 extern hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Moves the iterator to the next embedded object. Returns the current
+/// position if that's pointing to an object already.
+///
+/// i: The start position.
+///
+/// Returns: The advanced iterator, which will be the end position if there's no further embedded object.
+extern hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// XXX
 
 /// @}

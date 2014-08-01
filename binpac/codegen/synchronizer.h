@@ -49,7 +49,10 @@ protected:
     void visit(ctor::Bytes* b) override;
     void visit(ctor::RegExp* b) override;
 
+    void visit(type::EmbeddedObject* o) override;
+
     void visit(expression::Ctor* b) override;
+    void visit(expression::Type* t) override;
 
     void visit(production::Literal* l) override;
     void visit(production::Sequence* l) override;
@@ -71,7 +74,7 @@ private:
 
     // Gnerates the HILTI code to handle an out-of-input situation by
     // retrying next time if possible (i.e., more input may come).
-    void _hiltiNotYetFound(shared_ptr<hilti::builder::BlockBuilder> cont);
+    void _hiltiNotYetFound(shared_ptr<hilti::builder::BlockBuilder> cont, const std::string& tag);
 
     // Prints the given message to the binpac debug stream.
     void _hiltiDebug(const string& msg);

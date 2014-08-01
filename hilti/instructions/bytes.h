@@ -198,6 +198,11 @@ iBeginH(bytes, SkipObject, "bytes.skip_object")
     iOp1(optype::iterBytes, true);
 iEndH
 
+iBeginH(bytes, NextObject, "bytes.next_object")
+    iTarget(optype::iterBytes)
+    iOp1(optype::iterBytes, true);
+iEndH
+
 iBeginH(iterBytes, Begin, "begin")
     iTarget(optype::iterBytes);
     iOp1(optype::refBytes, true);

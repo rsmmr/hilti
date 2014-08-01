@@ -11,7 +11,7 @@
 using namespace binpac;
 using namespace binpac::codegen;
 
-void Synchronizer::_hiltiNotYetFound(shared_ptr<hilti::builder::BlockBuilder> cont)
+void Synchronizer::_hiltiNotYetFound(shared_ptr<hilti::builder::BlockBuilder> cont, const std::string& tag)
 {
     auto eod = cg()->builder()->addTmp("eod", hilti::builder::boolean::type());
     cg()->builder()->addInstruction(eod, hilti::instruction::bytes::IsFrozenIterBytes, state()->cur);
@@ -22,7 +22,7 @@ void Synchronizer::_hiltiNotYetFound(shared_ptr<hilti::builder::BlockBuilder> co
 
     // Not found and end of input reached.
     cg()->moduleBuilder()->pushBuilder(error);
-    _hiltiSynchronizeError("end of input reached without finding bytes");
+    _hiltiSynchronizeError("end of input reached without finding " + tag);
     cg()->moduleBuilder()->popBuilder(error);
 
     // Not found but more input may come, suspend.
@@ -90,7 +90,7 @@ void Synchronizer::_hiltiSynchronizeOnBytes(const string& data)
     cg()->moduleBuilder()->pushBuilder(not_found);
 
     cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
-    _hiltiNotYetFound(loop);
+    _hiltiNotYetFound(loop, "bytes");
 
     cg()->moduleBuilder()->popBuilder(not_found);
 
@@ -176,7 +176,7 @@ void Synchronizer::_hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pa
     // Not yet found the pattern, but more input could change that.
     cg()->moduleBuilder()->pushBuilder(not_yet_found);
     cg()->builder()->addInstruction(i, hilti::instruction::operator_::Assign, eob);
-    _hiltiNotYetFound(loop_inner);
+    _hiltiNotYetFound(loop_inner, "regular expression");
     cg()->moduleBuilder()->popBuilder(not_yet_found);
 
     // For sure not found at this position, try next.
@@ -192,7 +192,7 @@ void Synchronizer::_hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pa
 
     // Not found and end of input reached.
     cg()->moduleBuilder()->pushBuilder(end_of_data);
-    _hiltiNotYetFound(not_found);
+    _hiltiNotYetFound(not_found, "regular expression");
     cg()->moduleBuilder()->popBuilder(end_of_data);
 
     cg()->moduleBuilder()->pushBuilder(increment);
@@ -272,9 +272,81 @@ void Synchronizer::visit(ctor::RegExp* b)
     _hiltiSynchronizeOnRegexp(b->patterns());
 }
 
+void Synchronizer::visit(type::EmbeddedObject* o)
+{
+    auto type = o->argType();
+    auto htype = cg()->hiltiType(type);
+
+    auto at = cg()->builder()->addTmp("at_obj", ::hilti::builder::boolean::type());
+
+    auto done = cg()->moduleBuilder()->newBuilder("sync-done");
+    auto loop = cg()->moduleBuilder()->newBuilder("sync-loop");
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
+
+    ///
+
+    cg()->moduleBuilder()->pushBuilder(loop);
+
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::bytes::NextObject, state()->cur);
+    cg()->builder()->addInstruction(at, hilti::instruction::bytes::AtObject, state()->cur, ::hilti::builder::type::create(htype));
+
+    auto branches = cg()->builder()->addIf(at);
+    auto found = std::get<0>(branches);
+    auto not_found = std::get<1>(branches);
+
+    cg()->moduleBuilder()->popBuilder(loop);
+
+    ///
+
+    cg()->moduleBuilder()->pushBuilder(found);
+
+    if ( state()->type == SynchronizeAfter )
+        // Skip object.
+        cg()->builder()->addInstruction(state()->cur, hilti::instruction::bytes::SkipObject, state()->cur);
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+
+    cg()->moduleBuilder()->popBuilder(found);
+
+    ///
+
+    cg()->moduleBuilder()->pushBuilder(not_found);
+
+    /// Check if there's *any* object here, and if so move past it.
+    cg()->builder()->addInstruction(at, hilti::instruction::bytes::AtObject, state()->cur);
+
+    auto branches2 = cg()->builder()->addIfElse(at);
+    auto found2 = std::get<0>(branches2);
+    auto not_found2 = std::get<1>(branches2);
+
+    cg()->moduleBuilder()->popBuilder(not_found);
+
+    cg()->moduleBuilder()->pushBuilder(found2);
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::bytes::SkipObject, state()->cur);
+    cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
+    cg()->moduleBuilder()->popBuilder(found2);
+
+    cg()->moduleBuilder()->pushBuilder(not_found2);
+    // Actually the end of the data.
+    cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
+    _hiltiNotYetFound(loop, "embedded object");
+    cg()->moduleBuilder()->popBuilder(not_found2);
+
+    /// Continue normally.
+
+    cg()->moduleBuilder()->pushBuilder(done);
+}
+
 void Synchronizer::visit(expression::Ctor* b)
 {
     _hiltiSynchronizeOne(b->ctor());
+}
+
+void Synchronizer::visit(expression::Type* t)
+{
+    _hiltiSynchronizeOne(t->typeValue());
 }
 
 void Synchronizer::visit(production::Literal* l)

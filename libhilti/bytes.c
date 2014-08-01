@@ -1994,8 +1994,14 @@ void hlt_bytes_append_object(hlt_bytes* b, const hlt_type_info* type, void* obj,
         return;
     }
 
-    hlt_bytes* c = __hlt_bytes_new_object(type, obj, ctx);
-    __add_chunk(__tail(b, true), c);
+    // We make sure that after an object, there's another (emoty) chunk so
+    // that we can reliably move iterators past the object.
+
+    hlt_bytes* c1 = __hlt_bytes_new_object(type, obj, ctx);
+    hlt_bytes* c2 = __hlt_bytes_new(0, 0, 0);
+    __add_chunk(__tail(b, true), c1);
+    __add_chunk(c1, c2);
+
 
     hlt_thread_mgr_unblock(&b->blockable, ctx);
 }
@@ -2031,12 +2037,12 @@ int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_info* ty
 {
     __normalize_iter(&i);
 
-    __hlt_bytes_object* o = __get_object(i.bytes);
+    __hlt_bytes_object* o = i.bytes ? __get_object(i.bytes) : 0;
 
     if ( ! o )
         return false;
 
-    return type == o->type;
+    return hlt_type_equal(type, o->type);
 }
 
 hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes old, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -2048,13 +2054,37 @@ hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes old, hlt_exception**
         return GenericEndPos;
     }
 
-    hlt_iterator_bytes ni = old;
+    // append_object ensures that there's another block to point at.
+    assert(old.bytes->next);
+
+    hlt_iterator_bytes ni;
+    ni.bytes = old.bytes->next;
+    ni.cur = ni.bytes->start;
+
     GC_CCTOR(ni, hlt_iterator_bytes);
-
-    GC_ASSIGN(ni.bytes, old.bytes->next, hlt_bytes);
-
-    if ( ni.bytes )
-        ni.cur = ni.bytes->start;
-
     return ni;
 }
+
+hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes old, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __normalize_iter(&old);
+
+    hlt_iterator_bytes ni = old;
+
+    while ( ! __is_end(ni) ) {
+        if ( __at_object(ni) )
+            break;
+
+        if ( ! ni.bytes->next ) {
+            ni.cur = ni.bytes->end;
+            break;
+        }
+
+        ni.bytes = ni.bytes->next;
+        ni.cur = ni.bytes->start;
+    }
+
+    GC_CCTOR(ni, hlt_iterator_bytes);
+    return ni;
+}
+

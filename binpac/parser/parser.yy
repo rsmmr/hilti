@@ -262,6 +262,11 @@ dollar_id     : DOLLAR_IDENT                     { $$ = std::make_shared<ID>($1,
 
 property      : PROPERTY ';'                     { $$ = std::make_shared<Attribute>($1, nullptr, loc(@$)); }
               | PROPERTY '=' expr ';'            { $$ = std::make_shared<Attribute>($1, $3, loc(@$)); }
+              | PROPERTY '=' base_type ';'       { auto e = std::make_shared<expression::Type>($3, loc(@$));
+                                                   $$ = std::make_shared<Attribute>($1, e, loc(@$));
+                                                 }
+
+>>>>>>> 33cacd7... Fixup parser
 
 opt_global_decls
               : global_decl opt_global_decls     { $$ = $2; if ( $1 ) $$.push_front($1); }

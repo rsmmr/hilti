@@ -320,6 +320,14 @@ iBeginCC(bytes)
     )")
 iEndCC
 
+iBeginCC(bytes)
+    iValidateCC(NextObject) {
+    }
+
+    iDocCC(NextObject, R"(Advances iterator *op1* up to the next embedded object, returning the new iterator or the end position of none.
+    )")
+iEndCC
+
 iBeginCC(iterBytes)
     iValidateCC(Begin) {
     }

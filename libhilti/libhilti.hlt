@@ -150,6 +150,7 @@ declare "C-HILTI" any bytes_retrieve_object(iterator<bytes> b, type t)
 declare "C-HILTI" bool bytes_at_object(iterator<bytes> b)
 declare "C-HILTI" bool bytes_at_object_of_type(iterator<bytes> b, type t)
 declare "C-HILTI" iterator<bytes> bytes_skip_object(iterator<bytes> b)
+declare "C-HILTI" iterator<bytes> bytes_next_object(iterator<bytes> b)
 
 declare "C-HILTI" void bytes_freeze(ref<bytes> b, bool freeze)
 declare "C-HILTI" bool bytes_is_frozen(ref<bytes> b)

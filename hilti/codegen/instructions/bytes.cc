@@ -312,6 +312,13 @@ void StatementBuilder::visit(statement::instruction::bytes::SkipObject* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::NextObject* i)
+{
+    CodeGen::expr_list args = { i->op1() };
+    auto result = cg()->llvmCall("hlt::bytes_next_object", args);
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::iterBytes::Begin* i)
 {
     CodeGen::expr_list args;

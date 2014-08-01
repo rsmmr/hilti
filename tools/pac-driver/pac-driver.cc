@@ -326,8 +326,8 @@ hlt_bytes* readAllInput(Embed* embeds)
 
     check_exception(excpt);
 
-    // hlt_string s = hlt_bytes_to_string(&hlt_type_info_hlt_bytes, &input, 0, &excpt, ctx);
-    // hlt_string_print(stderr, s, 1, &excpt, ctx);
+    hlt_string s = hlt_bytes_to_string(&hlt_type_info_hlt_bytes, &input, 0, &excpt, ctx);
+    hlt_string_print(stderr, s, 1, &excpt, ctx);
 
     return input;
 
@@ -397,14 +397,23 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
     dump_memstats();
 
     while ( ! done ) {
-        cur_end = hlt_iterator_bytes_incr_by(cur, chunk_size, &excpt, ctx);
-        done = hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx);
+        if ( hlt_bytes_at_object(cur, &hlt_type_info_hlt_string, &excpt, ctx) ) {
+            done = 0;
+            void *o = hlt_bytes_retrieve_object(cur, &hlt_type_info_hlt_string, &excpt, ctx);
+            hlt_bytes_append_object(incr_input, &hlt_type_info_hlt_string, o, &excpt, ctx);
+            cur_end = hlt_bytes_skip_object(cur, &excpt, ctx);
+            GC_DTOR_GENERIC(o, &hlt_type_info_hlt_string);
+        }
 
-        chunk1 = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
-        chunk2 = hlt_bytes_clone(chunk1, &excpt, ctx); // FIXME: Need?
-        hlt_bytes_append(incr_input, chunk1, &excpt, ctx);
-        GC_DTOR(chunk1, hlt_bytes);
-        GC_DTOR(chunk2, hlt_bytes);
+        else {
+            cur_end = hlt_iterator_bytes_incr_by(cur, chunk_size, &excpt, ctx);
+            done = (hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx) && ! hlt_bytes_at_object(cur_end, &hlt_type_info_hlt_string, &excpt, ctx));
+            chunk1 = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
+            chunk2 = hlt_bytes_clone(chunk1, &excpt, ctx); // FIXME: Need?
+            hlt_bytes_append(incr_input, chunk1, &excpt, ctx);
+            GC_DTOR(chunk1, hlt_bytes);
+            GC_DTOR(chunk2, hlt_bytes);
+        }
 
         if ( done )
             hlt_bytes_freeze(incr_input, 1, &excpt, ctx);
@@ -467,6 +476,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
     GC_DTOR(input, hlt_bytes);
     GC_DTOR(incr_input, hlt_bytes);
     GC_DTOR(cur, hlt_iterator_bytes);
+
 }
 
 #ifdef PAC_DRIVER_JIT
