@@ -267,6 +267,11 @@ void Synchronizer::visit(ctor::Bytes* b)
     _hiltiSynchronizeOnBytes(b->value());
 }
 
+void Synchronizer::visit(ctor::RegExp* b)
+{
+    _hiltiSynchronizeOnRegexp(b->patterns());
+}
+
 void Synchronizer::visit(expression::Ctor* b)
 {
     _hiltiSynchronizeOne(b->ctor());

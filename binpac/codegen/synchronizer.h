@@ -47,6 +47,7 @@ protected:
     SynchronizerState* state();
 
     void visit(ctor::Bytes* b) override;
+    void visit(ctor::RegExp* b) override;
 
     void visit(expression::Ctor* b) override;
 
@@ -61,6 +62,9 @@ private:
 
     // Synchronizes by finding a byte sequence.
     void _hiltiSynchronizeOnBytes(const string& data);
+
+    // Synchronizes by finding a regular expression.
+    void _hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pattern_list& patterns);
 
     // Raises an exception signaling that synchronization has failed.
     void _hiltiSynchronizeError(const string& msg);
