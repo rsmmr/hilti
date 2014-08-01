@@ -80,6 +80,7 @@ using namespace hilti;
 %token <sval>  ATTR_GROUP     "'&group'"
 %token <sval>  ATTR_LIBHILTI  "'&libhilti'"
 %token <sval>  ATTR_NOSUB     "'&nosub'"
+%token <sval>  ATTR_FIRST_MATCH "'&first_match'"
 %token <sval>  ATTR_PRIORITY  "'&priority'"
 %token <sval>  ATTR_SCOPE     "'&scope'"
 %token <sval>  ATTR_DTOR      "'&libhilti_dtor'"

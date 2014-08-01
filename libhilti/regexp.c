@@ -35,6 +35,8 @@ static inline int _cflags(hlt_regexp_flags flags)
     int cflags = REG_EXTENDED | REG_LAZY;
     if ( flags & HLT_REGEXP_NOSUB )
         cflags |= REG_NOSUB;
+    if ( flags & HLT_REGEXP_FIRST_MATCH )
+        cflags |= REG_FIRST_MATCH;
 
     return cflags | ((cflags & REG_NOSUB) ? REG_ANCHOR : 0);
 }

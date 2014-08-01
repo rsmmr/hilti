@@ -133,7 +133,7 @@ void Synchronizer::_hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pa
 
     // match_token_init
     auto op = hilti::builder::regexp::create(patterns);
-    auto rty = hilti::builder::reference::type(hilti::builder::regexp::type({"&nosub"}));
+    auto rty = hilti::builder::reference::type(hilti::builder::regexp::type({"&nosub", "&first_match"}));
     auto glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node("__sync"), rty, op);
     auto pattern = ast::checkedCast<hilti::Expression>(glob);
 
@@ -152,6 +152,7 @@ void Synchronizer::_hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pa
     cg()->builder()->addInstruction(eob, hilti::instruction::iterBytes::End, state()->data);
     cg()->builder()->addInstruction(mresult, hilti::instruction::regexp::MatchTokenAdvanceBytes, mstate, i, eob);
     cg()->builder()->addInstruction(rc, hilti::instruction::tuple::Index, mresult, hilti::builder::integer::create(0));
+    cg()->builder()->addInstruction(i, hilti::instruction::tuple::Index, mresult, hilti::builder::integer::create(1));
     cg()->builder()->addInstruction(b, hilti::instruction::integer::Slt, rc, hilti::builder::integer::create(0));
 
     auto branches = cg()->builder()->addIf(b);
@@ -183,12 +184,11 @@ void Synchronizer::_hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pa
 
     cg()->builder()->addInstruction(eob, hilti::instruction::iterBytes::End, state()->data);
     cg()->builder()->addInstruction(b, hilti::instruction::operator_::Equal, state()->cur, eob);
-
-    cg()->moduleBuilder()->popBuilder(not_found);
-
     auto branches3 = cg()->builder()->addIf(b);
     auto end_of_data = std::get<0>(branches3);
     auto increment = std::get<1>(branches3);
+
+    cg()->moduleBuilder()->popBuilder(not_found);
 
     // Not found and end of input reached.
     cg()->moduleBuilder()->pushBuilder(end_of_data);
@@ -206,7 +206,7 @@ void Synchronizer::_hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pa
 
     if ( state()->type == SynchronizeAfter )
         // Skip pattern.
-        cg()->builder()->addInstruction(state()->cur, hilti::instruction::tuple::Index, mresult, hilti::builder::integer::create(1));
+        cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Assign, i);
 
     cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());

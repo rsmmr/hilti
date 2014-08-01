@@ -488,6 +488,8 @@ type::trait::Parameterized::parameter_list type::RegExp::parameters() const
     for ( auto a : _attrs ) {
         if ( a == "&nosub" )
             flags |= 1;
+        else if ( a == "&first_match" )
+            flags |= 2;
         else {
             fprintf(stderr, "unknown regexp attribute '%s'", a.c_str());
             abort();

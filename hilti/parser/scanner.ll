@@ -125,6 +125,7 @@ True                  yylval->bval = 1; return token::CBOOL;
 &group                yylval->sval = yytext; return token::ATTR_GROUP;
 &libhilti             yylval->sval = yytext; return token::ATTR_LIBHILTI;
 &nosub                yylval->sval = yytext; return token::ATTR_NOSUB;
+&first_match          yylval->sval = yytext; return token::ATTR_FIRST_MATCH;
 &priority             yylval->sval = yytext; return token::ATTR_PRIORITY;
 &scope                yylval->sval = yytext; return token::ATTR_SCOPE;
 &libhilti_dtor        yylval->sval = yytext; return token::ATTR_DTOR;
