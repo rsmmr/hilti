@@ -328,6 +328,16 @@ iBeginCC(bytes)
     )")
 iEndCC
 
+iBeginCC(bytes)
+    iValidateCC(Index) {
+    }
+
+    iDocCC(Index, R"(
+        Returns offset of the byte *op1* refers to relative to the beginning of the underlying byte object.
+    )")
+
+iEndCC
+
 iBeginCC(iterBytes)
     iValidateCC(Begin) {
     }

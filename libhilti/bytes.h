@@ -454,6 +454,13 @@ extern int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes 
 /// Raises: ValueError - If any of the positions is found to be out of range.
 extern hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Returns the offset of the byte an iterator points to relative to the
+/// beginning of the underlying bytes object.
+///
+/// b: The offset of the iterator.
+/// \hlt_c
+extern hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Converts a bytes object into a string object.
 ///
 /// Include: include-to-string-sig.txt

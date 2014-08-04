@@ -319,6 +319,17 @@ void StatementBuilder::visit(statement::instruction::bytes::NextObject* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::Index* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+
+    auto result = cg()->llvmCall("hlt::iterator_bytes_index", args);
+
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::iterBytes::Begin* i)
 {
     CodeGen::expr_list args;

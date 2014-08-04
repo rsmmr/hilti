@@ -28,6 +28,7 @@ struct __hlt_bytes {
     __hlt_thread_mgr_blockable blockable; // For blocking until changed.
     int8_t flags;              // Flags as combiniation of _BYTES_FLAG_* values.
     struct __hlt_bytes* next;  // Next part. Ref counted.
+    hlt_bytes_size offset;     // The offset of this chunks first byte relative to the beginning of the bytes object it's part of.
     int8_t* start;             // Pointer to first data byte.
     int8_t* end;               // Pointer to one after last data byte used so far.
     int8_t* reserved;          // Pointer to one after the last data byte available.
@@ -195,6 +196,7 @@ static void __add_chunk(hlt_bytes* tail, hlt_bytes* c)
     assert(! __is_frozen(tail));
 
     tail->next = c; // Consumes ref cnt.
+    c->offset = tail->offset + (__get_object(tail) ? 0 : tail->end - tail->start);
 }
 
 static hlt_bytes* __hlt_bytes_new(const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve)
@@ -207,6 +209,7 @@ static hlt_bytes* __hlt_bytes_new(const int8_t* data, hlt_bytes_size len, hlt_by
     hlt_bytes* b = GC_NEW_CUSTOM_SIZE_NO_INIT(hlt_bytes, sizeof(hlt_bytes) + reserve);
     b->flags = 0;
     b->next = 0;
+    b->offset = 0;
     b->start = b->data;
     b->end = b->start + len;
     b->reserved = b->start + reserve;
@@ -225,6 +228,7 @@ static hlt_bytes* __hlt_bytes_new_object(const hlt_type_info* type, void* obj, h
     __hlt_bytes_object* b = GC_NEW_CUSTOM_SIZE(hlt_bytes, sizeof(__hlt_bytes_object) + type->size);
     b->b.next = 0;
     b->b.flags = _BYTES_FLAG_OBJECT;
+    b->b.offset = 0;
     b->type = type;
 
     hlt_thread_mgr_blockable_init(&b->b.blockable);
@@ -241,6 +245,7 @@ static hlt_bytes* __hlt_bytes_new_reuse(int8_t* data, hlt_bytes_size len)
 {
     hlt_bytes* b = GC_NEW_NO_INIT(hlt_bytes);
     b->flags = 0;
+    b->offset = 0;
     b->next = 0;
     b->start = data;
     b->end = data + len;
@@ -413,6 +418,7 @@ void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt
     assert(src && dst);
 
     dst->flags = src->flags;
+    dst->offset = src->offset;
 
     int first = 1;
 
@@ -2088,3 +2094,12 @@ hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes old, hlt_exception**
     return ni;
 }
 
+hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __normalize_iter(&i);
+
+    if ( __at_object(i) )
+        return i.bytes->offset;
+
+    return i.bytes->offset + (i.cur - i.bytes->start);
+}

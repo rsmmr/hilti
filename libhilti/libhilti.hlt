@@ -166,6 +166,7 @@ declare "C-HILTI" iterator<bytes> iterator_bytes_incr(iterator<bytes> pos)
 declare "C-HILTI" iterator<bytes> iterator_bytes_incr_by(iterator<bytes> pos, int<64> n)
 declare "C-HILTI" bool iterator_bytes_eq(iterator<bytes> pos1, iterator<bytes> pos2)
 declare "C-HILTI" int<64> iterator_bytes_diff(iterator<bytes> pos1, iterator<bytes> pos2)
+declare "C-HILTI" int<64> iterator_bytes_index(iterator<bytes> i)
 
 ###
 
