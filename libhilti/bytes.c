@@ -775,38 +775,7 @@ hlt_bytes_size __hlt_iterator_bytes_diff(hlt_iterator_bytes p1, hlt_iterator_byt
     if ( __is_end(p2) )
         return hlt_bytes_len(p1.bytes, excpt, ctx) - (p1.cur - p1.bytes->start);
 
-    if ( __hlt_iterator_bytes_eq(p1, p2, excpt, ctx) )
-        return 0;
-
-    // Special case: both inside same chunk.
-    if ( p1.bytes == p2.bytes ) {
-        hlt_bytes_size n = p2.cur - p1.cur;
-        return (n > 0 ? n : 0);
-    }
-
-    // Count first bytes.
-    hlt_bytes_size n = p1.bytes->end - p1.cur;
-
-    // Count intermediary bytes.
-
-    int8_t p2_is_end = __is_end(p2);
-    hlt_bytes* c = p1.bytes->next;
-
-    for ( ; c != p2.bytes || (p2_is_end && c && ! __get_object(c)); c = c->next )
-        n += (c->end - c->start);
-
-    // Count final bytes.
-
-    if ( c )
-        n += (p2.cur - p2.bytes->start);
-
-    else if ( ! p2_is_end ) {
-        // Incompatible iterators.
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
-        return 0;
-    }
-
-    return n;
+    return hlt_iterator_bytes_index(p2, excpt, ctx) - hlt_iterator_bytes_index(p1, excpt, ctx);
 }
 
 // Doesn't ref the iterator.
