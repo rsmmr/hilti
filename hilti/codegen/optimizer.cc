@@ -38,8 +38,13 @@ bool Optimizer::optimize(llvm::Module* module, bool is_linked)
     llvm::PassManager passes;
     llvm::FunctionPassManager fpasses(module);
 
+#ifdef HAVE_LLVM_35
+    passes.add(new llvm::DataLayoutPass(module));
+    fpasses.add(new llvm::DataLayoutPass(module));
+#else
     passes.add(new llvm::DataLayout(module));
     fpasses.add(new llvm::DataLayout(module));
+#endif
 
     auto triple = module->getTargetTriple();
     assert(triple.size());

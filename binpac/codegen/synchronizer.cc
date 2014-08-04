@@ -229,7 +229,7 @@ Synchronizer::~Synchronizer()
 
 shared_ptr<hilti::Expression> Synchronizer::hiltiSynchronize(shared_ptr<Production> p, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur)
 {
-    assert(p->canSynchronize());
+    assert(p->supportsSynchronize());
 
     _state.type = SynchronizeUnspecified;
     _state.data = data;

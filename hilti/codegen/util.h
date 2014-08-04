@@ -72,7 +72,12 @@ extern llvm::CallInst* checkedCreateCall(IRBuilder* builder, const string& where
 ///
 /// module: The module to check.
 inline bool llvmVerifyModule(llvm::Module* module) {
+#ifdef HAVE_LLVM_35
+    llvm::raw_os_ostream out(std::cerr);
+    return ! llvm::verifyModule(*module, &out);
+#else
     return ! llvm::verifyModule(*module, llvm::PrintMessageAction);
+#endif    
 }
 
 /// Returns true if LLVM's module verification indicates a well-formed
