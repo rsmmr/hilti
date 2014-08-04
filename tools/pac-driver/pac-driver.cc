@@ -326,8 +326,8 @@ hlt_bytes* readAllInput(Embed* embeds)
 
     check_exception(excpt);
 
-    hlt_string s = hlt_bytes_to_string(&hlt_type_info_hlt_bytes, &input, 0, &excpt, ctx);
-    hlt_string_print(stderr, s, 1, &excpt, ctx);
+    // hlt_string s = hlt_bytes_to_string(&hlt_type_info_hlt_bytes, &input, 0, &excpt, ctx);
+    // hlt_string_print(stderr, s, 1, &excpt, ctx);
 
     return input;
 
