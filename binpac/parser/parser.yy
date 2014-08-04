@@ -266,8 +266,6 @@ property      : PROPERTY ';'                     { $$ = std::make_shared<Attribu
                                                    $$ = std::make_shared<Attribute>($1, e, loc(@$));
                                                  }
 
->>>>>>> 33cacd7... Fixup parser
-
 opt_global_decls
               : global_decl opt_global_decls     { $$ = $2; if ( $1 ) $$.push_front($1); }
               | /* empty */                      { $$ = declaration_list(); }

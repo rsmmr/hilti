@@ -386,6 +386,46 @@ private:
     // code to finalize that.
     void _hiltiFinishSynchronize(Production* sync_check);
 
+    // Returns an iterator reflecting the end of the data available to the
+    // parsing currently.
+    shared_ptr<hilti::Expression> _hiltiEod();
+
+    enum EodDataType {
+        // Semantics corresponding to operator::End: End of current input
+        // reached, independent of whether input is frozen and whether
+        // there's a object following.
+        EodStandard,
+        // Like EodStandard but only if input is also frozen.
+        EodIfFrozen
+    };
+
+    // Returns a HILTI boolean indicating if the current input stream has been frozen.
+    shared_ptr<hilti::Expression> _hiltiIsFrozen();
+
+    // Returns a HILTI boolean indicating if the current input position
+    // reflects the end of the input data. The type indicates further
+    // constraints to test for.
+    shared_ptr<hilti::Expression> _hiltiAtEod(EodDataType type = EodStandard);
+
+    // Returns a HILTI boolean indicating if a given input position reflects
+    // the end of the input data. The type indicates further constraints to
+    // test for.
+    shared_ptr<hilti::Expression> _hiltiAtEod(shared_ptr<hilti::Expression> pos, EodDataType type = EodStandard);
+
+    // Advances the current input position to the given iterator. If the
+    // distance between current and new position is known, it can be passed
+    // in as a hint in the form of an integer expression; which will make the
+    // generated code more efficient. Note that embedded objects don't count.
+    void _hiltiAdvanceTo(shared_ptr<hilti::Expression> ncur, shared_ptr<hilti::Expression> distance = nullptr);
+
+    typedef shared_ptr<hilti::Expression> InputPosition;
+
+    // Saves the current input position so that it can be later restored.
+    InputPosition _hiltiSavePosition();
+
+    // Restores a previoysly saved input position.
+    void _hiltiRestorePosition(InputPosition pos);
+
     std::list<shared_ptr<ParserState>> _states;
     shared_ptr<hilti::Expression> _last_parsed_value;
     shared_ptr<production::Literal> _cur_literal;
