@@ -800,7 +800,8 @@ hlt_bytes_size __hlt_iterator_bytes_diff(hlt_iterator_bytes p1, hlt_iterator_byt
     if ( __is_end(p2) )
         return hlt_bytes_len(p1.bytes, excpt, ctx) - (p1.cur - p1.bytes->start);
 
-    return hlt_iterator_bytes_index(p2, excpt, ctx) - hlt_iterator_bytes_index(p1, excpt, ctx);
+    hlt_bytes_size n = (hlt_iterator_bytes_index(p2, excpt, ctx) - hlt_iterator_bytes_index(p1, excpt, ctx));
+    return (n > 0 ? n : 0);
 }
 
 // Doesn't ref the iterator.
@@ -1053,14 +1054,8 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffe
 
 hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-//    __print_iterator("1 p1", p1);
-//    __print_iterator("1 p2", p2);
-
     __normalize_iter(&p1);
     __normalize_iter(&p2);
-
-//    __print_iterator("2 p1", p1);
-//    __print_iterator("2 p2", p2);
 
     hlt_bytes_size len = __hlt_iterator_bytes_diff(p1, p2, excpt, ctx);
     hlt_bytes* dst = __hlt_bytes_new(0, len, 0);
@@ -1302,8 +1297,10 @@ void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes p, hlt_exception** excpt, h
 
     // We need to keep the start block so that our object pointer remains the
     // same, but we empty it out and then delete intermediary blocks.
+    b->offset += (b->end - b->start);
     b->start = b->end;
     GC_ASSIGN(b->next, p.bytes, hlt_bytes);
+    b->next->offset += (p.cur - b->next->start);
     b->next->start = p.cur;
 
     // Don't need old start node data anymore;
@@ -2102,8 +2099,11 @@ hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** ex
 {
     __normalize_iter(&i);
 
+    if ( ! i.bytes )
+        return -1;
+
     if ( __at_object(i) )
         return i.bytes->offset;
 
-    return i.bytes->offset + (i.cur - i.bytes->start);
+    return i.bytes->offset + (((i.cur <= i.bytes->end) ? i.cur : i.bytes->end) - i.bytes->start);
 }

@@ -131,11 +131,14 @@ ref<bytes> bytes_match(ref<bytes> b, ref<regexp> re, int<64> group = 0) {
 
 export bytes_match
 
-ref<bytes> next_bytes(iterator<bytes> cur, int<64> n) {
-    local iterator<bytes> next
+ref<bytes> next_bytes(iterator<bytes> cur, iterator<bytes> end, int<64> n) {
+    local iterator<bytes> i
+    local iterator<bytes> j
     local ref<bytes> b
-    next = incr_by cur n
-    b = bytes.sub cur next
+    b = bytes.sub cur end
+    i = begin b
+    j = incr_by i n
+    b = bytes.sub i j
     return.result b
 }
 

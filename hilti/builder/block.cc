@@ -128,7 +128,11 @@ void BlockBuilder::addDebugMsg(const std::string& stream, const std::string& msg
                             shared_ptr<hilti::Expression> arg3,
                             shared_ptr<hilti::Expression> arg4,
                             shared_ptr<hilti::Expression> arg5,
-                            shared_ptr<hilti::Expression> arg6
+                            shared_ptr<hilti::Expression> arg6,
+                            shared_ptr<hilti::Expression> arg7,
+                            shared_ptr<hilti::Expression> arg8,
+                            shared_ptr<hilti::Expression> arg9,
+                            shared_ptr<hilti::Expression> arg10
                            )
 {
     hilti::builder::tuple::element_list elems;
@@ -150,6 +154,18 @@ void BlockBuilder::addDebugMsg(const std::string& stream, const std::string& msg
 
     if ( arg6 )
         elems.push_back(arg6);
+
+    if ( arg7 )
+        elems.push_back(arg7);
+
+    if ( arg8 )
+        elems.push_back(arg8);
+
+    if ( arg9 )
+        elems.push_back(arg9);
+
+    if ( arg10 )
+        elems.push_back(arg10);
 
     auto t = hilti::builder::tuple::create(elems);
 

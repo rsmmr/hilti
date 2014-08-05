@@ -578,6 +578,9 @@ void Validator::visit(type::unit::item::Field* f)
         if ( attr->key() == "synchronize" )
             continue;
 
+        if ( attr->key() == "length" )
+            continue;
+
         bool found = false;
 
         for ( auto pattr : parseable->parseAttributes() ) {

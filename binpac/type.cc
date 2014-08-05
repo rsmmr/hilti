@@ -759,7 +759,6 @@ std::list<trait::Parseable::ParseAttribute> Bytes::parseAttributes() const
     auto one = std::make_shared<expression::Constant>(std::make_shared<constant::Integer>(1, 64, false));
 
     return {
-        { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
         { "chunked", std::make_shared<type::Integer>(64, false), one, false },
         { "until", std::make_shared<type::Bytes>(), nullptr, false },
         { "eod", nullptr, nullptr, false },
@@ -816,7 +815,6 @@ shared_ptr<binpac::Type> List::elementType()
 std::list<trait::Parseable::ParseAttribute> List::parseAttributes() const
 {
     return {
-        { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
         { "count", std::make_shared<type::Integer>(64, false), nullptr, false },
         { "until", std::make_shared<type::Bool>(), nullptr, false },
         { "until_including", std::make_shared<type::Bool>(), nullptr, false },
