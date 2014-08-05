@@ -155,6 +155,9 @@ static inline hlt_iterator_bytes __create_iterator(hlt_bytes* bytes, int8_t* cur
     return i;
 }
 
+void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx, int8_t adj_ref, int8_t move_beyond_end);
+hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size p, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // This version does not adjust the reference count and must be called only
 // when the potentiall changed iterator will not be visible to the HILTI
 // layer.
@@ -164,12 +167,20 @@ static inline void __normalize_iter(hlt_iterator_bytes* pos)
         return;
 
     // If the pos was previously an end position but now new data has been
-    // added, adjust it so that it's pointing to the next byte. Note we do
-    // not adjust the reference count in this version.
+    // added, adjust it so that it's pointing to the next byte (or even
+    // beyond that, if the previous iterator recorded a future position).
+    // Note we do not adjust the reference count in this version.
+
+    int64_t incr = 0;
+
     while ( pos->cur >= pos->bytes->end && pos->bytes->next && ! __at_object(*pos) ) {
+        incr += (pos->cur - pos->bytes->end);
         pos->bytes = pos->bytes->next;
         pos->cur = pos->bytes->start;
     }
+
+    if ( incr )
+        __hlt_iterator_bytes_incr_by(pos, incr, 0, 0, 0, 1);
 }
 
 // This version adjust the reference count and should be called only when the
@@ -181,10 +192,17 @@ static inline void __normalize_iter_hilti(hlt_iterator_bytes* pos)
 
     // If the pos was previously an end position but now new data has been
     // added, adjust it so that it's pointing to the next byte.
+
+    int64_t incr = 0;
+
     while ( pos->cur >= pos->bytes->end && pos->bytes->next ) {
+        incr += (pos->cur - pos->bytes->end);
         GC_ASSIGN(pos->bytes, pos->bytes->next, hlt_bytes);
         pos->cur = pos->bytes->start;
     }
+
+    if ( incr )
+        __hlt_iterator_bytes_incr_by(pos, incr, 0, 0, 1, 0);
 }
 
 // c already ref'ed.
@@ -704,10 +722,13 @@ void __hlt_iterator_bytes_incr(hlt_iterator_bytes* p, hlt_exception** excpt, hlt
     p->cur = p->bytes->start;
 }
 
-void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx, int8_t adj_ref)
+void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx, int8_t adj_ref, int8_t move_beyond_end)
 {
     if ( __is_end(*p) )
         // Fail silently.
+        return;
+
+    if ( ! n )
         return;
 
     while ( 1 ) {
@@ -720,7 +741,11 @@ void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exceptio
 
         if ( ! p->bytes->next || __get_object(p->bytes) ) {
             // End reached.
-            p->cur = p->bytes->end;
+            if ( ! move_beyond_end )
+                p->cur = p->bytes->end;
+            else
+                p->cur = p->bytes->end + n;
+
             return;
         }
 
@@ -1028,8 +1053,14 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffe
 
 hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+//    __print_iterator("1 p1", p1);
+//    __print_iterator("1 p2", p2);
+
     __normalize_iter(&p1);
     __normalize_iter(&p2);
+
+//    __print_iterator("2 p1", p1);
+//    __print_iterator("2 p2", p2);
 
     hlt_bytes_size len = __hlt_iterator_bytes_diff(p1, p2, excpt, ctx);
     hlt_bytes* dst = __hlt_bytes_new(0, len, 0);
@@ -1177,8 +1208,12 @@ hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size p, hlt_exceptio
     }
 
     if ( ! c ) {
-        // Position is out range, return end().
-        return hlt_bytes_end(b, excpt, ctx);
+        // Position is out of range, return and end iterator that still
+        // records the number of missing bytes in the cur field.
+        hlt_iterator_bytes i;
+        GC_INIT(i.bytes, __tail(b, false), hlt_bytes);
+        i.cur = i.bytes->end + p;
+        return i;
     }
 
     hlt_iterator_bytes i;
@@ -1352,7 +1387,7 @@ hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes old, int64_t n,
 
     hlt_iterator_bytes ni = old;
     GC_CCTOR(ni, hlt_iterator_bytes);
-    __hlt_iterator_bytes_incr_by(&ni, n, excpt, ctx, 1);
+    __hlt_iterator_bytes_incr_by(&ni, n, excpt, ctx, 1, 0);
 
     return ni;
 }
@@ -1763,7 +1798,7 @@ static int8_t split1(hlt_bytes_pair* result, hlt_bytes* b, hlt_bytes* sep, hlt_e
             goto not_found;
 
         j = i;
-        __hlt_iterator_bytes_incr_by(&j, sep_len, excpt, ctx, 0);
+        __hlt_iterator_bytes_incr_by(&j, sep_len, excpt, ctx, 0, 0);
     }
 
     else {
