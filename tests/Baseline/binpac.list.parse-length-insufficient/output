@@ -1,1 +1,1 @@
-hilti: uncaught exception, BinPACHilti::ParseError with argument 'insufficient input' (from <no location>:)
+hilti: uncaught exception, BinPACHilti::ParseError with argument '&length area not fully parsed' (from <no location>:)

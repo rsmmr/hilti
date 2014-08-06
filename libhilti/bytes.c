@@ -791,7 +791,7 @@ hlt_bytes_size __hlt_iterator_bytes_diff(hlt_iterator_bytes p1, hlt_iterator_byt
     if ( __is_end(p1) ) {
         if ( ! __is_end(p2) && ! (__at_object(p1) || __at_object(p2)) ) {
             // Invalid starting position.
-            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            // hlt_set_exception(excpt, &hlt_exception_value_error, 0); // FIXME
         }
 
         return 0;

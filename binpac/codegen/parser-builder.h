@@ -373,7 +373,7 @@ private:
     void _hiltiFilterInput(bool resume);
 
     // Helper for bytes parsing, implements &chunked.
-    void _hiltiCheckChunk(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> length_op);
+    void _hiltiCheckChunk(shared_ptr<type::unit::item::Field> field);
 
     // Synchronize parsing with a given production.
     void _hiltiSynchronize(shared_ptr<Production> p);

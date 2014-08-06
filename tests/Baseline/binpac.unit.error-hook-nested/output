@@ -1,4 +1,4 @@
 <a=1234, t=(not set), b=(not set)>
 Error test2 <x=567\x0a, y=>
 Error test1 <a=1234, t=(Null), b=(not set)>
-hilti: uncaught exception, BinPACHilti::ParseError with argument 'insufficient input' (from /da/robin/binpacpp-debug/hilti2/tests/.tmp/binpac.unit.error-hook-nested/error-hook-nested.hb32264.tmp.hlt:687-688)
+hilti: uncaught exception, ParseError with argument '&length area not fully parsed' (from /home/robin/work/binpacpp/hilti2/tests/.tmp/binpac.unit.error-hook-nested/error-hook-nested.hb35190.tmp.hlt:1558-1559)

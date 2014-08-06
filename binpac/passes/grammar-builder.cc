@@ -256,11 +256,12 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
     field->setContainer(l->sharedPtr<type::unit::item::field::Container>());
     --_in_decl;
 
-    if ( until || while_ || until_including ) {
+    if ( until || while_ || until_including || length ) {
         // We use a Loop production here. type::Container installs a &foreach
         // hook that stops the iteration once the condition is satisfied.
         // Doing it this way allows the condition to run in the hook's scope,
-        // with access to "$$".
+        // with access to "$$". With "&length", we'll have been embedded into
+        // a ByteBlock production.
         auto l1 = std::make_shared<production::Loop>(sym, field, false, l->location());
         l1->pgMeta()->field = l->sharedPtr<type::unit::item::Field>();
         setResult(l1);
@@ -270,13 +271,6 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
         auto l1 = std::make_shared<production::Counter>(sym, count->value(), field, l->location());
         l1->pgMeta()->field = l->sharedPtr<type::unit::item::Field>();
         setResult(l1);
-    }
-
-    else if ( length ) {
-        auto l1 = std::make_shared<production::Loop>(sym, field, true, l->location());
-        auto l2 = std::make_shared<production::ByteBlock>(sym, length->value(), l1, l->location());
-        l1->pgMeta()->field = l->sharedPtr<type::unit::item::Field>();
-        setResult(l2);
     }
 
     else {
