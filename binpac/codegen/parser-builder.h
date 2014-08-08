@@ -376,7 +376,10 @@ private:
     void _hiltiCheckChunk(shared_ptr<type::unit::item::Field> field);
 
     // Synchronize parsing with a given production.
-    void _hiltiSynchronize(shared_ptr<Production> p);
+    void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<Production> p);
+
+    // Synchronize parsing by moving ahead a given number of bytes.
+    void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> i);
 
     // When parsing a production that can resynchronize on errors, insert
     // code to prepare for that.
@@ -384,7 +387,7 @@ private:
 
     // When parsing a production that can resynchronize on errors, insert
     // code to finalize that.
-    void _hiltiFinishSynchronize(Production* sync_check);
+    void _hiltiFinishSynchronize(Production* sync_check, shared_ptr<Production> sync_on);
 
     // Returns an iterator reflecting the end of the data available to the
     // parsing currently.
@@ -417,6 +420,9 @@ private:
     // in as a hint in the form of an integer expression; which will make the
     // generated code more efficient. Note that embedded objects don't count.
     void _hiltiAdvanceTo(shared_ptr<hilti::Expression> ncur, shared_ptr<hilti::Expression> distance = nullptr);
+
+    // Advances the current input position by the given number of bytes.
+    void _hiltiAdvanceBy(shared_ptr<hilti::Expression> n);
 
     typedef shared_ptr<hilti::Expression> InputPosition;
 

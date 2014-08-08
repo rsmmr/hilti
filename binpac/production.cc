@@ -46,7 +46,7 @@ bool Production::maySynchronize()
 
 bool Production::supportsSynchronize()
 {
-    return false;
+    return pgMeta()->field && pgMeta()->field->attributes()->lookup("length");
 }
 
 void Production::setContainer(shared_ptr<type::unit::item::field::Container> c)
@@ -190,6 +190,9 @@ Literal::Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Express
 
 bool Literal::supportsSynchronize()
 {
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
     return maySynchronize();
 }
 
@@ -366,6 +369,9 @@ NonTerminal::alternative_list ChildGrammar::rhss() const
 
 bool ChildGrammar::supportsSynchronize()
 {
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
     if ( _child->supportsSynchronize() )
         return true;
 
@@ -397,6 +403,9 @@ NonTerminal::alternative_list Enclosure::rhss() const
 
 bool Enclosure::supportsSynchronize()
 {
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
     return _child->supportsSynchronize();
 }
 
@@ -454,6 +463,9 @@ NonTerminal::alternative_list Sequence::rhss() const
 
 bool Sequence::supportsSynchronize()
 {
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
     return _seq.size() ? _seq.front()->supportsSynchronize() : false;
 }
 
@@ -558,6 +570,9 @@ NonTerminal::alternative_list LookAhead::rhss() const
 
 bool LookAhead::supportsSynchronize()
 {
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
     for ( auto t : _lahs.first ) {
         if ( ! t->supportsSynchronize() )
             return false;
@@ -698,6 +713,9 @@ NonTerminal::alternative_list While::rhss() const
 
 bool While::supportsSynchronize()
 {
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
     return _body->supportsSynchronize();
 }
 
@@ -731,6 +749,9 @@ bool Loop::eodOk() const
 
 bool Loop::supportsSynchronize()
 {
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
     return _body->supportsSynchronize();
 }
 

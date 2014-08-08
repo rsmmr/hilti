@@ -286,6 +286,7 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
     shared_ptr<type::unit::item::Field> field;
     shared_ptr<hilti::builder::BlockBuilder> cont;
     shared_ptr<hilti::builder::BlockBuilder> true_;
+    shared_ptr<hilti::builder::BlockBuilder> sync_cont;
 
     shared_ptr<ParserState> pstate_parse;
     shared_ptr<ParserState> pstate_length;
@@ -328,7 +329,7 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
         }
 
         auto false_ = hilti::builder::boolean::create(false);
-        pstate_parse = std::make_shared<ParserState>(state()->unit, state()->self, data, cur, hilti::builder::integer::create(-1), lah, lahstart, false_, state()->cookie);
+        pstate_parse = std::make_shared<ParserState>(state()->unit, state()->self, data, cur, hilti::builder::integer::create(-1), lah, lahstart, false_, state()->cookie, ParserState::DEFAULT, state()->parse_error_handler);
         pushState(pstate_parse);
     }
 
@@ -341,6 +342,28 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
 
         pstate_length = state()->clone();
         pstate_length->end = end;
+
+        if ( prod->maySynchronize() ) {
+            auto sync = cg()->moduleBuilder()->newBuilder("sync_on_length");
+            auto cont = cg()->moduleBuilder()->newBuilder("cont");
+            sync_cont = cg()->moduleBuilder()->newBuilder("sync_cont");
+
+            pstate_length->parse_error_handler = sync->block();
+
+            cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+
+            cg()->moduleBuilder()->pushBuilder(sync);
+            // Sync by jumping to end position. Note we're still working on the original state here.
+            auto n = cg()->moduleBuilder()->addTmp("n", hilti::builder::integer::type(64));
+            cg()->builder()->addInstruction(n, hilti::instruction::bytes::Index, state()->cur);
+            cg()->builder()->addInstruction(n, hilti::instruction::integer::Sub, end, n);
+            _hiltiSynchronize(prod, state(), n);
+            cg()->builder()->addInstruction(hilti::instruction::flow::Jump, sync_cont->block());
+            cg()->moduleBuilder()->popBuilder(sync);
+
+            cg()->moduleBuilder()->pushBuilder(cont);
+        }
+
         pushState(pstate_length);
     }
 
@@ -350,9 +373,6 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
         success = processOne(node);
 
     if ( pstate_length ) {
-
-        _hiltiDebugShowInput("XXX", state()->cur);
-
         auto idx = cg()->moduleBuilder()->addTmp("idx", hilti::builder::integer::type(64));
         cg()->builder()->addInstruction(idx, hilti::instruction::bytes::Index, state()->cur);
 
@@ -381,6 +401,11 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
         cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
         cg()->moduleBuilder()->popBuilder(true_);
         cg()->moduleBuilder()->pushBuilder(cont);
+    }
+
+    if ( sync_cont ) {
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, sync_cont->block());
+        cg()->moduleBuilder()->pushBuilder(sync_cont);
     }
 
     return success;
@@ -2362,16 +2387,33 @@ void ParserBuilder::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_
                                     hilti::builder::tuple::create( { sink, data, cg()->hiltiCookie() } ));
 }
 
-void ParserBuilder::_hiltiSynchronize(shared_ptr<Production> p)
+void ParserBuilder::_hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<Production> p)
 {
-    cg()->builder()->addComment(util::fmt("Synchronizing on: %s", p->render()));
+    cg()->builder()->addComment(util::fmt("Synchronizing on: %s", n->render()));
 
     _hiltiDebug("*** resynchronizing ***");
-    _hiltiDebugVerbose(util::fmt("synchronizing on: %s", p->render()));
+    _hiltiDebugVerbose(util::fmt("synchronizing on: %s", n->render()));
     _hiltiDebugShowInput("input pre-sync", state()->cur);
 
     auto ncur = cg()->hiltiSynchronize(p, state()->data, state()->cur);
     _hiltiAdvanceTo(ncur);
+
+    _hiltiRunHook(hook_state->unit, hook_state->self, _hookForUnit(hook_state->unit, "%sync"), nullptr, false, nullptr);
+
+    _hiltiDebugShowInput("input post-sync", state()->cur);
+}
+
+void ParserBuilder::_hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> i)
+{
+    cg()->builder()->addComment(util::fmt("Synchronizing on: %s", n->render()));
+
+    _hiltiDebug("*** resynchronizing ***");
+    _hiltiDebugVerbose(util::fmt("synchronizing on: %s", n->render()));
+    _hiltiDebugShowInput("input pre-sync", state()->cur);
+
+    _hiltiAdvanceBy(i);
+
+    _hiltiRunHook(hook_state->unit, hook_state->self, _hookForUnit(hook_state->unit, "%sync"), nullptr, false, nullptr);
 
     _hiltiDebugShowInput("input post-sync", state()->cur);
 }
@@ -2379,6 +2421,9 @@ void ParserBuilder::_hiltiSynchronize(shared_ptr<Production> p)
 void ParserBuilder::_hiltiPrepareSynchronize(Production* sync_check, shared_ptr<Production> sync_on, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> cont)
 {
     if ( ! sync_check->maySynchronize() )
+        return;
+
+    if ( ! sync_on->supportsSynchronize() )
         return;
 
     auto try_sync = cg()->moduleBuilder()->newBuilder("try_sync");
@@ -2390,8 +2435,7 @@ void ParserBuilder::_hiltiPrepareSynchronize(Production* sync_check, shared_ptr<
     cg()->moduleBuilder()->pushBuilder(try_sync);
 
     // Sync, then continue normally.
-    _hiltiSynchronize(sync_on);
-    _hiltiRunHook(hook_state->unit, hook_state->self, _hookForUnit(hook_state->unit, "%sync"), nullptr, false, nullptr);
+    _hiltiSynchronize(sync_on, hook_state, sync_on);
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont);
     cg()->moduleBuilder()->popBuilder(try_sync);
 
@@ -2409,9 +2453,12 @@ void ParserBuilder::_hiltiPrepareSynchronize(Production* sync_check, shared_ptr<
     cg()->moduleBuilder()->pushBuilder(syncable);
 }
 
-void ParserBuilder::_hiltiFinishSynchronize(Production* sync_check)
+void ParserBuilder::_hiltiFinishSynchronize(Production* sync_check, shared_ptr<Production> sync_on)
 {
     if ( ! sync_check->maySynchronize() )
+        return;
+
+    if ( ! sync_on->supportsSynchronize() )
         return;
 
     popState();
@@ -2497,6 +2544,11 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiIsFrozen()
 void ParserBuilder::_hiltiAdvanceTo(shared_ptr<hilti::Expression> ncur, shared_ptr<hilti::Expression> distance)
 {
     cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Assign, ncur);
+}
+
+void ParserBuilder::_hiltiAdvanceBy(shared_ptr<hilti::Expression> n)
+{
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::IncrBy, state()->cur, n);
 }
 
 ParserBuilder::InputPosition ParserBuilder::_hiltiSavePosition()
@@ -2785,8 +2837,10 @@ void ParserBuilder::visit(production::ChildGrammar* c)
     }
 
     auto ostate = state();
-    auto pstate = std::make_shared<ParserState>(child, subself, state()->data, state()->cur, state()->end, state()->lahead, state()->lahstart, state()->trim, state()->cookie);
 
+    auto pstate = state()->clone();
+    pstate->unit = child;
+    pstate->self = subself;
     pushState(pstate);
 
     _prepareParseObject(params, state()->cur);
@@ -2811,7 +2865,7 @@ void ParserBuilder::visit(production::ChildGrammar* c)
 
     auto child_result = _hiltiCallParseFunction(child, child_func, true, nullptr);
 
-    _hiltiFinishSynchronize(c);
+    _hiltiFinishSynchronize(c, c->child());
 
     if ( cg()->options().debug > 0 )
         cg()->builder()->debugPopIndent();
@@ -2853,7 +2907,7 @@ void ParserBuilder::visit(production::Enclosure* c)
 
     parse(c->child());
 
-    _hiltiFinishSynchronize(c);
+    _hiltiFinishSynchronize(c, c->child());
 
     _newValueForField(c->sharedPtr<Production>(), field, nullptr);
     _finishedProduction(c->sharedPtr<Production>());
@@ -3264,7 +3318,7 @@ void ParserBuilder::visit(production::Loop* l)
     parse(l->body(), &value);
     enableStoringValues();
 
-    _hiltiFinishSynchronize(l);
+    _hiltiFinishSynchronize(l, l->body());
 
     // Run foreach hook.
     auto stop = _hiltiRunHook(state()->unit, state()->self, _hookForItem(state()->unit, field, true, true), field, true, value);
