@@ -183,13 +183,13 @@ static hlt_string __exception_render(const hlt_exception* e, hlt_execution_conte
     }
 
     if ( e->vid != HLT_VID_MAIN ) {
-	char buffer[128];
+	char buffer[1024];
 	snprintf(buffer, sizeof(buffer), " in virtual thread %" PRId64, e->vid);
         s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
     }
 
     if ( e->location ) {
-        char buffer[128];
+        char buffer[1024];
         snprintf(buffer, sizeof(buffer), " (from %s)", e->location);
         s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
     }

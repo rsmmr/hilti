@@ -1440,8 +1440,7 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::I
     if ( debug && cg()->options().debug == 0 )
         return;
 
-    auto t = _hookName(id->pathAsString());
-    auto name = t.second;
+    auto name = id->pathAsString();
 
     if ( unit_module->id()->name() != current_module->id()->name() )
         name = util::fmt("%s::%s", unit_module->id()->name(), name);
@@ -1540,8 +1539,7 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<binpac::ty
     auto msg = util::fmt("- triggering hook %s", id->pathAsString());
     _hiltiDebugVerbose(msg);
 
-    auto t = _hookName(id->pathAsString());
-    auto name = t.second;
+    auto name = id->pathAsString();
 
     // TODO: Don't need "local" anymore I believe.
 
@@ -1605,14 +1603,34 @@ shared_ptr<binpac::ID> ParserBuilder::_hookForItem(shared_ptr<type::Unit> unit, 
     string fe = foreach ? "%foreach" : "";
     string pr = private_ ? util::fmt("%%intern%%%p", item.get()) : "%extern";
 
-    auto id = util::fmt("%s::%s::%s%s%s", cg()->moduleBuilder()->module()->id()->name(), unit->id()->name(), item->id()->name(), fe, pr);
-    return std::make_shared<binpac::ID>(id);
+    auto unit_module = unit->firstParent<Module>()->id();
+    auto current_module = cg()->moduleBuilder()->module()->id();
+
+    auto ns = (unit_module->name() != current_module->name()) ? unit_module->name() + "::" : string();
+    ns = "";
+
+    auto hook = util::fmt("%s_%s_%s_%s%s%s", unit->id()->name(), item->id()->name(), fe, pr);
+    hook = util::strreplace(hook, "::", "_");
+    hook = util::strreplace(hook, "%", "__0x37");
+    hook = string("__hook_") + hook;
+
+    return std::make_shared<binpac::ID>(ns + hook);
 }
 
 shared_ptr<binpac::ID> ParserBuilder::_hookForUnit(shared_ptr<type::Unit> unit, const string& name)
 {
-    auto id = util::fmt("%s::%s::%s", cg()->moduleBuilder()->module()->id()->name(), unit->id()->name(), name);
-    return std::make_shared<binpac::ID>(id);
+    auto unit_module = unit->firstParent<Module>()->id();
+    auto current_module = cg()->moduleBuilder()->module()->id();
+
+    auto ns = (unit_module->name() != current_module->name()) ? unit_module->name() + "::" : string();
+    ns = "";
+
+    auto hook = util::fmt("%s_%s_%s", unit->id()->name(), name);
+    hook = util::strreplace(hook, "::", "_");
+    hook = util::strreplace(hook, "%", "__0x37");
+    hook = string("__hook_") + hook;
+
+    return std::make_shared<binpac::ID>(ns + hook);
 }
 
 void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod, const std::list<shared_ptr<production::Terminal>>& terms, bool must_find)
