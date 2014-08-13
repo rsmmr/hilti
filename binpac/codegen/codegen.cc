@@ -372,8 +372,11 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCall(shared_ptr<expression::Function
 
     hilti::builder::tuple::element_list hilti_arg_list;
 
+    auto params = ftype->parameters();
+    auto p = params.begin();
+
     for ( auto a : args )
-        hilti_arg_list.push_back(hiltiExpression(a));
+        hilti_arg_list.push_back(hiltiExpression(a, (*p++)->type()));
 
     if ( ftype->callingConvention() == type::function::BINPAC_HILTI_C ||
          ftype->callingConvention() == type::function::HILTI_C ||
