@@ -103,6 +103,21 @@ void IDResolver::visit(expression::ID* i)
     auto vals = scope->lookup(id->id(), true);
 
     if ( ! vals.size() ) {
+        // Look it up in the current module if that's the namespace we are
+        // interested in.
+        auto module = current<Module>();
+        assert(module);
+
+        auto path = id->id()->path();
+
+        if ( id->id()->isScoped() && path.front() == module->id()->name() ) {
+            path.pop_front();
+            auto x = std::make_shared<ID>(path);
+	    vals = scope->lookup(x, true);
+        }
+    }
+
+    if ( ! vals.size() ) {
         // We we're inside an externally defined hook, make sure to also
         // search the global scope of the module where it's defined.
         auto imod = i->firstParent<Module>();
