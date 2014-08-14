@@ -1603,34 +1603,22 @@ shared_ptr<binpac::ID> ParserBuilder::_hookForItem(shared_ptr<type::Unit> unit, 
     string fe = foreach ? "%foreach" : "";
     string pr = private_ ? util::fmt("%%intern%%%p", item.get()) : "%extern";
 
-    auto unit_module = unit->firstParent<Module>()->id();
-    auto current_module = cg()->moduleBuilder()->module()->id();
-
-    auto ns = (unit_module->name() != current_module->name()) ? unit_module->name() + "::" : string();
-    ns = "";
-
-    auto hook = util::fmt("%s_%s_%s_%s%s%s", unit->id()->name(), item->id()->name(), fe, pr);
+    auto hook = util::fmt("%s_%s%s%s", unit->id()->name(), item->id()->name(), fe, pr);
     hook = util::strreplace(hook, "::", "_");
     hook = util::strreplace(hook, "%", "__0x37");
     hook = string("__hook_") + hook;
 
-    return std::make_shared<binpac::ID>(ns + hook);
+    return std::make_shared<binpac::ID>(hook);
 }
 
 shared_ptr<binpac::ID> ParserBuilder::_hookForUnit(shared_ptr<type::Unit> unit, const string& name)
 {
-    auto unit_module = unit->firstParent<Module>()->id();
-    auto current_module = cg()->moduleBuilder()->module()->id();
-
-    auto ns = (unit_module->name() != current_module->name()) ? unit_module->name() + "::" : string();
-    ns = "";
-
-    auto hook = util::fmt("%s_%s_%s", unit->id()->name(), name);
+    auto hook = util::fmt("%s_%s", unit->id()->name(), name);
     hook = util::strreplace(hook, "::", "_");
     hook = util::strreplace(hook, "%", "__0x37");
     hook = string("__hook_") + hook;
 
-    return std::make_shared<binpac::ID>(ns + hook);
+    return std::make_shared<binpac::ID>(hook);
 }
 
 void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod, const std::list<shared_ptr<production::Terminal>>& terms, bool must_find)
