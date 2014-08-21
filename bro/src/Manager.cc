@@ -269,7 +269,10 @@ void Manager::AddLibraryPath(const char* dirs)
 	assert(! post_scripts_init_run);
 
 	for ( auto dir : ::util::strsplit(dirs, ":") )
+		{
 		pimpl->import_paths.push_back(dir);
+		add_to_bro_path(dir);
+		}
 	}
 
 void Manager::InitMembers()
@@ -285,6 +288,8 @@ bool Manager::InitPreScripts()
 
 	::hilti::init();
 	::binpac::init();
+
+	add_input_file("init-bare-hilti.bro");
 
 	pre_scripts_init_run = true;
 
@@ -588,6 +593,11 @@ bool Manager::Compile()
 	assert(pre_scripts_init_run);
 	assert(post_scripts_init_run);
 
+	auto register_func = internal_func("Bro::register_protocol_analyzer");
+
+	if ( ! register_func )
+		reporter::fatal_error("Bro::register_protocol_analyzer() not available");
+
 	if ( ! CompileBroScripts() )
 		return false;
 
@@ -617,6 +627,10 @@ bool Manager::Compile()
 
 		for ( auto p : a->ports )
 			analyzer_mgr->RegisterAnalyzerForPort(a->tag, p.proto, p.port);
+
+		val_list* args = new val_list;
+		args->append(a->tag.AsEnumVal()->Ref());
+		register_func->Call(args);
 		}
 
 	for ( auto a : pimpl->pac2_file_analyzers )
