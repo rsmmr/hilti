@@ -207,10 +207,10 @@ Note how the ``ssh::banner`` definition from ``ssh.evt`` maps into the
 event's parameter signature.
 
 Before we can use it, we need to tell Bro where to find the BinPAC++
-plugin. For that, we set the environment variable ``BRO_PLUGINS`` to
+plugin. For that, we set the environment variable ``BRO_PLUGIN_PATH`` to
 the plugin's build directory::
 
-    export BRO_PLUGINS=/path/to/binpacpp/hilti2/build/bro
+    export BRO_PLUGIN_PATH=/path/to/binpacpp/hilti2/build/bro
 
 .. note::
 
@@ -234,6 +234,11 @@ Let's first just check that Bro indeeds loads the analyzer correctly.
         [Event] ssh::banner
         [...]
     [...]
+
+.. todo::
+
+    The ``-NN`` output currently does not include all the information
+    shown above. Need to fix.
 
 We see that Bro has found the BinPac++ plugin. The plugin indeed
 provides our analyzer ``pac2_SSH``, which generates one event

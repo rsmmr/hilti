@@ -108,6 +108,15 @@ class Pac2Type(Pac2Generic):
 
         return name
 
+class Pac2Function(Pac2Generic):
+    def handle_signature(self, sig, signode):
+        name = sig
+
+        if sig.find("::") > 0:
+            signode += nodes.strong("", name)
+
+        return name
+
 class Pac2MethodXRefRole(XRefRole):
     def process_link(self, env, refnode, has_explicit_title, title, target):
         i = title.find("::")
@@ -126,18 +135,21 @@ class Pac2Domain(Domain):
         'operator':    ObjType(l_('operator'), 'op'),
         'method':      ObjType(l_('method'),   'method'),
         'type':        ObjType(l_('type'),     'type'),
+        'function':    ObjType(l_('function'), 'function'),
     }
 
     directives = {
         'operator':      Pac2Operator,
         'method':        Pac2Method,
         'type':          Pac2Type,
+        'function':      Pac2Function,
     }
 
     roles = {
         'op':         XRefRole(),
         'method':     Pac2MethodXRefRole(),
         'type':       XRefRole(),
+        'function':   XRefRole(),
     }
 
     initial_data = {

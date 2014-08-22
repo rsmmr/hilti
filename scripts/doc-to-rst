@@ -119,6 +119,9 @@ def fmtPac2Operator(op):
     if kind == "HasAttribute":
         return ("has attribute", "%s ?. a:<attr>" % op1)
 
+    if kind == "TryAttribute":
+        return ("try attribute", "%s .? a:<attr>" % op1)
+
     if kind == "IncrPostfix":
         return ("++", "%s op:++" % op1)
 
