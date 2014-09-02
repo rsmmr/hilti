@@ -1,0 +1,191 @@
+{% extends "layout.html" %}
+{% set title = "HILTI and BinPAC++" %}
+{% set docstitle = "" %}
+{% set theme_nosidebar = True %}
+{% set theme_showheader = False %}
+{% set theme_showrelbartop = False %}
+{% set theme_showrelbartop = False %}
+
+{%- block relbar1 %} {% endblock %}
+{%- block relbar2 %} {% endblock %}
+
+{% block body %}
+
+<table width="100%" border="0" cellspacing="0" cellpadding="20em">
+<tr>
+<td align="left" valign="top" width="50%">
+
+<table width="100%" border="0" cellspacing="0" cellpadding="10em">
+<tr>
+<td align="left" valign="middle">
+    <img src="{{ pathto("_static/logo.png", 1)}}" alt="Logo">
+</td>
+
+<td align="left" valign="top">
+    <div style="font-size: 110%;">
+    <p>
+    <b>HILTI.</b> A high-level intermediary language for traffic
+    inspection.
+    </p>
+    <p>
+    <b>BinPAC++.</b> A next-generation parser generator for network
+    protocols and file formats.
+    </p>
+    </div>
+</td>
+
+</tr>
+</table>
+
+<h2>Download</h2>
+
+<p>
+The source code for both HILTI and BinPAC++ is hosted at
+<tt>git://git.icir.org/hilti</tt>. There's is also
+<a href="http://www.github.com/rsmmr/hilti">a mirror on github</a>.
+We do not offer any prepackaged source or binary downloads for the
+time being.
+</p>
+
+<h2>Documentation</h2>
+
+<p>
+There is the
+<a href="{{ pathto("manual")}}">start of a manual</a>. It's very
+preliminary at this point, and very incomplete.
+</p>
+
+<p>
+For more background on HILTI, see the <a
+href="http://www.icir.org/robin/papers/imc14-hilti.pdf">IMC paper</a>.
+For a demo of BinPAC++, watch the <a
+href="http://www.icir.org/robin/papers/imc14-hilti.pdf">presentation</a>
+at <a href="http://www.bro.org/community/brocon2014.html">BroCon
+2014</a>.
+</p>
+
+
+<h2><a name="contact">Mailing List & Contact</a></h2>
+
+For questions and discussion of HILTI and BinPAC++, join our
+<a href="http://mailman.icsi.berkeley.edu/mailman/admin/hilti">mailing list</a>.
+If you want to contact the development team directly,
+<a href="mailto:hilti@icir.org">email us</a>.
+
+<h2>Frequently Asked Questions</h2>
+
+<dl>
+
+<dt>What's the current implementation status?</dt>
+<dd>
+HILTI and BinPAC++ are currently in prototype state; they aren't
+production-ready yet. While they are functional and provide most of
+the initially target functionality at this point, that doesn't mean
+they are necessarily also stable, robust, efficient, portable,
+user-friendly, or documented.
+</dd>
+
+<dt>Well, so when do you expect this all to be production-ready then?</dt>
+<dd>
+There's quite a bit still left to do, and it will require more
+resources to make that happen. <a href="#contact">Let us know</a>
+if you want to help.
+</dd>
+
+<dt>Which platforms are supported?</dt>
+<dd>
+We develop HILTI and BinPAC++ on 64-bit Linux and MacOS; other
+platforms are unlikely to work at the moment.
+</dd>
+
+<dt>Can I use BinPAC++ with Bro?</dt>
+<dd>
+Yes, we have developed a
+<a href="{{ pathto("binpac/bro/index")}}">Bro plugin</a>
+that integrages BinPAC++ transparently into
+<a href="http://www.bro.org">Bro</a>.
+</dd>
+
+<dt>Oh, so is this all tied to Bro?</dt>
+<dd>
+No, not at all. While coming out of the
+<a href="http://www.bro.org">Bro Project</a>,
+HILTI and BinPAC++ are standalone systems designed with generic C APIs
+suitable for integration into a wide range of potentially quite
+different applications.
+</dd>
+
+<dt>Sounds all great, what's the license?</dt>
+<dd>
+HILTI and BinPAC++ are open-source and come with a BSD license, which
+allows for pretty much unrestricted use as long as you leave the
+license header in place.
+</dd>
+
+<dt>Who's behind all this?</dt>
+<dd>
+HILTI and BinPAC++ are being develop by the 
+<a href="http://www.icir.org">Networking and Security
+Group</a> at the <a href="http://www.icsi.berkeley.edu">International
+Computer Science Institute</a>, a non-profit research institute
+affiliated with the <a href="http://www.berkeley.edu">University of
+California, Berkeley</a>. Development is being funded by the
+<a href="http://www.nsf.gov">National Science Foundation</a>.
+</dd>
+
+</dl>
+
+</td>
+
+<td align="left" valign="top" width="50%">
+
+<h2>About HILTI</h2>
+
+<p>
+When developing networking systems such as firewalls, routers, and
+intrusion detection systems, one faces a striking gap between the ease
+with which one can often describe a desired analysis in high-level
+terms, and the tremendous amount of low-level implementation details
+that one must still grapple with to come to a robust solution. HILTI
+bridges this divide by providing an abstract execution environment for
+deep, stateful network traffic analysis. It offers <em>platform</em>
+to application developers that provides much of the low-level
+functionality, without tying it to a specific analysis structure.
+</p>
+
+<p>
+HILTI consists of two parts: (1) an <em>abstract machine mode</em> that
+caters specifically to the networking domain, directly supporting the
+field's common abstractions and idioms in its instruction set; and (2)
+a <em>compiler toolchain</em>, built on top of <a
+href="http://www.llvm.org">LLVM</a>, for turning programs
+written for the abstract machine into optimized, natively executable
+code.
+</p>
+
+<h2>About BinPAC++</h2>
+
+<p>
+BinPAC++ is a next-generation parser generator that makes it easy to
+build parsers for network protocols, file formats, and more. BinPAC++
+is more than just a "yacc for protocols": it's an all-in-one system
+that enables developers to write attributed grammars defining both
+syntax and semantics of an input format inside a single comprehensive
+scripting langauage.
+</p>
+
+<p>
+The BinPAC++ toolchain, built on top of HILTI, turns such grammars
+into efficient parsing code that exposes an well-defined C interface
+to its host application for feeding in input and retrieving results.
+At runtime, parsing proceeds fully incrementally&mdash;and potentially
+in parallel&mdash;on input streams of arbitrary size. Compilation
+takes place either statically at build time, or or just-in-time at
+startup.
+</p>
+
+</td>
+</tr>
+</table>
+
+{% endblock %}

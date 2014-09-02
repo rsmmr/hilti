@@ -1,9 +1,9 @@
 
-##################
-BinPAC++ and HILTI
-##################
+################################
+HILTI and BinPAC++ Documentation
+################################
 
-Version |release|, |today|
+Version |release|, |today|.
 
 Table of Contents:
 
@@ -14,7 +14,6 @@ Table of Contents:
    install/index.rst
    binpac/index.rst
    hilti/index.rst
-
 
 Index
 
