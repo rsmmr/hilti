@@ -8,8 +8,8 @@ Installation
 Prerequisites
 -------------
 
-The HILTI framework is being developed on 64-bit Linux and MacOS, and
-likely to fail on other platforms.
+The HILTI framework is developed on 64-bit Linux and MacOS, and will
+most likely not work on other platforms.
 
 To compile the framework, you need LLVM >= 3.4 and Clang >= 3.4 from
 http://llvm.org, along with C++11-compatible standard libraries. This
@@ -32,14 +32,17 @@ Clone the git repository::
 
     > git clone git://www.icir.org/hilti
 
+There's also a `mirror on github
+<http://www.github.com/rsmmr/hilti>`_, which you can browse directly.
+
 Installing LLVM/clang/libc++
 ----------------------------
 
-If your OS doesn't come with a full LLVM/clang 3.3 setup that also
-includes C++11 standard libraries (which is likely), you'll need to
-compile it yourself. This is a bit cumbersome unfortunately as one
-needs to compile clang twice: once to boostrap and once with the right
-``libc++``. Order of the involved steps is important.
+If your OS doesn't come with a full LLVM/clang 3.4 setup that also
+includes C++11 standard libraries, you'll need to compile it yourself.
+This is a bit cumbersome unfortunately as one needs to compile clang
+twice: once to boostrap and once with the right ``libc++``. Order of
+the involved steps is important.
 
 To make this easier, there's a script doing the necessary steps at
 http://github.org/rsmmr/install-clang. See the installation

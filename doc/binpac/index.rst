@@ -14,8 +14,6 @@ Table of Contents:
    bro/index
    c-api
    internals
-   todo
-   feature-requests
 
 Index
 

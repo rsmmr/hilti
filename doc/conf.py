@@ -154,10 +154,10 @@ html_theme_options = {
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-#html_title = None
+html_title = "HILTI & BinPAC++ v" + version
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-# html_short_title = "Home"
+html_short_title = "Table of Contents"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -183,8 +183,7 @@ html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
 html_sidebars = {
-    '**':    ['localtoc.html', 'sourcelink.html', 'searchbox.html'],
-    'manual': ['indexsidebar.html', 'sidebarhelp.html', 'sourcelink.html', 'searchbox.html'],
+    '**':    ['localtoc.html', 'sidebarhelp.html', 'searchbox.html', 'sourcelink.html'],
 }
 
 # Additional templates that should be rendered to pages, maps page names to

@@ -132,10 +132,10 @@ malformed, the parser will complain::
 Current State
 -------------
 
-Please note that BinPAC++ (and HILTI) is not yet stable, and there are
-number of known problems. In particular:
+Please note that BinPAC++ (and HILTI) is not yet production-ready, and
+there are number of known problems. In particular:
 
-    - Only 64-bit Linux is supported right now.
+    - Only 64-bit Linux and Mac OS are supported right now.
 
     - The BinPAC++ compiler is not good a detecting malformed input.
       If there's an error in a ``*.pac2`` will, chances are high that
@@ -148,20 +148,21 @@ number of known problems. In particular:
 
     - The language still lacks many basic features, including data
       types and operators. It's generally rather easy to add them (in
-      particular if HILTI already has the corresponding support); the
-      current set is simply driven by what's been needed so far.
+      particular if HILTI already has the corresponding support), but
+      the current set is simply driven by what's been needed so far.
 
 If you find any problems---including bugs, missing features, and
 unexpected/broken error handling---it would be most helpful if you
 could prepare a corresponding BTest unit test that demonstrates the
-issue; see ``tests/binpac/*`` for examples. For most things, fixing or
-adding them shouldn't be very difficult.
+issue; see ``tests/binpac/*`` for examples.  Please then file the unit
+test with the `github tracker
+<https://github.com/rsmmr/hilti/issues>`_ .
 
 Exploring More
 --------------
 
 * The BinPAC++ :ref:`pac2_reference` is slowly growing. Eventually, it
-  will document all available features.  Note though that the
+  will document all available features.  Note that the
   :ref:`data_types` section is auto-generated from the source code and
   hence comprehensively lists all currently available operators.
   Operations not in there aren't supported yet.
@@ -171,6 +172,6 @@ Exploring More
   
 * Look at BinPAC++ source files (``*.pac2``) across the
   ``tests/binpac/*`` subdirectories to see how BinPAC++ grammars look
-  like. In particular, the ``test/unit/*.pac2`` show the various
-  features available for defining units.
+  like. In particular, the ``test/unit/*.pac2`` show various features
+  available for defining units.
 

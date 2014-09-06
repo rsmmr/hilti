@@ -15,14 +15,13 @@ necessarily stable right now.
 Installation
 ============
 
-You currently need a topic branch of Bro that adds support for
-dynamically loaded plugins. To get it, use git::
+You currently need the current development version of Bro, as that
+adds support for dynamically loaded plugins. To get it, use git::
 
     > git clone --recursive git://git.bro.org/bro
-    > git checkout topic/robin/dynamic-plugins-2.3
 
 Now you need to build Bro with the same C++ compiler (and C++ standard
-library) that you also use for compiling HILTI/BinPAC++ with. If
+library) that you also use for compiling HILTI/BinPAC++. If
 that's, say, ``/opt/llvm/bin/clang++``, do:: 
 
     > CXX="/opt/llvm/bin/clang++ --stdlib=libc++" ./configure && make
@@ -114,7 +113,7 @@ standard SSH analyzer, there'll now be an
 ``analyzer::ANALYZER_PAC2_SSH``. (As you can see there's a bit of name
 normalization going on, use ``bro -NN`` to see the final name.).
 ``over TCP`` declares this to be an TCP application-layer analyzer
-(nothing else is supported yet).
+(``over UDP`` is the one other supported alternative right now).
 
 Next comes set of of properties for the analyzer, separated by commas
 (order is not important):
@@ -180,7 +179,7 @@ Events are defined by lines of the form ``<hook> -> event
       upper-case version of the software identification, you could use
       ``self.software.upper()``.
 
-      In addition to expression parameters, there are two "magic"
+      In addition to expression parameters, there are three "magic"
       parameters that provide access to internal Bro state:
 
         - ``$conn`` references the current connection that's being
@@ -190,6 +189,9 @@ Events are defined by lines of the form ``<hook> -> event
         - ``$is_orig`` turns into a boolean value indicating whether
           BinPAC++ is parsing the originator or responder side of the
           connection.
+
+        - ``$file`` references the current file in case of defining a
+          file analyzer rather than a protocol analyzer (see below).
 
       Note that the magic parameters aren't expressions; you can't
       further manipulate them.
@@ -308,6 +310,11 @@ Bro's BinPAC++ plugin comes with a number of options defined in
     debugging in the debugger easier if off.
 
 ``use_cache: bool`` (default: true)
+
+    .. todo::
+
+        This is currently broken and disabled.
+
     Enables caching of compiled BinPAC++/HILTI code. If on, you will
     notice that the first time you start Bro with a new (or modified)
     analyzer, it takes longer than on subsequent invocations. That's

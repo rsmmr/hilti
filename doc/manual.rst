@@ -1,11 +1,8 @@
 
-################################
-HILTI and BinPAC++ Documentation
-################################
+|today|.
 
-Version |release|, |today|.
-
-Table of Contents:
+Table of Contents
+=================
 
 .. toctree::
    :maxdepth: 3
