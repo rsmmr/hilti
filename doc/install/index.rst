@@ -8,13 +8,12 @@ Installation
 Prerequisites
 -------------
 
-The HILTI framework is being developed on 64-bit Linux only currently;
-usage on other platforms is likely to fail. Specifically, MacOS
-support is targeted for the near-future, but currently doesn't work.
+The HILTI framework is being developed on 64-bit Linux and MacOS, and
+likely to fail on other platforms.
 
-To compile the framework, you need LLVM 3.3 and Clang 3.3 from
+To compile the framework, you need LLVM >= 3.4 and Clang >= 3.4 from
 http://llvm.org, along with C++11-compatible standard libraries. This
-combo can still be painful to set up; see below for more.
+combo can still be painful to set up; see below for help.
 
 For unit testing:
 
@@ -22,33 +21,16 @@ For unit testing:
 
 For generating the documentation:
 
-* Doxygen 1.7.4 (http://www.stack.nl/~dimitri/doxygen)
-
 * Sphinx 1.1 (http://sphinx.pocoo.org)::
 
     > easy_install sphinx
-
-* Doxylink extension for Sphinx
-  (http://packages.python.org/sphinxcontrib-doxylink)::
-
-    > easy_install sphinxcontrib-doxylink
-
-  (TODO: Currently not fully used).
 
 Getting the Code
 ----------------
 
 Clone the git repository::
 
-    > git clone git://www.icir.org/binpacpp
-
-There's some other stuff in this repository as well; ignore that and
-go straight to ``binpacpp/hilti2`` (*not* ``binpacpp/hilti``, that's
-an old version).
-
-.. note:: Eventually, we well split up the repository into individual
-   ones for each component. As things are still moving fast, it's
-   however easier to keep them together for now.
+    > git clone git://www.icir.org/hilti
 
 Installing LLVM/clang/libc++
 ----------------------------
@@ -67,14 +49,14 @@ available via ``PATH``.
 Compiling the HILTI framework
 -----------------------------
 
-.. note:: HILTI doesn't have a nice installation framework yet, it's
-   best run just right ouf of the repository. This will eventually
-   change as things get more stable. 
+.. note:: HILTI doesn't have any installation framework yet, it's best
+   run just right ouf of the repository. This will eventually change.
 
-Compiling HILTI itself should be straight-forward. Just run make in
-the top-level directory::
+Compiling HILTI itself should be straight-forward once all
+prerequisites are available. Just run make in the top-level
+directory::
 
-    > cd binpacpp/hilti2
+    > cd hilti
     > make
 
 If you want to compile the included Bro plugin as well, you also need
@@ -82,9 +64,8 @@ to tell ``make`` where your Bro source tree is::
 
     > make BRO_DIST=/path/to/bro
 
-.. note:: You currently need a special topic branch of Bro to work
-   with HILTI/BinPAC++. See :ref:`pac2_bro-plugin` for more
-   information.
+As HILTI requires Bro's new plugin support, you will need to use the
+current git master version of Bro.
 
 If everything has worked right, there should now be a binary
 ``build/tools/hiltic`` afterwards (as well as a few others).

@@ -7,6 +7,9 @@ BTEST=`which btest`
 all: tests
 
 tests:
+	btest -j -f diag.log
+
+tests-all:
 	rm -f diag.log && touch diag.log
 
 	-@$(BTEST) -j -f diag.log.def
