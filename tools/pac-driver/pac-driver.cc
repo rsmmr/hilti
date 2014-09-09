@@ -705,7 +705,7 @@ int main(int argc, char** argv)
     }
 
     else {
-        char* reply_parser = strchr(parser, '/');
+        char* reply_parser = strchr((char*)parser, '/');
         if ( reply_parser )
             *reply_parser++ = '\0';
 
