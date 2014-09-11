@@ -68,7 +68,6 @@ iBeginCC(bytes)
     iDocCC(Copy ,R"(
         Copy the contents of *op1* into a new byte instance.
     )")
-
 iEndCC
 
 iBeginCC(bytes)
@@ -151,6 +150,22 @@ iBeginCC(bytes)
 
     iDocCC(Find, R"(
         Returns an iterator representing the first occurence of *op2* in *op1*, or an iterator pointing to the end of *op1* if nowhere.
+    )")
+
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(FindAtIter) {
+        // TODO: Validate type of target tuple.
+    }
+
+    iDocCC(FindAtIter, R"(
+        Searches *op2* from position *op1* onwards. Returns a tuple of a boolean and an iterator.
+        If *op2* was found, the boolean will be true and the iterator pointing to the first occurance.
+        If *op2* was not found, the boolean will be false and the iterator will point to the last position
+        so that everything before that is guaranteed to not contain even a partial match of *op1* (in other
+        words: one can trim until that position and then restart the search from there if more data gets
+        appended to the underlying bytes object.
     )")
 
 iEndCC
@@ -283,6 +298,56 @@ iBeginCC(bytes)
     iDocCC(Join, R"(
          Renders each of the elements in list *op2* into a bytes object (as if one printed it), and then concatenates them using *op1* as the separator.
     )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(AppendObject) {
+    }
+
+    iDocCC(AppendObject, R"(Inserts a separator object *op2* to the end of the bytes object *op1*. When iterating over a bytes object, reaching the object will generally be treated as if the end has been reached. However, the  instructions ``retrieve_object``/``at_object``/``skip_object`` may be used to operate on the inserted objects.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(RetrieveObject) {
+    }
+
+    iDocCC(RetrieveObject, R"(Retrieves a separator object at a iterator position *op1*. The object's type must match the target type, otherwise will throw a ``TypeError``. If no separator object at the position, throws a \c ValuesError.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(AtObject) {
+    }
+
+    iDocCC(AtObject, R"(Checks if there's a separator object located at the iterator position *op1*. If *op2* is given, confirms that the object is of the corresponding type as well.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(SkipObject) {
+    }
+
+    iDocCC(SkipObject, R"(Advances iterator *op1* past an object, returning the new iterator. Throws ``ValueError`` if there's no object at the location.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(NextObject) {
+    }
+
+    iDocCC(NextObject, R"(Advances iterator *op1* up to the next embedded object, returning the new iterator or the end position of none.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(Index) {
+    }
+
+    iDocCC(Index, R"(
+        Returns offset of the byte *op1* refers to relative to the beginning of the underlying byte object.
+    )")
+
 iEndCC
 
 iBeginCC(iterBytes)

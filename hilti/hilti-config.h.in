@@ -108,6 +108,7 @@ struct Configuration {
 #ifdef __linux__
         "m",
         "pthread",
+        "dl",
 #endif
 
 #if ${HAVE_PAPI}

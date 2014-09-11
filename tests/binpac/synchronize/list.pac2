@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:      echo abc12abc34aXXXXXXc56abc78abc90 | pac-driver-test %INPUT >>output 2>&1
+# @TEST-EXEC:      echo XXXXXXc56abc78abc90 | pac-driver-test %INPUT >>output 2>&1
+# @TEST-EXEC:      echo abc12abc34aXXXXXXXXXabc90 | pac-driver-test %INPUT >>output 2>&1
+# @TEST-EXEC-FAIL: echo abc12abc34aXXXXXXXXX | pac-driver-test %INPUT >>output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+
+module Mini;
+
+export type test1 = unit {
+    l: list<test2> &while($$.x != b"90") &synchronize;
+
+    on %done   { print "%done:", self; }
+    on %sync   { print "%synced"; }
+};
+
+type test2 = unit {
+       : b"abc" &synchronize;
+       x: bytes &length=2;
+
+};

@@ -1,0 +1,394 @@
+
+module TLS;
+
+type ContentType = enum {
+  change_cipher_spec = 20,
+  alert = 21,
+  handshake = 22,
+  application_data = 23,
+  heartbeat = 24
+};
+
+type HandshakeType = enum {
+  hello_request = 0,
+  client_hello = 1,
+  server_hello = 2,
+  NewSessionTicket = 4,
+  certificate = 11,
+  server_key_exchange = 12,
+  certificate_request = 13,
+  server_hello_done = 14,
+  certificate_verify = 15,
+  client_key_exchange = 16,
+  finished = 20
+};
+
+export type Extensions = enum {
+  server_name = 0,
+  max_fragment_length = 1,
+  client_certificate_url = 2,
+  trusted_ca_keys = 3,
+  truncated_hmac = 4,
+  status_request = 5,
+  user_mapping = 6,
+  client_authz = 7,
+  server_authz = 8,
+  cert_type = 9,
+  elliptic_curves = 10,
+  ec_point_formats = 11,
+  srp = 12,
+  signature_algorithms = 13,
+  use_srtp = 14,
+  heartbeat = 15,
+  application_layer_protocol_negotiation = 16,
+  status_request_v2 = 17,
+  signed_certificate_timestamp = 18,
+  SessionTicket_TLS = 35,
+  extended_random = 40,
+  next_protocol_negotiation = 13172,
+  origin_bound_certificates = 13175,
+  encrypted_client_certificates = 13180,
+  channel_id = 30031,
+  channel_id_new = 30032,
+  padding = 35655,
+  renegotiation_info = 65281
+};
+
+type ECPointFormat = enum {
+ uncompressed = 0,
+ ansiX962_compressed_prime = 1,
+ ansiX962_compressed_char2 =2
+};
+
+type NamedCurve = enum {
+  sect163k1 = 1, sect163r1 = 2, sect163r2 = 3,
+  sect193r1 = 4, sect193r2 = 5, sect233k1 = 6,
+  sect233r1 = 7, sect239k1 = 8, sect283k1 = 9,
+  sect283r1 = 10, sect409k1 = 11, sect409r1 = 12,
+  sect571k1 = 13, sect571r1 = 14, secp160k1 = 15,
+  secp160r1 = 16, secp160r2 = 17, secp192k1 = 18,
+  secp192r1 = 19, secp224k1 = 20, secp224r1 = 21,
+  secp256k1 = 22, secp256r1 = 23, secp384r1 = 24,
+  secp521r1 = 25,
+  arbitrary_explicit_prime_curves = 0xFF01,
+  arbitrary_explicit_char2_curves = 0xFF02
+};
+
+export type HeartbeatMode = enum {
+ peer_allowed_to_send = 1,
+ peer_not_allowed_to_send = 2
+};
+
+type NameType = enum {
+  host_name = 0
+};
+
+type AlertLevel = enum {
+  warning= 1, fatal= 2
+};
+
+type AlertDescription = enum {
+  close_notify = 0,
+  unexpected_message = 10,
+  bad_record_mac = 20,
+  decryption_failed_RESERVED = 21,
+  record_overflow = 22,
+  decompression_failure = 30,
+  handshake_failure = 40,
+  no_certificate_RESERVED = 41,
+  bad_certificate = 42,
+  unsupported_certificate = 43,
+  certificate_revoked = 44,
+  certificate_expired = 45,
+  certificate_unknown = 46,
+  illegal_parameter = 47,
+  unknown_ca = 48,
+  access_denied = 49,
+  decode_error = 50,
+  decrypt_error = 51,
+  export_restriction_RESERVED = 60,
+  protocol_version = 70,
+  insufficient_security = 71,
+  internal_error = 80,
+  user_canceled = 90,
+  no_renegotiation = 100,
+  unsupported_extension = 110
+};
+
+export type HashAlgorithm = enum {
+  none = 0, md5= 1, sha1= 2, sha224= 3, sha256= 4, sha384= 5,
+  sha512 = 6
+};
+
+export type SignatureAlgorithm = enum {
+  anonymous = 0, rsa= 1, dsa= 2, ecdsa= 3
+};
+
+export type TLSVersion = enum {
+  UNDEF = -1, # out of range, only used internally
+  SSLv2  = 0x0002,
+  SSLv3  = 0x0300,
+  TLSv10 = 0x0301,
+  TLSv11 = 0x0302,
+  TLSv12 = 0x0303
+};
+
+type ClientCertificateType = enum {
+  rsa_sign = 1, dss_sign = 2, rsa_fixed_dh = 3, dss_fixed_dh = 4,
+  rsa_ephemeral_dh_RESERVED = 5, dss_ephemeral_dh_RESERVED = 6,
+  fortezza_dms_RESERVED = 20
+};
+
+export type Message = unit {
+  var handshakesink: sink;
+  var alertsink: sink;
+  var record_version: TLSVersion = TLSVersion::UNDEF;
+
+  records: list<RecordFragment(self.handshakesink, self.alertsink, self.record_version)>;
+
+  on %init {
+    self.handshakesink.connect(new Handshake(self.record_version));
+    self.alertsink.connect(new Alert());
+  }
+};
+
+type RecordFragment = unit(handshakesink: sink, alertsink: sink, record_version: TLSVersion) {
+  content_type: uint8 &convert=ContentType($$);
+  version: uint16 &convert=TLSVersion($$) {
+    record_version = self.version;
+  }
+  length: uint16;
+
+  var encrypted: bool = False;
+
+  switch ( self.content_type ) {
+    ContentType::handshake -> : bytes &length=self.length -> handshakesink;
+    ContentType::alert -> : bytes &length=self.length -> alertsink;
+    ContentType::change_cipher_spec -> : bytes &length=self.length {
+      # everything in this connection will be encrypted from now on.
+      # close all sinks
+      handshakesink.close();
+      alertsink.close();
+    }
+#   ContentType::heartbeat -> : bytes &length=self.length -> heartbeatsink;
+    ContentType::application_data -> : bytes &length=self.length; # encrypted application data.
+    * -> : bytes &length=self.length { print "unhandled type", self.content_type; }
+  } if ( self.encrypted == False );
+};
+
+# note - this will mostly be garbage because it is encrypted.
+export type Alert = unit {
+  alerts: list<Alert_message>;
+};
+
+type Alert_message = unit {
+  level: uint8 &convert=AlertLevel($$);
+  description: uint8 &convert=AlertDescription($$);
+};
+
+export type Handshake = unit(version: TLSVersion) {
+  handshakes: list<Handshake_message(version)>;
+};
+
+type Handshake_message = unit(version: TLSVersion) {
+  msg_type: uint8 &convert=HandshakeType($$);
+  length: bytes &length=3 &convert=$$.to_uint(BinPAC::ByteOrder::Network);
+
+  switch ( self.msg_type ) {
+    HandshakeType::client_hello -> client_hello: ClientHello(self.length);
+    HandshakeType::server_hello_done,
+    HandshakeType::hello_request -> : bytes &length=self.length; # Fixme: alert if length != 0
+    HandshakeType::server_hello -> server_hello: ServerHello(self.length);
+    HandshakeType::certificate -> certificate: Certificate;
+    HandshakeType::certificate_request -> certificate_request: CertificateRequest(version);
+    HandshakeType::certificate_verify -> : bytes &length=self.length; # opaque encrypted data
+    HandshakeType::client_key_exchange -> client_key_exchange: ClientKeyExchange(self.length);
+    HandshakeType::server_key_exchange -> server_key_exchange: ServerKeyExchange(self.length);
+    HandshakeType::NewSessionTicket -> session_ticket: NewSessionTicket;
+    * -> : bytes &length=self.length { print "unhandled type", self.msg_type; }
+  };
+};
+
+type NewSessionTicket = unit {
+  ticket_lifetime_hint: uint32;
+  ticket_length: uint16;
+  ticket: bytes &length=self.ticket_length;
+};
+
+type CertificateRequest = unit(version: TLSVersion) {
+  certificate_types_length: uint8;
+  certificate_types: list<uint8> &count=self.certificate_types_length; # convert with ClientCertificateType when possible
+  signatures: SignatureAlgorithms if ( version == TLSVersion::TLSv12 );
+  certificate_authorities_length: uint16;
+  certificate_authorities: bytes &length=self.certificate_authorities_length; # Fixme: parse ASN.1 in here. Sometime.
+};
+
+# Fixme: need certificate information :(
+type ClientKeyExchange = unit(len: uint64) {
+  : bytes &length=len;
+};
+
+# Fixme: need certificate information :(
+type ServerKeyExchange = unit(len: uint64) {
+  : bytes &length=len;
+};
+
+type Certificate = unit {
+  length: bytes &length=3 &convert=$$.to_uint(BinPAC::ByteOrder::Network);
+  certificate_list: list<certificate_message> &length=self.length;
+};
+
+type certificate_message = unit {
+  length: bytes &length=3 &convert=$$.to_uint(BinPAC::ByteOrder::Network);
+  cert: bytes &length=self.length; # certificates, forward to whatever
+};
+
+type Random = unit {
+  gmt_unix_time: uint32;
+  random_bytes: bytes &length=28;
+};
+
+type ClientHello = unit(len: uint64) {
+  client_version: uint16 &convert=TLSVersion($$);
+  random: Random;
+  session_id_length: uint8;
+  session_id: bytes &length=self.session_id_length;
+  cipher_suites_length: uint16;
+  cipher_suites: list<uint16> &count=(self.cipher_suites_length/2);
+  compression_methods_length: uint8;
+  compression_methods: list<uint8> &count=self.compression_methods_length;
+  extensions_length: uint16 if ( len > self.offset() );
+  extensions: list<Extension> &length=self.extensions_length if ( len > self.offset() );
+};
+
+type Extension = unit {
+  var data: sink;
+
+  var extension_type: Extensions;
+  extension_code_raw: bytes &length=2;
+  extension_code: uint16 &parse=self.extension_code_raw {
+    self.data.write(self.extension_code_raw);
+    self.extension_type = Extensions(self.extension_code);
+  }
+  extension_length_raw: bytes &length=2;
+  extension_length: uint16 &parse(self.extension_length_raw) {
+    self.data.write(self.extension_length_raw);
+  }
+  extension_data: bytes &length=self.extension_length -> self.data;
+
+  on %init {
+    self.data.connect(new Extension_Parse);
+  }
+};
+
+export type Extension_Parse = unit {
+  var extension_type: Extensions;
+  extension_code: uint16 {
+    self.extension_type = Extensions(self.extension_code);
+  }
+  extension_length: uint16;
+
+  switch ( self.extension_type ) {
+    Extensions::next_protocol_negotiation -> :bytes &length=self.extension_length; # alert if != 0
+    Extensions::ec_point_formats -> ec_point_formats: EcPointsFormat_extension;
+    Extensions::elliptic_curves -> elliptic_curves: EllipticCurveList;
+    Extensions::SessionTicket_TLS -> ticket_data: bytes &length=self.extension_length; # ticket data
+    Extensions::heartbeat -> heartbeat: uint8 &convert=HeartbeatMode($$);
+    Extensions::signature_algorithms -> signature_algorithms: SignatureAlgorithms;
+    Extensions::renegotiation_info -> renegotiation_info: RenegotiationInfo;
+    Extensions::server_name -> server_name: ServerNameList if ( self.extension_length > 0 );
+    Extensions::application_layer_protocol_negotiation -> application_layer_protocol_negotiation: ProtocolNameList;
+    Extensions::status_request -> status_request: StatusRequest(self.extension_length);
+    Extensions::signed_certificate_timestamp -> signed_certificate_timestamp: bytes &length=self.extension_length; # Certificate transparency
+    * -> : UnknownExtension (self.extension_code, self.extension_type, self.extension_length);
+  };
+};
+
+type StatusRequest = unit(len: uint16) {
+  status_type: uint8; # 1 -> ocsp.
+
+  switch ( self.status_type ) {
+    1 -> {
+            responder_id_list_length: uint16;
+            responder_id_list: bytes &length=self.responder_id_list_length;
+            request_extensions_list: uint16;
+            request_extensions: bytes &length=self.request_extensions_list; # asn1 encoded
+         }
+    * -> : bytes &length=(len - 1); # we do not know this type...
+  };
+};
+
+type UnknownExtension = unit(extension_code: uint16, extension_type: Extensions, len: uint16) {
+  data: bytes &length=len;
+};
+
+type ProtocolName = unit {
+  length: uint8;
+  name: bytes &length=self.length;
+};
+
+type ProtocolNameList = unit {
+  length: uint16;
+  protocol_name_list: list<ProtocolName> &length=self.length;
+};
+
+type ServerName = unit {
+  var total_length: uint64;
+  name_type: uint8 &convert=NameType($$);
+
+  switch ( self.name_type ) {
+    NameType::host_name -> {
+     host_name_length: uint16;
+     host_name: bytes &length=self.host_name_length;
+    }
+  };
+
+   : void {
+    self.total_length = self.offset();
+  }
+};
+
+type ServerNameList = unit {
+  length: uint16;
+  server_name_list: list<ServerName> &length=self.length;
+};
+
+type RenegotiationInfo = unit {
+  length: uint8;
+  renegotiated_connection: bytes &length=self.length;
+};
+
+type SignatureAlgorithms = unit {
+  length: uint16;
+  supported_signature_algorithms: list<SignatureAndHashAlgorithm> &length=self.length;
+};
+
+type SignatureAndHashAlgorithm = unit {
+  hash: uint8 &convert=HashAlgorithm($$);
+  signature: uint8 &convert=SignatureAlgorithm($$);
+};
+
+tuple<HashAlgorithm, SignatureAlgorithm> bro_SignatureAndHashAlgorithm(entry: SignatureAndHashAlgorithm) {
+  return (entry.hash, entry.signature);
+}
+
+type EcPointsFormat_extension = unit {
+  length: uint8;
+  ec_point_format_list: list<uint8> &count=self.length; # when possible - convert to EcPointsFormat &convert=ECPointFormat($$);
+};
+
+type EllipticCurveList = unit {
+  length: uint16;
+  elliptic_curve_list: list<uint16> &count=(self.length/2); # when possible - convert to enum
+};
+
+type ServerHello = unit(len: uint64) {
+  server_version: uint16 &convert=TLSVersion($$);
+  random: Random;
+  session_id_length: uint8;
+  session_id: bytes &length=self.session_id_length;
+  cipher_suite: uint16;
+  compression_method: uint8;
+  extensions_length: uint16 if ( len > self.offset() );
+  extensions: list<Extension> &length=self.extensions_length if ( len > self.offset() );
+};

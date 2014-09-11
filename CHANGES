@@ -1,0 +1,10 @@
+
+0.3-3 | 2014-09-10 20:20:03 -0700
+
+  * Fixing potential compiler error.
+
+  * Adding a top-level README, updating CHANGES, VERSION, docs.
+
+0.3 | 2014-09-03 20:45:29 -0700
+
+  * Initial public version.

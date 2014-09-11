@@ -1,5 +1,3 @@
 #! /usr/bin/env bash
 
-echo $0: $@ >>/tmp/llvm
-
 # We just ignore this.

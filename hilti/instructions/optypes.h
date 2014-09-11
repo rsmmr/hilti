@@ -78,6 +78,7 @@ static shared_ptr<Type> refTimer(new type::Reference(timer));
 static shared_ptr<Type> refTimerMgr(new type::Reference(timerMgr));
 static shared_ptr<Type> refVector(new type::Reference(vector));
 
+static shared_ptr<Type> typeAny(new type::TypeType());
 static shared_ptr<Type> typeBytes(new type::TypeType(bytes));
 static shared_ptr<Type> typeCallable(new type::TypeType(callable));
 static shared_ptr<Type> typeChannel(new type::TypeType(channel));

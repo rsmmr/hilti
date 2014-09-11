@@ -1,0 +1,50 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local ref<bytes> b2
+    local iterator<bytes> start
+    local iterator<bytes> cur
+    local iterator<bytes> cur2
+    local bool eq
+
+    b = b"ABC"
+    bytes.append b b"DEF"
+    bytes.append b b"GHI"
+    bytes.append b b""
+    bytes.append b b"JKL"
+
+    start = begin b
+
+    cur = bytes.offset b 15
+    cur2 = bytes.offset b 20
+
+    b2 = bytes.sub start cur
+    call Hilti::print(b2)
+    b2 = bytes.sub start cur2
+    call Hilti::print(b2)
+
+    bytes.append b b"MNO"
+    bytes.append b b"PQR"
+
+    b2 = bytes.sub start cur
+    call Hilti::print(b2)
+    b2 = bytes.sub start cur2
+    call Hilti::print(b2)
+
+    bytes.append b b"STU"
+    bytes.append b b"VWX"
+
+    b2 = bytes.sub start cur
+    call Hilti::print(b2)
+    b2 = bytes.sub start cur2
+    call Hilti::print(b2)
+ }
+
+

@@ -17,6 +17,7 @@ namespace attribute {
 enum Tag {
     CANREMOVE,
     DEFAULT,
+    FIRSTMATCH,
     GROUP,
     HOIST,
     LIBHILTI,

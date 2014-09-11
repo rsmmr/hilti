@@ -1,0 +1,21 @@
+#
+# @TEST-EXEC:      echo abc12aXXXXXXc56abc78abc90 | pac-driver-test %INPUT >>output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+
+module Mini;
+
+export type test1 = unit {
+    l1: test2;
+    l2: test2  &synchronize;
+    l3: test2;
+
+    on %done   { print "%done:", self; }
+    on %sync   { print "%synced"; }
+};
+
+type test2 = unit {
+       : b"abc" &synchronize;
+       x: bytes &length=2;
+
+};

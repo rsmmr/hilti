@@ -1,0 +1,32 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# This used to trigger memory corruption in valgrind. Not sure if
+# the effect was always visible outside of valgrind (it sometimes was,
+# but don't know about this minimized example).
+
+module Main
+
+import Hilti
+
+iterator<bytes> find(iterator<bytes> i, iterator<bytes> end)
+{
+    return.result end
+}
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> j
+    local iterator<bytes> e
+
+    b = b"12345"
+    bytes.append b b"xyzABC"
+
+    j = begin b
+    e = end b
+
+    j = call find(j, e)
+
+    call Hilti::print("done")
+}

@@ -94,6 +94,7 @@ protected:
     void visit(type::CAddr* c) override;
     void visit(type::Double* d) override;
     void visit(type::Enum* e) override;
+    void visit(type::EmbeddedObject* e) override;
     void visit(type::Exception* e) override;
     void visit(type::File* f) override;
     void visit(type::Function* f) override;

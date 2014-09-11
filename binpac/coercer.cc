@@ -46,6 +46,16 @@ bool Coercer::_coerceTo(shared_ptr<Expression> expr, shared_ptr<Type> src, share
         }
     }
 
+    if ( src->render() == dst->render() )
+	{
+	// FIXME: This a hack to get obvious matches to succeed. But we
+	// should really implement equal() consistently instead.
+	if ( result )
+                *result = expr;
+
+	return true;
+	}
+
     auto t = ast::tryCast<type::OptionalArgument>(dst);
 
     if ( t )

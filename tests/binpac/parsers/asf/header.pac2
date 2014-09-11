@@ -1,0 +1,44 @@
+#
+# @TEST-EXEC:  cat %DIR/charley-header.wmv | pac-driver-test %INPUT ${PARSERS}/asf.pac2 >charley
+# @TEST-EXEC:  cat %DIR/wildlife-header.wmv | pac-driver-test %INPUT ${PARSERS}/asf.pac2 >wildlife
+# @TEST-EXEC:  btest-diff charley
+# @TEST-EXEC:  btest-diff wildlife 
+#
+
+module Test;
+
+import parsers/asf;
+
+on Asf::AsfFile::number_objects {
+  print "Total header size: ", self.size;
+  print "Number of header objects: ", self.number_objects;
+}
+
+on Asf::asf_extended_content_description_descriptor::%done {
+  print "Extended content description: ", self;
+}
+
+on Asf::asf_file_properties::%done {
+  print "File properties: ", self;
+}
+
+on Asf::codec_list::%done {
+  print "Codec list: ", self;
+}
+
+on Asf::bitrate_record::%done {
+  print "Average bitrate of stream ", self.flags.stream_number, ": ", self.average_bitrate;
+}
+
+on Asf::stream_properties::%done {
+  print "Properties of stream ", self.flags.stream_number, ": ", self;
+}
+
+on Asf::asf_content_description::%done {
+  print "Content information: ";
+  print "Title: ", self.title;
+  print "Author: ", self.author;
+  print "Description: ", self.description;
+  print "Copyright: ", self.copyright;
+  print "Rating: ", self.rating;
+}

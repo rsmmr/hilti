@@ -64,11 +64,14 @@ void GrammarBuilder::_resolveUnknown(shared_ptr<Production> production)
         auto n = unknown->node();
         auto p = _compiled.find(n);
         assert( p != _compiled.end());
-        production->replace(n);
+        if ( ast::isA<Production>(n) )
+            production->replace(n);
     }
 
-    for ( auto c : production->childs() )
-        _resolveUnknown(c->sharedPtr<binpac::Production>());
+    for ( auto c : production->childs() ) {
+        if ( ast::isA<Production>(c) )
+             _resolveUnknown(c->sharedPtr<binpac::Production>());
+    }
 }
 
 string GrammarBuilder::counter(const string& key)
@@ -180,8 +183,20 @@ void GrammarBuilder::visit(type::unit::item::field::AtomicType* t)
     if ( ! _in_decl )
         return;
 
-    auto sym = "var:" + t->id()->name();
-    auto prod = std::make_shared<production::Variable>(sym, t->type());
+    shared_ptr<Production> prod;
+
+    if ( ast::isA<type::EmbeddedObject>(t->type()) ) {
+        // Not quite clear if there's a nicer way to present these than
+        // special-casing them here.
+        auto sym = "type:" + t->id()->name();
+        prod = std::make_shared<production::TypeLiteral>(sym, t->type());
+    }
+
+    else {
+        auto sym = "var:" + t->id()->name();
+        prod = std::make_shared<production::Variable>(sym, t->type());
+    }
+
     prod->pgMeta()->field = t->sharedPtr<type::unit::item::Field>();
     setResult(prod);
 }
@@ -202,6 +217,7 @@ void GrammarBuilder::visit(type::unit::item::field::Unit* u)
     else
         name = util::fmt("unit%d", _unit_counter++);
 
+    assert(ast::isA<Production>(chprod));
     auto child = std::make_shared<production::ChildGrammar>(name, chprod, ast::checkedCast<type::Unit>(u->type()), u->location());
     child->pgMeta()->field = u->sharedPtr<type::unit::item::field::Unit>();
     setResult(child);
@@ -240,11 +256,12 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
     field->setContainer(l->sharedPtr<type::unit::item::field::Container>());
     --_in_decl;
 
-    if ( until || while_ || until_including ) {
+    if ( until || while_ || until_including || length ) {
         // We use a Loop production here. type::Container installs a &foreach
         // hook that stops the iteration once the condition is satisfied.
         // Doing it this way allows the condition to run in the hook's scope,
-        // with access to "$$".
+        // with access to "$$". With "&length", we'll have been embedded into
+        // a ByteBlock production.
         auto l1 = std::make_shared<production::Loop>(sym, field, false, l->location());
         l1->pgMeta()->field = l->sharedPtr<type::unit::item::Field>();
         setResult(l1);
@@ -254,13 +271,6 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
         auto l1 = std::make_shared<production::Counter>(sym, count->value(), field, l->location());
         l1->pgMeta()->field = l->sharedPtr<type::unit::item::Field>();
         setResult(l1);
-    }
-
-    else if ( length ) {
-        auto l1 = std::make_shared<production::Loop>(sym, field, true, l->location());
-        auto l2 = std::make_shared<production::ByteBlock>(sym, length->value(), l1, l->location());
-        l1->pgMeta()->field = l->sharedPtr<type::unit::item::Field>();
-        setResult(l2);
     }
 
     else {

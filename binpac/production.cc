@@ -6,6 +6,7 @@
 
 #include "expression.h"
 #include "production.h"
+#include "attribute.h"
 
 using namespace binpac;
 using namespace binpac::production;
@@ -38,6 +39,16 @@ bool Production::nullable() const
     return false;
 }
 
+bool Production::maySynchronize()
+{
+    return pgMeta()->field && pgMeta()->field->attributes()->lookup("synchronize");
+}
+
+bool Production::supportsSynchronize()
+{
+    return pgMeta()->field && pgMeta()->field->attributes()->lookup("length");
+}
+
 void Production::setContainer(shared_ptr<type::unit::item::field::Container> c)
 {
     _container = c;
@@ -61,7 +72,19 @@ string Production::render()
     if ( _location != Location::None )
         location = util::fmt(" (%s)", string(_location).c_str());
 
-    return util::fmt("%10s: %-3s -> %s%s", ++name, _symbol.c_str(), renderProduction().c_str(), location.c_str());
+    string can_sync = "";
+    string sync_at = "";
+
+    bool have_sync = pgMeta()->field && pgMeta()->field->attributes()->lookup("synchronize");
+
+    if ( maySynchronize() || supportsSynchronize() || have_sync )
+        can_sync = util::fmt(" (sync %c/%c/%c)",
+                             maySynchronize() ? '+' : '-',
+                             supportsSynchronize() ? '+' : '-',
+                             have_sync ? '+' : '-');
+
+    return util::fmt("%10s: %-3s -> %s%s%s", ++name, _symbol.c_str(), renderProduction().c_str(),
+                     location.c_str(), can_sync);
 }
 
 const Location& Production::location() const
@@ -165,6 +188,14 @@ Literal::Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Express
 {
 }
 
+bool Literal::supportsSynchronize()
+{
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
+    return maySynchronize();
+}
+
 string Literal::renderTerminal() const
 {
     return literal()->render();
@@ -224,6 +255,33 @@ Literal::pattern_list production::Ctor::patterns() const
     return _ctor->patterns();
 }
 
+production::TypeLiteral::TypeLiteral(const string& symbol, shared_ptr<binpac::Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+    : Literal(symbol, type, expr, filter, l)
+{
+    _type = type;
+    addChild(_type);
+}
+
+shared_ptr<binpac::Type> production::TypeLiteral::type() const
+{
+    return _type;
+}
+
+string production::TypeLiteral::renderProduction() const
+{
+    return _type->render() + util::fmt(" (%s/id %d)", _type->render(), tokenID());
+}
+
+shared_ptr<Expression> production::TypeLiteral::literal() const
+{
+    return std::make_shared<expression::Type>(_type);
+}
+
+Literal::pattern_list production::TypeLiteral::patterns() const
+{
+    return Literal::pattern_list();
+}
+
 production::Variable::Variable(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
     : Terminal(symbol, type, expr, filter, l)
 {
@@ -272,6 +330,12 @@ ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<Production> child, s
 {
     _child = child;
     addChild(_child);
+    assert(ast::isA<Production>(_child));
+}
+
+shared_ptr<Production> ChildGrammar::child() const
+{
+    return _child;
 }
 
 shared_ptr<type::Unit> ChildGrammar::childType() const
@@ -298,8 +362,25 @@ string ChildGrammar::renderProduction() const
 
 NonTerminal::alternative_list ChildGrammar::rhss() const
 {
+    assert(ast::isA<Production>(_child));
     alternative_list rhss = { { _child } };
     return rhss;
+}
+
+bool ChildGrammar::supportsSynchronize()
+{
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
+    if ( _child->supportsSynchronize() )
+        return true;
+
+    auto utype = ast::checkedCast<type::Unit>(type());
+
+    if ( utype->property("synchronize-after") || utype->property("synchronize-at") )
+        return true;
+
+    return false;
 }
 
 Enclosure::Enclosure(const string& symbol, shared_ptr<Production> child, const Location& l)
@@ -320,6 +401,14 @@ NonTerminal::alternative_list Enclosure::rhss() const
     return rhss;
 }
 
+bool Enclosure::supportsSynchronize()
+{
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
+    return _child->supportsSynchronize();
+}
+
 string Enclosure::renderProduction() const
 {
     return _child->symbol();
@@ -328,12 +417,21 @@ string Enclosure::renderProduction() const
 Sequence::Sequence(const string& symbol, const production_list& seq, shared_ptr<Type> type, const Location& l)
     : NonTerminal(symbol, type, l)
 {
-    _seq = seq;
+    for ( auto a : seq )
+        _seq.push_back(a);
+
+    for ( auto a : _seq )
+        addChild(a);
 }
 
-const Sequence::production_list& Sequence::sequence() const
+Sequence::production_list Sequence::sequence() const
 {
-    return _seq;
+    production_list l;
+
+    for ( auto a : _seq )
+        l.push_back(a);
+
+    return l;
 }
 
 void Sequence::add(shared_ptr<Production> prod)
@@ -359,8 +457,16 @@ string Sequence::renderProduction() const
 
 NonTerminal::alternative_list Sequence::rhss() const
 {
-    alternative_list l = { _seq };
+    alternative_list l = { sequence() };
     return l;
+}
+
+bool Sequence::supportsSynchronize()
+{
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
+    return _seq.size() ? _seq.front()->supportsSynchronize() : false;
 }
 
 LookAhead::LookAhead(const string& symbol, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l)
@@ -412,7 +518,7 @@ void LookAhead::setAlternatives(shared_ptr<Production> alt1, shared_ptr<Producti
 
     if ( _alt2 )
         removeChild(_alt2);
-        
+
     _alt1 = alt1;
     _alt2 = alt2;
     addChild(_alt1);
@@ -462,6 +568,24 @@ NonTerminal::alternative_list LookAhead::rhss() const
     return { { _alt1 }, { _alt2 } };
 }
 
+bool LookAhead::supportsSynchronize()
+{
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
+    for ( auto t : _lahs.first ) {
+        if ( ! t->supportsSynchronize() )
+            return false;
+    }
+
+    for ( auto t : _lahs.second ) {
+        if ( ! t->supportsSynchronize() )
+            return false;
+    }
+
+    return true;
+}
+
 Boolean::Boolean(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
@@ -505,6 +629,10 @@ Counter::Counter(const string& symbol, shared_ptr<Expression> expr, shared_ptr<P
     _expr = expr;
     _body = body;
     addChild(_body);
+}
+
+Counter::~Counter()
+{
 }
 
 shared_ptr<Expression> Counter::expression() const
@@ -583,6 +711,14 @@ NonTerminal::alternative_list While::rhss() const
     return { { _body } };
 }
 
+bool While::supportsSynchronize()
+{
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
+    return _body->supportsSynchronize();
+}
+
 Loop::Loop(const string& symbol, shared_ptr<Production> body, bool eod_ok, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
@@ -609,6 +745,14 @@ NonTerminal::alternative_list Loop::rhss() const
 bool Loop::eodOk() const
 {
     return _eod_ok ? true : nullable();
+}
+
+bool Loop::supportsSynchronize()
+{
+    if ( ::Production::supportsSynchronize() )
+        return true;
+
+    return _body->supportsSynchronize();
 }
 
 Switch::Switch(const string& symbol, shared_ptr<Expression> expr, const case_list& cases, shared_ptr<Production> default_, const Location& l)

@@ -26,7 +26,7 @@ void CodeBuilder::visit(expression::operator_::bytes::Plus* i)
     auto op2 = cg()->hiltiExpression(i->op2());
 
     auto copy = cg()->builder()->addTmp("copy", hilti::builder::reference::type(hilti::builder::bytes::type()));
-    cg()->builder()->addInstruction(copy, hilti::instruction::bytes::Copy, op1);
+    cg()->builder()->addInstruction(copy, hilti::instruction::operator_::Clone, op1);
     cg()->builder()->addInstruction(hilti::instruction::bytes::Append, copy, op2);
     setResult(copy);
 }

@@ -1,0 +1,172 @@
+# Simple parser for the beginning of an RTMP connection
+# At the moment, this parser stops after the first client-side packet, which
+# contains the stream information.
+
+module RTMP;
+
+type TypeId = enum {
+  ChunkSize = 0x1,
+  AbortMessage = 0x2,
+  NumberBytesRed = 0x3,
+  Ping = 0x4,
+  Response = 0x5,
+  ClientRequest = 0x6,
+  Audio = 0x8,
+  Video = 0x9,
+  FlexStream = 0xF,
+  FlexSharedObject = 0x10,
+  FlexMessage = 0x11,
+  Notify = 0x12,
+  SharedObject = 0x13,
+  RPC = 0x14
+};
+
+type AmfType = enum {
+  Numeric = 0x0,
+  Boolean = 0x1,
+  String = 0x2,
+  FlashObject = 0x3,
+  FlashMovie = 0x4,
+  Null = 0x5,
+  Undefined = 0x6,
+  Reference = 0x7,
+  ECMAArray = 0x8,
+  EndOfObjectDefinition = 0x9,
+  StrictArray = 0xA,
+  Date = 0xB,
+  MultiByteString = 0xC,
+  UnsupportedFeature = 0xD,
+  RecordSet = 0xE,
+  AMLObject = 0xF,
+  TypedObject = 0x10
+};
+
+export type Requests = unit {
+   : uint8(0x3); # version or something like that
+   : bytes &length=1536; # challenge - first step.
+   : bytes &length=1536; # challenge - second step.
+
+  first_packet : rtmp_message;
+};
+
+# At the moment we only parse three amf packets - because the client
+# connection will send exactly three packets at the beginning which
+# contain exactly the information that we want.
+export type Amf = unit {
+  connect_string : amf_packet;
+  number_string : amf_packet;
+  object_string : amf_packet;
+};
+
+type rtmp_message = unit {
+  var message_length : uint32;
+  var chunk_length : uint32;
+  var amfsink : sink;
+  var submessage_count : uint32;
+
+  header : rtmp_header {
+    # The first header has to specify the messave length. And the chunk length.
+    # and the type.
+    if ( self.header.tpe_raw == b"\x08" ) # audio
+      self.chunk_length = 64;
+    else
+      self.chunk_length = 128;
+
+    self.message_length = self.header.message_length;
+    if ( self.message_length == 0 )
+      self.message_length = self.chunk_length;
+  }
+
+  body : bytes &length=( (self.message_length < self.chunk_length) ? self.message_length : self.chunk_length ) -> self.amfsink {
+    if ( self.message_length < self.chunk_length )
+      self.message_length = 0;
+    else
+      self.message_length = self.message_length - self.chunk_length;
+
+    self.submessage_count = self.message_length / self.chunk_length;
+    if ( (self.message_length mod self.chunk_length) > 0 )
+      self.submessage_count = self.submessage_count + 1;
+  }
+
+  # if RTMP does interleaving, I will kill someone...
+
+  submessages : list < rtmp_submessage(self.chunk_length, self.message_length, self.amfsink) >
+    &count=self.submessage_count
+    if ( self.message_length > 0 );
+
+  on %init {
+    self.amfsink.connect(new Amf);
+  }
+};
+
+type rtmp_submessage = unit(chunk_length: uint32, message_length: uint32, amfsink: sink) {
+  header: rtmp_header;
+  body: bytes &length=( (message_length < chunk_length) ? message_length : chunk_length ) -> amfsink {
+    if ( message_length < chunk_length )
+      message_length = 0;
+    else
+      message_length = message_length - chunk_length;
+  }
+};
+
+type rtmp_header = unit {
+  head : bitfield(8) {
+    size : 6..7;
+    amf_index: 0..5;
+  };
+
+  ts : bytes &length=3 if ( self.head.size <= 2);
+
+  # Todo - parse 3-byte length nicer when syntax is available
+  # len : bytes &length=3 if ( self.head.size == 0 || self.head.size == 1);
+
+  var message_length : uint32 = 0;
+  len_first : uint8 if ( self.head.size <= 1 );
+  len_second : uint16 if ( self.head.size <= 1 );
+
+  tpe_raw : bytes &length=1 if ( self.head.size <= 1 );
+  tpe : uint8 &convert=TypeId($$) &parse(self.tpe_raw) if ( self.head.size <= 1 );
+  routing : bytes &length=4 if ( self.head.size == 0 );
+
+  on %done {
+    if ( self.head.size == 0 || self.head.size == 1 ) {
+      self.message_length = ( self.len_first << 16 ) | self.len_second;
+    }
+  }
+};
+
+type amf_string = unit {
+  len : uint16;
+  value : bytes &length=self.len;
+};
+
+type amf_packet = unit {
+  type_raw: bytes &length=1;
+  tpe: uint8 &parse(self.type_raw) &convert=AmfType($$);
+
+  switch ( self.tpe ) {
+    AmfType::Numeric -> amf_number : bytes &length=8; # Fixme - this actually is a double. Reading doubles from the network does not work yet.
+    AmfType::Boolean -> amf_boolean : uint8;
+    AmfType::String -> amf_string : amf_string;
+    AmfType::Null -> : void;
+    AmfType::Undefined -> : void;
+    AmfType::FlashObject -> amf_object : amf_object;
+    AmfType::EndOfObjectDefinition -> : void;
+  };
+};
+
+type amf_object = unit {
+  entries : list<amf_object_entry> &until ( $$.value.type_raw == b"\x09" );
+};
+
+type amf_object_entry = unit {
+  key : amf_string;
+  value : amf_packet;
+};
+
+export type Replies = unit {
+   : uint8(0x03); # version perhaps
+  server_challenge: bytes &length=1536;
+  client_challenge: bytes &length=1536;
+};
+

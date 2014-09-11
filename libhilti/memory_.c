@@ -461,10 +461,10 @@ void __hlt_memory_safepoint(hlt_execution_context* ctx, const char* location)
 
 void* hlt_stack_alloc(size_t size)
 {
-#ifndef DARWIN
-    void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+#ifdef DARWIN
+    void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
 #else
-    void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
+    void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
 #endif
 
     if ( stack == MAP_FAILED ) {

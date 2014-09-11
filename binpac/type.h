@@ -1227,6 +1227,18 @@ public:
 
     shared_ptr<binpac::Type> fieldType() override;
 
+    /// Create a field for parsing a type. This internally knows which field
+    /// class to use for each type, and will create a corresponding instance.
+    static shared_ptr<Field> createByType(shared_ptr<Type>,
+                                          shared_ptr<ID> id,
+                                          shared_ptr<Expression> cond = nullptr,
+                                          const hook_list& hooks = hook_list(),
+                                          const attribute_list& attrs = attribute_list(),
+                                          const expression_list& params = expression_list(),
+                                          const expression_list& sinks = expression_list(),
+                                          const Location& l=Location::None);
+
+
     ACCEPT_VISITOR(Item);
 
 protected:
@@ -1835,6 +1847,23 @@ public:
 };
 
 ////
+
+/// Type representing an object embedded into a data stream.
+class EmbeddedObject : public TypedPacType, public trait::Parseable
+{
+public:
+    /// Constructor.
+    ///
+    /// etype: The type of the embedded object.
+    ///
+    /// l: Associated location.
+    EmbeddedObject(shared_ptr<Type> etype, const Location& l=Location::None);
+
+    /// Constructor for a wildcard type.
+    EmbeddedObject(const Location& l=Location::None);
+
+    ACCEPT_VISITOR(TypedPacType);
+};
 
 }
 

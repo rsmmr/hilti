@@ -1,0 +1,459 @@
+module pcap;
+
+import BinPAC;
+
+type DataLinkType = enum {
+  DLT_NULL = 0, #  BSD loopback encapsulation
+  DLT_EN10MB = 1, #  Ethernet (10Mb)
+  DLT_EN3MB = 2, #  Experimental Ethernet (3Mb)
+  DLT_AX25 = 3, #  Amateur Radio AX.25
+  DLT_PRONET = 4, #  Proteon ProNET Token Ring
+  DLT_CHAOS = 5, #  Chaos
+  DLT_IEEE802 = 6, # = 802,.5 Token Ring
+  DLT_ARCNET = 7, #  ARCNET, with BSD-style header
+  DLT_SLIP = 8, #  Serial Line IP
+  DLT_PPP = 9, #  Point-to-point Protocol
+  DLT_FDDI = 10,  #  FDDI
+  DLT_ATM_RFC1483 = 11,  #  LLC-encapsulated ATM
+  DLT_RAW = 12,  #  raw IP
+  DLT_SLIP_BSDOS = 15,  #  BSD/OS Serial Line IP
+  DLT_PPP_BSDOS = 16,  #  BSD/OS Point-to-point Protocol
+  DLT_ATM_CLIP = 19,  #  Linux Classical-IP over ATM
+  DLT_REDBACK_SMARTEDGE = 32,
+  DLT_PPP_SERIAL = 50,  #  PPP over serial with HDLC encapsulation
+  DLT_PPP_ETHER = 51,  #  PPP over Ethernet
+  DLT_SYMANTEC_FIREWALL = 99,
+  DLT_MATCHING_MIN = 104,
+  DLT_C_HDLC = 104, #  Cisco HDLC
+  DLT_IEEE802_11 = 105, #  IEEE = 802,.11 wireless
+  DLT_FRELAY = 107,
+  DLT_LOOP = 108,
+  DLT_ENC = 109,
+  DLT_LINUX_SLL = 113,
+  DLT_LTALK = 114,
+  DLT_ECONET = 115,
+  DLT_IPFILTER = 116,
+  DLT_PFLOG = 117,
+  DLT_CISCO_IOS = 118,
+  DLT_PRISM_HEADER = 119,
+  DLT_AIRONET_HEADER = 120,
+  DLT_HHDLC = 121,
+  DLT_IP_OVER_FC = 122,
+  DLT_SUNATM = 123, #  Solaris+SunATM
+  DLT_RIO = 124,     #  RapidIO
+  DLT_PCI_EXP = 125,     #  PCI Express
+  DLT_AURORA = 126,     #  Xilinx Aurora link layer
+  DLT_IEEE802_11_RADIO = 127, # IEE802,.11 plus radiotap radio header
+  DLT_TZSP = 128,     #  Tazmen Sniffer Protocol
+  DLT_ARCNET_LINUX = 129, #  ARCNET
+  DLT_JUNIPER_MLPPP = 130,
+  DLT_JUNIPER_MLFR = 131,
+  DLT_JUNIPER_ES = 132,
+  DLT_JUNIPER_GGSN = 133,
+  DLT_JUNIPER_MFR = 134,
+  DLT_JUNIPER_ATM2 = 135,
+  DLT_JUNIPER_SERVICES = 136,
+  DLT_JUNIPER_ATM1 = 137,
+  DLT_APPLE_IP_OVER_IEEE1394 = 138,
+  DLT_MTP2_WITH_PHDR = 139, #  pseudo-header with various info, followed by MTP2
+  DLT_MTP2 = 140, #  MTP2, without pseudo-header
+  DLT_MTP3 = 141, #  MTP3, without pseudo-header or MTP2
+  DLT_SCCP = 142, #  SCCP, without pseudo-header or MTP2 or MTP3
+  DLT_DOCSIS = 143,
+  DLT_LINUX_IRDA = 144,
+  DLT_IBM_SP = 145,
+  DLT_IBM_SN = 146,
+  DLT_USER0 = 147,
+  DLT_USER1 = 148,
+  DLT_USER2 = 149,
+  DLT_USER3 = 150,
+  DLT_USER4 = 151,
+  DLT_USER5 = 152,
+  DLT_USER6 = 153,
+  DLT_USER7 = 154,
+  DLT_USER8 = 155,
+  DLT_USER9 = 156,
+  DLT_USER10 = 157,
+  DLT_USER11 = 158,
+  DLT_USER12 = 159,
+  DLT_USER13 = 160,
+  DLT_USER14 = 161,
+  DLT_USER15 = 162,
+  DLT_IEEE802_11_RADIO_AVS = 163, # IEEE802,.11 plus AVS radio header
+  DLT_JUNIPER_MONITOR = 164,
+  DLT_BACNET_MS_TP = 165,
+  DLT_PPP_PPPD = 166,
+  DLT_JUNIPER_PPPOE = 167,
+  DLT_JUNIPER_PPPOE_ATM = 168,
+  DLT_GPRS_LLC = 169, #  GPRS LLC
+  DLT_GPF_T = 170, #  GPF-T (ITU-T G.7041/Y.1303)
+  DLT_GPF_F = 171, #  GPF-F (ITU-T G.7041/Y.1303)
+  DLT_GCOM_T1E1 = 172,
+  DLT_GCOM_SERIAL = 173,
+  DLT_JUNIPER_PIC_PEER = 174,
+  DLT_ERF_ETH = 175, #  Ethernet
+  DLT_ERF_POS = 176, #  Packet-over-SONET
+  DLT_LINUX_LAPD = 177,
+  DLT_JUNIPER_ETHER = 178,
+  DLT_JUNIPER_PPP = 179,
+  DLT_JUNIPER_FRELAY = 180,
+  DLT_JUNIPER_CHDLC = 181,
+  DLT_MFR = 182,
+  DLT_JUNIPER_VP = 183,
+  DLT_A653_ICM = 185,
+  DLT_USB = 186,
+  DLT_BLUETOOTH_HCI_H4 = 187,
+  DLT_IEEE802_16_MAC_CPS = 188,
+  DLT_USB_LINUX = 189,
+  DLT_CAN20B = 190,
+  DLT_IEEE802_15_4_LINUX = 191,
+  DLT_PPI = 192,
+  DLT_IEEE802_16_MAC_CPS_RADIO = 193,
+  DLT_JUNIPER_ISM = 194,
+  DLT_IEEE802_15_4 = 195,
+  DLT_SITA = 196,
+  DLT_ERF = 197,
+  DLT_RAIF1 = 198,
+  DLT_IPMB = 199,
+  DLT_JUNIPER_ST = 200,
+  DLT_BLUETOOTH_HCI_H4_WITH_PHDR = 201,
+  DLT_AX25_KISS = 202,
+  DLT_LAPD = 203,
+  DLT_PPP_WITH_DIR = 204, #  PPP - don't confuse with DLT_PPP_WITH_DIRECTION
+  DLT_C_HDLC_WITH_DIR = 205, #  Cisco HDLC
+  DLT_FRELAY_WITH_DIR = 206, #  Frame Relay
+  DLT_LAPB_WITH_DIR = 207, #  LAPB
+  DLT_IPMB_LINUX = 209,
+  DLT_FLEXRAY = 210,
+  DLT_MOST = 211,
+  DLT_LIN = 212,
+  DLT_X2E_SERIAL = 213,
+  DLT_X2E_XORAYA = 214,
+  DLT_IEEE802_15_4_NONASK_PHY = 215,
+  DLT_LINUX_EVDEV = 216,
+  DLT_GSMTAP_UM = 217,
+  DLT_GSMTAP_ABIS = 218,
+  DLT_MPLS = 219,
+  DLT_USB_LINUX_MMAPPED = 220,
+  DLT_DECT = 221,
+  DLT_AOS = 222,
+  DLT_WIHART = 223,
+  DLT_FC_2 = 224,
+  DLT_FC_2_WITH_FRAME_DELIMS = 225,
+  DLT_IPNET = 226,
+  DLT_CAN_SOCKETCAN = 227,
+  DLT_IPV4 = 228,
+  DLT_IPV6 = 229,
+  DLT_IEEE802_15_4_NOFCS = 230,
+  DLT_DBUS = 231,
+  DLT_JUNIPER_VS = 232,
+  DLT_JUNIPER_SRX_E2E = 233,
+  DLT_JUNIPER_FIBRECHANNEL = 234,
+  DLT_DVB_CI = 235,
+  DLT_MUX27010 = 236,
+  DLT_STANAG_5066_D_PDU = 237,
+  DLT_JUNIPER_ATM_CEMIC = 238,
+  DLT_NFLOG = 239,
+  DLT_NETANALYZER = 240,
+  DLT_NETANALYZER_TRANSPARENT = 241,
+  DLT_IPOIB = 242,
+  DLT_MPEG_2_TS = 243,
+  DLT_NG40 = 244,
+  DLT_NFC_LLCP = 245,
+  DLT_PFSYNC = 246,
+  DLT_INFINIBAND = 247,
+  DLT_SCTP = 248,
+  DLT_USBPCAP = 249,
+  DLT_RTAC_SERIAL = 250,
+  DLT_BLUETOOTH_LE_LL = 251,
+  DLT_WIRESHARK_UPPER_PDU = 252
+};
+
+type EtherType = enum {
+  IPV4 = 0x800,
+  ARP = 0x806,
+  Wake_on_LAN = 0x842,
+  RARP = 0x8035,
+  AppleTalk = 0x809B,
+  AARP = 0x80F3,
+  IEEE8021Q = 0x8100,
+  IPX = 0x8137,
+  IPX_2 = 0x8138,
+  QNX_Qnet = 0x8204,
+  IPV6 = 0x86DD,
+  PPPoE_Discovery = 0x8863,
+  PPPoE_Session = 0x8864,
+  Jumbo_Frame = 0x8870,
+  EAP = 0x888E
+};
+
+export type PcapFile = unit {
+  magic_number: uint32;
+
+  switch ( self.magic_number ) {
+    0xa1b2c3d4 -> header: PcapHeader(BinPAC::ByteOrder::Big);
+    0xd4c3b2a1 -> header: PcapHeader(BinPAC::ByteOrder::Little);
+  };
+};
+
+# header after the magic number
+type PcapHeader = unit(byteorder: BinPAC::ByteOrder) {
+  %byteorder = byteorder;
+
+  version_major: uint16;
+  version_minor: uint16;
+  thiszone: int32;
+  sigfigs: uint32;
+  snaplen: uint32;
+  network: uint32 &convert=DataLinkType($$);
+  # packet data follows
+   : list<PcapPacket(byteorder, self.network)> &transient;
+};
+
+type PcapPacket = unit(byteorder: BinPAC::ByteOrder, network: DataLinkType) {
+  %byteorder = byteorder;
+
+  ts_sec: uint32;
+  ts_usec: uint32;
+  incl_len: uint32;
+  orig_len: uint32;
+
+  switch ( network ) {
+    DataLinkType::DLT_EN10MB -> : EthernetPacket(self.incl_len);
+    * ->: bytes &length=self.incl_len;
+  };
+};
+
+type EthernetPacket = unit(len: uint32) {
+  destination: bytes &length=6;
+  source: bytes &length=6;
+  ethertype: uint16 &convert=EtherType($$);
+
+  switch ( self.ethertype ) {
+    EtherType::IPV4 -> : IPV4Packet(len - self.offset());
+    * -> : bytes &length=(len - self.offset());
+  };
+};
+
+type ProtocolNumber = enum {
+  HOPOPT = 0,
+  ICMP = 1,
+  IGMP = 2,
+  GGP = 3,
+  IPv4 = 4,
+  ST = 5,
+  TCP = 6,
+  CBT = 7,
+  EGP = 8,
+  IGP = 9,
+  BBN_RCC_MON = 10,
+  NVP_II = 11,
+  PUP = 12,
+  ARGUS = 13,
+  EMCON = 14,
+  XNET = 15,
+  CHAOS = 16,
+  UDP = 17,
+  MUX = 18,
+  DCN_MEAS = 19,
+  HMP = 20,
+  PRM = 21,
+  XNS_IDP = 22,
+  TRUNK_1 = 23,
+  TRUNK_2 = 24,
+  LEAF_1 = 25,
+  LEAF_2 = 26,
+  RDP = 27,
+  IRTP = 28,
+  ISO_TP4 = 29,
+  NETBLT = 30,
+  MFE_NSP = 31,
+  MERIT_INP = 32,
+  DCCP = 33,
+  ThreePC = 34,
+  IDPR = 35,
+  XTP = 36,
+  DDP = 37,
+  IDPR_CMTP = 38,
+  TPPlusPlus = 39,
+  IL = 40,
+  IPv6 = 41,
+  SDRP = 42,
+  IPv6_Route = 43,
+  IPv6_Frag = 44,
+  IDRP = 45,
+  RSVP = 46,
+  GRE = 47,
+  DSR = 48,
+  BNA = 49,
+  ESP = 50,
+  AH = 51,
+  I_NLSP = 52,
+  SWIPE = 53,
+  NARP = 54,
+  MOBILE = 55,
+  TLSP = 56,
+  SKIP = 57,
+  IPv6_ICMP = 58,
+  IPv6_NoNxt = 59,
+  IPv6_Opts = 60,
+  CFTP = 62,
+  SAT_EXPAK = 64,
+  KRYPTOLAN = 65,
+  RVD = 66,
+  IPPC = 67,
+  SAT_MON = 69,
+  VISA = 70,
+  IPCV = 71,
+  CPNX = 72,
+  CPHB = 73,
+  WSN = 74,
+  PVP = 75,
+  BR_SAT_MON = 76,
+  SUN_ND = 77,
+  WB_MON = 78,
+  WB_EXPAK = 79,
+  ISO_IP = 80,
+  VMTP = 81,
+  SECURE_VMTP = 82,
+  VINES = 83,
+  TTP = 84,
+  IPTM = 84,
+  NSFNET_IGP = 85,
+  DGP = 86,
+  TCF = 87,
+  EIGRP = 88,
+  OSPFIGP = 89,
+  Sprite_RPC = 90,
+  LARP = 91,
+  MTP = 92,
+  AX25 = 93,
+  IPIP = 94,
+  MICP = 95,
+  SCC_SP = 96,
+  ETHERIP = 97,
+  ENCAP = 98,
+  GMTP = 100,
+  IFMP = 101,
+  PNNI = 102,
+  PIM = 103,
+  ARIS = 104,
+  SCPS = 105,
+  QNX = 106,
+  ASlashN = 107,
+  IPComp = 108,
+  SNP = 109,
+  Compaq_Peer = 110,
+  IPX_in_IP = 111,
+  VRRP = 112,
+  PGM = 113,
+  L2TP = 115,
+  DDX = 116,
+  IATP = 117,
+  STP = 118,
+  SRP = 119,
+  UTI = 120,
+  SMP = 121,
+  SM = 122,
+  PTP = 123,
+  ISIS = 124,
+  FIRE = 125,
+  CRTP = 126,
+  CRUDP = 127,
+  SSCOPMCE = 128,
+  IPLT = 129,
+  SPS = 130,
+  PIPE = 131,
+  SCTP = 132,
+  FC = 133,
+  RSVP_E2E_IGNORE = 134,
+  Mobility_Header = 135,
+  UDPLite = 136,
+  MPLS_in_IP = 137,
+  manet = 138,
+  HIP = 139,
+  Shim6 = 140,
+  WESP = 141,
+  ROHC = 142
+};
+
+type IPV4Packet = unit(len: uint64) {
+  head: bitfield(16) {
+    version: 12..15;
+    ihl: 8..11;
+    dcsp: 2..7;
+    ecn: 0..1;
+  };
+
+  length: uint16;
+  id: uint16;
+
+  head2: bitfield(16) {
+    reserved: 15;
+    df: 14;
+    mf: 13;
+    fragment_offset: 0..12;
+  };
+
+  ttl: uint8;
+  protocol: uint8 &convert=ProtocolNumber($$);
+  checksum: uint16;
+  source: addr &ipv4;
+  destination: addr &ipv4;
+  options: bytes &length=(self.head.ihl - 5);
+
+  switch ( self.protocol ) {
+    ProtocolNumber::UDP -> : UDPPacket(len - self.offset());
+    ProtocolNumber::TCP -> : TCPPacket(len - self.offset());
+    * -> : bytes &length=(len - self.offset());
+  };
+
+};
+
+type UDPPacket = unit(len: uint64) {
+  var lower_port: uint16; # used for protocol identification. Kind of cheating...
+  var parser: sink;
+
+  source_port: uint16;
+  destination_port: uint16 {
+    self.lower_port = self.source_port;
+    if ( self.destination_port < self.lower_port )
+      self.lower_port = self.destination_port;
+
+    self.parser.connect_mime_type(BinPAC::fmt(b"port-udp/%u", (self.lower_port, 1)));
+  }
+  length: uint16;
+  checksum: uint16;
+
+  data: bytes &length=(len - self.offset()) -> self.parser;
+};
+
+type TCPPacket = unit(len: uint64) {
+  var lower_port: uint16; # used for protocol identification. Kind of cheating...
+
+  source_port: uint16;
+  destination_port: uint16{
+    self.lower_port = self.source_port;
+    if ( self.destination_port < self.lower_port )
+      self.lower_port = self.destination_port;
+  }
+  sequence_number: uint32;
+  ack_number: uint32;
+  flags: bitfield(16) {
+    fin: 0;
+    syn: 1;
+    rst: 2;
+    psh: 3;
+    ack: 4;
+    urg: 5;
+    reserved: 6..11;
+    data_offset: 12..15;
+  };
+
+  window: uint16;
+  checksum: uint16;
+  urgend_pointer: uint16;
+  options: bytes &length=(self.flags.data_offset - 5)*4;
+
+  :bytes &length=(len - self.offset()); # packet content
+};

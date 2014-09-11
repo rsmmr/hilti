@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC:  echo 1234567890 | HILTI_DEBUG=binpac pac-driver-test %INPUT -e 4:test >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+       a: b"1234";
+       b: object<string>;
+       c: b"5678";
+
+       on %done {
+           print self;
+       }
+};

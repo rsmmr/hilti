@@ -236,6 +236,12 @@ void Printer::visit(constant::Enum* e)
     p << scopedID(&p, expr, e->value());
 }
 
+void Printer::visit(type::EmbeddedObject* e)
+{
+    Printer& p = *this;
+    p << "object<" << e->argType() << ">";
+}
+
 #if 0
 void Printer::visit(constant::Expression* e)
 {
@@ -1182,6 +1188,9 @@ void Printer::visit(type::unit::item::Variable* v)
     if ( v->default_() )
         p << " = " << v->default_();
 
+    if ( v->attributes()->size() )
+        p << " " << v->attributes();
+
     _printUnitHooks(p, v->hooks());
 }
 
@@ -1200,6 +1209,9 @@ void Printer::visit(type::unit::item::field::Ctor* r)
         p << r->id();
 
     p << ": " << r->ctor();
+
+    if ( r->attributes()->size() )
+        p << " " << r->attributes();
 
     _printUnitFieldCommon(p, r);
 }

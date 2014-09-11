@@ -61,6 +61,12 @@ typedef struct {
     hlt_bytes* second; /// Second element.
 } hlt_bytes_pair;
 
+/// Type for the result of ~~hlt_bytes_find_bytes_at_iter.
+typedef struct {
+    int8_t success;
+    hlt_iterator_bytes iter;
+} hlt_bytes_find_at_iter_result;
+
 /// Instantiates a new bytes object. The bytes object is initially empty.
 ///
 /// Returns: The new bytes object.
@@ -191,6 +197,20 @@ extern int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_excep
 ///
 /// Returns: The position where bytes is found, or ~~hlt_bytes_end if not found.
 extern hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Searches for the first occurance of another bytes object from an iterator position onwards.
+///
+/// i: The position where to start the search.
+///
+/// needle: The bytes to search.
+/// \hlt_c
+///
+/// Returns: If the needle was found, the result struct indicates success and
+/// return the position of the first occurence. If the needle was not found,
+/// the result struct indicates failure and return the last position that
+/// guarantees no overlap with any potential match if the underlying bytes
+/// object were further extended.
+extern hlt_bytes_find_at_iter_result hlt_bytes_find_bytes_at_iter(hlt_iterator_bytes i, hlt_bytes* needle, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Matches a bytes objects against the sequence started by an interator. 
 ///
@@ -427,6 +447,13 @@ extern int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes 
 /// Raises: ValueError - If any of the positions is found to be out of range.
 extern hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Returns the offset of the byte an iterator points to relative to the
+/// beginning of the underlying bytes object.
+///
+/// b: The offset of the iterator.
+/// \hlt_c
+extern hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Converts a bytes object into a string object.
 ///
 /// Include: include-to-string-sig.txt
@@ -495,6 +522,75 @@ extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* p, hlt
 
 /// XXX
 extern hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Inserts a separator objects of arbitrary type to the end of the bytes
+/// objects. When iterating over a bytes object, reaching the object will
+/// generally be treated as if the end has been reached. However, the other
+/// \c hlt_bytes_*_object() functions allow to check for, extract, and move
+/// over the object.
+///
+/// b: The bytes object to insert the object into.
+///
+/// type: The type of the object.
+///
+/// obj: A pointer to the object.
+///
+/// \hlt_c
+extern void hlt_bytes_append_object(hlt_bytes* b, const hlt_type_info* type, void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Retrieves a separator object at a given iterator position. The object's
+/// expected type must be specified. If there's no object at the position,
+/// throws a \c ValuesError. If there is an object, but of the wrong type,
+/// throws a \c TypeError.
+///
+/// i: The position where to expect the object.
+///
+/// type: The expecyed type of the object.
+///
+/// \hlt_c
+///
+/// Returns: A pointer to the retrieved object.
+extern void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Checks if there's a separator object located at a given iterator position.
+///
+/// i: The position where to check for an object.
+///
+/// \hlt_c
+///
+/// Returns: 1 if there's an object (of any type); 0 otherwise.
+extern int8_t hlt_bytes_at_object(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Checks if there's a separator object of a specified type located at a
+/// given iterator position.
+///
+/// i: The position where to check for an object.
+///
+/// type: The type the object has to have.
+///
+/// \hlt_c
+///
+/// Returns: 1 if there's an object of the given type; if so,
+/// hlt_bytes_retrieve_object will succeed if given the same type. 0
+/// otherwise, including when there's an object but not of the type specified
+/// by \c type.
+extern int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Moves the iterator past an object. Throws \a ValueError if there's no
+/// object at the location.
+///
+/// i: The position where to move over the object.
+///
+/// Returns: The advanced iterator.
+extern hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Moves the iterator to the next embedded object. Returns the current
+/// position if that's pointing to an object already.
+///
+/// i: The start position.
+///
+/// Returns: The advanced iterator, which will be the end position if there's no further embedded object.
+extern hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Hoisted versions.
 extern void hlt_bytes_new_hoisted(__hlt_bytes_hoisted* dst, hlt_exception** excpt, hlt_execution_context* ctx);

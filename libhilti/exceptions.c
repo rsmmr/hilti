@@ -50,6 +50,7 @@ hlt_exception_type hlt_exception_no_thread_context = { "NoThreadContext", &hlt_e
 hlt_exception_type hlt_exception_conversion_error = { "ConversionError", &hlt_exception_unspecified, &hlt_type_info_hlt_string};
 hlt_exception_type hlt_exception_termination = { "Termination", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_cloning_not_supported = { "CloningNotSupported", &hlt_exception_unspecified, &hlt_type_info_hlt_string};
+hlt_exception_type hlt_exception_type_error = { "TypeError", &hlt_exception_unspecified, &hlt_type_info_hlt_string };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}; // FIXME: &hlt_type_info_hlt_int_32 };
@@ -177,13 +178,13 @@ static hlt_string __exception_render(const hlt_exception* e, hlt_execution_conte
     }
 
     if ( e->vid != HLT_VID_MAIN ) {
-        char buffer[128];
+        char buffer[1024];
         snprintf(buffer, sizeof(buffer), " in virtual thread %" PRId64, e->vid);
         s = hlt_string_concat(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
     }
 
     if ( e->location ) {
-        char buffer[128];
+        char buffer[1024];
         snprintf(buffer, sizeof(buffer), " (from %s)", e->location);
         s = hlt_string_concat(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
     }

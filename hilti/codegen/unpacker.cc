@@ -184,15 +184,6 @@ static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackR
     // Loop exit.
     cg->pushBuilder(block_exit);
 
-    // Move towards delimiter.
-    params = { delim };
-    auto l = cg->llvmCall("hlt::bytes_len", params);
-    auto len = builder::codegen::create(builder::integer::type(64), l);
-    cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
-    params = { cur, len };
-    next = cg->llvmCall("hlt::iterator_bytes_incr_by", params);
-    cg->llvmCreateStore(next, result.iter_ptr);
-
     if ( ! skip ) {
         // Get the string up to here.
         cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
@@ -205,6 +196,15 @@ static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackR
         auto init_val = cg->llvmInitVal(bytes_type);
         cg->llvmCreateStore(init_val, result.value_ptr);
     }
+
+    // Move beyond delimiter.
+    params = { delim };
+    auto l = cg->llvmCall("hlt::bytes_len", params);
+    auto len = builder::codegen::create(builder::integer::type(64), l);
+    cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
+    params = { cur, len };
+    next = cg->llvmCall("hlt::iterator_bytes_incr_by", params);
+    cg->llvmGCAssign(result.iter_ptr, next, iter_type, true);
 
     // Leave builder on stack.
 }

@@ -14,8 +14,6 @@ Table of Contents:
    builder
    c-api
    development
-   todo
-
 
 Index
 

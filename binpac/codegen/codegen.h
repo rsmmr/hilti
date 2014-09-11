@@ -29,6 +29,7 @@ namespace codegen {
     class CodeBuilder;
     class TypeBuilder;
     class ParserBuilder;
+    class Synchronizer;
 }
 
 class CodeGen : public ast::Logger
@@ -109,6 +110,18 @@ public:
     ///
     /// Returns: The coerced expression.
     shared_ptr<hilti::Expression> hiltiCoerce(shared_ptr<hilti::Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst);
+
+    /// Generates the code to synchronized streaming at a production. The
+    /// production must indicate support for synchronization via
+    /// canSynchronize(). The code throws a XXX exception when
+    /// synchronization failed.
+    ///
+    /// data: The current input bytes object.
+    ///
+    /// cur: The current input position in \a data
+    ///
+    /// Returns: The new input position.
+    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<Production> p, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur);
 
     /// Returns the default value for instances of a BinPAC type that aren't
     /// further intiailized.
@@ -309,6 +322,7 @@ private:
     unique_ptr<codegen::CodeBuilder>     _code_builder;
     unique_ptr<codegen::ParserBuilder>   _parser_builder;
     unique_ptr<codegen::TypeBuilder>     _type_builder;
+    unique_ptr<codegen::Synchronizer>    _synchronizer;
     unique_ptr<Coercer>     _coercer;
 };
 

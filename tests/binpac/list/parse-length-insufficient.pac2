@@ -3,7 +3,7 @@
 
 module Test;
 
-export type Test = unit {
+export type TestX = unit {
   # list of byte-length 5
   list_entries: list<Entry> &length=5;
   b: uint8;

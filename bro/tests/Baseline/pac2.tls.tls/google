@@ -1,0 +1,35 @@
+==Client hello
+192.168.6.157, 74.125.239.63
+Version, TLS::TLSVersion_TLSv12
+ts, 1393273890
+client random, }\xbb\xddj\xe3\x87\0*M\xed\xa3Lr^A\xd2C\xf2/\xc3\x1f\xbb\xa1\xca^U%5\xb0m
+session id, 
+cipher list, [49195, 49199, 158, 52244, 52243, 156, 49162, 49172, 57, 53, 49159, 49161, 49169, 49171, 51, 50, 5, 4, 47, 10]
+==Client hello end
+tls_extension_server_name, 192.168.6.157, 74.125.239.63, [www.google.fr]
+tls_extension_renegotiation_info, 192.168.6.157, 74.125.239.63, 
+tls_extension_elliptic_curves, 192.168.6.157, 74.125.239.63, [23, 24, 25]
+tls_extension_ec_point_formats, 192.168.6.157, 74.125.239.63
+tls_extension_sessionticket_tls, 192.168.6.157, 74.125.239.63, 
+tls_extension_next_protocol_negotiation, 192.168.6.157, 74.125.239.63
+tls_extension_application_layer_protocol_negotiation, 192.168.6.157, 74.125.239.63, [spdy/3, spdy/3.1, http/1.1]
+unknown extension, 192.168.6.157, 74.125.239.63, 30032, TLS::Extensions_channel_id_new, 
+tls_extension_status_request, 192.168.6.157, 74.125.239.63, , 
+tls_extension_signature_algorithms, 192.168.6.157, 74.125.239.63, [[hash=TLS::HashAlgorithm_sha256, signature=TLS::SignatureAlgorithm_rsa], [hash=TLS::HashAlgorithm_sha384, signature=TLS::SignatureAlgorithm_rsa], [hash=TLS::HashAlgorithm_sha1, signature=TLS::SignatureAlgorithm_rsa], [hash=TLS::HashAlgorithm_sha256, signature=TLS::SignatureAlgorithm_ecdsa], [hash=TLS::HashAlgorithm_sha384, signature=TLS::SignatureAlgorithm_ecdsa], [hash=TLS::HashAlgorithm_sha1, signature=TLS::SignatureAlgorithm_ecdsa], [hash=TLS::HashAlgorithm_sha256, signature=TLS::SignatureAlgorithm_dsa], [hash=TLS::HashAlgorithm_sha1, signature=TLS::SignatureAlgorithm_dsa]]
+tls_extension_signed_certificate_timestamp, 192.168.6.157, 74.125.239.63, 
+unknown extension, 192.168.6.157, 74.125.239.63, 35655, TLS::Extensions_padding, \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+==Server hello
+192.168.6.157, 74.125.239.63
+Version, TLS::TLSVersion_TLSv12
+ts, 1393273889
+server random, R\xfaw\xed\xdd\x86\xa768$I\x95\xebr\xb0\xe5\xd8\xfeyb\xeaLKB!W:^J
+session id, 
+cipher, 49195
+compression metod, 0
+==Server hello end
+tls_extension_renegotiation_info, 192.168.6.157, 74.125.239.63, 
+tls_extension_ec_point_formats, 192.168.6.157, 74.125.239.63
+tls_extension_sessionticket_tls, 192.168.6.157, 74.125.239.63, 
+unknown extension, 192.168.6.157, 74.125.239.63, 30032, TLS::Extensions_channel_id_new, 
+tls_extension_application_layer_protocol_negotiation, 192.168.6.157, 74.125.239.63, [spdy/3.1]
+session ticket handshake, 100800, \x97\x85\xf0_\xed\x87M\xa4_"\xe7L\xb6\xd5"\xbek$j{^Fu\xdc^Q\x9b^M\xff\xe8\x9e\xe5\xaf\xb21{N\xb4M\xcd\xe5v]^CV\x8c\xbb^L^K^\xc3\xd8\xca\0{\xed\x814\x9f^CzP(X\x89ndk\xc9^D\xeb|\x99\xd0\xaf\x8a\x95J\xfe\x97K\x80\x1e\xc1\xdc\x1b\x8b\x8c\xdd6\xeb\xb6^?\x98@\x82\x82xf\xdc\xdc^Qg\x93\x8dTI^O\xb9^E\xc9\xa9\xdcqaR\x8d\x1c\xd8G\xd7\xbc\xc6\xf1A\xe7\xbbu\xca^O\x98\xc8T\xf5\xbfyE\xd8\xafu\xe1\xed\xbc^N\xc2\x82^In\xa6)\x84\xd9\x81!\xa7\x9c^R\x9e^Cp'\x81\xd2\x1c\xc8X;^N\x96p$\xa0>xkuH>^D^P\x1e^U\xa6^D\xbcP\x82\xd3GK6\xc4\x1f^Z\xf2w^Y\xed\xd07^V\xb23^KJ\xea#\xc0:d1^C-\xd0

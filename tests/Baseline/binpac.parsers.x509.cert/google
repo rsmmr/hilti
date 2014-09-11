@@ -1,0 +1,14 @@
+Name oid:  2.5.4.6  value:  US
+Name oid:  2.5.4.10  value:  Google Inc
+Name oid:  2.5.4.3  value:  Google Internet Authority G2
+Name oid:  2.5.4.6  value:  US
+Name oid:  2.5.4.8  value:  California
+Name oid:  2.5.4.7  value:  Mountain View
+Name oid:  2.5.4.10  value:  Google Inc
+Name oid:  2.5.4.3  value:  *.google.com
+Version:  3
+Serial number:  1263020097705851079
+Valid from:  131120144311Z
+Valid till:  140320000000Z
+Signature algorithm:  1.2.840.113549.1.1.5
+Public key algorithm:  1.2.840.113549.1.1.1

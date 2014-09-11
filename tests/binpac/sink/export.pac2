@@ -1,0 +1,47 @@
+#
+# @TEST-EXEC:  echo 1234567890abcde | pac-driver-test %INPUT sub.pac2 -- -p Mini::Main >output
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: Sinks cannot connect across modules at the moment.
+
+module Mini;
+
+import Sub;
+
+export type Main = unit {
+    a: bytes &length=2;
+
+    b: bytes &length=5 {
+        self.data.write(self.b);
+    }
+
+    c: bytes &length=5{
+        self.data.write(self.c);
+    }
+
+    d: bytes &length=3;
+
+    var data : sink;
+
+    on %init {
+        self.data.connect(new Test::Sub());
+    }
+
+    on %done {
+        print "Main", self;
+    }
+};
+
+@TEST-START-FILE sub.pac2
+
+module Test;
+
+export type Sub = unit() {
+    s1: bytes &length=10;
+
+    on %done {
+        print "Sub ", self;
+    }
+};
+
+@TEST-END-FILE

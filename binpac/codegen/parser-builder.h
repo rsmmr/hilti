@@ -145,6 +145,9 @@ protected:
 
     void visit(expression::Ctor* c) override;
     void visit(expression::Constant* c) override;
+    void visit(expression::Type* c) override;
+
+    void visit(Production* p) override;
 
     void visit(production::Boolean* b) override;
     void visit(production::ChildGrammar* c) override;
@@ -168,6 +171,7 @@ protected:
     void visit(type::Bytes* b) override;
     void visit(type::Double* d) override;
     void visit(type::Enum* e) override;
+    void visit(type::EmbeddedObject* o) override;
     void visit(type::Integer* i) override;
     void visit(type::Interval* i) override;
     void visit(type::List* l) override;
@@ -369,7 +373,64 @@ private:
     void _hiltiFilterInput(bool resume);
 
     // Helper for bytes parsing, implements &chunked.
-    void _hiltiCheckChunk(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> length_op);
+    void _hiltiCheckChunk(shared_ptr<type::unit::item::Field> field);
+
+    // Synchronize parsing with a given production.
+    void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<Production> p);
+
+    // Synchronize parsing by moving ahead a given number of bytes.
+    void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> i);
+
+    // When parsing a production that can resynchronize on errors, insert
+    // code to prepare for that.
+    void _hiltiPrepareSynchronize(Production* sync_check, shared_ptr<Production> sync_on, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> cont);
+
+    // When parsing a production that can resynchronize on errors, insert
+    // code to finalize that.
+    void _hiltiFinishSynchronize(Production* sync_check, shared_ptr<Production> sync_on);
+
+    // Returns an iterator reflecting the end of the data available to the
+    // parsing currently.
+    shared_ptr<hilti::Expression> _hiltiEod();
+
+    enum EodDataType {
+        // Semantics corresponding to operator::End: End of current input
+        // reached, independent of whether input is frozen and whether
+        // there's a object following.
+        EodStandard,
+        // Like EodStandard but only if input is also frozen.
+        EodIfFrozen
+    };
+
+    // Returns a HILTI boolean indicating if the current input stream has been frozen.
+    shared_ptr<hilti::Expression> _hiltiIsFrozen();
+
+    // Returns a HILTI boolean indicating if the current input position
+    // reflects the end of the input data. The type indicates further
+    // constraints to test for.
+    shared_ptr<hilti::Expression> _hiltiAtEod(EodDataType type = EodStandard);
+
+    // Returns a HILTI boolean indicating if a given input position reflects
+    // the end of the input data. The type indicates further constraints to
+    // test for.
+    shared_ptr<hilti::Expression> _hiltiAtEod(shared_ptr<hilti::Expression> pos, EodDataType type = EodStandard);
+
+    // Advances the current input position to the given iterator. If the
+    // distance between current and new position is known, it can be passed
+    // in as a hint in the form of an integer expression; which will make the
+    // generated code more efficient. Note that embedded objects don't count.
+    void _hiltiAdvanceTo(shared_ptr<hilti::Expression> ncur, shared_ptr<hilti::Expression> distance = nullptr);
+
+    // Advances the current input position by the given number of bytes.
+    void _hiltiAdvanceBy(shared_ptr<hilti::Expression> n);
+
+    typedef shared_ptr<hilti::Expression> InputPosition;
+
+    // Saves the current input position so that it can be later restored.
+    InputPosition _hiltiSavePosition();
+
+    // Restores a previoysly saved input position.
+    void _hiltiRestorePosition(InputPosition pos);
 
     std::list<shared_ptr<ParserState>> _states;
     shared_ptr<hilti::Expression> _last_parsed_value;

@@ -58,3 +58,8 @@ import "HILTI-C" bytes fmt(format: bytes, args: tuple<*>)  &hilti_id=BinPAC::fmt
 # Formatting function sprintf-style.
 import "HILTI-C" string fmt(format: string, args: tuple<*>) &hilti_id=BinPAC::fmt_string;
 # %end-fmt
+
+# %begin-mktime
+# mktime(3) equivalent.
+import "HILTI-C" time mktime(y: uint<64>, m: uint<64>, d: uint<64>, H: uint<64>, M: uint<64>, S: uint<64>) &hilti_id=BinPAC::mktime;
+# %end-mktime

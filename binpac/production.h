@@ -60,6 +60,22 @@ public:
     /// instructions.
     virtual bool atomic() const = 0;
 
+    /// Returns true if this production is flagged by the user as ok to be
+    /// parsed in synchronization mode (i.e., after a parser error, or in DPD
+    /// mode, it knows how to find a subsequent point in the input stream
+    /// where it can continue normally). This is independent of whether the
+    /// production actually supports that.
+    bool maySynchronize();
+
+    /// Returns true if this production in principle supports being parsed in
+    /// synchronization mode (i.e., after a parser error, or in DPD mode, it
+    /// knows how to find a subsequent point in the input stream where it can
+    /// continue normally). This is independent of whether the user has
+    /// requested to activate that support.
+    ///
+    /// The default implemementation returns false.
+    virtual bool supportsSynchronize();
+
     /// If this production corresponds to a container's item field, sets the
     /// container.
     void setContainer(shared_ptr<type::unit::item::field::Container> c);
@@ -227,6 +243,7 @@ public:
     /// Returns a set of regular expressions corresponding to the literal.
     virtual pattern_list patterns() const = 0;
 
+    bool supportsSynchronize() override;
     string renderTerminal() const override;
 
     ACCEPT_VISITOR(Terminal);
@@ -284,6 +301,34 @@ private:
     shared_ptr<binpac::Ctor> _ctor;
 };
 
+/// A literal represented by a type. Note that normally types aren't
+/// literals; they can only if the parsing can for tell that a instance of
+/// the type is coming up, i.e., supports look-ahead (as, e.g., in the case
+/// of embedded objects).
+class TypeLiteral : public Literal
+{
+public:
+    /// Constructor.
+    ///
+    /// type: The type.
+    ///
+    /// l: Associated location.
+    TypeLiteral(const string& symbol, shared_ptr<binpac::Type> type, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+
+    /// Returns the type.
+    shared_ptr<binpac::Type> type() const;
+
+    shared_ptr<Expression> literal() const override;
+    pattern_list patterns() const override;
+
+    ACCEPT_VISITOR(Literal);
+
+protected:
+    string renderProduction() const override;
+
+private:
+    shared_ptr<binpac::Type> _type;
+};
 
 /// A variable. A variable is a terminal that will be parsed from the input
 /// stream according to its type, yet is not recognizable as such in advance
@@ -361,6 +406,9 @@ public:
     /// l: Associated location.
     ChildGrammar(const string& symbol, shared_ptr<Production> child, shared_ptr<type::Unit> type, const Location& l = Location::None);
 
+    /// Returns the child production.
+    shared_ptr<Production> child() const;
+
     /// Returns the child type.
     shared_ptr<type::Unit> childType() const;
 
@@ -382,6 +430,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool supportsSynchronize() override;
 
 private:
     node_ptr<Production> _child;
@@ -411,6 +460,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool supportsSynchronize() override;
 
 private:
     node_ptr<Production> _child;
@@ -435,7 +485,7 @@ public:
     Sequence(const string& symbol, const production_list& seq, shared_ptr<Type> type = nullptr, const Location& l = Location::None);
 
     /// Returns the production sequence.
-    const production_list& sequence() const;
+    production_list sequence() const;
 
     /// Adds a production to the sequence.
     ///
@@ -447,9 +497,10 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool supportsSynchronize() override;
 
 private:
-    production_list _seq;
+    std::list<node_ptr<Production>> _seq;
 };
 
 /// A pair of alternatives between which we can decide with one token of
@@ -506,6 +557,7 @@ protected:
 
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool supportsSynchronize() override;
 
 private:
     std::pair<look_aheads, look_aheads> _lahs;
@@ -569,6 +621,9 @@ public:
     ///
     /// l: Associated location.
     Counter(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l = Location::None);
+
+    /// Destructor.
+    virtual ~Counter();
 
     /// Returns the counter expression.
     shared_ptr<binpac::Expression> expression() const;
@@ -648,6 +703,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool supportsSynchronize() override;
 
 private:
     shared_ptr<Expression> _expr;
@@ -681,6 +737,7 @@ public:
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
+    bool supportsSynchronize() override;
 
 private:
     node_ptr<Production> _body;

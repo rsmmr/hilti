@@ -759,10 +759,9 @@ std::list<trait::Parseable::ParseAttribute> Bytes::parseAttributes() const
     auto one = std::make_shared<expression::Constant>(std::make_shared<constant::Integer>(1, 64, false));
 
     return {
-        { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
         { "chunked", std::make_shared<type::Integer>(64, false), one, false },
         { "until", std::make_shared<type::Bytes>(), nullptr, false },
-        { "eod", nullptr, nullptr, false }
+        { "eod", nullptr, nullptr, false },
     };
 }
 
@@ -816,7 +815,6 @@ shared_ptr<binpac::Type> List::elementType()
 std::list<trait::Parseable::ParseAttribute> List::parseAttributes() const
 {
     return {
-        { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
         { "count", std::make_shared<type::Integer>(64, false), nullptr, false },
         { "until", std::make_shared<type::Bool>(), nullptr, false },
         { "until_including", std::make_shared<type::Bool>(), nullptr, false },
@@ -1106,6 +1104,27 @@ shared_ptr<Type> unit::item::Field::fieldType()
 
     return ftype;
 }
+
+shared_ptr<unit::item::Field> unit::item::Field::createByType(shared_ptr<Type> type,
+                                                              shared_ptr<ID> id,
+                                                              shared_ptr<Expression> condition,
+                                                              const hook_list& hooks,
+                                                              const attribute_list& attributes,
+                                                              const expression_list& parameters,
+                                                              const expression_list& sinks,
+                                                              const Location& location)
+{
+    if ( auto unit = ast::tryCast<type::Unit>(type) )
+        return std::make_shared<type::unit::item::field::Unit>(id, unit, condition, hooks, attributes, parameters, sinks, location);
+
+    if ( auto list = ast::tryCast<type::List>(type) ) {
+        auto field = createByType(list->argType(), nullptr, nullptr, hook_list(), attribute_list(), expression_list(), expression_list(), location);
+        return std::make_shared<type::unit::item::field::container::List>(id, field, condition, hooks, attributes, sinks, location);
+    }
+
+    return std::make_shared<type::unit::item::field::AtomicType>(id, type, condition, hooks, attributes, sinks, location);
+}
+
 
 bool unit::item::Field::transient() const
 {
@@ -1808,5 +1827,15 @@ Sink::Sink(const Location& l) : PacType(l)
 
 
 Sink::~Sink()
+{
+}
+
+EmbeddedObject::EmbeddedObject(shared_ptr<Type> etype, const Location& l)
+    : TypedPacType(etype, l)
+{
+}
+
+EmbeddedObject::EmbeddedObject(const Location& l)
+    : TypedPacType(l)
 {
 }

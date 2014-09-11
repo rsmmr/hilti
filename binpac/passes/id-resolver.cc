@@ -103,6 +103,21 @@ void IDResolver::visit(expression::ID* i)
     auto vals = scope->lookup(id->id(), true);
 
     if ( ! vals.size() ) {
+        // Look it up in the current module if that's the namespace we are
+        // interested in.
+        auto module = current<Module>();
+        assert(module);
+
+        auto path = id->id()->path();
+
+        if ( id->id()->isScoped() && path.front() == module->id()->name() ) {
+            path.pop_front();
+            auto x = std::make_shared<ID>(path);
+	    vals = scope->lookup(x, true);
+        }
+    }
+
+    if ( ! vals.size() ) {
         // We we're inside an externally defined hook, make sure to also
         // search the global scope of the module where it's defined.
         auto imod = i->firstParent<Module>();
@@ -333,15 +348,8 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
     if ( constant )
         nfield = std::make_shared<type::unit::item::field::Constant>(name, constant->constant(), condition, hooks, attributes, sinks, location);
 
-    if ( type ) {
-        auto tval = type->typeValue();
-        auto unit = ast::tryCast<type::Unit>(tval);
-
-        if ( unit )
-            nfield = std::make_shared<type::unit::item::field::Unit>(name, unit, condition, hooks, attributes, params, sinks, location);
-        else
-            nfield = std::make_shared<type::unit::item::field::AtomicType>(name, tval, condition, hooks, attributes, sinks, location);
-    }
+    if ( type )
+        nfield = type::unit::item::Field::createByType(type->typeValue(), name, condition, hooks, attributes, params, sinks, location);
 
     nfield->scope()->setParent(f->scope()->parent());
 

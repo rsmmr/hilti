@@ -1,16 +1,11 @@
 
 >>> (Unresolved operator cast<string >(a ))
-wrong-cast.pac2:10-10: error, no matching operator found for types
+wrong-cast.pac2:10-10: error, operator use is ambigious
 got operands: (int<32>, (type type))
 candidate operators:
     cast<(type type)>(double)
-    cast<(type type)>(enum { )
     cast<(type type)>(int<*>)
     cast<(type type)>(int<*>)
     cast<(type type)>(int<*>)
-    cast<(type type)>(interval)
-    cast<(type type)>(interval)
-    cast<(type type)>(time)
-    cast<(type type)>(time)
  [pass::binpac::OperatorResolver]
 wrong-cast.pac2: Aborting due to input error.

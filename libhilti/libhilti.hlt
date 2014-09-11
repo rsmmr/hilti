@@ -127,12 +127,13 @@ declare "C-HILTI" ref<bytes> bytes_concat(ref<bytes> b1, ref<bytes> b2)
 declare "C-HILTI" ref<bytes> bytes_sub(iterator<bytes> start, iterator<bytes> last)
 declare "C-HILTI" bool bytes_contains_bytes(ref<bytes> b, ref<bytes> other)
 declare "C-HILTI" iterator<bytes> bytes_find_bytes(ref<bytes> b, ref<bytes> other)
+declare "C-HILTI" tuple<bool, iterator<bytes>> bytes_find_bytes_at_iter(iterator<bytes> i, ref<bytes> needle)
+
 declare "C-HILTI" iterator<bytes> bytes_offset(ref<bytes> b, int<64> offset)
 declare "C-HILTI" iterator<bytes> bytes_begin(ref<bytes> b)
 declare "C-HILTI" iterator<bytes> bytes_end(ref<bytes> b)
 declare "C-HILTI" int<8> bytes_cmp(ref<bytes> b1, ref<bytes> b2)
 declare "C-HILTI" bool bytes_match_at(iterator<bytes> pos, ref<bytes> b)
-declare "C-HILTI" ref<bytes> bytes_copy(ref<bytes> b)
 declare "C-HILTI" void bytes_trim(ref<bytes> b, iterator<bytes> pos)
 declare "C-HILTI" int<64> bytes_to_int(ref<bytes> b, int<64> base)
 declare "C-HILTI" int<64> bytes_to_int_binary(ref<bytes> b, Hilti::ByteOrder order)
@@ -145,6 +146,13 @@ declare "C-HILTI" bool bytes_starts_with(ref<bytes> b, ref<bytes> pat)
 declare "C-HILTI" ref<bytes> bytes_join(ref<bytes> b, ref<list<*>> l)
 declare "C-HILTI" void bytes_freeze(ref<bytes> b, bool freeze)
 declare "C-HILTI" bool bytes_is_frozen(ref<bytes> b)
+
+declare "C-HILTI" void bytes_append_object(ref<bytes> b, any o)
+declare "C-HILTI" any bytes_retrieve_object(iterator<bytes> b, type t)
+declare "C-HILTI" bool bytes_at_object(iterator<bytes> b)
+declare "C-HILTI" bool bytes_at_object_of_type(iterator<bytes> b, type t)
+declare "C-HILTI" iterator<bytes> bytes_skip_object(iterator<bytes> b)
+declare "C-HILTI" iterator<bytes> bytes_next_object(iterator<bytes> b)
 
 declare "C-HILTI" void bytes_new_hoisted(ref<bytes> dst) &noexception
 declare "C-HILTI" void bytes_concat_hoisted(ref<bytes> dst, ref<bytes> b1, ref<bytes> b2)
@@ -163,6 +171,7 @@ declare "C-HILTI" iterator<bytes> iterator_bytes_incr(iterator<bytes> pos)
 declare "C-HILTI" iterator<bytes> iterator_bytes_incr_by(iterator<bytes> pos, int<64> n)
 declare "C-HILTI" bool iterator_bytes_eq(iterator<bytes> pos1, iterator<bytes> pos2)
 declare "C-HILTI" int<64> iterator_bytes_diff(iterator<bytes> pos1, iterator<bytes> pos2)
+declare "C-HILTI" int<64> iterator_bytes_index(iterator<bytes> i)
 
 ###
 

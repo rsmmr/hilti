@@ -127,7 +127,12 @@ void BlockBuilder::addDebugMsg(const std::string& stream, const std::string& msg
                             shared_ptr<hilti::Expression> arg2,
                             shared_ptr<hilti::Expression> arg3,
                             shared_ptr<hilti::Expression> arg4,
-                            shared_ptr<hilti::Expression> arg5
+                            shared_ptr<hilti::Expression> arg5,
+                            shared_ptr<hilti::Expression> arg6,
+                            shared_ptr<hilti::Expression> arg7,
+                            shared_ptr<hilti::Expression> arg8,
+                            shared_ptr<hilti::Expression> arg9,
+                            shared_ptr<hilti::Expression> arg10
                            )
 {
     hilti::builder::tuple::element_list elems;
@@ -146,6 +151,21 @@ void BlockBuilder::addDebugMsg(const std::string& stream, const std::string& msg
 
     if ( arg5 )
         elems.push_back(arg5);
+
+    if ( arg6 )
+        elems.push_back(arg6);
+
+    if ( arg7 )
+        elems.push_back(arg7);
+
+    if ( arg8 )
+        elems.push_back(arg8);
+
+    if ( arg9 )
+        elems.push_back(arg9);
+
+    if ( arg10 )
+        elems.push_back(arg10);
 
     auto t = hilti::builder::tuple::create(elems);
 
@@ -218,7 +238,7 @@ void BlockBuilder::endTryCatch()
 
     auto t = _mbuilder->_tries.back();
     auto stmt = builder::block::try_(try_->block(), t->catches);
-    //_mbuilder->_tries.pop_back();
+    _mbuilder->_tries.pop_back();
 
     _mbuilder->builder()->statement()->addStatement(stmt);
     _mbuilder->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
@@ -227,10 +247,12 @@ void BlockBuilder::endTryCatch()
 
 void BlockBuilder::pushCatch(shared_ptr<Type> type, shared_ptr<ID> id)
 {
+    static int cnt = 0;
+
     assert(_mbuilder->_tries.size());
 
     _mbuilder->pushBody(true);
-    _mbuilder->pushBuilder("catch");
+    _mbuilder->pushBuilder(util::fmt("__pcatch_%d", ++cnt));
 
     auto body = _mbuilder->_currentBody()->stmt;
     auto catch_ = builder::block::catch_(type, id, body, Location::None);
@@ -246,10 +268,12 @@ void BlockBuilder::popCatch()
 
 void BlockBuilder::pushCatchAll()
 {
+    static int cnt = 0;
+
     assert(_mbuilder->_tries.size());
 
     _mbuilder->pushBody(true);
-    _mbuilder->pushBuilder("catch-all");
+    _mbuilder->pushBuilder(util::fmt("__pcatch_all_%d", ++cnt));
 
     auto body = _mbuilder->_currentBody()->stmt;
     auto catch_ = builder::block::catchAll(body, Location::None);

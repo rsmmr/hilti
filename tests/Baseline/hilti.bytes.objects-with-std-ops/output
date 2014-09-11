@@ -1,0 +1,93 @@
+--- 1
+abc<obj:string>def
+ABC<obj:42>DEF<obj:43>
+|    concat -> abcABC
+|    clone+append -> abc<obj:string>defABC
+|    contains -> False
+|    startswith -> False
+|    find+sub -> 
+|    cmp -> -1
+|    split -> [0: abc<obj:string>def]
+|    split1 -> (abc<obj:string>def,)
+--- 2
+abc<obj:string>def
+|    lower -> abc
+|    upper -> ABC
+|    strip -> abc
+|    length -> 3
+|    to_int -> value error
+|    is_frozen -> False
+|    empty -> False
+--- 3
+<obj:42>DEF
+ABC<obj:42>DEF<obj:43>
+|    concat -> ABC
+|    clone+append -> <obj:42>DEFABC
+|    contains -> False
+|    startswith -> False
+|    find+sub -> 
+|    cmp -> 1
+|    split -> [0: <obj:42>DEF]
+|    split1 -> (<obj:42>DEF,)
+--- 4
+<obj:42>DEF
+|    lower -> 
+|    upper -> 
+|    strip -> 
+|    length -> 0
+|    to_int -> 0
+|    is_frozen -> False
+|    empty -> True
+--- 5
+DEF<obj:42>
+ABC<obj:42>DEF<obj:43>
+|    concat -> DEFABC
+|    clone+append -> DEF<obj:42>ABC
+|    contains -> False
+|    startswith -> False
+|    find+sub -> 
+|    cmp -> -1
+|    split -> [0: DEF<obj:42>]
+|    split1 -> (DEF<obj:42>,)
+--- 6
+DEF<obj:42>
+|    lower -> def
+|    upper -> DEF
+|    strip -> DEF
+|    length -> 3
+|    to_int -> value error
+|    is_frozen -> False
+|    empty -> False
+--- 7
+abcd<obj:string>def
+b
+|    concat -> abcdb
+|    clone+append -> abcd<obj:string>defb
+|    contains -> True
+|    startswith -> False
+|    find+sub -> bcd
+|    cmp -> 1
+|    split -> [0: a, 1: cd]
+|    split1 -> (a,cd)
+--- 8
+abc<obj:string>def
+e
+|    concat -> abce
+|    clone+append -> abc<obj:string>defe
+|    contains -> False
+|    startswith -> False
+|    find+sub -> 
+|    cmp -> 1
+|    split -> [0: abc<obj:string>def]
+|    split1 -> (abc<obj:string>def,)
+--- last
+abc<obj:string>def
+|    diff begin-to-end -> 3
+|    clone+offset(2)+trim -> c<obj:string>def
+|    clone+offset(4)+trim -> <obj:string>def
+|    clone+incr_by(2)+trim -> c<obj:string>def
+|    clone+incr_by(4)+trim -> <obj:string>def
+--- last2
+[1, 2, 3]
+abcd<obj:string>def
+|    join -> 1abcd2abcd3

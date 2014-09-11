@@ -1,0 +1,28 @@
+#
+# @TEST-EXEC: echo 01234567890abcdef | pac-driver-test %INPUT mini.pac2 >output
+# @TEST-EXEC: btest-diff output
+#
+# @TEST-KNOWN-FAILURE: globals and imports do not like each other
+
+module test;
+import mini;
+
+export type Test = unit {
+	a: bytes &length = 1;
+	b: Mini::Foo;
+
+	on %done { print self; }
+};
+
+### @TEST-START-FILE mini.pac2
+
+module Mini;
+
+global mini_here_i_am = True;
+
+type Foo = unit {
+	a: bytes &length=4;
+	b: bytes &length=6 if ( mini_here_i_am );
+};
+
+### @TEST-END-FILE

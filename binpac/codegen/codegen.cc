@@ -8,6 +8,7 @@
 #include "code-builder.h"
 #include "parser-builder.h"
 #include "type-builder.h"
+#include "synchronizer.h"
 #include "../context.h"
 #include "../attribute.h"
 
@@ -46,7 +47,10 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
     _code_builder = unique_ptr<codegen::CodeBuilder>(new codegen::CodeBuilder(this));
     _parser_builder = unique_ptr<codegen::ParserBuilder>(new codegen::ParserBuilder(this));
     _type_builder = unique_ptr<codegen::TypeBuilder>(new codegen::TypeBuilder(this));
+    _synchronizer = unique_ptr<codegen::Synchronizer>(new codegen::Synchronizer(this));
     _coercer = unique_ptr<Coercer>(new Coercer());
+
+    _parser_builder->forwardLoggingTo(this);
 
     try {
         hilti::path_list paths = module->context()->options().libdirs_pac2;
@@ -97,6 +101,9 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
         _mbuilder->module()->compilerContext()->print(_mbuilder->module(), std::cerr);
 #endif
         _module = nullptr;
+
+        if ( errors() )
+            return nullptr;
 
         auto m = _mbuilder->finalize();
 
@@ -367,8 +374,11 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCall(shared_ptr<expression::Function
 
     hilti::builder::tuple::element_list hilti_arg_list;
 
+    auto params = ftype->parameters();
+    auto p = params.begin();
+
     for ( auto a : args )
-        hilti_arg_list.push_back(hiltiExpression(a));
+        hilti_arg_list.push_back(hiltiExpression(a, (*p++)->type()));
 
     if ( ftype->callingConvention() == type::function::BINPAC_HILTI_C ||
          ftype->callingConvention() == type::function::HILTI_C ||
@@ -612,4 +622,9 @@ shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(shared_ptr<h
     builder()->addInstruction(result, hilti::instruction::integer::Mask, value, lower, upper);
 
     return result;
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiSynchronize(shared_ptr<Production> p, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur)
+{
+    return _synchronizer->hiltiSynchronize(p, data, cur);
 }

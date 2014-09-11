@@ -28,7 +28,7 @@ void CodeBuilder::hiltiStatement(shared_ptr<Statement> stmt)
         cg()->builder()->addComment(util::fmt("Statement: %s", stmt->render()));
 
     bool success = processOne(stmt);
-    assert(success);
+    assert(success || errors());
 }
 
 shared_ptr<hilti::Expression> CodeBuilder::hiltiExpression(shared_ptr<Expression> expr, shared_ptr<Type> coerce_to)
@@ -38,7 +38,7 @@ shared_ptr<hilti::Expression> CodeBuilder::hiltiExpression(shared_ptr<Expression
 
     shared_ptr<hilti::Node> result;
     bool success = processOne(expr, &result, coerce_to);
-    assert(success);
+    assert(success || errors());
 
     assert(result);
     return ast::checkedCast<hilti::Expression>(result);
@@ -466,7 +466,13 @@ void CodeBuilder::visit(variable::Local* v)
 
 void CodeBuilder::visit(variable::Global* v)
 {
-    auto result = hilti::builder::id::create(cg()->hiltiID(v->id()));
+    auto result = hilti::builder::id::create(cg()->hiltiID(v->id(), true));
+
+    auto hid = result->id();
+
+    if ( hid->isScoped() && ! cg()->moduleBuilder()->declared(hid) )
+        moduleBuilder()->declareGlobal(hid, cg()->hiltiType(v->type()));
+
     setResult(result);
 }
 

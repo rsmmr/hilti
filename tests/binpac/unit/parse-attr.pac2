@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf 1234567890 | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf 1234567890 | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 
 module Mini;
@@ -7,7 +7,8 @@ module Mini;
 export type test = unit {
     a: bytes &length=5;
     B: bytes &length=5 &parse(b"ABCDE");
-    c: bytes &length=5;
+    C: bytes &parse(b"FGHI");
+    d: bytes &length=5;
 
     on %done {
         print self;

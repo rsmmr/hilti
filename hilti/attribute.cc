@@ -31,6 +31,7 @@ static const AttributeDef Attributes[] = {
     { attribute::CANREMOVE,     attribute::STRUCT_FIELD, attribute::NONE,       "canremove",     "<insert doc>" },
     { attribute::DEFAULT,       attribute::STRUCT_FIELD, attribute::EXPRESSION, "default",       "<insert doc>" },
     { attribute::DEFAULT,       attribute::MAP ,         attribute::EXPRESSION, "default",       "<insert doc>" },
+    { attribute::FIRSTMATCH,    attribute::REGEXP,       attribute::NONE,       "first_match",   "<insert doc>" },
     { attribute::GROUP,         attribute::FUNCTION,     attribute::INTEGER,    "group",         "<insert doc>" },
     { attribute::HOIST,         attribute::VARIABLE,     attribute::NONE,       "hoist",         "<insert doc>" },
     { attribute::LIBHILTI,      attribute::EXCEPTION,    attribute::STRING,     "libhilti",      "<insert doc>" },

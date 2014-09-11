@@ -651,6 +651,7 @@ hlt_string hlt_string_join(hlt_string sep, hlt_list* l, hlt_exception** excpt, h
 
         void* obj = hlt_iterator_list_deref(i, excpt, ctx);
         hlt_string so = hlt_object_to_string(ti, obj, 0, excpt, ctx);
+
         s = hlt_string_concat(s, so, excpt, ctx);
 
         i = hlt_iterator_list_incr(i, excpt, ctx);

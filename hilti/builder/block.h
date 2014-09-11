@@ -199,7 +199,12 @@ public:
                  shared_ptr<hilti::Expression> arg2 = nullptr,
                  shared_ptr<hilti::Expression> arg3 = nullptr,
                  shared_ptr<hilti::Expression> arg4 = nullptr,
-                 shared_ptr<hilti::Expression> arg5 = nullptr
+                 shared_ptr<hilti::Expression> arg5 = nullptr,
+                 shared_ptr<hilti::Expression> arg6 = nullptr,
+                 shared_ptr<hilti::Expression> arg7 = nullptr,
+                 shared_ptr<hilti::Expression> arg8 = nullptr,
+                 shared_ptr<hilti::Expression> arg9 = nullptr,
+                 shared_ptr<hilti::Expression> arg10 = nullptr
                  );
 
    /// Helper to increase the debugging indent.

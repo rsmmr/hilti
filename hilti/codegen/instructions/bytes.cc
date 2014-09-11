@@ -163,6 +163,17 @@ void StatementBuilder::visit(statement::instruction::bytes::Find* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::FindAtIter* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+
+    auto result = cg()->llvmCall("hlt::bytes_find_bytes_at_iter", args);
+
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::bytes::Offset* i)
 {
     CodeGen::expr_list args;
@@ -313,6 +324,62 @@ void StatementBuilder::visit(statement::instruction::bytes::Join* i)
         CodeGen::expr_list args = { i->target(), i->op1(), i->op2() };
         cg()->llvmCall("hlt::bytes_join_hoisted", args);
     }
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::AppendObject* i)
+{
+    CodeGen::expr_list args = { i->op1(), i->op2() };
+    cg()->llvmCall("hlt::bytes_append_object", args);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::RetrieveObject* i)
+{
+    auto t = i->target()->type();
+
+    CodeGen::expr_list args = { i->op1(), builder::type::create(t) };
+    auto voidp = cg()->llvmCall("hlt::bytes_retrieve_object", args);
+    auto casted = cg()->builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(t)));
+    cg()->llvmStore(i, cg()->builder()->CreateLoad(casted));
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::AtObject* i)
+{
+    if ( ! i->op2() ) {
+        CodeGen::expr_list args = { i->op1() };
+        auto result = cg()->llvmCall("hlt::bytes_at_object", args);
+        cg()->llvmStore(i, result);
+    }
+
+    else {
+        CodeGen::expr_list args = { i->op1(), i->op2() };
+        auto result = cg()->llvmCall("hlt::bytes_at_object_of_type", args);
+        cg()->llvmStore(i, result);
+    }
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::SkipObject* i)
+{
+    CodeGen::expr_list args = { i->op1() };
+    auto result = cg()->llvmCall("hlt::bytes_skip_object", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::NextObject* i)
+{
+    CodeGen::expr_list args = { i->op1() };
+    auto result = cg()->llvmCall("hlt::bytes_next_object", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Index* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+
+    auto result = cg()->llvmCall("hlt::iterator_bytes_index", args);
+
+    cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::iterBytes::Begin* i)

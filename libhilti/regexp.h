@@ -17,6 +17,7 @@ typedef struct __hlt_match_token_state hlt_match_token_state;
 /// Pattern compilation flags.
 typedef int64_t hlt_regexp_flags;
 static const int HLT_REGEXP_NOSUB = 1;  /// Compile without support for capturing sub-expressions.
+static const int HLT_REGEXP_FIRST_MATCH = 2;  /// Report first match when matching incrementally.
 
 /// Type for range within a ~~Bytes object.
 typedef struct {
