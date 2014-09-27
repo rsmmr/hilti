@@ -14,7 +14,6 @@ extern "C" {
 #include "Plugin.h"
 #include "Manager.h"
 #include "LocalReporter.h"
-#include "profile.h"
 
 using namespace bro::hilti;
 using namespace binpac;
