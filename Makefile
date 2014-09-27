@@ -2,6 +2,8 @@
 # This is just a wrapper around the CMake setup.
 #
 
+DOCKER_IMAGE="rsmmr/hilti"
+
 all: release
 
 debug:
@@ -18,3 +20,9 @@ clean:
 
 tags:
 	update-tags
+
+docker-build:
+	docker build -t ${DOCKER_IMAGE} .
+
+docker-run:
+	docker run -i -t ${DOCKER_IMAGE} /bin/bash

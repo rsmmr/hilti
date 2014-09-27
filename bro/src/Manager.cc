@@ -24,10 +24,6 @@ extern "C" {
 #include <analyzer/Analyzer.h>
 #include <analyzer/Manager.h>
 
-#ifdef BRO_PLUGIN_HAVE_PROFILING
-#include "profile.h"
-#endif
-
 #undef List
 
 // HILTI/BinPAC includes.
