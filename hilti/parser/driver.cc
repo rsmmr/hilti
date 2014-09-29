@@ -26,6 +26,9 @@ shared_ptr<hilti::Module> Driver::parse(shared_ptr<CompilerContext> ctx, std::is
     _parser->set_debug_level(_dbg_parser);
     _parser->parse();
 
+    if ( ! _mbuilder )
+        return 0;
+
     auto module = _mbuilder->module();
     auto merrors = _mbuilder->errors();
 
