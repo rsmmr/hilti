@@ -1,4 +1,8 @@
 
+0.3-12 | 2014-09-29 14:59:47 -0700
+
+  * Doing parallel build in Dockerfile.
+
 0.3-11 | 2014-09-27 20:57:00 -0700
 
   * Adding Dockerfile. This builds an image with HILTI compiled in

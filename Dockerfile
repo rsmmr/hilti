@@ -26,7 +26,7 @@ RUN cd /opt/bro && ./configure && make -j 5 && make install
 
 # Setup HILTI.
 ADD . /opt/hilti
-RUN cd /opt/hilti && make BRO_DIST=/opt/bro
+RUN cd /opt/hilti && make -j 5 BRO_DIST=/opt/bro
 
 
 
