@@ -1,6 +1,6 @@
 #
-# @TEST-EXEC:  printf "\xa1" | pac-driver-test %INPUT >output 2>&1
-# @TEST-EXEC:  printf "\xb5" | pac-driver-test %INPUT >>output 2>&1
+# @TEST-EXEC:  printf "\241" | pac-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  printf "\265" | pac-driver-test %INPUT >>output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
 

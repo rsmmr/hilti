@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf '\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\x01\x02\x03\x04\x05\xb4\x92\x04\x00\xb4\x92\x04\x00' | pac-driver-test %INPUT >output
+# @TEST-EXEC:  printf '\001\002\003\004\005\001\002\003\004\005\001\002\003\004\005\001\002\003\004\005\264\222\004\000\264\222\004\000' | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 
 module Mini;

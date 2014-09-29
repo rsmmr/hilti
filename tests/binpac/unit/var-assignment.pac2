@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf '\x01\x00\x00\x03\x04' | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf '\001\000\000\003\004' | pac-driver-test %INPUT >output    
 # @TEST-EXEC:  btest-diff output
 #
 # @TEST-KNOWN-FAILURE: assignments of members to vars not supported.

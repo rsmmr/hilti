@@ -1,6 +1,6 @@
 #
-# @TEST-EXEC:  printf "A\x0a\x0bA\x0c\x0dAAA\x05" | pac-driver-test %INPUT >output    
-# @TEST-EXEC:  printf "AAA\x05" | pac-driver-test %INPUT >>output
+# @TEST-EXEC:  printf "A\012\013A\014\015AAA\005" | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf "AAA\005" | pac-driver-test %INPUT >>output
 # @TEST-EXEC:  btest-diff output
 #
 

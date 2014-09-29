@@ -1,6 +1,6 @@
 #
 # @TEST-EXEC:       hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
-# @TEST-EXEC-FAIL:  printf "\x20\x45\x00" | ./a.out >output 2>&1
+# @TEST-EXEC-FAIL:  printf "\040\105\000" | ./a.out >output 2>&1
 # @TEST-EXEC:       btest-diff output
 #
 

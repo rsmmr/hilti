@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf '\x18\x2d\x44\x54\xfb\x21\x09\x40' | pac-driver-test %INPUT >output
+# @TEST-EXEC:  printf '\030\055\104\124\373\041\011\100' | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
 # @TEST-KNOWN-FAILURE: parsing doubles is not yet implemented.

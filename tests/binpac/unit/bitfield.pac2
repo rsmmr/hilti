@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf "\xff\xff\xff\xff" | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf "\377\377\377\377" | pac-driver-test %INPUT >output    
 # @TEST-EXEC:  btest-diff output
 #
 

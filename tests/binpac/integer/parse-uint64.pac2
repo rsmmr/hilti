@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf '\x01\x02\x03\x04\x05\x06\x07\x08\x01\x02\x03\x04\x05\x06\x07\x08' | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf '\001\002\003\004\005\006\007\010\001\002\003\004\005\006\007\010' | pac-driver-test %INPUT >output    
 # @TEST-EXEC:  btest-diff output
 #
 
