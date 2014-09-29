@@ -23,6 +23,7 @@ tags:
 
 docker-build:
 	docker build -t ${DOCKER_IMAGE} .
+	docker tag `docker inspect --format='{{.Id}}' ${DOCKER_IMAGE}` ${DOCKER_IMAGE}:`cat VERSION`
 
 docker-run:
-	docker run -i -t ${DOCKER_IMAGE} /bin/bash
+	docker run -i -t ${DOCKER_IMAGE}

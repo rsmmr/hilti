@@ -1,5 +1,5 @@
 
-set(BINPAC_VERSION "0.2")
+file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" BINPAC_VERSION LIMIT_COUNT 1)
 
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
