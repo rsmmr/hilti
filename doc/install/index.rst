@@ -97,7 +97,7 @@ as::
 In the remainder of this documentation, we assume that these tools are
 indeed found in the ``PATH``.
 
-.. _docker::
+.. _docker:
 
 Docker Image
 ------------
