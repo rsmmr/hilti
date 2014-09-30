@@ -28,6 +28,7 @@ hlt_time binpac_mktime(int64_t y, int64_t m, int64_t d, int64_t H, int64_t M, in
     t.tm_mday = d;
     t.tm_mon = m - 1;
     t.tm_year = y - 1900;
+    t.tm_isdst = -1;
 
     time_t teatime = mktime(&t);
 
