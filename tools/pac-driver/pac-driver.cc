@@ -330,10 +330,12 @@ static void dump_memstats()
 
 void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 {
-    hlt_bytes* input = readAllInput(embeds);
-
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
+
+    hlt_bytes* input = readAllInput(embeds);
+    GC_CCTOR(input, hlt_bytes, ctx);
+
     hlt_iterator_bytes cur = hlt_bytes_begin(input, &excpt, ctx);
 
     check_exception(excpt);
@@ -351,6 +353,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
             fprintf(stderr, "--- pac-driver: done parsing single input chunk.\n");
 
         GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
+        GC_DTOR(input, hlt_bytes, ctx);
         check_exception(excpt);
         dump_memstats();
         return;
@@ -359,13 +362,13 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
     // Feed incrementally.
 
     hlt_bytes* chunk1;
-    hlt_bytes* chunk2;
     hlt_iterator_bytes end = hlt_bytes_end(input, &excpt, ctx);
     hlt_iterator_bytes cur_end;
     int8_t done = 0;
     hlt_exception* resume = 0;
 
     hlt_bytes* incr_input = hlt_bytes_new(&excpt, ctx);
+    GC_CCTOR(incr_input, hlt_bytes, ctx);
 
     dump_memstats();
 
@@ -380,7 +383,6 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
         cur_end = hlt_iterator_bytes_incr_by(cur, chunk_size, &excpt, ctx);
         done = (hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx) && ! hlt_bytes_at_object(cur_end, &hlt_type_info_hlt_string, &excpt, ctx));
         chunk1 = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
-        chunk2 = hlt_bytes_copy(chunk1, &excpt, ctx); // FIXME: Need?
         hlt_bytes_append(incr_input, chunk1, &excpt, ctx);
 
         if ( done )
@@ -436,6 +438,9 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 
         cur = cur_end;
     }
+
+    GC_DTOR(incr_input, hlt_bytes, ctx);
+    GC_DTOR(input, hlt_bytes, ctx);
 }
 
 #ifdef PAC_DRIVER_JIT

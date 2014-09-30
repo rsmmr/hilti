@@ -1337,7 +1337,7 @@ hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size p, hlt_exceptio
         // Position is out of range, return and end iterator that still
         // records the number of missing bytes in the cur field.
         hlt_iterator_bytes i;
-        GC_INIT(i.bytes, __tail(b, false), hlt_bytes, ctx);
+        i.bytes = __tail(b, false);
         i.cur = i.bytes->end + p;
         return i;
     }

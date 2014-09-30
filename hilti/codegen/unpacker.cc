@@ -204,7 +204,7 @@ static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackR
     cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
     params = { cur, len };
     next = cg->llvmCall("hlt::iterator_bytes_incr_by", params);
-    cg->llvmGCAssign(result.iter_ptr, next, iter_type, true);
+    cg->llvmCreateStore(next, result.iter_ptr);
 
     // Leave builder on stack.
 }
