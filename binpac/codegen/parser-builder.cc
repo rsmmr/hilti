@@ -123,17 +123,20 @@ public:
     shared_ptr<hilti::Expression> hiltiArguments() const;
 
     shared_ptr<ParserState> clone() const {
-        return std::make_shared<ParserState>(unit,
-                                             self,
-                                             data,
-                                             cur,
-                                             end,
-                                             lahead,
-                                             lahstart,
-                                             trim,
-                                             cookie,
-                                             mode,
-                                             parse_error_handler);
+        auto state = std::make_shared<ParserState>(unit,
+                                                   self,
+                                                   data,
+                                                   cur,
+                                                   end,
+                                                   lahead,
+                                                   lahstart,
+                                                   trim,
+                                                   cookie,
+                                                   mode,
+                                                   parse_error_handler);
+
+        state->advcur = advcur;
+        return state;
     }
 
     shared_ptr<binpac::type::Unit> unit;
@@ -144,6 +147,7 @@ public:
     shared_ptr<hilti::Expression> lahead;
     shared_ptr<hilti::Expression> lahstart;
     shared_ptr<hilti::Expression> trim;
+    shared_ptr<hilti::Expression> advcur;
     shared_ptr<hilti::Expression> cookie;
     LiteralMode mode;
     shared_ptr<hilti::Expression> parse_error_handler = nullptr;
@@ -171,6 +175,7 @@ ParserState::ParserState(shared_ptr<binpac::type::Unit> arg_unit,
     lahstart = (arg_lahstart ? arg_lahstart : hilti::builder::id::create("__lahstart"));
     trim = (arg_trim ? arg_trim : hilti::builder::id::create("__trim"));
     cookie = (arg_cookie ? arg_cookie : hilti::builder::id::create("__cookie"));
+    advcur = nullptr;
     mode = arg_mode;
     parse_error_handler = arg_parse_error_handler;
 }
@@ -342,6 +347,8 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
 
         pstate_length = state()->clone();
         pstate_length->end = end;
+        pstate_length->advcur = cg()->builder()->addTmp("advcur", _hiltiTypeIteratorBytes());
+        cg()->builder()->addInstruction(pstate_length->advcur, hilti::instruction::operator_::Assign, state()->cur);
 
         if ( prod->maySynchronize() ) {
             auto sync = cg()->moduleBuilder()->newBuilder("sync_on_length");
@@ -374,7 +381,7 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
 
     if ( pstate_length ) {
         auto idx = cg()->moduleBuilder()->addTmp("idx", hilti::builder::integer::type(64));
-        cg()->builder()->addInstruction(idx, hilti::instruction::bytes::Index, state()->cur);
+        cg()->builder()->addInstruction(idx, hilti::instruction::bytes::Index, pstate_length->advcur);
 
         auto eod_not_reached = cg()->moduleBuilder()->addTmp("eod_not_reached", hilti::builder::boolean::type());
         cg()->builder()->addInstruction(eod_not_reached, hilti::instruction::operator_::Unequal, idx, state()->end);
@@ -396,6 +403,9 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
 
     if ( pstate_parse )
         popState();
+
+    if ( field )
+        _hiltiUpdateInputPostion();
 
     if ( true_ ) {
         cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
@@ -1291,7 +1301,6 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
     if ( field ) {
         _hiltiSaveInputPostion();
         hiltiRunFieldHooks(field, state()->self);
-        _hiltiUpdateInputPostion();
     }
 
     _last_parsed_value = value;
@@ -2213,7 +2222,7 @@ void ParserBuilder::_hiltiUpdateInputPostion()
 
     auto ncur = cg()->builder()->addTmp("ncur", _hiltiTypeIteratorBytes());
     cg()->builder()->addInstruction(ncur, hilti::instruction::struct_::Get, state()->self, hilti::builder::string::create("__cur"));
-    _hiltiAdvanceTo(ncur);
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Assign, ncur);
 }
 
 void ParserBuilder::_hiltiTrimInput()
@@ -2551,11 +2560,17 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiIsFrozen()
 void ParserBuilder::_hiltiAdvanceTo(shared_ptr<hilti::Expression> ncur, shared_ptr<hilti::Expression> distance)
 {
     cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Assign, ncur);
+
+    if ( state()->advcur )
+        cg()->builder()->addInstruction(state()->advcur, hilti::instruction::operator_::Assign, ncur);
 }
 
 void ParserBuilder::_hiltiAdvanceBy(shared_ptr<hilti::Expression> n)
 {
     cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::IncrBy, state()->cur, n);
+
+    if ( state()->advcur )
+        cg()->builder()->addInstruction(state()->advcur, hilti::instruction::operator_::Assign, state()->cur);
 }
 
 ParserBuilder::InputPosition ParserBuilder::_hiltiSavePosition()
