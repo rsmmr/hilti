@@ -1871,7 +1871,11 @@ void CodeGen::llvmCreateStackmap()
         if ( is_ptr )
             val = builder()->CreateLoad(val);
 
-        args.push_back(val);
+        // LLVM 3.5 crashes if we pass in an i1 here. However, we don't need
+        // to do that anyways, so just limit to types that are interested to
+        // the memory management.
+        if ( val->getType()->isPointerTy() || val->getType()->isAggregateType() )
+            args.push_back(val);
     }
 
     // The normal intrinsic workflow doesn't work here for some reason. Probably the varargs.
