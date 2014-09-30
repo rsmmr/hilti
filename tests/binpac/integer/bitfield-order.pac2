@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  printf '\x40\x01\x40\x01\x40\x01' | HILTI_DEBUG=binpac pac-driver-test -d %INPUT >output 2>&1
+# @TEST-EXEC:  printf '\100\001\100\001\100\001' | HILTI_DEBUG=binpac pac-driver-test -d %INPUT >output 2>&1
 # @TEST-EXEC:  btest-diff output
 # @TEST-EXEC:  btest-diff hlt-debug.log
 

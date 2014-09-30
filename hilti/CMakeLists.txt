@@ -1,5 +1,5 @@
 
-set(HILTI_VERSION "0.2")
+file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" HILTI_VERSION LIMIT_COUNT 1)
 
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
 set(ffi     "${CMAKE_CURRENT_BINARY_DIR}/autogen/ffi")

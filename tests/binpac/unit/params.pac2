@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf '1234\x01AB567890' | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf '1234\001AB567890' | pac-driver-test %INPUT >output    
 # @TEST-EXEC:  btest-diff output
 #
 

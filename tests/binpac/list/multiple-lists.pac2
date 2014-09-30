@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  printf '\x01\x00' pac-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  printf '\001\000' pac-driver-test %INPUT >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
 # @TEST-KNOWN-FAILURE: Triggers parse failure

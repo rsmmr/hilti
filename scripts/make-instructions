@@ -21,6 +21,21 @@ function getInstructions
     grep -h '^[\t ]*iBegin' | sed 's/.*(\(.*\) *, ".*)/\1/g' | sed 's/, /::/g' | sort
 }
 
+function lock()
+{
+  while true; do
+        if mkdir "$1.d" 2>/dev/null; then
+           break;
+        fi
+        echo "`basename $0`: waiting for lock $1.d ..."
+        sleep 1
+  done
+}
+
+function unlock ()
+{
+  rmdir "$1.d"
+}
 
 if [ $# -le 2 ]; then
     echo "usage: `basename $0` -h  <current-source-directory> <target-directory> *.h"
@@ -77,8 +92,8 @@ if [ "$kind" == "-h" ]; then
     TIMESTAMP=$dst/timestamp
     now=`date +%s`
 
-    lockfile -1 $LOCK
-    trap "rm -f $LOCK" EXIT
+    lock $LOCK
+    trap "unlock $LOCK" EXIT
 
     if [ -e $TIMESTAMP ]; then
         ts=`cat $TIMESTAMP`

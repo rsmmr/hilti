@@ -1,4 +1,4 @@
-# @TEST-EXEC: printf '\x41\x42' | pac-driver-test %INPUT >output
+# @TEST-EXEC: printf '\101\102' | pac-driver-test %INPUT >output
 # @TEST-EXEC: btest-diff output
 #
 # @TEST-KNOWN-FAILURE: there's a problem with comparing enum labels.

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  printf '\x00\x05WORKS' | HILTI_DEBUG=binpac pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  printf '\000\005WORKS' | HILTI_DEBUG=binpac pac-driver-test %INPUT >output 2>&1    
 # @TEST-EXEC:  btest-diff output
 
 module Mini;

@@ -96,3 +96,28 @@ as::
 
 In the remainder of this documentation, we assume that these tools are
 indeed found in the ``PATH``.
+
+.. _docker:
+
+Docker Image
+------------
+
+As it can still be a bit tricky to set this is all up, there's also a
+`Docker image <https://registry.hub.docker.com/u/rsmmr/hilti/>`_
+available that comes with all pieces preinstalled (HILTI/BinPAC++,
+Bro, LLVM/clang)::
+
+    # docker run -i -t "rsmmr/hilti"
+    HILTI 0.3-11
+    BinPAC++ 0.3-11
+    root@b18c7c5bc7e2:~# cat hello-world.pac2
+    module Test;
+
+    print "Hello, world!";
+    root@b18c7c5bc7e2:~# pac-driver hello-world.pac2
+    Hello, world!
+
+To build the Docker image yourself from the supplied Dockerfile, you
+can use the make target::
+
+    # make docker-build

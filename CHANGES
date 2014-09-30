@@ -1,4 +1,26 @@
 
+0.3-12 | 2014-09-29 14:59:47 -0700
+
+  * Doing parallel build in Dockerfile.
+
+0.3-11 | 2014-09-27 20:57:00 -0700
+
+  * Adding Dockerfile. This builds an image with HILTI compiled in
+    /opt/hilti, and PATH setup to include the HILTI toolchain.
+
+  * Removing dependency on lockfile.
+
+  * Turns out "\xXX" with printf isn't portable across shells.
+
+  * Portability fix in shell script.
+
+  * Fixing nullptr dereference in some error cases.
+
+  * Don't use static PAPI library anymore, as it conflicts with
+    linking into a Bro plugin.
+
+  * Compile fix.
+
 0.3-3 | 2014-09-10 20:20:03 -0700
 
   * Fixing potential compiler error.

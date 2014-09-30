@@ -12,6 +12,12 @@ grammars to Bro. The following overview walks through installation and
 usage. Keep in mind that everything is in development and not
 necessarily stable right now.
 
+.. note::
+
+    The :ref:`docker` comes with both Bro itself and the plugin
+    preinstalled, so you can skip the installation process when using
+    that.
+
 Installation
 ============
 

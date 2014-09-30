@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf '\x00\x0a\x00\x3f' | HILTI_DEBUG=binpac pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  printf '\000\012\000\077' | HILTI_DEBUG=binpac pac-driver-test %INPUT >output 2>&1    
 # @TEST-EXEC:  btest-diff output
 #
 

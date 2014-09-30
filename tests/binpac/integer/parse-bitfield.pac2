@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  printf '\xff\xff\xff\xff' | HILTI_DEBUG=binpac pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  printf '\377\377\377\377' | HILTI_DEBUG=binpac pac-driver-test %INPUT >output 2>&1    
 # @TEST-EXEC:  btest-diff output
 
 module Mini;
