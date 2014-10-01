@@ -404,9 +404,6 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
     if ( pstate_parse )
         popState();
 
-    if ( field )
-        _hiltiUpdateInputPostion();
-
     if ( true_ ) {
         cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
         cg()->moduleBuilder()->popBuilder(true_);
@@ -1301,6 +1298,7 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
     if ( field ) {
         _hiltiSaveInputPostion();
         hiltiRunFieldHooks(field, state()->self);
+        _hiltiUpdateInputPostion();
     }
 
     _last_parsed_value = value;
