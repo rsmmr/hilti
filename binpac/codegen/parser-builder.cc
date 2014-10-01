@@ -2064,7 +2064,6 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiInsufficientInputHandler(bool
 
     if ( eod_ok ) {
         _hiltiDebugVerbose("insufficient input (but end-of-data is ok here)");
-        cg()->builder()->addDebugMsg("binpac-verbose", "frozen1: %s", frozen);
         cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, frozen, resume->block(), suspend->block());
         result = frozen;
     }
