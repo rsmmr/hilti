@@ -17,6 +17,9 @@ void StatementBuilder::visit(statement::instruction::regexp::New* i)
     if ( t->attributes().has(attribute::NOSUB) )
         flags |= HLT_REGEXP_NOSUB;
 
+    if ( t->attributes().has(attribute::FIRSTMATCH) )
+        flags |= HLT_REGEXP_FIRST_MATCH;
+
     CodeGen::expr_list args = { builder::integer::create(flags) };
     auto result = cg()->llvmCall("hlt::regexp_new", args);
     cg()->llvmStore(i, result);

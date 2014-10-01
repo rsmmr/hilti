@@ -580,6 +580,9 @@ void Loader::visit(ctor::RegExp* c)
     if ( c->attributes().has(attribute::NOSUB) )
         flags |= HLT_REGEXP_NOSUB;
 
+    if ( c->attributes().has(attribute::FIRSTMATCH) )
+        flags |= HLT_REGEXP_FIRST_MATCH;
+
     CodeGen::expr_list args = { builder::integer::create(flags) };
     auto regexp = cg()->llvmCall("hlt::regexp_new", args);
 
