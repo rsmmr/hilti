@@ -380,8 +380,11 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
             cur_end = hlt_bytes_skip_object(cur, &excpt, ctx);
         }
 
-        cur_end = hlt_iterator_bytes_incr_by(cur, chunk_size, &excpt, ctx);
+        else
+            cur_end = hlt_iterator_bytes_incr_by(cur, chunk_size, &excpt, ctx);
+
         done = (hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx) && ! hlt_bytes_at_object(cur_end, &hlt_type_info_hlt_string, &excpt, ctx));
+
         chunk1 = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
         hlt_bytes_append(incr_input, chunk1, &excpt, ctx);
 
