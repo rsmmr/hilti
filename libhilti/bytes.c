@@ -1133,7 +1133,7 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffe
     if ( ! len )
         return buffer;
 
-    if ( __is_end(p1) ) {
+    if ( __is_end(p1) && ! __at_object(p1) ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
         return 0;
     }
@@ -1174,7 +1174,7 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffe
         }
     }
 
-    if ( c ) {
+    if ( c && ! __get_object(c) ) {
         hlt_bytes_size n = min((p2.cur - p2.bytes->start), buffer_size - (p - buffer));
 
         if ( n ) {
@@ -1183,7 +1183,7 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffe
         }
     }
 
-    else if ( ! p2_is_end ) {
+    else if ( ! p2_is_end && ! __get_object(c) ) {
         // Incompatible iterators.
         hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
         return 0;
