@@ -36,6 +36,7 @@ struct __hlt_bytes {
     int8_t* end;               // Pointer to one after last data byte used so far.
     int8_t* reserved;          // Pointer to one after the last data byte available.
     int8_t* to_free;           // Need to free data pointed to when dtoring.
+    hlt_bytes_size* marks;     // If non-null, array of offsets of marks within this chunk. Terminated by -1. Must be freed.
     int8_t data[0];            // Inline data starts here if free is zero.
 };
 
@@ -56,6 +57,9 @@ struct __hlt_bytes_hoisted {
 typedef struct __hlt_bytes_object __hlt_bytes_object;
 
 static hlt_iterator_bytes GenericEndPos = { 0, 0 };
+
+static hlt_bytes* _hlt_bytes_new(const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve, hlt_execution_context* ctx);
+static void __add_chunk(hlt_bytes* tail, hlt_bytes* c, hlt_execution_context* ctx);
 
 static inline hlt_bytes_size min(hlt_bytes_size a, hlt_bytes_size b)
 {
@@ -85,6 +89,21 @@ static inline hlt_bytes* __tail(hlt_bytes* b, int8_t consider_object)
 static inline int8_t __at_object(const hlt_iterator_bytes i)
 {
     return i.bytes && __get_object(i.bytes) != 0;
+}
+
+static inline int8_t __at_mark(const hlt_iterator_bytes i)
+{
+    hlt_bytes* b = i.bytes;
+
+    if ( ! (b && b->marks) )
+        return 0;
+
+    for ( hlt_bytes_size* m = b->marks; m && *m != -1; m++ ) {
+        if ( *m == (i.cur - b->start) )
+            return 1;
+    }
+
+    return 0;
 }
 
 static inline int8_t __is_end(const hlt_iterator_bytes p)
@@ -125,6 +144,15 @@ static void __print_bytes(const char* prefix, const hlt_bytes* b)
             fprintf(stderr, "...");
 
         fprintf(stderr, "\" ");
+
+        if ( b->marks ) {
+            fprintf(stderr, "[ ");
+
+            for ( hlt_bytes_size* m = b->marks; m && *m >= 0; m++ )
+                fprintf(stderr, "m@%" PRId64" ", *m);
+
+            fprintf(stderr, "] ");
+        }
     }
 
     fprintf(stderr, ")\n");
@@ -132,7 +160,11 @@ static void __print_bytes(const char* prefix, const hlt_bytes* b)
 
 static void __print_iterator(const char* prefix, hlt_iterator_bytes i)
 {
-    fprintf(stderr, "%s: i(#%p@%lu) is_end=%d at_object=%d\n", prefix, i.bytes, i.bytes ? i.cur - i.bytes->start : 0, __is_end(i), __at_object(i));
+    fprintf(stderr, "%s: i(#%p@%lu) is_end=%d at_object=%d at_mark=%d\n", prefix, i.bytes,
+            i.bytes ? i.cur - i.bytes->start : 0, __is_end(i),
+            __at_object(i),
+            __at_mark(i));
+
     __print_bytes("  -> ", i.bytes);
 }
 
@@ -214,6 +246,84 @@ static inline void __normalize_iter_hilti(hlt_iterator_bytes* pos, hlt_execution
         __hlt_iterator_bytes_incr_by(pos, incr, 0, 0, 1, 0);
 }
 
+hlt_bytes_size __hlt_bytes_len(hlt_bytes* b)
+{
+    hlt_bytes_size len = 0;
+
+    for ( ; b && ! __get_object(b) ; b = b->next )
+        len += (b->end - b->start);
+
+    return len;
+}
+
+// This reservers enough space to fit all old plus addl_reserve new marks
+// plus the final -1, and then returns a pointer to where the first new mark
+// should be stored.
+hlt_bytes_size* __hlt_bytes_reserve_space_for_more_marks(hlt_bytes_size** dst, int addl_reserve)
+{
+    if ( ! *dst ) {
+        *dst = hlt_malloc((addl_reserve + 1) * sizeof(hlt_bytes_size));
+        return *dst;
+    }
+
+    else {
+        int len_dst = 0;
+        for ( hlt_bytes_size* i = *dst; *i >= 0; i++, len_dst++ );
+        *dst = hlt_realloc(*dst, (len_dst + addl_reserve + 1) * sizeof(hlt_bytes_size),
+                                 (len_dst + 1) * sizeof(hlt_bytes_size));
+        return *dst + len_dst;
+    }
+}
+
+void __hlt_bytes_append_mark(hlt_bytes* b, hlt_bytes_size mark, hlt_execution_context* ctx)
+{
+    hlt_bytes* tail = __tail(b, true);
+
+    if ( __get_object(tail) ) {
+        // Need to add an empty block to record the mark.
+        hlt_bytes* empty = _hlt_bytes_new(0, 0, 0, ctx);
+        __add_chunk(tail, empty, ctx);
+        tail = empty;
+    }
+
+    hlt_bytes_size* dst = __hlt_bytes_reserve_space_for_more_marks(&tail->marks, 1);
+    *dst++ = (mark >= 0 ? mark : (tail->end - tail->start));
+    *dst++ = -1;
+}
+
+void __hlt_bytes_copy_marks(hlt_bytes_size** marks, hlt_bytes* b, int8_t* first, int8_t* last, int8_t adjoffset)
+{
+    if ( ! (marks && b->marks) )
+        return;
+
+    int n = 0;
+    for ( hlt_bytes_size* i = b->marks; *i != -1; i++, n++ )
+        ;
+
+    hlt_bytes_size* dst = __hlt_bytes_reserve_space_for_more_marks(marks, n);
+
+    int64_t offset_first = first ? (first - b->start) : -1;
+    int64_t offset_last  = last ? (last - b->start) : -1;
+
+    for ( hlt_bytes_size* p = b->marks; *p != -1; p++ ) {
+
+        if ( *p < 0 )
+            continue;
+
+        hlt_bytes_size offset = *p + adjoffset;
+
+        if ( offset_first >= 0 && offset < offset_first )
+            continue;
+
+        if ( offset_last >= 0 && offset >= offset_last )
+            continue;
+
+        *dst++ = offset;
+    }
+
+    *dst++ = -1;
+}
+
 // c not yet ref'ed.
 static void __add_chunk(hlt_bytes* tail, hlt_bytes* c, hlt_execution_context* ctx)
 {
@@ -225,6 +335,15 @@ static void __add_chunk(hlt_bytes* tail, hlt_bytes* c, hlt_execution_context* ct
     GC_CCTOR(c, hlt_bytes, ctx);
     tail->next = c;
     c->offset = tail->offset + (__get_object(tail) ? 0 : tail->end - tail->start);
+
+    if ( tail->marks ) {
+        for ( hlt_bytes_size* p = tail->marks; *p != -1; p++ ) {
+            if ( *p >= (tail->end - tail->start) ) {
+                __hlt_bytes_append_mark(tail, *p - (tail->end - tail->start), ctx);
+                *p = -2; // Delete.
+            }
+        }
+    }
 }
 
 static inline void _hlt_bytes_init(hlt_bytes* b, const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve, hlt_execution_context* ctx)
@@ -238,6 +357,7 @@ static inline void _hlt_bytes_init(hlt_bytes* b, const int8_t* data, hlt_bytes_s
     b->end = b->start + len;
     b->reserved = b->start + reserve;
     b->to_free = 0;
+    b->marks = 0;
 
     hlt_thread_mgr_blockable_init(&b->blockable);
 
@@ -254,6 +374,7 @@ static inline void _hlt_bytes_init_reuse(hlt_bytes* b, int8_t* data, hlt_bytes_s
     b->end = data + len;
     b->reserved = data + len;
     b->to_free = data;
+    b->marks = 0;
 
     hlt_thread_mgr_blockable_init(&b->blockable);
 }
@@ -263,6 +384,7 @@ static void _hlt_bytes_init_object(__hlt_bytes_object* b, const hlt_type_info* t
     b->b.next = 0;
     b->b.flags = _BYTES_FLAG_OBJECT;
     b->b.offset = 0;
+    b->b.marks = 0;
     b->type = type;
 
     hlt_thread_mgr_blockable_init(&b->b.blockable);
@@ -284,6 +406,10 @@ static inline void _hlt_bytes_init_hoisted(__hlt_bytes_hoisted* dst, const int8_
         // have this cleared?
         hlt_free(b->to_free);
 
+    if ( b->marks )
+        // Previous use had allocated memory.
+        hlt_free(b->marks);
+
     if ( len <= sizeof(dst->data) ) {
         b->start = dst->data;
         b->reserved = b->start + sizeof(dst->data);
@@ -300,6 +426,7 @@ static inline void _hlt_bytes_init_hoisted(__hlt_bytes_hoisted* dst, const int8_
     b->offset = 0;
     b->next = 0;
     b->end = b->start + len;
+    b->marks = 0;
 
     hlt_thread_mgr_blockable_init(&b->blockable);
 
@@ -355,101 +482,6 @@ static hlt_bytes* _hlt_bytes_new_object_ref(const hlt_type_info* type, void* obj
     return &b->b;
 }
 
-hlt_bytes_size __hlt_bytes_len(hlt_bytes* b)
-{
-    hlt_bytes_size len = 0;
-
-    for ( ; b && ! __get_object(b) ; b = b->next )
-        len += (b->end - b->start);
-
-    return len;
-}
-
-#if 0
-
-// Turns out that we don't need this with the current object semantics. Note,
-// if reenabling this code later: it hasn't been fully tested and may not
-// work right in all cases.
-
-// Duplicates b1 and, optionally, b2 into a preallocated bytes object. It's
-// ok if dst isn't large enough, then we'll add chunks as necessary. The
-// duplication includes all included separator objects.
-static inline void __hlt_bytes_duplicate_into_helper(hlt_bytes* dst, hlt_bytes* src, int8_t* start, hlt_execution_context* ctx)
-{
-    // Copy data into object as long as possible.
-
-    __hlt_bytes_object* o;
-    hlt_bytes* b;
-
-    hlt_bytes_size available = (dst->reserved - dst->start);
-    int8_t* p = dst->start;
-
-    for ( b = src; b && available && ! __get_object(b); b = b->next, start = 0 ) {
-
-        if ( ! start )
-            start = b->start;
-
-        assert(start);
-
-        hlt_bytes_size len = (b->end - b->start);
-        hlt_bytes_size n = min(available, len);
-        memcpy(p, start, n);
-        dst->end = p + n;
-
-        p += n;
-        available -= n;
-
-        if ( len != n ) {
-            // Not enough space.
-            start += n;
-            break;
-        }
-    }
-
-    if ( ! b )
-        // All copied. Done.
-        return;
-
-    while ( b && (o = __get_object(b)) ) {
-        // Duplicate object.
-        void* p = &o->object;
-        __hlt_bytes_object* no = (__hlt_bytes_object*)_hlt_bytes_new_object(o->type, &p, ctx);
-        __add_chunk(dst, &no->b);
-        dst = &no->b;
-        b = b->next;
-        start = b->start;
-    }
-
-    if ( ! b )
-        // All copied now. Done.
-        return;
-
-    // Create a new bytes object, copy the rest in there, and append it.
-    hlt_bytes_size len = __hlt_bytes_len(b);
-
-    if ( len ) {
-        hlt_bytes* ext = __hlt_bytes_new(0, len, 0);
-        __add_chunk(dst, ext);
-        __hlt_bytes_duplicate_into_helper(ext, b, start, ctx);
-    }
-}
-
-static inline void __hlt_bytes_duplicate_into(hlt_bytes* dst, hlt_bytes* src, hlt_execution_context* ctx)
-{
-    __hlt_bytes_duplicate_into_helper(dst, src, src->start, ctx);
-}
-
-static inline void __hlt_bytes_duplicate_into_2(hlt_bytes* dst, hlt_bytes* src1, hlt_bytes* src2, hlt_execution_context* ctx)
-{
-    // We temporarily connect the two.
-    hlt_bytes* t = __tail(src1, true);
-    t->next = src2;
-    __hlt_bytes_duplicate_into_helper(dst, src1, src1->start, ctx);
-    t->next = 0;
-}
-
-#endif
-
 void hlt_bytes_dtor(hlt_type_info* ti, hlt_bytes* b, hlt_execution_context* ctx)
 {
     b->start = b->end = 0;
@@ -461,8 +493,13 @@ void hlt_bytes_dtor(hlt_type_info* ti, hlt_bytes* b, hlt_execution_context* ctx)
         GC_DTOR_GENERIC(&obj->object, obj->type, ctx);
     }
 
-    else if ( b->to_free )
-        hlt_free(b->to_free);
+    else {
+        if ( b->to_free )
+            hlt_free(b->to_free);
+
+        if ( b->marks )
+            hlt_free(b->marks);
+}
 }
 
 void hlt_iterator_bytes_dtor(hlt_type_info* ti, hlt_iterator_bytes* p, hlt_execution_context* ctx)
@@ -521,6 +558,7 @@ void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt
 
     dst->flags = src->flags;
     dst->offset = src->offset;
+    dst->marks = 0;
 
     int first = 1;
 
@@ -558,6 +596,8 @@ void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt
                 hlt_bytes_size n = (src->end - src->start);
                 b = _hlt_bytes_new(src->start, n, 0, ctx);
             }
+
+            __hlt_bytes_copy_marks(&b->marks, src, 0, 0, 0);
         }
 
         if ( ! first ) {
@@ -641,6 +681,7 @@ void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt
     int8_t* p = dst->start;
 
     for ( ; other && ! __get_object(other); other = other->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, other, 0, 0, p - dst->start);
         hlt_bytes_size n = other->end - other->start;
         memcpy(p, other->start, n);
         p += n;
@@ -683,12 +724,14 @@ static void _hlt_bytes_concat_into(hlt_bytes* dst, hlt_bytes* b1, hlt_bytes* b2,
     int8_t* p = dst->start;
 
     for ( ; b1 && ! __get_object(b1); b1 = b1->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, b1, 0, 0, p - dst->start);
         hlt_bytes_size n = b1->end - b1->start;
         memcpy(p, b1->start, n);
         p += n;
     }
 
     for ( ; b2 && ! __get_object(b2); b2 = b2->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, b2, 0, 0, p - dst->start);
         hlt_bytes_size n = b2->end - b2->start;
         memcpy(p, b2->start, n);
         p += n;
@@ -1079,6 +1122,7 @@ static void _hlt_bytes_copy_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** e
     int8_t* p = dst->start;
 
     for ( ; b; b = b->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, b, 0, 0, p - dst->start);
         hlt_bytes_size n = (b->end - b->start);
         memcpy(p, b->start, n);
         p += n;
@@ -1120,7 +1164,7 @@ hlt_bytes* hlt_bytes_clone(hlt_bytes* b, hlt_exception** excpt, hlt_execution_co
     return dst;
 }
 
-static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffer_size, hlt_bytes_size len, hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
+static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** marks, hlt_bytes_size buffer_size, hlt_bytes_size len, hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // Some here is a bit awkward and only to retain the old semantics of
     // to_raw_buffer() that if the buffer gets exceeded, we fill it to the
@@ -1150,6 +1194,8 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffe
         if ( n )
             memcpy(p, p1.cur, n);
 
+        __hlt_bytes_copy_marks(marks, p1.bytes, p1.cur, p2.cur, (p1.bytes->start - p1.cur));
+
         return buffer_size <= len ? p + n : 0;
     }
 
@@ -1157,6 +1203,7 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffe
     hlt_bytes_size n = min((p1.bytes->end - p1.cur), buffer_size - (p - buffer));
 
     if ( n ) {
+        __hlt_bytes_copy_marks(marks, p1.bytes, p1.cur, 0, (p - buffer) + (p1.bytes->start - p1.cur));
         memcpy(p, p1.cur, n);
         p += n;
     }
@@ -1168,6 +1215,8 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffe
     for ( ; c && (c != p2.bytes || p2_is_end) && ! __get_object(c); c = c->next ) {
         hlt_bytes_size n = min((c->end - c->start), buffer_size - (p - buffer));
 
+        __hlt_bytes_copy_marks(marks, c, 0, 0, (p - buffer));
+
         if ( n ) {
             memcpy(p, c->start, n);
             p += n;
@@ -1176,6 +1225,8 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size buffe
 
     if ( c && ! __get_object(c) ) {
         hlt_bytes_size n = min((p2.cur - p2.bytes->start), buffer_size - (p - buffer));
+
+        __hlt_bytes_copy_marks(marks, p2.bytes, 0, p1.cur, (p - buffer) + (p2.bytes->start - p2.cur));
 
         if ( n ) {
             memcpy(p, p2.bytes->start, n);
@@ -1203,7 +1254,7 @@ void hlt_bytes_sub_hoisted(__hlt_bytes_hoisted* dst, hlt_iterator_bytes p1, hlt_
     if ( ! len )
         return;
 
-    __hlt_bytes_sub_raw_internal(dst->b.start, len, len, p1, p2, excpt, ctx);
+    __hlt_bytes_sub_raw_internal(dst->b.start, &dst->b.marks, len, len, p1, p2, excpt, ctx);
 }
 
 hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -1217,7 +1268,7 @@ hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_excep
     if ( ! len )
         return dst;
 
-    if ( __hlt_bytes_sub_raw_internal(dst->start, len, len, p1, p2, excpt, ctx) )
+    if ( __hlt_bytes_sub_raw_internal(dst->start, &dst->marks, len, len, p1, p2, excpt, ctx) )
         return dst;
 
     return 0;
@@ -1230,7 +1281,7 @@ int8_t* hlt_bytes_sub_raw(int8_t* dst, size_t dst_len, hlt_iterator_bytes p1, hl
 
     hlt_bytes_size len = __hlt_iterator_bytes_diff(p1, p2, excpt, ctx);
 
-    if ( __hlt_bytes_sub_raw_internal(dst, dst_len, len, p1, p2, excpt, ctx) )
+    if ( __hlt_bytes_sub_raw_internal(dst, 0, dst_len, len, p1, p2, excpt, ctx) )
         return dst;
 
     // Not enough space.
@@ -1440,6 +1491,9 @@ void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes p, hlt_exception** excpt, h
     else if ( b->to_free ) {
         hlt_free(b->to_free);
         b->to_free = 0;
+
+        if ( b->marks )
+            hlt_free(b->marks);
     }
 }
 
@@ -1551,8 +1605,6 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
 
     if ( ! b )
         return hlt_string_from_asciiz("(Null)", excpt, ctx);
-
-    // __print_bytes("debug:", b);
 
     char hex[5] = { '\\', 'x', 'X', 'X', '\0' };
     char buffer[256];
@@ -1827,10 +1879,11 @@ static void _hlt_bytes_upper_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** 
     hlt_iterator_bytes cur;
     __hlt_bytes_begin(&cur, b, excpt, ctx);
 
-    while ( ! __is_end(cur) ) {
-        int8_t ch = __hlt_iterator_bytes_deref(cur, excpt, ctx);
-        *p++ = toupper(ch);
-        __hlt_iterator_bytes_incr(&cur, excpt, ctx, 0);
+    for ( hlt_bytes* c = b; c && ! __get_object(c); c = c->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, c, 0, 0, p - dst->start);
+
+        for ( int8_t* s = c->start; s < c->end; s++ )
+            *p++ = toupper(*s);
     }
 }
 
@@ -1866,10 +1919,11 @@ static void _hlt_bytes_lower_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** 
     hlt_iterator_bytes cur;
     __hlt_bytes_begin(&cur, b, excpt, ctx);
 
-    while ( ! __is_end(cur) ) {
-        int8_t ch = __hlt_iterator_bytes_deref(cur, excpt, ctx);
-        *p++ = tolower(ch);
-        __hlt_iterator_bytes_incr(&cur, excpt, ctx, 0);
+    for ( hlt_bytes* c = b; c && ! __get_object(c); c = c->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, c, 0, 0, p - dst->start);
+
+        for ( int8_t* s = c->start; s < c->end; s++ )
+            *p++ = tolower(*s);
     }
 }
 
@@ -2257,4 +2311,41 @@ hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** ex
         return i.bytes->offset;
 
     return i.bytes->offset + (((i.cur <= i.bytes->end) ? i.cur : i.bytes->end) - i.bytes->start);
+}
+
+void hlt_bytes_append_mark(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __hlt_bytes_append_mark(b, -1, ctx);
+}
+
+hlt_iterator_bytes hlt_bytes_next_mark(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __normalize_iter(&i);
+
+    hlt_bytes* b = i.bytes;
+    int8_t* c = i.cur + 1; // Skip current position.
+
+    while ( 1 ) {
+        if ( __get_object(b) )
+            // End of iteration, but not found.
+            return __create_iterator(b, b->end);
+
+        for ( hlt_bytes_size* m = b->marks; m && *m != -1; m++ ) {
+            if ( *m >= (c - b->start) )
+                return __create_iterator(b, b->start + *m);
+        }
+
+        if ( ! b->next )
+            // No mark found.
+            return __create_iterator(b, b->end);
+
+        b = b->next;
+        c = b->start;
+    }
+}
+
+int8_t hlt_bytes_at_mark(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __normalize_iter(&i);
+    return __at_mark(i);
 }

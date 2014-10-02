@@ -208,6 +208,20 @@ iBeginH(bytes, NextObject, "bytes.next_object")
     iOp1(optype::iterBytes, true);
 iEndH
 
+iBeginH(bytes, AppendMark, "bytes.append_mark")
+    iOp1(optype::refBytes, false);
+iEndH
+
+iBeginH(bytes, NextMark, "bytes.next_mark")
+    iTarget(optype::iterBytes)
+    iOp1(optype::iterBytes, true);
+iEndH
+
+iBeginH(bytes, AtMark, "bytes.at_mark")
+    iTarget(optype::boolean)
+    iOp1(optype::iterBytes, true);
+iEndH
+
 iBeginH(bytes, Index, "bytes.index")
     iTarget(optype::int64);
     iOp1(optype::iterBytes, true);

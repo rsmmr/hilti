@@ -341,6 +341,30 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
+    iValidateCC(AppendMark) {
+    }
+
+    iDocCC(AppendMark, R"(Inserts a mark right after the current end of bytes object *op1*. When later more bytes get added, the mark will be pointing to the first of them.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(NextMark) {
+    }
+
+    iDocCC(NextMark, R"(Moves the iterator *op1* to the position of the next mark, or to then end if there's no further mark. Returns the current position if that's pointing to a mark already.
+    )")
+iEndCC
+
+iBeginCC(bytes)
+    iValidateCC(AtMark) {
+    }
+
+    iDocCC(AtMark, R"(Checks if there's a mark located at the iterator position *op1*.
+    )")
+iEndCC
+
+iBeginCC(bytes)
     iValidateCC(Index) {
     }
 

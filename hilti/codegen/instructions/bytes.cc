@@ -371,6 +371,26 @@ void StatementBuilder::visit(statement::instruction::bytes::NextObject* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::AppendMark* i)
+{
+    CodeGen::expr_list args = { i->op1() };
+    cg()->llvmCall("hlt::bytes_append_mark", args);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::NextMark* i)
+{
+    CodeGen::expr_list args = { i->op1() };
+    auto result = cg()->llvmCall("hlt::bytes_next_mark", args);
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::AtMark* i)
+{
+    CodeGen::expr_list args = { i->op1() };
+    auto result = cg()->llvmCall("hlt::bytes_at_mark", args);
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::bytes::Index* i)
 {
     CodeGen::expr_list args;

@@ -1,0 +1,73 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void p(int<64> n, int<64> m, ref<bytes> b, iterator<bytes> i)
+{
+    local ref<bytes> s
+    local iterator<bytes> e
+    e = end b
+    s = bytes.sub i e
+    call Hilti::print(n, False)
+    call Hilti::print(" ", False)
+    call Hilti::print(m, False)
+    call Hilti::print(" ", False)
+    call Hilti::print(s)
+}
+
+void l(int<64> n, ref<bytes> b)
+{
+    local iterator<bytes> i
+    i = begin b
+    call p(n, 1, b, i)
+    i = bytes.next_mark i
+    call p(n, 2, b, i)
+    i = bytes.next_mark i
+    call p(n, 3, b, i)
+    i = bytes.next_mark i
+    call p(n, 4, b, i)
+    i = bytes.next_mark i
+    call p(n, 5, b, i)
+    call Hilti::print("")
+}
+
+
+void run() {
+    local ref<bytes> x
+    local ref<bytes> b
+    local iterator<bytes> i
+
+    x = b"aabc"
+    bytes.append_mark x
+    bytes.append x b"def"
+    bytes.append_mark x
+    bytes.append x b"ghii"
+
+    call l(1, x)
+
+    b = clone x
+    call l(2, b)
+
+    b = bytes.upper x
+    call l(3, b)
+
+    b = bytes.lower x
+    call l(4, b)
+
+    b = bytes.concat x x
+    call l(5, b)
+
+    b = bytes.lower x
+    b = bytes.strip b Hilti::Side::Left b"aa"
+    b = bytes.strip b Hilti::Side::Right b"ii"
+    call l(6, b)
+
+    b = clone x
+    b = bytes.strip b Hilti::Side::Left b"aa"
+    b = bytes.strip b Hilti::Side::Right b"ii"
+    call l(7, b)
+}

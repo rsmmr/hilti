@@ -154,6 +154,10 @@ declare "C-HILTI" bool bytes_at_object_of_type(iterator<bytes> b, type t)
 declare "C-HILTI" iterator<bytes> bytes_skip_object(iterator<bytes> b)
 declare "C-HILTI" iterator<bytes> bytes_next_object(iterator<bytes> b)
 
+declare "C-HILTI" void bytes_append_mark(ref<bytes> b)
+declare "C-HILTI" iterator<bytes> bytes_next_mark(iterator<bytes> b)
+declare "C-HILTI" bool bytes_at_mark(iterator<bytes> b)
+
 declare "C-HILTI" void bytes_new_hoisted(ref<bytes> dst) &noexception
 declare "C-HILTI" void bytes_concat_hoisted(ref<bytes> dst, ref<bytes> b1, ref<bytes> b2)
 declare "C-HILTI" void bytes_sub_hoisted(ref<bytes> dst, iterator<bytes> start, iterator<bytes> last)
