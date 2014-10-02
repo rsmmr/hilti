@@ -592,6 +592,23 @@ extern hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes i, hlt_except
 /// Returns: The advanced iterator, which will be the end position if there's no further embedded object.
 extern hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Inserts a mark right after the current end of bytes object. When more
+/// bytes get added, the mark will be pointing to the first of them.
+///
+/// b: The bytes object to append the mark to.
+///
+/// \hlt_c
+extern void hlt_bytes_append_mark(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Moves the iterator to the position of the next mark. Returns the current
+/// position if that's pointing to a mark already.
+///
+/// i: The start position.
+///
+/// Returns: The advanced iterator, which will be the end position if there's
+/// no further mark before the current end position.
+extern hlt_iterator_bytes hlt_bytes_next_mark(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Hoisted versions.
 extern void hlt_bytes_new_hoisted(__hlt_bytes_hoisted* dst, hlt_exception** excpt, hlt_execution_context* ctx);
 extern void hlt_bytes_new_from_data_copy_hoisted(__hlt_bytes_hoisted* dst, const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);

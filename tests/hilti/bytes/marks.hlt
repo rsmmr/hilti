@@ -1,0 +1,76 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void p(int<64> n, ref<bytes> b, iterator<bytes> i)
+{
+    local ref<bytes> s
+    local iterator<bytes> e
+    e = end b
+    s = bytes.sub i e
+    call Hilti::print(n, False)
+    call Hilti::print(" ", False)
+    call Hilti::print(s)
+}
+
+void run() {
+    local ref<bytes> b
+    local ref<bytes> x
+    local iterator<bytes> i
+    local iterator<bytes> i2
+    local bool bl
+    local string s
+
+    b = b"abc"
+    bytes.append_mark b
+    bytes.append b b"def"
+
+    i = begin b
+    call p(1, b, i)
+
+    i = bytes.next_mark i
+    call p(2, b, i)
+
+    i = bytes.next_mark i
+    call p(3, b, i)
+
+    #
+
+    b = b"abc"
+    bytes.append_mark b
+
+    i = begin b
+    i = bytes.next_mark i
+    call p(4, b, i)
+
+    #
+
+    b = b""
+    bytes.append_mark b
+    bytes.append b b"abc"
+    bytes.append_mark b
+    bytes.append_mark b
+    bytes.append b b""
+    bytes.append_mark b
+    bytes.append b b"def"
+    bytes.append b b"ghi"
+    bytes.append_mark b
+    bytes.append b b"jkl"
+
+    i = begin b
+    i = bytes.next_mark i
+    call p(5, b, i)
+    i = incr i
+    i = bytes.next_mark i
+    call p(6, b, i)
+    i = bytes.next_mark i
+    call p(7, b, i)
+    i = bytes.next_mark i
+    call p(8, b, i)
+    i = bytes.next_mark i
+}
+
