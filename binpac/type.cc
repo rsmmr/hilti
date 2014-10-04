@@ -1839,3 +1839,9 @@ EmbeddedObject::EmbeddedObject(const Location& l)
     : TypedPacType(l)
 {
 }
+
+Mark::Mark(const Location& l)
+    : PacType(l)
+{
+}
+

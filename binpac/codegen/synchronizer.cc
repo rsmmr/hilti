@@ -341,6 +341,45 @@ void Synchronizer::visit(type::EmbeddedObject* o)
     cg()->moduleBuilder()->pushBuilder(done);
 }
 
+void Synchronizer::visit(type::Mark* m)
+{
+    auto done = cg()->moduleBuilder()->newBuilder("sync-done");
+    auto loop = cg()->moduleBuilder()->newBuilder("sync-loop");
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
+
+    ///
+
+    cg()->moduleBuilder()->pushBuilder(loop);
+
+    auto at_mark = cg()->builder()->addTmp("at_mark", ::hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::bytes::NextMark, state()->cur);
+    cg()->builder()->addInstruction(at_mark, hilti::instruction::bytes::AtMark, state()->cur);
+
+    auto branches = cg()->builder()->addIf(at_mark);
+    auto found = std::get<0>(branches);
+    auto not_found = std::get<1>(branches);
+
+    cg()->moduleBuilder()->popBuilder(loop);
+
+    ///
+
+    cg()->moduleBuilder()->pushBuilder(found);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    cg()->moduleBuilder()->popBuilder(found);
+
+    ///
+
+    cg()->moduleBuilder()->pushBuilder(not_found);
+    cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
+    _hiltiNotYetFound(loop, "mark");
+    cg()->moduleBuilder()->popBuilder(not_found);
+
+    /// Continue normally.
+
+    cg()->moduleBuilder()->pushBuilder(done);
+}
+
 void Synchronizer::visit(expression::Ctor* b)
 {
     _hiltiSynchronizeOne(b->ctor());

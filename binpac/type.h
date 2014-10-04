@@ -1865,6 +1865,18 @@ public:
     ACCEPT_VISITOR(TypedPacType);
 };
 
+/// Type representing a mark inside a bytes object.
+class Mark : public PacType
+{
+public:
+    /// Constructor.
+    ///
+    /// l: Associated location.
+    Mark(const Location& l=Location::None);
+
+    ACCEPT_VISITOR(PacType);
+};
+
 }
 
 }

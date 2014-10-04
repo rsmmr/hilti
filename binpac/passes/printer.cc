@@ -242,6 +242,12 @@ void Printer::visit(type::EmbeddedObject* e)
     p << "object<" << e->argType() << ">";
 }
 
+void Printer::visit(type::Mark* m)
+{
+    Printer& p = *this;
+    p << "mark";
+}
+
 #if 0
 void Printer::visit(constant::Expression* e)
 {

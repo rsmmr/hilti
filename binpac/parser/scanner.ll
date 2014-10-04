@@ -104,6 +104,7 @@ iter                  return token::ITER;
 list                  return token::LIST;
 local                 return token::LOCAL;
 map                   return token::MAP;
+mark                  return token::MARK;
 mod                   return token::MOD;
 module                return token::MODULE;
 net                   return token::NET;
