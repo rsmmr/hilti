@@ -64,13 +64,10 @@ void run() {
     i = begin b
     i = bytes.next_mark i
     call p(5, b, i)
-    i = incr i
     i = bytes.next_mark i
     call p(6, b, i)
     i = bytes.next_mark i
     call p(7, b, i)
-    i = bytes.next_mark i
-    call p(8, b, i)
     i = bytes.next_mark i
 }
 

@@ -384,6 +384,13 @@ void StatementBuilder::visit(statement::instruction::bytes::NextMark* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::AtMark* i)
+{
+    CodeGen::expr_list args = { i->op1() };
+    auto result = cg()->llvmCall("hlt::bytes_at_mark", args);
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::bytes::Index* i)
 {
     CodeGen::expr_list args;

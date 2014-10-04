@@ -217,6 +217,11 @@ iBeginH(bytes, NextMark, "bytes.next_mark")
     iOp1(optype::iterBytes, true);
 iEndH
 
+iBeginH(bytes, AtMark, "bytes.at_mark")
+    iTarget(optype::boolean)
+    iOp1(optype::iterBytes, true);
+iEndH
+
 iBeginH(bytes, Index, "bytes.index")
     iTarget(optype::int64);
     iOp1(optype::iterBytes, true);

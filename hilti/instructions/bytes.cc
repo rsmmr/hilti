@@ -357,6 +357,14 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
+    iValidateCC(AtMark) {
+    }
+
+    iDocCC(AtMark, R"(Checks if there's a mark located at the iterator position *op1*.
+    )")
+iEndCC
+
+iBeginCC(bytes)
     iValidateCC(Index) {
     }
 

@@ -91,6 +91,21 @@ static inline int8_t __at_object(const hlt_iterator_bytes i)
     return i.bytes && __get_object(i.bytes) != 0;
 }
 
+static inline int8_t __at_mark(const hlt_iterator_bytes i)
+{
+    hlt_bytes* b = i.bytes;
+
+    if ( ! (b && b->marks) )
+        return 0;
+
+    for ( hlt_bytes_size* m = b->marks; m && *m != -1; m++ ) {
+        if ( *m == (i.cur - b->start) )
+            return 1;
+    }
+
+    return 0;
+}
+
 static inline int8_t __is_end(const hlt_iterator_bytes p)
 {
     return p.bytes == 0 || (p.bytes == __tail(p.bytes, false) && p.cur >= p.bytes->end) || __at_object(p);
@@ -145,7 +160,11 @@ static void __print_bytes(const char* prefix, const hlt_bytes* b)
 
 static void __print_iterator(const char* prefix, hlt_iterator_bytes i)
 {
-    fprintf(stderr, "%s: i(#%p@%lu) is_end=%d at_object=%d\n", prefix, i.bytes, i.bytes ? i.cur - i.bytes->start : 0, __is_end(i), __at_object(i));
+    fprintf(stderr, "%s: i(#%p@%lu) is_end=%d at_object=%d at_mark=%d\n", prefix, i.bytes,
+            i.bytes ? i.cur - i.bytes->start : 0, __is_end(i),
+            __at_object(i),
+            __at_mark(i));
+
     __print_bytes("  -> ", i.bytes);
 }
 
@@ -256,7 +275,7 @@ hlt_bytes_size* __hlt_bytes_reserve_space_for_more_marks(hlt_bytes_size** dst, i
     }
 }
 
-void __hlt_bytes_append_mark(hlt_bytes* b, hlt_execution_context* ctx)
+void __hlt_bytes_append_mark(hlt_bytes* b, hlt_bytes_size mark, hlt_execution_context* ctx)
 {
     hlt_bytes* tail = __tail(b, true);
 
@@ -268,30 +287,35 @@ void __hlt_bytes_append_mark(hlt_bytes* b, hlt_execution_context* ctx)
     }
 
     hlt_bytes_size* dst = __hlt_bytes_reserve_space_for_more_marks(&tail->marks, 1);
-    *dst++ = tail->offset + (tail->end - tail->start);
+    *dst++ = (mark >= 0 ? mark : (tail->end - tail->start));
     *dst++ = -1;
 }
 
-void __hlt_bytes_copy_marks(hlt_bytes_size** marks, hlt_bytes* b, int8_t* first, int8_t* last, hlt_bytes_size adjoffset)
+void __hlt_bytes_copy_marks(hlt_bytes_size** marks, hlt_bytes* b, int8_t* first, int8_t* last, int8_t adjoffset)
 {
-    if ( ! b->marks )
+    if ( ! (marks && b->marks) )
         return;
 
     int n = 0;
-    for ( hlt_bytes_size* i = b->marks; *i >= 0; i++, n++ );
+    for ( hlt_bytes_size* i = b->marks; *i != -1; i++, n++ )
+        ;
 
     hlt_bytes_size* dst = __hlt_bytes_reserve_space_for_more_marks(marks, n);
 
-    int64_t offset_first = first ? b->offset - (first - b->start) : -1;
-    int64_t offset_last  = last ? b->offset - (last - b->start) : -1;
+    int64_t offset_first = first ? (first - b->start) : -1;
+    int64_t offset_last  = last ? (last - b->start) : -1;
 
-    for ( hlt_bytes_size* p = b->marks; *p >= 0; p++ ) {
-        hlt_bytes_size offset = (*p + adjoffset);
+    for ( hlt_bytes_size* p = b->marks; *p != -1; p++ ) {
 
-        if ( offset_first >= 0 && *p < offset_first )
+        if ( *p < 0 )
             continue;
 
-        if ( offset_last >= 0 && *p >= offset_last )
+        hlt_bytes_size offset = *p + adjoffset;
+
+        if ( offset_first >= 0 && offset < offset_first )
+            continue;
+
+        if ( offset_last >= 0 && offset >= offset_last )
             continue;
 
         *dst++ = offset;
@@ -312,10 +336,13 @@ static void __add_chunk(hlt_bytes* tail, hlt_bytes* c, hlt_execution_context* ct
     tail->next = c;
     c->offset = tail->offset + (__get_object(tail) ? 0 : tail->end - tail->start);
 
-    if ( tail->marks && tail->end == tail->start ) {
-        __hlt_bytes_copy_marks(&c->marks, tail, 0, 0, 0);
-        hlt_free(tail->marks);
-        tail->marks = 0;
+    if ( tail->marks ) {
+        for ( hlt_bytes_size* p = tail->marks; *p != -1; p++ ) {
+            if ( *p >= (tail->end - tail->start) ) {
+                __hlt_bytes_append_mark(tail, *p - (tail->end - tail->start), ctx);
+                *p = -2; // Delete.
+            }
+        }
     }
 }
 
@@ -654,10 +681,10 @@ void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt
     int8_t* p = dst->start;
 
     for ( ; other && ! __get_object(other); other = other->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, other, 0, 0, p - dst->start);
         hlt_bytes_size n = other->end - other->start;
         memcpy(p, other->start, n);
         p += n;
-        __hlt_bytes_copy_marks(&dst->marks, other, 0, 0, 0);
     }
 
     __add_chunk(__tail(b, true), dst, ctx);
@@ -695,20 +722,18 @@ static void _hlt_bytes_concat_into(hlt_bytes* dst, hlt_bytes* b1, hlt_bytes* b2,
 #endif
 
     int8_t* p = dst->start;
-    hlt_bytes_size m = 0;
 
     for ( ; b1 && ! __get_object(b1); b1 = b1->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, b1, 0, 0, p - dst->start);
         hlt_bytes_size n = b1->end - b1->start;
         memcpy(p, b1->start, n);
-        __hlt_bytes_copy_marks(&dst->marks, b1, 0, 0, 0);
         p += n;
-        m += n;
     }
 
     for ( ; b2 && ! __get_object(b2); b2 = b2->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, b2, 0, 0, p - dst->start);
         hlt_bytes_size n = b2->end - b2->start;
         memcpy(p, b2->start, n);
-        __hlt_bytes_copy_marks(&dst->marks, b2, 0, 0, m);
         p += n;
     }
 }
@@ -1097,11 +1122,10 @@ static void _hlt_bytes_copy_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** e
     int8_t* p = dst->start;
 
     for ( ; b; b = b->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, b, 0, 0, p - dst->start);
         hlt_bytes_size n = (b->end - b->start);
         memcpy(p, b->start, n);
         p += n;
-
-        __hlt_bytes_copy_marks(&dst->marks, b, 0, 0, 0);
     }
 }
 
@@ -1163,8 +1187,6 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** mar
 
     int8_t* p = buffer;
 
-    hlt_bytes_size adjoffset = -(p1.cur - p1.bytes->start);
-
     // Special case: both inside same chunk.
     if ( p1.bytes == p2.bytes ) {
         hlt_bytes_size n = min((p2.cur - p1.cur), buffer_size);
@@ -1172,8 +1194,7 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** mar
         if ( n )
             memcpy(p, p1.cur, n);
 
-        if ( marks )
-            __hlt_bytes_copy_marks(marks, p1.bytes, p1.cur, p2.cur, adjoffset);
+        __hlt_bytes_copy_marks(marks, p1.bytes, p1.cur, p2.cur, (p1.bytes->start - p1.cur));
 
         return buffer_size <= len ? p + n : 0;
     }
@@ -1182,11 +1203,9 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** mar
     hlt_bytes_size n = min((p1.bytes->end - p1.cur), buffer_size - (p - buffer));
 
     if ( n ) {
+        __hlt_bytes_copy_marks(marks, p1.bytes, p1.cur, 0, (p - buffer) + (p1.bytes->start - p1.cur));
         memcpy(p, p1.cur, n);
         p += n;
-
-        if ( marks )
-            __hlt_bytes_copy_marks(marks, p1.bytes, p1.cur, 0, adjoffset);
     }
 
     // Intermediate blocks.
@@ -1196,25 +1215,23 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** mar
     for ( ; c && (c != p2.bytes || p2_is_end) && ! __get_object(c); c = c->next ) {
         hlt_bytes_size n = min((c->end - c->start), buffer_size - (p - buffer));
 
+        __hlt_bytes_copy_marks(marks, c, 0, 0, (p - buffer));
+
         if ( n ) {
             memcpy(p, c->start, n);
             p += n;
         }
-
-        if ( marks )
-            __hlt_bytes_copy_marks(marks, c, 0, 0, adjoffset);
     }
 
     if ( c && ! __get_object(c) ) {
         hlt_bytes_size n = min((p2.cur - p2.bytes->start), buffer_size - (p - buffer));
 
+        __hlt_bytes_copy_marks(marks, p2.bytes, 0, p1.cur, (p - buffer) + (p2.bytes->start - p2.cur));
+
         if ( n ) {
             memcpy(p, p2.bytes->start, n);
             p += n;
         }
-
-        if ( marks )
-            __hlt_bytes_copy_marks(marks, p2.bytes, 0, p2.cur, adjoffset);
     }
 
     else if ( ! p2_is_end && ! __get_object(c) ) {
@@ -1589,8 +1606,6 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
     if ( ! b )
         return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
-    // __print_bytes("debug:", b);
-
     char hex[5] = { '\\', 'x', 'X', 'X', '\0' };
     char buffer[256];
     uint64_t i = 0;
@@ -1865,10 +1880,10 @@ static void _hlt_bytes_upper_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** 
     __hlt_bytes_begin(&cur, b, excpt, ctx);
 
     for ( hlt_bytes* c = b; c && ! __get_object(c); c = c->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, c, 0, 0, p - dst->start);
+
         for ( int8_t* s = c->start; s < c->end; s++ )
             *p++ = toupper(*s);
-
-        __hlt_bytes_copy_marks(&dst->marks, c, 0, 0, 0);
     }
 }
 
@@ -1905,10 +1920,10 @@ static void _hlt_bytes_lower_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** 
     __hlt_bytes_begin(&cur, b, excpt, ctx);
 
     for ( hlt_bytes* c = b; c && ! __get_object(c); c = c->next ) {
+        __hlt_bytes_copy_marks(&dst->marks, c, 0, 0, p - dst->start);
+
         for ( int8_t* s = c->start; s < c->end; s++ )
             *p++ = tolower(*s);
-
-        __hlt_bytes_copy_marks(&dst->marks, c, 0, 0, 0);
     }
 }
 
@@ -2300,39 +2315,37 @@ hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** ex
 
 void hlt_bytes_append_mark(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __hlt_bytes_append_mark(b, ctx);
+    __hlt_bytes_append_mark(b, -1, ctx);
 }
 
 hlt_iterator_bytes hlt_bytes_next_mark(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    // We don't normalize the iterator here.
+    __normalize_iter(&i);
 
-    hlt_bytes_size index = hlt_iterator_bytes_index(i, excpt, ctx);
+    hlt_bytes* b = i.bytes;
+    int8_t* c = i.cur + 1; // Skip current position.
 
     while ( 1 ) {
-
-        if ( __get_object(i.bytes) ) {
+        if ( __get_object(b) )
             // End of iteration, but not found.
-            i.cur = i.bytes->end;
-            __normalize_iter(&i);
-            return i;
+            return __create_iterator(b, b->end);
+
+        for ( hlt_bytes_size* m = b->marks; m && *m != -1; m++ ) {
+            if ( *m >= (c - b->start) )
+                return __create_iterator(b, b->start + *m);
         }
 
-        for ( hlt_bytes_size* m = i.bytes->marks; m && *m >= 0; m++ ) {
-            if ( *m >= index ) {
-                i.cur = i.bytes->start + (*m - i.bytes->offset);
-                __normalize_iter(&i);
-                return i;
-            }
-        }
-
-        if ( ! i.bytes->next ) {
+        if ( ! b->next )
             // No mark found.
-            i.cur = i.bytes->end;
-            __normalize_iter(&i);
-            return i;
-        }
+            return __create_iterator(b, b->end);
 
-        i.bytes = i.bytes->next;
+        b = b->next;
+        c = b->start;
     }
+}
+
+int8_t hlt_bytes_at_mark(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __normalize_iter(&i);
+    return __at_mark(i);
 }
