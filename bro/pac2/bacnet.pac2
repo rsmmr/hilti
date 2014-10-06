@@ -1428,7 +1428,8 @@ type BBMD = unit (func: BVLC_function, len: uint16) {
   switch ( func ) {
    BVLC_function::BVLC-Result -> bvlc_result: uint16 &convert=BVLC_result($$);
    BVLC_function::Read-BDT-ACK,
-   BVLC_function::Write-BDT -> bdts: list<BDT_entry> &length=len;
+   # FIXME: for some reason &length does not seem to work here. Perhaps it has problems with addr &ipv4?
+   BVLC_function::Write-BDT -> bdts: list<BDT_entry> &count=len/10;
    BVLC_function::Read-FDT,
    BVLC_function::Read-BDT -> : void;
    BVLC_function::Register-FD -> ttl: uint16;
@@ -1479,7 +1480,7 @@ tuple<NPDU_priority, uint64, bytes, uint64, bytes, uint64, NPDU_type> bro_npdu_i
 type NPDU = unit(len: uint16) {
   var bacnet-priority: NPDU_priority;
 
-  version: uint8; # should be 0x1, but wireshark trace also has 10?
+  version: uint8; # should be 0x1, but trace also has 10?
   control : bitfield(8) {
     bacnet-priority: 0..1;
     der: 2;
