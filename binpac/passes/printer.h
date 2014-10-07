@@ -104,6 +104,7 @@ protected:
     void visit(type::Iterator* i) override;
     void visit(type::List* l) override;
     void visit(type::Map* m) override;
+    void visit(type::Mark* m) override;
     void visit(type::Module* m) override;
     void visit(type::Network* n) override;
     void visit(type::OptionalArgument* o) override;

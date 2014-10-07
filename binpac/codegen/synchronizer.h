@@ -50,6 +50,7 @@ protected:
     void visit(ctor::RegExp* b) override;
 
     void visit(type::EmbeddedObject* o) override;
+    void visit(type::Mark* o) override;
 
     void visit(expression::Ctor* b) override;
     void visit(expression::Type* t) override;

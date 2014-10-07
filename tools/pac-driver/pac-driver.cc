@@ -59,6 +59,7 @@ struct Options {
 typedef struct  {
     int first;
     const char* second;
+    int mark;
 } Embed;
 
 int driver_debug = 0;
@@ -107,6 +108,7 @@ static void usage(const char* prog)
     fprintf(stderr, "    -i <n>        Feed input incrementally in chunks of size <n>\n");
     fprintf(stderr, "    -e <off:str>  Embed string <str> at offset <off>; can be given multiple times\n");
     fprintf(stderr, "    -l            Show available parsers\n");
+    fprintf(stderr, "    -m <off>      Set mark at offset <off>; can be given multiple times\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
 #ifdef PAC_DRIVER_JIT
@@ -264,8 +266,15 @@ hlt_bytes* readAllInput(Embed* embeds)
     int8_t buffer[4096];
 
     if ( embeds->second && embeds->first == 0 ) {
-        hlt_string s = hlt_string_from_asciiz(embeds->second, &excpt, ctx);
-        hlt_bytes_append_object(input, &hlt_type_info_hlt_string, &s, &excpt, ctx);
+
+        if ( embeds->mark )
+            hlt_bytes_append_mark(input, &excpt, ctx);
+
+        else {
+            hlt_string s = hlt_string_from_asciiz(embeds->second, &excpt, ctx);
+            hlt_bytes_append_object(input, &hlt_type_info_hlt_string, &s, &excpt, ctx);
+        }
+
         ++embeds;
     }
 
@@ -281,8 +290,15 @@ hlt_bytes* readAllInput(Embed* embeds)
         hlt_bytes_append_raw(input, copy, n, &excpt, ctx);
 
         if ( embeds->second ) {
-            hlt_string s = hlt_string_from_asciiz(embeds->second, &excpt, ctx);
-            hlt_bytes_append_object(input, &hlt_type_info_hlt_string, &s, &excpt, ctx);
+
+            if ( embeds->mark )
+                hlt_bytes_append_mark(input, &excpt, ctx);
+
+            else {
+                hlt_string s = hlt_string_from_asciiz(embeds->second, &excpt, ctx);
+                hlt_bytes_append_object(input, &hlt_type_info_hlt_string, &s, &excpt, ctx);
+            }
+
             ++embeds;
         }
 
@@ -385,6 +401,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 
         done = (hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx) && ! hlt_bytes_at_object(cur_end, &hlt_type_info_hlt_string, &excpt, ctx));
 
+        //fprintf(stderr, "\n");
         chunk1 = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
         hlt_bytes_append(incr_input, chunk1, &excpt, ctx);
 
@@ -522,7 +539,7 @@ int main(int argc, char** argv)
 #endif
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:")) != -1) {
 
         switch (ch) {
 
@@ -568,6 +585,20 @@ int main(int argc, char** argv)
             if ( embeds_count < sizeof(embeds) - 1 ) {
                 embeds[embeds_count].first = offset;
                 embeds[embeds_count].second = m + 1;
+                embeds[embeds_count].mark = 0;
+                embeds_count++;
+            }
+
+            break;
+         }
+
+         case 'm': {
+            int offset = atoi(optarg);
+
+            if ( embeds_count < sizeof(embeds) - 1 ) {
+                embeds[embeds_count].first = offset;
+                embeds[embeds_count].second = optarg; // Dummy, just != 0.
+                embeds[embeds_count].mark = 1;
                 embeds_count++;
             }
 

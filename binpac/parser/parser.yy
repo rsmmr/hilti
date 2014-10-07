@@ -122,6 +122,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         LIST
 %token         LOCAL
 %token         MAP
+%token         MARK
 %token         MODULE
 %token         NET
 %token         ON
@@ -440,6 +441,7 @@ atomic_type   : ANY                              { $$ = std::make_shared<type::A
               | TUPLE '<' '*' '>'                { $$ = std::make_shared<type::Tuple>(loc(@$)); }
 
               | OBJECT '<' type '>'              { $$ = std::make_shared<type::EmbeddedObject>($3); }
+              | MARK                             { $$ = std::make_shared<type::Mark>(); }
 
               | bitfield                         { $$ = $1; }
               | bitset                           { $$ = $1; }

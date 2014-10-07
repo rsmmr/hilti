@@ -117,6 +117,7 @@ type::Interval
 type::Iterator
 type::List
 type::Map
+type::Mark
 type::Module
 type::Network
 type::OptionalArgument
