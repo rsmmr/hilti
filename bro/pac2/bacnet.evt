@@ -99,7 +99,7 @@ on BACnet::BACnet_SegmentACK_PDU
   -> event bacnet_apdu_segment_ack ($conn, cast<uint64>(self.invokeID), cast<uint64>(self.sequence_number), cast<uint64>(self.actual_window_size));
 
 on BACnet::PDU_error
-  -> event bacnet_apdu_error ($conn, cast<uint64>(self.invokeID), cast<uint64>(self.error-class), cast<uint64>(self.error-code));
+  -> event bacnet_apdu_error ($conn, cast<uint64>(self.invokeID), self.service, self.error-class, self.error-code);
 
 on BACnet::PDU_reject
   -> event bacnet_apdu_reject ($conn, cast<uint64>(self.invokeID), self.reject_reason);
@@ -123,7 +123,7 @@ on BACnet::Who_Is_Request
 on BACnet::Who_Has_Request if ( self.objectIdentifier.tag.tag == 2)
   -> event bacnet_who_has_request_device ($conn, self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber) );
 
-on BACnet::Who_Has_Request if ( self.objectIdentifier.tag.tag == 3)
+on BACnet::Who_Has_Request if ( self.objectName.tag.tag == 3)
   -> event bacnet_who_has_request_name ($conn, self.objectName.characters.value);
 
 on BACnet::I_Have_Request

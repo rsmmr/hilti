@@ -3,6 +3,8 @@
 # @TEST-EXEC: btest-diff rpm-out
 # @TEST-EXEC: bro -r ${TRACES}/bacnet/who-is-i-am.pcap bacnet.evt ${PAC2}/bacnet.bro %INPUT >who-out
 # @TEST-EXEC: btest-diff who-out
+# @TEST-EXEC: bro -r ${TRACES}/bacnet/bacnet-property-error.pcap bacnet.evt ${PAC2}/bacnet.bro %INPUT >error-out
+# @TEST-EXEC: btest-diff error-out
 
 event bacnet_apdu_confirmed_request(c: connection, invokeID: count, service: BACnet::BACnetConfirmedServiceChoice)
   {
@@ -29,9 +31,9 @@ event bacnet_apdu_segment_ack(c: connection, invokeID: count, sequence_number: c
   print "segment ack", c$id$orig_h, c$id$resp_h, invokeID, sequence_number, actual_window_size;
   }
 
-event bacnet_apdu_error(c: connection, invokeID: count, error_class: count, error_code: count)
+event bacnet_apdu_error(c: connection, invokeID: count, service: BACnet::BACnetConfirmedServiceChoice, error_class: BACnet::BACnetErrorClass, error_code: BACnet::BACnetErrorCode)
   {
-  print "error", c$id$orig_h, c$id$resp_h, invokeID, error_class, error_code;
+  print "error", c$id$orig_h, c$id$resp_h, invokeID, service, error_class, error_code;
   }
 
 event bacnet_apdu_reject(c: connection, invokeID: count, reason: BACnet::BACnetRejectReason)

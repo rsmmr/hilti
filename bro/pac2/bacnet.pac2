@@ -2143,11 +2143,158 @@ type ReadProperty_ACK = unit {
   propertyValue: BACnetArray_Partial(3);
 };
 
+export type BACnetErrorClass = enum {
+  device = 0,
+  object-error = 1,
+  property-error = 2,
+  resources = 3,
+  security = 4,
+  services = 5,
+  vt = 6,
+  communication = 7
+};
+
+export type BACnetErrorCode = enum {
+  abort-apdu-too-long = 123,
+  abort-application-exceeded-reply-time = 124,
+  abort-buffer-overflow = 51,
+  abort-insufficient-security = 135,
+  abort-invalid-apdu-in-this-state = 52,
+  abort-other = 56,
+  abort-out-of-resources = 125,
+  abort-preempted-by-higher-priority-task = 53,
+  abort-proprietary = 55,
+  abort-security-error = 136,
+  abort-segmentation-not-supported = 54,
+  abort-tsm-timeout = 126,
+  abort-window-size-out-of-range = 127,
+  access-denied = 85,
+  addressing-error = 115,
+  bad-destination-address = 86,
+  bad-destination-device-id = 87,
+  bad-signature = 88,
+  bad-source-address = 89,
+  bad-timestamp = 90,
+  busy = 82,
+  cannot-use-key = 91,
+  cannot-verify-message-id = 92,
+  character-set-not-supported = 41,
+  communication-disabled = 83,
+  configuration-in-progress = 2,
+  correct-key-revision = 93,
+  cov-subscription-failed = 43,
+  datatype-not-supported = 47,
+  delete-fdt-entry-failed = 120,
+  device-busy = 3,
+  destination-device-id-required = 94,
+  distribute-broadcast-failed = 121,
+  duplicate-message = 95,
+  duplicate-name = 48,
+  duplicate-object-id = 49,
+  dynamic-creation-not-supported = 4,
+  encryption-not-configured = 96,
+  encryption-required = 97,
+  file-access-denied = 5,
+  file-full = 128,
+  inconsistent-configuration = 129,
+  inconsistent-object-type = 130,
+  inconsistent-parameters = 7,
+  inconsistent-selection-criterion = 8,
+  incorrect-key = 98,
+  internal-error = 131,
+  invalid-array-index = 42,
+  invalid-configuration-data = 46,
+  invalid-data-type = 9,
+  invalid-event-state = 73,
+  invalid-file-access-method = 10,
+  invalid-file-start-position = 11,
+  invalid-key-data = 99,
+  invalid-parameter-data-type = 13,
+  invalid-tag = 57,
+  invalid-time-stamp = 14,
+  key-update-in-progress = 100,
+  list-element-not-found = 81,
+  log-buffer-full = 75,
+  logged-value-purged = 76,
+  malformed-message = 101,
+  message-too-long = 113,
+  missing-required-parameter = 16,
+  network-down = 58,
+  no-alarm-configured = 74,
+  no-objects-of-specified-type = 17,
+  no-property-specified = 77,
+  no-space-for-object = 18,
+  no-space-to-add-list-element = 19,
+  no-space-to-write-property = 20,
+  no-vt-sessions-available = 21,
+  not-configured = 132,
+  not-configured-for-triggered-logging = 78,
+  not-cov-property = 44,
+  not-key-server = 102,
+  not-router-to-dnet = 110,
+  object-deletion-not-permitted = 23,
+  object-identifier-already-exists = 24,
+  other = 0,
+  operational-problem = 25,
+  optional-functionality-not-supported = 45,
+  out-of-memory = 133,
+  parameter-out-of-range = 80,
+  password-failure = 26,
+  property-is-not-a-list = 22,
+  property-is-not-an-array = 50,
+  read-access-denied = 27,
+  read-bdt-failed = 117,
+  read-fdt-failed = 119,
+  register-foreign-device-failed = 118,
+  reject-buffer-overflow = 59,
+  reject-inconsistent-parameters = 60,
+  reject-invalid-parameter-data-type = 61,
+  reject-invalid-tag = 62,
+  reject-missing-required-parameter = 63,
+  reject-parameter-out-of-range = 64,
+  reject-too-many-arguments = 65,
+  reject-undefined-enumeration = 66,
+  reject-unrecognized-service = 67,
+  reject-proprietary = 68,
+  reject-other = 69,
+  router-busy = 111,
+  security-error = 114,
+  security-not-configured = 103,
+  service-request-denied = 29,
+  source-security-required = 104,
+  success = 84,
+  timeout = 30,
+  too-many-keys = 105,
+  unknown-authentication-type = 106,
+  unknown-device = 70,
+  unknown-file-size = 122,
+  unknown-key = 107,
+  unknown-key-revision = 108,
+  unknown-network-message = 112,
+  unknown-object = 31,
+  unknown-property = 32,
+  unknown-subscription = 79,
+  unknown-route = 71,
+  unknown-source-message = 109,
+  unknown-vt-class = 34,
+  unknown-vt-session = 35,
+  unsupported-object-type = 36,
+  value-not-initialized = 72,
+  value-out-of-range = 37,
+  value-too-long = 134,
+  vt-session-already-closed = 38,
+  vt-session-termination-failure = 39,
+  write-access-denied = 40,
+  write-bdt-failed = 116
+};
+
 type PDU_error = unit {
   invokeID: uint8;
-  error-class: uint8;
-  error-code: uint8;
-  # conversion codes -> standard;
+  service: uint8 &convert=BACnetConfirmedServiceChoice($$);
+  error-class_tag: BACnetTag;
+  error-class: bytes &length=self.error-class_tag.lvt &convert=BACnetErrorClass($$.to_uint(BinPAC::ByteOrder::Network));
+  error-code_tag: BACnetTag;
+  error-code: bytes &length=self.error-code_tag.lvt &convert=BACnetErrorCode($$.to_uint(BinPAC::ByteOrder::Network));
 };
 
 export type BACnetRejectReason = enum {
@@ -2165,6 +2312,7 @@ export type BACnetRejectReason = enum {
 
 type PDU_reject = unit {
   invokeID: uint8;
+  # FIXME: might be preceeded by tag. Need traffic containing it...
   reject_reason: uint8 &convert=BACnetAbortReason($$);
 };
 
@@ -2189,6 +2337,7 @@ type PDU_abort = unit(head_raw: bytes) { # page 624
     tpe: 4..7;
   } &parse(head_raw);
   invokeID: uint8;
+  # FIXME: might be preceeded by tag. Need traffic containing it...
   abort_reason: uint8 &convert=BACnetAbortReason($$); # pg. 652
 };
 
