@@ -1,6 +1,8 @@
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+find_package(HILTI)
+
 if ( BRO_DIST )
 
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${BRO_DIST}/cmake)
@@ -32,8 +34,6 @@ if ( BRO_DIST )
         project(Bro-Plugin-Hilti)
 
         cmake_minimum_required(VERSION 2.6.3)
-
-        find_package(HILTI)
 
         if ( NOT HILTI_FOUND )
             message(FATAL_ERROR "HILTI not found")
@@ -105,8 +105,8 @@ if ( BRO_DIST )
     bro_plugin_end()
 
     if ( BUILDING_HILTI )
-        set(plugin_external_libs ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap)
-        set(plugin_hilti_libs    hilti hilti-jit ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a)
+        set(plugin_external_libs ${LLVM_LIBS} ${LLVM_LDFLAGS} )
+        set(plugin_hilti_libs    hilti hilti-jit ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a ${HILTI_LIBS})
         set(plugin_binpac_libs   binpacxx)
 
         if ( "${CMAKE_BUILD_TYPE}" MATCHES "Debug" )
