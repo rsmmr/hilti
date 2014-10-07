@@ -129,6 +129,7 @@ using namespace hilti;
 %token         TRY            "'try'"
 %token         TUPLE          "'tuple'"
 %token         TYPE           "'type'"
+%token         UNION          "'union'"
 %token         VECTOR         "'vector'"
 %token         VOID           "'void'"
 %token         WITH           "'with'"
@@ -165,8 +166,10 @@ using namespace hilti;
 %type <stmt>             stmt instruction try_catch foreach
 %type <struct_field>     struct_field
 %type <struct_fields>    struct_fields opt_struct_fields
+%type <union_field>      union_field
+%type <union_fields>     union_fields opt_union_fields
 %type <sval>             re_pattern_constant
-%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ overlay context scope function_type
+%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ union_ overlay context scope function_type
 %type <types>            type_list
 
 %%
@@ -331,6 +334,7 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | enum_                            { $$ = $1; }
               | exception                        { $$ = $1; }
               | struct_                          { $$ = $1; }
+              | union_                           { $$ = $1; }
               | scope                            { $$ = $1; }
               | context                          { $$ = $1; }
               | overlay                          { $$ = $1; }
@@ -401,6 +405,23 @@ struct_fields : struct_fields ',' struct_field   { $$ = $1; $$.push_back($3); }
 
 struct_field  : type local_id opt_attributes     { $1->setAttributes($3);
                                                    $$ = builder::struct_::field($2, $1, nullptr, false, loc(@$));
+                                                 }
+
+union_        : UNION opt_attributes             { driver.disableLineMode(); }
+                    '{' opt_union_fields '}'     { driver.enableLineMode();
+                                                   $$ = builder::union_::type($5, loc(@$));
+                                                   $$->setAttributes($2);
+                                                 }
+              | UNION '<' type_list '>'          { $$ = builder::union_::type($3, loc(@$)); }
+
+opt_union_fields : union_fields                  { $$ = $1; }
+              | /* empty */                      { $$ = builder::union_::field_list(); }
+
+union_fields : union_fields ',' union_field      { $$ = $1; $$.push_back($3); }
+              | union_field                      { $$ = builder::union_::field_list(); $$.push_back($1); }
+
+union_field  : type local_id opt_attributes      { $1->setAttributes($3);
+                                                   $$ = builder::union_::field($2, $1, nullptr, false, loc(@$));
                                                  }
 
 context       :                                  { driver.disableLineMode(); }

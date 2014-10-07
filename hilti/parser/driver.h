@@ -36,6 +36,7 @@ struct yystype_hilti {
     type::Bitset::Label bitset_label;
     type::Scope::field_list scope_fields;
     type::Struct::field_list struct_fields;
+    type::Struct::field_list union_fields;
     type::Struct::field_list context_fields;
     type::Overlay::field_list overlay_fields;
     ctor::Map::element map_element;
@@ -55,6 +56,7 @@ struct yystype_hilti {
     shared_ptr<hilti::function::Parameter> param;
     shared_ptr<hilti::statement::try_::Catch> catch_;
     shared_ptr<hilti::type::struct_::Field> struct_field;
+    shared_ptr<hilti::type::union_::Field> union_field;
     shared_ptr<hilti::type::struct_::Field> context_field;
     shared_ptr<hilti::type::overlay::Field> overlay_field;
 

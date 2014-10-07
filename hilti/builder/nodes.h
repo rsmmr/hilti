@@ -1878,6 +1878,84 @@ inline shared_ptr<hilti::type::struct_::Field> field(const std::string& name, sh
 
 }
 
+namespace union_ {
+
+typedef hilti::type::Union::field_list field_list;
+
+/// Instantiates a type::Union type with named fields
+///
+/// fields: The union's fields.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Union> type(const field_list& fields, const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Union>(fields, l);
+}
+
+/// Instantiates a type::Union type with anonymous fields, based on types
+/// only. This resembles a variant.
+///
+/// types: The unions's types.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Union> type(const type_list& types, const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Union>(types, l);
+}
+
+/// Instantiates a type::Union wildcard type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Union> typeAny(const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Union>(l);
+}
+
+/// Instanties a union field for its type description.
+///
+/// id:  The name of the field.
+///
+/// type: The type of the field.
+///
+/// default_: An optional default value, null if no default.
+///
+/// internal: If true, the field will not be printed when the union
+/// type is rendered as a string. Internal IDS are also skipped from
+/// ctor expressions and list conversions.
+///
+/// l: Location associated with the field.
+inline shared_ptr<hilti::type::union_::Field> field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, bool internal = false, const Location& l=Location::None)
+{
+    if ( default_ )
+        type->attributes().add(attribute::DEFAULT, default_);
+
+    return std::make_shared<hilti::type::union_::Field>(id, type, internal, l);
+}
+
+/// Instanties a union field for its type description.
+///
+/// name:  The name of the field.
+///
+/// type: The type of the field.
+///
+/// default_: An optional default value, null if no default.
+///
+/// internal: If true, the field will not be printed when the union
+/// type is rendered as a string. Internal IDS are also skipped from
+/// ctor expressions and list conversions.
+///
+/// l: Location associated with the field.
+inline shared_ptr<hilti::type::union_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, const Location& l=Location::None)
+{
+    return std::make_shared<hilti::type::union_::Field>(id::node(name), type, l);
+}
+
+
+}
+
 ////
 
 namespace context {

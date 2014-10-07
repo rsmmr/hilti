@@ -1755,6 +1755,67 @@ public:
    ACCEPT_VISITOR(Struct);
 };
 
+namespace union_ {
+    typedef struct_::Field Field;
+}
+
+/// Type for unions.
+class Union : public ValueType, public trait::TypeList, public trait::Hashable, public trait::Parameterized
+{
+public:
+   typedef std::list<node_ptr<union_::Field>> field_list;
+
+   /// Constructor with names fields.
+   ///
+   /// fields: The union's fields.
+   ///
+   /// l: Associated location.
+   Union(const field_list& fields, const Location& l=Location::None);
+
+   /// Constructor with anonymous fields, resemling a variant.
+   ///
+   /// fields: The union's fields.
+   ///
+   /// l: Associated location.
+   Union(const type_list& types, const Location& l=Location::None);
+
+   /// Constructor for a wildcard union type matching any other.
+   ///
+   /// l: Associated location.
+   Union(const Location& l=Location::None);
+
+   virtual ~Union();
+
+   /// Returns the list of fields. If this is union with anonymous fields,
+   /// placeholder names will be filled in.
+   const field_list& fields() const { return _fields; }
+
+   /// Returns if this a union with anonymous fields.
+   bool anonymousFields() const { return _anonymous; }
+
+   /// Adds a field.
+   void addField(shared_ptr<union_::Field> field);
+
+   /// Returns the field of a given name, or null if no such field.
+   shared_ptr<union_::Field> lookup(shared_ptr<ID> id) const;
+
+   const trait::TypeList::type_list typeList() const override;
+   parameter_list parameters() const override;
+
+   bool _equal(shared_ptr<hilti::Type> other) const override;
+
+   ACCEPT_VISITOR(Type);
+
+protected:
+   // Returns a sorted list of field so that we have a well-defined order.
+   field_list sortedFields();
+
+private:
+   std::list<node_ptr<union_::Field>> _fields;
+   bool _anonymous;
+   string _dtor;
+};
+
 /// Type for a threading ``scope``.
 class Scope : public HiltiType {
 public:

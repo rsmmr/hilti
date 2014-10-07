@@ -35,6 +35,7 @@ declare "C-HILTI" string time_to_string(any d, int<32> options, caddr seen)
 declare "C-HILTI" string interval_to_string(any d, int<32> options, caddr seen)
 declare "C-HILTI" string vector_to_string(any l, int<32> options, caddr seen)
 declare "C-HILTI" string file_to_string(any f, int<32> options, caddr seen)
+declare "C-HILTI" string union_to_string(any s, int<32> options, caddr seen)
 
 declare "C-HILTI" int<64> int_to_int64(any n)
 declare "C-HILTI" int<64> bool_to_int64(any b)
@@ -63,6 +64,8 @@ declare "C-HILTI" int<64> bytes_hash(any s)
 declare "C-HILTI" bool    bytes_equal(any s1, any s2)
 declare "C-HILTI" int<64> struct_hash(any s)
 declare "C-HILTI" int<64> struct_equal(any s)
+declare "C-HILTI" int<64> union_hash(any s)
+declare "C-HILTI" int<64> union_equal(any s)
 
 declare "C-HILTI" any bytes_blockable(any s)
 
@@ -91,6 +94,8 @@ declare "C-HILTI" caddr tuple_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  tuple_clone_init(caddr dst, any src, caddr cstate)
 declare "C-HILTI" caddr channel_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  channel_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr union_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  union_clone_init(caddr dst, any src, caddr cstate)
 
 ###
 
@@ -99,6 +104,10 @@ declare "C-HILTI" void exception_dtor(ref<exception> b)
 ###
 
 declare "C-HILTI" void struct_dtor(any b)
+
+###
+
+declare "C-HILTI" void union_dtor(any b)
 
 ###
 

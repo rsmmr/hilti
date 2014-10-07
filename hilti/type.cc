@@ -94,6 +94,7 @@ type::RegExp::~RegExp() {}
 type::Set::~Set() {}
 type::String::~String() {}
 type::Struct::~Struct() {}
+type::Union::~Union() {}
 type::Scope::~Scope() {}
 type::Time::~Time() {}
 type::Timer::~Timer() {}
@@ -642,58 +643,87 @@ bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
     // Comparing the types by rendering them to avoid infinite recursion
     // for cycles.
     return const_cast<type::Struct *>(this)->render() == ty->render();
+}
 
-#if 0
-    // This version has problems when some type IDs come without namespace.
-    // But looks like can just render directly.
+type::Union::Union(const Location& l) : ValueType(l)
+{
+    setWildcard(true);
+}
 
-    auto other = ast::as<type::Struct>(ty);
+type::Union::Union(const field_list& fields, const Location& l) : ValueType(l)
+{
+    _fields = fields;
+    _anonymous = false;
 
-    if ( _fields.size() != other->_fields.size() )
-        return false;
+    for ( auto f : _fields )
+        addChild(f);
+}
 
-    auto i1 = _fields.begin();
-    auto i2 = other->_fields.begin();
+type::Union::Union(const type_list& types, const Location& l) : ValueType(l)
+{
+    _anonymous = true;
 
-    for ( ; i1 != _fields.end(); ++i1, ++i2 ) {
-        auto f1 = *i1;
-        auto f2 = *i2;
+    field_list fields;
 
-        if ( f1->id()->name() != f2->id()->name() )
-            return false;
+    int i = 0;
 
-        // Comparing the types by rendering them to avoid infinite recursion
-        // for cycles.
-        std::ostringstream t1;
-        passes::Printer(t1, true).run(f1->type());
-
-        std::ostringstream t2;
-        passes::Printer(t2, true).run(f2->type());
-
-        if ( t1.str() != t2.str() )
-            return false;
-
-        if ( f1->default_() && ! f2->default_() )
-            return false;
-
-        if ( f2->default_() && ! f1->default_() )
-            return false;
-
-        // Comparing the expression by rendering them.
-        if ( f1->default_() && f2->default_() ) {
-            std::ostringstream e1;
-            passes::Printer(e1, true).run(f1->default_());
-
-            std::ostringstream e2;
-            passes::Printer(e2, true).run(f2->default_());
-
-            if ( e1.str() != e2.str() )
-                return false;
-        }
+    for ( auto t : types ) {
+        auto id = std::make_shared<hilti::ID>(::util::fmt("f%d", ++i), l);
+        auto f = std::make_shared<hilti::type::struct_::Field>(id, t, false, l);
+        _fields.push_back(f);
     }
 
-    return true;
-#endif
+    for ( auto f : _fields )
+        addChild(f);
+}
+
+shared_ptr<type::union_::Field> type::Union::lookup(shared_ptr<ID> id) const
+{
+    for ( auto f : _fields ) {
+        if ( f->id()->name() == id->name() )
+            return f;
+    }
+
+    return nullptr;
+}
+
+type::Union::field_list type::Union::sortedFields()
+{
+    field_list sorted = _fields;
+
+    sorted.sort([] (shared_ptr<union_::Field> lhs, shared_ptr<union_::Field> rhs) {
+        return lhs->id()->name().compare(rhs->id()->name()) < 0; });
+
+    return sorted;
+}
+
+const type::trait::TypeList::type_list type::Union::typeList() const
+{
+    type::trait::TypeList::type_list types;
+
+    for ( auto f : _fields )
+        types.push_back(f->type());
+
+    return types;
+}
+
+type::trait::Parameterized::parameter_list type::Union::parameters() const
+{
+    type::trait::Parameterized::parameter_list params;
+
+    for ( auto f : _fields ) {
+        auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(f->type()));
+        params.push_back(p);
+    }
+
+    return params;
+}
+
+bool type::Union::_equal(shared_ptr<hilti::Type> ty) const
+{
+    // Comparing the types by rendering them to avoid infinite recursion
+    // for cycles.
+    return const_cast<type::Union *>(this)->render() == ty->render();
 }
 
 bool type::Function::_equal(shared_ptr<hilti::Type> o) const

@@ -60,6 +60,7 @@ namespace type {
    class TimerMgr;
    class Tuple;
    class TypeType;
+   class Union;
    class Unknown;
    class Unset;
    class Vector;

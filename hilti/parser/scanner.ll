@@ -107,6 +107,7 @@ timer_mgr             return token::TIMERMGR;
 try                   return token::TRY;
 tuple                 return token::TUPLE;
 type                  return token::TYPE;
+union                 return token::UNION;
 vector                return token::VECTOR;
 void                  return token::VOID;
 with                  return token::WITH;
