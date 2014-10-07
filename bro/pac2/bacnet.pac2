@@ -1594,7 +1594,7 @@ type APDU = unit(len: uint16) {
   };
 };
 
-type BACnetConfirmedServiceChoice = enum {
+export type BACnetConfirmedServiceChoice = enum {
   # Alarm and Event Services
   acknowledgeAlarm = 0,
   confirmedCOVNotification = 1,
@@ -1717,7 +1717,7 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_Request;
     BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_Request( len - self.len );
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_Request( len - self.len );
-    * -> : void { print "unhandled confirmedrequest", self.confirmed_service_choice; }
+    * -> : void; # { print "unhandled confirmedrequest", self.confirmed_service_choice; }
   } if ( self.head1.more-follows == 0 && self.head1.segmented-message == 0 );
 
   switch ( self.confirmed_service_choice ) {
@@ -1728,7 +1728,7 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_Request;
     BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_Request( len - self.len );
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_Request( len - self.len );
-    * -> : void { print "unhandled confirmedrequest", self.confirmed_service_choice; }
+    * -> : void; # { print "unhandled confirmedrequest", self.confirmed_service_choice; }
   } if ( ( self.head1.more-follows == 0 ) && ( self.head1.segmented-message == 1 ) && ( self.segmentation_status ) ); # only parse message if we are in last chunk and have all data
 
     : void {
@@ -1874,7 +1874,7 @@ type WriteProperty_Request = unit(len: uint16) {
   bacnet-priority: BACnetContextMessage(BACnetType::UnsignedInteger, 4, self.first_tag) if ( len > self.offset() );
 };
 
-type BACnetUnconfirmedServiceChoice = enum {
+export type BACnetUnconfirmedServiceChoice = enum {
   i-Am = 0,
   i-Have = 1,
   unconfirmedCOVNotification = 2,
@@ -1898,7 +1898,7 @@ type PDU_unconfirmedRequest = unit(len: uint16) {
     BACnetUnconfirmedServiceChoice::unconfirmedPrivateTransfer -> unconfirmedPrivateTransfer: UnconfirmedPrivateTransfer_Request(len - 2);
     BACnetUnconfirmedServiceChoice::who-Is -> who_is: Who_Is_Request(len - 2);
     BACnetUnconfirmedServiceChoice::who-Has -> who_has: Who_Has_Request(len - 2);
-    * -> : void { print "unhandled unconfirmedconfirmedrequest", self.service_choice; }
+    * -> : void; # { print "unhandled unconfirmedconfirmedrequest", self.service_choice; }
   };
 };
 
@@ -2045,7 +2045,7 @@ type BACnet_ComplexACK_PDU = unit(head_raw: bytes, len: uint16) {
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_ACK;
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_ACK( len - self.len );
     BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_ACK( len - self.len );
-    * -> : void { print "unhandled complexAck", self.confirmed_service_choice; } # Fixme: missing cases
+    * -> : void; # { print "unhandled complexAck", self.confirmed_service_choice; } # Fixme: missing cases
   } if ( self.head.more-follows == 0 && self.head.segmented-message == 0 ); # only parse message if we are in single-chunk
 
   switch ( self.confirmed_service_choice ) {
@@ -2054,7 +2054,7 @@ type BACnet_ComplexACK_PDU = unit(head_raw: bytes, len: uint16) {
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_ACK &parse(self.content_bytes);
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_ACK( cast<uint16>(|self.content_bytes|) ) &parse(self.content_bytes);
     BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_ACK( cast<uint16>(|self.content_bytes|) ) &parse(self.content_bytes);
-    * -> : void { print "unhandled complexAck", self.confirmed_service_choice; } # Fixme: missing cases
+    * -> : void; # { print "unhandled complexAck", self.confirmed_service_choice; } # Fixme: missing cases
   } if ( ( self.head.more-follows == 0 ) && ( self.head.segmented-message == 1 ) && ( self.segmentation_status ) ); # only parse message if we are in last chunk and have all data
 
     : void {
@@ -2140,7 +2140,7 @@ type PDU_error = unit {
   # conversion codes -> standard;
 };
 
-type BACnetRejectReason = enum {
+export type BACnetRejectReason = enum {
   other = 0,
   buffer-overflow = 1,
   inconsistent-parameters = 2,
@@ -2158,7 +2158,7 @@ type PDU_reject = unit {
   reject_reason: uint8 &convert=BACnetAbortReason($$);
 };
 
-type BACnetAbortReason = enum {
+export type BACnetAbortReason = enum {
   other = 0,
   buffer-overflow = 1,
   invalid-apdu-in-this-state = 2,
