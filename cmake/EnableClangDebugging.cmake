@@ -39,12 +39,12 @@ if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
     if ( NOT "${cxx_analyzer}" STREQUAL "cxx_analyzer-NOTFOUND" )
         message(STATUS "Activating clang's static analyzer for C++; original compiler is ${CMAKE_CXX_COMPILER}.")
 
-        set(CCC_CXX "${CMAKE_C_COMPILER}")
+        set(CCC_CXX "${CMAKE_CXX_COMPILER}")
 
         set(cxx_analyzer_wrapper "${CMAKE_CURRENT_BINARY_DIR}/c++-analyzer-cmake-wrapper")
         configure_file(${cxx_analyzer_wrapper_in} ${cxx_analyzer_wrapper})
 
-        set(CMAKE_C_COMPILER "${cxx_analyzer_wrapper}")
+        set(CMAKE_CXX_COMPILER "${cxx_analyzer_wrapper}")
 
     else ()
         message(STATUS "NOTE: Cannot find c++-analyzer in PATH, no static analysis for C++")

@@ -1,0 +1,9 @@
+Who-is, 192.168.0.50, 192.168.0.255, 133, 133
+Who-has, 192.168.0.50, 192.168.0.255, BACnet::BACnetObjectType_device, 133
+I-am, 192.168.0.24, 192.168.0.255, BACnet::BACnetObjectType_device, 133, 480, 0, BACnet::BACnetVendorIDs_Lithonia_Lighting
+Who-has, 192.168.0.50, 192.168.0.255, BACnet::BACnetObjectType_device, 133
+I-have, 192.168.0.24, 192.168.0.255, BACnet::BACnetObjectType_device, 4194303, BACnet::BACnetObjectType_device, 133, Unknown
+I-have, 192.168.0.24, 192.168.0.50, BACnet::BACnetObjectType_device, 133, BACnet::BACnetObjectType_device, 133, SYNERGY
+Who-has, 192.168.0.50, 192.168.0.255, BACnet::BACnetObjectType_device, 133
+I-have, 192.168.0.24, 192.168.0.255, BACnet::BACnetObjectType_device, 4194303, BACnet::BACnetObjectType_device, 133, Unknown
+I-have, 192.168.0.24, 192.168.0.50, BACnet::BACnetObjectType_device, 133, BACnet::BACnetObjectType_device, 133, SYNERGY

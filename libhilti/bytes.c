@@ -68,7 +68,7 @@ static inline hlt_bytes_size min(hlt_bytes_size a, hlt_bytes_size b)
 
 static inline __hlt_bytes_object* __get_object(const hlt_bytes* b)
 {
-    return (b->flags & _BYTES_FLAG_OBJECT) ? (__hlt_bytes_object*) b : 0;
+    return (b && (b->flags & _BYTES_FLAG_OBJECT)) ? (__hlt_bytes_object*) b : 0;
 }
 
 static inline hlt_bytes* __tail(hlt_bytes* b, int8_t consider_object)
@@ -261,6 +261,8 @@ hlt_bytes_size __hlt_bytes_len(hlt_bytes* b)
 // should be stored.
 hlt_bytes_size* __hlt_bytes_reserve_space_for_more_marks(hlt_bytes_size** dst, int addl_reserve)
 {
+    assert(dst);
+
     if ( ! *dst ) {
         *dst = hlt_malloc((addl_reserve + 1) * sizeof(hlt_bytes_size));
         return *dst;
