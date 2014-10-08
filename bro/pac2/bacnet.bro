@@ -20,7 +20,7 @@ export {
     dnet: count &optional;  # destination network number. FFFF = global broadcast.
     dadr: string &optional; # destination mac layer address, variable length
     snet: count &optional;  # same as destination
-    sadr: string &optional; 
+    sadr: string &optional;
     hop_count: count &optional; # decrementinghop-count. Initialized with 255
     message_type: NPDU_type &optional; # NL message type if NPDU contains nl-message
   };

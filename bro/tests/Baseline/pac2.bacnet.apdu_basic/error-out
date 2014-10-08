@@ -1,0 +1,1 @@
+error, 192.168.0.24, 192.168.0.50, 137, BACnet::BACnetConfirmedServiceChoice_reinitializeDevice, BACnet::BACnetErrorClass_services, BACnet::BACnetErrorCode_password-failure

@@ -1,4 +1,8 @@
 
+0.3-15 | 2014-09-30 11:59:48 -0700
+
+  * Minor documentation updates.
+
 0.3-12 | 2014-09-29 14:59:47 -0700
 
   * Doing parallel build in Dockerfile.

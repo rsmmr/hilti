@@ -76,3 +76,56 @@ on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && (
 # Fixme: return only the first element of dnet (length has to be 1)
 on BACnet::NPDU if ( (  self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::Establish-Connection-To-Network ) )
   -> event bacnet_npdu_establish_connection_to_network ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ], cast<uint64>(self.npdu_message.termination_time) );
+
+## BACnet APDU Messages
+
+# This should cover all possible classes of APDU messages. Due to the fact that we do not yet support sending optional values to Bro,
+# only the information that has to be present in the protocol is sent into the events. For the moment, this basically is the invokeID and
+# the chosen service.
+
+on BACnet::PDU_confirmedRequest
+  -> event bacnet_apdu_confirmed_request ($conn, cast<uint64>(self.invokeID), self.confirmed_service_choice);
+
+on BACnet::PDU_unconfirmedRequest
+  -> event bacnet_apdu_unconfirmed_request ($conn, self.service_choice);
+
+on BACnet::PDU_simpleACK
+  -> event bacnet_apdu_simple_ack ($conn, cast<uint64>(self.invokeID), self.service_choice);
+
+on BACnet::BACnet_ComplexACK_PDU
+  -> event bacnet_apdu_complex_ack ($conn, cast<uint64>(self.invokeID), self.confirmed_service_choice);
+
+on BACnet::BACnet_SegmentACK_PDU
+  -> event bacnet_apdu_segment_ack ($conn, cast<uint64>(self.invokeID), cast<uint64>(self.sequence_number), cast<uint64>(self.actual_window_size));
+
+on BACnet::PDU_error
+  -> event bacnet_apdu_error ($conn, cast<uint64>(self.invokeID), self.service, self.error-class, self.error-code);
+
+on BACnet::PDU_reject
+  -> event bacnet_apdu_reject ($conn, cast<uint64>(self.invokeID), self.reject_reason);
+
+on BACnet::PDU_abort
+  -> event bacnet_apdu_abort ($conn, cast<uint64>(self.invokeID), self.abort_reason);
+
+# A few unconfirmed requests -- at the moment only device discovery
+
+on BACnet::I_Am_Request
+  -> event bacnet_i_am_request ($conn, self.iAmDeviceIdentifier.oid.tpe, cast<uint64>(self.iAmDeviceIdentifier.oid.data.instanceNumber),
+    cast<uint64>(self.maxAPDULengthAccepted.unsigned), cast<uint64>(self.segmentationSupported.unsigned), self.vendorID);
+
+# FIXME: neither value has to be present :(
+on BACnet::Who_Is_Request
+  -> event bacnet_who_is_request ($conn, cast<uint64>(self.deviceInstanceRangeLowLimit), cast<uint64>(self.deviceInstanceRangeHighLimit));
+
+# Fixme: once again, not a single value in the request has to be present. At the moment this only works if the values we expect arrive.
+# we need optionals to support the other cases.
+# one of these two cases will fail.
+on BACnet::Who_Has_Request if ( self.objectIdentifier.tag.tag == 2)
+  -> event bacnet_who_has_request_device ($conn, self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber) );
+
+on BACnet::Who_Has_Request if ( self.objectName.tag.tag == 3)
+  -> event bacnet_who_has_request_name ($conn, self.objectName.characters.value);
+
+on BACnet::I_Have_Request
+  -> event bacnet_i_have_request ($conn, self.deviceIdentifier.oid.tpe, cast<uint64>(self.deviceIdentifier.oid.data.instanceNumber),
+    self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber), self.objectName.characters.value);
