@@ -5,6 +5,79 @@
 #include "../module.h"
 #include "../builder/nodes.h"
 
+static void _validateBranches(const Instruction* ins, shared_ptr<Expression> op, shared_ptr<Type> ty_op1, bool by_type)
+{
+    ins->isConstant(op);
+
+    auto a1 = ast::as<expression::Constant>(op);
+    auto a2 = ast::as<constant::Tuple>(a1->constant());
+
+    for ( auto i : a2->value() ) {
+        auto t = ast::as<type::Tuple>(i->type());
+
+        if ( ! t ) {
+            ins->error(i, "not a tuple");
+            return;
+        }
+
+        if ( t->typeList().size() != 2 ) {
+            ins->error(i, "clause must be a tuple (value, label)");
+            return;
+        }
+
+        ins->isConstant(i);
+
+        auto c1 = ast::as<expression::Constant>(i);
+        auto c2 = ast::as<constant::Tuple>(c1->constant());
+
+        auto list = c2->value();
+        auto j = list.begin();
+        auto t1 = *j++;
+        auto t2 = *j++;
+
+        if ( ! by_type ) {
+            ins->canCoerceTo(t1, ty_op1);
+            ins->equalTypes(t2->type(), builder::label::type());
+        }
+
+        else {
+            auto t = ast::as<expression::Type>(t1);
+
+            if ( ! t ) {
+                ins->error(t1, "not a type");
+                return;
+            }
+
+            auto types = ast::checkedCast<type::Union>(ty_op1)->fields(t->typeValue());
+            if ( ! types.size() )
+                ins->error(t1, "type does not exist in union");
+        }
+    }
+}
+
+static std::set<shared_ptr<Expression>> _successorBranches(const Instruction* ins, shared_ptr<Expression> op, shared_ptr<Expression> def)
+{
+    std::set<shared_ptr<Expression>> succ = { def };
+
+    auto a1 = ast::as<expression::Constant>(op);
+    auto a2 = ast::as<constant::Tuple>(a1->constant());
+
+    for ( auto i : a2->value() ) {
+        auto t = ast::as<type::Tuple>(i->type());
+        auto c1 = ast::as<expression::Constant>(i);
+        auto c2 = ast::as<constant::Tuple>(c1->constant());
+
+        auto list = c2->value();
+        auto j = list.begin();
+        auto t1 = *j++;
+        auto t2 = *j++;
+
+        succ.insert(t2);
+    }
+
+    return succ;
+}
+
 iBeginCC(flow)
     iValidateCC(ReturnResult) {
         auto decl = validator()->current<Declaration>();
@@ -162,59 +235,11 @@ iBeginCC(flow)
             return;
         }
 
-        isConstant(op3);
-
-        auto a1 = ast::as<expression::Constant>(op3);
-        auto a2 = ast::as<constant::Tuple>(a1->constant());
-
-        for ( auto i : a2->value() ) {
-            auto t = ast::as<type::Tuple>(i->type());
-
-            if ( ! t ) {
-                error(i, "not a tuple");
-                return;
-            }
-
-            if ( t->typeList().size() != 2 ) {
-                error(i, "switch clause must be a tuple (value, label)");
-                return;
-            }
-
-            isConstant(i);
-
-            auto c1 = ast::as<expression::Constant>(i);
-            auto c2 = ast::as<constant::Tuple>(c1->constant());
-
-            auto list = c2->value();
-            auto j = list.begin();
-            auto t1 = *j++;
-            auto t2 = *j++;
-
-            canCoerceTo(t1, ty_op1);
-            equalTypes(t2->type(), builder::label::type());
-        }
+        _validateBranches(this, op3, ty_op1, false);
     }
 
     iSuccessorsCC(Switch) {
-        std::set<shared_ptr<Expression>> succ = { op2 };
-
-        auto a1 = ast::as<expression::Constant>(op3);
-        auto a2 = ast::as<constant::Tuple>(a1->constant());
-
-        for ( auto i : a2->value() ) {
-            auto t = ast::as<type::Tuple>(i->type());
-            auto c1 = ast::as<expression::Constant>(i);
-            auto c2 = ast::as<constant::Tuple>(c1->constant());
-
-            auto list = c2->value();
-            auto j = list.begin();
-            auto t1 = *j++;
-            auto t2 = *j++;
-
-            succ.insert(t2);
-        }
-
-        return succ;
+        return _successorBranches(this, op2, op3);
     }
 
     iDocCC(Switch, R"(
@@ -229,4 +254,31 @@ iBeginCC(flow)
     )")
 
 iEndCC
+
+iBeginCC(flow)
+    iValidateCC(DispatchUnion) {
+        auto ty_op1 = op1->type();
+        auto ty_op2 = as<type::Label>(op2->type());
+        auto ty_op3 = as<type::Tuple>(op3->type());
+
+        _validateBranches(this, op3, ty_op1, true);
+    }
+
+    iSuccessorsCC(DispatchUnion) {
+        return _successorBranches(this, op3, op2);
+    }
+
+    iDocCC(DispatchUnion, R"(
+        Branches to one of several alternatives. The type of the current value of union *op1* determines which
+        alternative to take.  *op3* is a tuple of giving all alternatives as
+        2-tuples *(type, destination)*. *type* must be one of the types that the union *op1* defines.
+        and *destination* is a block label. If *type* equals that of the current value of *op1*,
+        control is transfered to the corresponding block. If multiple
+        alternatives match the type, one of them is taken but it's undefined
+        which one. If no alternative matches (including when no unit field is set), control is transfered to block
+        *op2*.
+    )")
+
+iEndCC
+
 

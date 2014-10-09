@@ -42,7 +42,7 @@ protected:
    void visit(type::Reference* t) override;
    void visit(type::CAddr* t) override;
    void visit(type::Unset* t) override;
-
+   void visit(type::Union* t) override;
 
 private:
     bool _cctor;

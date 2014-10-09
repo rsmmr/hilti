@@ -566,6 +566,59 @@ void Printer::visit(type::Unknown* i)
     p << (i->id() ? util::fmt("<Unresolved '%s'>", i->id()->pathAsString().c_str()) : "<Unknown>");
 }
 
+void Printer::visit(type::Union* t)
+{
+    if ( printTypeID(t) )
+        return;
+
+    Printer& p = *this;
+
+    if ( t->wildcard() ) {
+        p << "union<*>";
+        return;
+    }
+
+
+    if ( t->anonymousFields() ) {
+        p << "union<";
+        printList(t->typeList(), ", ");
+        p << ">";
+        return;
+    }
+
+    if ( ! t->fields().size() ) {
+        p << " union { }" << endl;
+        return;
+    }
+
+    p << "union {" << endl;
+    pushIndent();
+    enableTypeIDs();
+
+    auto i = t->fields().begin();
+
+    while ( i != t->fields().end() ) {
+        auto f = *i++;
+        auto last = (i == t->fields().end());
+
+        p << f->type() << ' ' << f->id();
+
+        printAttributes(f->type()->attributes());
+
+        if ( ! last )
+            p << ",";
+
+        p.printMetaInfo(f->metaInfo());
+
+        p << endl;
+    }
+
+    disableTypeIDs();
+    popIndent();
+
+    p << "}" << endl << endl;
+}
+
 void Printer::visit(type::Integer* i)
 {
     if ( printTypeID(i) )

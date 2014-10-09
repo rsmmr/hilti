@@ -150,6 +150,12 @@ void Loader::visit(expression::Variable* v)
     call(v->variable());
 }
 
+void Loader::visit(expression::Type* v)
+{
+    auto ti = cg()->llvmRtti(v->type());
+    setResult(ti, false, false);
+}
+
 void Loader::visit(variable::Local* v)
 {
     auto name = v->internalName();

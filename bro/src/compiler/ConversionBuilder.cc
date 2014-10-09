@@ -1108,7 +1108,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromTuple(shar
 					  val,
 					  hidx);
 
-		auto tmp_h2b = RuntimeHiltiToVal(tmp, type->FieldType(i));
+		auto tmp_h2b = RuntimeHiltiToVal(tmp, type->FieldType(i)); // XXX
 
 		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
 					  ::hilti::builder::id::create("LibBro::bro_record_assign"),

@@ -1790,13 +1790,24 @@ public:
    /// placeholder names will be filled in.
    const field_list& fields() const { return _fields; }
 
+   /// Returns all fields of a givem type.
+   ///
+   /// type: The type to search for. It must match the fields directly, no
+   /// coercion.
+   field_list fields(shared_ptr<Type> type) const;
+
    /// Returns if this a union with anonymous fields.
    bool anonymousFields() const { return _anonymous; }
 
    /// Adds a field.
    void addField(shared_ptr<union_::Field> field);
 
-   /// Returns the field of a given name, or null if no such field.
+   /// Returns the field of a given name. If there's no such field, including
+   /// if this is a union with anonymous fields, returns null.
+   shared_ptr<union_::Field> lookup(const string& name) const;
+
+   /// Returns the field of a given name. If there's no such field, including
+   /// if this is a union with anonymous fields, returns null.
    shared_ptr<union_::Field> lookup(shared_ptr<ID> id) const;
 
    const trait::TypeList::type_list typeList() const override;

@@ -150,3 +150,15 @@ void Coercer::visit(type::Unset* c)
     // value.
     setResult(true);
 }
+
+void Coercer::visit(type::Union* c)
+{
+    setResult(false);
+
+    auto dst_b = ast::as<type::Bool>(arg1());
+
+    if ( dst_b ) {
+        setResult(true);
+        return;
+    }
+}

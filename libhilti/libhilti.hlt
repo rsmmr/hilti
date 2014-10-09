@@ -107,6 +107,7 @@ declare "C-HILTI" void struct_dtor(any b)
 
 ###
 
+declare "C-HILTI" void union_cctor(any b)
 declare "C-HILTI" void union_dtor(any b)
 
 ###

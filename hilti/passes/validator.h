@@ -132,6 +132,7 @@ protected:
    void visit(type::TimerMgr* t) override;
    void visit(type::Tuple* t) override;
    void visit(type::TypeType* t) override;
+   void visit(type::Union* t) override;
    void visit(type::Unknown* t) override;
    void visit(type::Vector* t) override;
    void visit(type::Void* t) override;

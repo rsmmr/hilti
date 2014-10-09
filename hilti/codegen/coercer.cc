@@ -184,3 +184,25 @@ void codegen::Coercer::visit(type::Unset* r)
     setResult(cg()->llvmInitVal(dst));
 }
 
+void codegen::Coercer::visit(type::Union* t)
+{
+    auto val = arg1();
+    auto dst = arg2();
+
+    auto type = t->sharedPtr<type::Union>();
+
+    auto dst_bool = ast::as<type::Bool>(dst);
+
+    if ( dst_bool ) {
+        auto addr = cg()->llvmAddTmp("u", cg()->llvmType(type), val, false);
+        CodeGen::value_list args = { cg()->llvmRtti(type),
+                                     cg()->builder()->CreateBitCast(addr, cg()->llvmTypePtr()) };
+
+        auto utype = cg()->llvmCallC("__hlt_union_type", args, false, false);
+        auto non_null = cg()->builder()->CreateICmpNE(utype, cg()->llvmConstNull(utype->getType()));
+        setResult(non_null);
+        return;
+    }
+
+    assert(false);
+}

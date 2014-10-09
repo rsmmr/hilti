@@ -1,0 +1,26 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = union<double, ref<bytes>>
+
+void run() {
+    local A a
+    local bool b
+
+    b = a
+    call Hilti::print(a, False)
+    call Hilti::print(" ", False)
+    call Hilti::print(b)
+
+    a = union.init A 3.14
+    b = a
+    call Hilti::print(a, False)
+    call Hilti::print(" ", False)
+    call Hilti::print(b)
+}

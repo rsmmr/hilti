@@ -277,7 +277,7 @@ void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_
 
 void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    assert(hlt_type_equal(l->type, type));
+    assert(__hlt_type_equal(l->type, type));
 
     __hlt_list_node* n = _make_node(l, val, excpt, ctx);
     if ( ! n ) {
@@ -290,7 +290,7 @@ void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_
 
 void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    assert(hlt_type_equal(l->type, type));
+    assert(__hlt_type_equal(l->type, type));
 
     __hlt_list_node* n = _make_node(l, val, excpt, ctx);
     if ( ! n ) {
@@ -303,7 +303,7 @@ void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_e
 
 void hlt_list_append(hlt_list* l1, hlt_list* l2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    assert(hlt_type_equal(l1->type, l2->type));
+    assert(__hlt_type_equal(l1->type, l2->type));
 
     for ( __hlt_list_node* n = l2->head; n; n = n->next )
         hlt_list_push_back(l1, l2->type, &n->data, excpt, ctx);
@@ -385,7 +385,7 @@ void hlt_list_insert(const hlt_type_info* type, void* val, hlt_iterator_list i, 
         return;
     }
 
-    assert(hlt_type_equal(i.list->type, type));
+    assert(__hlt_type_equal(i.list->type, type));
 
     __hlt_list_node* n = _make_node(i.list, val, excpt, ctx);
     if ( ! n ) {

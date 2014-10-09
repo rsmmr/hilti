@@ -679,12 +679,29 @@ type::Union::Union(const type_list& types, const Location& l) : ValueType(l)
 
 shared_ptr<type::union_::Field> type::Union::lookup(shared_ptr<ID> id) const
 {
+    return lookup(id->pathAsString());
+}
+
+shared_ptr<type::union_::Field> type::Union::lookup(const string& name) const
+{
     for ( auto f : _fields ) {
-        if ( f->id()->name() == id->name() )
+        if ( f->id()->name() == name )
             return f;
     }
 
     return nullptr;
+}
+
+type::Union::field_list type::Union::fields(shared_ptr<Type> type) const
+{
+    field_list fields;
+
+    for ( auto f : _fields ) {
+        if ( f->type()->equal(type) )
+            fields.push_back(f);
+    }
+
+    return fields;
 }
 
 type::Union::field_list type::Union::sortedFields()

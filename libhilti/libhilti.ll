@@ -148,6 +148,8 @@
 
 ;;; libhilti functions that don't fit the normal calling conventions.
 
+declare i1 @__hlt_type_equal(%hlt.type_info*, %hlt.type_info*)
+
 declare void @__hlt_object_ref(%hlt.type_info*, i8 *, %hlt.execution_context*)
 declare void @__hlt_object_unref(%hlt.type_info*, i8 *, %hlt.execution_context*)
 declare void @__hlt_object_dtor(%hlt.type_info*, i8 *, i8*, %hlt.execution_context*)
@@ -195,6 +197,8 @@ declare %hlt.execution_context* @hlt_global_execution_context();
 declare %hlt.thread_mgr*        @hlt_global_thread_mgr();
 
 declare %hlt.timer*     @__hlt_timer_new_function(%hlt.callable*, %hlt.exception**, %hlt.execution_context*)
+
+declare %hlt.type_info* @__hlt_union_type(%hlt.type_info*, i8*)
 
 declare i8* @__hlt_malloc(i64, i8*, i8*)
 declare void @__hlt_free(i8*, i8*, i8*)

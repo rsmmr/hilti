@@ -150,6 +150,7 @@ protected:
    virtual void visit(expression::Function* e) override;
    virtual void visit(expression::Parameter* e) override;
    virtual void visit(expression::Variable* e) override;
+   virtual void visit(expression::Type* e) override;
 
    virtual void visit(variable::Global* v) override;
    virtual void visit(variable::Local* v) override;

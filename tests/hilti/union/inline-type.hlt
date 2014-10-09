@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local union<string, bytes> a
+
+    a = union.init union<string, bytes> "hurz"
+
+    call Hilti::print(a)
+}

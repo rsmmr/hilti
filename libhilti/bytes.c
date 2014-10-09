@@ -2236,7 +2236,7 @@ void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info* type,
     __hlt_bytes_object* o = __get_object(i.bytes);
     assert(o && o->type);
 
-    if ( type && ! hlt_type_equal(type, o->type) ) {
+    if ( type && ! __hlt_type_equal(type, o->type) ) {
         hlt_set_exception(excpt, &hlt_exception_type_error, 0, ctx);
         return 0;
     }
@@ -2259,7 +2259,7 @@ int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_info* ty
     if ( ! o )
         return false;
 
-    return hlt_type_equal(type, o->type);
+    return __hlt_type_equal(type, o->type);
 }
 
 hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes old, hlt_exception** excpt, hlt_execution_context* ctx)

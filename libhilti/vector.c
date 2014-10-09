@@ -231,7 +231,7 @@ void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt, hlt
 
 void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    assert(hlt_type_equal(v->type, elemtype));
+    assert(__hlt_type_equal(v->type, elemtype));
 
     if ( i >= v->capacity ) {
         // Allocate more memory.
@@ -262,7 +262,7 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
 void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(v);
-    assert(hlt_type_equal(v->type, elemtype));
+    assert(__hlt_type_equal(v->type, elemtype));
 
     ++v->last;
 

@@ -95,6 +95,7 @@ set(instructions
     instructions/time.h
     instructions/timer-mgr.h
     instructions/timer.h
+    instructions/union.h
     instructions/thread.h
     instructions/tuple.h
     instructions/vector.h
@@ -171,8 +172,10 @@ add_library (hilti STATIC
     instructions/operators.cc
     instructions/port.cc
     instructions/profiler.cc
+    instructions/struct.cc
     instructions/thread.cc
     instructions/tuple.cc
+    instructions/union.cc
 
     parser/driver.cc
 
@@ -234,6 +237,7 @@ add_library (hilti STATIC
     codegen/instructions/timer.cc
     codegen/instructions/thread.cc
     codegen/instructions/tuple.cc
+    codegen/instructions/union.cc
     codegen/instructions/vector.cc
     codegen/linker.cc
     codegen/loader.cc

@@ -207,7 +207,7 @@ struct __hlt_type_info {
    extern const hlt_type_info hlt_type_info_##id; \
 
 /// Returns true if the two type informations refer to equivalent types.
-int8_t hlt_type_equal(const hlt_type_info* ti1, const hlt_type_info* ti2);
+int8_t __hlt_type_equal(const hlt_type_info* ti1, const hlt_type_info* ti2);
 
 // Include prototypes for compiler-generated type information.
 #include "type-info.h"

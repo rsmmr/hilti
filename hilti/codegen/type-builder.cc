@@ -1,4 +1,6 @@
 
+#include <algorithm>
+
 #include "../hilti.h"
 
 #include "type-builder.h"
@@ -1147,3 +1149,98 @@ void TypeBuilder::visit(type::Unset* t)
     setResult(ti);
 }
 
+void TypeBuilder::visit(type::Union* t)
+{
+    auto llvm_type_only = arg1();
+
+    string sname;
+
+    if ( t->id() ) {
+        sname = t->id()->pathAsString();
+
+        if ( ! t->id()->isScoped() ) {
+            auto s = t->scope();
+            if ( s.size() )
+                sname = ::util::fmt("%s::%s", s, sname);
+        }
+    }
+
+    else
+        sname = t->render();
+
+    sname = util::mangle(sname, true);
+
+    llvm::StructType* stype = nullptr;
+    llvm::Type* data_type = nullptr;
+
+    // See if we have already created this union type.
+    auto i = _known_unions.find(sname);
+
+    if ( i != _known_unions.end() ) {
+        stype = i->second;
+        data_type = stype->getElementType(1);
+    }
+
+    else {
+        /// Need to create the union type. We first create it empty and
+        /// cache it so that recursion works. We'll then add the right
+        /// fields.
+        stype = llvm::StructType::create(cg()->llvmContext(), sname); // opaque type
+        _known_unions.insert(std::make_pair(sname, stype));
+
+        // Determine the size of the largest field.
+        uint64_t max_size = 0;
+
+        for ( auto f : t->fields() ) {
+            auto size = cg()->llvmSizeOfForTarget(cg()->llvmType(f->type()));
+            max_size = std::max(max_size, size);
+        }
+
+        // Now add the fields.
+        data_type = llvm::ArrayType::get(cg()->llvmTypeInt(8), max_size);
+        CodeGen::type_list fields { cg()->llvmTypeInt(32), data_type };
+
+        for ( auto f : t->fields() )
+            fields.push_back(cg()->llvmType(f->type()));
+
+        stype->setBody(fields);
+    }
+
+    TypeInfo* ti = new TypeInfo(t);
+    ti->id = HLT_TYPE_UNION;
+    ti->init_val = cg()->llvmConstStruct({ cg()->llvmConstInt(-1, 32), cg()->llvmConstNull(data_type) });
+    ti->object_type = stype;
+    ti->to_string = "hlt::union_to_string";
+    ti->hash = "hlt::union_hash";
+    ti->equal = "hlt::union_equal";
+    ti->clone_init = "hlt::union_clone_init";
+    ti->cctor = "hlt::union_cctor";
+    ti->dtor = "hlt::union_dtor";
+
+    setResult(ti);
+
+    if ( ! llvm_type_only ) {
+        /// Type information for a ``union`` includes the fields' types and names
+        /// in the ``aux`` entry.
+
+        CodeGen::constant_list array;
+
+        for ( auto f : t->fields() ) {
+            auto name = t->anonymousFields() ? cg()->llvmConstNull(cg()->llvmTypePtr())
+                : cg()->llvmConstAsciizPtr(f->id()->name());
+
+            CodeGen::constant_list pair { cg()->llvmRtti(f->type()), name };
+            array.push_back(cg()->llvmConstStruct(pair));
+        }
+
+        llvm::GlobalVariable* glob = nullptr;
+
+        if ( array.size() ) {
+            auto aval = cg()->llvmConstArray(array);
+            glob = cg()->llvmAddConst("union-fields", aval);
+        glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
+        }
+
+        ti->aux = glob;
+    }
+}

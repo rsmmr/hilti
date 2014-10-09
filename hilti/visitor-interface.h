@@ -255,6 +255,7 @@ public:
    virtual void visit(type::TimerMgr* t)    {}
    virtual void visit(type::Tuple* t)       {}
    virtual void visit(type::TypeType* t)    {}
+   virtual void visit(type::Union* t)       {}
    virtual void visit(type::Unknown* t)     {}
    virtual void visit(type::Unset* t)       {}
    virtual void visit(type::Vector* t)      {}

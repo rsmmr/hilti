@@ -508,6 +508,11 @@ public:
    /// of the box.
    llvm::Constant* llvmSizeOf(llvm::Type* t);
 
+   /// Returns the size of an LLVM type for the current target platform. Note
+   /// that the returned value is non-portable, if possible llvmSizeOf()
+   /// should be prefered.
+   uint64_t llvmSizeOfForTarget(llvm::Type* t);
+
    /// Stores an LLVM value at the location associated with a HILTI
    /// expression.
    ///

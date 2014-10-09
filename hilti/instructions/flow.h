@@ -65,3 +65,10 @@ iBeginH(flow, Switch, "switch")
     iOp2(optype::label, true)
     iOp3(optype::tuple, true)
 iEndH
+
+iBeginH(flow, DispatchUnion, "dispatch")
+    iTerminator()
+    iOp1(optype::union_, true)
+    iOp2(optype::label, true)
+    iOp3(optype::tuple, true)
+iEndH

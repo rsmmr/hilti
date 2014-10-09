@@ -261,7 +261,7 @@ void StatementBuilder::visit(statement::instruction::flow::Jump* i)
 
 void StatementBuilder::visit(statement::instruction::flow::Switch* i)
 {
-    auto op1 = cg()->llvmValue(i->op1(), nullptr);
+    auto op1 = cg()->llvmValue(i->op1());
     auto default_ = llvm::cast<llvm::BasicBlock>(cg()->llvmValue(i->op2()));
     auto a1 = ast::as<expression::Constant>(i->op3());
     auto a2 = ast::as<constant::Tuple>(a1->constant());
@@ -323,10 +323,9 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
         int n = 1;
         for ( auto a : alts ) {
             cg()->llvmInstruction(cmp, instruction::operator_::Equal, i->op1(), builder::codegen::create(i->op1()->type(), a.first));
-            auto match = cg()->builder()->CreateICmpEQ(cg()->llvmConstInt(1, 1), cg()->llvmValue(cmp));
             auto next_block = cg()->newBuilder("switch-chain");
             auto found = cg()->newBuilder("switch-match");
-            cg()->builder()->CreateCondBr(match, found->GetInsertBlock(), next_block->GetInsertBlock());
+            cg()->builder()->CreateCondBr(cg()->llvmValue(cmp), found->GetInsertBlock(), next_block->GetInsertBlock());
 
             cg()->pushBuilder(found);
             cg()->llvmCreateStore(cg()->llvmConstInt(n++, 64), destination);
@@ -351,5 +350,74 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
 
         cg()->popBuilder();
     }
+}
+
+void StatementBuilder::visit(statement::instruction::flow::DispatchUnion* i)
+{
+    auto default_ = llvm::cast<llvm::BasicBlock>(cg()->llvmValue(i->op2()));
+    auto a1 = ast::as<expression::Constant>(i->op3());
+    auto a2 = ast::as<constant::Tuple>(a1->constant());
+
+    std::list<std::pair<llvm::Value*, llvm::BasicBlock*>> alts;
+
+    for ( auto c : a2->value() ) {
+        auto c1 = ast::as<expression::Constant>(c);
+        auto c2 = ast::as<constant::Tuple>(c1->constant());
+
+        auto v = c2->value();
+        auto j = v.begin();
+        auto type = cg()->llvmValue((*j++));
+        auto block = llvm::cast<llvm::BasicBlock>(cg()->llvmValue(*j++));
+
+        alts.push_back(std::make_pair(type, block));
+    }
+
+    // TODO: Same todo here as above with the Switch statement regarding
+    // indirecbr.
+
+    auto done = cg()->newBuilder("dispatch-done");
+
+    auto addr = cg()->llvmValueAddress(i->op1());
+    CodeGen::value_list args = { cg()->llvmRtti(i->op1()->type()),
+                                 cg()->builder()->CreateBitCast(addr, cg()->llvmTypePtr())
+                               };
+
+    auto union_type = cg()->llvmCallC("__hlt_union_type", args, false, false);
+
+    auto destination = cg()->llvmCreateAlloca(cg()->llvmTypeInt(64));
+    cg()->llvmCreateStore(cg()->llvmConstInt(0, 64), destination); // Zero for default.
+
+    int n = 1;
+
+    for ( auto a : alts ) {
+
+        CodeGen::value_list args = { union_type, a.first };
+        auto match = cg()->llvmCallC("__hlt_type_equal", args, false, false);
+        auto next_block = cg()->newBuilder("dispatch-chain");
+        auto found = cg()->newBuilder("dispatch-match");
+        cg()->builder()->CreateCondBr(match, found->GetInsertBlock(), next_block->GetInsertBlock());
+
+        cg()->pushBuilder(found);
+        cg()->llvmCreateStore(cg()->llvmConstInt(n++, 64), destination);
+        cg()->builder()->CreateBr(done->GetInsertBlock());
+        cg()->popBuilder();
+
+        cg()->pushBuilder(next_block);
+        }
+
+    cg()->builder()->CreateBr(done->GetInsertBlock());
+
+    cg()->pushBuilder(done);
+
+    cg()->llvmBuildInstructionCleanup();
+
+    // Do the indirect branch.
+    auto switch_ = cg()->builder()->CreateSwitch(cg()->builder()->CreateLoad(destination), default_);
+
+    n = 1;
+    for ( auto a : alts )
+        switch_->addCase(cg()->llvmConstInt(n++, 64), a.second);
+
+    cg()->popBuilder();
 }
 

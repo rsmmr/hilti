@@ -327,6 +327,11 @@ llvm::Constant* CodeGen::llvmSizeOf(llvm::Constant* v)
     return llvmSizeOf(v->getType());
 }
 
+uint64_t CodeGen::llvmSizeOfForTarget(llvm::Type* t)
+{
+    return _data_layout->getTypeAllocSize(t);
+}
+
 llvm::Constant* CodeGen::llvmSizeOf(llvm::Type* t)
 {
     // Computer size using the "portable sizeof" idiom ...

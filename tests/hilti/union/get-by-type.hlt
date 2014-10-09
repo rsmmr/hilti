@@ -1,0 +1,37 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = union<int<64>, bool, string>
+
+void run() {
+    local A a
+    local int<64> i
+    local bool b
+
+    a = union.init A 42
+    call Hilti::print(a)
+
+    i = union.get a
+    call Hilti::print(i)
+
+    b = union.is_set a int<64>
+    call Hilti::print(b)
+
+    b = union.is_set a string
+    call Hilti::print(b)
+
+    try {
+        b = union.get a
+        call Hilti::print(b)
+    }
+
+    catch ( ref<Hilti::UndefinedValue> e ) {
+       call Hilti::print ("Caught it!")
+     }
+}
