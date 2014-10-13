@@ -52,7 +52,12 @@ if ( HILTI_CONFIG )
                     OUTPUT_VARIABLE HILTI_CLANGXX_EXEC
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    set(HILTI_LIBS "${HILTI_LIBS_SHARED} -lc++")
+    separate_arguments(HILTI_LIBS_SHARED)
+    separate_arguments(HILTI_LIBS_STATIC)
+    separate_arguments(HILTI_LD_FLAGS)
+    separate_arguments(HILTI_CXX_FLAGS)
+
+    set(HILTI_LIBS ${HILTI_LIBS_SHARED} -lc++)
 
     if ( HILTI_LD_FLAGS AND HILTI_LIBS AND HILTI_CXX_FLAGS )
         set(HILTI_SUCCESS "Found")

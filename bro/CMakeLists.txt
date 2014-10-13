@@ -119,6 +119,7 @@ if ( BRO_DIST )
 
         set(plugin_deps hilti binpacxx libhilti-rt-dbg.bc libbinpac-rt-dbg.bc libhilti-rt.bc libbinpac-rt.bc)
 
+        message("XXXX: ${plugin_hilti_libs}")
         target_link_libraries(${_plugin_lib} ${plugin_hilti_libs} ${plugin_binpac_libs} ${plugin_external_libs})
         target_link_libraries(${_plugin_lib} ${addl_libs})
         add_dependencies(${_plugin_lib} ${autogen}/bro.pac2.h ${autogen}/libbro.hlt.h ${autogen}/libbro.hlt.o ${plugin_deps})
