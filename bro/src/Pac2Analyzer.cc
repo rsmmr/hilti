@@ -332,7 +332,7 @@ void Pac2_TCP_Analyzer::FlipRoles()
 void Pac2_TCP_Analyzer::EndpointEOF(bool is_orig)
 	{
 	TCP_ApplicationAnalyzer::EndpointEOF(is_orig);
-	//FeedChunk(0, (const u_char*)"", is_orig, true);
+    FeedChunk(0, (const u_char*)"", is_orig, true);
 	}
 
 void Pac2_TCP_Analyzer::ConnectionClosed(analyzer::tcp::TCP_Endpoint* endpoint,
