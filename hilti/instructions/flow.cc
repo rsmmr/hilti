@@ -239,7 +239,7 @@ iBeginCC(flow)
     }
 
     iSuccessorsCC(Switch) {
-        return _successorBranches(this, op2, op3);
+        return _successorBranches(this, op3, op2);
     }
 
     iDocCC(Switch, R"(
