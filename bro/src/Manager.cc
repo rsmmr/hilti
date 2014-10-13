@@ -589,11 +589,6 @@ bool Manager::Compile()
 	assert(pre_scripts_init_run);
 	assert(post_scripts_init_run);
 
-	auto register_func = internal_func("Bro::register_protocol_analyzer");
-
-	if ( ! register_func )
-		reporter::fatal_error("Bro::register_protocol_analyzer() not available");
-
 	if ( ! CompileBroScripts() )
 		return false;
 
@@ -624,9 +619,6 @@ bool Manager::Compile()
 		for ( auto p : a->ports )
 			analyzer_mgr->RegisterAnalyzerForPort(a->tag, p.proto, p.port);
 
-		val_list* args = new val_list;
-		args->append(a->tag.AsEnumVal()->Ref());
-		register_func->Call(args);
 		}
 
 	for ( auto a : pimpl->pac2_file_analyzers )
@@ -1034,6 +1026,22 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 
 	if ( pimpl->dump_code || pimpl->dump_code_all )
 		DumpCode(pimpl->dump_code_all);
+
+    // Need to delay the following until here. If we compile scripts, this
+    // will require the compiled register_protocol_analyzer function to be
+    // available.
+
+	auto register_func = internal_func("Bro::register_protocol_analyzer");
+
+	if ( ! register_func )
+		reporter::fatal_error("Bro::register_protocol_analyzer() not available");
+
+	for ( auto a : pimpl->pac2_file_analyzers )
+		{
+        val_list* args = new val_list;
+		args->append(a->tag.AsEnumVal()->Ref());
+        register_func->Call(args);
+        }
 
 	return true;
 	}
