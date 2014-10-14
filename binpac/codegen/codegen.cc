@@ -628,3 +628,123 @@ shared_ptr<hilti::Expression> CodeGen::hiltiSynchronize(shared_ptr<Production> p
 {
     return _synchronizer->hiltiSynchronize(p, data, cur);
 }
+
+shared_ptr<hilti::Expression> CodeGen::_hiltiItemOp(HiltiItemOp i, shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, const std::string& fname, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> addl_op)
+{
+    shared_ptr<hilti::Instruction> ins ;
+    shared_ptr<hilti::Expression> result;
+
+    switch ( i ) {
+     case GET:
+        assert(ftype);
+        ins = hilti::instruction::struct_::Get;
+        result = builder()->addTmp("item", ftype);
+        break;
+
+     case GET_DEFAULT:
+        assert(addl_op);
+        assert(ftype);
+        ins = hilti::instruction::struct_::GetDefault;
+        result = builder()->addTmp("item", ftype);
+        break;
+
+     case SET:
+        assert(addl_op);
+        ins = hilti::instruction::struct_::Set;
+        break;
+
+     case UNSET:
+        ins = hilti::instruction::struct_::Unset;
+        break;
+
+     case IS_SET:
+        ins = hilti::instruction::struct_::IsSet;
+        result = builder()->addTmp("item", ::hilti::builder::boolean::type());
+        break;
+    }
+
+    auto f = ::hilti::builder::string::create(fname);
+
+    if ( addl_op ) {
+        if ( result )
+            builder()->addInstruction(result, ins, unit, f, addl_op);
+        else
+            builder()->addInstruction(ins, unit, f, addl_op);
+    }
+    else {
+        if ( result )
+            builder()->addInstruction(result, ins, unit, f);
+        else
+            builder()->addInstruction(ins, unit, f);
+    }
+
+    return result;
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemGet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> default_)
+{
+    if ( default_ )
+        return _hiltiItemOp(GET_DEFAULT, unit, field, field->id()->name(), hiltiType(field->fieldType()), default_);
+    else
+        return _hiltiItemOp(GET, unit, field, field->id()->name(), hiltiType(field->fieldType()), nullptr);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemGet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> default_)
+{
+    return hiltiItemGet(unit, field->name(), ftype, default_);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemGet(shared_ptr<hilti::Expression> unit, const string& field, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> default_)
+{
+    if ( default_ )
+        return _hiltiItemOp(GET_DEFAULT, unit, nullptr, field, ftype, default_);
+    else
+        return _hiltiItemOp(GET, unit, nullptr, field, ftype, nullptr);
+}
+
+void CodeGen::hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> value)
+{
+    _hiltiItemOp(SET, unit, field, field->id()->name(), hiltiType(field->fieldType()), value);
+}
+
+void CodeGen::hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field, shared_ptr<hilti::Expression> value)
+{
+    hiltiItemSet(unit, field->name(), value);
+}
+
+void CodeGen::hiltiItemSet(shared_ptr<hilti::Expression> unit, const string& field, shared_ptr<hilti::Expression> value)
+{
+    _hiltiItemOp(SET, unit, nullptr, field, nullptr, value);
+}
+
+void CodeGen::hiltiItemUnset(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field)
+{
+    _hiltiItemOp(UNSET, unit, field, field->id()->name(), hiltiType(field->fieldType()), nullptr);
+}
+
+void CodeGen::hiltiItemUnset(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field)
+{
+    hiltiItemUnset(unit, field->name());
+}
+
+void CodeGen::hiltiItemUnset(shared_ptr<hilti::Expression> unit, const string& field)
+{
+    _hiltiItemOp(UNSET, unit, nullptr, field, nullptr, nullptr);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemIsSet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field)
+{
+    return _hiltiItemOp(IS_SET, unit, field, field->id()->name(), hiltiType(field->fieldType()), nullptr);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemIsSet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field)
+{
+    return hiltiItemIsSet(unit, field->name());
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemIsSet(shared_ptr<hilti::Expression> unit, const string& field)
+{
+    return _hiltiItemOp(IS_SET, unit, nullptr, field, nullptr, nullptr);
+}
+
+

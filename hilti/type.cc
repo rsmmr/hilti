@@ -598,8 +598,13 @@ void type::Struct::addField(shared_ptr<struct_::Field> field)
 
 shared_ptr<type::struct_::Field> type::Struct::lookup(shared_ptr<ID> id) const
 {
+    return lookup(id->name());
+}
+
+shared_ptr<type::struct_::Field> type::Struct::lookup(const std::string& name) const
+{
     for ( auto f : _fields ) {
-        if ( f->id()->name() == id->name() )
+        if ( f->id()->name() == name )
             return f;
     }
 

@@ -1758,6 +1758,11 @@ public:
     /// id: The item to look up.
     shared_ptr<unit::Item> item(shared_ptr<ID> id) const;
 
+    /// Returns the item of a given name, or null if there's no such item.
+    ///
+    /// name: The item to look up.
+    shared_ptr<unit::Item> item(const std::string& name) const;
+
     /// Traverses an ID path to a sub-item and returns it. For example, \c
     /// a.b.c descends down field \c a, then \c b, and finally returns \c c
     /// there. Returns null for the item if the path is not valid. The second

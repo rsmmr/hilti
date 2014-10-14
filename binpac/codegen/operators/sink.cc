@@ -22,13 +22,8 @@ void CodeBuilder::visit(binpac::expression::operator_::sink::Connect* i)
     auto unit = cg()->hiltiExpression(callParameter(i->op3(), 0));
 
     // Check that it's not already connected.
-    auto old_sink = cg()->builder()->addTmp("old_sink", cg()->hiltiType(std::make_shared<type::Sink>()));
-
-    cg()->builder()->addInstruction(old_sink,
-                                    hilti::instruction::struct_::GetDefault,
-                                    unit,
-                                    hilti::builder::string::create("__sink"),
-                                    hilti::builder::reference::createNull());
+    auto ftype = hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::Sink"));
+    auto old_sink = cg()->hiltiItemGet(unit, "__sink", ftype, hilti::builder::reference::createNull());
 
     auto branches = cg()->builder()->addIf(old_sink);
     auto sink_set = std::get<0>(branches);
@@ -42,22 +37,15 @@ void CodeBuilder::visit(binpac::expression::operator_::sink::Connect* i)
 
     cg()->moduleBuilder()->pushBuilder(cont);
 
-    auto parser = cg()->builder()->addTmp("parser", hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::Parser")));
-
-    cg()->builder()->addInstruction(parser,
-                                    hilti::instruction::struct_::Get,
-                                    unit,
-                                    hilti::builder::string::create("__parser"));
+    auto ptype = hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::Parser"));
+    auto parser = cg()->hiltiItemGet(unit, "__parser", ptype);
 
     cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
                                     hilti::builder::id::create("BinPACHilti::sink_connect"),
                                     hilti::builder::tuple::create( { sink, unit, parser } ));
 
     // Set the __sink field.
-    cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
-                                    unit,
-                                    hilti::builder::string::create("__sink"),
-                                    sink);
+    cg()->hiltiItemSet(unit, "__sink", sink);
 
     setResult(std::make_shared<hilti::expression::Void>());
 }

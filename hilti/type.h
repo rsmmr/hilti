@@ -1716,6 +1716,9 @@ public:
    /// Returns the field of a given name, or null if no such field.
    shared_ptr<struct_::Field> lookup(shared_ptr<ID> id) const;
 
+   /// Returns the field of a given name, or null if no such field.
+   shared_ptr<struct_::Field> lookup(const std::string& name) const;
+
    const trait::TypeList::type_list typeList() const override;
    parameter_list parameters() const override;
 

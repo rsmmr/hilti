@@ -1688,8 +1688,13 @@ shared_ptr<unit::item::Property> Unit::property(const string& prop) const
 
 shared_ptr<unit::Item> Unit::item(shared_ptr<ID> id) const
 {
+    return item(id->name());
+}
+
+shared_ptr<unit::Item> Unit::item(const std::string& name) const
+{
     for ( auto i : flattenedItems() ) {
-        if ( i->id() && i->id()->name() == id->name() )
+        if ( i->id() && i->id()->name() == name )
             return i;
     }
 
