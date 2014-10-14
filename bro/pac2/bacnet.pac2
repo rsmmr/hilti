@@ -1714,7 +1714,7 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
     BACnetConfirmedServiceChoice::confirmedEventNotification -> confirmedEventNotification: ConfirmedEventNotification_Request( len - self.len );
     BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len );
     BACnetConfirmedServiceChoice::writeProperty -> writeProperty: WriteProperty_Request( len - self.len );
-    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_Request;
+    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_Request( self.invokeID );
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_Request;
     BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_Request( len - self.len );
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_Request( len - self.len );
@@ -1725,7 +1725,7 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
     BACnetConfirmedServiceChoice::confirmedEventNotification -> confirmedEventNotification: ConfirmedEventNotification_Request( len - self.len );
     BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len );
     BACnetConfirmedServiceChoice::writeProperty -> writeProperty: WriteProperty_Request( len - self.len );
-    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_Request;
+    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_Request( self.invokeID );
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_Request;
     BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_Request( len - self.len );
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_Request( len - self.len );
@@ -1820,7 +1820,7 @@ type ConfirmedEventNotification_Request = unit(len: uint16) {
 # BACnetAuthenticationFactor
 # BACnetReliability,
 
-type AtomicReadFile_Request = unit {
+type AtomicReadFile_Request = unit(invokeID: uint8) {
   fileIdentifier: BACnetMessage; # oid
   # choice. Opening tag
   open_tag: BACnetTag;
@@ -2051,7 +2051,7 @@ type BACnet_ComplexACK_PDU = unit(head_raw: bytes, len: uint16) {
 
   switch ( self.confirmed_service_choice ) {
     BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK;
-    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_ACK;
+    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_ACK( self.invokeID );
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_ACK;
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_ACK( len - self.len );
     BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_ACK( len - self.len );
@@ -2060,7 +2060,7 @@ type BACnet_ComplexACK_PDU = unit(head_raw: bytes, len: uint16) {
 
   switch ( self.confirmed_service_choice ) {
     BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK &parse(self.content_bytes);
-    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_ACK &parse(self.content_bytes);
+    BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_ACK( self.invokeID ) &parse(self.content_bytes);
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_ACK &parse(self.content_bytes);
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_ACK( cast<uint16>(|self.content_bytes|) ) &parse(self.content_bytes);
     BACnetConfirmedServiceChoice::readRange -> readRange: ReadRange_ACK( cast<uint16>(|self.content_bytes|) ) &parse(self.content_bytes);
@@ -2108,7 +2108,7 @@ type ConfirmedPrivateTransfer_ACK = unit(len: uint16) {
   resultBlock: BACnetArray if ( len > self.offset() ); # ABSTRACT-SYNTAX.&Type OPTIONAL
 };
 
-type AtomicReadFile_ACK = unit {
+type AtomicReadFile_ACK = unit(invokeID: uint8) {
   endOfFile: BACnetMessage; # boolean
   # choice. Opening tag
   open_tag: BACnetTag;
@@ -2506,11 +2506,16 @@ type BACnetObjectIdentifier = unit {
 type BACnetMessage = unit {
   tag: BACnetTag;
 
-  var boolean: uint16;
+  var boolean: bool;
+  var bool_val: uint16;
 
   switch ( self.tag.tpe ) {
     BACnetType::NULL -> : void;
-    BACnetType::BOOLEAN -> : void { self.boolean = self.tag.lvt; }
+    BACnetType::BOOLEAN -> : void {
+      self.bool_val = self.tag.lvt;
+      self.boolean = self.bool_val == 0 ? False : True;
+
+    }
     BACnetType::UnsignedInteger,
     BACnetType::Enumerated -> unsigned: bytes &length=self.tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network);
     BACnetType::Integer -> signed: bytes &length=self.tag.lvt &convert=$$.to_int(BinPAC::ByteOrder::Network);
@@ -2548,11 +2553,16 @@ type BACnetContextMessage = unit(tpe: BACnetType, tag: uint8, prev_tag: BACnetTa
     }
   }
 
-  var boolean: uint16;
+  var boolean: bool;
+  var bool_val: uint16;
 
   switch ( tpe ) {
     BACnetType::NULL -> : void;
-    BACnetType::BOOLEAN -> : void { self.boolean = self.tag.lvt; }
+    BACnetType::BOOLEAN -> : void {
+      self.bool_val = self.tag.lvt;
+      self.boolean = self.bool_val == 0 ? False : True;
+
+    }
     BACnetType::UnsignedInteger,
     BACnetType::Enumerated -> unsigned: bytes &length=self.tag.lvt &convert=$$.to_uint(BinPAC::ByteOrder::Network);
     BACnetType::Integer -> signed: bytes &length=self.tag.lvt &convert=$$.to_int(BinPAC::ByteOrder::Network);

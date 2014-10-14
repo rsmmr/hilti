@@ -129,3 +129,18 @@ on BACnet::Who_Has_Request if ( self.objectName.tag.tag == 3)
 on BACnet::I_Have_Request
   -> event bacnet_i_have_request ($conn, self.deviceIdentifier.oid.tpe, cast<uint64>(self.deviceIdentifier.oid.data.instanceNumber),
     self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber), self.objectName.characters.value);
+
+# File requests
+# Stream based
+on BACnet::AtomicReadFile_Request if ( self.open_tag.tag == 0 )
+  -> event bacnet_atomicreadfile_request ($conn, cast<uint64>(invokeID), True, self.fileIdentifier.oid.tpe, cast<uint64>(self.fileIdentifier.oid.data.instanceNumber), cast<int64>(self.fileStartPosition.signed), cast<uint64>(self.requestedOctetCount.unsigned));
+
+# Record based
+on BACnet::AtomicReadFile_Request if ( self.open_tag.tag == 1 )
+  -> event bacnet_atomicreadfile_request ($conn, cast<uint64>(invokeID), False, self.fileIdentifier.oid.tpe, cast<uint64>(self.fileIdentifier.oid.data.instanceNumber), cast<int64>(self.fileStartRecord.signed), cast<uint64>(self.requestedRecordCount.unsigned));
+
+# Stream based
+on BACnet::AtomicReadFile_ACK if ( self.open_tag.tag == 0 )
+  -> event bacnet_atomicreadfile_ack ($conn, cast<uint64>(invokeID), self.endOfFile.boolean, cast<int64>(self.fileStartPosition.signed), self.fileData.octets);
+
+# FIXME: Record based not implemented. Need traffic to get this completely right :)
