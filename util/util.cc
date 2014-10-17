@@ -110,6 +110,8 @@ string util::uitoa_n(uint64_t value, int base, int n)
 {
     static char dig[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+    assert(base <= strlen(dig));
+
     string s;
 
 	do {

@@ -230,8 +230,8 @@ void GrammarBuilder::visit(type::unit::item::field::switch_::Case* c)
 
     auto prods = Production::production_list();
 
-    for ( auto i : c->items() )
-        prods.push_back(compileOne(i));
+    for ( auto f : c->fields() )
+        prods.push_back(compileOne(f));
 
     auto name = util::fmt("case%d", _case_counter++);
     auto seq = std::make_shared<production::Sequence>(name, prods, nullptr, c->location());

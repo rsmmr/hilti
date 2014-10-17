@@ -33,8 +33,9 @@ void CodeBuilder::visit(ctor::Unit* m)
 
         cg()->builder()->beginTryCatch();
 
+        auto item = unit->item(id->name());
         auto val = hiltiExpression(init, itype);
-        cg()->hiltiItemSet(result, id->name(), val);
+        cg()->hiltiItemSet(result, item, val);
 
         cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::AttributeNotSet")),
                                    hilti::builder::id::node("e"));
@@ -73,7 +74,7 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
     auto expr = cg()->hiltiExpression(i->op3(), item->fieldType());
 
     auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->fieldType()), nullptr, false);
-    cg()->hiltiItemSet(uval, attr->id(), expr);
+    cg()->hiltiItemSet(uval, item, expr);
 
     cg()->hiltiRunFieldHooks(item, uval);
 
@@ -88,7 +89,7 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
     auto item = unit->item(attr->id());
     assert(item && item->type());
 
-    auto has = cg()->hiltiItemIsSet(cg()->hiltiExpression(i->op1()), attr->id());
+    auto has = cg()->hiltiItemIsSet(cg()->hiltiExpression(i->op1()), item);
     setResult(has);
 }
 

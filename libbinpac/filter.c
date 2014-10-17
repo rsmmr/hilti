@@ -74,7 +74,10 @@ void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt, hlt_ex
         n = f->next;
         (*f->def->close)(f, excpt, ctx);
         (*f->def->dtor)(0, f, ctx);
-        GC_CLEAR(f, binpac_filter, ctx);
+
+        if ( f != head )
+            // The reference to the first filter is owned by the struct.
+            GC_CLEAR(f, binpac_filter, ctx);
     }
 }
 

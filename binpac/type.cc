@@ -1,4 +1,5 @@
 
+
 #include "attribute.h"
 #include "type.h"
 #include "constant.h"
@@ -1157,6 +1158,16 @@ expression_list unit::item::Field::parameters() const
     return params;
 }
 
+unit::item::Field* unit::item::Field::parent() const
+{
+    return _parent;
+}
+
+void unit::item::Field::setParent(Field* parent)
+{
+    _parent = parent;
+}
+
 unit::item::field::Constant::Constant(shared_ptr<ID> id,
                                       shared_ptr<binpac::Constant> const_,
                                       shared_ptr<Expression> cond,
@@ -1428,7 +1439,7 @@ expression_list unit::item::field::switch_::Case::expressions() const
     return exprs;
 }
 
-unit_field_list unit::item::field::switch_::Case::items() const
+unit_field_list unit::item::field::switch_::Case::fields() const
 {
     unit_field_list items;
 
@@ -1436,6 +1447,20 @@ unit_field_list unit::item::field::switch_::Case::items() const
         items.push_back(i);
 
     return items;
+}
+
+std::string unit::item::field::switch_::Case::uniqueName()
+{
+    string s;
+
+    for ( auto f : fields() ) {
+        s += (f->anonymous() ? "<anon>" : f->id()->name());
+        s += "|";
+        s += (f->fieldType() ? f->fieldType()->render() : "<no type>");
+        s += "\n";
+    }
+
+    return ::util::uitoa_n(::util::hash(s), 62, 5);
 }
 
 unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, shared_ptr<Expression> cond, const hook_list& hooks, const Location& l)
@@ -1450,9 +1475,12 @@ unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& 
     for ( auto c : _cases )
         addChild(c);
 
-    for ( auto c : _cases )
-        for ( auto i : c->items() )
-            i->scope()->setParent(scope());
+    for ( auto c : _cases ) {
+        for ( auto f : c->fields() ) {
+            f->scope()->setParent(scope());
+            f->setParent(this);
+        }
+    }
 }
 
 shared_ptr<Expression> unit::item::field::Switch::expression() const
@@ -1468,6 +1496,42 @@ unit::item::field::Switch::case_list unit::item::field::Switch::cases() const
         cases.push_back(c);
 
     return cases;
+}
+
+bool unit::item::field::Switch::noFields() const
+{
+    for ( auto c : _cases ) {
+        for ( auto f : c->fields() ) {
+            if ( f->type() && ! ast::isA<type::Void>(f->type()) )
+                return false;
+        }
+    }
+
+    return true;
+}
+
+shared_ptr<unit::item::field::switch_::Case> unit::item::field::Switch::case_(shared_ptr<Item> f)
+{
+    for ( auto c : _cases ) {
+        for ( auto of : c->fields() ) {
+            if ( f.get() == of.get() )
+                return c;
+        }
+    }
+
+    return nullptr;
+}
+
+std::string unit::item::field::Switch::uniqueName()
+{
+    string s;
+
+    for ( auto c : cases() ) {
+        s += c->uniqueName();
+        s += "===\n";
+    }
+
+    return ::util::uitoa_n(::util::hash(s), 62, 5);
 }
 
 unit::item::Variable::Variable(shared_ptr<binpac::ID> id, shared_ptr<binpac::Type> type, shared_ptr<Expression> default_, const hook_list& hooks, const Location& l)
@@ -1561,19 +1625,11 @@ static void _flatten(shared_ptr<type::unit::Item> i, unit_item_list* dst)
 
     if ( switch_ ) {
         for ( auto c : switch_->cases() )
-            for ( auto i : c->items() )
-                _flatten(i, dst);
+            for ( auto f : c->fields() )
+                _flatten(f, dst);
 
         // return;
     }
-
-#if 0
-    // Same for containers.
-    auto container = ast::tryCast<type::unit::item::field::Container>(i);
-
-    if ( container )
-        _flatten(container->field(), dst);
-#endif
 
     dst->push_back(i);
 }

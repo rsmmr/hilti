@@ -895,40 +895,134 @@ void ParserBuilder::_finishParseFunction(bool finalize_pobj)
     cg()->moduleBuilder()->popFunction();
 }
 
+static shared_ptr<hilti::type::struct_::Field> _convertField(CodeGen* cg, shared_ptr<binpac::type::unit::item::Field> f)
+{
+    if ( ! f->type() )
+        return nullptr;
+
+    if ( ast::isA<binpac::type::Void>(f->type()) )
+        return nullptr;
+
+    auto name = f->id()->name();
+
+    auto ftype = f->fieldType();
+    auto type = cg->hiltiType(ftype);
+    assert(type);
+
+    auto sfield = hilti::builder::struct_::field(name, type, nullptr, false, f->location());
+
+    if ( f->anonymous() )
+        sfield->type()->attributes().add(hilti::attribute::CANREMOVE);
+
+    return sfield;
+}
+
+static void _addField(hilti::builder::struct_::field_list* fields, shared_ptr<hilti::type::struct_::Field> f)
+{
+    // It's ok to have multiple fields with the same name at
+    // one level (assuming their types match). But filter
+    // them so that we get each only once.
+
+    for ( auto g : *fields ) {
+        if ( g->id()->name() == f->id()->name() )
+            return;
+    }
+
+    fields->push_back(f);
+}
+
+static void _convertFields(CodeGen* cg, std::list<shared_ptr<binpac::type::unit::item::Field>> in_fields, hilti::builder::struct_::field_list* out_fields, hilti::builder::struct_::field_list* top_level_fields)
+{
+    // One struct field per non-constant unit field.
+    for ( auto f : in_fields ) {
+        auto sw = ast::tryCast<binpac::type::unit::item::field::Switch>(f);
+
+        if ( ! sw ) {
+            auto hf = _convertField(cg, f);
+
+            if ( hf )
+                _addField(out_fields, hf);
+        }
+
+        else {
+            hilti::builder::union_::field_list ufields;
+
+            if ( sw->noFields() )
+                continue;
+
+            for ( auto s : sw->cases() ) {
+
+                auto items = s->fields();
+                assert(items.size() > 0);
+
+                shared_ptr<hilti::type::union_::Field> ufield;
+
+                if ( items.size() == 1 ) {
+                    // A single item translates directly into a union field.
+
+                    auto item = items.front();
+
+                    ufield = _convertField(cg, item);
+
+                    if ( ! ufield )
+                        continue;
+
+                    _addField(&ufields, ufield);
+                }
+
+                else {
+                    // A series of items require a new struct, stored at the
+                    // union field.
+                    hilti::builder::struct_::field_list sfields;
+                    _convertFields(cg, items, &sfields, top_level_fields);
+
+                    auto stype = hilti::builder::struct_::type(sfields);
+                    auto sname = ::util::fmt("__struct_%s", s->uniqueName());
+
+                    if ( ! cg->moduleBuilder()->hasType(sname) )
+                        cg->moduleBuilder()->addType(sname, stype, false);
+
+                    ufield = hilti::builder::struct_::field(::util::fmt("items_%s", s->uniqueName()),
+                                                            ::hilti::builder::reference::type(::hilti::builder::type::byName(sname)),
+                                                            nullptr, false);
+                    ufield->setAnonymous();
+
+                    _addField(&ufields, ufield);
+                }
+
+                for ( auto item : items ) {
+                    // If the field has a default, we add another field to
+                    // the main struct that will store the default value
+                    // later.
+                    if ( auto attr = item->attributes()->lookup("default") ) {
+                        auto dname = ::util::fmt("__default_%s", item->id()->name());
+                        auto ftype = cg->hiltiType(item->fieldType());
+                        auto def = ::hilti::builder::struct_::field(dname, ftype, nullptr, item->location());
+                        _addField(top_level_fields, def);
+                    }
+                }
+            }
+
+            auto utype = hilti::builder::union_::type(ufields);
+            auto uname = ::util::fmt("__union_%s", sw->uniqueName());
+
+            if ( ! cg->moduleBuilder()->hasType(uname) )
+                cg->moduleBuilder()->addType(uname, utype, true);
+
+            auto sfield = hilti::builder::struct_::field(::util::fmt("switch_%s", sw->uniqueName()),
+                                                         ::hilti::builder::type::byName(uname),
+                                                         nullptr, false, sw->location());
+            sfield->setAnonymous();
+
+            _addField(out_fields, sfield);
+        }
+    }
+}
+
 shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Unit> u)
 {
     hilti::builder::struct_::field_list fields;
-
-    std::set<string> have;
-
-    // One struct field per non-constant unit field.
-    for ( auto f : u->flattenedFields() ) {
-        if ( ! f->type() )
-            continue;
-
-        if ( ast::isA<type::Void>(f->type()) )
-            continue;
-
-        auto name = f->id()->name();
-
-        if ( have.find(name) != have.end() )
-            // Duplicate field names are ok with switch cases as long as the
-            // types match. That (and otherwise forbidden duplicates) should
-            // have already been checked where we get here ...
-            continue;
-
-        auto ftype = f->fieldType();
-        auto type = cg()->hiltiType(ftype);
-        assert(type);
-
-        auto sfield = hilti::builder::struct_::field(name, type, nullptr, false, f->location());
-
-        if ( f->anonymous() )
-            sfield->type()->attributes().add(hilti::attribute::CANREMOVE);
-
-        have.insert(name);
-        fields.push_back(sfield);
-    }
+    _convertFields(cg(), u->fields(), &fields, &fields);
 
     // One struct field per variable.
     for ( auto v : u->variables() ) {
@@ -1057,7 +1151,7 @@ void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params
             continue;
 
         auto def = cg()->hiltiExpression(attr->value());
-        cg()->hiltiItemSet(state()->self, f, def);
+        cg()->hiltiItemPresetDefault(state()->self, f, def);
     }
 
     // Sink variables get special treatment herel they are allocated here.

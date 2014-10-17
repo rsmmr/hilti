@@ -1186,7 +1186,7 @@ void Printer::visit(type::unit::item::Variable* v)
 {
     Printer& p = *this;
 
-    if ( v->id() )
+    if ( ! v->anonymous() )
         p << v->id();
 
     p << ": " << v->type();
@@ -1211,7 +1211,8 @@ void Printer::visit(type::unit::item::field::Constant* c)
 void Printer::visit(type::unit::item::field::Ctor* r)
 {
     Printer& p = *this;
-    if ( r->id() )
+
+    if ( ! r->anonymous() )
         p << r->id();
 
     p << ": " << r->ctor();
@@ -1240,7 +1241,7 @@ void Printer::visit(type::unit::item::field::AtomicType* t)
 {
     Printer& p = *this;
 
-    if ( t->id() )
+    if ( ! t->anonymous() )
         p << t->id();
 
     p << ": " << t->type();
@@ -1255,7 +1256,7 @@ void Printer::visit(type::unit::item::field::Unit* t)
 {
     Printer& p = *this;
 
-    if ( t->id() )
+    if ( ! t->anonymous() )
         p << t->id();
 
     p << ": " << t->type();
@@ -1280,17 +1281,17 @@ void Printer::visit(type::unit::item::field::switch_::Case* c)
 
     p << " -> ";
 
-    auto items = c->items();
+    auto fields = c->fields();
 
-    if ( items.size() ) {
+    if ( fields.size() ) {
         p << " {\n";
         pushIndent();
     }
 
-    for ( auto i : items )
-        p << i;
+    for ( auto f : fields )
+        p << f;
 
-    if ( items.size() ) {
+    if ( fields.size() ) {
         popIndent();
         p << "}\n";
     }

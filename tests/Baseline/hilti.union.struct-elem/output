@@ -1,0 +1,9 @@
+
+---- 1
+<x=(not set), y=(not set), z=(not set)>
+
+---- 2
+<x=(not set), y=<unset>, z=(not set)>
+
+---- 3
+<x=(not set), y=<test=Foo>, z=(not set)>

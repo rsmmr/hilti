@@ -217,6 +217,25 @@ void Validator::visit(declaration::Type* t)
 {
     auto unit = ast::tryCast<type::Unit>(t->type());
 
+    if ( unit ) {
+        // TODO: It's ok to have the same field name multiple times under
+        // certain constraints: it's ok if the fields using the name are on
+        // the same "level", i.e., all inside the top unit, or inside cases
+        // of the same switch. It's not ok to be on different levels, or
+        // within separate switches (as that will be messed up due to the
+        // unions used for compiling it).
+#if 0
+        std::set<string> have;
+
+        for ( auto f : unit->flattenedFields() ) {
+            if ( have.find(f->id()->name()) != have.end() )
+                error(f, ::util::fmt("duplicate field name '%s'", f->id()->name()));
+
+            have.insert(f->id()->name());
+        }
+#endif
+    }
+
     if ( unit && unit->grammar() ) {
         string err = unit->grammar()->check();
 
@@ -700,11 +719,20 @@ void Validator::visit(type::unit::item::field::Ctor* t)
 
 void Validator::visit(type::unit::item::field::Switch* s)
 {
+    if ( s->cases().empty() ) {
+        error(s, "switch without cases");
+        return;
+    }
+
     int defaults = 0;
 
     std::set<string> have;
 
     for ( auto c : s->cases() ) {
+
+        if ( c->fields().empty() ) {
+            error(c, "switch case without any item");
+        }
 
         if ( c->default_() )
             ++defaults;

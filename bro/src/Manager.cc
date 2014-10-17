@@ -2393,8 +2393,8 @@ void Manager::AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev)
 	{
 	auto uid = ::hilti::builder::id::node(ev->unit);
 
-	if ( ev->minfo->hilti_mbuilder->declared(uid) )
-		return;
+    if ( ev->minfo->hilti_mbuilder->declared(uid) )
+        return;
 
 	assert(ev->minfo->pac2_hilti_module);
 	auto t = ev->minfo->pac2_hilti_module->body()->scope()->lookup(uid, true);

@@ -560,6 +560,7 @@ unit_switch_case
               | exprs ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>($1, $3, loc(@$)); }
               | '*'   ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>(expression_list(), $3, loc(@$)); }
 
+
 opt_type_attrs: type_attr opt_type_attrs         { $$ = $2; $$.push_front($1); }
               | /* empty */                      { $$ = attribute_list(); }
 
