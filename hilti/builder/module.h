@@ -702,6 +702,14 @@ public:
    /// Returns: An expression referencing the type.
    shared_ptr<hilti::expression::Type> addType(const std::string& id, shared_ptr<Type> type, bool force_unique = false, const Location& l = Location::None);
 
+   /// Returns true if a type of a given name already exists in the current
+   /// function.
+   bool hasType(const std::string& id);
+
+   /// Returns true if a type of a given name already exists in the current
+   /// function.
+   bool hasType(shared_ptr<hilti::ID> id);
+
    /// Adds a context declaration to the module. Note that only a module must
    /// have at most one contecct declaration.
    ///

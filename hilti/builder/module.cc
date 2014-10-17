@@ -682,6 +682,18 @@ shared_ptr<hilti::expression::Type> ModuleBuilder::addType(const std::string& id
     return addType(std::make_shared<ID>(id, l), type, force_unique, l);
 }
 
+bool ModuleBuilder::hasType(const std::string& id)
+{
+    return hasType(std::make_shared<ID>(id));
+}
+
+bool ModuleBuilder::hasType(shared_ptr<hilti::ID> id)
+{
+    id = _normalizeID(id);
+    auto d = _globals.find(id->pathAsString(_module->id()));
+    return d != _globals.end();
+}
+
 shared_ptr<hilti::expression::Type> ModuleBuilder::addContext(shared_ptr<Type> type, const Location& l)
 {
     auto id = std::make_shared<hilti::ID>("Context", l);

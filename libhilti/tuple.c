@@ -6,24 +6,24 @@
 #include "string_.h"
 
 // Generic version working with all tuple types.
-void hlt_tuple_dtor(hlt_type_info* ti, void* obj, const char* location, hlt_execution_context* ctx)
+void hlt_tuple_dtor(hlt_type_info* ti, void* obj, hlt_execution_context* ctx)
 {
     hlt_type_info** types = (hlt_type_info**) &ti->type_params;
     int16_t* offsets = (int16_t *)ti->aux;
 
     for ( int i = 0; i < ti->num_params; i++ ) {
-        __hlt_object_dtor(types[i], obj + offsets[i], location, ctx);
+        __hlt_object_dtor(types[i], obj + offsets[i], "tuple-dtor", ctx);
     }
 }
 
 // Generic version working with all tuple types.
-void hlt_tuple_cctor(hlt_type_info* ti, void* obj, const char* location, hlt_execution_context* ctx)
+void hlt_tuple_cctor(hlt_type_info* ti, void* obj, hlt_execution_context* ctx)
 {
     hlt_type_info** types = (hlt_type_info**) &ti->type_params;
     int16_t* offsets = (int16_t *)ti->aux;
 
     for ( int i = 0; i < ti->num_params; i++ ) {
-        __hlt_object_cctor(types[i], obj + offsets[i], location, ctx);
+        __hlt_object_cctor(types[i], obj + offsets[i], "tuple-dtor", ctx);
     }
 }
 

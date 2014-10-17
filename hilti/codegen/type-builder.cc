@@ -1094,7 +1094,12 @@ void TypeBuilder::visit(type::Struct* t)
         int i = 0;
 
         for ( auto f : t->fields() ) {
-            auto name = cg()->llvmConstAsciizPtr(f->id()->name());
+            auto n = f->id()->name();
+
+            if ( f->anonymous() )
+                n = string(".") + n;
+
+            auto name = cg()->llvmConstAsciizPtr(n);
 
             // Calculate the offset.
             auto idx = cg()->llvmGEPIdx(i + 2); // skip the gchdr and bitmask.
@@ -1226,7 +1231,8 @@ void TypeBuilder::visit(type::Union* t)
         CodeGen::constant_list array;
 
         for ( auto f : t->fields() ) {
-            auto name = t->anonymousFields() ? cg()->llvmConstNull(cg()->llvmTypePtr())
+            auto name = (t->anonymousFields() || f->anonymous())
+                ? cg()->llvmConstNull(cg()->llvmTypePtr())
                 : cg()->llvmConstAsciizPtr(f->id()->name());
 
             CodeGen::constant_list pair { cg()->llvmRtti(f->type()), name };

@@ -120,6 +120,7 @@ protected:
    void visit(constant::Time* c) override;
    void visit(constant::Tuple* c) override;
    void visit(constant::Unset* c) override;
+   void visit(constant::Union* c) override;
 
    void visit(ctor::Bytes* c) override;
    void visit(ctor::List* c) override;

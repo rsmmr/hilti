@@ -167,6 +167,7 @@ declare void @__hlt_debug_push_indent(%hlt.execution_context*)
 declare void @__hlt_debug_pop_indent(%hlt.execution_context*)
 declare void @__hlt_debug_print_str(i8*, %hlt.execution_context*)
 declare void @__hlt_debug_print_ptr(i8*, i8*, %hlt.execution_context*)
+declare void @__hlt_debug_print_object(i8*, i8*, %hlt.type_info*, %hlt.execution_context*)
 
 declare %hlt.string* @hlt_string_from_data_ref(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 declare %hlt.string* @hlt_string_from_data(i8*, i64, %hlt.exception**, %hlt.execution_context*)

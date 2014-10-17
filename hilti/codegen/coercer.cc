@@ -204,5 +204,15 @@ void codegen::Coercer::visit(type::Union* t)
         return;
     }
 
+    auto dst_union = ast::as<type::Union>(dst);
+
+    if ( dst_union && t->wildcard() ) {
+        auto t = cg()->llvmType(dst_union);
+        auto result = cg()->llvmConstNull(t);
+        cg()->llvmInsertValue(result, cg()->llvmConstInt(-1, 32), 0);
+        setResult(result);
+        return;
+    }
+
     assert(false);
 }

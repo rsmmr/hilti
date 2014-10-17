@@ -168,6 +168,7 @@ using namespace hilti;
 %type <struct_fields>    struct_fields opt_struct_fields
 %type <union_field>      union_field
 %type <union_fields>     union_fields opt_union_fields
+%type <union_constant_field> union_constant_field
 %type <sval>             re_pattern_constant
 %type <type>             base_type type enum_ bitset exception opt_exception_base struct_ union_ overlay context scope function_type
 %type <types>            type_list
@@ -506,7 +507,17 @@ constant      : CINTEGER                         { $$ = builder::integer::create
               | TIME '(' CDOUBLE ')'             { $$ = builder::time::create($3, loc(@$)); }
               | TIME '(' CINTEGER ')'            { $$ = builder::time::create((uint64_t)$3, loc(@$)); }
               | tuple                            { $$ = builder::tuple::create($1, loc(@$));  }
+              | UNION '<' type '>' '(' union_constant_field ')'
+                                                 { $$ = builder::union_::create($3, $6.first, $6.second, loc(@$)); }
+              | UNION '(' union_constant_field ')'
+                                                 { $$ = builder::union_::create(nullptr, $3.first, $3.second, loc(@$)); }
+              | UNION '(' ')'
+                                                 { $$ = builder::union_::create(loc(@$)); }
               ;
+
+union_constant_field
+              : local_id ':' expr                { $$ = std::make_pair($1, $3); }
+              | expr                             { $$ = std::make_pair(nullptr, $1); }
 
 ctor          : CBYTES                           { $$ = builder::bytes::create($1, loc(@$)); }
               | ctor_regexp                      { $$ = $1; }

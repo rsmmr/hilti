@@ -206,3 +206,38 @@ constant::Enum::Enum(shared_ptr<ID> value, shared_ptr<Type> etype, const Locatio
     throw ConstantParseError(this, util::fmt("unknown enum label '%s'", value->pathAsString().c_str()));
 }
 
+constant::Union::Union(shared_ptr<Type> utype, shared_ptr<ID> field, shared_ptr<Expression> value, const Location& l)
+    : Constant(l)
+{
+    _type = utype;
+    _id = field;
+    _expr = value;
+
+    addChild(_type);
+    addChild(_id);
+    addChild(_expr);
+}
+
+shared_ptr<Type> constant::Union::type() const
+{
+    if ( _type )
+        return _type;
+
+    if ( ! _expr )
+        return std::make_shared<type::Union>();
+
+    if ( _id ) {
+        type::Union::field_list fields = { std::make_shared<type::union_::Field>(_id, _expr->type()) };
+        return std::make_shared<type::Union>(fields, location());
+    }
+
+    else {
+        type::trait::TypeList::type_list fields = { _expr->type() };
+        return std::make_shared<type::Union>(fields, location());
+    }
+}
+
+std::list<shared_ptr<hilti::Expression>> constant::Union::flatten()
+{
+    return { _expr };
+}

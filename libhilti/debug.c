@@ -208,6 +208,23 @@ void __hlt_debug_print_ptr(const char* s, void* ptr, hlt_execution_context* ctx)
     fprintf(stderr, "%s %p (ctx: %p globals: %p)\n", s, ptr, ctx, glb);
 }
 
+void __hlt_debug_print_object(const char* s, void* ptr, hlt_type_info* t, hlt_execution_context* ctx)
+{
+    fprintf(stderr, "debug: %3" PRId64 " ", ctx->debug_indent);
+
+    for ( int i = ctx->debug_indent * 4; i; --i )
+        fputc(' ', stderr);
+
+    fprintf(stderr, "%s ", s);
+
+    hlt_exception* excpt = 0;
+    hlt_string x = hlt_object_to_string(t, ptr, 0, &excpt, ctx);
+    hlt_string_print(stderr, x, 0, &excpt, ptr);
+
+    void* glb = &ctx->globals;
+    fprintf(stderr, " (ctx: %p globals: %p)\n", ctx, glb);
+}
+
 void __hlt_debug_push_indent(hlt_execution_context* ctx)
 {
     ++ctx->debug_indent;

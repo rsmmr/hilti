@@ -40,7 +40,7 @@ static int _fieldIndex(shared_ptr<type::Union> utype, shared_ptr<type::union_::F
     int i = 0;
 
     for ( auto f : utype->fields() ) {
-        if ( f == field )
+        if ( f->id()->name() == field->id()->name() )
             return i;
 
         i++;

@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = union {
+    int<64> i,
+    bool b,
+    string test
+    }
+
+type B = union<string, bool>
+
+void run() {
+    call Hilti::print(union<A>(test:"TeSt1"))
+    call Hilti::print(union<A>("TeSt2"))
+    call Hilti::print(union(test:"TeSt3"))
+    call Hilti::print(union("TeSt4"))
+    call Hilti::print(union<B>("TeSt5"))
+    call Hilti::print(union())
+}

@@ -80,7 +80,7 @@ public:
    /// Returns the type of the constructed object. If the container has
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
@@ -112,7 +112,7 @@ public:
    /// Returns the type of the constructed object. If the container has
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
@@ -156,7 +156,7 @@ public:
    /// Returns the type of the constructed object. If the container has
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
@@ -201,7 +201,7 @@ public:
    /// Returns the type of the constructed object. If the container has
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
    /// Returns the map's default value, or null if none. This is a shortcut
    /// to querying the corresponding type attribute.
@@ -252,7 +252,7 @@ public:
    /// Returns the type of the constructed object. Pattern constants are
    /// always of type \c regexp<>. To add further type attributes, they need
    /// to be coerced to a regexp type that has them.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
    ACCEPT_VISITOR(Ctor);
 

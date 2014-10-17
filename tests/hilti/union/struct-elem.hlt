@@ -1,0 +1,40 @@
+
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = union {
+    int<64> i,
+    bool b,
+    ref<bytes> test
+    }
+
+type B = struct {
+    string x,
+    A y,
+    bool z
+    }
+
+void run() {
+    local ref<B> b
+
+    call Hilti::print("")
+    call Hilti::print("---- 1")
+    b = new B
+    call Hilti::print(b)
+
+    call Hilti::print("")
+    call Hilti::print("---- 2")
+    struct.set b "y" union()
+    call Hilti::print(b)
+
+    call Hilti::print("")
+    call Hilti::print("---- 3")
+    struct.set b "y" union<A>(b"Foo")
+    call Hilti::print(b)
+}

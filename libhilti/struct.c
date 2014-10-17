@@ -21,7 +21,7 @@ struct field {
 };
 
 // Generic version working with all struct types.
-void hlt_struct_dtor(hlt_type_info* type, void* obj, const char* location, hlt_execution_context* ctx)
+void hlt_struct_dtor(hlt_type_info* type, void* obj, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_STRUCT);
 
@@ -106,29 +106,35 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
             // Don't print internal names.
             continue;
 
-        if ( printed++ >  0 )
-            s = hlt_string_concat(s, separator, excpt, ctx);
-
-        hlt_string field_s = hlt_string_from_asciiz(array[i].field, excpt, ctx);
-        s = hlt_string_concat(s, field_s, excpt, ctx);
-        s = hlt_string_concat(s, equal, excpt, ctx);
-
-        uint32_t is_set = (mask & (1 << i));
+        hlt_string t;
 
         assert(types[i]);
+        uint32_t is_set = (mask & (1 << i));
 
-        if ( ! is_set ) {
-            hlt_string not_set = hlt_string_from_asciiz("(not set)", excpt, ctx);
-            s = hlt_string_concat(s, not_set, excpt, ctx);
-        }
+        if ( ! is_set )
+            t = hlt_string_from_asciiz("(not set)", excpt, ctx);
 
-        else {
-            hlt_string t = __hlt_object_to_string(types[i], obj + array[i].offset, options, seen, excpt, ctx);
-            s = hlt_string_concat(s, t, excpt, ctx);
-        }
+        else
+            t = __hlt_object_to_string(types[i], obj + array[i].offset, options, seen, excpt, ctx);
 
         if ( hlt_check_exception(excpt) )
             return 0;
+
+        if ( array[i].field[0] && array[i].field[0] != '.' ) {
+            // A leading dot suppresses printing the field name.
+            hlt_string field_s = hlt_string_from_asciiz(array[i].field, excpt, ctx);
+            field_s = hlt_string_concat(field_s, equal, excpt, ctx);
+            t = hlt_string_concat(field_s, t, excpt, ctx);
+        }
+
+        if ( hlt_string_len(t, excpt, ctx) == 0 )
+            // Nothing to show.
+            continue;
+
+        if ( printed++ >  0 )
+            s = hlt_string_concat(s, separator, excpt, ctx);
+
+        s = hlt_string_concat(s, t, excpt, ctx);
     }
 
     hlt_string postfix = hlt_string_from_asciiz(">", excpt, ctx);
@@ -214,7 +220,7 @@ int8_t hlt_struct_equal(const hlt_type_info* type1, const void* obj1, const hlt_
                 return 0;
         }
     }
-   
+
     return 1;
 }
 

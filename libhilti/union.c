@@ -36,7 +36,7 @@ hlt_type_info* __hlt_union_type(hlt_type_info* type, void* obj)
     return fields[u->field].type;
 }
 
-void hlt_union_cctor(hlt_type_info* type, void* obj, const char* location, hlt_execution_context* ctx)
+void hlt_union_cctor(hlt_type_info* type, void* obj, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_UNION);
 
@@ -47,10 +47,10 @@ void hlt_union_cctor(hlt_type_info* type, void* obj, const char* location, hlt_e
         return;
 
     if ( u->field >= 0 )
-        __hlt_object_cctor(fields[u->field].type, obj, location, ctx);
+        __hlt_object_cctor(fields[u->field].type, &u->data, "union-cctor", ctx);
 }
 
-void hlt_union_dtor(hlt_type_info* type, void* obj, const char* location, hlt_execution_context* ctx)
+void hlt_union_dtor(hlt_type_info* type, void* obj, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_UNION);
 
@@ -61,7 +61,7 @@ void hlt_union_dtor(hlt_type_info* type, void* obj, const char* location, hlt_ex
         return;
 
     if ( u->field >= 0 )
-        __hlt_object_dtor(fields[u->field].type, obj, location, ctx);
+        __hlt_object_dtor(fields[u->field].type, &u->data, "union-dtor", ctx);
 }
 
 void hlt_union_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -95,10 +95,17 @@ hlt_string hlt_union_to_string(const hlt_type_info* type, void* obj, int32_t opt
     if ( u->field < 0 )
         return hlt_string_from_asciiz("<unset>", excpt, ctx);
 
+    const char* name = fields[u->field].name;
+
+    if ( name && name[0] && name[1] &&
+         name[0] == '_' && name[1] == '_' )
+        // Don't print internal names.
+        return 0;
+
     hlt_string s = hlt_string_from_asciiz("<", excpt, ctx);
 
-    if ( fields[u->field].name ) {
-        hlt_string n = hlt_string_from_asciiz(fields[u->field].name, excpt, ctx);
+    if ( name ) {
+        hlt_string n = hlt_string_from_asciiz(name, excpt, ctx);
         s = hlt_string_concat(s, n, excpt, ctx);
         n = hlt_string_from_asciiz("=", excpt, ctx);
         s = hlt_string_concat(s, n, excpt, ctx);

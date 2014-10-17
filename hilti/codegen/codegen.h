@@ -1648,6 +1648,9 @@ public:
    /// Prints a pointer to stderr at runtime, prefixed with an additional string.
    void llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr);
 
+   /// Print a HILTI object to stderr at runtime, prefixed with an additional string.
+   void llvmDebugPrintObject(const string& prefix, llvm::Value* ptr, shared_ptr<Type> type);
+
    /// A case for llvmSwitch().
    struct SwitchCase {
        // FIXME: We should be able to use just a nromal function pointer here

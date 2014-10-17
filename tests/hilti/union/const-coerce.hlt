@@ -1,0 +1,51 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = union {
+    int<64> i,
+    bool b,
+    string test
+    }
+
+void run() {
+    local A a
+    local bool b
+    local string s
+    local union<string> z
+
+    a = union<A>(test:"TeSt1")
+    call Hilti::print (a)
+
+    b = union.is_set a string
+    call Hilti::print (b)
+
+    b = union.is_set a "test"
+    call Hilti::print (b)
+
+    b = union.is_set a "i"
+    call Hilti::print (b)
+
+    a = union(test:"TeSt2")
+    call Hilti::print (a)
+
+    a = union("TeSt3")
+    call Hilti::print (a)
+
+    b = union("TeSt3")
+    call Hilti::print (b)
+
+    z = union("xxx")
+    call Hilti::print (z)
+
+    b = union.is_set z string
+    call Hilti::print (b)
+
+    b = union.is_set union("xxx") string
+    call Hilti::print (b)
+}

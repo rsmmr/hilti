@@ -1953,6 +1953,79 @@ inline shared_ptr<hilti::type::union_::Field> field(const std::string& name, sha
     return std::make_shared<hilti::type::union_::Field>(id::node(name), type, l);
 }
 
+/// Instantiates an AST expression node representing a union constant that
+/// has one named field set.
+///
+/// utype: The union's type. This must be a union with named fields. The type
+/// can be null, in which case, the constant's type is derived as a union
+/// with just a single field of type corresponding to that of *value*.
+///
+/// field: The ID of the field to initialize.
+///
+/// value: The value to set the field to.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(shared_ptr<Type> utype, shared_ptr<ID> field, shared_ptr<Expression> value, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Union>(utype, field, value, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing a union constant that
+/// has one named field set.
+///
+/// utype: The union's type. This must be a union with named fields. The type
+/// can be null, in which case, the constant's type is derived as a union
+/// with just a single field of type corresponding to that of *value*.
+///
+/// field: A constant string expression with the ID of the field to
+/// initialize.
+///
+/// value: The value to set the field to.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(shared_ptr<Type> utype, shared_ptr<Expression> field, shared_ptr<Expression> value, const Location& l=Location::None)
+{
+    auto cexpr = ast::checkedCast<::hilti::expression::Constant>(field);
+    auto cval = ast::checkedCast<::hilti::constant::String>(cexpr->constant());
+    auto id = std::make_shared<::hilti::ID>(cval->value(), field->location());
+    auto c = std::make_shared<constant::Union>(utype, id, value, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing a union constant that
+/// has an anoymous field set.
+///
+/// utype: The union's type. This must be a union with anoymous fields. The
+/// type can be null, in which case, the constant's type is derived as a
+/// union with just a single anonymous field of type corresponding to that of
+/// *value*.
+///
+/// value: The value to set the union to.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(shared_ptr<Type> utype, shared_ptr<Expression> value, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Union>(utype, nullptr, value, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing an unset union constant of wildcard type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Union>(nullptr, nullptr, nullptr, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
 
 }
 

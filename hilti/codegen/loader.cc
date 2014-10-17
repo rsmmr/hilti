@@ -286,6 +286,57 @@ void Loader::visit(constant::Unset* t)
         setResult(cg()->llvmInitVal(t->type()), false, false);
 }
 
+void Loader::visit(constant::Union* c)
+{
+    auto dtype = arg1();
+
+    // TODO: Should factor this out into codegen, and then use from
+    // instructions/unit.cc as well.
+    auto utype = ast::as<type::Union>(c->type());
+    auto data_type = llvm::cast<llvm::StructType>(cg()->llvmType(utype))->getElementType(1);
+
+    shared_ptr<type::union_::Field> field;
+
+    if ( c->id() )
+        field = utype->lookup(c->id());
+
+    else if ( c->expression() ) {
+        auto fields = utype->fields(c->expression()->type());
+        assert(fields.size() == 1);
+        field = fields.front();
+    }
+
+    if ( ! field ) {
+        auto t = ast::isA<type::Union>(dtype) ? dtype : std::make_shared<type::Union>(type::Union::type_list());
+        auto ht = cg()->llvmType(t);
+        llvm::Value* none = cg()->llvmConstNull(ht);
+        none = cg()->llvmInsertValue(none, cg()->llvmConstInt(-1, 32), 0);
+        setResult(none, false, false);
+        return;
+    }
+
+    int fidx = -1;
+
+    if ( field ) {
+        for ( auto f : utype->fields() ) {
+            fidx++;
+
+            if ( f == field )
+                break;
+        }
+
+        assert(fidx < utype->fields().size());
+    }
+
+    auto op = cg()->llvmValue(c->expression());
+    auto val = cg()->llvmReinterpret(op, data_type);
+    auto idx = cg()->llvmConstInt(fidx, 32);
+
+    CodeGen::value_list elems = { idx, val };
+    auto result = cg()->llvmValueStruct(elems);
+    setResult(result, false, false);
+}
+
 void Loader::visit(constant::Reference* r)
 {
     // This can only be the null value.

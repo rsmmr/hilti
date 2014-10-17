@@ -66,6 +66,7 @@ struct yystype_hilti {
     std::list<node_ptr<hilti::Expression>> exprs; // FIXME: This should be replaced with expr2.
     std::list<shared_ptr<hilti::Expression>> exprs2;
     std::list<node_ptr<hilti::statement::try_::Catch>> catches;
+    std::pair<shared_ptr<ID>, shared_ptr<Expression>> union_constant_field;
 
     std::list<string> strings;
 

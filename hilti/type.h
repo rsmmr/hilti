@@ -1673,15 +1673,23 @@ public:
    shared_ptr<Expression> default_() const;
    bool internal() const { return _internal; }
 
+   /// Returns true if the field is anonymous. Anonymous have their name
+   /// skipped when printed at runtime. 
+   bool anonymous() const { return _anonymous; }
+
    /// Marks the field as internal.
    void setInternal() { _internal = true; }
+
+   /// Marks the field as internal.
+   void setAnonymous() { _anonymous = true; }
 
    ACCEPT_VISITOR_ROOT();
 
 private:
    node_ptr<ID> _id;
    node_ptr<hilti::Type> _type;
-   bool _internal;
+   bool _internal = false;
+   bool _anonymous = false;
 };
 
 

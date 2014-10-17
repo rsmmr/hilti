@@ -1334,6 +1334,26 @@ void Printer::visit(constant::Port* c)
     }
 }
 
+void Printer::visit(constant::Union* c)
+{
+    Printer& p = *this;
+
+    p << "union";
+
+    if ( c->type() )
+        p << "<" << c->type() << ">";
+
+    p << "(";
+
+    if ( c->id() )
+        p << c->id()->name() << ": ";
+
+    if ( c->expression() )
+        p << c->expression();
+
+    p << ")";
+}
+
 void Printer::visit(ctor::Bytes* c)
 {
     Printer& p = *this;
@@ -1432,4 +1452,3 @@ void Printer::visit(ctor::Callable* c)
     p << "))";
 
 }
-

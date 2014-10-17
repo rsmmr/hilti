@@ -118,6 +118,7 @@ namespace constant {
    class Time;
    class Tuple;
    class Unset;
+   class Union;
 }
 
 namespace ctor {
@@ -300,6 +301,7 @@ public:
    virtual void visit(constant::Time* c)      {}
    virtual void visit(constant::Tuple* c)     {}
    virtual void visit(constant::Unset* c)     {}
+   virtual void visit(constant::Union* c)  {}
 
    // Ctors.
    virtual void visit(Ctor* c)         {}

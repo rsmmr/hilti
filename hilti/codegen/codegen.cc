@@ -3584,6 +3584,14 @@ void CodeGen::llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr)
     llvmCallC(llvmLibFunction("__hlt_debug_print_ptr"), args, false);
 }
 
+void CodeGen::llvmDebugPrintObject(const string& prefix, llvm::Value* ptr, shared_ptr<Type> type)
+{
+    auto s = llvmConstAsciizPtr(prefix);
+    auto p = builder()->CreateBitCast(ptr, llvmTypePtr());
+    value_list args = { s, p, llvmRtti(type), llvmExecutionContext() };
+    llvmCallC(llvmLibFunction("__hlt_debug_print_object"), args, false);
+}
+
 llvm::Value* CodeGen::llvmSwitchEnumConst(llvm::Value* op, const case_list& cases, bool result, const Location& l)
 {
     assert (op->getType()->isStructTy());
@@ -3842,7 +3850,7 @@ void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const str
 {
     auto fd = _getField(this, stype, field);
     auto cval = val->coerceTo(fd.second->type());
-    auto lval = llvmValue(cval, fd.second->type());
+    auto lval = llvmValue(val, fd.second->type());
     llvmStructSet(stype, sval, field, lval);
 }
 
