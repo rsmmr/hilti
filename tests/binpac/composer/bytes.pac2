@@ -1,4 +1,5 @@
-# @TEST-EXEC:  echo 1234567890 | HILTI_DEBUG=binpac pac-driver-test %INPUT 
+# @TEST-EXEC:  echo 1234567890 | HILTI_DEBUG=binpac:binpac-compose pac-driver-test -c %INPUT >output
+# @TEST-EXEC:  btest-diff output
 # @TEST-EXEC:  btest-diff hlt-debug.log
 
 module Mini;
@@ -6,8 +7,4 @@ module Mini;
 export type test = unit {
        a: bytes &length=4;
        b: bytes &length=6;
-
-       on %done {
-        print self;
-        }
 };

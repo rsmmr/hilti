@@ -2219,7 +2219,7 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 
 	body->addStatement(stmt);
 
-	auto hook = std::make_shared<::binpac::Hook>(body, ev->priority);
+    auto hook = std::make_shared<::binpac::Hook>(body, ::binpac::Hook::PARSE, ev->priority);
 	auto hdecl = std::make_shared<::binpac::declaration::Hook>(std::make_shared<::binpac::ID>(ev->hook), hook);
 
 	auto raise_result = std::make_shared<::binpac::type::function::Result>(std::make_shared<::binpac::type::Void>(), true);

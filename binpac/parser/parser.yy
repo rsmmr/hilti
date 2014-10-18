@@ -604,7 +604,7 @@ unit_hooks    : unit_hook unit_hooks             { $$ = $2; $2.push_front($1); }
 
 unit_hook     : opt_debug opt_priority opt_foreach
                                                  { driver.pushScope(std::make_shared<Scope>(driver.module()->body()->scope())); }
-                block                            { $$ = std::make_shared<Hook>($5, $2, $1, $3, loc(@$)); driver.popScope(); }
+block                                            { $$ = std::make_shared<Hook>($5, Hook::PARSE_COMPOSE, $2, $1, $3, loc(@$)); driver.popScope(); }
 
 opt_debug     : PROPERTY                         { $$ = ($1 == "%debug");
                                                    if ( ! $$ ) error(@$, "unexpected property, only %debug permitted");

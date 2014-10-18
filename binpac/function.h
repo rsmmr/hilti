@@ -44,9 +44,20 @@ private:
 class Hook : public Node
 {
 public:
+    /// The kind of a hook defines whether it's to trigger during parsing or
+    /// composing, or both.
+    enum Kind {
+        PARSE,         ///< A parse hook.
+        COMPOSE,       ///< A compose hook.
+        PARSE_COMPOSE, ///< A hook trigering during both parsing and composing.
+    };
+
     /// body: A statement with the hook's body. Typically, the statement type
     /// will be that of a block of statements. body can be null if this is
     /// just a hook prototype.
+    ///
+    /// kind: The kind of the hook, i.e., whether it's to trigger during
+    /// parsing or composing.
     ///
     /// prio: The priority of the hook. If multiple hook are defined for the
     /// same field, they are executed in order of decreasing priority.
@@ -57,8 +68,8 @@ public:
     /// ~~binpac_enable_debug).
     ///
     /// l: Location associated with the node.
-    Hook(shared_ptr<binpac::Statement> body = nullptr,
-         int prio = 0, bool debug = false,
+    Hook(shared_ptr<binpac::Statement> body,
+         Kind kind, int prio = 0, bool debug = false,
          bool foreach = false, const Location& l=Location::None);
 
     /// Returns the hook's body.
@@ -77,6 +88,14 @@ public:
     /// Returns true if this hooks is marked with \c foreach.
     bool foreach() const;
 
+    /// Returns true if this is a hook to run during parsing (as opposed to
+    /// composing, but note that a hook can be both).
+    bool parseHook() const;
+
+    /// Returns true if this is a hook to run during composing (as opposed to
+    /// parsing, but note that a hook can be both).
+    bool composeHook() const;
+
     /// Sets the unit type that this hook is part of. Should be called only
     /// form the resolver passes.
     void setUnit(shared_ptr<type::Unit> unit);
@@ -90,6 +109,7 @@ public:
 private:
     node_ptr<binpac::Statement> _body;
     node_ptr<type::Unit> _unit = nullptr;
+    Kind _kind;
     int _prio;
     bool _debug;
     bool _foreach;

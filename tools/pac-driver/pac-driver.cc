@@ -111,6 +111,7 @@ static void usage(const char* prog)
     fprintf(stderr, "    -m <off>      Set mark at offset <off>; can be given multiple times\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
+    fprintf(stderr, "    -c            After parsing, compose data back to binary\n");
 #ifdef PAC_DRIVER_JIT
     fprintf(stderr, "    -I            Add directory to import path.\n");
     fprintf(stderr, "    -d            Enable debug mode for JIT compilation\n");
@@ -344,6 +345,33 @@ static void dump_memstats()
             heap, alloced, current_allocs, total_refs, num_nullbuffer, max_nullbuffer);
 }
 
+void composeOutput(hlt_bytes* data, void** obj, hlt_type_info* type, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes_block block;
+    hlt_iterator_bytes start = hlt_bytes_begin(data, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(data, excpt, ctx);
+
+    void* cookie = 0;
+
+    do {
+        cookie = hlt_bytes_iterate_raw(&block, cookie, start, end, excpt, ctx);
+        fwrite(block.start, 1, (block.end - block.start), stdout);
+    } while ( cookie );
+}
+
+void processParseObject(binpac_parser* p, void* pobj)
+{
+    if ( ! p->compose_func )
+        return;
+
+    hlt_execution_context* ctx = hlt_global_execution_context();
+    hlt_exception* excpt = 0;
+
+    p->compose_func(pobj, composeOutput, 0, &excpt, ctx);
+
+    check_exception(excpt);
+}
+
 void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 {
     hlt_execution_context* ctx = hlt_global_execution_context();
@@ -367,6 +395,8 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 
         if ( driver_debug )
             fprintf(stderr, "--- pac-driver: done parsing single input chunk.\n");
+
+        processParseObject(p, pobj);
 
         GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
         GC_DTOR(input, hlt_bytes, ctx);
@@ -420,6 +450,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
                 fprintf(stderr, "--- pac-driver: starting parsing (eod=%d).\n", frozen);
 
             void *pobj = (*p->parse_func)(incr_input, 0, &excpt, ctx);
+            processParseObject(p, pobj);
             GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
         }
 
@@ -428,6 +459,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
                 fprintf(stderr, "--- pac-driver: resuming parsing (eod=%d, excpt=%p).\n", frozen, resume);
 
             void *pobj = (*p->resume_func)(resume, &excpt, ctx);
+            processParseObject(p, pobj);
             GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
         }
 
@@ -526,6 +558,7 @@ int main(int argc, char** argv)
     int chunk_size = 0;
     int list_parsers = false;
     const char* parser = 0;
+    char* reply_parser = 0;
     Embed embeds[256];
     int embeds_count = 0;
 
@@ -538,8 +571,11 @@ int main(int argc, char** argv)
     ::Options* options = &_options;
 #endif
 
+    options->generate_parsers = true;
+    options->generate_composers = false;
+
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:c")) != -1) {
 
         switch (ch) {
 
@@ -604,6 +640,10 @@ int main(int argc, char** argv)
 
             break;
          }
+
+         case 'c':
+            options->generate_composers = true;
+            break;
 
 #ifdef PAC_DRIVER_JIT
          case 'I':
@@ -699,7 +739,7 @@ int main(int argc, char** argv)
     }
 
     else {
-        char* reply_parser = strchr((char*)parser, '/');
+        reply_parser = strchr((char*)parser, '/');
         if ( reply_parser )
             *reply_parser++ = '\0';
 
@@ -724,6 +764,16 @@ int main(int argc, char** argv)
     }
 
     assert(request && reply);
+
+    if ( request && ! request->parse_func ) {
+        fprintf(stderr, "parsing support not compile for %s\n", parser);
+        exit(1);
+    }
+
+    if ( reply && ! reply->parse_func ) {
+        fprintf(stderr, "parsing support not compile for %s\n", reply_parser);
+        exit(1);
+    }
 
     GC_CCTOR(request, hlt_BinPACHilti_Parser, ctx);
     GC_CCTOR(reply, hlt_BinPACHilti_Parser, ctx);

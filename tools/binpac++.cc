@@ -60,6 +60,7 @@ void usage()
             "  -O | --optimize       Optimize generated code (for -l         [Default: off].\n"
             "  -P | --prototypes     Generate C API prototypes for generated module.\n"
             "  -s | --add-stdlibs    Add standard HILTI runtime libraries (for -l).\n"
+            "  -t | --type <t>       Type of code to generate: parse/compose/both [Default: parse].\n"
             "\n";
 }
 
@@ -81,8 +82,11 @@ int main(int argc, char** argv)
 {
     shared_ptr<binpac::Options> options = std::make_shared<binpac::Options>();
 
+    options->generate_parsers = true;
+    options->generate_composers = false;
+
     while ( true ) {
-        int c = getopt_long(argc, argv, "AcdD:o:nOPWlspI:vh", long_options, 0);
+        int c = getopt_long(argc, argv, "AcdD:o:nOPWlspI:vht:", long_options, 0);
 
         if ( c < 0 )
             break;
@@ -144,6 +148,28 @@ int main(int argc, char** argv)
          case 'v':
             ::version();
             return 0;
+
+         case 't':
+            if ( strcmp(optarg, "parse") == 0 ) {
+                options->generate_parsers = true;
+                options->generate_composers = false;
+            }
+
+            else if ( strcmp(optarg, "compose") == 0 ) {
+                options->generate_parsers = false;
+                options->generate_composers = true;
+            }
+
+            else if ( strcmp(optarg, "both") == 0 ) {
+                options->generate_parsers = true;
+                options->generate_composers = true;
+            }
+
+            else {
+                error("", "-t argument must be 'parse', 'compose', or 'both.'");
+            }
+
+            break;
 
          case 'h':
             usage();

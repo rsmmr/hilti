@@ -23,6 +23,7 @@ type Parser = struct {
     ref<list<string>> mime_types, # MIME types handled by this parser.
     caddr parse_func,             # The C function performing the parsing.
     caddr resume_func,            # The C function resuming parsing after a yield.
+    caddr compose_func,           # The C function composing the object.
     caddr type_info,              # Type info for the parser. Filled in at the C level.
     caddr parse_func_sink,        # The C function performing the parsing for a sink.
     caddr resume_func_sink,       # The C function resuming sink parsing after a yield.

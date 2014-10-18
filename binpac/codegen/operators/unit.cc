@@ -76,7 +76,7 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
     auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->fieldType()), nullptr, false);
     cg()->hiltiItemSet(uval, item, expr);
 
-    cg()->hiltiRunFieldHooks(item, uval);
+    cg()->hiltiRunFieldHooks(unit, item, uval, false, cg()->hiltiCookie());
 
     setResult(expr);
 }
