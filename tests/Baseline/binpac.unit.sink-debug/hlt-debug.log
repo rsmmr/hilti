@@ -1,18 +1,18 @@
-00000001 [binpac-sinks/main-thread]     connected parser Mini::Sub [0x22765d0] to sink 0x2275f70
+00000001 [binpac-sinks/main-thread]     connected parser Mini::Sub [0x84f8af0] to sink 0x6530600
 00000002 [binpac/main-thread]           Main
-00000003 [binpac-sinks/main-thread]     starting to write to sink 0x2275f70
-00000004 [binpac-sinks/main-thread]     writing to sink 0x2275f70: |12345|
-00000005 [binpac-sinks/main-thread]     - start writing to sink 0x2275f70 for parser 0x22765d0
+00000003 [binpac-sinks/main-thread]     starting to write to sink 0x6530600
+00000004 [binpac-sinks/main-thread]     writing to sink 0x6530600: |12345| (5 bytes)
+00000005 [binpac-sinks/main-thread]     - start writing to sink 0x6530600 for parser 0x84f8af0
 00000006 [binpac/main-thread]             Sub
-00000007 [binpac-sinks/main-thread]     - writing to sink 0x2275f70 suspended for parser 0x22765d0
-00000008 [binpac-sinks/main-thread]     done writing to sink 0x2275f70
+00000007 [binpac-sinks/main-thread]     - writing to sink 0x6530600 suspended for parser 0x84f8af0
+00000008 [binpac-sinks/main-thread]     done writing to sink 0x6530600
 00000009 [binpac/main-thread]               a = 12345
-00000010 [binpac-sinks/main-thread]     starting to write to sink 0x2275f70
-00000011 [binpac-sinks/main-thread]     writing to sink 0x2275f70: |678901234567890123456789\x00123456789012345678901 ...|
-00000012 [binpac-sinks/main-thread]     - resuming writing to sink 0x2275f70 for parser 0x22765d0
+00000010 [binpac-sinks/main-thread]     starting to write to sink 0x6530600
+00000011 [binpac-sinks/main-thread]     writing to sink 0x6530600: |678901234567890123456789\x00123456789012345678901 ...| (55 bytes)
+00000012 [binpac-sinks/main-thread]     - resuming writing to sink 0x6530600 for parser 0x84f8af0
 00000013 [binpac/main-thread]               s1 = 12345678901234567890123456789\x001234567890123456789012345
-00000014 [binpac-sinks/main-thread]     - writing to sink 0x2275f70 finished for parser 0x22765d0
-00000015 [binpac-sinks/main-thread]     done writing to sink 0x2275f70
+00000014 [binpac-sinks/main-thread]     - writing to sink 0x6530600 finished for parser 0x84f8af0
+00000015 [binpac-sinks/main-thread]     done writing to sink 0x6530600
 00000016 [binpac/main-thread]             b = 678901234567890123456789\x00123456789012345678901234567890
-00000017 [binpac-sinks/main-thread]     closing sink 0x2275f70
-00000018 [binpac-sinks/main-thread]     closed sink 0x2275f70, disconnected all parsers
+00000017 [binpac-sinks/main-thread]     closing sink 0x6530600
+00000018 [binpac-sinks/main-thread]     closed sink 0x6530600, disconnected all parsers

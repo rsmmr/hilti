@@ -1239,12 +1239,16 @@ void TypeBuilder::visit(type::Union* t)
             array.push_back(cg()->llvmConstStruct(pair));
         }
 
+        // Add null pointers as end markers.
+        CodeGen::constant_list pair { cg()->llvmConstNull(cg()->llvmTypeRtti()), cg()->llvmConstNull() };
+        array.push_back(cg()->llvmConstStruct(pair));
+
         llvm::GlobalVariable* glob = nullptr;
 
         if ( array.size() ) {
             auto aval = cg()->llvmConstArray(array);
             glob = cg()->llvmAddConst("union-fields", aval);
-        glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
+            glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
         }
 
         ti->aux = glob;

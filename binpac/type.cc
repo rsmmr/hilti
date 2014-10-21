@@ -995,6 +995,16 @@ void unit::Item::setAnonymous()
     _anonymous = true;
 }
 
+bool unit::Item::aliased() const
+{
+    return _aliased;
+}
+
+void unit::Item::setAliased()
+{
+    _aliased = true;
+}
+
 void unit::Item::setCtorNoName()
 {
     _ctor_no_name = true;

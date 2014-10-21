@@ -1,18 +1,18 @@
 3 pac, 1363624631.441318, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F
 2 std, 1363624631.406021, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, T
-2 pac, 1363624631.443781, http_message_done, CXWv6p3arKYeMETxOg, F, 197
-2 pac, 1363624631.443781, http_end_entities, CXWv6p3arKYeMETxOg, F
-2 pac, 1363624631.443781, http_ALL_entities, CXWv6p3arKYeMETxOg, F, |{^J  "origin": "10.224.189.238",^J  "headers": {^J    "Host": "httpbin.org",^J    "Connection": "close",^J    "Accept": "*/*",^J    "User-Agent": "curl/7.29.0"^J  },^J  "gzipped": true,^J  "method": "GET"^J}|
-2 pac, 1363624631.443781, file_state_remove, FOTFUh3hVFh2jbEhWi, 197
-2 pac, 1363624631.443781, file_over_new_connection, CXWv6p3arKYeMETxOg, FOTFUh3hVFh2jbEhWi, 0, F
-2 pac, 1363624631.443781, file_new, FOTFUh3hVFh2jbEhWi, 0
+2 pac, 1363624631.441318, http_message_done, CXWv6p3arKYeMETxOg, F, 197
 2 pac, 1363624631.441318, http_header, CXWv6p3arKYeMETxOg, F, SERVER, gunicorn/0.16.1
 2 pac, 1363624631.441318, http_header, CXWv6p3arKYeMETxOg, F, DATE, Mon, 18 Mar 2013 16:37:11 GMT
 2 pac, 1363624631.441318, http_header, CXWv6p3arKYeMETxOg, F, CONTENT-TYPE, application/json
 2 pac, 1363624631.441318, http_header, CXWv6p3arKYeMETxOg, F, CONTENT-LENGTH, 165
 2 pac, 1363624631.441318, http_header, CXWv6p3arKYeMETxOg, F, CONTENT-ENCODING, gzip
 2 pac, 1363624631.441318, http_header, CXWv6p3arKYeMETxOg, F, CONNECTION, close
+2 pac, 1363624631.441318, http_end_entities, CXWv6p3arKYeMETxOg, F
 2 pac, 1363624631.441318, http_content_type, CXWv6p3arKYeMETxOg, F, APPLICATION, JSON
+2 pac, 1363624631.441318, http_ALL_entities, CXWv6p3arKYeMETxOg, F, |{^J  "origin": "10.224.189.238",^J  "headers": {^J    "Host": "httpbin.org",^J    "Connection": "close",^J    "Accept": "*/*",^J    "User-Agent": "curl/7.29.0"^J  },^J  "gzipped": true,^J  "method": "GET"^J}|
+2 pac, 1363624631.441318, file_state_remove, FOTFUh3hVFh2jbEhWi, 197
+2 pac, 1363624631.441318, file_over_new_connection, CXWv6p3arKYeMETxOg, FOTFUh3hVFh2jbEhWi, 0, F
+2 pac, 1363624631.441318, file_new, FOTFUh3hVFh2jbEhWi, 0
 2 pac, 1363624631.440994, http_reply, [orig_h=141.142.228.5, orig_p=50153/tcp, resp_h=54.243.118.187, resp_p=80/tcp], 1.1, 200, OK
 2 pac, 1363624631.440994, http_begin_entities, CXWv6p3arKYeMETxOg, F
 2 pac, 1363624631.406021, protocol_confirmation, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, 3

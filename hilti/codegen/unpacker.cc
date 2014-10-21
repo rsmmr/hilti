@@ -466,7 +466,7 @@ void Unpacker::visit(type::Integer* t)
     ));
 
     cases.push_back(CodeGen::SwitchCase(
-        "uint64l", u64b,
+        "uint64b", u64b,
         [&] (CodeGen* cg) -> llvm::Value* { _integerUnpack(cg, args, result, 64, false, ABI::BigEndian, {7, 6, 5, 4, 3, 2, 1, 0}); return nullptr; }
     ));
 

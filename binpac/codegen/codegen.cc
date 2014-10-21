@@ -921,6 +921,12 @@ static void _setFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> u, share
 
 shared_ptr<hilti::Expression> CodeGen::_hiltiItemOp(HiltiItemOp i, shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, const std::string& fname, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> addl_op)
 {
+    if ( field && field->aliased() )
+        // Aliased fields are stored at the top-level, and clearing the field
+        // here will direct the functions called be low to access it here.
+        // The whole semantics of aliased fields aren't great though ...
+        field = nullptr;
+
     auto fn = ::hilti::builder::string::create(fname);
 
     switch ( i ) {

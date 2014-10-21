@@ -1136,6 +1136,13 @@ public:
     /// passed to the ctor). Primarily for internal use.
     void setAnonymous();
 
+    /// Returns true if there's another unit field with the same name.
+    bool aliased() const;
+
+    /// Marks this field as one sharing its name with another one in the same
+    /// unit. Mainly for internal use by normalizer, who detects aliasing.
+    void setAliased();
+
     /// Marks this item as created a by a ctor expression that didn't give it
     /// a name. Variables marked as such might treated differently when
     /// coercion union types.
@@ -1184,6 +1191,7 @@ protected:
 
 private:
     bool _anonymous = false;
+    bool _aliased = false;
     bool _ctor_no_name = false;
     int _do_hooks = 1;
     node_ptr<ID> _id;

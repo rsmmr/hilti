@@ -429,4 +429,3 @@ iBeginCC(iterBytes)
         Returns the bytes *op1* is referencing.
     )")
 iEndCC
-

@@ -30,8 +30,23 @@ void Normalizer::visit(declaration::Type* t)
 {
     auto unit = ast::tryCast<type::Unit>(t->type());
 
-    if ( unit && t->linkage() == Declaration::EXPORTED )
-        unit->setExported();
+    if ( unit ) {
+        if ( t->linkage() == Declaration::EXPORTED )
+            unit->setExported();
+
+        // Find fields sharing a name.
+        std::map<std::string, int> fields;
+        for ( auto f : unit->flattenedFields() ) {
+            auto n = f->id()->name();
+            fields[n] += 1;
+        }
+
+        for ( auto f : unit->flattenedFields() ) {
+            auto n = f->id()->name();
+            if ( fields[n] > 1 )
+                f->setAliased();
+        }
+    }
 }
 
 void Normalizer::visit(declaration::Variable* t)
@@ -129,7 +144,7 @@ void Normalizer::visit(statement::Return* r)
 
     auto rtype = func->type()->result()->type();
 
-    if ( ast::isA<type::Unknown>(rtype) ) 
+    if ( ast::isA<type::Unknown>(rtype) )
         rtype->replace(r->expression()->type());
 }
 

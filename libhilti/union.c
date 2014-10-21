@@ -95,6 +95,11 @@ hlt_string hlt_union_to_string(const hlt_type_info* type, void* obj, int32_t opt
     if ( u->field < 0 )
         return hlt_string_from_asciiz("<unset>", excpt, ctx);
 
+    int num_fields = 0;
+
+    // Count number of fields.
+    for ( struct __field* f = fields; f->type; f++, num_fields++ );
+
     const char* name = fields[u->field].name;
 
     if ( name && name[0] && name[1] &&
@@ -102,7 +107,10 @@ hlt_string hlt_union_to_string(const hlt_type_info* type, void* obj, int32_t opt
         // Don't print internal names.
         return 0;
 
-    hlt_string s = hlt_string_from_asciiz("<", excpt, ctx);
+    hlt_string s = 0;
+
+    if ( num_fields > 1 )
+        s = hlt_string_from_asciiz("<", excpt, ctx);
 
     if ( name ) {
         hlt_string n = hlt_string_from_asciiz(name, excpt, ctx);
@@ -114,8 +122,10 @@ hlt_string hlt_union_to_string(const hlt_type_info* type, void* obj, int32_t opt
     hlt_string t = __hlt_object_to_string(fields[u->field].type, &u->data, options, seen, excpt, ctx);
     s = hlt_string_concat(s, t, excpt, ctx);
 
-    t = hlt_string_from_asciiz(">", excpt, ctx);
-    s = hlt_string_concat(s, t, excpt, ctx);
+    if ( num_fields > 1 ) {
+        t = hlt_string_from_asciiz(">", excpt, ctx);
+        s = hlt_string_concat(s, t, excpt, ctx);
+    }
 
     return s;
 }

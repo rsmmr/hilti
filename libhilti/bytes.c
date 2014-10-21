@@ -137,7 +137,7 @@ static void __print_bytes(const char* prefix, const hlt_bytes* b)
             if ( isprint(b->start[i]) )
                 fprintf(stderr, "%c", b->start[i]);
             else
-                fprintf(stderr, "\\x%2x", b->start[i]);
+                fprintf(stderr, "\\x%02x", b->start[i]);
         }
 
         if ( (b->end - b->start) > 20 )
@@ -239,11 +239,12 @@ static inline void __normalize_iter_hilti(hlt_iterator_bytes* pos, hlt_execution
 
     while ( pos->cur >= pos->bytes->end && pos->bytes->next ) {
         incr += (pos->cur - pos->bytes->end);
+        pos->bytes = pos->bytes->next;
         pos->cur = pos->bytes->start;
     }
 
     if ( incr )
-        __hlt_iterator_bytes_incr_by(pos, incr, 0, 0, 1, 0);
+        __hlt_iterator_bytes_incr_by(pos, incr, 0, 0, 1, 1);
 }
 
 hlt_bytes_size __hlt_bytes_len(hlt_bytes* b)
@@ -926,7 +927,7 @@ hlt_bytes_size __hlt_iterator_bytes_diff(hlt_iterator_bytes p1, hlt_iterator_byt
     }
 
     if ( __is_end(p2) )
-        return hlt_bytes_len(p1.bytes, excpt, ctx) - (p1.cur - p1.bytes->start);
+        return hlt_bytes_len(p1.bytes, excpt, ctx) - (((p1.cur <= p1.bytes->end) ? p1.cur : p1.bytes->end) - p1.bytes->start);
 
     hlt_bytes_size n = (hlt_iterator_bytes_index(p2, excpt, ctx) - hlt_iterator_bytes_index(p1, excpt, ctx));
     return (n > 0 ? n : 0);
@@ -1331,24 +1332,8 @@ int8_t __hlt_bytes_extract_one_slowpath(hlt_iterator_bytes* p, hlt_iterator_byte
         return 0;
     }
 
-    // Extract byte.
-    int8_t b = *(p->cur);
-
-    // Increase iterator.
-    if ( p->cur < p->bytes->end - 1 )
-        // We stay inside chunk.
-        ++p->cur;
-
-    else {
-        if ( p->bytes->next ) {
-            // Switch to next chunk.
-            p->bytes = p->bytes->next;
-            p->cur = p->bytes->start;
-        }
-        else
-            // End reached.
-            p->cur = p->bytes->end;
-    }
+    int8_t b = __hlt_iterator_bytes_deref(*p, excpt, ctx);
+    __hlt_iterator_bytes_incr(p, excpt, ctx, 1);
 
     return b;
 }
@@ -1464,6 +1449,7 @@ void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes p, hlt_exception** excpt, h
     // Check if within first block, we just adjust the start pointer there
     // then.
     if ( p.bytes == b ) {
+        b->offset += (p.cur - b->start);
         b->start = p.cur;
         return;
     }

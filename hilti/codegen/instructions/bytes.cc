@@ -456,4 +456,3 @@ void StatementBuilder::visit(statement::instruction::iterBytes::Deref* i)
 
     cg()->llvmStore(i, result);
 }
-

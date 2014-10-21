@@ -237,10 +237,12 @@ void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* fi
 
     const char* dots = hlt_iterator_bytes_eq(p, end, excpt, ctx) ? "" : " ...";
 
+    hlt_bytes_size len = hlt_bytes_len(data, excpt, ctx);
+
     if ( ! filter )
-        DBG_LOG("binpac-sinks", "writing to sink %p: |%s%s|", sink, buffer, dots);
+        DBG_LOG("binpac-sinks", "writing to sink %p: |%s%s| (%" PRIu64 " bytes)", sink, buffer, dots, len);
     else
-        DBG_LOG("binpac-sinks", "    filtered by %s: |%s%s|", filter->def->name, buffer, dots);
+        DBG_LOG("binpac-sinks", "    filtered by %s: |%s%s| (%" PRIu64 " bytes)", filter->def->name, buffer, dots, len);
 
 #endif
 }

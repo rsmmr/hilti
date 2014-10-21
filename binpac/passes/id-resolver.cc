@@ -355,6 +355,9 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
     nfield->setParent(f->parent());
     nfield->setUnit(f->unit().get());
 
+    if ( f->aliased() )
+        nfield->setAliased();
+
     assert(nfield);
     f->replace(nfield);
 

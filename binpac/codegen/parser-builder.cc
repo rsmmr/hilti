@@ -328,7 +328,8 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
         }
         else {
             data = cg()->builder()->addTmp("parse_data", _hiltiTypeBytes());
-            cg()->builder()->addInstruction(data, hilti::instruction::operator_::Assign, input);
+            // Need to copy here, because we modify the data by freezing it.
+            cg()->builder()->addInstruction(data, hilti::instruction::operator_::Clone, input);
             cg()->builder()->addInstruction(cur, hilti::instruction::iterBytes::Begin, data);
             cg()->builder()->addInstruction(hilti::instruction::bytes::Freeze, data);
         }
@@ -384,7 +385,7 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
         cg()->builder()->addInstruction(idx, hilti::instruction::bytes::Index, pstate_length->advcur);
 
         auto eod_not_reached = cg()->moduleBuilder()->addTmp("eod_not_reached", hilti::builder::boolean::type());
-        cg()->builder()->addInstruction(eod_not_reached, hilti::instruction::operator_::Unequal, idx, state()->end);
+        cg()->builder()->addInstruction(eod_not_reached, hilti::instruction::integer::Slt, idx, state()->end);
 
         auto branches = cg()->builder()->addIf(eod_not_reached);
         auto not_all_parsed = std::get<0>(branches);
@@ -917,8 +918,12 @@ static shared_ptr<hilti::type::struct_::Field> _convertField(CodeGen* cg, shared
     return sfield;
 }
 
-static void _addField(hilti::builder::struct_::field_list* fields, shared_ptr<hilti::type::struct_::Field> f)
+static void _addField(hilti::builder::struct_::field_list* fields, hilti::builder::struct_::field_list* top_level_fields, shared_ptr<binpac::type::unit::item::Field> uf, shared_ptr<hilti::type::struct_::Field> f)
 {
+    if ( top_level_fields && uf && uf->aliased() )
+        // Aliased fields are stored at the global level.
+        fields = top_level_fields;
+
     // It's ok to have multiple fields with the same name at
     // one level (assuming their types match). But filter
     // them so that we get each only once.
@@ -935,13 +940,14 @@ static void _convertFields(CodeGen* cg, std::list<shared_ptr<binpac::type::unit:
 {
     // One struct field per non-constant unit field.
     for ( auto f : in_fields ) {
+
         auto sw = ast::tryCast<binpac::type::unit::item::field::Switch>(f);
 
         if ( ! sw ) {
             auto hf = _convertField(cg, f);
 
             if ( hf )
-                _addField(out_fields, hf);
+                _addField(out_fields, top_level_fields, f, hf);
         }
 
         else {
@@ -967,7 +973,7 @@ static void _convertFields(CodeGen* cg, std::list<shared_ptr<binpac::type::unit:
                     if ( ! ufield )
                         continue;
 
-                    _addField(&ufields, ufield);
+                    _addField(&ufields, top_level_fields, item, ufield);
                 }
 
                 else {
@@ -976,18 +982,20 @@ static void _convertFields(CodeGen* cg, std::list<shared_ptr<binpac::type::unit:
                     hilti::builder::struct_::field_list sfields;
                     _convertFields(cg, items, &sfields, top_level_fields);
 
-                    auto stype = hilti::builder::struct_::type(sfields);
-                    auto sname = ::util::fmt("__struct_%s", s->uniqueName());
+                    if ( sfields.size() ) {
+                        auto stype = hilti::builder::struct_::type(sfields);
+                        auto sname = ::util::fmt("__struct_%s", s->uniqueName());
 
-                    if ( ! cg->moduleBuilder()->hasType(sname) )
-                        cg->moduleBuilder()->addType(sname, stype, false);
+                        if ( ! cg->moduleBuilder()->hasType(sname) )
+                            cg->moduleBuilder()->addType(sname, stype, false);
 
-                    ufield = hilti::builder::struct_::field(::util::fmt("items_%s", s->uniqueName()),
-                                                            ::hilti::builder::reference::type(::hilti::builder::type::byName(sname)),
-                                                            nullptr, false);
-                    ufield->setAnonymous();
+                        ufield = hilti::builder::struct_::field(::util::fmt("items_%s", s->uniqueName()),
+                            ::hilti::builder::reference::type(::hilti::builder::type::byName(sname)),
+                                                                nullptr, false);
+                        ufield->setAnonymous();
 
-                    _addField(&ufields, ufield);
+                        _addField(&ufields, top_level_fields, nullptr, ufield);
+                    }
                 }
 
                 for ( auto item : items ) {
@@ -998,23 +1006,25 @@ static void _convertFields(CodeGen* cg, std::list<shared_ptr<binpac::type::unit:
                         auto dname = ::util::fmt("__default_%s", item->id()->name());
                         auto ftype = cg->hiltiType(item->fieldType());
                         auto def = ::hilti::builder::struct_::field(dname, ftype, nullptr, item->location());
-                        _addField(top_level_fields, def);
+                        _addField(top_level_fields, nullptr, nullptr, def);
                     }
                 }
             }
 
-            auto utype = hilti::builder::union_::type(ufields);
-            auto uname = ::util::fmt("__union_%s", sw->uniqueName());
+            if ( ufields.size() ) {
+                auto utype = hilti::builder::union_::type(ufields);
+                auto uname = ::util::fmt("__union_%s", sw->uniqueName());
 
-            if ( ! cg->moduleBuilder()->hasType(uname) )
-                cg->moduleBuilder()->addType(uname, utype, true);
+                if ( ! cg->moduleBuilder()->hasType(uname) )
+                    cg->moduleBuilder()->addType(uname, utype, true);
 
-            auto sfield = hilti::builder::struct_::field(::util::fmt("switch_%s", sw->uniqueName()),
-                                                         ::hilti::builder::type::byName(uname),
-                                                         nullptr, false, sw->location());
-            sfield->setAnonymous();
+                auto sfield = hilti::builder::struct_::field(::util::fmt("switch_%s", sw->uniqueName()),
+                    ::hilti::builder::type::byName(uname),
+                                                             nullptr, false, sw->location());
+                sfield->setAnonymous();
 
-            _addField(out_fields, sfield);
+                _addField(out_fields, top_level_fields, nullptr, sfield);
+            }
         }
     }
 }
@@ -1081,6 +1091,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         // The current position in the non-yet-filtered data (i.e., in
         // __filter_decoded)
         auto filter_cur = hilti::builder::struct_::field("__filter_cur", _hiltiTypeIteratorBytes(), nullptr, true);
+        auto filter_advcur = hilti::builder::struct_::field("__filter_advcur", _hiltiTypeIteratorBytes(), nullptr, true);
 
         // The current end position in the non-yet-filtered data (i.e., in
         // __filter_decoded)
@@ -1092,6 +1103,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         fields.push_back(filter);
         fields.push_back(filter_dec);
         fields.push_back(filter_cur);
+        fields.push_back(filter_advcur);
         fields.push_back(filter_end);
     }
 
@@ -1441,23 +1453,29 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
         internalError("unknown literal mode in _hiltiDebugShowInput");
     }
 
-    // auto frozen = _hiltiIsFrozen();
-    auto frozen = cg()->builder()->addTmp("is_frozen", hilti::builder::boolean::type());
-    cg()->builder()->addInstruction(frozen, hilti::instruction::bytes::IsFrozenBytes, state()->data);
+    auto frozen1 = cg()->builder()->addTmp("is_frozen", hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(frozen1, hilti::instruction::bytes::IsFrozenBytes, state()->data);
+
+    auto frozen2 = _hiltiIsFrozen();
 
     auto mode = hilti::builder::string::create(modetag);
     auto at = cg()->builder()->addTmp("at_obj", ::hilti::builder::boolean::type());
     auto len = cg()->builder()->addTmp("len", ::hilti::builder::integer::type(64));
     auto idx = cg()->builder()->addTmp("idx", ::hilti::builder::integer::type(64));
+    auto gend = cg()->builder()->addTmp("gend", _hiltiTypeIteratorBytes());
+    auto gidx = cg()->builder()->addTmp("gidx", ::hilti::builder::integer::type(64));
 
     cg()->builder()->addInstruction(at, hilti::instruction::bytes::AtObject, cur);
     cg()->builder()->addInstruction(len, hilti::instruction::bytes::Diff, cur, end);
     cg()->builder()->addInstruction(idx, hilti::instruction::bytes::Index, cur);
     auto eod = _hiltiAtEod();
 
+    cg()->builder()->addInstruction(gend, hilti::instruction::operator_::End, state()->data);
+    cg()->builder()->addInstruction(gidx, hilti::instruction::bytes::Index, gend);
+
     if ( cg()->options().debug > 0 )
-        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (len: %s; cur: %s; end: %s; eod: %s; lit-mode: %s; frozen: %s; trimming %d; at object %d)",
-                                     hilti::builder::string::create(tag), next, len, idx, state()->end, eod, mode, frozen, state()->trim, at);
+        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (len: %s; cur: %s; end: %s; global-end: %s eod: %s; lit-mode: %s; frozen: %s (%s); trimming %d; at object %d)",
+                                     hilti::builder::string::create(tag), next, len, idx, state()->end, gidx, eod, mode, frozen2, frozen1, state()->trim, at);
 }
 
 void ParserBuilder::_hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type)
@@ -2074,7 +2092,6 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiUnpack(shared_ptr<Type> target
     cg()->builder()->addInstruction(ncur, hilti::instruction::tuple::Index, result, hilti::builder::integer::create(1));
     _hiltiAdvanceTo(ncur);
 
-
     //
 
     cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("Hilti::WouldBlock")),
@@ -2147,6 +2164,8 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiInsufficientInputHandler(bool
     _hiltiFilterInput(true);
 
     // Leave on stack.
+
+    _hiltiDebugShowInput("after resume", state()->cur);
 
     return result;
 }
@@ -2318,6 +2337,7 @@ void ParserBuilder::_hiltiFilterInput(bool resume)
     auto decoded = cg()->builder()->addTmp("decoded", _hiltiTypeBytes());
     auto filter_decoded = cg()->builder()->addTmp("filter_decoded", _hiltiTypeBytes());
     auto filter_cur = cg()->builder()->addTmp("filter_cur", _hiltiTypeIteratorBytes());
+    auto filter_advcur = cg()->builder()->addTmp("filter_advcur", _hiltiTypeIteratorBytes());
     auto filter_end = cg()->builder()->addTmp("filter_end", hilti::builder::integer::type(64));
     auto begin = cg()->builder()->addTmp("begin", _hiltiTypeIteratorBytes());
     auto len = cg()->builder()->addTmp("len", hilti::builder::integer::type(64));
@@ -2335,6 +2355,9 @@ void ParserBuilder::_hiltiFilterInput(bool resume)
     else {
         auto v = cg()->hiltiItemGet(state()->self, "__filter_cur", _hiltiTypeIteratorBytes());
         cg()->builder()->addInstruction(filter_cur, hilti::instruction::operator_::Assign, v);
+
+        v = cg()->hiltiItemGet(state()->self, "__filter_advcur", _hiltiTypeIteratorBytes());
+        cg()->builder()->addInstruction(filter_advcur, hilti::instruction::operator_::Assign, v);
 
         v = cg()->hiltiItemGet(state()->self, "__filter_end", hilti::builder::integer::type(64));
         cg()->builder()->addInstruction(filter_end, hilti::instruction::operator_::Assign, v);
@@ -2364,6 +2387,11 @@ void ParserBuilder::_hiltiFilterInput(bool resume)
         cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Assign, begin);
         cg()->builder()->addInstruction(state()->end, hilti::instruction::operator_::Assign, hilti::builder::integer::create(-1));
         cg()->builder()->addInstruction(state()->data, hilti::instruction::operator_::Assign, decoded);
+
+        if ( state()->advcur ) {
+            cg()->hiltiItemSet(state()->self, "__filter_advcur", state()->advcur);
+            cg()->builder()->addInstruction(state()->advcur, hilti::instruction::operator_::Assign, begin);
+        }
 
         if ( state()->unit->buffering() ) {
             cg()->hiltiItemSet(state()->self, "__input", begin);
@@ -2562,13 +2590,42 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiIsFrozen()
     // We declare it frozen if either the underlying bytes object is indeed
     // so, or we have been told an explicit prior end position.
 
+    auto have_end = cg()->moduleBuilder()->addTmp("have_end", hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(have_end, hilti::instruction::integer::Sgeq, state()->end, hilti::builder::integer::create(0));
+
+    auto branches = cg()->builder()->addIfElse(have_end);
+    auto yes = std::get<0>(branches);
+    auto no = std::get<1>(branches);
+    auto done = std::get<2>(branches);
+
     auto is_frozen = cg()->moduleBuilder()->addTmp("is_frozen", hilti::builder::boolean::type());
     auto at_eod = cg()->moduleBuilder()->addTmp("at_eod", hilti::builder::boolean::type());
-    auto cur_eod = _hiltiEod();
-    auto global_eod = cg()->moduleBuilder()->addTmp("eod", _hiltiTypeIteratorBytes());
 
-    cg()->builder()->addInstruction(global_eod, hilti::instruction::iterBytes::End, state()->data);
-    cg()->builder()->addInstruction(at_eod, hilti::instruction::operator_::Unequal, cur_eod, global_eod);
+    cg()->moduleBuilder()->pushBuilder(yes);
+
+    // Current position >= local end of data.
+    auto idx = cg()->moduleBuilder()->addTmp("idx", hilti::builder::integer::type(64));
+    cg()->builder()->addInstruction(idx, hilti::instruction::bytes::Index, state()->cur);
+    cg()->builder()->addInstruction(at_eod, hilti::instruction::integer::Sgeq, idx, state()->end);
+
+    // Local end of data >= global end of data.
+    auto geod = cg()->moduleBuilder()->addTmp("geod", _hiltiTypeIteratorBytes());
+    auto gidx = cg()->moduleBuilder()->addTmp("gidx", hilti::builder::integer::type(64));
+    auto at_geod = cg()->moduleBuilder()->addTmp("at_geod", hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(geod, hilti::instruction::iterBytes::End, state()->data);
+    cg()->builder()->addInstruction(gidx, hilti::instruction::bytes::Index, geod);
+    cg()->builder()->addInstruction(at_geod, hilti::instruction::integer::Sgeq, gidx, state()->end);
+    cg()->builder()->addInstruction(at_eod, hilti::instruction::boolean::Or, at_eod, at_geod);
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    cg()->moduleBuilder()->popBuilder(yes);
+
+    cg()->moduleBuilder()->pushBuilder(no);
+    cg()->builder()->addInstruction(at_eod, hilti::instruction::operator_::Assign, ::hilti::builder::boolean::create(false));
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    cg()->moduleBuilder()->popBuilder(no);
+
+    cg()->moduleBuilder()->pushBuilder(done);
 
     cg()->builder()->addInstruction(is_frozen, hilti::instruction::bytes::IsFrozenIterBytes, state()->cur);
     cg()->builder()->addInstruction(is_frozen, hilti::instruction::boolean::Or, is_frozen, at_eod);
