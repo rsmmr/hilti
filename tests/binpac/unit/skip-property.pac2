@@ -1,0 +1,63 @@
+#
+# @TEST-EXEC:  echo 1234567890abcdeFGHJI | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: %skip property not yet supported
+
+module Enable;
+
+export type test_pre = unit {
+  %skip-pre = /[\t\n]+/;
+
+  a: bytes &length=1;
+  b: bytes &length=2;
+  c: bytes &length=3;
+};
+
+export type test_post = unit {
+  %skip-post = /[\r\n ]+/;
+
+  a: bytes &length=1;
+  b: bytes &length=2;
+  c: bytes &length=3;
+};
+
+export type test_both = unit {
+  %skip-pre = / +/;
+  %skip-post = / +/;
+
+  a: bytes &length=1;
+  b: bytes &length=2;
+  c: bytes &length=3;
+};
+
+
+module Disable;
+
+%skip-pre = /\t+/;
+%skip-pre = /[\n ]+/;
+
+export type test_pre = unit {
+  %skip-pre = None;
+
+  a: bytes &length=1;
+  b: bytes &length=2;
+  c: bytes &length=3;
+};
+
+export type test_post = unit {
+  %skip-post = None;
+
+  a: bytes &length=1;
+  b: bytes &length=2;
+  c: bytes &length=3;
+};
+j
+export type test_both = unit {
+  %skip-pre = None;
+  %skip-post = None;
+
+  a: bytes &length=1;
+  b: bytes &length=2;
+  c: bytes &length=3;
+};
