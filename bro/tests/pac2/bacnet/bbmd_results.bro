@@ -15,30 +15,30 @@ event bacnet_bvlc_result(c: connection, result: BACnet::BVLC_result)
 
 event bacnet_bvlc_write_bdt(c: connection, result: vector of BACnet::BDT_entry)
   {
-  print "Write bdt", result;
+  print "Write bdt", c$id$orig_h, c$id$resp_h, result;
   }
 
 event bacnet_bvlc_read_bdt_ack(c: connection, result: vector of BACnet::BDT_entry)
   {
-  print "Bdt ack", result;
+  print "Bdt ack", c$id$orig_h, c$id$resp_h, result;
   }
 
 event bacnet_register_fd(c: connection, ttl: count)
   {
-  print "Register fd", ttl;
+  print "Register fd", c$id$orig_h, c$id$resp_h, ttl;
   }
 
 event bacnet_bvlc_read_fdt_ack(c: connection, result: vector of BACnet::FDT_entry)
   {
-  print "Fdt ack", result;
+  print "Fdt ack", c$id$orig_h, c$id$resp_h, result;
   }
 
 event bacnet_bvlc_delete_ftd_entry(c: connection, result: vector of BACnet::FDT_entry)
   {
-  print "Delete ftd", result;
+  print "Delete ftd", c$id$orig_h, c$id$resp_h, result;
   }
 
 event bacnet_bvlc_forwarded_npdu_information(c: connection, originator: addr, originator_port: count)
   {
-  print "Forwarded npdu", originator, originator_port;
+  print "Forwarded npdu", c$id$orig_h, c$id$resp_h, originator, originator_port;
   }
