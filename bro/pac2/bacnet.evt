@@ -144,3 +144,12 @@ on BACnet::AtomicReadFile_ACK if ( self.open_tag.tag == 0 )
   -> event bacnet_atomicreadfile_ack ($conn, cast<uint64>(invokeID), self.endOfFile.boolean, cast<int64>(self.fileStartPosition.signed), self.fileData.octets);
 
 # FIXME: Record based not implemented. Need traffic to get this completely right :)
+
+# Property Requests
+
+# Fixme: does not deal with propertyArrayIndex yet.
+on BACnet::ReadProperty_Request
+  -> event bacnet_readproperty_request ($conn, cast<uint64>(invokeID), self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber), self.propertyIdentifier);
+
+on BACnet::ReadProperty_ACK
+  -> event bacnet_readproperty_ack ($conn, cast<uint64>(invokeID), self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber), self.propertyIdentifier);

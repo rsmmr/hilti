@@ -749,7 +749,7 @@ export type BACnetVendorIDs = enum {
   Entelec = 726
 };
 
-type BACnetPropertyIdentifier = enum {
+export type BACnetPropertyIdentifier = enum {
   absentee-limit = 244,
   accepted-modes = 175,
   access-alarm-events = 245,
@@ -1101,12 +1101,22 @@ type BACnetPropertyIdentifier = enum {
   write-status = 370,
   zone-from = 320,
   zone-members = 165,
-  zone-to = 321
+  zone-to = 321,
 # The special property identifiers all, optional, and required are reserved for use in the
 # ReadPropertyMultiple service or services not defined in this standard.
 #
 # Enumerated values 0-511 are reserved for definition by ASHRAE. Enumerated values 512-4194303 may be used by
 # others subject to the procedures and constraints described in Clause 23.
+#
+# Old and removed:
+  issue-confirmed-notifications = 51,
+  protocol-conformance-class = 95,
+  recipient = 101,
+  current-notify-time = 129,
+  previous-notify-time = 138,
+  master-exemption = 284,
+  occupancy-exemption = 293,
+  passback-exemption = 299
 };
 
 type BACnetEventType = enum {
@@ -1712,7 +1722,7 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
 
   switch ( self.confirmed_service_choice ) {
     BACnetConfirmedServiceChoice::confirmedEventNotification -> confirmedEventNotification: ConfirmedEventNotification_Request( len - self.len );
-    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len );
+    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len, self.invokeID );
     BACnetConfirmedServiceChoice::writeProperty -> writeProperty: WriteProperty_Request( len - self.len );
     BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_Request( self.invokeID );
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_Request;
@@ -1723,7 +1733,7 @@ type PDU_confirmedRequest = unit(head: bytes, len: uint16) {
 
   switch ( self.confirmed_service_choice ) {
     BACnetConfirmedServiceChoice::confirmedEventNotification -> confirmedEventNotification: ConfirmedEventNotification_Request( len - self.len );
-    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len );
+    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_Request( len - self.len, self.invokeID );
     BACnetConfirmedServiceChoice::writeProperty -> writeProperty: WriteProperty_Request( len - self.len );
     BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_Request( self.invokeID );
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_Request;
@@ -1854,7 +1864,7 @@ type AtomicWriteFile_Request = unit {
    : BACnetTag;
 };
 
-type ReadProperty_Request = unit(len: uint16) {
+type ReadProperty_Request = unit(len: uint16, invokeID: uint8) {
   # context-specific tags 0 - 2
   first_tag: BACnetTag;
   objectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 0, self.first_tag);
@@ -2050,7 +2060,7 @@ type BACnet_ComplexACK_PDU = unit(head_raw: bytes, len: uint16) {
   }
 
   switch ( self.confirmed_service_choice ) {
-    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK;
+    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK( self.invokeID );
     BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_ACK( self.invokeID );
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_ACK;
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_ACK( len - self.len );
@@ -2059,7 +2069,7 @@ type BACnet_ComplexACK_PDU = unit(head_raw: bytes, len: uint16) {
   } if ( self.head.more-follows == 0 && self.head.segmented-message == 0 ); # only parse message if we are in single-chunk
 
   switch ( self.confirmed_service_choice ) {
-    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK &parse(self.content_bytes);
+    BACnetConfirmedServiceChoice::readProperty -> readProperty: ReadProperty_ACK( self.invokeID ) &parse(self.content_bytes);
     BACnetConfirmedServiceChoice::atomicReadFile -> atomicReadFile: AtomicReadFile_ACK( self.invokeID ) &parse(self.content_bytes);
     BACnetConfirmedServiceChoice::atomicWriteFile -> atomicWriteFile: AtomicWriteFile_ACK &parse(self.content_bytes);
     BACnetConfirmedServiceChoice::confirmedPrivateTransfer -> confirmedPrivateTransfer: ConfirmedPrivateTransfer_ACK( cast<uint16>(|self.content_bytes|) ) &parse(self.content_bytes);
@@ -2132,7 +2142,7 @@ type AtomicWriteFile_ACK = unit {
   FileStartRecord: BACnetContextMessage(BACnetType::Integer, 0, self.fileStartPosition.tag);
 };
 
-type ReadProperty_ACK = unit {
+type ReadProperty_ACK = unit(invokeID: uint8) {
   # context-specific tags 0 - 3
   first_tag: BACnetTag;
   objectIdentifier: BACnetContextMessage(BACnetType::BACnetObjectIdentifier, 0, self.first_tag);
@@ -2141,6 +2151,7 @@ type ReadProperty_ACK = unit {
   propertyArrayIndex: BACnetContextMessage(BACnetType::UnsignedInteger, 2, self.propertyIdentifier_tag);
   propertyValue_tag: BACnetTag if ( self.propertyArrayIndex.tag.tag != 3 ); # check if previous tag was optional. This tag = 3
   propertyValue: BACnetArray_Partial(3);
+  #on %done { print self.propertyValue.value; }
 };
 
 export type BACnetErrorClass = enum {
@@ -2527,8 +2538,8 @@ type BACnetMessage = unit {
     BACnetType::BACnetObjectIdentifier -> oid: BACnetObjectIdentifier;
 
     # Fixme: Real, double. I don't think Binpac++ can read those from wire yet.
-    BACnetType::Real -> : bytes &length = 4;
-    BACnetType::Double -> : bytes &length = 8;
+    BACnetType::Real -> realval: bytes &length = 4;
+    BACnetType::Double -> doubleval: bytes &length = 8;
   } if ( self.tag.class == ASN1Class::APPLICATION);
   # skip parsing if we do not have an application tag. Usually, this should only happen when we are parsing
   # arrays. There the last tag will be context-specific and we use it to abort.
