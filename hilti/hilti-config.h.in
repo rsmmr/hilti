@@ -104,7 +104,6 @@ struct Configuration {
 
     std::list<string> runtime_shared_libraries = {
         "pcap",
-        "unwind",
 #ifdef __linux__
         "m",
         "pthread",
