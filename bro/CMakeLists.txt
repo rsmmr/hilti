@@ -1,8 +1,6 @@
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-find_package(HILTI)
-
 if ( BRO_DIST )
 
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${BRO_DIST}/cmake)
@@ -30,6 +28,12 @@ if ( BRO_DIST )
         set(binpac "${CMAKE_CURRENT_BINARY_DIR}/../tools/binpac++")
         set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic")
 
+        find_package(PAPI)
+
+        if ( PAPI_FOUND )
+            set(optional_libs ${PAPI_LIBRARIES})
+        endif ()
+
     else ()
         project(Bro-Plugin-Hilti)
 
@@ -40,6 +44,7 @@ if ( BRO_DIST )
         endif()
 
         message(STATUS "Building Bro plugin outsidoe of of HILTI tree")
+        message(FATAL "Building Bro plugin outsidoe of of HILTI tree not supported currently")
 
         set(CMAKE_C_COMPILER          "${HILTI_CLANG_EXEC}")
         set(CMAKE_CXX_COMPILER        "${HILTI_CLANGXX_EXEC}")
@@ -105,8 +110,7 @@ if ( BRO_DIST )
     bro_plugin_end()
 
     if ( BUILDING_HILTI )
-        set(plugin_external_libs ${LLVM_LIBS} ${LLVM_LDFLAGS} )
-        set(plugin_hilti_libs    hilti hilti-jit ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a ${HILTI_LIBS})
+        set(plugin_hilti_libs    hilti hilti-jit ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a)
         set(plugin_binpac_libs   binpacxx)
 
         if ( "${CMAKE_BUILD_TYPE}" MATCHES "Debug" )
@@ -117,12 +121,13 @@ if ( BRO_DIST )
             set(plugin_binpac_libs ${plugin_binpac_libs} ${PROJECT_BINARY_DIR}/libbinpac/libbinpac-rt.bc)
         endif ()
 
-        set(plugin_deps hilti binpacxx libhilti-rt-dbg.bc libbinpac-rt-dbg.bc libhilti-rt.bc libbinpac-rt.bc)
+        set(plugin_deps hilti-config hilti binpacxx libhilti-rt-dbg.bc libbinpac-rt-dbg.bc libhilti-rt.bc libbinpac-rt.bc)
 
-        message("XXXX: ${plugin_hilti_libs}")
-        target_link_libraries(${_plugin_lib} ${plugin_hilti_libs} ${plugin_binpac_libs} ${plugin_external_libs})
-        target_link_libraries(${_plugin_lib} ${addl_libs})
+        target_link_libraries(${_plugin_lib} ${plugin_hilti_libs})
+        target_link_libraries(${_plugin_lib} ${plugin_binpac_libs})
+        target_link_libraries(${_plugin_lib} ${optional_libs})
         add_dependencies(${_plugin_lib} ${autogen}/bro.pac2.h ${autogen}/libbro.hlt.h ${autogen}/libbro.hlt.o ${plugin_deps})
+
     else ()
         message(FATAL_ERROR "Building the Bro plugin outside of the HILTI tree is not yet supported.")
     endif ()

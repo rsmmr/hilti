@@ -40,7 +40,7 @@ struct Configuration {
         "-std=c++0x"
     };
 
-    string compiler_llvm_cxxflags = "${LLVM_CXXFLAGS}";
+    string compiler_llvm_cxxflags = "${LLVM_CXXFLAGS_AS_STRING}";
 
     std::list<string> compiler_library_dirs = {
         "${PROJECT_BINARY_DIR}/hilti",
@@ -52,8 +52,8 @@ struct Configuration {
         "-Wl,-rpath,${PROJECT_BINARY_DIR}/hilti"
     };
 
-    string compiler_llvm_libraries = "${LLVM_LIBS}";
-    string compiler_llvm_ldflags = "${LLVM_LDFLAGS}";
+    string compiler_llvm_libraries = "${LLVM_LIBS_AS_STRING}";
+    string compiler_llvm_ldflags = "${LLVM_LDFLAGS_AS_STRING}";
 
     std::list<string> compiler_static_libraries = {
         "hilti"

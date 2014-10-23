@@ -22,6 +22,8 @@
 # LLVM_LDFLAGS      Linker flags for linking with the core LLVM libraries.
 # LLVM_LIBS         Linker libraries for linking with the core LLVM libraries.
 #
+# LLVM_{CFLAGS,CXXFLAGS,LDFLAGS,LIBS}_AS_STRING Same, but as space-separated strings instead of lists.
+#
 # LLVM_CONFIG_EXEC  Path of the llvm-config executable.
 # LLVM_CLANG_EXEC   Path of the clang executable.
 # LLVM_CLANGXX_EXEC Path of the clang++ executable.
@@ -117,20 +119,35 @@ else ()
   string(STRIP "${LLVM_LDFLAGS}" LLVM_LDFLAGS)
   string(STRIP "${LLVM_LIBS}" LLVM_LIBS)
 
+  separate_arguments(LLVM_LDFLAGS)
+  separate_arguments(LLVM_CFLAGS)
+  separate_arguments(LLVM_CXXFLAGS)
+  separate_arguments(LLVM_LIBS)
+
+  string(REGEX REPLACE ";+" " " LLVM_LDFLAGS_AS_STRING "${LLVM_LDFLAGS}")
+  string(REGEX REPLACE ";+" " " LLVM_CFLAGS_AS_STRING "${LLVM_CFLAGS}")
+  string(REGEX REPLACE ";+" " " LLVM_CXXFLAGS_AS_STRING "${LLVM_CXXFLAGS}")
+  string(REGEX REPLACE ";+" " " LLVM_LIBS_AS_STRING "${LLVM_LIBS}")
+
   # FIND_LLVM_LIBS( ${LLVM_CONFIG_EXEC} "jit native" LLVM_LIBS_JIT LLVM_LIBS_JIT_OBJECTS )
   # STRING(REPLACE " -lLLVMCore -lLLVMSupport -lLLVMSystem" "" LLVM_LIBS_JIT ${LLVM_LIBS_JIT_RAW})
 
   # Determine path to compiler-rt runtime libraries.
   exec_program(${LLVM_CLANG_EXEC} ARGS --version OUTPUT_VARIABLE CLANG_VERSION)
-  string(REGEX MATCH "[0-9]+\\.[0-9]" CLANG_VERSION "${CLANG_VERSION}")
+  string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" CLANG_VERSION "${CLANG_VERSION}")
+
+  if ( NOT CLANG_VERSION )
+      string(REGEX MATCH "[0-9]+\\.[0-9]+" CLANG_VERSION "${CLANG_VERSION}.0")
+  endif ()
+
   exec_program("uname -s" OUTPUT_VARIABLE os)
   string(TOLOWER "${os}" os)
   set(COMPILER_RT_LIB_DIR ${LLVM_PREFIX}/lib/clang/${CLANG_VERSION}/lib/${os})
 
   if ( EXISTS "${COMPILER_RT_LIB_DIR}" )
-      MESSAGE("compiler-rt runtime directory: ${COMPILER_RT_LIB_DIR}")
+      MESSAGE(STATUS "Compiler-rt runtime directory: ${COMPILER_RT_LIB_DIR}")
   else ()
-      MESSAGE("cannot find compiler-rt runtime directory (tried ${COMPILER_RT_LIB_DIR})")
+      MESSAGE(STATUS "Cannot find compiler-rt runtime directory (tried ${COMPILER_RT_LIB_DIR})")
       set(COMPILER_RT_LIB_DIR)
   endif ()
 
