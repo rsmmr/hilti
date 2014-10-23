@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  echo 1234567890 | HILTI_DEBUG=binpac pac-driver-test %INPUT   
+# @TEST-EXEC: pac-driver-test %INPUT >output 2>&1
 # @TEST-EXEC:  btest-diff hlt-debug.log
 #
 

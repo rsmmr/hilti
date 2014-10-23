@@ -69,3 +69,14 @@ void ConstantCoercer::visit(constant::Tuple* t)
 
     setResult(shared_ptr<Constant>(new constant::Tuple(coerced_elems, t->location())));
 }
+
+void ConstantCoercer::visit(constant::Optional* t)
+{
+    auto dst = ast::tryCast<type::Optional>(arg1());
+
+    if ( dst ) {
+        auto coerced = t->value()->coerceTo(dst->argType());
+        setResult(std::make_shared<constant::Optional>(coerced));
+        return;
+    }
+}

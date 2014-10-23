@@ -1340,7 +1340,7 @@ void Printer::visit(constant::Union* c)
 
     p << "union";
 
-    if ( c->type() )
+    if ( ! c->typeDerived() )
         p << "<" << c->type() << ">";
 
     p << "(";

@@ -217,6 +217,23 @@ void TypeBuilder::visit(type::OptionalArgument* o)
 {
 }
 
+void TypeBuilder::visit(type::Optional* o)
+{
+    shared_ptr<::hilti::Type> ht;
+
+    if ( o->argType() ) {
+        ::hilti::builder::type_list t = { hiltiType(o->argType()) };
+        ht = ::hilti::builder::union_::type(t, o->location() );
+    }
+
+    else
+        ht = ::hilti::builder::union_::typeAny(o->location());
+
+    TypeInfo ti;
+    ti.hilti_type = ht;
+    setResult(ti);
+}
+
 void TypeBuilder::visit(type::Port* p)
 {
     TypeInfo ti;

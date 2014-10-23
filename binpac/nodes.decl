@@ -20,6 +20,7 @@ constant::Integer
 constant::Tuple
 constant::Address
 constant::Network
+constant::Optional
 constant::Port
 constant::Bitset
 constant::Enum
@@ -121,6 +122,7 @@ type::Mark
 type::Module
 type::Network
 type::OptionalArgument
+type::Optional
 type::Port
 type::RegExp
 type::Set

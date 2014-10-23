@@ -1,0 +1,3 @@
+hilti: uncaught exception, UndefinedValue (from <no location>:)
+internal HILTI error: hlt_abort() called
+/home/robin/work/hilti/tests/Scripts/pac-driver-test: line 48: 41168 Aborted                 $cmdline

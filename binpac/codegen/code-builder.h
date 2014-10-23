@@ -69,6 +69,7 @@ protected:
     void visit(constant::Integer* i) override;
     void visit(constant::Interval* i) override;
     void visit(constant::Network* n) override;
+    void visit(constant::Optional* p) override;
     void visit(constant::Port* p) override;
     void visit(constant::String* s) override;
     void visit(constant::Time* t) override;

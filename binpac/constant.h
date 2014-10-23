@@ -346,6 +346,36 @@ private:
     uint64_t _nsecs;
 };
 
+/// AST node for a constant of type Optional.
+class Optional : public Constant
+{
+public:
+    /// Constructor for a set optional constant.
+    ///
+    /// expr: The expresssion to set the optional value to.
+    ///
+    /// l: An associated location.
+    Optional(shared_ptr<Expression> expr, const Location& l=Location::None);
+
+    /// Constructor for an unset of optional constant. This creates a
+    /// wildcard optional that coerces to any other optional.
+    ///
+    /// l: An associated location.
+    Optional(const Location& l=Location::None);
+
+    /// Returns the optional's expression, or null if none for a wildcard
+    /// constant.
+    shared_ptr<Expression> value() const;
+
+    /// Returns the type of the constant.
+    shared_ptr<Type> type() const override;
+
+    ACCEPT_VISITOR(Constant);
+
+private:
+    node_ptr<Expression> _expr;
+};
+
 }
 
 }

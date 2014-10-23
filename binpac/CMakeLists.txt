@@ -49,6 +49,7 @@ set(operators
     operators/iterator.cc
     operators/list.cc
     operators/map.cc
+    operators/optional.cc
     operators/set.cc
     operators/sink.cc
     operators/time.cc
@@ -139,6 +140,7 @@ add_library (binpacxx STATIC
     codegen/operators/list.cc
     codegen/operators/map.cc
     codegen/operators/network.cc
+    codegen/operators/optional.cc
     codegen/operators/port.cc
     codegen/operators/regexp.cc
     codegen/operators/set.cc

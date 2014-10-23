@@ -274,6 +274,16 @@ void Printer::visit(constant::Network* n)
     p << n->value();
 }
 
+void Printer::visit(constant::Optional* o)
+{
+    Printer& p = *this;
+
+    if ( o->value() )
+        p << "optional(" << o->value() << ")";
+    else
+        p << "optional()";
+}
+
 void Printer::visit(constant::Port* po)
 {
     Printer& p = *this;
@@ -996,6 +1006,19 @@ void Printer::visit(type::OptionalArgument* o)
 
     Printer& p = *this;
     p << "[ " << o->argType() << " ]";
+}
+
+void Printer::visit(type::Optional* o)
+{
+    if ( printTypeID(o) )
+        return;
+
+    Printer& p = *this;
+
+    if ( ! o->wildcard() )
+        p << "optional<" << o->argType() << ">";
+    else
+        p << "optional<*>";
 }
 
 void Printer::visit(type::Port* po)

@@ -111,6 +111,7 @@ net                   return token::NET;
 new                   return token::NEW;
 object                return token::OBJECT;
 on                    return token::ON;
+optional              return token::OPTIONAL;
 port                  return token::PORT;
 print                 return token::PRINT;
 priority              return token::PRIORITY;

@@ -42,6 +42,7 @@ protected:
     void visit(constant::Integer* i) override;
     void visit(constant::Interval* i) override;
     void visit(constant::Network* n) override;
+    void visit(constant::Optional* p) override;
     void visit(constant::Port* p) override;
     void visit(constant::String* s) override;
     void visit(constant::Time* t) override;
@@ -108,6 +109,7 @@ protected:
     void visit(type::Module* m) override;
     void visit(type::Network* n) override;
     void visit(type::OptionalArgument* o) override;
+    void visit(type::Optional* o) override;
     void visit(type::Port* p) override;
     void visit(type::RegExp* r) override;
     void visit(type::Set* s) override;

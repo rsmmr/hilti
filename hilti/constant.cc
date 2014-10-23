@@ -209,19 +209,19 @@ constant::Enum::Enum(shared_ptr<ID> value, shared_ptr<Type> etype, const Locatio
 constant::Union::Union(shared_ptr<Type> utype, shared_ptr<ID> field, shared_ptr<Expression> value, const Location& l)
     : Constant(l)
 {
-    _type = utype;
+    _utype = utype;
     _id = field;
     _expr = value;
 
-    addChild(_type);
+    addChild(_utype);
     addChild(_id);
     addChild(_expr);
 }
 
 shared_ptr<Type> constant::Union::type() const
 {
-    if ( _type )
-        return _type;
+    if ( _utype )
+        return _utype;
 
     if ( ! _expr )
         return std::make_shared<type::Union>();
@@ -240,4 +240,19 @@ shared_ptr<Type> constant::Union::type() const
 std::list<shared_ptr<hilti::Expression>> constant::Union::flatten()
 {
     return { _expr };
+}
+
+shared_ptr<Expression> constant::Union::expression() const
+{
+    return _expr;
+}
+
+shared_ptr<ID> constant::Union::id() const
+{
+    return _id;
+}
+
+bool constant::Union::typeDerived() const
+{
+    return ! _utype.get();
 }

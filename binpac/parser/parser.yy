@@ -170,6 +170,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         OR
 %token         STOP
 %token         OBJECT
+%token         OPTIONAL
 
 %token         ATTR_HILTI_ID
 
@@ -180,7 +181,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <bits>             bitfield_bits
 %type <bits_spec>        bitfield_bits_spec
 %type <cc>               opt_cc
-%type <constant>         constant tuple
+%type <constant>         constant tuple optional
 %type <ctor>             ctor
 %type <declaration>      global_decl type_decl var_decl const_decl func_decl hook_decl local_decl
 %type <declarations>     opt_global_decls opt_local_decls
@@ -443,6 +444,8 @@ atomic_type   : ANY                              { $$ = std::make_shared<type::A
               | OBJECT '<' type '>'              { $$ = std::make_shared<type::EmbeddedObject>($3); }
               | MARK                             { $$ = std::make_shared<type::Mark>(); }
 
+              | OPTIONAL '<' type '>'            { $$ = std::make_shared<type::Optional>($3); }
+
               | bitfield                         { $$ = $1; }
               | bitset                           { $$ = $1; }
               | enum_                            { $$ = $1; }
@@ -638,9 +641,14 @@ constant      : CINTEGER                         { $$ = std::make_shared<constan
               | TIME '(' CDOUBLE ')'             { $$ = std::make_shared<constant::Time>($3, loc(@$)); }
               | TIME '(' CINTEGER ')'            { $$ = std::make_shared<constant::Time>((uint64_t)$3, loc(@$)); }
               | tuple                            { $$ = $1; }
+              | optional                         { $$ = $1; }
               ;
 
 tuple         : '(' opt_exprs ')'                { $$ = std::make_shared<constant::Tuple>($2, loc(@$)); }
+              ;
+
+optional      : OPTIONAL '(' expr ')'            { $$ = std::make_shared<constant::Optional>($3, loc(@$)); }
+              | OPTIONAL '(' ')'                 { $$ = std::make_shared<constant::Optional>(loc(@$)); }
               ;
 
 ctor          : CBYTES                           { $$ = std::make_shared<ctor::Bytes>($1, loc(@$)); }

@@ -536,21 +536,21 @@ public:
    shared_ptr<Type> type() const override;
 
    /// Returns true if the type is derived rather than provied.
-   bool typeDerived() const { return _type.get(); }
+   bool typeDerived() const;
 
    /// Returns the name of the initialized field if any, or null if
    /// anonymous.
-   shared_ptr<ID> id() const { return _id; }
+   shared_ptr<ID> id() const;
 
    /// Returns the initilization value if any, or null if none.
-   shared_ptr<Expression> expression() const { return _expr; }
+   shared_ptr<Expression> expression() const;
 
    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
    ACCEPT_VISITOR(Constant);
 
 private:
-   node_ptr<Type> _type;
+   node_ptr<Type> _utype;
    node_ptr<ID> _id;
    node_ptr<Expression> _expr;
 };

@@ -1,0 +1,26 @@
+#
+# @TEST-EXEC:  hilti-build -o a.out %INPUT
+# @TEST-EXEC:  ./a.out >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+print optional(1);
+print optional(b"ABC");
+#print optional();
+
+global X: optional<bytes>;
+global Y: bytes;
+
+X = optional(b"ABC");
+print X;
+
+X = optional();
+print X;
+
+Y = optional(b"ABC");
+print Y;
+
+
+

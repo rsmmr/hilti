@@ -227,3 +227,25 @@ const uint64_t Interval::value() const
 {
     return _nsecs;
 }
+
+Optional::Optional(shared_ptr<Expression> expr, const Location& l) : Constant(l)
+{
+    _expr = expr;
+    addChild(_expr);
+}
+
+Optional::Optional(const Location& l) : Constant(l)
+{
+    _expr = nullptr;
+}
+
+shared_ptr<Expression> Optional::value() const
+{
+    return _expr;
+}
+
+shared_ptr<Type> Optional::type() const
+{
+    return _expr ? std::make_shared<type::Optional>(_expr->type(), location())
+                 : std::make_shared<type::Optional>(location());
+}

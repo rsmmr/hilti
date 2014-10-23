@@ -1916,3 +1916,14 @@ Mark::Mark(const Location& l)
 {
 }
 
+Optional::Optional(shared_ptr<Type> type, const Location& l)
+    : TypedPacType(type, l)
+{
+}
+
+Optional::Optional(const Location& l)
+    : TypedPacType(l)
+{
+}
+
+

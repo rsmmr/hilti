@@ -2016,6 +2016,20 @@ inline shared_ptr<hilti::expression::Constant> create(shared_ptr<Type> utype, sh
     return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
+/// Instantiates an AST expression node representing a union constant of a
+/// single field.
+///
+/// value: The value to set the single union field to.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(shared_ptr<Expression> value, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Union>(nullptr, nullptr, value, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
 /// Instantiates an AST expression node representing an unset union constant of wildcard type.
 ///
 /// l: Location associated with the type.

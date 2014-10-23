@@ -176,7 +176,7 @@ int8_t hlt_bcmp(void* p1, void* p2, int64_t n)
 void hlt_abort()
 {
     __hlt_debug_print("hilti-mem", "hlt_abort() called");
-    fprintf(stderr, "internal HILTI error: hlt_abort() called");
+    fprintf(stderr, "internal HILTI error: hlt_abort() called\n");
     abort();
 }
 

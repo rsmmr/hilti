@@ -1911,6 +1911,23 @@ public:
     ACCEPT_VISITOR(PacType);
 };
 
+/// Type representing an optional instance of another type.
+class Optional : public TypedPacType
+{
+public:
+    /// Constructor.
+    ///
+    /// type: The type of the wrappend instance.
+    ///
+    /// l: Associated location.
+    Optional(shared_ptr<Type> type, const Location& l=Location::None);
+
+    /// Constructor for a wildcard type.
+    Optional(const Location& l=Location::None);
+
+    ACCEPT_VISITOR(TypedPacType);
+};
+
 }
 
 }
