@@ -589,11 +589,6 @@ bool Manager::Compile()
 	assert(pre_scripts_init_run);
 	assert(post_scripts_init_run);
 
-	auto register_func = internal_func("Bro::register_protocol_analyzer");
-
-	if ( ! register_func )
-		reporter::fatal_error("Bro::register_protocol_analyzer() not available");
-
 	if ( ! CompileBroScripts() )
 		return false;
 
@@ -624,9 +619,6 @@ bool Manager::Compile()
 		for ( auto p : a->ports )
 			analyzer_mgr->RegisterAnalyzerForPort(a->tag, p.proto, p.port);
 
-		val_list* args = new val_list;
-		args->append(a->tag.AsEnumVal()->Ref());
-		register_func->Call(args);
 		}
 
 	for ( auto a : pimpl->pac2_file_analyzers )
@@ -1034,6 +1026,22 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 
 	if ( pimpl->dump_code || pimpl->dump_code_all )
 		DumpCode(pimpl->dump_code_all);
+
+    // Need to delay the following until here. If we compile scripts, this
+    // will require the compiled register_protocol_analyzer function to be
+    // available.
+
+	auto register_func = internal_func("Bro::register_protocol_analyzer");
+
+	if ( ! register_func )
+		reporter::fatal_error("Bro::register_protocol_analyzer() not available");
+
+	for ( auto a : pimpl->pac2_file_analyzers )
+		{
+        val_list* args = new val_list;
+		args->append(a->tag.AsEnumVal()->Ref());
+        register_func->Call(args);
+        }
 
 	return true;
 	}
@@ -2385,8 +2393,8 @@ void Manager::AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev)
 	{
 	auto uid = ::hilti::builder::id::node(ev->unit);
 
-	if ( ev->minfo->hilti_mbuilder->declared(uid) )
-		return;
+    if ( ev->minfo->hilti_mbuilder->declared(uid) )
+        return;
 
 	assert(ev->minfo->pac2_hilti_module);
 	auto t = ev->minfo->pac2_hilti_module->body()->scope()->lookup(uid, true);
@@ -2670,13 +2678,8 @@ void Manager::ExtractParsers(hlt_list* parsers)
 		parser_map.insert(std::make_tuple(name, p));
 		hlt_free(name);
 
-		hlt_iterator_list j = i;
 		i = hlt_iterator_list_incr(i, &excpt, ctx);
-		GC_DTOR(j, hlt_iterator_list);
 		}
-
-	GC_DTOR(i, hlt_iterator_list);
-	GC_DTOR(end, hlt_iterator_list);
 
 	for ( auto a : pimpl->pac2_analyzers )
 		{
@@ -2687,7 +2690,7 @@ void Manager::ExtractParsers(hlt_list* parsers)
 				if ( i != parser_map.end() )
 						{
 						a->parser_orig = i->second;
-						GC_CCTOR(a->parser_orig, hlt_BinPACHilti_Parser);
+						GC_CCTOR(a->parser_orig, hlt_BinPACHilti_Parser, ctx);
 						}
 				}
 
@@ -2698,7 +2701,7 @@ void Manager::ExtractParsers(hlt_list* parsers)
 				if ( i != parser_map.end() )
 						{
 						a->parser_resp = i->second;
-						GC_CCTOR(a->parser_resp, hlt_BinPACHilti_Parser);
+						GC_CCTOR(a->parser_resp, hlt_BinPACHilti_Parser, ctx);
 						}
 				}
 		}
@@ -2713,13 +2716,13 @@ void Manager::ExtractParsers(hlt_list* parsers)
 		if ( i != parser_map.end() )
 			{
 			a->parser = i->second;
-			GC_CCTOR(a->parser, hlt_BinPACHilti_Parser);
+			GC_CCTOR(a->parser, hlt_BinPACHilti_Parser, ctx);
 			}
 		}
 
 	for ( auto p : parser_map )
 		{
-		GC_DTOR(p.second, hlt_BinPACHilti_Parser);
+		GC_DTOR(p.second, hlt_BinPACHilti_Parser, ctx);
 		}
 	}
 
@@ -2887,7 +2890,7 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 		char* e = hlt_exception_to_asciiz(excpt, &etmp, ctx);
 		reporter::error(::util::fmt("event/function %s raised exception: %s", func->Name(), e));
 		hlt_free(e);
-		GC_DTOR(excpt, hlt_exception);
+		GC_DTOR(excpt, hlt_exception, ctx);
 		}
 
 	return result ? result : new ::Val(0, ::TYPE_VOID);

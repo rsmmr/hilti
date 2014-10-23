@@ -34,29 +34,29 @@ struct __hlt_vector {
     hlt_enum strategy;          // Expiration strategy if set; zero otherwise.
 };
 
-void hlt_vector_dtor(hlt_type_info* ti, hlt_vector* v)
+void hlt_vector_dtor(hlt_type_info* ti, hlt_vector* v, hlt_execution_context* ctx)
 {
     void* end = v->elems + v->last * v->type->size;
     for ( void* elem = v->elems; elem <= end; elem += v->type->size ) {
-        GC_DTOR_GENERIC(elem, v->type);
+        GC_DTOR_GENERIC(elem, v->type, ctx);
     }
 
-    GC_DTOR_GENERIC(v->def, v->type);
-    GC_DTOR(v->tmgr, hlt_timer_mgr);
+    GC_DTOR_GENERIC(v->def, v->type, ctx);
+    GC_DTOR(v->tmgr, hlt_timer_mgr, ctx);
 
     hlt_free(v->elems);
     hlt_free(v->timers);
     hlt_free(v->def);
 }
 
-void hlt_iterator_vector_cctor(hlt_type_info* ti, hlt_iterator_vector* i)
+void hlt_iterator_vector_cctor(hlt_type_info* ti, hlt_iterator_vector* i, hlt_execution_context* ctx)
 {
-    GC_CCTOR(i->vec, hlt_vector);
+    GC_CCTOR(i->vec, hlt_vector, ctx);
 }
 
-void hlt_iterator_vector_dtor(hlt_type_info* ti, hlt_iterator_vector* i)
+void hlt_iterator_vector_dtor(hlt_type_info* ti, hlt_iterator_vector* i, hlt_execution_context* ctx)
 {
-    GC_DTOR(i->vec, hlt_vector);
+    GC_DTOR(i->vec, hlt_vector, ctx);
 }
 
 static inline void _access_entry(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -83,29 +83,28 @@ static inline void _set_entry(hlt_vector* v, hlt_vector_idx i, void *val, int dt
     void* dst = v->elems + i * v->type->size;
 
     if ( dtor )
-        GC_DTOR_GENERIC(dst, v->type);
+        GC_DTOR_GENERIC(dst, v->type, ctx);
 
     memcpy(dst, val, v->type->size);
-    GC_CCTOR_GENERIC(dst, v->type);
+    GC_CCTOR_GENERIC(dst, v->type, ctx);
 
     // Start timer if needed.
     if ( v->tmgr && v->timeout ) {
-        GC_CCTOR(v, hlt_vector);
+        GC_CCTOR(v, hlt_vector, ctx);
         __hlt_vector_timer_cookie cookie = { v, i };
         v->timers[i] = __hlt_timer_new_vector(cookie, excpt, ctx); // Not memory-managed on our end.
         hlt_time t = hlt_timer_mgr_current(v->tmgr, excpt, ctx) + v->timeout;
         hlt_timer_mgr_schedule(v->tmgr, t, v->timers[i], excpt, ctx);
-        GC_DTOR(v->timers[i], hlt_timer); // Not memory-managed on our end.
+        GC_DTOR(v->timers[i], hlt_timer, ctx); // Not memory-managed on our end.
     }
 }
 
-hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_vector_init(hlt_vector* v, const hlt_type_info* elemtype, const void* def, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_vector* v = GC_NEW(hlt_vector);
     v->elems = hlt_malloc(elemtype->size * InitialCapacity);
 
     if ( tmgr ) {
-        GC_INIT(v->tmgr, tmgr, hlt_timer_mgr);
+        GC_INIT(v->tmgr, tmgr, hlt_timer_mgr, ctx);
         v->timers = hlt_malloc(sizeof(hlt_timer*) *  InitialCapacity);
         assert(v->timers);
     }
@@ -122,7 +121,12 @@ hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, struc
     v->type = elemtype;
     v->timeout = 0.0;
     v->strategy = hlt_enum_unset(excpt, ctx);
+}
 
+hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_vector* v = GC_NEW(hlt_vector, ctx);
+    _hlt_vector_init(v, elemtype, def, tmgr, excpt, ctx);
     return v;
 }
 
@@ -133,7 +137,7 @@ static void _clone_init_in_thread(const hlt_type_info* ti, void* dstp, hlt_excep
     // If we arrive here, it can't be a custom timer mgr but only the
     // thread-wide one.
     dst->tmgr = ctx->tmgr;
-    GC_CCTOR(dst->tmgr, hlt_timer_mgr);
+    GC_CCTOR(dst->tmgr, hlt_timer_mgr, ctx);
 
     assert(dst->timers);
 
@@ -145,13 +149,13 @@ static void _clone_init_in_thread(const hlt_type_info* ti, void* dstp, hlt_excep
             continue;
 
         hlt_timer_mgr_schedule(dst->tmgr, t->time, t, excpt, ctx);
-        GC_DTOR(t, hlt_timer); // Not memory-managed on our end.
+        GC_DTOR(t, hlt_timer, ctx); // Not memory-managed on our end.
     }
 }
 
 void* hlt_vector_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return GC_NEW(hlt_vector);
+    return GC_NEW_REF(hlt_vector, ctx);
 }
 
 void hlt_vector_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -161,7 +165,7 @@ void hlt_vector_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hl
 
     if ( src->tmgr && src->tmgr != ctx->tmgr ) {
         hlt_string msg = hlt_string_from_asciiz("vector with non-standard timer mgr cannot be cloned", excpt, ctx);
-        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg);
+        hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg, ctx);
         return;
     }
 
@@ -180,7 +184,7 @@ void hlt_vector_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hl
 
         if ( src->timers && src->timeout ) {
             if ( src->timers[i] ) {
-                GC_CCTOR(dst, hlt_vector);
+                GC_CCTOR(dst, hlt_vector, ctx);
                 __hlt_vector_timer_cookie cookie = { dst, i };
                 dst->timers[i] = __hlt_timer_new_vector(cookie, excpt, ctx);
                 dst->timers[i]->time = src->timers[i]->time; // Preset time.
@@ -209,26 +213,25 @@ void hlt_vector_timeout(hlt_vector* v, hlt_enum strategy, hlt_interval timeout, 
     v->strategy = strategy;
 
     if ( ! v->tmgr )
-        GC_ASSIGN(v->tmgr, ctx->tmgr, hlt_timer_mgr);
+        GC_ASSIGN(v->tmgr, ctx->tmgr, hlt_timer_mgr, ctx);
 }
 
 void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( i > v->last ) {
-        hlt_set_exception(excpt, &hlt_exception_index_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_index_error, 0, ctx);
         return 0;
     }
 
     _access_entry(v, i, excpt, ctx);
     void *elem = v->elems + i * v->type->size;
-    GC_CCTOR_GENERIC(elem, v->type);
 
     return elem;
 }
 
 void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    assert(hlt_type_equal(v->type, elemtype));
+    assert(__hlt_type_equal(v->type, elemtype));
 
     if ( i >= v->capacity ) {
         // Allocate more memory.
@@ -259,7 +262,7 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
 void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(v);
-    assert(hlt_type_equal(v->type, elemtype));
+    assert(__hlt_type_equal(v->type, elemtype));
 
     ++v->last;
 
@@ -293,7 +296,7 @@ void hlt_vector_expire(__hlt_vector_timer_cookie cookie, hlt_exception** excpt, 
         v->timers[i] = 0;
 
     void* dst = v->elems + i * v->type->size;
-    GC_DTOR_GENERIC(dst, v->type);
+    GC_DTOR_GENERIC(dst, v->type, ctx);
 
     hlt_clone_deep(dst, v->type, v->def, excpt, ctx);
 }
@@ -317,7 +320,7 @@ hlt_iterator_vector hlt_vector_begin(hlt_vector* v, hlt_exception** excpt, hlt_e
 {
     hlt_iterator_vector i;
 
-    GC_INIT(i.vec, (v->last >= 0 ? v : 0), hlt_vector);
+    i.vec = (v->last >= 0 ? v : 0);
     i.idx = 0;
 
     return i;
@@ -345,20 +348,18 @@ hlt_iterator_vector hlt_iterator_vector_incr(hlt_iterator_vector i, hlt_exceptio
         j.idx = 0;
     }
 
-    GC_CCTOR(j, hlt_iterator_vector);
     return j;
 }
 
 void* hlt_iterator_vector_deref(hlt_iterator_vector i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.vec ) {
-        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
         return 0;
     }
 
     _access_entry(i.vec, i.idx, excpt, ctx);
     void *elem = i.vec->elems + i.idx * i.vec->type->size;
-    GC_CCTOR_GENERIC(elem, i.vec->type);
     return elem;
 }
 
@@ -387,38 +388,22 @@ hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int3
 
     for ( hlt_vector_idx i = 0; i <= v->last; i++ ) {
 
-        hlt_string istr = hlt_int_to_string(&hlt_type_info_hlt_int_64, &i, options, excpt, ctx);
+        hlt_string istr = hlt_int_to_string(&hlt_type_info_hlt_int_64, &i, options, seen, excpt, ctx);
+        hlt_string t = __hlt_object_to_string(v->type, v->elems + i * v->type->size, options, seen, excpt, ctx);
 
-        s = hlt_string_concat_and_unref(s, istr, excpt, ctx);
-
-        hlt_string tmp = s;
+        s = hlt_string_concat(s, istr, excpt, ctx);
         s = hlt_string_concat(s, sep1, excpt, ctx);
-        GC_DTOR(tmp, hlt_string);
+        s = hlt_string_concat(s, t, excpt, ctx);
 
-        hlt_string t = hlt_object_to_string(v->type, v->elems + i * v->type->size, options, seen, excpt, ctx);
-
-        s = hlt_string_concat_and_unref(s, t, excpt, ctx);
-
-        if ( i < v->last ) {
-            hlt_string tmp = s;
+        if ( i < v->last )
             s = hlt_string_concat(s, sep2, excpt, ctx);
-            GC_DTOR(tmp, hlt_string);
-        }
 
-        if ( *excpt )
-            goto error;
+        if ( hlt_check_exception(excpt) )
+            return 0;
     }
 
     hlt_string postfix = hlt_string_from_asciiz("]", excpt, ctx);
-    s = hlt_string_concat_and_unref(s, postfix, excpt, ctx);
+    s = hlt_string_concat(s, postfix, excpt, ctx);
 
-    GC_DTOR(sep1, hlt_string);
-    GC_DTOR(sep2, hlt_string);
     return s;
-
-error:
-    GC_DTOR(sep1, hlt_string);
-    GC_DTOR(sep2, hlt_string);
-    GC_DTOR(s, hlt_string);
-    return 0;
 }

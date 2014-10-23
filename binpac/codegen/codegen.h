@@ -300,7 +300,7 @@ public:
     ///
     /// Returns: The equivalent HILTI byte order.
     shared_ptr<hilti::Expression> hiltiByteOrder(shared_ptr<Expression> expr);
-    
+
     /// Converts an expression of type BinPAC::Charset into a HILTI value of type Hilti::Charset.
     ///
     /// expr: The expression to convert.
@@ -311,7 +311,134 @@ public:
     /// XXX
     shared_ptr<hilti::Expression> hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<hilti::Expression> lower, shared_ptr<hilti::Expression> upper);
 
+    /// Extracts the value for a unit field. If a field is not set, but a
+    /// default has been preset, that default will be returned.
+    ///
+    /// unit: The unit instance to extract the field from.
+    ///
+    /// field: The field to extract.
+    ///
+    /// default_: The default to return if the field is neither set nor a
+    /// default has been preset. If not given, an unset field will throw an
+    /// exception. If given, this behaves like the HILTI \c
+    /// struct.get_default instruction.
+    ///
+    /// Returns: The field's current value.
+    shared_ptr<hilti::Expression> hiltiItemGet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> default_ = nullptr);
+
+    /// Extracts the value for a unit field.
+    ///
+    /// unit: The unit instance to extract the field from.
+    ///
+    /// field: The ID referencing the field to extract.
+    ///
+    /// default_: The default to return if the field is not set. If not
+    /// given, an unset field will throw an exception.
+    ///
+    /// Returns: The field's current value.
+    shared_ptr<hilti::Expression> hiltiItemGet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> default_ = nullptr);
+
+    /// Extracts the value for a unit field.
+    ///
+    /// unit: The unit instance to extract the field from.
+    ///
+    /// field: The ID referencing the field to extract.
+    ///
+    /// default_: The default to return if the field is not set. If not
+    /// given, an unset field will throw an exception.
+    ///
+    /// Returns: The field's current value.
+    shared_ptr<hilti::Expression> hiltiItemGet(shared_ptr<hilti::Expression> unit, const string& field, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> default_ = nullptr);
+
+    /// Sets the value for a unit field.
+    ///
+    /// unit: The unit instance to set the field in.
+    ///
+    /// field: The field to set.
+    ///
+    /// value: The value to set the field to.
+    void hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> value);
+
+    /// Sets the value for a unit field.
+    ///
+    /// unit: The unit instance to set the field in.
+    ///
+    /// field: The name of the field to set.
+    ///
+    /// value: The value to set the field to.
+    void hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field, shared_ptr<hilti::Expression> value);
+
+    /// Sets the value for a unit field.
+    ///
+    /// unit: The unit instance to set the field in.
+    ///
+    /// field: The name of the field to set.
+    ///
+    /// value: The value to set the field to.
+    void hiltiItemSet(shared_ptr<hilti::Expression> unit, const string& field, shared_ptr<hilti::Expression> value);
+
+    /// Sets the default value for a unit field. The is what hiltiItemGet()
+    /// will return if not value has been explicitly set.
+    ///
+    /// unit: The unit instance to set the field in.
+    ///
+    /// field: The field to set.
+    ///
+    /// def: The default to set the field to.
+    void hiltiItemPresetDefault(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> def);
+
+    /// Unsets the value for a unit field.
+    ///
+    /// unit: The unit instance to set the field in.
+    ///
+    /// field: The field to set.
+    void hiltiItemUnset(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field);
+
+    /// Unsets the value for a unit field.
+    ///
+    /// unit: The unit instance to set the field in.
+    ///
+    /// field: The name of the field to set.
+    void hiltiItemUnset(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field);
+
+    /// Unsets the value for a unit field.
+    ///
+    /// unit: The unit instance to set the field in.
+    ///
+    /// field: The name of the field to set.
+    void hiltiItemUnset(shared_ptr<hilti::Expression> unit, const string& field);
+
+    /// Checks if a unit field has a value set for it.
+    ///
+    /// unit: The unit instance to check the field for.
+    ///
+    /// field: The field to check.
+    ///
+    /// Returns: A boolean HILTI expression being true if the field has a value currently.
+    shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field);
+
+    /// Checks if a unit field has a value set for it.
+    ///
+    /// unit: The unit instance to check the field for.
+    ///
+    /// field: The name of the field to check.
+    ///
+    /// Returns: A boolean HILTI expression being true if the field has a value currently.
+    shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field);
+
+    /// Checks if a unit field has a value set for it.
+    ///
+    /// unit: The unit instance to check the field for.
+    ///
+    /// field: The name of the field to check.
+    ///
+    /// Returns: A boolean HILTI expression being true if the field has a value currently.
+    shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit, const string& field);
+
 private:
+    enum HiltiItemOp { GET, GET_DEFAULT, SET, PRESET_DEFAULT, UNSET, IS_SET };
+    shared_ptr<hilti::Expression> _hiltiItemOp(HiltiItemOp i, shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, const std::string& fname, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> addl_op);
+
     CompilerContext* _ctx;
     bool _compiling = false;
     shared_ptr<Module> _module = nullptr;

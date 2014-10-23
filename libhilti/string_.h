@@ -44,7 +44,7 @@ struct __hlt_string {
 /// the right signature to use in an \ref hlt_type_info object.
 ///
 /// \hlt_to_string
-extern hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the length of a string. This is the logical length that accounts
 /// for character encoding, not the number of bytes the strings needs for
@@ -65,20 +65,6 @@ extern hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt, hlt_e
 ///
 /// Returns: The concatenation.
 extern hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_execution_context* ctx);
-
-/// Concatenates two strings and returns the result. This variant of
-/// hlt_string_concat takes ownership of the two strings passed in.
-///
-/// s1: The first string. Function takes ownership of the reference passed
-/// in.
-///
-/// s2: The second string. Function takes ownership of the reference passed
-/// in.
-///
-/// \hlt_c
-///
-/// Returns: The concatenation.
-extern hlt_string hlt_string_concat_and_unref(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Extracts a substring from a string.
 ///
@@ -198,7 +184,22 @@ extern hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, 
 /// \hlt_c
 ///
 /// Returns: The string representation.
-extern hlt_string hlt_object_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_object_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Returns a string representatin of an HILTI object. This is an internal
+/// version for recursive execution by conversion function; it takes a
+/// pointer stack to avoid running into cycles.
+///
+/// type: Type information for \c obj.
+///
+/// obj: A \a pointer to the object to turn into a string representation.
+///
+/// seen: Stack of objects traversed so far.
+///
+/// \hlt_c
+///
+/// Returns: The string representation.
+extern hlt_string __hlt_object_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Prints a string to a file. This is mainly for debugging purposes.
 ///

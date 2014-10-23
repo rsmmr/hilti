@@ -3,6 +3,7 @@
 
 #include "../module.h"
 #include "../options.h"
+#include "../statement.h"
 
 #include "codegen.h"
 #include "util.h"
@@ -122,9 +123,9 @@ void CodeGen::llvmInsertComment(const string& comment)
     _functions.back()->next_comment = comment;
 }
 
-llvm::Value* CodeGen::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst)
+llvm::Value* CodeGen::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst, bool cctor)
 {
-    return _coercer->llvmCoerceTo(value, src, dst);
+    return _coercer->llvmCoerceTo(value, src, dst, cctor);
 }
 
 llvm::Type* CodeGen::llvmLibType(const string& name)
@@ -278,6 +279,11 @@ llvm::Value* CodeGen::llvmValue(shared_ptr<Expression> expr, shared_ptr<hilti::T
     return _loader->llvmValue(expr, cctor, coerce_to);
 }
 
+void CodeGen::llvmValueInto(llvm::Value* dst, shared_ptr<Expression> expr, shared_ptr<hilti::Type> coerce_to, bool cctor)
+{
+    _loader->llvmValueInto(dst, expr, cctor, coerce_to);
+}
+
 llvm::Value* CodeGen::llvmValueAddress(shared_ptr<Expression> expr)
 {
     return _loader->llvmValueAddress(expr);
@@ -321,6 +327,11 @@ llvm::Constant* CodeGen::llvmSizeOf(llvm::Constant* v)
     return llvmSizeOf(v->getType());
 }
 
+uint64_t CodeGen::llvmSizeOfForTarget(llvm::Type* t)
+{
+    return _data_layout->getTypeAllocSize(t);
+}
+
 llvm::Constant* CodeGen::llvmSizeOf(llvm::Type* t)
 {
     // Computer size using the "portable sizeof" idiom ...
@@ -331,7 +342,7 @@ llvm::Constant* CodeGen::llvmSizeOf(llvm::Type* t)
 
 void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value, bool dtor_first)
 {
-    _storer->llvmStore(target, value, true, dtor_first);
+    _storer->llvmStore(target, value, false, dtor_first);
 }
 
 std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
@@ -406,7 +417,7 @@ llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
 
 void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value, bool dtor_first)
 {
-    _storer->llvmStore(instr->target(), value, true, dtor_first);
+    _storer->llvmStore(instr->target(), value, false, dtor_first);
 }
 
 llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builder, bool abort_on_excpt, bool is_init_func, type::function::CallingConvention cc)
@@ -650,15 +661,6 @@ void CodeGen::createGlobalsInitFunction()
     auto name = util::mangle(_hilti_module->id(), true, nullptr, ::util::fmt("init.globals.%s", linkerModuleIdentifier()));
     _globals_init_func = llvmPushLinkerJoinableFunction(name);
 
-#ifdef OLDSTRING
-    // Init the global string constants.
-    for ( auto gs : _global_strings ) {
-        auto s = llvmStringFromData(gs.first);
-        builder()->CreateStore(s, gs.second);
-        finishStatement(); // Add cleanup.
-    }
-#endif
-
     // Init user defined globals.
     for ( auto g : _collector->globals() ) {
         llvmDebugPrint("hilti-trace", ::util::fmt("init global %s", g->id()->pathAsString()));
@@ -689,12 +691,6 @@ void CodeGen::createGlobalsInitFunction()
     }
 
     auto stype = shared_ptr<Type>(new type::String());
-
-#ifdef OLDSTRING
-    for ( auto gs : _global_strings ) {
-        llvmDtor(gs.second, stype, true, "init-globals");
-    }
-#endif
 
     if ( functionEmpty() ) {
         // We haven't added anything to the function, just discard.
@@ -933,7 +929,7 @@ llvm::Type* CodeGen::llvmTypeExceptionPtr() {
 
 llvm::Constant* CodeGen::llvmExceptionTypeObject(shared_ptr<type::Exception> excpt)
 {
-    auto libtype = excpt ? excpt->libraryType() : "hlt_exception_unspecified";
+    auto libtype = excpt ? excpt->attributes().getAsString(attribute::LIBHILTI, "") : "hlt_exception_unspecified";
 
     if ( libtype.size() ) {
         // If it's a libhilti exception, create an extern declaration
@@ -1127,38 +1123,11 @@ llvm::Value* CodeGen::llvmStringFromData(const string& str)
     value_list args;
     args.push_back(data);
     args.push_back(llvmConstInt(str.size(), 64));
-    return llvmCallC(llvmLibFunction("hlt_string_from_data"), args, true);
+    return llvmCallC(llvmLibFunction("hlt_string_from_data"), args, true, false);
 }
 
 llvm::Value* CodeGen::llvmStringPtr(const string& s)
 {
-#ifdef OLDSTRING
-    // If we're currently buildign the init function, we create the new value
-    // directly and without caching, because otherwise we'd be telling the
-    // init function to create, which it wouldn't do because it's already
-    // running. Clear? :)
-
-    if ( _functions.back()->is_init_func ) {
-        auto data = llvmAddTmp("string", llvmTypeString(), llvmStringFromData(s));
-        llvmDtorAfterInstruction(data, builder::string::type(), true, "llvmStringPtr");
-        return data;
-    }
-
-    // While we can represent empty string as a nullptr, we also create an
-    // object here in that case because we need to return a pointer.
-
-    // See if we have already created an array for this string.
-    llvm::Value* data = lookupCachedValue("llvmString", s);
-
-    if ( ! data ) {
-        data = llvmAddGlobal("string", llvmTypeString());
-        cacheValue("llvmString", s, data);
-        _global_strings.push_back(make_pair(s, data));
-    }
-
-    return data;
-#endif
-
     auto val = llvmString(s);
     auto ptr = llvmAddTmp("string", val->getType(), val);
     return ptr;
@@ -1170,9 +1139,7 @@ llvm::Value* CodeGen::llvmString(const string& s)
         // The empty string is represented by a null pointer.
         return llvmConstNull(llvmTypeString());
 
-    auto val = llvmStringFromData(s);
-    llvmDtorAfterInstruction(val, builder::string::type(), false, "llvmString");
-    return val;
+    return llvmStringFromData(s);
 }
 
 llvm::Value* CodeGen::llvmValueStruct(const std::vector<llvm::Value*>& elems, bool packed)
@@ -1231,39 +1198,53 @@ llvm::GlobalVariable* CodeGen::llvmAddGlobal(const string& name, llvm::Constant*
     return llvmAddGlobal(name, init->getType(), init, use_name_as_is);
 }
 
-llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, llvm::Value* init)
+llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, shared_ptr<Expression> init)
 {
     auto llvm_type = llvmType(type);
 
     bool init_in_entry_block = false;
     bool init_is_init_val = false;
 
+    llvm::Value* llvm_init = nullptr;
+
     if ( ! init ) {
         init_in_entry_block = true;
-        init = typeInfo(type)->init_val;
+        llvm_init = typeInfo(type)->init_val;
         init_is_init_val = true;
     }
-
-    assert(init);
 
     llvm::BasicBlock& block(function()->getEntryBlock());
 
     auto builder = newBuilder(&block, true);
+    llvm::Value* local = 0;
 
-    auto local = builder->CreateAlloca(llvm_type, 0, name);
-    builder->CreateStore(typeInfo(type)->init_val, local);
+    if ( ! type->attributes().has(attribute::HOIST) ) {
+        if ( init )
+            llvm_init = llvmValue(init, type, false);
 
-    if ( init_in_entry_block ) {
-        pushBuilder(builder);
-        llvmCreateStore(init, local);
-        popBuilder();
+        local = builder->CreateAlloca(llvm_type, 0, name);
+        builder->CreateStore(typeInfo(type)->init_val, local);
+
+        if ( init_in_entry_block ) {
+            pushBuilder(builder);
+            llvmCreateStore(llvm_init, local);
+            popBuilder();
+        }
+
+        else {
+            if ( ! init_is_init_val )
+                llvmCreateStore(llvm_init, local);
+        }
     }
 
     else {
-        llvmGCClear(local, type, "add-local");
+        // Hoist a reference type to the stack.
+        assert(llvm_type->isPointerTy());
+        llvm_type = llvm_type->getPointerElementType();
+        local = builder->CreateAlloca(llvm_type, 0, name);
 
-        if ( ! init_is_init_val )
-            llvmCreateStore(init, local);
+        if ( init )
+            llvmValueInto(local, init, type);
     }
 
     _functions.back()->locals.insert(make_pair(name, std::make_pair(local, type)));
@@ -1654,8 +1635,13 @@ void CodeGen::llvmAddHookMetaData(shared_ptr<Hook> hook, llvm::Value *llvm_func)
     vals.push_back(llvm_func);
 
     // Record priority and group.
-    vals.push_back(llvmConstInt(hook->priority(), 64));
-    vals.push_back(llvmConstInt(hook->group(), 64));
+    auto ftype = ast::checkedCast<type::Hook>(hook->type());
+
+    int64_t priority = ftype->attributes().getAsInt(attribute::PRIORITY, 0);
+    int64_t group = ftype->attributes().getAsInt(attribute::GROUP, 0);
+
+    vals.push_back(llvmConstInt(priority, 64));
+    vals.push_back(llvmConstInt(group, 64));
 
     // Create/get the global hook implementation node and add our vals as
     // subnode in there. The linker will merge all the top-level entries.
@@ -1706,8 +1692,8 @@ void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result, bool resul
 
         state->exits.push_back(std::make_pair(block(), result));
 
-        if ( rtype && ! result_cctored )
-            llvmCctor(result, rtype, false, "llvm-return");
+        if ( result_cctored )
+            llvmDtor(result, rtype, false, "llvm-return");
     }
 
     builder()->CreateBr(state->exit_block);
@@ -1771,7 +1757,6 @@ void CodeGen::llvmBuildExitBlock()
             // after us anymore, we do the string's mgt manually here.
             auto str = llvmStringFromData(string("func/") + name);
             llvmProfilerStop(str);
-            llvmDtor(str, builder::string::type(), false, "exit-block/profiler-stop");
         }
     }
 
@@ -1809,19 +1794,101 @@ void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, 
     _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(tmp, is_ptr, type, false, location_addl)));
 }
 
-void CodeGen::llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type, const string& location_addl)
+void CodeGen::llvmMemorySafepoint(const std::string& where)
 {
-    auto stmt = _stmt_builder->currentStatement();
+    CodeGen::value_list args;
+    args.push_back(llvmExecutionContext());
+    args.push_back(llvmConstAsciizPtr(where));
 
-    // Note: it's ok here if stmt is null, we use that for all tmps that
-    // aren't directly associated with a statement.
+    llvmCallC("__hlt_memory_safepoint", args, false, false);
+}
 
-    auto ti = typeInfo(type);
+void CodeGen::llvmAdaptStackForSafepoint(bool pre)
+{
+    if ( ! pre )
+        llvmCreateStackmap();
 
-    if ( ti->dtor.size() == 0 && ti->dtor_func == 0 )
-        return;
+    for ( auto l : liveValues() ) {
+        auto val = std::get<0>(l);
+        auto type = std::get<1>(l);
+        auto is_ptr = std::get<2>(l);
 
-    _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(addr, true, type, true, "clear-local/" + location_addl)));
+        if ( pre )
+            llvmCctor(val, type, is_ptr, "adapt-for-savepoint-pre");
+        else
+            llvmDtor(val, type, is_ptr, "adapt-for-savepoint-post");
+    }
+}
+
+CodeGen::live_list CodeGen::liveValues()
+{
+    live_list lives;
+
+    // If null, we're inside some internal function.
+    if ( _functions.back()->leave_func ) {
+
+        auto ln = _stmt_builder->liveness();
+        auto in = *ln.in;
+        auto out = *ln.out;
+        auto dead = *ln.dead;
+
+        for ( auto l : in ) {
+
+            if ( dead.find(l) != dead.end() )
+                continue;
+
+            auto val = llvmValueAddress(l->expression);
+            auto type = l->expression->type();
+
+            if ( type->attributes().has(attribute::HOIST) )
+                continue;
+
+            assert(val);
+            lives.push_back(std::make_tuple(val, type, true));
+        }
+    }
+
+    return lives;
+}
+
+void CodeGen::llvmCreateStackmap()
+{
+#ifndef HAVE_LLVM_35
+    return;
+#endif
+
+    string fid = ::util::fmt("%s:%d", _functions.back()->function->getName().str(), ++_functions.back()->stackmap_id);
+    uint64_t pid = ::util::hash(fid);
+
+#ifdef HAVE_LLVM_34
+    CodeGen::value_list args = { llvmConstInt(pid, 32), llvmConstInt(0, 32) };
+    std::vector<llvm::Type *> tys = { llvmTypeInt(32), llvmTypeInt(32) };
+#else
+    CodeGen::value_list args = { llvmConstInt(pid, 64), llvmConstInt(0, 32) };
+    std::vector<llvm::Type *> tys = { llvmTypeInt(64), llvmTypeInt(32) };
+#endif
+
+    for ( auto l : liveValues() ) {
+        auto val = std::get<0>(l);
+        auto type = std::get<1>(l);
+        auto is_ptr = std::get<2>(l);
+
+        if ( is_ptr )
+            val = builder()->CreateLoad(val);
+
+        // LLVM 3.5 crashes if we pass in an i1 here. However, we don't need
+        // to do that anyways, so just limit to types that are interested to
+        // the memory management.
+        if ( val->getType()->isPointerTy() || val->getType()->isAggregateType() )
+            args.push_back(val);
+    }
+
+    // The normal intrinsic workflow doesn't work here for some reason. Probably the varargs.
+    auto stackmap = _module->getOrInsertFunction(llvm::Intrinsic::getName(llvm::Intrinsic::experimental_stackmap),
+                                                 llvm::FunctionType::get(llvmTypeVoid(), tys, 1));
+    assert(stackmap);
+
+    llvmCreateCall(stackmap, args);
 }
 
 void CodeGen::llvmClearLocalOnException(shared_ptr<Expression> expr)
@@ -1840,11 +1907,6 @@ void CodeGen::llvmClearLocalAfterInstruction(shared_ptr<Expression> expr, const 
 
     // Note: it's ok here if stmt is null, we use that for all tmps that
     // aren't directly associated with a statement.
-
-    auto ti = typeInfo(expr->type());
-
-    if ( ti->dtor.size() == 0 && ti->dtor_func == 0 )
-        return;
 
     _functions.back()->dtors_after_ins_exprs.insert(std::make_pair(stmt, std::make_tuple(expr, location_addl)));
 }
@@ -1875,8 +1937,15 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
         auto expr = std::get<0>(tupl);
         auto loc_addl = std::get<1>(tupl);
 
-        auto tmp = llvmValueAddress(expr);
         auto type = expr->type();
+
+        if ( type->attributes().has(attribute::HOIST) ) {
+            auto tmp = llvmValue(expr);
+            llvmDestroy(tmp, type, "instr-cleanup-1-hoist/" + loc_addl);
+            continue;
+        }
+
+        auto tmp = llvmValueAddress(expr);
 
         for ( auto l : _functions.back()->locals ) {
             if ( l.second.first == tmp ) {
@@ -1899,12 +1968,16 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
             if ( dont_do_locals )
                 continue;
 
+            if ( type->attributes().has(attribute::HOIST) ) {
+                llvmDestroy(tmp, type, "instr-cleanup-2-hoist/" + loc_addl);
+                continue;
+            }
+
             // See if we indeed know that address as a local. If not, it's a
             // const parameter that we don't need to unref.
             for ( auto l : _functions.back()->locals ) {
                 if ( l.second.first == tmp ) {
                     llvmGCClear(l.second.first, l.second.second, string("instr-cleanup-2/") + loc_addl);
-                    break;
                 }
             }
 
@@ -1965,26 +2038,13 @@ void CodeGen::setInstructionCleanupAfterCall()
 
 void CodeGen::llvmBuildFunctionCleanup()
 {
-    // We used to unref the local here, but that's now done in
-    // StatementBuilder::llvmStatement based on liveness analysis.
-#if 0
-    // Unref locals (incl. parameters).
-    for ( auto l : _functions.back()->locals )
-        llvmDtor(l.second.first, l.second.second, true, "func-cleanup-local");
-#endif
+    // Need to destroy locals hoisted to the stack.
+    for ( auto l : _functions.back()->locals ) {
+        auto val = l.second.first;
+        auto type = l.second.second;
 
-    auto func = _functions.back()->leave_func;
-
-    // If our parameters were passed at +1, we need to unref all the consts
-    // because nobody else does that. For the non-consts, the shadows take
-    // care of that.
-    if ( func && func->function()->type()->ccPlusOne() ) {
-        for ( auto p : func->function()->type()->parameters() ) {
-            if ( ! p->constant() )
-                continue;
-
-            llvmDtor(llvmParameter(p), p->type(), false, "func-cleanup-const");
-        }
+        if ( type->attributes().has(attribute::HOIST) )
+            llvmDestroy(val, type, "function-cleanup-hoist");
     }
 }
 
@@ -2084,6 +2144,7 @@ llvm::Value* CodeGen::llvmExceptionNew(const string& exception, const Location& 
     args.push_back(llvmExceptionTypeObject(etype));
     args.push_back(arg ? arg : llvmConstNull());
     args.push_back(llvmLocationString(l));
+    args.push_back(llvmExecutionContext());
 
     return llvmCallC("hlt_exception_new", args, false, false);
 }
@@ -2103,7 +2164,7 @@ llvm::Value* CodeGen::llvmExceptionFiber(llvm::Value* excpt)
 void CodeGen::llvmRaiseException(const string& exception, const Location& l, llvm::Value* arg)
 {
     auto excpt = llvmExceptionNew(exception, l, arg);
-    llvmRaiseException(excpt, true);
+    llvmRaiseException(excpt, false);
 }
 
 void CodeGen::llvmRaiseException(llvm::Value* excpt, bool dtor)
@@ -2343,6 +2404,13 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
     }
 
     for ( auto l : _functions.back()->locals_cleared_on_excpt ) {
+
+        if ( l->type()->attributes().has(attribute::HOIST) ) {
+            auto tmp = llvmValue(l);
+            llvmDestroy(tmp, l->type(), "trigger-excpt-handling/hoist");
+            continue;
+        }
+
         auto tmp = llvmValueAddress(l);
 
         if ( tmp )
@@ -2523,17 +2591,25 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     llvm::Value* result = 0;
 
-    if ( func->noYield() ) {
+    if ( ! ftype->mayYield() ) {
         llvmDebugPrint("hilti-flow", ::util::fmt("entering entry wrapper for %s", func->id()->pathAsString()));
-        result = llvmCall(func, params, false);
+        result = llvmCall(func, params, true, false); // +1 as otherwise the subsequent safepoint would delete it.
+        // When we use a fiber, that takes care of inserting a safepoint.
+        // Without fiber, we need to do it ourselves.
+        llvmMemorySafepoint("cstub-noyield");
         llvmDebugPrint("hilti-flow", ::util::fmt("left entry wrapper for %s", func->id()->pathAsString()));
     }
 
     else {
         llvmDebugPrint("hilti-flow", ::util::fmt("entering entry fiber for %s", func->id()->pathAsString()));
-        result = llvmCallInNewFiber(llvmFunction(func), ftype, params);
+        // +1 as otherwise the subsequent safepoint would delete it.
+        result = llvmCallInNewFiber(llvmFunction(func), ftype, params, true);
         llvmDebugPrint("hilti-flow", ::util::fmt("left entry fiber for %s", func->id()->pathAsString()));
     }
+
+    // Unref the result's +1.
+    if ( ! rtype->equal(shared_ptr<Type>(new type::Void())) )
+        llvmDtor(result, rtype, false, "cwrapper/result-adjust");
 
     // Copy exception over.
     auto ctx_excpt = llvmCurrentException();
@@ -2543,11 +2619,11 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
     else
-        llvmReturn(rtype, result, true);
+        llvmReturn(rtype, result, false);
 
     popFunction();
 
-    if ( func->noYield() )
+    if ( ! ftype->mayYield() )
         return std::make_pair(rf1, nullptr);
 
     // Build the resume function.
@@ -2588,7 +2664,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
     else
-        llvmReturn(rtype, result, true);
+        llvmReturn(rtype, result, false);
 
     popFunction();
 
@@ -2598,14 +2674,13 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     return std::make_pair(rf1, rf2);
 }
 
-llvm::Value* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
+llvm::Value* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool result_cctored, bool excpt_check, call_exception_callback_t excpt_callback)
 {
-    auto result = llvmDoCall(llvm_func, nullptr, ftype, args, nullptr, excpt_check);
+    auto result = llvmDoCall(llvm_func, nullptr, nullptr, ftype, args, result_cctored, nullptr, excpt_check, excpt_callback);
     return result;
 }
 
-
-llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args)
+llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool result_cctored)
 {
     auto rtype = ftype->result()->type();
 
@@ -2660,7 +2735,7 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
             fargs.push_back(builder::codegen::create(args[i]->type(), val));
         }
 
-        auto result = llvmCall(llvm_func, ftype, fargs, false);
+        auto result = llvmCall(llvm_func, ftype, fargs, result_cctored, false);
 
         llvmProfilerStop("fiber/inner");
 
@@ -2723,11 +2798,10 @@ llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
 
     pushBuilder(yield);
 
-    CodeGen::value_list args = { fiber, llvmLocationString(Location::None) };
+    CodeGen::value_list args = { fiber, llvmLocationString(Location::None), llvmExecutionContext() };
     auto excpt = llvmCallC("hlt_exception_new_yield", args, false, false);
     value_list eargs = { llvmExecutionContext(), excpt };
     llvmCallC("__hlt_context_set_exception", eargs, false, false);
-    llvmDtor(excpt, builder::reference::type(builder::exception::typeAny()), false, "llvmFiberStart");
     llvmCreateBr(done);
     popBuilder();
 
@@ -2757,21 +2831,30 @@ void CodeGen::llvmFiberYield(llvm::Value* fiber, shared_ptr<Type> blockable_ty, 
     CodeGen::value_list args1 = { llvmExecutionContext(), blockable_val };
     llvmCallC("__hlt_context_set_blockable", args1, false, false);
 
+    llvmAdaptStackForSafepoint(true);
+
     CodeGen::value_list args2 = { fiber };
     llvmCallC("hlt_fiber_yield", args2, false, false);
+
+    llvmAdaptStackForSafepoint(false);
 }
 
-llvm::Value* CodeGen::llvmCallableBind(shared_ptr<Hook> hook, const expr_list args, bool deep_copy_args)
+llvm::Value* CodeGen::llvmCallableBind(shared_ptr<Hook> hook, const expr_list args, bool ref, bool excpt_check, bool deep_copy_args, bool cctor_callable)
 {
-    return llvmDoCallableBind(nullptr, hook, hook->type(), args, true, deep_copy_args);
+    return llvmDoCallableBind(nullptr, hook, hook, hook->type(), args, ref, excpt_check, deep_copy_args, cctor_callable);
 }
 
-llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check, bool deep_copy_args)
+llvm::Value* CodeGen::llvmCallableBind(shared_ptr<Function> func, shared_ptr<type::Function> ftype, const expr_list args, bool ref, bool excpt_check, bool deep_copy_args, bool cctor_callable)
 {
-    return llvmDoCallableBind(llvm_func_val, nullptr, ftype, args, excpt_check, deep_copy_args);
+    return llvmDoCallableBind(llvmFunction(func), func, nullptr, func->type(), args, ref, true, deep_copy_args, cctor_callable);
 }
 
-llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check, bool deep_copy_args)
+llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<type::Function> ftype, const expr_list args, bool ref, bool excpt_check, bool deep_copy_args, bool cctor_callable)
+{
+    return llvmDoCallableBind(llvm_func_val, nullptr, nullptr, ftype, args, ref, excpt_check, deep_copy_args, cctor_callable);
+}
+
+llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<Function> func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool result_cctor, bool excpt_check, bool deep_copy_args, bool cctor_callable)
 {
     auto llvm_func = llvm_func_val ? llvm::cast<llvm::Function>(llvm_func_val) : nullptr;
     auto result = ftype->result();
@@ -2799,9 +2882,9 @@ llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<
 
     // Now fill a new callable object with its values.
     auto callable_type = std::make_shared<type::Callable>(result, unbound_args);
-    llvm::Value* c = llvmObjectNew(callable_type, sty);
+    llvm::Value* c = llvmObjectNew(callable_type, sty, cctor_callable);
     llvm::Value* s = builder()->CreateLoad(c);
-    auto func_val = llvmCallableMakeFuncs(llvm_func, hook, ftype, excpt_check, sty, name, unbound_args);
+    auto func_val = llvmCallableMakeFuncs(llvm_func, func, hook, ftype, result_cctor, excpt_check, sty, name, unbound_args);
     func_val = builder()->CreateBitCast(func_val, stypes[1]); // FIXME: Not sure why we need this cast.
     s = llvmInsertValue(s, func_val, 1);
 
@@ -2833,7 +2916,7 @@ llvm::Value* CodeGen::llvmDoCallableBind(llvm::Value* llvm_func_val, shared_ptr<
     return builder()->CreateBitCast(c, llvmTypePtr(cty));
 }
 
-llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name, const type::function::parameter_list& unbound_args)
+llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Function> func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool result_cctor, bool excpt_check, llvm::StructType* sty, const string& name, const type::function::parameter_list& unbound_args)
 {
     llvm::Value* cached = lookupCachedValue("callable-func", name);
 
@@ -2891,12 +2974,12 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
         ? llvmAddTmp("hook.rval", llvm_rtype, nullptr, true) : nullptr;
 
     if ( result ) {
-        llvmDoCall(llvm_func, hook, ftype, nargs, result, excpt_check);
+        llvmDoCall(llvm_func, func, hook, ftype, nargs, result_cctor, result, excpt_check);
         result = builder()->CreateLoad(result);
     }
 
     else
-        result = llvmDoCall(llvm_func, hook, ftype, nargs, nullptr, excpt_check);
+        result = llvmDoCall(llvm_func, func, hook, ftype, nargs, result_cctor, nullptr, excpt_check);
 
     llvmDebugPrint("hilti-flow", ::util::fmt("leaving callable's run function for %s", name));
 
@@ -2980,7 +3063,11 @@ llvm::Value* CodeGen::llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_pt
     llvm::Constant* llvm_dtor_func = nullptr;
 
     if ( ftype->parameters().size() ) {
-        CodeGen::llvm_parameter_list lparams = { std::make_pair("callable", llvmTypePtr(cty)) };
+        CodeGen::llvm_parameter_list lparams = {
+            std::make_pair("callable", llvmTypePtr(cty)),
+            std::make_pair(codegen::symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext()))
+        };
+
         auto dtor = llvmAddFunction(string(".callable.dtor") + name, llvmTypeVoid(), lparams, true, true);
 
         pushFunction(dtor);
@@ -3105,14 +3192,15 @@ llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Valu
     return result;
 }
 
-llvm::Value* CodeGen::llvmRunHook(shared_ptr<Hook> hook, const expr_list& args, llvm::Value* result)
+llvm::Value* CodeGen::llvmRunHook(shared_ptr<Hook> hook, const expr_list& args, llvm::Value* result, bool cctor_result)
 {
-    return llvmDoCall(nullptr, hook, hook->type(), args, result, true);
+    return llvmDoCall(nullptr, hook, hook, hook->type(), args, cctor_result, result, true);
 }
 
-llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list& args, llvm::Value* hook_result, bool excpt_check)
+llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Function> func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list& args, bool cctor_result, llvm::Value* hook_result, bool excpt_check, call_exception_callback_t excpt_callback)
 {
     bool cleanup_precall = false;
+    bool result_is_cctored = false;
     std::vector<llvm::Value*> llvm_args;
 
     // Prepare return value according to calling convention.
@@ -3120,15 +3208,14 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
     switch ( ftype->callingConvention() ) {
      case type::function::HILTI:
      case type::function::HOOK:
-        // Can pass directly.
         break;
 
      case type::function::HILTI_C:
-        // FIXME: Do ABI stuff!
+        result_is_cctored = ftype->attributes().has(attribute::REF);
         break;
 
      case type::function::C:
-        // Don't mess with arguments.
+        result_is_cctored = ftype->attributes().has(attribute::REF);
         break;
 
      case type::function::CALLABLE:
@@ -3153,9 +3240,9 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
          case type::function::HOOK: {
             // Can pass directly but need context.
             assert(! ast::isA<hilti::type::TypeType>(arg_type)); // Not supported.
-            auto arg_value = llvmValue(coerced, ptype, ftype->ccPlusOne());
+            auto arg_value = llvmValue(coerced, ptype, false);
             llvm_args.push_back(arg_value);
-            cleanup_precall = ftype->ccPlusOne();
+            cleanup_precall = false;
             break;
          }
 
@@ -3220,7 +3307,11 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
         break;
 
      case type::function::HILTI_C: {
-         excpt = llvmAddTmp("excpt", llvmTypeExceptionPtr(), 0, true);
+         if ( ! ftype->attributes().has(attribute::NOEXCEPTION) )
+             excpt = llvmAddTmp("excpt", llvmTypeExceptionPtr(), 0, true);
+         else
+             excpt = llvmConstNull(llvmTypePtr(llvmTypeExceptionPtr()));
+
          llvm_args.push_back(excpt);
          llvm_args.push_back(llvmExecutionContext());
         break;
@@ -3247,32 +3338,53 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
     }
 
     auto t = llvmAdaptFunctionArgs(ftype);
+
+    // Adapt reference counting for locals in case we reach a safepoint
+    // during the call.
+    if ( ftype->mayTriggerSafepoint() )
+         llvmAdaptStackForSafepoint(true);
+
     auto result = abi()->createCall(llvm_func, llvm_args, t.first, t.second, ftype->callingConvention());
+
+    // Back to normal
+    if ( ftype->mayTriggerSafepoint() )
+         llvmAdaptStackForSafepoint(false);
 
     if ( ! cleanup_precall && _functions.back()->dtors_after_call ) {
         llvmBuildInstructionCleanup();
         _functions.back()->dtors_after_call = false;
     }
 
+    if ( result_is_cctored && ! cctor_result )
+        llvmDtor(result, ftype->result()->type(), false, "llvmDoCall");
+
+    if ( ! result_is_cctored && cctor_result )
+        llvmCctor(result, ftype->result()->type(), false, "llvmDoCall");
+
+    excpt_callback(this);
+
     switch ( cc ) {
      case type::function::HILTI_C:
-         llvmCheckCException(excpt, excpt_check);
-         break;
+        if ( ! ftype->attributes().has(attribute::NOEXCEPTION) )
+            llvmCheckCException(excpt, excpt_check);
+
+        break;
 
      default:
-        if ( excpt_check )
+        if ( excpt_check && ! ftype->attributes().has(attribute::NOEXCEPTION) )
             llvmCheckException();
         break;
-        }
+    }
+
     return result;
-}
 
-llvm::Value* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list args, bool excpt_check)
+}
+llvm::Value* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list args, bool cctor_result, bool excpt_check, call_exception_callback_t excpt_callback)
 {
-    return llvmCall(llvmFunction(func), func->type(), args, excpt_check);
+    return llvmDoCall(llvmFunction(func), func, nullptr, func->type(), args, cctor_result, nullptr, excpt_check, excpt_callback);
 }
 
-llvm::Value* CodeGen::llvmCall(const string& name, const expr_list args, bool excpt_check)
+llvm::Value* CodeGen::llvmCall(const string& name, const expr_list args, bool cctor_result, bool excpt_check, call_exception_callback_t excpt_callback)
 {
     auto id = shared_ptr<ID>(new ID(name));
     auto expr = _hilti_module->body()->scope()->lookupUnique(id);
@@ -3285,7 +3397,7 @@ llvm::Value* CodeGen::llvmCall(const string& name, const expr_list args, bool ex
 
     auto func = ast::as<expression::Function>(expr)->function();
 
-    return llvmCall(func, args, excpt_check);
+    return llvmCall(func, args, cctor_result, excpt_check, excpt_callback);
 }
 
 llvm::Value* CodeGen::llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm::Value* high)
@@ -3318,6 +3430,28 @@ llvm::Value* CodeGen::llvmCurrentLocation(const string& addl)
     return llvmConstAsciizPtr(s);
 }
 
+void CodeGen::llvmDestroy(llvm::Value* val, shared_ptr<Type> type, const string& location_addl)
+{
+    if ( auto rtype = ast::tryCast<type::Reference>(type) )
+        type = rtype->argType();
+
+    assert(type::hasTrait<type::trait::HeapType>(type));
+
+    auto ti = typeInfo(type);
+
+    if ( ti->obj_dtor.size() == 0 && ti->obj_dtor_func == 0 )
+        return;
+
+    auto loc = options().debug ? llvmCurrentLocation(string("llvmDestroy/") + location_addl) : llvmConstNull();
+
+    value_list args;
+    args.push_back(llvmRtti(type));
+    args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
+    args.push_back(builder()->CreateBitCast(loc, llvmTypePtr()));
+    args.push_back(llvmExecutionContext());
+    llvmCallC("__hlt_object_destroy", args, false, false);
+}
+
 void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl)
 {
     auto ti = typeInfo(type);
@@ -3338,6 +3472,7 @@ void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, con
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
     args.push_back(builder()->CreateBitCast(loc, llvmTypePtr()));
+    args.push_back(llvmExecutionContext());
     llvmCallC("__hlt_object_dtor", args, false, false);
 }
 
@@ -3361,6 +3496,7 @@ void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, co
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
     args.push_back(builder()->CreateBitCast(loc, llvmTypePtr()));
+    args.push_back(llvmExecutionContext());
     llvmCallC("__hlt_object_cctor", args, false, false);
 }
 
@@ -3446,6 +3582,14 @@ void CodeGen::llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr)
     auto p = builder()->CreateBitCast(ptr, llvmTypePtr());
     value_list args = { s, p, llvmExecutionContext() };
     llvmCallC(llvmLibFunction("__hlt_debug_print_ptr"), args, false);
+}
+
+void CodeGen::llvmDebugPrintObject(const string& prefix, llvm::Value* ptr, shared_ptr<Type> type)
+{
+    auto s = llvmConstAsciizPtr(prefix);
+    auto p = builder()->CreateBitCast(ptr, llvmTypePtr());
+    value_list args = { s, p, llvmRtti(type), llvmExecutionContext() };
+    llvmCallC(llvmLibFunction("__hlt_debug_print_object"), args, false);
 }
 
 llvm::Value* CodeGen::llvmSwitchEnumConst(llvm::Value* op, const case_list& cases, bool result, const Location& l)
@@ -3577,7 +3721,7 @@ static std::pair<int, shared_ptr<type::struct_::Field>> _getField(CodeGen* cg, s
     return std::make_pair(0, nullptr);
 }
 
-llvm::Value* CodeGen::llvmStructNew(shared_ptr<Type> type)
+llvm::Value* CodeGen::llvmStructNew(shared_ptr<Type> type, bool ref)
 {
     auto stype = ast::as <type::Struct>(type);
     auto llvm_stype = llvmType(stype);
@@ -3586,7 +3730,7 @@ llvm::Value* CodeGen::llvmStructNew(shared_ptr<Type> type)
         // Empty struct are ok, we turn then into null pointers.
         return llvmConstNull(llvm_stype);
 
-    auto s = llvmObjectNew(stype, llvm::cast<llvm::StructType>(llvm::cast<llvm::PointerType>(llvm_stype)->getElementType()));
+    auto s = llvmObjectNew(stype, llvm::cast<llvm::StructType>(llvm::cast<llvm::PointerType>(llvm_stype)->getElementType()), ref);
 
     // Initialize fields
     auto zero = llvmGEPIdx(0);
@@ -3648,7 +3792,6 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     auto notzero = builder()->CreateICmpNE(isset, llvmConstInt(0, 32));
     llvmCreateCondBr(notzero, block_ok, block_not_set);
 
-
     pushBuilder(block_ok);
 
     // Load field
@@ -3691,9 +3834,6 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     else
         result = result_ok;
 
-    if ( ! filter )
-        llvmCctor(result, f->type(), false, "struct-get");
-
     // Leave builder on stack.
 
     return result;
@@ -3710,7 +3850,7 @@ void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const str
 {
     auto fd = _getField(this, stype, field);
     auto cval = val->coerceTo(fd.second->type());
-    auto lval = llvmValue(cval, fd.second->type());
+    auto lval = llvmValue(val, fd.second->type());
     llvmStructSet(stype, sval, field, lval);
 }
 
@@ -3833,10 +3973,17 @@ void CodeGen::llvmFree(llvm::Value* val, const string& type, const Location& l)
     llvmCallC("__hlt_free", args, false, false);
 }
 
-llvm::Value* CodeGen::llvmObjectNew(shared_ptr<Type> type, llvm::StructType* llvm_type)
+llvm::Value* CodeGen::llvmObjectNew(shared_ptr<Type> type, llvm::StructType* llvm_type, bool ref)
 {
-    value_list args { llvmRtti(type), llvmSizeOf(llvm_type), llvmConstAsciizPtr("llvm.object.new") };
-    auto result = llvmCallC("__hlt_object_new", args, false, false);
+    value_list args {
+        llvmRtti(type),
+        llvmSizeOf(llvm_type),
+        llvmConstAsciizPtr("llvm.object.new"),
+        llvmExecutionContext()
+        };
+
+    auto func = ref ? "__hlt_object_new_ref" : "__hlt_object_new";
+    auto result = llvmCallC(func, args, false, false);
     return builder()->CreateBitCast(result, llvmTypePtr(llvm_type));
 }
 
@@ -3959,7 +4106,7 @@ llvm::Value* CodeGen::llvmHtoN(llvm::Value* val)
     }
 
     expr_list args = { builder::codegen::create(builder::integer::type(width), val) };
-    return llvmCall(f, args);
+    return llvmCall(f, args, false);
 }
 
 llvm::Value* CodeGen::llvmNtoH(llvm::Value* val)
@@ -3991,7 +4138,7 @@ llvm::Value* CodeGen::llvmNtoH(llvm::Value* val)
     }
 
     expr_list args = { builder::codegen::create(builder::integer::type(width), val) };
-    return llvmCall(f, args);
+    return llvmCall(f, args, false);
 }
 
 void CodeGen::llvmMemcpy(llvm::Value *dst, llvm::Value *src, llvm::Value *n)
@@ -4161,20 +4308,21 @@ void CodeGen::llvmProfilerStart(llvm::Value* tag, llvm::Value* style, llvm::Valu
         builder::codegen::create(builder::reference::type(builder::timer_mgr::type()), tmgr)
     };
 
-    llvmCall("hlt::profiler_start", args, false);
+    llvmCall("hlt::profiler_start", args, false, false);
 }
 
 void CodeGen::llvmProfilerStart(const string& tag, const string& style, int64_t param, llvm::Value* tmgr)
 {
     assert(tag.size());
 
+    if ( options().profile == 0 )
+        return;
+
     auto ltag = llvmStringFromData(tag);
     auto lstyle = style.size() ? llvmEnum(style) : static_cast<llvm::Value*>(nullptr);
     auto lparam = llvmConstInt(param, 64);
 
     llvmProfilerStart(ltag, lstyle, lparam, tmgr);
-
-    llvmDtor(ltag, builder::string::type(), false, "profiler-start");
 }
 
 void CodeGen::llvmProfilerStop(llvm::Value* tag)
@@ -4188,16 +4336,18 @@ void CodeGen::llvmProfilerStop(llvm::Value* tag)
         builder::codegen::create(builder::string::type(), tag),
     };
 
-    llvmCall("hlt::profiler_stop", args, false);
+    llvmCall("hlt::profiler_stop", args, false, false);
 }
 
 void CodeGen::llvmProfilerStop(const string& tag)
 {
     assert(tag.size());
 
+    if ( options().profile == 0 )
+        return;
+
     auto ltag = llvmStringFromData(tag);
     llvmProfilerStop(ltag);
-    llvmDtor(ltag, builder::string::type(), false, "profiler-start");
 }
 
 void CodeGen::llvmProfilerUpdate(llvm::Value* tag, llvm::Value* arg)
@@ -4215,7 +4365,7 @@ void CodeGen::llvmProfilerUpdate(llvm::Value* tag, llvm::Value* arg)
         builder::codegen::create(builder::integer::type(64), arg),
     };
 
-    llvmCall("hlt::profiler_update", args, false);
+    llvmCall("hlt::profiler_update", args, false, false);
 }
 
 void CodeGen::llvmProfilerUpdate(const string& tag, int64_t arg)

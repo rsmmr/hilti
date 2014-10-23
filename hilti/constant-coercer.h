@@ -23,6 +23,7 @@ public:
    void visit(constant::Tuple* t) override;
    void visit(constant::CAddr* t) override;
    void visit(constant::Unset* t) override;
+   void visit(constant::Union* t) override;
 };
 
 

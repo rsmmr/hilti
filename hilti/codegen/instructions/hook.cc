@@ -47,7 +47,7 @@ void StatementBuilder::visit(statement::instruction::hook::Run* i)
 
     CodeGen::expr_list params;
     prepareCall(i->op1(), i->op2(), &params, true);
-    auto stopped = cg()->llvmRunHook(hook, params, result);
+    auto stopped = cg()->llvmRunHook(hook, params, result, false);
 
     if ( has_result ) {
         auto cont = cg()->newBuilder("cont");
@@ -66,7 +66,7 @@ void StatementBuilder::visit(statement::instruction::hook::Stop* i)
 {
     if ( i->op1() ) {
         // Store result in last parameter.
-        auto val = cg()->llvmValue(i->op1(), nullptr, true);
+        auto val = cg()->llvmValue(i->op1(), nullptr);
         cg()->llvmCreateStore(val, --cg()->function()->arg_end());
     }
 

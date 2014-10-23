@@ -138,7 +138,7 @@ int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt
 
 	int len = hlt_bytes_len(b, excpt, ctx);
 	char data[len];
-	hlt_bytes_to_raw_buffer(b, (int8_t*)data, len, excpt, ctx);
+	hlt_bytes_to_raw((int8_t*)data, len, b, excpt, ctx);
 	return new StringVal(len, data); // copies data.
 	}
 
@@ -211,12 +211,10 @@ int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt
 	// We cheat a bit by knowing that this call will do the right thing
 	// in our case of having just one pattern for which the type info
 	// doesn't matter here.
-	auto pattern = hlt_regexp_to_string(nullptr, &re, 0, excpt, ctx);
-	auto cstr = hlt_string_to_native(pattern, excpt, ctx);
+	auto cstr = hlt_regexp_to_asciiz(re, excpt, ctx);
 	auto rval = new ::RE_Matcher(cstr);
 	rval->Compile();
 	hlt_free(cstr);
-	GC_DTOR(pattern, hlt_string);
 	return new PatternVal(rval);
 	}
 
@@ -226,7 +224,6 @@ int8_t libbro_cookie_to_is_orig_boolean(void* cookie, hlt_exception** excpt, hlt
 	auto fname_native = hlt_string_to_native(fname, excpt, ctx);
 	auto fval = new ::Val(new BroFile(fname_native, "a+"));
 	hlt_free(fname_native);
-	GC_DTOR(fname, hlt_string);
 	return fval;
 	}
 
@@ -354,10 +351,8 @@ hlt_regexp* libbro_b2h_pattern(Val *val, hlt_exception** excpt, hlt_execution_co
 	auto pattern = val->AsPattern()->PatternText();
 	auto s = hlt_string_from_asciiz(pattern, excpt, ctx);
 
-	auto re = hlt_regexp_new_flags(HLT_REGEXP_NOSUB, excpt, ctx); // Bro can't do subgroups.
+	auto re = hlt_regexp_new(HLT_REGEXP_NOSUB, excpt, ctx); // Bro can't do subgroups.
 	hlt_regexp_compile(re, s, excpt, ctx);
-
-	GC_DTOR(s, hlt_string);
 
 	return re;
 	}
@@ -368,7 +363,7 @@ hlt_file* libbro_b2h_file(Val *val, hlt_exception** excpt, hlt_execution_context
 	auto hfile = hlt_file_new(excpt, ctx);
 	auto fname = hlt_string_from_asciiz(bfile->Name(), excpt, ctx);
 	hlt_file_open(hfile, fname, Hilti_FileType_Text, Hilti_FileMode_Append, Hilti_Charset_UTF8, excpt, ctx);
-	GC_DTOR(fname, hlt_string);
+
 	return hfile;
 	}
 
@@ -378,7 +373,7 @@ void* libbro_get_event_handler(hlt_bytes* name, hlt_exception** excpt, hlt_execu
 	{
 	hlt_bytes_size len = hlt_bytes_len(name, excpt, ctx);
 	char evname[len + 1];
-	hlt_bytes_to_raw_buffer(name, (int8_t*)evname, len, excpt, ctx);
+	hlt_bytes_to_raw((int8_t*)evname, len, name, excpt, ctx);
 	evname[len] = '\0';
 
 	EventHandlerPtr ev = event_registry->Lookup(evname);
@@ -650,13 +645,8 @@ void libbro_bro_record_assign(::RecordVal* rval, uint64_t idx, ::Val* val, hlt_e
 		auto td = *(::TypeDecl**) hlt_iterator_list_deref(i, excpt, ctx);
 		decls->append(td);
 
-		hlt_iterator_list j = i;
 		i = hlt_iterator_list_incr(i, excpt, ctx);
-		GC_DTOR(j, hlt_iterator_list);
 		}
-
-	GC_DTOR(i, hlt_iterator_list);
-	GC_DTOR(end, hlt_iterator_list);
 
 	return new RecordType(decls);
 	}
@@ -778,7 +768,7 @@ void libbro_object_mapping_register(void* bobj, hlt_type_info* ti, void** hobj, 
 	if ( m != objects_b2h.end() )
 		abort();
 
-	GC_CCTOR_GENERIC(hobj, ti);
+	GC_CCTOR_GENERIC(hobj, ti, ctx);
 	objects_b2h[bobj] = std::make_pair(ti, *hobj);
 	objects_h2b[*hobj] = bobj;
 	}
@@ -796,7 +786,7 @@ void libbro_object_mapping_unregister_bro(void* obj, hlt_exception** excpt, hlt_
 	objects_b2h.erase(m);
 	objects_h2b.erase(hobj);
 
-	GC_DTOR_GENERIC(&hobj, ti);
+	GC_DTOR_GENERIC(&hobj, ti, ctx);
 	}
 
 void libbro_object_mapping_invalidate_bro(void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -829,9 +819,6 @@ void* libbro_object_mapping_lookup_hilti(::BroObj* obj, hlt_exception** excpt, h
 
 	if ( m == objects_b2h.end() )
 		return &null_;
-
-	const hlt_type_info* ti = m->second.first;
-	GC_CCTOR_GENERIC(&m->second.second, ti);
 
 	return &m->second.second;
 	}
@@ -878,9 +865,6 @@ void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_
 		if ( ! bcookie )
 			break;
 		}
-
-	GC_DTOR(start, hlt_iterator_bytes);
-	GC_DTOR(end, hlt_iterator_bytes);
 	}
 
 void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -909,9 +893,6 @@ void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie, 
 
 		offset += (block.end - block.start);
 		}
-
-	GC_DTOR(start, hlt_iterator_bytes);
-	GC_DTOR(end, hlt_iterator_bytes);
 	}
 
 void bro_file_gap(uint64_t offset, uint64_t len, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -984,9 +965,6 @@ void bro_rule_match(hlt_enum pattern_type, hlt_bytes* data, int8_t bol, int8_t e
 
 		first = false;
 		}
-
-	GC_DTOR(start, hlt_iterator_bytes);
-	GC_DTOR(end, hlt_iterator_bytes);
 	}
 
 int8_t bro_get_const_bool(hlt_string id, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -997,7 +975,7 @@ int8_t bro_get_const_bool(hlt_string id, void* cookie, hlt_exception** excpt, hl
 
 	if ( ! (broid && broid->HasVal()) )
 		{
-		hlt_set_exception(excpt, &hlt_exception_value_error, i);
+		hlt_set_exception(excpt, &hlt_exception_value_error, i, ctx);
 		return false;
 		}
 
@@ -1023,47 +1001,46 @@ struct hlt_LibBro_BroAny {
 	to_val_func_t to_val_func;
 };
 
-void libbro_any_dtor(hlt_type_info* type, hlt_LibBro_BroAny* any)
+void libbro_any_dtor(hlt_type_info* type, hlt_LibBro_BroAny* any, hlt_execution_context* ctx)
 	{
-	GC_DTOR_GENERIC(any->ptr, any->type_info);
+	GC_DTOR_GENERIC(any->ptr, any->type_info, ctx);
 	hlt_free(any->ptr);
 	Unref(any->bro_type);
 	}
 
-void libbro_any_cctor(hlt_type_info* ti, hlt_LibBro_BroAny* any)
+#if 0
+void libbro_any_cctor(hlt_type_info* ti, hlt_LibBro_BroAny* any, hlt_execution_context* ctx)
 	{
 	void* ptr = hlt_malloc(ti->size);
 	memcpy(ptr, any->ptr, ti->size);
 	any->ptr = ptr;
-	GC_CCTOR_GENERIC(any->ptr, any->type_info);
+	GC_CCTOR_GENERIC(any->ptr, any->type_info, ctx);
 
 	if ( any->bro_type )
 		Ref(any->bro_type);
 	}
+#endif
 
-
-hlt_LibBro_BroAny* libbro_any_from_hilti(hlt_type_info* ti, void* obj, BroType* btype, to_val_func_t to_val_func, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_LibBro_BroAny* libbro_any_from_hilti_ref(hlt_type_info* ti, void* obj, BroType* btype, to_val_func_t to_val_func, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	hlt_LibBro_BroAny* any = (hlt_LibBro_BroAny*) GC_NEW(hlt_LibBro_BroAny);
+	hlt_LibBro_BroAny* any = (hlt_LibBro_BroAny*) GC_NEW_REF(hlt_LibBro_BroAny, ctx);
 
 	any->mask = 255;
 	any->ptr = hlt_malloc(ti->size);
 	memcpy(any->ptr, obj, ti->size);
+	GC_CCTOR_GENERIC(any->ptr, any->type_info, ctx);
 	any->type_info = ti;
 	any->bro_type = btype;
 	any->to_val_func = to_val_func;
 
-	GC_CCTOR_GENERIC(any->ptr, any->type_info);
-
 	if ( any->bro_type )
-		::Ref(any->bro_type);
+		Ref(any->bro_type);
 
 	return any;
 	}
 
 void* libbro_any_to_hilti(hlt_LibBro_BroAny* any, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	GC_CCTOR_GENERIC(any->ptr, any->type_info);
 	return any->ptr;
 	}
 

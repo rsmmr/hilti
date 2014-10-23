@@ -133,8 +133,10 @@ void Synchronizer::_hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pa
 
     // match_token_init
     auto op = hilti::builder::regexp::create(patterns);
-    auto rty = hilti::builder::reference::type(hilti::builder::regexp::type({"&nosub", "&first_match"}));
-    auto glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node("__sync"), rty, op);
+    auto re = ast::checkedCast<hilti::ctor::RegExp>(op->ctor());
+    re->attributes().add(attribute::NOSUB);
+    re->attributes().add(attribute::FIRSTMATCH);
+    auto glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node("__sync"), op->type(), op);
     auto pattern = ast::checkedCast<hilti::Expression>(glob);
 
     cg()->builder()->addInstruction(mstate, hilti::instruction::regexp::MatchTokenInit, pattern);
@@ -333,6 +335,45 @@ void Synchronizer::visit(type::EmbeddedObject* o)
     cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
     _hiltiNotYetFound(loop, "embedded object");
     cg()->moduleBuilder()->popBuilder(not_found2);
+
+    /// Continue normally.
+
+    cg()->moduleBuilder()->pushBuilder(done);
+}
+
+void Synchronizer::visit(type::Mark* m)
+{
+    auto done = cg()->moduleBuilder()->newBuilder("sync-done");
+    auto loop = cg()->moduleBuilder()->newBuilder("sync-loop");
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
+
+    ///
+
+    cg()->moduleBuilder()->pushBuilder(loop);
+
+    auto at_mark = cg()->builder()->addTmp("at_mark", ::hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::bytes::NextMark, state()->cur);
+    cg()->builder()->addInstruction(at_mark, hilti::instruction::bytes::AtMark, state()->cur);
+
+    auto branches = cg()->builder()->addIf(at_mark);
+    auto found = std::get<0>(branches);
+    auto not_found = std::get<1>(branches);
+
+    cg()->moduleBuilder()->popBuilder(loop);
+
+    ///
+
+    cg()->moduleBuilder()->pushBuilder(found);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    cg()->moduleBuilder()->popBuilder(found);
+
+    ///
+
+    cg()->moduleBuilder()->pushBuilder(not_found);
+    cg()->builder()->addInstruction(hilti::instruction::bytes::Trim, state()->data, state()->cur);
+    _hiltiNotYetFound(loop, "mark");
+    cg()->moduleBuilder()->popBuilder(not_found);
 
     /// Continue normally.
 

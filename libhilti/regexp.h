@@ -14,9 +14,8 @@ typedef struct __hlt_regexp hlt_regexp;
 /// Type for state of token matching.
 typedef struct __hlt_match_token_state hlt_match_token_state;
 
-/// Type for compilation flags. A mask of these is the stored as a type
-/// parameter with the regexp type.
-typedef int16_t hlt_regexp_flags;
+/// Pattern compilation flags.
+typedef int64_t hlt_regexp_flags;
 static const int HLT_REGEXP_NOSUB = 1;  /// Compile without support for capturing sub-expressions.
 static const int HLT_REGEXP_FIRST_MATCH = 2;  /// Report first match when matching incrementally.
 
@@ -40,20 +39,12 @@ typedef struct {
 
 /// Instantiates a new Regexp instance.
 ///
-/// type: The type information for the regexp type.
+/// flags: The compilation flags for the regexp.
+///
 /// excpt: &
 ///
 /// Returns: The new Regexp instance.
-extern hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
-
-/// Instantiates a new Regexp instance. This version is for use from C and
-/// takes the flags directly rather than as type information.
-///
-/// flags: A bitmask of \c HLT_REGEXP_* flags.
-/// excpt: &
-///
-/// Returns: The new Regexp instance.
-extern hlt_regexp* hlt_regexp_new_flags(hlt_regexp_flags flags, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_regexp* hlt_regexp_new(hlt_regexp_flags flags, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Instantiates a new Regexp instance by recompiling the patterns from
 /// another instance, potentially with new flags.
@@ -65,7 +56,7 @@ extern hlt_regexp* hlt_regexp_new_flags(hlt_regexp_flags flags, hlt_exception** 
 /// excpt: &
 ///
 /// Returns: The new Regexp instance.
-extern hlt_regexp* hlt_regexp_new_from_regexp(const hlt_type_info* type, hlt_regexp* other, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_regexp* hlt_regexp_new_from_regexp(hlt_regexp* other, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Compiles a pattern.
 ///
@@ -190,7 +181,17 @@ extern hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_by
 /// Converts a regexp into a string.
 ///
 /// Include: include-to-string-sig.txt
-hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Converts a regexp into a null-terminated C string.
+///
+/// re: The regexp to render.
+///
+/// \hlt_c.
+///
+/// Returns: A pointer to the native string. THe function passes ownership to
+/// the caller, who needs to call hlt_free() once done.
+char* hlt_regexp_to_asciiz(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// TODO: Document.
 extern hlt_regexp_match_token hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);

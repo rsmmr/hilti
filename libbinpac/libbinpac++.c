@@ -25,7 +25,7 @@ static void _register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exc
     parser->type_info = pobj;
     hlt_list_push_back(__binpac_globals_get()->parsers, &hlt_type_info_hlt_BinPACHilti_Parser, &parser, excpt, ctx);
     binpachilti_mime_register_parser(parser, excpt, ctx);
-    GC_DTOR(parser, hlt_BinPACHilti_Parser);
+    GC_DTOR(parser, hlt_BinPACHilti_Parser, ctx);
 }
 
 static void _move_tmp_parsers()
@@ -82,7 +82,6 @@ void __binpac_init_from_state(__binpac_globals* state)
 
 hlt_list* binpac_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    GC_CCTOR(__binpac_globals_get()->parsers, hlt_list);
     return __binpac_globals_get()->parsers;
 }
 
@@ -110,7 +109,7 @@ void binpac_fatal_error(const char* msg)
 // Note that this function can be called before binpac_init().
 void binpachilti_register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    GC_CCTOR(parser, hlt_BinPACHilti_Parser);
+    GC_CCTOR(parser, hlt_BinPACHilti_Parser, ctx);
 
     if ( _initialized )
         _register_parser(parser, pobj, excpt, ctx);

@@ -120,33 +120,24 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     hlt_string usr = hilti_fmt(fmt, type, tuple, excpt, ctx);
     hlt_string indent = hlt_string_from_asciiz("  ", excpt, ctx);
 
-    for ( int i = ctx->debug_indent; i; --i ) {
-        GC_CCTOR(indent, hlt_string);
-        usr = hlt_string_concat_and_unref(indent, usr, excpt, ctx);
-    }
+    for ( int i = ctx->debug_indent; i; --i )
+        usr = hlt_string_concat(indent, usr, excpt, ctx);
 
-    GC_DTOR(indent, hlt_string);
-
-    if ( *excpt ) {
-        GC_DTOR(usr, hlt_string);
+    if ( hlt_check_exception(excpt) )
         return;
-    }
 
     // We must not terminate while in here.
     int old_state;
     hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
 
-
     hlt_string p = hlt_string_from_asciiz(prefix, excpt, ctx);
-    hlt_string r = hlt_string_concat_and_unref(p, usr, excpt, ctx);
+    hlt_string r = hlt_string_concat(p, usr, excpt, ctx);
 
     FILE* out = _debug_out();
     flockfile(out);
     hlt_string_print(out, r, 1, excpt, ctx);
     fflush(out);
     funlockfile(out);
-
-    GC_DTOR(r, hlt_string);
 
     hlt_pthread_setcancelstate(old_state, NULL);
 }
@@ -215,6 +206,23 @@ void __hlt_debug_print_ptr(const char* s, void* ptr, hlt_execution_context* ctx)
 
     void* glb = &ctx->globals;
     fprintf(stderr, "%s %p (ctx: %p globals: %p)\n", s, ptr, ctx, glb);
+}
+
+void __hlt_debug_print_object(const char* s, void* ptr, hlt_type_info* t, hlt_execution_context* ctx)
+{
+    fprintf(stderr, "debug: %3" PRId64 " ", ctx->debug_indent);
+
+    for ( int i = ctx->debug_indent * 4; i; --i )
+        fputc(' ', stderr);
+
+    fprintf(stderr, "%s ", s);
+
+    hlt_exception* excpt = 0;
+    hlt_string x = hlt_object_to_string(t, ptr, 0, &excpt, ctx);
+    hlt_string_print(stderr, x, 0, &excpt, ptr);
+
+    void* glb = &ctx->globals;
+    fprintf(stderr, " (ctx: %p globals: %p)\n", ctx, glb);
 }
 
 void __hlt_debug_push_indent(hlt_execution_context* ctx)

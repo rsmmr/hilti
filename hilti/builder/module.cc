@@ -173,8 +173,7 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<
                                                               shared_ptr<hilti::function::Result> result,
                                                               const hilti::function::parameter_list& params,
                                                               hilti::type::function::CallingConvention cc,
-                                                              shared_ptr<Type> scope,
-                                                              const hilti::function::attribute_list& attrs,
+                                                              const hilti::AttributeSet& attrs,
                                                               bool no_body,
                                                               const Location& l)
 {
@@ -182,29 +181,28 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
-    auto func = std::make_shared<hilti::Function>(id, ftype, _module, scope, attrs, nullptr, l);
+    ftype->setAttributes(attrs);
+
+    auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, l);
     return pushFunction(func, no_body);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<ID> id,
-							      std::shared_ptr<hilti::type::Function> ftype,
-                                                              shared_ptr<Type> scope,
-                                                              const hilti::function::attribute_list& attrs,
-                                                              bool no_body,
-                                                              const Location& l)
+                                                                     std::shared_ptr<hilti::type::Function> ftype,
+                                                                     bool no_body,
+                                                                     const Location& l)
 {
-    auto func = std::make_shared<hilti::Function>(id, ftype, _module, scope, attrs, nullptr, l);
+    auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, l);
     return pushFunction(func, no_body);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(const std::string& name,
-								     std::shared_ptr<hilti::type::Function> ftype,
-                                                              shared_ptr<Type> scope,
+                                                              std::shared_ptr<hilti::type::Function> ftype,
                                                               bool no_body,
                                                               const Location& l)
 {
     auto id = ::std::make_shared<hilti::ID>(name, l);
-    auto func = std::make_shared<hilti::Function>(id, ftype, _module, scope, hilti::function::attribute_list(), nullptr, l);
+    auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, l);
     return pushFunction(func, no_body);
 }
 
@@ -212,12 +210,11 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(const std::
                                                               shared_ptr<hilti::function::Result> result,
                                                               const hilti::function::parameter_list& params,
                                                               hilti::type::function::CallingConvention cc,
-                                                              shared_ptr<Type> scope,
-                                                              const hilti::function::attribute_list& attrs,
+                                                              const hilti::AttributeSet& attrs,
                                                               bool no_body,
                                                               const Location& l)
 {
-    return pushFunction(std::make_shared<ID>(id, l), result, params, cc, scope, attrs, no_body, l);
+    return pushFunction(std::make_shared<ID>(id, l), result, params, cc, attrs, no_body, l);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(shared_ptr<hilti::Hook> hook)
@@ -232,30 +229,33 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(shared_p
                                                                        shared_ptr<hilti::function::Result> result,
                                                                        const hilti::function::parameter_list& params,
                                                                        hilti::type::function::CallingConvention cc,
+                                                                       const hilti::AttributeSet& attrs,
                                                                        const Location& l)
 {
     if ( ! result )
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
-    auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, hilti::function::attribute_list(), nullptr, l);
+    ftype->setAttributes(attrs);
+
+    auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, l);
     return declareFunction(func);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(shared_ptr<ID> id,
-								       std::shared_ptr<hilti::type::Function> ftype,
+                                                                        std::shared_ptr<hilti::type::Function> ftype,
                                                                        const Location& l)
 {
-    auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, hilti::function::attribute_list(), nullptr, l);
+    auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, l);
     return declareFunction(func);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(const std::string& name,
-								       std::shared_ptr<hilti::type::Function> ftype,
-                                                                       const Location& l)
+                                                                        std::shared_ptr<hilti::type::Function> ftype,
+                                                                        const Location& l)
 {
     auto id = ::std::make_shared<hilti::ID>(name, l);
-    auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, hilti::function::attribute_list(), nullptr, l);
+    auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, l);
     return declareFunction(func);
 }
 
@@ -263,21 +263,25 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(const st
                                                                        shared_ptr<hilti::function::Result> result,
                                                                        const hilti::function::parameter_list& params,
                                                                        hilti::type::function::CallingConvention cc,
+                                                                       const hilti::AttributeSet& attrs,
                                                                        const Location& l)
 {
-    return declareFunction(std::make_shared<ID>(id, l), result, params, cc, l);
+    return declareFunction(std::make_shared<ID>(id, l), result, params, cc, attrs, l);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(shared_ptr<ID> id,
-                                                                   shared_ptr<hilti::function::Result> result,
-                                                                   const hilti::function::parameter_list& params,
-                                                                   const Location& l)
+                                                                    shared_ptr<hilti::function::Result> result,
+                                                                    const hilti::function::parameter_list& params,
+                                                                    const hilti::AttributeSet& attrs,
+                                                                    const Location& l)
 {
     if ( ! result )
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
-    auto func = std::make_shared<hilti::Hook>(id, ftype, _module, nullptr, hilti::function::attribute_list(), nullptr, l);
+    ftype->setAttributes(attrs);
+
+    auto func = std::make_shared<hilti::Hook>(id, ftype, _module, nullptr, l);
     return declareHook(func);
 }
 
@@ -285,24 +289,24 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(shared_ptr<I
 								    std::shared_ptr<hilti::type::Hook> ftype,
 								    const Location& l)
 {
-    auto func = std::make_shared<hilti::Hook>(id, ftype, _module, nullptr, hilti::function::attribute_list(), nullptr, l);
+    auto func = std::make_shared<hilti::Hook>(id, ftype, _module, nullptr, l);
     return declareHook(func);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(const std::string& id,
-                                                                   shared_ptr<hilti::function::Result> result,
-                                                                   const hilti::function::parameter_list& params,
-                                                                   const Location& l)
+                                                                    shared_ptr<hilti::function::Result> result,
+                                                                    const hilti::function::parameter_list& params,
+                                                                    const hilti::AttributeSet& attrs,
+                                                                    const Location& l)
 {
-    return declareHook(std::make_shared<hilti::ID>(id, l), result, params, l);
+    return declareHook(std::make_shared<hilti::ID>(id, l), result, params, attrs, l);
 }
 
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(shared_ptr<ID> id,
                                                           shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
-                                                          shared_ptr<Type> scope,
-                                                          const hilti::function::attribute_list& attrs,
+                                                          const hilti::AttributeSet& attrs,
                                                           bool no_body,
                                                           const Location& l)
 {
@@ -310,37 +314,36 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(shared_ptr<ID> 
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
-    auto func =  std::make_shared<hilti::Hook>(id, ftype, _module, scope, attrs, nullptr, l);
+    ftype->setAttributes(attrs);
+
+    auto func =  std::make_shared<hilti::Hook>(id, ftype, _module, nullptr, l);
     return pushFunction(func, no_body);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(shared_ptr<ID> id,
 								 std::shared_ptr<hilti::type::Hook> ftype,
-								 shared_ptr<Type> scope,
-								 const hilti::function::attribute_list& attrs,
 								 bool no_body,
 								 const Location& l)
 {
-    auto func =  std::make_shared<hilti::Hook>(id, ftype, _module, scope, attrs, nullptr, l);
+    auto func =  std::make_shared<hilti::Hook>(id, ftype, _module, nullptr, l);
     return pushFunction(func, no_body);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(const std::string& id,
                                                           shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
-                                                          shared_ptr<Type> scope,
-                                                          const hilti::function::attribute_list& attrs,
+                                                          const hilti::AttributeSet& attrs,
                                                           bool no_body,
                                                           const Location& l)
 {
-    return pushHook(std::make_shared<ID>(id, l), result, params, scope, attrs, no_body, l);
+    return pushHook(std::make_shared<ID>(id, l), result, params, attrs, no_body, l);
 
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(shared_ptr<ID> id,
                                                           shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
-                                                          shared_ptr<Type> scope,
+                                                          const hilti::AttributeSet& attrs,
                                                           int64_t priority, int64_t group,
                                                           bool no_body,
                                                           const Location& l)
@@ -348,20 +351,30 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(shared_ptr<ID> 
     if ( ! result )
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
+    hilti::AttributeSet lattrs = attrs;
+
+    if ( priority )
+        lattrs.add(attribute::PRIORITY, priority);
+
+    if ( group )
+        lattrs.add(attribute::GROUP, group);
+
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
-    auto func = std::make_shared<hilti::Hook>(id, ftype, _module, scope, priority, group, nullptr, l);
+    ftype->setAttributes(lattrs);
+
+    auto func = std::make_shared<hilti::Hook>(id, ftype, _module, nullptr, l);
     return pushFunction(func, no_body);
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(const std::string& id,
                                                           shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
-                                                          shared_ptr<Type> scope,
+                                                          const hilti::AttributeSet& attrs,
                                                           int64_t priority, int64_t group,
                                                           bool no_body,
                                                           const Location& l)
 {
-    return pushHook(std::make_shared<ID>(id, l), result, params, scope, priority, group, no_body, l);
+    return pushHook(std::make_shared<ID>(id, l), result, params, attrs, priority, group, no_body, l);
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::popFunction()
@@ -669,13 +682,23 @@ shared_ptr<hilti::expression::Type> ModuleBuilder::addType(const std::string& id
     return addType(std::make_shared<ID>(id, l), type, force_unique, l);
 }
 
+bool ModuleBuilder::hasType(const std::string& id)
+{
+    return hasType(std::make_shared<ID>(id));
+}
+
+bool ModuleBuilder::hasType(shared_ptr<hilti::ID> id)
+{
+    id = _normalizeID(id);
+    auto d = _globals.find(id->pathAsString(_module->id()));
+    return d != _globals.end();
+}
+
 shared_ptr<hilti::expression::Type> ModuleBuilder::addContext(shared_ptr<Type> type, const Location& l)
 {
     auto id = std::make_shared<hilti::ID>("Context", l);
     return addType(id, type, false, l);
 }
-
-
 
 shared_ptr<hilti::expression::Variable> ModuleBuilder::addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
 {

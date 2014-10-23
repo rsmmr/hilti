@@ -6,24 +6,24 @@
 #include "string_.h"
 
 // Generic version working with all tuple types.
-void hlt_tuple_dtor(hlt_type_info* ti, void* obj, const char* location)
+void hlt_tuple_dtor(hlt_type_info* ti, void* obj, hlt_execution_context* ctx)
 {
     hlt_type_info** types = (hlt_type_info**) &ti->type_params;
     int16_t* offsets = (int16_t *)ti->aux;
 
     for ( int i = 0; i < ti->num_params; i++ ) {
-        __hlt_object_dtor(types[i], obj + offsets[i], location);
+        __hlt_object_dtor(types[i], obj + offsets[i], "tuple-dtor", ctx);
     }
 }
 
 // Generic version working with all tuple types.
-void hlt_tuple_cctor(hlt_type_info* ti, void* obj, const char* location)
+void hlt_tuple_cctor(hlt_type_info* ti, void* obj, hlt_execution_context* ctx)
 {
     hlt_type_info** types = (hlt_type_info**) &ti->type_params;
     int16_t* offsets = (int16_t *)ti->aux;
 
     for ( int i = 0; i < ti->num_params; i++ ) {
-        __hlt_object_cctor(types[i], obj + offsets[i], location);
+        __hlt_object_cctor(types[i], obj + offsets[i], "tuple-dtor", ctx);
     }
 }
 
@@ -34,7 +34,7 @@ void hlt_tuple_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt
     char* dst = (char*)dstp;
 
     if ( ! src ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
         return;
     }
 
@@ -44,7 +44,7 @@ void hlt_tuple_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt
     for ( int i = 0; i < ti->num_params; i++ ) {
         int16_t offset = offsets[i];
         __hlt_clone(dst + offset, types[i], src + offset, cstate, excpt, ctx);
-        if ( *excpt )
+        if ( hlt_check_exception(excpt) )
             return;
     }
 }
@@ -67,41 +67,17 @@ hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
     for ( i = 0; i < type->num_params; i++ ) {
 
-        hlt_string t = hlt_object_to_string(types[i], obj + offsets[i], 0, seen, excpt, ctx);
-        hlt_string tmp = s;
+        hlt_string t = __hlt_object_to_string(types[i], obj + offsets[i], 0, seen, excpt, ctx);
         s = hlt_string_concat(s, t, excpt, ctx);
 
-        GC_DTOR(tmp, hlt_string);
-        GC_DTOR(t, hlt_string);
-        t = 0;
-
-        if ( *excpt )
-            goto error;
-
-        if ( i < type->num_params - 1 ) {
-            hlt_string tmp = s;
+        if ( i < type->num_params - 1 )
             s = hlt_string_concat(s, separator, excpt, ctx);
-            GC_DTOR(tmp, hlt_string);
 
-            if ( *excpt )
-                goto error;
-        }
-
+        if ( hlt_check_exception(excpt) )
+            return 0;
     }
 
-    result = hlt_string_concat(s, postfix, excpt, ctx);
-    GC_DTOR(s, hlt_string);
-
-error:
-    if ( ! result )
-        GC_DTOR(s, hlt_string);
-
-    GC_DTOR(t, hlt_string);
-
-    GC_DTOR(postfix, hlt_string);
-    GC_DTOR(separator, hlt_string);
-
-    return result;
+    return hlt_string_concat(s, postfix, excpt, ctx);
 }
 
 hlt_hash hlt_tuple_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)

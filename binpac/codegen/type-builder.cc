@@ -228,7 +228,7 @@ void TypeBuilder::visit(type::RegExp* r)
 {
     TypeInfo ti;
 
-    auto t = hilti::builder::regexp::type(hilti::builder::regexp::attribute_list(), r->location());
+    auto t = hilti::builder::regexp::type(r->location());
     ti.hilti_type = hilti::builder::reference::type(t, r->location());
 
     setResult(ti);

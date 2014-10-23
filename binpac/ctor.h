@@ -16,10 +16,7 @@ namespace binpac {
 class Ctor : public ast::Ctor<AstInfo>
 {
 public:
-    /// A pattern is a tuple of two strings. The first element is the regexp
-    /// itself, and the second a string with optional patterns flags.
-    /// Currently, no flags are supported though.
-    typedef std::pair<string, string> pattern;
+    typedef std::string pattern;
 
     /// A list of patterns.
     typedef std::list<pattern> pattern_list;
@@ -201,22 +198,25 @@ public:
     ///
     /// flags: The string with flags.
     ///
-    /// attrs: Type attributes that will become part of the returned type::RegExp.
+    /// attrs: Optional attributes.
     ///
     /// l: An associated location.
-    RegExp(const string& regexp, const string& flags, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
+    RegExp(const string& regexp, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
 
     /// Constructor.
     ///
     /// patterns: List of patterns.
     ///
-    /// attrs: Type attributes that will become part of the returned type::RegExp.
+    /// attrs: Optional attributes.
     ///
     /// l: An associated location.
     RegExp(const pattern_list& patterns, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
 
     /// Returns the pattern.
     pattern_list patterns() const override;
+
+    /// Returns the attributes.
+    const attribute_list& attributes() const;
 
     /// Returns the type of the constructed object. Pattern constants are
     /// always of type \c regexp<>. To add further type attributes, they need
@@ -228,6 +228,7 @@ public:
 private:
     node_ptr<Type> _type;
     pattern_list _patterns;
+    attribute_list _attributes;
 };
 
 /// AST node for a unit constructor.

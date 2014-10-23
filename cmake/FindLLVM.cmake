@@ -106,7 +106,7 @@ else ()
 
   # This needs oprofile support in LLVM: oprofilejit
   set(llvm_libs "object core bitreader bitwriter linker asmparser interpreter executionengine jit mcjit runtimedyld nativecodegen ipo irreader x86asmparser")
-  exec_program(${LLVM_CONFIG_EXEC} ARGS --libs ${llvm_libs} OUTPUT_VARIABLE LLVM_LIBS)
+  exec_program(${LLVM_CONFIG_EXEC} ARGS --libs        OUTPUT_VARIABLE LLVM_LIBS)
 
   # --system-libs exists since LLVM 3.5.
   execute_process(COMMAND ${LLVM_CONFIG_EXEC} --system-libs OUTPUT_VARIABLE LLVM_SYSTEM_LIBS ERROR_QUIET)

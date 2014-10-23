@@ -24,13 +24,13 @@ static void fatal_error(const char* msg)
 }
 
 // Executes a single command.
-static void execute_cmd(__hlt_cmd *cmd)
+static void execute_cmd(__hlt_cmd *cmd, hlt_execution_context* ctx)
 {
     DBG_LOG(DBG_STREAM_QUEUE, "executing cmd %p of type %d", cmd, cmd->type);
 
     switch ( cmd->type ) {
       case __HLT_CMD_FILE:
-        __hlt_file_cmd_internal(cmd);
+        __hlt_file_cmd_internal(cmd, ctx);
         break;
 
       default:
@@ -49,6 +49,8 @@ static void* _manager(void *arg)
 
     __hlt_files_init();
 
+    hlt_execution_context* ctx = __hlt_globals()->cmd_context;
+
     // We terminate iff all writer threads have terminated already with all
     // remaining elements processed.
     while ( ! hlt_thread_queue_terminated(__hlt_globals()->cmd_queue) ) {
@@ -58,7 +60,8 @@ static void* _manager(void *arg)
         if ( ! cmd )
             continue;
 
-        execute_cmd(cmd);
+        execute_cmd(cmd, ctx);
+        hlt_memory_safepoint(ctx);
 
         uint64_t size = hlt_thread_queue_size(__hlt_globals()->cmd_queue);
         if ( size % 100 == 0 ) {
@@ -84,6 +87,7 @@ void __hlt_cmd_queue_init()
     DBG_LOG(DBG_STREAM_QUEUE, "starting command queue manager thread");
 
     __hlt_globals()->cmd_queue = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 1000, 0); // Slot 0 is main thread.
+    __hlt_globals()->cmd_context = __hlt_execution_context_new_ref(HLT_VID_CMDQUEUE, 0);
 
     if ( ! __hlt_globals()->cmd_queue )
         fatal_error("cannot create command queue data structure");
@@ -113,6 +117,7 @@ void __hlt_cmd_queue_done()
         fatal_error("cannot join thread");
 
     hlt_thread_queue_delete(__hlt_globals()->cmd_queue);
+    hlt_execution_context_delete(__hlt_globals()->cmd_context);
 
     DBG_LOG(DBG_STREAM_QUEUE, "command queue manager has terminated");
 }
@@ -138,7 +143,7 @@ void __hlt_cmdqueue_push(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_co
 {
     if ( ! hlt_is_multi_threaded() ) {
         DBG_LOG(DBG_STREAM_QUEUE, "directly executing cmd %p of type %d", cmd, cmd->type);
-        execute_cmd(cmd);
+        execute_cmd(cmd, ctx);
     }
 
     else {

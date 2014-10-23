@@ -23,6 +23,7 @@ public:
    void visit(type::Tuple* t);
    void visit(type::CAddr* c);
    void visit(type::Unset* c);
+   void visit(type::Union* c);
 };
 
 }

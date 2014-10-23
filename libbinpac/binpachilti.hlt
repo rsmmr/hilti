@@ -48,11 +48,13 @@ type Sink = struct {
 type UserCookie = caddr
 
 declare "C-HILTI" ref<Sink> sink_new()
-declare "C-HILTI" void sink_connect(ref<Sink> sink, any pobj, ref<Parser> parser)
-declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj)
-declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, UserCookie user)
-declare "C-HILTI" void sink_close(ref<Sink> sink)
-declare "C-HILTI" void sink_add_filter(ref<Sink> sink, Filter ftype)
+declare "C-HILTI" void sink_connect(ref<Sink> sink, any pobj, ref<Parser> parser) &safepoint
+declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj) &safepoint
+declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_close(ref<Sink> sink) &safepoint
+declare "C-HILTI" void sink_add_filter(ref<Sink> sink, Filter ftype) &safepoint
+declare "C-HILTI" void sink_connect_mimetype_bytes(ref<Sink> sink, ref<bytes> mtype, UserCookie user )&safepoint
+declare "C-HILTI" void sink_connect_mimetype_string(ref<Sink> sink, string mtype, UserCookie user) &safepoint
 declare "C-HILTI" int<64> sink_size(ref<Sink> sink)
 
 # Support functions for filters.
@@ -72,9 +74,6 @@ type Filter = enum {
 declare "C-HILTI" ref<ParseFilter> filter_add(ref<ParseFilter> head, Filter ftype)
 declare "C-HILTI" void filter_close(ref<ParseFilter> head)
 declare "C-HILTI" ref<bytes> filter_decode(ref<ParseFilter> head, ref<bytes> data)
-
-declare "C-HILTI" void sink_connect_mimetype_bytes(ref<Sink> sink, ref<bytes> mtype, UserCookie user)
-declare "C-HILTI" void sink_connect_mimetype_string(ref<Sink> sink, string mtype, UserCookie user)
 
 # Debugging.
 declare "C-HILTI" void enable_debugging(bool enabled)

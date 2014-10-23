@@ -297,8 +297,7 @@ std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PatternVal* v
 	// middle as well, so we just generally remove it.
 	auto pt = std::string(val->AsPattern()->AnywherePatternText());
 	pt = ::util::strreplace(pt, "^?(.|\\n)*", "");
-	auto p = ::hilti::builder::regexp::pattern(pt, "");
-	return ::hilti::builder::regexp::create(p);
+	return ::hilti::builder::regexp::create(pt);
 	}
 
 std::shared_ptr<::hilti::Expression> ValueBuilder::Compile(const ::PortVal* val)

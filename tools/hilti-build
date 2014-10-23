@@ -252,6 +252,7 @@ def nativeLink(input, output):
         flags = []
 
     flags += ["-g"]
+    flags += runConfig(HiltiConfig, "--runtime --ldflags").split()
     flags += runConfig(HiltiConfig, "--runtime --libs").split()
 
     # if Options.binpac:
@@ -329,6 +330,9 @@ Input files may be end in one of the following extensions:
 
     if options.time:
         options.verbose = True
+
+    if options.optimize:
+        options.debug = 0
 
     global Options
     Options = options

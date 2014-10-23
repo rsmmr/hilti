@@ -1,4 +1,6 @@
 
+#include <algorithm>
+
 #include "../hilti.h"
 
 #include "type-builder.h"
@@ -463,6 +465,7 @@ llvm::Function* TypeBuilder::_makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, b
     CodeGen::llvm_parameter_list params;
     params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
     params.push_back(std::make_pair("tuple", cg->llvmTypePtr(llvm_type)));
+    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg->llvmTypePtr(cg->llvmTypeExecutionContext())));
 
     auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
     func->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
@@ -874,6 +877,7 @@ llvm::Function* TypeBuilder::_makeOverlayFuncHelper(CodeGen* cg, type::Overlay* 
     CodeGen::llvm_parameter_list params;
     params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
     params.push_back(std::make_pair("overlay", cg->llvmTypePtr(llvm_type)));
+    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg->llvmTypePtr(cg->llvmTypeExecutionContext())));
 
     auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
 
@@ -919,6 +923,17 @@ void TypeBuilder::visit(type::RegExp* t)
     ti->to_string = "hlt::regexp_to_string";
     ti->clone_alloc = "hlt::regexp_clone_alloc";
     ti->clone_init = "hlt::regexp_clone_init";
+
+    // The type-specific aux information is a single int64 corresponding to
+    // hlt_regexp_flags.
+
+    int64_t flags = 0;
+
+    if ( t->attributes().has(attribute::NOSUB) )
+        flags |= 1;
+
+    ti->aux = llvm::ConstantExpr::getIntToPtr(cg()->llvmConstInt(flags, 64), cg()->llvmTypePtr());
+
     setResult(ti);
 }
 
@@ -949,6 +964,7 @@ llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llv
     CodeGen::llvm_parameter_list params;
     params.push_back(std::make_pair("type", cg()->llvmTypePtr(cg()->llvmTypeRtti())));
     params.push_back(std::make_pair("struct", cg()->llvmTypePtr(llvm_type)));
+    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg()->llvmTypePtr(cg()->llvmTypeExecutionContext())));
 
     auto func = cg()->llvmAddFunction(name, cg()->llvmTypeVoid(), params, false);
     func->setLinkage(llvm::GlobalValue::LinkOnceODRLinkage);
@@ -1060,7 +1076,7 @@ void TypeBuilder::visit(type::Struct* t)
 
     if ( ! llvm_type_only ) {
         if ( ! t->wildcard() )
-            ti->dtor_func = _declareStructDtor(t, stype, t->libHiltiDtor());
+            ti->dtor_func = _declareStructDtor(t, stype, t->attributes().getAsString(attribute::LIBHILTI_DTOR, ""));
         else
             // Generic versions working with all tuples.
             ti->dtor = "hlt::struct_dtor";
@@ -1078,7 +1094,12 @@ void TypeBuilder::visit(type::Struct* t)
         int i = 0;
 
         for ( auto f : t->fields() ) {
-            auto name = cg()->llvmConstAsciizPtr(f->id()->name());
+            auto n = f->id()->name();
+
+            if ( f->anonymous() )
+                n = string(".") + n;
+
+            auto name = cg()->llvmConstAsciizPtr(n);
 
             // Calculate the offset.
             auto idx = cg()->llvmGEPIdx(i + 2); // skip the gchdr and bitmask.
@@ -1133,3 +1154,103 @@ void TypeBuilder::visit(type::Unset* t)
     setResult(ti);
 }
 
+void TypeBuilder::visit(type::Union* t)
+{
+    auto llvm_type_only = arg1();
+
+    string sname;
+
+    if ( t->id() ) {
+        sname = t->id()->pathAsString();
+
+        if ( ! t->id()->isScoped() ) {
+            auto s = t->scope();
+            if ( s.size() )
+                sname = ::util::fmt("%s::%s", s, sname);
+        }
+    }
+
+    else
+        sname = t->render();
+
+    sname = util::mangle(sname, true);
+
+    llvm::StructType* stype = nullptr;
+    llvm::Type* data_type = nullptr;
+
+    // See if we have already created this union type.
+    auto i = _known_unions.find(sname);
+
+    if ( i != _known_unions.end() ) {
+        stype = i->second;
+        data_type = stype->getElementType(1);
+    }
+
+    else {
+        /// Need to create the union type. We first create it empty and
+        /// cache it so that recursion works. We'll then add the right
+        /// fields.
+        stype = llvm::StructType::create(cg()->llvmContext(), sname); // opaque type
+        _known_unions.insert(std::make_pair(sname, stype));
+
+        // Determine the size of the largest field.
+        uint64_t max_size = 0;
+
+        for ( auto f : t->fields() ) {
+            auto size = cg()->llvmSizeOfForTarget(cg()->llvmType(f->type()));
+            max_size = std::max(max_size, size);
+        }
+
+        // Now add the fields.
+        data_type = llvm::ArrayType::get(cg()->llvmTypeInt(8), max_size);
+        CodeGen::type_list fields { cg()->llvmTypeInt(32), data_type };
+
+        for ( auto f : t->fields() )
+            fields.push_back(cg()->llvmType(f->type()));
+
+        stype->setBody(fields);
+    }
+
+    TypeInfo* ti = new TypeInfo(t);
+    ti->id = HLT_TYPE_UNION;
+    ti->init_val = cg()->llvmConstStruct({ cg()->llvmConstInt(-1, 32), cg()->llvmConstNull(data_type) });
+    ti->object_type = stype;
+    ti->to_string = "hlt::union_to_string";
+    ti->hash = "hlt::union_hash";
+    ti->equal = "hlt::union_equal";
+    ti->clone_init = "hlt::union_clone_init";
+    ti->cctor = "hlt::union_cctor";
+    ti->dtor = "hlt::union_dtor";
+
+    setResult(ti);
+
+    if ( ! llvm_type_only ) {
+        /// Type information for a ``union`` includes the fields' types and names
+        /// in the ``aux`` entry.
+
+        CodeGen::constant_list array;
+
+        for ( auto f : t->fields() ) {
+            auto name = (t->anonymousFields() || f->anonymous())
+                ? cg()->llvmConstNull(cg()->llvmTypePtr())
+                : cg()->llvmConstAsciizPtr(f->id()->name());
+
+            CodeGen::constant_list pair { cg()->llvmRtti(f->type()), name };
+            array.push_back(cg()->llvmConstStruct(pair));
+        }
+
+        // Add null pointers as end markers.
+        CodeGen::constant_list pair { cg()->llvmConstNull(cg()->llvmTypeRtti()), cg()->llvmConstNull() };
+        array.push_back(cg()->llvmConstStruct(pair));
+
+        llvm::GlobalVariable* glob = nullptr;
+
+        if ( array.size() ) {
+            auto aval = cg()->llvmConstArray(array);
+            glob = cg()->llvmAddConst("union-fields", aval);
+            glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
+        }
+
+        ti->aux = glob;
+    }
+}

@@ -147,6 +147,7 @@ public:
                                                            shared_ptr<hilti::function::Result> result = nullptr,
                                                            const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                            hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
+                                                           const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                                            const Location& l=Location::None);
 
    /// Adds a function declaration to the module, without beginning to build
@@ -176,6 +177,7 @@ public:
                                                            shared_ptr<hilti::function::Result> result = nullptr,
                                                            const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                            hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
+                                                           const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                                            const Location& l=Location::None);
 
    /// Adds a hook declaration to the module, without beginning to build the hook.
@@ -190,9 +192,10 @@ public:
    ///
    /// Returns: An expression referencing the hook.
    shared_ptr<hilti::declaration::Function> declareHook(shared_ptr<ID> id,
-                                                       shared_ptr<hilti::function::Result> result = nullptr,
-                                                       const hilti::function::parameter_list& params = hilti::function::parameter_list(),
-                                                       const Location& l=Location::None);
+                                                        shared_ptr<hilti::function::Result> result = nullptr,
+                                                        const hilti::function::parameter_list& params = hilti::function::parameter_list(),
+                                                        const hilti::AttributeSet& attrs = hilti::AttributeSet(),
+                                                        const Location& l=Location::None);
 
    /// Adds a hook declaration to the module, without beginning to build the
    /// hook.
@@ -209,6 +212,7 @@ public:
    shared_ptr<hilti::declaration::Function> declareHook(const std::string& id,
                                                        shared_ptr<hilti::function::Result> result = nullptr,
                                                        const hilti::function::parameter_list& params = hilti::function::parameter_list(),
+                                                       const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                                        const Location& l=Location::None);
 
    /// Pushes a HILTI function onto the stack of functions currently being
@@ -225,8 +229,6 @@ public:
    ///
    /// cc: The function's calling convention.
    ///
-   /// scope: The function's scheduling scope.
-   ///
    /// no_body: If true, don't push a body.
    ///
    /// l: Location associated with the type.
@@ -236,8 +238,7 @@ public:
                                                   shared_ptr<hilti::function::Result> result = nullptr,
                                                   const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                   hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
-                                                  shared_ptr<Type> scope = nullptr,
-                                                  const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
+                                                  const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                                   bool no_body = false,
                                                   const Location& l=Location::None);
 
@@ -250,8 +251,6 @@ public:
    ///
    /// ftype: The function's type.
    ///
-   /// scope: The function's scheduling scope.
-   ///
    /// no_body: If true, don't push a body.
    ///
    /// l: Location associated with the type.
@@ -259,8 +258,6 @@ public:
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::declaration::Function> pushFunction(shared_ptr<ID> id,
 						  std::shared_ptr<hilti::type::Function> ftype,
-                                                  shared_ptr<Type> scope = nullptr,
-                                                  const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
                                                   bool no_body = false,
                                                   const Location& l=Location::None);
 
@@ -273,8 +270,6 @@ public:
    ///
    /// ftype: The function's type.
    ///
-   /// scope: The function's scheduling scope.
-   ///
    /// no_body: If true, don't push a body.
    ///
    /// l: Location associated with the type.
@@ -282,7 +277,6 @@ public:
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::declaration::Function> pushFunction(const std::string& name,
 						  std::shared_ptr<hilti::type::Function> ftype,
-                                                  shared_ptr<Type> scope = nullptr,
                                                   bool no_body = false,
                                                   const Location& l=Location::None);
 
@@ -300,8 +294,6 @@ public:
    ///
    /// cc: The function's calling convention.
    ///
-   /// scope: The function's scheduling scope.
-   ///
    /// no_body: If true, don't push a body.
    ///
    /// l: Location associated with the type.
@@ -311,8 +303,7 @@ public:
                                                   shared_ptr<hilti::function::Result> result = nullptr,
                                                   const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                   hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
-                                                  shared_ptr<Type> scope = nullptr,
-                                                  const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
+                                                  const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                                   bool no_body = false,
                                                   const Location& l=Location::None);
 
@@ -333,8 +324,6 @@ public:
    ///
    /// params: The parameters to the hook.
    ///
-   /// scope: The hook's scheduling scope.
-   ///
    /// attrs: The hook attributes (i.e., priority and group).
    ///
    /// no_body: If true, don't push a body.
@@ -345,8 +334,7 @@ public:
    shared_ptr<hilti::declaration::Function> pushHook(shared_ptr<ID> id,
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
-                                              shared_ptr<Type> scope = nullptr,
-                                              const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
+                                              const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                               bool no_body = false,
                                               const Location& l=Location::None);
 
@@ -360,8 +348,6 @@ public:
    ///
    /// htype: The hooks' type.
    ///
-   /// scope: The hook's scheduling scope.
-   ///
    /// attrs: The hook attributes (i.e., priority and group).
    ///
    /// no_body: If true, don't push a body.
@@ -370,11 +356,9 @@ public:
    ///
    /// Returns: An expression referencing the hook.
    shared_ptr<hilti::declaration::Function> pushHook(shared_ptr<ID> id,
-					      std::shared_ptr<hilti::type::Hook> type,
-                                              shared_ptr<Type> scope = nullptr,
-                                              const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
-                                              bool no_body = false,
-                                              const Location& l=Location::None);
+                                                     std::shared_ptr<hilti::type::Hook> type,
+                                                     bool no_body = false,
+                                                     const Location& l=Location::None);
 
    /// Pushes a HILTI hook onto the stack of functions currently being built.
    /// Note that hooks and functions are internally kept on the same stack
@@ -388,8 +372,6 @@ public:
    /// void hook.
    ///
    /// params: The parameters to the hook.
-   ///
-   /// scope: The hook's scheduling scope.
    ///
    /// attrs: The hook attributes (i.e., priority and group).
    ///
@@ -401,8 +383,7 @@ public:
    shared_ptr<hilti::declaration::Function> pushHook(const std::string& id,
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
-                                              shared_ptr<Type> scope = nullptr,
-                                              const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
+                                              const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                               bool no_body = false,
                                               const Location& l=Location::None);
 
@@ -419,8 +400,6 @@ public:
    ///
    /// params: The parameters to the hook.
    ///
-   /// scope: The hook's scheduling scope.
-   ///
    /// priority: The hook's priority.
    ///
    /// group: The hook's group.
@@ -431,7 +410,7 @@ public:
    shared_ptr<hilti::declaration::Function> pushHook(shared_ptr<ID> id,
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
-                                              shared_ptr<Type> scope = nullptr,
+                                              const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                               int64_t priority = 0, int64_t group = 0,
                                               bool no_body = false,
                                               const Location& l=Location::None);
@@ -449,8 +428,6 @@ public:
    ///
    /// params: The parameters to the hook.
    ///
-   /// scope: The hook's scheduling scope.
-   ///
    /// priority: The hook's priority.
    ///
    /// group: The hook's group.
@@ -461,7 +438,7 @@ public:
    shared_ptr<hilti::declaration::Function> pushHook(const std::string& id,
                                               shared_ptr<hilti::function::Result> result,
                                               const hilti::function::parameter_list& params,
-                                              shared_ptr<Type> scope,
+                                              const hilti::AttributeSet& attrs,
                                               int64_t priority, int64_t group,
                                               bool no_body = false,
                                               const Location& l=Location::None);
@@ -724,6 +701,14 @@ public:
    ///
    /// Returns: An expression referencing the type.
    shared_ptr<hilti::expression::Type> addType(const std::string& id, shared_ptr<Type> type, bool force_unique = false, const Location& l = Location::None);
+
+   /// Returns true if a type of a given name already exists in the current
+   /// function.
+   bool hasType(const std::string& id);
+
+   /// Returns true if a type of a given name already exists in the current
+   /// function.
+   bool hasType(shared_ptr<hilti::ID> id);
 
    /// Adds a context declaration to the module. Note that only a module must
    /// have at most one contecct declaration.

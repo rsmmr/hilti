@@ -38,18 +38,14 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
     flockfile(stdout);
 
     if ( type->to_string ) {
-        __hlt_pointer_stack seen;
-        __hlt_pointer_stack_init(&seen);
-        hlt_string s = hlt_object_to_string(type, obj, 0, &seen, excpt, ctx);
-        __hlt_pointer_stack_destroy(&seen);
+        hlt_string s = hlt_object_to_string(type, obj, 0, excpt, ctx);
 
-        if ( *excpt )
+        if ( hlt_check_exception(excpt) )
             goto unlock;
 
         hlt_string_print(stdout, s, 0, excpt, ctx);
-        GC_DTOR(s, hlt_string);
 
-        if ( *excpt )
+        if ( hlt_check_exception(excpt) )
             goto unlock;
     }
 

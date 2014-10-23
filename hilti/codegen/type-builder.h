@@ -279,6 +279,7 @@ protected:
    void visit(type::Timer* t) override;
    void visit(type::TimerMgr* t) override;
    void visit(type::Tuple* t) override;
+   void visit(type::Union* t) override;
    void visit(type::Unset* t) override;
    void visit(type::Vector* t) override;
    void visit(type::Void* t) override;
@@ -311,6 +312,7 @@ private:
 
    // We cache structs by name so that we always map them to the same type.
    std::map<string, llvm::StructType*> _known_structs;
+   std::map<string, llvm::StructType*> _known_unions;
 
    // We acculumate struct dtor functions first and then build them at the end.
    std::list<std::pair<type::Struct*, llvm::Function*>> _struct_dtors;

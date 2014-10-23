@@ -4,16 +4,16 @@
 #include "callable.h"
 #include "context.h"
 
-void hlt_callable_dtor(hlt_type_info* ti, hlt_callable* c)
+void hlt_callable_dtor(hlt_type_info* ti, hlt_callable* c, hlt_execution_context* ctx)
 {
     if ( c->__func->dtor )
-        (*c->__func->dtor)(c);
+        (*c->__func->dtor)(c, ctx);
 }
 
 void* hlt_callable_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_callable* src = *(hlt_callable**)srcp;
-    return GC_NEW_CUSTOM_SIZE_GENERIC(ti, src->__func->object_size);
+    return GC_NEW_CUSTOM_SIZE_GENERIC_REF(ti, src->__func->object_size, ctx);
 }
 
 void hlt_callable_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)

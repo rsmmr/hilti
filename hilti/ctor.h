@@ -80,7 +80,7 @@ public:
    /// Returns the type of the constructed object. If the container has
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
@@ -112,7 +112,7 @@ public:
    /// Returns the type of the constructed object. If the container has
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
@@ -156,7 +156,7 @@ public:
    /// Returns the type of the constructed object. If the container has
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
@@ -182,11 +182,9 @@ public:
    ///
    /// elems: The elements for the instance being constructed.
    ///
-   /// def: If given a default value to return for unused indices.
-   ///
    /// l: An associated location.
    Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems,
-       shared_ptr<Expression> def = nullptr, const Location& l=Location::None);
+       const Location& l=Location::None);
 
    /// Constructor.
    ///
@@ -203,10 +201,11 @@ public:
    /// Returns the type of the constructed object. If the container has
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
-   /// Returns the map's default value, or null if none.
-   shared_ptr<Expression> default_() const { return _default; }
+   /// Returns the map's default value, or null if none. This is a shortcut
+   /// to querying the corresponding type attribute.
+   shared_ptr<Expression> default_() const;
 
    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
@@ -215,7 +214,6 @@ public:
 private:
    node_ptr<Type> _type;
    element_list _elems;
-   node_ptr<Expression> _default;
 };
 
 /// AST node for a regexp constructor.
@@ -225,7 +223,7 @@ public:
    /// A pattern is a tuple of two strings. The first element is the regexp
    /// itself, and the second a string with optional patterns flags.
    /// Currently, no flags are supported though.
-   typedef std::pair<string, string> pattern;
+   typedef std::string pattern;
 
    /// A list of patterns.
    typedef std::list<pattern> pattern_list;
@@ -234,21 +232,33 @@ public:
    ///
    /// patterns: List of patterns.
    ///
+   /// attrs: Optional pattern attributes. They apply to all givenm regexps.
+   ///
    /// l: An associated location.
-   RegExp(const pattern_list& patterns, const Location& l=Location::None);
+   RegExp(const pattern_list& patterns,
+          const hilti::AttributeSet& attrs = hilti::AttributeSet(),
+          const Location& l=Location::None);
 
-   /// Returns the pattern.
+   /// Returns the patterns.
    const pattern_list& patterns() const { return _patterns; }
+
+   /// Returns the patterns' attributes.
+   const AttributeSet& attributes() const { return *_attributes; }
+
+   /// Returns the attributes associated with the function's type. This may
+   /// be modified to change the attributes.
+   AttributeSet& attributes() { return *_attributes; }
 
    /// Returns the type of the constructed object. Pattern constants are
    /// always of type \c regexp<>. To add further type attributes, they need
    /// to be coerced to a regexp type that has them.
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<Type> type() const override { return _type; }
 
    ACCEPT_VISITOR(Ctor);
 
 private:
    node_ptr<Type> _type;
+   node_ptr<AttributeSet> _attributes;
    pattern_list _patterns;
 };
 

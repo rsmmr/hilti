@@ -27,6 +27,7 @@ public:
    bool includeFlow() const;
    void printFlow(Statement* stmt, const string& prefix = "");
    bool printTypeID(Type* t);
+   void printAttributes(const AttributeSet& attrs);
 
 protected:
    void visit(Module* m) override;
@@ -84,6 +85,7 @@ protected:
    void visit(type::TimerMgr* t) override;
    void visit(type::Tuple* t) override;
    void visit(type::TypeType* t) override;
+   void visit(type::Union* t) override;
    void visit(type::Unknown* t) override;
    void visit(type::Unset* t) override;
    void visit(type::Vector* t) override;
@@ -118,6 +120,7 @@ protected:
    void visit(constant::Time* c) override;
    void visit(constant::Tuple* c) override;
    void visit(constant::Unset* c) override;
+   void visit(constant::Union* c) override;
 
    void visit(ctor::Bytes* c) override;
    void visit(ctor::List* c) override;

@@ -31,7 +31,6 @@ void Storer::visit(expression::Parameter* p)
 {
     auto val = arg1();
     auto plusone = arg2().first;
-    auto dtor_first = arg2().second;
 
     auto param = p->parameter();
 
@@ -41,7 +40,10 @@ void Storer::visit(expression::Parameter* p)
     auto name = "__shadow_" + param->id()->name();
     auto addr = cg()->llvmLocal(name);
 
-    cg()->llvmGCAssign(addr, val, p->type(), plusone, dtor_first);
+    cg()->llvmCreateStore(val, addr);
+
+    if ( plusone )
+        cg()->llvmDtor(val, p->type(), false, "storer/parameter");
 }
 
 void Storer::visit(expression::CodeGen* c)
@@ -66,12 +68,13 @@ void Storer::visit(variable::Local* v)
 {
     auto val = arg1();
     auto plusone = arg2().first;
-    auto dtor_first = arg2().second;
 
     auto name = v->internalName();
     assert(name.size());
 
     auto addr = cg()->llvmLocal(name);
+    cg()->llvmCreateStore(val, addr);
 
-    cg()->llvmGCAssign(addr, val, v->type(), plusone, dtor_first);
+    if ( plusone )
+        cg()->llvmDtor(val, v->type(), false, "storer/local");
 }

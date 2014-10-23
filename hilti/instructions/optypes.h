@@ -49,6 +49,7 @@ static shared_ptr<Type> time(new type::Time());
 static shared_ptr<Type> timer(new type::Timer());
 static shared_ptr<Type> timerMgr(new type::TimerMgr());
 static shared_ptr<Type> tuple(new type::Tuple());
+static shared_ptr<Type> union_(new type::Union());
 static shared_ptr<Type> vector(new type::Vector());
 
 static shared_ptr<Type> iterBytes(new type::iterator::Bytes());
@@ -93,6 +94,7 @@ static shared_ptr<Type> typeOverlay(new type::TypeType(overlay));
 static shared_ptr<Type> typeRegExp(new type::TypeType(regexp));
 static shared_ptr<Type> typeSet(new type::TypeType(set));
 static shared_ptr<Type> typeStruct(new type::TypeType(struct_));
+static shared_ptr<Type> typeUnion(new type::TypeType(union_));
 static shared_ptr<Type> typeTimer(new type::TypeType(timer));
 static shared_ptr<Type> typeTimerMgr(new type::TypeType(timerMgr));
 static shared_ptr<Type> typeVector(new type::TypeType(vector));

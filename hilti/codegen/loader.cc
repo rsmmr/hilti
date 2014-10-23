@@ -10,6 +10,7 @@
 
 #include "libhilti/enum.h"
 #include "libhilti/port.h"
+#include "libhilti/regexp.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -22,22 +23,40 @@ Loader::~Loader()
 {
 }
 
-llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type, bool cctor)
+llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type, bool cctor, llvm::Value* dst)
 {
-    if ( cctor ) {
-        if ( ! result.cctor )
-            cg()->llvmCctor(result.value, type, result.is_ptr, "loader.normResult");
+    if ( ! dst ) {
+        if ( cctor ) {
+            if ( ! result.cctor )
+                cg()->llvmCctor(result.value, type, result.is_ptr, "loader.normResult");
+        }
+
+        else {
+            if ( result.cctor )
+                cg()->llvmDtorAfterInstruction(result.value, type, result.is_ptr, "Loader.normResult");
+        }
+    }
+
+    if ( dst ) {
+        if ( ! result.stored_in_dst ) {
+            if ( result.is_ptr ) {
+                auto tmp = cg()->builder()->CreateLoad(result.value);
+                cg()->llvmCreateStore(tmp, dst);
+            }
+
+            else
+                cg()->llvmCreateStore(result.value, dst);
+        }
+
+        return nullptr;
     }
 
     else {
-        if ( result.cctor )
-            cg()->llvmDtorAfterInstruction(result.value, type, result.is_ptr, "Loader.normResult");
+        if ( result.is_ptr )
+            return cg()->builder()->CreateLoad(result.value);
+        else
+            return result.value;
     }
-
-    if ( result.is_ptr )
-        return cg()->builder()->CreateLoad(result.value);
-    else
-        return result.value;
 }
 
 llvm::Value* Loader::llvmValue(shared_ptr<Expression> expr, bool cctor, shared_ptr<hilti::Type> coerce_to)
@@ -46,17 +65,34 @@ llvm::Value* Loader::llvmValue(shared_ptr<Expression> expr, bool cctor, shared_p
         expr = expr->coerceTo(coerce_to);
 
     _cctor = cctor;
+    _dst = nullptr;
     _LoadResult result;
     setArg1(coerce_to);
     bool success = processOne(expr, &result);
     assert(success);
 
-    return normResult(result, expr->type(), cctor);
+    return normResult(result, expr->type(), cctor, nullptr);
+}
+
+void Loader::llvmValueInto(llvm::Value* dst, shared_ptr<Expression> expr, bool cctor, shared_ptr<hilti::Type> coerce_to)
+{
+    if ( coerce_to )
+        expr = expr->coerceTo(coerce_to);
+
+    _cctor = cctor;
+    _dst = dst;
+    _LoadResult result;
+    setArg1(coerce_to);
+    bool success = processOne(expr, &result);
+    assert(success);
+
+    normResult(result, expr->type(), cctor, dst);
 }
 
 llvm::Value* Loader::llvmValueAddress(shared_ptr<Expression> expr)
 {
     _cctor = false;
+    _dst = nullptr;
     _LoadResult result;
     setArg1(nullptr);
     bool success = processOne(expr, &result);
@@ -68,21 +104,45 @@ llvm::Value* Loader::llvmValueAddress(shared_ptr<Expression> expr)
 llvm::Value* Loader::llvmValue(shared_ptr<Constant> constant, bool cctor)
 {
     _cctor = cctor;
+    _dst = nullptr;
     _LoadResult result;
     bool success = processOne(constant, &result);
     assert(success);
 
-    return normResult(result, constant->type(), cctor);
+    return normResult(result, constant->type(), cctor, nullptr);
+}
+
+void Loader::llvmValueInto(llvm::Value* dst, shared_ptr<Constant> constant, bool cctor)
+{
+    _cctor = cctor;
+    _dst = dst;
+    _LoadResult result;
+    bool success = processOne(constant, &result);
+    assert(success);
+
+    normResult(result, constant->type(), cctor, dst);
 }
 
 llvm::Value* Loader::llvmValue(shared_ptr<Ctor> ctor, bool cctor)
 {
     _cctor = cctor;
+    _dst = 0;
     _LoadResult result;
     bool success = processOne(ctor, &result);
     assert(success);
 
-    return normResult(result, ctor->type(), cctor);
+    return normResult(result, ctor->type(), cctor, nullptr);
+}
+
+void Loader::llvmValueInto(llvm::Value* dst, shared_ptr<Ctor> ctor, bool cctor)
+{
+    _cctor = cctor;
+    _dst = dst;
+    _LoadResult result;
+    bool success = processOne(ctor, &result);
+    assert(success);
+
+    normResult(result, ctor->type(), cctor, dst);
 }
 
 void Loader::visit(expression::Variable* v)
@@ -90,13 +150,20 @@ void Loader::visit(expression::Variable* v)
     call(v->variable());
 }
 
+void Loader::visit(expression::Type* v)
+{
+    auto ti = cg()->llvmRtti(v->type());
+    setResult(ti, false, false);
+}
+
 void Loader::visit(variable::Local* v)
 {
     auto name = v->internalName();
     assert(name.size());
 
+    auto hoist = v->type()->attributes().has(attribute::HOIST);
     auto addr = cg()->llvmLocal(name);
-    setResult(addr, false, true);
+    setResult(addr, false, ! hoist);
 }
 
 void Loader::visit(variable::Global* v)
@@ -146,9 +213,9 @@ void Loader::visit(expression::Default* e)
 
 void Loader::visit(expression::Coerced* e)
 {
-    auto val = llvmValue(e->expression(), true);
-    auto coerced = cg()->llvmCoerceTo(val, e->expression()->type(), e->type());
-    setResult(coerced, true, false);
+    auto val = llvmValue(e->expression(), false);
+    auto coerced = cg()->llvmCoerceTo(val, e->expression()->type(), e->type(), false);
+    setResult(coerced, false, false);
 }
 
 void Loader::visit(expression::Function* f)
@@ -217,6 +284,57 @@ void Loader::visit(constant::Unset* t)
         setResult(cg()->llvmConstInt(0, 1), false, false);
     else
         setResult(cg()->llvmInitVal(t->type()), false, false);
+}
+
+void Loader::visit(constant::Union* c)
+{
+    auto dtype = arg1();
+
+    // TODO: Should factor this out into codegen, and then use from
+    // instructions/unit.cc as well.
+    auto utype = ast::as<type::Union>(c->type());
+    auto data_type = llvm::cast<llvm::StructType>(cg()->llvmType(utype))->getElementType(1);
+
+    shared_ptr<type::union_::Field> field;
+
+    if ( c->id() )
+        field = utype->lookup(c->id());
+
+    else if ( c->expression() ) {
+        auto fields = utype->fields(c->expression()->type());
+        assert(fields.size() == 1);
+        field = fields.front();
+    }
+
+    if ( ! field ) {
+        auto t = ast::isA<type::Union>(dtype) ? dtype : std::make_shared<type::Union>(type::Union::type_list());
+        auto ht = cg()->llvmType(t);
+        llvm::Value* none = cg()->llvmConstNull(ht);
+        none = cg()->llvmInsertValue(none, cg()->llvmConstInt(-1, 32), 0);
+        setResult(none, false, false);
+        return;
+    }
+
+    int fidx = -1;
+
+    if ( field ) {
+        for ( auto f : utype->fields() ) {
+            fidx++;
+
+            if ( f == field )
+                break;
+        }
+
+        assert(fidx < utype->fields().size());
+    }
+
+    auto op = cg()->llvmValue(c->expression());
+    auto val = cg()->llvmReinterpret(op, data_type);
+    auto idx = cg()->llvmConstInt(fidx, 32);
+
+    CodeGen::value_list elems = { idx, val };
+    auto result = cg()->llvmValueStruct(elems);
+    setResult(result, false, false);
 }
 
 void Loader::visit(constant::Reference* r)
@@ -387,13 +505,17 @@ void Loader::visit(ctor::Bytes* c)
     llvm::Constant* data = cg()->llvmAddConst("bytes", array);
     data = llvm::ConstantExpr::getBitCast(data, cg()->llvmTypePtr());
 
-    CodeGen::value_list args;
-    args.push_back(data);
-    args.push_back(cg()->llvmConstInt(c->value().size(), 64));
+    if ( ! _dst ) {
+        CodeGen::value_list args = { data, cg()->llvmConstInt(c->value().size(), 64) };
+        auto val = cg()->llvmCallC("hlt_bytes_new_from_data_copy", args, true, false);
+        setResult(val, false, false);
+    }
 
-    auto val = cg()->llvmCallC("hlt_bytes_new_from_data_copy", args, true);
-
-    setResult(val, true, false);
+    else {
+        CodeGen::value_list args = { _dst, data, cg()->llvmConstInt(c->value().size(), 64) };
+        cg()->llvmCallC("hlt_bytes_new_from_data_copy_hoisted", args, true, false);
+        setResult(nullptr, false, false, true);
+    }
 }
 
 static shared_ptr<Expression> _tmgrNull(CodeGen* cg)
@@ -413,17 +535,17 @@ void Loader::visit(ctor::List* c)
     auto op2 = _tmgrNull(cg());
 
     CodeGen::expr_list args = {op1, op2};
-    auto list = cg()->llvmCall("hlt::list_new", args);
+    auto list = cg()->llvmCall("hlt::list_new", args, false);
 
     auto listop = builder::codegen::create(c->type(), list);
 
     for ( auto e : c->elements() ) {
         e = e->coerceTo(etype);
         CodeGen::expr_list args = { listop, e };
-        cg()->llvmCall("hlt::list_push_back", args);
+        cg()->llvmCall("hlt::list_push_back", args, false);
     }
 
-    setResult(list, true, false);
+    setResult(list, false, false);
 }
 
 void Loader::visit(ctor::Set* c)
@@ -446,7 +568,7 @@ void Loader::visit(ctor::Set* c)
         cg()->llvmCall("hlt::set_insert", args);
     }
 
-    setResult(set, true, false);
+    setResult(set, false, false);
 }
 
 void Loader::visit(ctor::Vector* c)
@@ -469,7 +591,7 @@ void Loader::visit(ctor::Vector* c)
         cg()->llvmCall("hlt::vector_push_back", args);
     }
 
-    setResult(vec, true, false);
+    setResult(vec, false, false);
 }
 
 void Loader::visit(ctor::Map* c)
@@ -505,24 +627,32 @@ void Loader::visit(ctor::Map* c)
         cg()->llvmCall("hlt::map_default", args);
     }
 
-    setResult(map, true, false);
+    setResult(map, false, false);
 }
 
 void Loader::visit(ctor::RegExp* c)
 {
-    auto patterns = c->patterns();
+    int flags = 0;
 
-    auto top = ast::as<type::Reference>(c->type())->argType();
-    CodeGen::expr_list args = { builder::type::create(top)};
+    if ( c->attributes().has(attribute::NOSUB) )
+        flags |= HLT_REGEXP_NOSUB;
+
+    if ( c->attributes().has(attribute::FIRSTMATCH) )
+        flags |= HLT_REGEXP_FIRST_MATCH;
+
+    CodeGen::expr_list args = { builder::integer::create(flags) };
     auto regexp = cg()->llvmCall("hlt::regexp_new", args);
+
     auto op1 = builder::codegen::create(c->type(), regexp);
+
+    auto patterns = c->patterns();
 
     if ( patterns.size() == 1 ) {
         // Just one pattern, we use regexp_compile().
         auto pattern = patterns.front();
         CodeGen::expr_list args;
         args.push_back(op1);
-        args.push_back(builder::string::create(pattern.first));
+        args.push_back(builder::string::create(pattern));
         cg()->llvmCall("hlt::regexp_compile", args);
     }
 
@@ -537,16 +667,15 @@ void Loader::visit(ctor::RegExp* c)
 
         for ( auto p : patterns ) {
             args = { builder::codegen::create(ltype, list),
-                     builder::string::create(p.first) };
+                     builder::string::create(p) };
             cg()->llvmCall("hlt::list_push_back", args);
         }
 
         args = { op1, builder::codegen::create(ltype, list) };
         cg()->llvmCall("hlt::regexp_compile_set", args);
-        cg()->llvmDtor(list, ltype, false, "ctor::RegExp");
     }
 
-    setResult(regexp, true, false);
+    setResult(regexp, false, false);
 }
 
 void Loader::visit(ctor::Callable* c)
@@ -561,13 +690,12 @@ void Loader::visit(ctor::Callable* c)
 
     if ( hook ) {
         auto htype = ast::checkedCast<type::Hook>(ftype);
-        auto callable = cg()->llvmCallableBind(hook, params);
-        setResult(callable, true, false);
+        auto callable = cg()->llvmCallableBind(hook, params, false, false);
+        setResult(callable, false, false);
     }
 
     else {
-        auto llvm_func = cg()->llvmValue(c->function());
-        auto callable = cg()->llvmCallableBind(llvm_func, ftype, params);
-        setResult(callable, true, false);
+        auto callable = cg()->llvmCallableBind(cg()->llvmValue(c->function()), ftype, params, false, false);
+        setResult(callable, false, false);
     }
 }

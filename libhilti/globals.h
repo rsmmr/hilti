@@ -36,6 +36,7 @@ struct __hlt_global_state {
 
     // cmdqueue.c
     hlt_thread_queue* cmd_queue;
+    hlt_execution_context* cmd_context;
     pthread_t queue_manager;
 
     // threading.c
@@ -77,6 +78,8 @@ struct __hlt_global_state {
     _Atomic(uint_fast64_t) num_unrefs;
     _Atomic(uint_fast64_t) num_stacks;
     _Atomic(uint_fast64_t) size_stacks;
+    _Atomic(uint_fast64_t) num_nullbuffer;
+    _Atomic(uint_fast64_t) max_nullbuffer;
 };
 
 // A type holding all of libhilti's global state.

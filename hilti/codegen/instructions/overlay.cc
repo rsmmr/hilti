@@ -14,24 +14,17 @@ void StatementBuilder::visit(statement::instruction::overlay::Attach* i)
     auto ov = cg()->llvmValue(i->op1());
     auto iter = cg()->llvmValue(i->op2());
 
-    auto old_iter= cg()->llvmExtractValue(ov, 0);
-    cg()->llvmDtor(old_iter, itype, false, "overlay-attach");
+    // We don't reference count here because overlays are stored on the
+    // stack.
 
     // Save the starting offset.
     ov = cg()->llvmInsertValue(ov, iter, 0);
-    cg()->llvmCctor(iter, itype, false, "overlay-attach");
 
     // Clear the cache.
     auto end = cg()->llvmIterBytesEnd();
 
-    for ( int j = 1; j < 1 + otype->numDependencies(); ++j ) {
-        old_iter = cg()->llvmExtractValue(ov, j);
-        cg()->llvmDtor(old_iter, itype, false, "overlay-attach");
-
-        ov = cg()->llvmInsertValue(ov, end, j); // Probably unnecessary, but can't hurt.
-        cg()->llvmCctor(end, itype, false, "overlay-attach");
-    }
-
+    for ( int j = 1; j < 1 + otype->numDependencies(); ++j )
+        ov = cg()->llvmInsertValue(ov, end, j);
 
     // Need to rewrite back into the original value.
     cg()->llvmStore(i->op1(), ov);
@@ -39,14 +32,13 @@ void StatementBuilder::visit(statement::instruction::overlay::Attach* i)
 
 // Generates the unpacking code for one field, assuming all dependencies are
 // already resolved. Returns tuple (new overlay, unpacked val) where val is
-// already ref'ed.
+// not ref'ed.
 static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<type::Overlay> otype, llvm::Value* ov, shared_ptr<type::overlay::Field> field, llvm::Value* offset0, llvm::Value* b, const Location& l)
 {
     auto itype = builder::iterator::type(builder::bytes::type());
     auto btype = builder::reference::type(builder::bytes::type());
 
     llvm::Value* begin = nullptr;
-    auto unref_begin = false;
 
     if ( field->startOffset() == 0 ) {
         // Starts right at beginning.
@@ -54,7 +46,6 @@ static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<ty
             auto arg1 = builder::codegen::create(btype, b);
             CodeGen::expr_list args = { arg1 };
             begin = cg->llvmCall("hlt::bytes_begin", args);
-            unref_begin = true;
         }
 
         else {
@@ -70,7 +61,6 @@ static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<ty
             auto arg2 = builder::integer::create(field->startOffset());
             CodeGen::expr_list args = { arg1, arg2 };
             begin = cg->llvmCall("hlt::bytes_offset", args);
-            unref_begin = true;
         }
 
         else {
@@ -78,7 +68,6 @@ static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<ty
             auto arg2 = builder::integer::create(field->startOffset());
             CodeGen::expr_list args = { arg1, arg2 };
             begin = cg->llvmCall("hlt::iterator_bytes_incr_by", args);
-            unref_begin = true;
         }
     }
 
@@ -107,17 +96,8 @@ static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<ty
     auto val = unpacked.first;
     auto end = unpacked.second;
 
-    if ( field->depIndex() >= 0 ) {
-        auto old_iter = cg->llvmExtractValue(ov, field->depIndex());
-        cg->llvmDtor(old_iter, itype, false, "overlay-emit-one-0");
+    if ( field->depIndex() >= 0 )
         ov = cg->llvmInsertValue(ov, end, field->depIndex());
-    }
-
-    else
-        cg->llvmDtor(end, itype, false, "overlay-emit-one-1");
-
-    if ( unref_begin )
-        cg->llvmDtor(begin, itype, false, "overlay-emit-one-2");
 
     return std::make_pair(ov, val);
 }

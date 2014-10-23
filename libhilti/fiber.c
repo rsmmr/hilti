@@ -307,9 +307,11 @@ int8_t hlt_fiber_start(hlt_fiber* fiber, hlt_execution_context* ctx)
 
     switch ( fiber->state ) {
      case YIELDED:
+        __hlt_memory_safepoint(fiber->context, "fiber_start/yield");
         return 0;
 
      case IDLE:
+        __hlt_memory_safepoint(fiber->context, "fiber_start/done");
         __hlt_context_set_fiber(fiber->context, 0);
         hlt_fiber_delete(fiber, ctx);
         return 1;

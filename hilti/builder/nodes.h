@@ -13,6 +13,8 @@ shared_ptr<T> _sptr(T* ptr) { return shared_ptr<T>(ptr); }
 
 typedef std::list<shared_ptr<hilti::Type>> type_list;
 
+typedef AttributeSet attribute_set;
+
 namespace expression {
 
 /// Instantiates the default value of a type.
@@ -629,9 +631,6 @@ namespace function {
 
 typedef hilti::function::parameter_list parameter_list;
 
-typedef Function::attribute function_attribute;
-typedef std::list<function_attribute> attribute_list;
-
 /// Instantiates an AST node representating the declaration of a function.
 ///
 /// id: The name of the function.
@@ -658,36 +657,19 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
                                                 shared_ptr<hilti::function::Result> result = nullptr,
                                                 const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                 hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
-                                                shared_ptr<Type> scope = nullptr,
                                                 shared_ptr<statement::Block> body = nullptr,
                                                 shared_ptr<Module> module = nullptr,
-                                                const hilti::function::attribute_list& attrs = hilti::function::attribute_list(),
+                                                const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                                 const Location& l=Location::None) {
 
     if ( ! result )
         result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::HiltiFunction>(result, params, cc, l);
-    auto func = std::make_shared<Function>(id, ftype, module, scope, attrs, body, l);
+    ftype->setAttributes(attrs);
+
+    auto func = std::make_shared<Function>(id, ftype, module, body, l);
     return std::make_shared<declaration::Function>(func, l);
-}
-
-/// Returns a function attribute list for use with create().
-inline attribute_list attributes()
-{
-    return attribute_list();
-}
-
-/// Returns a function attribute for use with create().
-///
-/// name: The name of attributes, which must be \c &priority or \c &group.
-///
-/// val: The attributes value.
-///
-/// Returns: The attribute.
-inline function_attribute attribute(const ::string& name, int64_t val)
-{
-    return std::make_pair(name, val);
 }
 
 /// Instantiates an AST node representing a function parameter for its type description.
@@ -789,44 +771,6 @@ typedef hilti::function::parameter_list parameter_list;
 /// body: The body of the function. Can be null to declare a function with
 /// giving it a body (for prototyping a hook).
 ///
-/// scope: The function's scheduling scope.
-///
-/// priority: The hook's priority, should default to 0.
-///
-/// group: The hook's group, 0 for none.
-///
-/// l: Location associated with the type.
-///
-/// Returns: The hook node.
-inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
-                                            shared_ptr<hilti::function::Result> result,
-                                            const hilti::function::parameter_list& params,
-                                            shared_ptr<Module> module,
-                                            shared_ptr<statement::Block> body,
-                                            shared_ptr<Type> scope,
-                                            int64_t priority, int64_t group,
-                                            const Location& l=Location::None)
-{
-    auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
-    auto func = std::make_shared<Hook>(id, ftype, module, scope, priority, group, body, l);
-    return std::make_shared<declaration::Hook>(func, l);
-}
-
-/// Instantiates an AST node representating the declaration of a hook implementation.
-///
-/// id: The name of the hook.
-///
-/// result: The parameter representing the return value.
-///
-/// params: The parameters to the hook.
-///
-/// module: The module the hook implementation is declared in.
-///
-/// scope: The function's scheduling scope.
-///
-/// body: The body of the function. Can be null to declare a function with
-/// giving it a body (for prototyping a hook).
-///
 /// attrs: The attributes defined for the hook.
 ///
 /// l: Location associated with the type.
@@ -835,14 +779,15 @@ inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
 inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
                                             shared_ptr<hilti::function::Result> result,
                                             const hilti::function::parameter_list& params,
+                                            const hilti::AttributeSet& attrs,
                                             shared_ptr<Module> module,
                                             shared_ptr<statement::Block> body,
-                                            shared_ptr<Type> scope,
-                                            const hilti::function::attribute_list& attrs,
                                             const Location& l=Location::None)
 {
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
-    auto func = std::make_shared<Hook>(id, ftype, module, scope, attrs, body, l);
+    ftype->setAttributes(attrs);
+
+    auto func = std::make_shared<Hook>(id, ftype, module, body, l);
     return std::make_shared<declaration::Hook>(func, l);
 }
 
@@ -858,9 +803,12 @@ inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
 /// Returns: The type node.
 inline shared_ptr<hilti::type::Function> type(shared_ptr<hilti::function::Result> result = nullptr,
 					      const hilti::function::parameter_list& params = hilti::function::parameter_list(),
-					      const Location& l=Location::None)
+                          const hilti::AttributeSet& attrs = hilti::AttributeSet(),
+                          const Location& l=Location::None)
 {
-    return std::make_shared<hilti::type::Hook>(result, params, l);
+    auto t = std::make_shared<hilti::type::Hook>(result, params, l);
+    t->setAttributes(attrs);
+    return t;
 }
 
 }
@@ -1266,10 +1214,11 @@ typedef hilti::ctor::Callable::argument_list argument_list;
 /// Returns: The type node.
 ///
 /// \note This is an old version of the builder function and deprecated.
-inline shared_ptr<hilti::type::Callable> type(shared_ptr<hilti::Type> rtype, const Location& l=Location::None) {
+inline shared_ptr<hilti::type::Callable> type(shared_ptr<hilti::Type> rtype,
+                                              const Location& l=Location::None) {
     auto result = std::make_shared<hilti::function::Result>(rtype, false);
     hilti::function::parameter_list params;
-    return std::make_shared<hilti::type::Callable>(result, params, l);
+    return std::make_shared<hilti::type::Callable>(result, params);
 }
 
 /// Instantiates a type::callable type.
@@ -1526,7 +1475,7 @@ inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> etype, const 
 
 /// Instantiates an AST expression node representing a set ctor.
 ///
-/// dummy: Dummy flag that differentiates this function from the one giving 
+/// dummy: Dummy flag that differentiates this function from the one giving
 /// the element type. The value is ignored.
 ///
 /// stype: The type of the set, which must be \a type::Set.
@@ -1630,7 +1579,10 @@ typedef ctor::Map::element_list element_list;
 /// Returns: The expression node.
 inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, shared_ptr<Expression> def = nullptr, const Location& l=Location::None)
 {
-    auto c = std::make_shared<ctor::Map>(ktype, vtype, elems, def, l);
+    auto c = std::make_shared<ctor::Map>(ktype, vtype, elems, l);
+    if ( def )
+        c->type()->attributes().add(attribute::DEFAULT, def);
+
     return std::make_shared<hilti::expression::Ctor>(c, l);
 }
 
@@ -1757,18 +1709,6 @@ namespace regexp {
 
 typedef hilti::ctor::RegExp::pattern re_pattern;
 typedef hilti::ctor::RegExp::pattern_list re_pattern_list;
-typedef hilti::type::RegExp::attribute_list attribute_list;
-
-/// Instantiates a RegExp pattern for use with create().
-///
-/// re: The regular expression itself.
-///
-/// flags: An optional set of compilation flags. Currently, no flags are
-/// supported though.
-inline re_pattern pattern(const ::string& re, const ::string& flags, const Location& l=Location::None)
-{
-    return std::make_tuple(re, flags);
-}
 
 /// Instantiates an AST expression node representing a RegExp ctor with a
 /// series of patterns.
@@ -1778,9 +1718,11 @@ inline re_pattern pattern(const ::string& re, const ::string& flags, const Locat
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(const re_pattern_list& patterns, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Ctor> create(const re_pattern_list& patterns,
+                                                  const hilti::AttributeSet& attrs = hilti::AttributeSet(),
+                                                  const Location& l=Location::None)
 {
-    auto c = std::make_shared<ctor::RegExp>(patterns, l);
+    auto c = std::make_shared<ctor::RegExp>(patterns, attrs, l);
     return std::make_shared<hilti::expression::Ctor>(c, l);
 }
 
@@ -1791,11 +1733,13 @@ inline shared_ptr<hilti::expression::Ctor> create(const re_pattern_list& pattern
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(const re_pattern& pattern, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Ctor> create(const re_pattern& pattern,
+                                                  const hilti::AttributeSet& attrs = hilti::AttributeSet(),
+                                                  const Location& l=Location::None)
 {
     re_pattern_list patterns;
     patterns.push_back(pattern);
-    return create(patterns, l);
+    return create(patterns, attrs, l);
 }
 
 /// Instantiates a type::RegExp type.
@@ -1806,16 +1750,7 @@ inline shared_ptr<hilti::expression::Ctor> create(const re_pattern& pattern, con
 /// l: Location associated with the type.
 ///
 /// Returns: The type node.
-inline shared_ptr<hilti::type::RegExp> type(const attribute_list& attrs = attribute_list(), const Location& l=Location::None) {
-    return std::make_shared<hilti::type::RegExp>(attrs, l);
-}
-
-/// Instantiates a type::RegExp wildcard type.
-///
-/// l: Location associated with the type.
-///
-/// Returns: The type node.
-inline shared_ptr<hilti::type::RegExp> typeAny(const Location& l=Location::None) {
+inline shared_ptr<hilti::type::RegExp> type(const Location& l=Location::None) {
     return std::make_shared<hilti::type::RegExp>(l);
 }
 
@@ -1913,7 +1848,10 @@ inline shared_ptr<hilti::type::Struct> typeAny(const Location& l=Location::None)
 /// l: Location associated with the field.
 inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, bool internal = false, const Location& l=Location::None)
 {
-    return std::make_shared<hilti::type::struct_::Field>(id, type, default_, internal, l);
+    if ( default_ )
+        type->attributes().add(attribute::DEFAULT, default_);
+
+    return std::make_shared<hilti::type::struct_::Field>(id, type, internal, l);
 }
 
 /// Instanties a struct field for its type description.
@@ -1931,9 +1869,163 @@ inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_p
 /// l: Location associated with the field.
 inline shared_ptr<hilti::type::struct_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, bool internal = false, const Location& l=Location::None)
 {
-    return std::make_shared<hilti::type::struct_::Field>(id::node(name), type, default_, internal, l);
+    if ( default_ )
+        type->attributes().add(attribute::DEFAULT, default_);
+
+    return std::make_shared<hilti::type::struct_::Field>(id::node(name), type, internal, l);
 }
 
+
+}
+
+namespace union_ {
+
+typedef hilti::type::Union::field_list field_list;
+
+/// Instantiates a type::Union type with named fields
+///
+/// fields: The union's fields.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Union> type(const field_list& fields, const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Union>(fields, l);
+}
+
+/// Instantiates a type::Union type with anonymous fields, based on types
+/// only. This resembles a variant.
+///
+/// types: The unions's types.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Union> type(const type_list& types, const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Union>(types, l);
+}
+
+/// Instantiates a type::Union wildcard type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Union> typeAny(const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Union>(l);
+}
+
+/// Instanties a union field for its type description.
+///
+/// id:  The name of the field.
+///
+/// type: The type of the field.
+///
+/// default_: An optional default value, null if no default.
+///
+/// internal: If true, the field will not be printed when the union
+/// type is rendered as a string. Internal IDS are also skipped from
+/// ctor expressions and list conversions.
+///
+/// l: Location associated with the field.
+inline shared_ptr<hilti::type::union_::Field> field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, bool internal = false, const Location& l=Location::None)
+{
+    if ( default_ )
+        type->attributes().add(attribute::DEFAULT, default_);
+
+    return std::make_shared<hilti::type::union_::Field>(id, type, internal, l);
+}
+
+/// Instanties a union field for its type description.
+///
+/// name:  The name of the field.
+///
+/// type: The type of the field.
+///
+/// default_: An optional default value, null if no default.
+///
+/// internal: If true, the field will not be printed when the union
+/// type is rendered as a string. Internal IDS are also skipped from
+/// ctor expressions and list conversions.
+///
+/// l: Location associated with the field.
+inline shared_ptr<hilti::type::union_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, const Location& l=Location::None)
+{
+    return std::make_shared<hilti::type::union_::Field>(id::node(name), type, l);
+}
+
+/// Instantiates an AST expression node representing a union constant that
+/// has one named field set.
+///
+/// utype: The union's type. This must be a union with named fields. The type
+/// can be null, in which case, the constant's type is derived as a union
+/// with just a single field of type corresponding to that of *value*.
+///
+/// field: The ID of the field to initialize.
+///
+/// value: The value to set the field to.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(shared_ptr<Type> utype, shared_ptr<ID> field, shared_ptr<Expression> value, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Union>(utype, field, value, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing a union constant that
+/// has one named field set.
+///
+/// utype: The union's type. This must be a union with named fields. The type
+/// can be null, in which case, the constant's type is derived as a union
+/// with just a single field of type corresponding to that of *value*.
+///
+/// field: A constant string expression with the ID of the field to
+/// initialize.
+///
+/// value: The value to set the field to.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(shared_ptr<Type> utype, shared_ptr<Expression> field, shared_ptr<Expression> value, const Location& l=Location::None)
+{
+    auto cexpr = ast::checkedCast<::hilti::expression::Constant>(field);
+    auto cval = ast::checkedCast<::hilti::constant::String>(cexpr->constant());
+    auto id = std::make_shared<::hilti::ID>(cval->value(), field->location());
+    auto c = std::make_shared<constant::Union>(utype, id, value, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing a union constant that
+/// has an anoymous field set.
+///
+/// utype: The union's type. This must be a union with anoymous fields. The
+/// type can be null, in which case, the constant's type is derived as a
+/// union with just a single anonymous field of type corresponding to that of
+/// *value*.
+///
+/// value: The value to set the union to.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(shared_ptr<Type> utype, shared_ptr<Expression> value, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Union>(utype, nullptr, value, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing an unset union constant of wildcard type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Union>(nullptr, nullptr, nullptr, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
 
 }
 
@@ -1972,7 +2064,7 @@ inline shared_ptr<hilti::type::Context> typeAny(const Location& l=Location::None
 /// l: Location associated with the field.
 inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, const Location& l=Location::None)
 {
-    return std::make_shared<hilti::type::struct_::Field>(id, type, nullptr, false, l);
+    return std::make_shared<hilti::type::struct_::Field>(id, type, false, l);
 }
 
 /// Instanties a context field for its type description.
@@ -1984,7 +2076,7 @@ inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_p
 /// l: Location associated with the field.
 inline shared_ptr<hilti::type::struct_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, const Location& l=Location::None)
 {
-    return std::make_shared<hilti::type::struct_::Field>(id::node(name), type, nullptr, false, l);
+    return std::make_shared<hilti::type::struct_::Field>(id::node(name), type, false, l);
 }
 
 }

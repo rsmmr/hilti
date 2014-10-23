@@ -137,7 +137,7 @@ typedef struct __hlt_cmd_write __hlt_cmd_write;
 
 // Internal function to perform the actual write from the queue manager. This
 // function is not thread-safe and must be called only from a single thread.
-void __hlt_file_cmd_internal(__hlt_cmd* c);
+void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_execution_context* ctx);
 
 /// @}
 

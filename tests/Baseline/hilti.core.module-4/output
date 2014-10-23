@@ -1,2 +1,3 @@
 module.hlt:1.1-2.4: error, syntax error, unexpected "'void'", expecting "'module'"
+module.hlt: Aborting due to verification error.
 error running hiltic, aborting

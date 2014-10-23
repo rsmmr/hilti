@@ -21,7 +21,7 @@ static string _opToStr(shared_ptr<Expression> op)
 void StatementBuilder::visit(statement::instruction::struct_::New* i)
 {
     auto stype = ast::as<type::Struct>(typedType(i->op1()));
-    auto result = cg()->llvmStructNew(stype);
+    auto result = cg()->llvmStructNew(stype, false);
     cg()->llvmStore(i, result);
 }
 
@@ -53,6 +53,7 @@ void StatementBuilder::visit(statement::instruction::struct_::GetDefault* i)
                                           auto dst = cg->builder()->CreateBitCast(clone, cg->llvmTypePtr());
                                           CodeGen::value_list args = { dst, cg->llvmRtti(i->op3()->type()), src };
                                           cg->llvmCallC("hlt_clone_deep", args, true, false);
+                                          cg->llvmDtor(clone, field->type(), true, "struct.get-default");
                                           return cg->builder()->CreateLoad(clone);
                                       },
 #else
@@ -74,8 +75,13 @@ void StatementBuilder::visit(statement::instruction::struct_::IsSet* i)
 void StatementBuilder::visit(statement::instruction::struct_::Set* i)
 {
     auto stype = referencedType(i->op1());
+    auto fname = _opToStr(i->op2());
+    auto field = ast::checkedCast<type::Struct>(stype)->lookup(fname);
+    assert(field);
+
     auto op1 = cg()->llvmValue(i->op1());
-    cg()->llvmStructSet(stype, op1, _opToStr(i->op2()), i->op3());
+    auto op3 = cg()->llvmValue(i->op3(), field->type());
+    cg()->llvmStructSet(stype, op1, fname, op3);
 }
 
 void StatementBuilder::visit(statement::instruction::struct_::Unset* i)

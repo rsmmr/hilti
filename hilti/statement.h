@@ -374,6 +374,9 @@ public:
     /// Marks this function as internally added.
     void setInternal() { _internal = true; }
 
+    /// Returns true the instruction's target operand is hoisted.
+    bool hoisted() const;
+
     ACCEPT_VISITOR(Statement);
 
     /// Constructor.

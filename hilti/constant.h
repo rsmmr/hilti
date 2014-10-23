@@ -511,6 +511,51 @@ private:
    uint64_t _interv;
 };
 
+/// AST node for a union constructor.
+class Union : public Constant
+{
+public:
+   /// Constructor.
+   ///
+   /// utype: The type of the union. Can be null to derive automatically;
+   /// then the type will be a union with a single field determined by
+   /// *field* and *value*.
+   ///
+   /// field: The name of the field to initialize. Can be null for an
+   /// anoymous field, with the field value's type determing what to set.
+   ///
+   /// value: The value to initialize the field with. Can be null for a union
+   /// with all fields left unset.
+   ///
+   /// l: An associated location.
+   Union(shared_ptr<Type> utype, shared_ptr<ID> field, shared_ptr<Expression> value, const Location& l=Location::None);
+
+   /// Returns the type of the constructed union. If not explicity set, this
+   /// will be derived from the value. If no value has been set either, this
+   /// will be a wildcard union type.
+   shared_ptr<Type> type() const override;
+
+   /// Returns true if the type is derived rather than provied.
+   bool typeDerived() const { return _type.get(); }
+
+   /// Returns the name of the initialized field if any, or null if
+   /// anonymous.
+   shared_ptr<ID> id() const { return _id; }
+
+   /// Returns the initilization value if any, or null if none.
+   shared_ptr<Expression> expression() const { return _expr; }
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
+
+   ACCEPT_VISITOR(Constant);
+
+private:
+   node_ptr<Type> _type;
+   node_ptr<ID> _id;
+   node_ptr<Expression> _expr;
+};
+
+
 }
 
 }

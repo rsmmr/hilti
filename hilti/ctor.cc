@@ -103,13 +103,12 @@ std::list<shared_ptr<hilti::Expression>> ctor::Set::flatten()
     return l;
 }
 
-ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, shared_ptr<Expression> def, const Location& l) : Ctor(l)
+ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l) : Ctor(l)
 {
     assert(ktype);
     assert(vtype);
 
     _elems = elems;
-    _default = def;
     _type = std::make_shared<type::Map>(ktype, vtype, l);
     _type = std::make_shared<type::Reference>(_type);
 
@@ -119,7 +118,6 @@ ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_lis
     }
 
     addChild(_type);
-    addChild(_default);
 }
 
 ctor::Map::Map(shared_ptr<Type> mtype, const element_list& elems, const Location& l)
@@ -151,10 +149,22 @@ std::list<shared_ptr<hilti::Expression>> ctor::Map::flatten()
 
 }
 
-ctor::RegExp::RegExp(const pattern_list& patterns, const Location& l)
+shared_ptr<Expression> ctor::Map::default_() const
+{
+    return type()->attributes().getAsExpression(attribute::DEFAULT);
+}
+
+ctor::RegExp::RegExp(const pattern_list& patterns,
+                     const hilti::AttributeSet& attrs,
+                     const Location& l)
 {
     _patterns = patterns;
-    _type = std::make_shared<type::RegExp>(type::RegExp::attribute_list(), l);
+
+    _attributes = std::make_shared<AttributeSet>();
+    *_attributes = attrs;
+    addChild(_attributes);
+
+    _type = std::make_shared<type::RegExp>(l);
     _type = std::make_shared<type::Reference>(_type);
     addChild(_type);
 }

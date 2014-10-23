@@ -325,19 +325,21 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
         internalError("unexpected calling convention in hiltiDefineFunction()");
     }
 
+    hilti::builder::attribute_set attrs;
+
     // TODO: Do we always want to export these?
     if ( ! declare_only )
         moduleBuilder()->exportID(name);
 
     if ( func->body() && ! declare_only ) {
-        auto decl = moduleBuilder()->pushFunction(name, result, params, cc, nullptr, hilti::builder::function::attributes(), false, func->location());
+        auto decl = moduleBuilder()->pushFunction(name, result, params, cc, attrs, false, func->location());
         hiltiStatement(func->body());
         moduleBuilder()->popFunction();
         return decl;
     }
 
     else
-        return moduleBuilder()->declareFunction(name, result, params, cc, func->location());
+        return moduleBuilder()->declareFunction(name, result, params, cc, attrs, func->location());
 }
 
 shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> func, const string& scope)
@@ -355,7 +357,7 @@ shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> fu
 
     // To make overloaded functions unique, we add a hash of the signature.
     auto type = func->type()->render();
-    auto name = util::fmt("%s__%s", id, util::uitoa_n(util::hash(type), 64, 4));
+    auto name = util::fmt("%s__%s", id, util::uitoa_n(util::hash(type), 62, 4));
 
     return hilti::builder::id::node(name, func->location());
 }
@@ -626,3 +628,419 @@ shared_ptr<hilti::Expression> CodeGen::hiltiSynchronize(shared_ptr<Production> p
 {
     return _synchronizer->hiltiSynchronize(p, data, cur);
 }
+
+static binpac::type::unit::item::field::Switch* _switch(shared_ptr<binpac::type::unit::Item> item)
+{
+    auto f = ast::tryCast<binpac::type::unit::item::Field>(item);
+
+    if ( ! (f && f->parent()) )
+        return nullptr;
+
+    return dynamic_cast<binpac::type::unit::item::field::Switch *>(f->parent());
+}
+
+static bool _usingStructForItems(shared_ptr<binpac::type::unit::Item> f)
+{
+    auto sw = _switch(f);
+
+    if ( ! sw )
+        return false;
+
+    auto c = sw->case_(f);
+    return c && (c->fields().size() > 1);
+}
+
+static shared_ptr<hilti::Type> _structType(const string& uniq)
+{
+    auto n = ::util::fmt("__struct_%s", uniq);
+    return hilti::builder::type::byName(n);
+}
+
+static shared_ptr<hilti::Expression> _structTmp(CodeGen* cg, const string& uniq)
+{
+    auto stype = ::hilti::builder::reference::type(_structType(uniq));
+    auto s = cg->moduleBuilder()->addTmp("s", stype);
+    return s;
+}
+
+static shared_ptr<hilti::Expression> _structFieldName(const string& uniq)
+{
+    return ::hilti::builder::string::create(::util::fmt("items_%s", uniq));
+}
+
+static shared_ptr<hilti::Type> _unionType(const string& uniq)
+{
+    auto n = ::util::fmt("__union_%s", uniq);
+    return hilti::builder::type::byName(n);
+}
+
+static shared_ptr<hilti::Expression> _unionTmp(CodeGen* cg, const string& uniq)
+{
+    auto utype = _unionType(uniq);
+    auto u = cg->moduleBuilder()->addTmp("u", utype);
+    return u;
+}
+
+static shared_ptr<hilti::Expression> _unionFieldName(const string& uniq)
+{
+    return ::hilti::builder::string::create(::util::fmt("switch_%s", uniq));
+}
+
+typedef std::function<void (void)> _callback_t;
+
+static void _ifSet(CodeGen* cg, shared_ptr<hilti::Instruction> ins, shared_ptr<hilti::Expression> o, shared_ptr<hilti::Expression> fn, _callback_t yes_branch, _callback_t no_branch)
+{
+    auto has = cg->builder()->addTmp("is_set", ::hilti::builder::boolean::type());
+    cg->builder()->addInstruction(has, ins, o, fn);
+
+    auto branches = cg->builder()->addIfElse(has);
+    auto yes = std::get<0>(branches);
+    auto no = std::get<1>(branches);
+    auto done = std::get<2>(branches);
+
+    cg->moduleBuilder()->pushBuilder(yes);
+    yes_branch();
+    cg->builder()->addInstruction(::hilti::instruction::flow::Jump, done->block());
+    cg->moduleBuilder()->popBuilder();
+
+    cg->moduleBuilder()->pushBuilder(no);
+    no_branch();
+    cg->builder()->addInstruction(::hilti::instruction::flow::Jump, done->block());
+    cg->moduleBuilder()->popBuilder();
+
+    cg->moduleBuilder()->pushBuilder(done);
+}
+
+// struct pobj {
+//     string a;
+//     union _switch {
+//         bool b
+//         string c
+//         ref<struct> d;
+//     }
+//     bool e;
+// }
+
+static void _getFieldInStruct(CodeGen* cg, shared_ptr<hilti::Expression> result, shared_ptr<hilti::Expression> s, shared_ptr<hilti::Expression> fn, shared_ptr<binpac::type::unit::Item> f, shared_ptr<hilti::Expression> top_level_s, bool op_is_set);
+static void _getFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> result, shared_ptr<hilti::Expression> u, shared_ptr<hilti::Expression> fn, shared_ptr<binpac::type::unit::Item> f, shared_ptr<hilti::Expression> top_level_s, bool op_is_set);
+static void _presetDefaultInStruct(CodeGen* cg, shared_ptr<hilti::Expression> s, shared_ptr<hilti::Expression> fn, shared_ptr<hilti::Expression> value, shared_ptr<binpac::type::unit::Item> f, shared_ptr<hilti::Expression> top_level_s);
+
+static void _setFieldInStruct(CodeGen* cg, shared_ptr<hilti::Expression> s, shared_ptr<hilti::Expression> fn, shared_ptr<hilti::Expression> value, shared_ptr<binpac::type::unit::Item> f);
+static void _setFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> u, shared_ptr<hilti::Expression> fn, shared_ptr<hilti::Expression> value, shared_ptr<binpac::type::unit::Item> f);
+
+static void _getFieldInStruct(CodeGen* cg, shared_ptr<hilti::Expression> result, shared_ptr<hilti::Expression> s, shared_ptr<hilti::Expression> fn, shared_ptr<binpac::type::unit::Item> f, shared_ptr<hilti::Expression> top_level_s, bool op_is_set)
+{
+    shared_ptr<hilti::Instruction> ins_struct;
+
+    if ( op_is_set )
+        ins_struct = ::hilti::instruction::struct_::IsSet;
+    else
+        ins_struct = ::hilti::instruction::struct_::Get;
+
+    if ( auto sw = _switch(f) ) {
+        auto u = _unionTmp(cg, sw->uniqueName());
+        auto ufn = _unionFieldName(sw->uniqueName());
+
+        if ( ! (f && f->attributes()->lookup("default")) ) {
+            if ( op_is_set ) {
+                _ifSet(cg, ::hilti::instruction::struct_::IsSet, s, ufn,
+                       [&] () { // Union field in struct is set.
+                           cg->builder()->addInstruction(u, ::hilti::instruction::struct_::Get, s, ufn);
+                           _getFieldInUnion(cg, result, u, fn, f, nullptr, op_is_set);
+                       },
+
+                       [&] () { // Union field in struct is not set.
+                           cg->builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, ::hilti::builder::boolean::create(false));
+                       });
+            }
+
+            else {
+                cg->builder()->addInstruction(u, ::hilti::instruction::struct_::Get, s, ufn);
+                _getFieldInUnion(cg, result, u, fn, f, nullptr, op_is_set);
+            }
+        }
+
+        else {
+            _ifSet(cg, ::hilti::instruction::struct_::IsSet, s, ufn,
+                   [&] () { // Union field in struct is set.
+                       cg->builder()->addInstruction(u, ::hilti::instruction::struct_::Get, s, ufn);
+                       _getFieldInUnion(cg, result, u, fn, f, s, op_is_set);
+                   },
+
+                   [&] () { // Union field in struct is not set.
+                       auto dn = ::hilti::builder::string::create(::util::fmt("__default_%s", f->id()->name()));
+                       cg->builder()->addInstruction(result, ins_struct, top_level_s, dn);
+                   });
+        }
+    }
+
+    else
+        cg->builder()->addInstruction(result, ins_struct, s, fn);
+}
+
+static void _getFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> result, shared_ptr<hilti::Expression> u, shared_ptr<hilti::Expression> fn, shared_ptr<binpac::type::unit::Item> f, shared_ptr<hilti::Expression> top_level_s, bool op_is_set)
+{
+    shared_ptr<hilti::Instruction> ins_struct;
+    shared_ptr<hilti::Instruction> ins_union;
+
+    if ( op_is_set )
+        ins_struct = ::hilti::instruction::struct_::IsSet;
+    else
+        ins_struct = ::hilti::instruction::struct_::Get;
+
+    if ( op_is_set )
+        ins_union = ::hilti::instruction::union_::IsSetField;
+    else
+        ins_union = ::hilti::instruction::union_::GetField;
+
+    if ( _usingStructForItems(f) ) {
+        auto sw = _switch(f);
+        auto c = sw->case_(f);
+        assert(c);
+        auto s = _structTmp(cg, c->uniqueName());
+        auto ufn = _structFieldName(c->uniqueName());
+
+        if ( ! (f && f->attributes()->lookup("default")) ) {
+            if ( op_is_set ) {
+                _ifSet(cg, ::hilti::instruction::union_::IsSetField, u, ufn,
+                       [&] () { // Union field in struct is set.
+                           cg->builder()->addInstruction(s, ::hilti::instruction::union_::GetField, u, ufn);
+                           _getFieldInStruct(cg, result, s, fn, nullptr, top_level_s, op_is_set); // TODO: For truly recursive fields, need new parent here.
+                       },
+
+                       [&] () { // Union field in struct is not set.
+                           cg->builder()->addInstruction(result, ::hilti::instruction::operator_::Assign, ::hilti::builder::boolean::create(false));
+                       });
+            }
+
+            else {
+                cg->builder()->addInstruction(s, ::hilti::instruction::union_::GetField, u, ufn);
+                _getFieldInStruct(cg, result, s, fn, nullptr, top_level_s, op_is_set); // TODO: For truly recursive fields, need new parent here.
+            }
+        }
+
+        else {
+            _ifSet(cg, ::hilti::instruction::union_::IsSetField, u, ufn,
+                   [&] () { // Union field in struct is set.
+                       cg->builder()->addInstruction(s, ::hilti::instruction::union_::GetField, u, ufn);
+                       _getFieldInStruct(cg, result, s, fn, nullptr, top_level_s, op_is_set); // TODO: For truly recursive fields, need new parent here.
+                   },
+
+                   [&] () { // Union field in struct is not set.
+                       auto dn = ::hilti::builder::string::create(::util::fmt("__default_%s", f->id()->name()));
+                       cg->builder()->addInstruction(result, ins_struct, top_level_s, dn);
+                   });
+        }
+    }
+
+    else {
+        if ( ! (f && f->attributes()->lookup("default")) ) {
+                cg->builder()->addInstruction(result, ins_union, u, fn);
+        }
+
+        else {
+            _ifSet(cg, ::hilti::instruction::union_::IsSetField, u, fn,
+                   [&] () { // Union field in struct is set.
+                       cg->builder()->addInstruction(result, ins_union, u, fn);
+                   },
+
+                   [&] () { // Union field in struct is not set.
+                       auto dn = ::hilti::builder::string::create(::util::fmt("__default_%s", f->id()->name()));
+                       cg->builder()->addInstruction(result, ins_struct, top_level_s, dn);
+                   });
+        }
+    }
+}
+
+static void _presetDefaultInStruct(CodeGen* cg, shared_ptr<hilti::Expression> s, shared_ptr<hilti::Expression> fn, shared_ptr<hilti::Expression> value, shared_ptr<binpac::type::unit::Item> f, shared_ptr<hilti::Expression> top_level_s)
+{
+    if ( _switch(f) ) {
+        auto dn = ::hilti::builder::string::create(::util::fmt("__default_%s", f->id()->name()));
+        cg->builder()->addInstruction(hilti::instruction::struct_::Set, top_level_s, dn, value);
+    }
+
+    else
+        cg->builder()->addInstruction(hilti::instruction::struct_::Set, s, fn, value);
+}
+
+static void _setFieldInStruct(CodeGen* cg, shared_ptr<hilti::Expression> s, shared_ptr<hilti::Expression> fn, shared_ptr<hilti::Expression> value, shared_ptr<binpac::type::unit::Item> f)
+{
+    if ( auto sw = _switch(f) ) {
+        auto u = _unionTmp(cg, sw->uniqueName());
+        auto ufn = _unionFieldName(sw->uniqueName());
+
+        _ifSet(cg, ::hilti::instruction::struct_::IsSet, s, ufn,
+               [&] () { // Struct field in union is set.
+                   cg->builder()->addInstruction(u, ::hilti::instruction::struct_::Get, s, ufn);
+               },
+
+               [&] () { // Struct field in union is not set.
+               });
+
+        _setFieldInUnion(cg, u, fn, value, f);
+        cg->builder()->addInstruction(::hilti::instruction::struct_::Set, s, ufn, u);
+    }
+
+    else
+        cg->builder()->addInstruction(hilti::instruction::struct_::Set, s, fn, value);
+}
+
+static void _setFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> u, shared_ptr<hilti::Expression> fn, shared_ptr<hilti::Expression> value, shared_ptr<binpac::type::unit::Item> f)
+{
+    auto sw = _switch(f);
+    assert(sw);
+
+    auto utype = _unionType(sw->uniqueName());
+
+    if ( _usingStructForItems(f) ) {
+        auto c = sw->case_(f);
+        assert(c);
+        auto s = _structTmp(cg, c->uniqueName());
+        auto sfn = _structFieldName(c->uniqueName());
+
+        _ifSet(cg, ::hilti::instruction::union_::IsSetField, u, sfn,
+               [&] () { // Struct field in union is set.
+                   _getFieldInUnion(cg, s, u, sfn, nullptr, nullptr, false); // TODO: For truly recursive fields, need new parent here.
+               },
+
+               [&] () { // Struct field in union is not set.
+                   cg->builder()->addInstruction(s, ::hilti::instruction::struct_::New,
+                                                ::hilti::builder::type::create(_structType(c->uniqueName())));
+                   cg->builder()->addInstruction(u, ::hilti::instruction::operator_::Assign,
+                                                ::hilti::builder::union_::create(utype, sfn, s));
+               });
+
+        _setFieldInStruct(cg, s, fn, value, nullptr);  // TODO: For truly recursive fields, need new parent here.
+    }
+
+    else {
+        cg->builder()->addInstruction(u, ::hilti::instruction::operator_::Assign,
+                                         ::hilti::builder::union_::create(utype, fn, value));
+    }
+}
+
+shared_ptr<hilti::Expression> CodeGen::_hiltiItemOp(HiltiItemOp i, shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, const std::string& fname, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> addl_op)
+{
+    if ( field && field->aliased() )
+        // Aliased fields are stored at the top-level, and clearing the field
+        // here will direct the functions called be low to access it here.
+        // The whole semantics of aliased fields aren't great though ...
+        field = nullptr;
+
+    auto fn = ::hilti::builder::string::create(fname);
+
+    switch ( i ) {
+     case GET: {
+         auto result = builder()->addTmp("item", ftype);
+         _getFieldInStruct(this, result, unit, fn, field, unit, false);
+         return result;
+     }
+
+     case GET_DEFAULT: {
+         if ( _switch(field) )
+             internalError("_hiltItemOp does not implement GET_DEFAULT for switches");
+
+         auto result = builder()->addTmp("item", ftype);
+         builder()->addInstruction(result, hilti::instruction::struct_::GetDefault, unit, fn, addl_op);
+         return result;
+     }
+
+     case IS_SET: {
+         auto result = builder()->addTmp("is_set", ::hilti::builder::boolean::type());
+         _getFieldInStruct(this, result, unit, fn, field, unit, true);
+         return result;
+     }
+
+     case SET: {
+         _setFieldInStruct(this, unit, fn, addl_op, field);
+         return nullptr;
+     }
+
+     case PRESET_DEFAULT: {
+         _presetDefaultInStruct(this, unit, fn, addl_op, field, unit);
+         return nullptr;
+     }
+
+     case UNSET: {
+         if ( _switch(field) )
+             internalError("_hiltItemOp does not implement UNSET for switches");
+
+         builder()->addInstruction(hilti::instruction::struct_::Unset, unit, fn);
+         return nullptr;
+     }
+
+    }
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemGet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> default_)
+{
+    if ( default_ )
+        return _hiltiItemOp(GET_DEFAULT, unit, field, field->id()->name(), hiltiType(field->fieldType()), default_);
+    else
+        return _hiltiItemOp(GET, unit, field, field->id()->name(), hiltiType(field->fieldType()), nullptr);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemGet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> default_)
+{
+    return hiltiItemGet(unit, field->name(), ftype, default_);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemGet(shared_ptr<hilti::Expression> unit, const string& field, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> default_)
+{
+    if ( default_ )
+        return _hiltiItemOp(GET_DEFAULT, unit, nullptr, field, ftype, default_);
+    else
+        return _hiltiItemOp(GET, unit, nullptr, field, ftype, nullptr);
+}
+
+void CodeGen::hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> value)
+{
+    _hiltiItemOp(SET, unit, field, field->id()->name(), value->type(), value);
+}
+
+void CodeGen::hiltiItemPresetDefault(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> value)
+{
+    _hiltiItemOp(PRESET_DEFAULT, unit, field, field->id()->name(), value->type(), value);
+}
+
+void CodeGen::hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field, shared_ptr<hilti::Expression> value)
+{
+    hiltiItemSet(unit, field->name(), value);
+}
+
+void CodeGen::hiltiItemSet(shared_ptr<hilti::Expression> unit, const string& field, shared_ptr<hilti::Expression> value)
+{
+    _hiltiItemOp(SET, unit, nullptr, field, nullptr, value);
+}
+
+void CodeGen::hiltiItemUnset(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field)
+{
+    _hiltiItemOp(UNSET, unit, field, field->id()->name(), hiltiType(field->fieldType()), nullptr);
+}
+
+void CodeGen::hiltiItemUnset(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field)
+{
+    hiltiItemUnset(unit, field->name());
+}
+
+void CodeGen::hiltiItemUnset(shared_ptr<hilti::Expression> unit, const string& field)
+{
+    _hiltiItemOp(UNSET, unit, nullptr, field, nullptr, nullptr);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemIsSet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field)
+{
+    return _hiltiItemOp(IS_SET, unit, field, field->id()->name(), hiltiType(field->fieldType()), nullptr);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemIsSet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field)
+{
+    return hiltiItemIsSet(unit, field->name());
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemIsSet(shared_ptr<hilti::Expression> unit, const string& field)
+{
+    return _hiltiItemOp(IS_SET, unit, nullptr, field, nullptr, nullptr);
+}
+
+

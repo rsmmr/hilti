@@ -3,13 +3,24 @@
 
 #include "../stmt-builder.h"
 
+#include "libhilti/regexp.h"
+
 using namespace hilti;
 using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::regexp::New* i)
 {
-    CodeGen::expr_list args;
-    args.push_back(i->op1());
+    auto t = typedType(i->op1());
+
+    int flags = 0;
+
+    if ( t->attributes().has(attribute::NOSUB) )
+        flags |= HLT_REGEXP_NOSUB;
+
+    if ( t->attributes().has(attribute::FIRSTMATCH) )
+        flags |= HLT_REGEXP_FIRST_MATCH;
+
+    CodeGen::expr_list args = { builder::integer::create(flags) };
     auto result = cg()->llvmCall("hlt::regexp_new", args);
     cg()->llvmStore(i, result);
 }

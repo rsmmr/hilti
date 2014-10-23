@@ -55,10 +55,10 @@ hlt_exception_type hlt_exception_type_error = { "TypeError", &hlt_exception_unsp
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}; // FIXME: &hlt_type_info_hlt_int_32 };
 
-void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt)
+void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt, hlt_execution_context* ctx)
 {
     if ( excpt->arg ) {
-        GC_DTOR_GENERIC(excpt->arg, excpt->type->argtype);
+        GC_DTOR_GENERIC(excpt->arg, excpt->type->argtype, ctx);
         hlt_free(excpt->arg);
     }
 
@@ -66,16 +66,15 @@ void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt)
         hlt_fiber_delete(excpt->fiber, 0);
 }
 
-hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)
+static inline void _hlt_exception_init(hlt_exception* excpt, hlt_exception_type* type, void* arg, const char* location, hlt_execution_context* ctx)
 {
-    hlt_exception* excpt = GC_NEW(hlt_exception);
     excpt->type = type;
 
     if ( arg ) {
         hlt_exception* e;
         excpt->arg = hlt_malloc(type->argtype->size);
         memcpy(excpt->arg, &arg, type->argtype->size);
-        GC_CCTOR_GENERIC(excpt->arg, type->argtype);
+        GC_CCTOR_GENERIC(excpt->arg, type->argtype, ctx);
     }
 
     else
@@ -84,12 +83,18 @@ hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char
     excpt->fiber = 0;
     excpt->vid = HLT_VID_MAIN;
     excpt->location = location;
+}
+
+hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location, hlt_execution_context* ctx)
+{
+    hlt_exception* excpt = GC_NEW(hlt_exception, ctx);
+    _hlt_exception_init(excpt, type, arg, location, ctx);
     return excpt;
 }
 
-hlt_exception* hlt_exception_new_yield(hlt_fiber* fiber, const char* location)
+hlt_exception* hlt_exception_new_yield(hlt_fiber* fiber, const char* location, hlt_execution_context* ctx)
 {
-   hlt_exception* excpt = hlt_exception_new(&hlt_exception_yield, 0, location);
+   hlt_exception* excpt = hlt_exception_new(&hlt_exception_yield, 0, location, ctx);
    excpt->fiber = fiber;
    return excpt;
 }
@@ -109,21 +114,15 @@ void __hlt_exception_clear_fiber(hlt_exception* excpt)
     excpt->fiber = 0;
 }
 
-#if 0
-hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location)
+void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg, const char* location, hlt_execution_context* ctx)
 {
-    int32_t *arg_copy = hlt_malloc(sizeof(int32_t));
-    *arg_copy = arg;
-    hlt_exception *excpt = __hlt_exception_new(&hlt_exception_yield, arg_copy, location);
-    excpt->cont = cont;
-    return excpt;
-}
-#endif
+    if ( ! dst ) {
+        fprintf(stderr, "unexpected exception in libhilti (__hlt_set_exception)\n");
+        abort();
+    }
 
-void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg, const char* location)
-{
-    assert(dst);
-    GC_ASSIGN_REFED(*dst, hlt_exception_new(type, arg, location), hlt_exception);
+    hlt_exception* e = hlt_exception_new(type, arg, location, ctx);
+    GC_ASSIGN(*dst, e, hlt_exception, ctx);
 }
 
 int8_t __hlt_exception_match(hlt_exception* excpt, hlt_exception_type* type)
@@ -172,26 +171,22 @@ static hlt_string __exception_render(const hlt_exception* e, hlt_execution_conte
     hlt_string s = hlt_string_from_asciiz(e->type->name, &excpt, ctx);
 
     if ( e->arg ) {
-        __hlt_pointer_stack seen;
-        __hlt_pointer_stack_init(&seen);
-        hlt_string arg = hlt_object_to_string(e->type->argtype, e->arg, 0, &seen, &excpt, ctx);
-        __hlt_pointer_stack_destroy(&seen);
-
-        s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz(" with argument '", &excpt, ctx), &excpt, ctx);
-        s = hlt_string_concat_and_unref(s, arg, &excpt, ctx);
-        s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz("'", &excpt, ctx), &excpt, ctx);
+        hlt_string arg = hlt_object_to_string(e->type->argtype, e->arg, 0, &excpt, ctx);
+        s = hlt_string_concat(s, hlt_string_from_asciiz(" with argument '", &excpt, ctx), &excpt, ctx);
+        s = hlt_string_concat(s, arg, &excpt, ctx);
+        s = hlt_string_concat(s, hlt_string_from_asciiz("'", &excpt, ctx), &excpt, ctx);
     }
 
     if ( e->vid != HLT_VID_MAIN ) {
-	char buffer[1024];
-	snprintf(buffer, sizeof(buffer), " in virtual thread %" PRId64, e->vid);
-        s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
+        char buffer[1024];
+        snprintf(buffer, sizeof(buffer), " in virtual thread %" PRId64, e->vid);
+        s = hlt_string_concat(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
     }
 
     if ( e->location ) {
         char buffer[1024];
         snprintf(buffer, sizeof(buffer), " (from %s)", e->location);
-        s = hlt_string_concat_and_unref(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
+        s = hlt_string_concat(s, hlt_string_from_asciiz(buffer, &excpt, ctx), &excpt, ctx);
     }
 
     return s;
@@ -213,7 +208,6 @@ static void __exception_print(const char* prefix, hlt_exception* e, hlt_executio
     fprintf(stderr, "%s%s\n", prefix, c);
 
     hlt_free(c);
-    GC_DTOR(s, hlt_string);
 
     fflush(stderr);
     funlockfile(stderr);
@@ -242,7 +236,7 @@ void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_executio
     hlt_abort();
 }
 
-hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_exception* e = *((const hlt_exception**)obj);
     return __exception_render(e, ctx);
@@ -251,7 +245,5 @@ hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, i
 char* hlt_exception_to_asciiz(hlt_exception* e, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s = __exception_render(e, ctx);
-    char* c = hlt_string_to_native(s, excpt, ctx);
-    GC_DTOR(s, hlt_string);
-    return c;
+    return hlt_string_to_native(s, excpt, ctx);
 }

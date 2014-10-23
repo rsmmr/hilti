@@ -55,6 +55,11 @@ iBeginH(bytes, Equal, "equal")
     iOp2(optype::refBytes, true);
 iEndH
 
+iBeginH(bytes, Copy, "bytes.copy")
+    iTarget(optype::refBytes)
+    iOp1(optype::refBytes, true);
+iEndH
+
 iBeginH(bytes, Diff, "bytes.diff")
     iTarget(optype::int64);
     iOp1(optype::iterBytes, true);
@@ -148,7 +153,7 @@ iEndH
 
 iBeginH(bytes, Strip, "bytes.strip")
     iTarget(optype::refBytes)
-    iOp1(optype::refBytes, false);
+    iOp1(optype::refBytes, true);
     iOp2(optype::optional(optype::enum_), true);
     iOp3(optype::optional(optype::refBytes), true);
 iEndH
@@ -200,6 +205,20 @@ iEndH
 
 iBeginH(bytes, NextObject, "bytes.next_object")
     iTarget(optype::iterBytes)
+    iOp1(optype::iterBytes, true);
+iEndH
+
+iBeginH(bytes, AppendMark, "bytes.append_mark")
+    iOp1(optype::refBytes, false);
+iEndH
+
+iBeginH(bytes, NextMark, "bytes.next_mark")
+    iTarget(optype::iterBytes)
+    iOp1(optype::iterBytes, true);
+iEndH
+
+iBeginH(bytes, AtMark, "bytes.at_mark")
+    iTarget(optype::boolean)
     iOp1(optype::iterBytes, true);
 iEndH
 

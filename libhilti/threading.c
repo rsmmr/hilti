@@ -68,17 +68,47 @@ static void _fatal_error(const char* msg)
     exit(1);
 }
 
+// Returns the execution context to use for a given virtual thread ID.
+static hlt_execution_context* _worker_get_ctx(hlt_worker_thread* thread, hlt_vthread_id vid)
+{
+    if ( vid == 0 )
+        return hlt_global_execution_context();
+
+    hlt_vthread_id max = thread->max_vid;
+
+    if ( max < vid ) {
+        // Need to grow the context array.
+        hlt_vthread_id new_max = max;
+        while ( new_max < vid )
+            new_max *= 2;
+
+        thread->ctxs = hlt_realloc(thread->ctxs, (new_max+1) * sizeof(hlt_execution_context*), (max+1) * sizeof(hlt_execution_context*));
+        thread->max_vid = new_max;
+    }
+
+    hlt_execution_context* ctx = thread->ctxs[vid];
+
+    if ( ! ctx ) {
+        // Haven't seen this thread yet, need to create new context.
+        ctx = __hlt_execution_context_new_ref(vid, 1);
+        ctx->worker = thread;
+        thread->ctxs[vid] = ctx;
+    }
+
+    return ctx;
+}
+
 static void _hlt_job_delete(hlt_job* j, hlt_execution_context* ctx)
 {
     DBG_LOG(DBG_STREAM, "deleting job %lu", j->id);
 
     if ( j->fiber ) {
         hlt_callable* func = hlt_fiber_get_cookie(j->fiber);
-        GC_DTOR(func, hlt_callable);
+        GC_DTOR(func, hlt_callable, ctx);
         hlt_fiber_delete(j->fiber, ctx);
     }
 
-    GC_DTOR_GENERIC(&j->tcontext, j->tcontext_type);
+    GC_DTOR_GENERIC(&j->tcontext, j->tcontext_type, ctx);
     hlt_free(j);
 }
 
@@ -89,7 +119,9 @@ static void _hlt_worker_thread_delete(hlt_worker_thread* t)
     while ( hlt_thread_queue_size(t->jobs) ) {
         hlt_job* job = hlt_thread_queue_read(t->jobs, 10);
         assert(job);
-        _hlt_job_delete(job, 0);
+
+        hlt_execution_context* ctx = _worker_get_ctx(t, job->vid);
+        _hlt_job_delete(job, ctx);
     }
 
     hlt_thread_queue_delete(t->jobs);
@@ -102,16 +134,18 @@ static void _hlt_worker_thread_delete(hlt_worker_thread* t)
 
         while ( bjob ) {
             hlt_blocked_job* next = bjob->next;
-            _hlt_job_delete(bjob->job, 0);
+
+            hlt_execution_context* ctx = _worker_get_ctx(t, bjob->job->vid);
+            _hlt_job_delete(bjob->job, ctx);
+
             hlt_free(bjob);
             bjob = next;
         }
     }
 
     for ( int j = 1; j <= t->max_vid; j++ ) {
-        if ( t->ctxs[j] ) {
-            GC_DTOR(t->ctxs[j], hlt_execution_context);
-        }
+        if ( t->ctxs[j] )
+            hlt_execution_context_delete(t->ctxs[j]);
     }
 
     kh_destroy_blocked_jobs(t->jobs_blocked);
@@ -258,47 +292,17 @@ static void _add_to_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockabl
     ++resource->num_blocked;
 }
 
-// Returns the execution context to use for a given virtual thread ID.
-static hlt_execution_context* _worker_get_ctx(hlt_worker_thread* thread, hlt_vthread_id vid)
-{
-    if ( vid == 0 )
-        return hlt_global_execution_context();
-
-    hlt_vthread_id max = thread->max_vid;
-
-    if ( max < vid ) {
-        // Need to grow the context array.
-        hlt_vthread_id new_max = max;
-        while ( new_max < vid )
-            new_max *= 2;
-
-        thread->ctxs = hlt_realloc(thread->ctxs, (new_max+1) * sizeof(hlt_execution_context*), (max+1) * sizeof(hlt_execution_context*));
-        thread->max_vid = new_max;
-    }
-
-    hlt_execution_context* ctx = thread->ctxs[vid];
-
-    if ( ! ctx ) {
-        // Haven't seen this thread yet, need to create new context.
-        ctx = __hlt_execution_context_new(vid);
-        ctx->worker = thread;
-        thread->ctxs[vid] = ctx;
-    }
-
-    return ctx;
-}
-
 // The top-level function to run inside a job's fiber. The received argument is the callable to execute.
 static void _worker_fiber_entry(hlt_fiber* fiber, void *callable)
 {
     hlt_execution_context* ctx = hlt_fiber_context(fiber);
     hlt_exception* excpt = 0;
     HLT_CALLABLE_RUN((hlt_callable *)callable, 0, Hilti_CallbackSchedule, &excpt, ctx);
-    GC_DTOR(callable, hlt_callable);
+    GC_DTOR(callable, hlt_callable, ctx);
 
     if ( excpt ) {
         __hlt_thread_mgr_uncaught_exception_in_thread(excpt, ctx);
-        GC_DTOR(excpt, hlt_exception);
+        GC_DTOR(excpt, hlt_exception, ctx);
     }
 
     hlt_fiber_return(fiber);
@@ -343,6 +347,7 @@ static void _unblock_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockab
     kh_del_blocked_jobs(thread->jobs_blocked, i);
 }
 
+// func at +1, tcontext at +1.
 static void _worker_schedule(hlt_worker_thread* current, hlt_worker_thread* target, hlt_vthread_id vid, hlt_callable* func, hlt_type_info* tcontext_type, void* tcontext, hlt_execution_context* ctx)
 {
     if ( target->mgr->state != HLT_THREAD_MGR_RUN && target->mgr->state != HLT_THREAD_MGR_FINISH ) {
@@ -359,8 +364,8 @@ static void _worker_schedule(hlt_worker_thread* current, hlt_worker_thread* targ
     job->id = ++__hlt_globals()->job_counter;
 #endif
 
-    GC_CCTOR_GENERIC(&job->tcontext, tcontext_type);
-    GC_CCTOR(func, hlt_callable);
+    // We get the func at +1, so no ref needed.
+    // we also get the tcontext at +1, so no ref needed either.
 
     _worker_schedule_job(current, target, job);
 }
@@ -533,7 +538,7 @@ static void* _worker(void* worker_thread_ptr)
 
                 if ( excpt ) {
                     __hlt_thread_mgr_uncaught_exception_in_thread(excpt, tctx);
-                    GC_DTOR(excpt, hlt_exception);
+                    GC_DTOR(excpt, hlt_exception, tctx);
                 }
             }
 
@@ -557,6 +562,9 @@ static void* _worker(void* worker_thread_ptr)
 
     // Signal the command queue that we're done.
     __hlt_cmd_worker_terminating(thread->id);
+
+    for ( int i = 0; i < mgr->num_workers; ++i )
+        hlt_thread_queue_flush(mgr->workers[i]->jobs, thread->id);
 
     DBG_LOG(DBG_STREAM, "exiting worker thread");
     return 0;
@@ -634,16 +642,16 @@ void __hlt_threading_done(hlt_exception** excpt)
         // Threads are still running so shut them down. If we don't have any
         // exceptions, we give them a chance to shutdown gracefully,
         // otherwise we just kill the threads.
-        hlt_thread_mgr_set_state(mgr, *excpt ? HLT_THREAD_MGR_KILL : HLT_THREAD_MGR_STOP);
+        hlt_thread_mgr_set_state(mgr, hlt_check_exception(excpt) ? HLT_THREAD_MGR_KILL : HLT_THREAD_MGR_STOP);
     }
 
     assert(mgr->state == HLT_THREAD_MGR_DEAD);
 
     // Now that all threads have terminated, we can check for any uncaught
     // exceptions and then delete the thread manager.
-    if ( ! *excpt && mgr->num_excpts != 0 ) {
+    if ( ! hlt_check_exception(excpt) && mgr->num_excpts != 0 ) {
         DBG_LOG(DBG_STREAM, "raising UncaughtThreadException");
-        hlt_set_exception(excpt, &hlt_exception_uncaught_thread_exception, 0);
+        hlt_set_exception(excpt, &hlt_exception_uncaught_thread_exception, 0, hlt_global_execution_context());
     }
 
     hlt_thread_mgr_delete(hlt_global_thread_mgr());
@@ -655,7 +663,7 @@ void __hlt_threading_done(hlt_exception** excpt)
 double hlt_threading_load(hlt_exception** excpt)
 {
     if ( ! hlt_is_multi_threaded() ) {
-        hlt_set_exception(excpt, &hlt_exception_no_threading, 0);
+        hlt_set_exception(excpt, &hlt_exception_no_threading, 0, hlt_global_execution_context());
         return 0.0;
     }
 
@@ -785,7 +793,7 @@ uint32_t hlt_thread_mgr_num_threads(hlt_thread_mgr* mgr)
 void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! hlt_is_multi_threaded() ) {
-        hlt_set_exception(excpt, &hlt_exception_no_threading, 0);
+        hlt_set_exception(excpt, &hlt_exception_no_threading, 0, ctx);
         return;
     }
 
@@ -796,7 +804,7 @@ void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_call
 void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, hlt_type_info* type, void* tcontext, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! hlt_is_multi_threaded() ) {
-        hlt_set_exception(excpt, &hlt_exception_no_threading, 0);
+        hlt_set_exception(excpt, &hlt_exception_no_threading, 0, ctx);
         return;
     }
 
@@ -815,7 +823,10 @@ void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, hlt_type_info* type
     hlt_vthread_id scaled_vid = (vid % n) + cfg->vid_schedule_min;
 
     hlt_worker_thread* thread = _vthread_to_worker(mgr, scaled_vid);
-    _worker_schedule(ctx->worker, thread, scaled_vid, func, type, tcontext, ctx);
+
+    void* cloned_tcontext;
+    hlt_clone_deep(&cloned_tcontext, type, &tcontext, excpt, ctx);
+    _worker_schedule(ctx->worker, thread, scaled_vid, func, type, cloned_tcontext, ctx);
 }
 
 const char* hlt_thread_mgr_current_native_thread()

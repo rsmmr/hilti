@@ -114,7 +114,7 @@ declare "C-HILTI" void    object_mapping_unregister_hilti(any obj)
 declare "C-HILTI" BroVal  object_mapping_lookup_bro(any obj)
 declare "C-HILTI" any     object_mapping_lookup_hilti(BroVal val)
 
-declare "C-HILTI" ref<BroAny> any_from_hilti(const any obj, BroType btype, caddr to_val_func)
+declare "C-HILTI" ref<BroAny> any_from_hilti_ref(const any obj, BroType btype, caddr to_val_func)
 declare "C-HILTI" any         any_to_hilti(const ref<BroAny> a)
 
 declare "C-HILTI" ref<BroAny> any_from_val(BroVal v)

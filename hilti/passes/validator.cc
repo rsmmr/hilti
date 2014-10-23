@@ -710,10 +710,10 @@ void Validator::visit(type::Reference* t)
 
 void Validator::visit(type::RegExp* t)
 {
-    for ( auto a : t->attributes() ) {
-        if ( a != "&nosub" && a != "&first_match" )
-            error(t, util::fmt("unknown regexp attribute '%s'", a.c_str()));
-    }
+    string msg;
+
+    if ( ! t->attributes().validate(attribute::REGEXP, &msg) )
+         error(t, msg);
 }
 
 void Validator::visit(type::Set* t)
@@ -791,6 +791,50 @@ void Validator::visit(type::Tuple* t)
 
 void Validator::visit(type::TypeType* t)
 {
+}
+
+void Validator::visit(type::Union* t)
+{
+    std::set<string> names;
+
+    if ( t->anonymousFields() ) {
+        // Make sure no type is given twice.
+        std::set<string> types;
+
+        for ( auto f : t->fields() ) {
+            auto s = f->type()->render();
+            if ( types.find(s) != types.end() ) {
+                error(f, "duplicate type in union with anonymous fields");
+                return;
+            }
+
+            types.insert(s);
+        }
+    }
+
+    else {
+        for ( auto f : t->fields() ) {
+            if ( names.find(f->id()->name()) != names.end() ) {
+                error(f, "duplicate field name in union");
+                return;
+            }
+
+        names.insert(f->id()->name());
+
+        if ( ! f->type() ) {
+            error(f, "union has field without type");
+            continue;
+        }
+
+        if ( ! f->id() ) {
+            error(f, "union has field without ID");
+            continue;
+        }
+
+        if ( ! type::hasTrait<type::trait::ValueType>(f->type()) )
+            error(f, "union fields must be of value type");
+        }
+    }
 }
 
 void Validator::visit(type::Unknown* t)

@@ -92,6 +92,16 @@ bool Printer::printTypeID(Type* t)
     return ::ast::passes::printer::printTypeID(this, t, _module);
 }
 
+void Printer::printAttributes(const AttributeSet& attrs)
+{
+    for ( auto a : attrs.all() ) {
+        (*this) << " &" << Attribute::tagToName(a.tag());
+
+        if ( a.hasValue() )
+            (*this) << "=" << a.value();
+    }
+}
+
 void Printer::visit(Module* m)
 {
     setPrintOriginalIDs(false);
@@ -386,6 +396,8 @@ void Printer::visit(declaration::Variable* v)
         p << " = ";
         p << v->variable()->init();
     }
+
+    printAttributes(v->variable()->type()->attributes());
 }
 
 void Printer::visit(declaration::Type* t)
@@ -455,13 +467,7 @@ void Printer::visit(declaration::Function* f)
 
     p << ')';
 
-    if ( hook ) {
-        if ( hook->priority() != 0 )
-            p << " &priority=" << hook->priority() << " ";
-
-        if ( hook->group() != 0 )
-            p << " &group=" << hook->group() << " ";
-    }
+    printAttributes(ftype->attributes());
 
     p << endl;
 
@@ -558,6 +564,59 @@ void Printer::visit(type::Unknown* i)
 {
     Printer& p = *this;
     p << (i->id() ? util::fmt("<Unresolved '%s'>", i->id()->pathAsString().c_str()) : "<Unknown>");
+}
+
+void Printer::visit(type::Union* t)
+{
+    if ( printTypeID(t) )
+        return;
+
+    Printer& p = *this;
+
+    if ( t->wildcard() ) {
+        p << "union<*>";
+        return;
+    }
+
+
+    if ( t->anonymousFields() ) {
+        p << "union<";
+        printList(t->typeList(), ", ");
+        p << ">";
+        return;
+    }
+
+    if ( ! t->fields().size() ) {
+        p << " union { }" << endl;
+        return;
+    }
+
+    p << "union {" << endl;
+    pushIndent();
+    enableTypeIDs();
+
+    auto i = t->fields().begin();
+
+    while ( i != t->fields().end() ) {
+        auto f = *i++;
+        auto last = (i == t->fields().end());
+
+        p << f->type() << ' ' << f->id();
+
+        printAttributes(f->type()->attributes());
+
+        if ( ! last )
+            p << ",";
+
+        p.printMetaInfo(f->metaInfo());
+
+        p << endl;
+    }
+
+    disableTypeIDs();
+    popIndent();
+
+    p << "}" << endl << endl;
 }
 
 void Printer::visit(type::Integer* i)
@@ -1007,7 +1066,7 @@ void Printer::visit(type::RegExp* t)
         return;
 
     Printer& p = *this;
-    p << "regexp<" << util::strjoin(t->attributes(), ",") << ">";
+    p << "regexp";
 }
 
 void Printer::visit(type::MatchTokenState* t)
@@ -1058,8 +1117,7 @@ void Printer::visit(type::Struct* t)
 
         p << f->type() << ' ' << f->id();
 
-        if ( f->default_() )
-            p << " &default=" << f->default_();
+        printAttributes(f->type()->attributes());
 
         if ( ! last )
             p << ",";
@@ -1276,6 +1334,26 @@ void Printer::visit(constant::Port* c)
     }
 }
 
+void Printer::visit(constant::Union* c)
+{
+    Printer& p = *this;
+
+    p << "union";
+
+    if ( c->type() )
+        p << "<" << c->type() << ">";
+
+    p << "(";
+
+    if ( c->id() )
+        p << c->id()->name() << ": ";
+
+    if ( c->expression() )
+        p << c->expression();
+
+    p << ")";
+}
+
 void Printer::visit(ctor::Bytes* c)
 {
     Printer& p = *this;
@@ -1316,8 +1394,7 @@ void Printer::visit(ctor::Map* c)
 
     p << ")";
 
-    if ( c->default_() )
-        p << " &default=" << c->default_();
+    printAttributes(c->type()->attributes());
 }
 
 void Printer::visit(ctor::Set* c)
@@ -1350,9 +1427,12 @@ void Printer::visit(ctor::RegExp* c)
     std::list<string> patterns;
 
     for ( auto p : c->patterns() )
-        patterns.push_back(string("/") + p.first + string("/") + p.second);
+        patterns.push_back(string("/") + p + string("/"));
 
     printList(patterns, " | ");
+
+    auto rtype = ast::checkedCast<hilti::type::Reference>(c->type())->argType();
+    printAttributes(c->attributes());
 }
 
 void Printer::visit(ctor::Callable* c)
@@ -1372,4 +1452,3 @@ void Printer::visit(ctor::Callable* c)
     p << "))";
 
 }
-

@@ -18,7 +18,7 @@
 #  HILTI_CLANGXX_EXEC Full path to clang++ being used with HILTI.
 
 if ( NOT HILTI_CONFIG )
-    find_program(HILTI_CONFIG NAMES hilti-config)
+    find_program(HILTI_CONFIG NAMES ${PROJECT_BINARY_DIR}/tools/hilti-config hilti-config)
 endif ()
 
 if ( "${CMAKE_BUILD_TYPE}" MATCHES "DEBUG" )
@@ -26,8 +26,6 @@ if ( "${CMAKE_BUILD_TYPE}" MATCHES "DEBUG" )
 else ()
     set(hcdbg "")
 endif ()
-
-message("X")
 
 if ( HILTI_CONFIG )
     execute_process(COMMAND "${HILTI_CONFIG}" ${hcdbg} --compiler --runtime --cxxflags
@@ -54,7 +52,12 @@ if ( HILTI_CONFIG )
                     OUTPUT_VARIABLE HILTI_CLANGXX_EXEC
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    set(HILTI_LIBS "${HILTI_LIBS_SHARED} -lc++")
+    separate_arguments(HILTI_LIBS_SHARED)
+    separate_arguments(HILTI_LIBS_STATIC)
+    separate_arguments(HILTI_LD_FLAGS)
+    separate_arguments(HILTI_CXX_FLAGS)
+
+    set(HILTI_LIBS ${HILTI_LIBS_SHARED} -lc++)
 
     if ( HILTI_LD_FLAGS AND HILTI_LIBS AND HILTI_CXX_FLAGS )
         set(HILTI_SUCCESS "Found")

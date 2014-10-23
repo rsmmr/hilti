@@ -13,7 +13,6 @@ void StatementBuilder::visit(statement::instruction::thread::GetContext* i)
     assert(ty);
 
     tctx = cg()->builder()->CreateBitCast(tctx, cg()->llvmType(ty));
-    cg()->llvmCctor(tctx, ty, false, "thread.get_context");
     cg()->llvmStore(i, tctx);
 }
 
@@ -49,7 +48,7 @@ llvm::Value* _promoteContext(CodeGen* cg, llvm::Value* tctx,
 
     // Build the destination context field by field.
 
-    auto new_tctx = cg->llvmStructNew(dst_context);
+    auto new_tctx = cg->llvmStructNew(dst_context, false);
 
     for ( auto f : dst_context->fields() ) {
         if ( ! dst_scope->hasField(f->id()) )
@@ -57,12 +56,9 @@ llvm::Value* _promoteContext(CodeGen* cg, llvm::Value* tctx,
             continue;
 
         auto val = cg->llvmStructGet(src_context, tctx, f->id()->name(), nullptr, nullptr);
-        val = cg->llvmCoerceTo(val, src_context->lookup(f->id())->type(), f->type());
+        val = cg->llvmCoerceTo(val, src_context->lookup(f->id())->type(), f->type(), false);
         cg->llvmStructSet(dst_context, new_tctx, f->id()->name(), val);
-        cg->llvmDtor(val, f->type(), false, "thread.cc::_promoteContext");
     }
-
-    cg->llvmDtorAfterInstruction(new_tctx, builder::reference::type(dst_context), false, "thread.cc::_promoteContext");
 
     return new_tctx;
 }
@@ -81,7 +77,10 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
     bool deep_copy = false;
 #endif
 
-    auto job = cg()->llvmCallableBind(func, ftype, params, true, deep_copy);
+    // We return a ref'ed object here so that the callable doesn't end up in
+    // the nullbuffer of the current thread. We pass ownership to the target
+    // threat below.
+    auto job = cg()->llvmCallableBind(func, ftype, params, false, false, deep_copy, true);
     auto mgr = cg()->llvmThreadMgr();
 
     if ( i->op3() ) {
@@ -138,6 +137,4 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
         CodeGen::value_list vals = { mgr, ti, tctx, job };
         cg()->llvmCallC("__hlt_thread_mgr_schedule_tcontext", vals, true, true);
     }
-
-    cg()->llvmDtor(job, builder::reference::type(builder::callable::typeAny()), false, "thread.schedule");
 }

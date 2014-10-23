@@ -1,2 +1,3 @@
 module.hlt:1.1-2.6: error, syntax error, unexpected "'struct'", expecting "'module'"
+module.hlt: Aborting due to verification error.
 error running hiltic, aborting

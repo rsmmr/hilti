@@ -27,20 +27,21 @@ struct yystype_hilti {
     std::string sval;
     hilti::type::function::CallingConvention cc;
 
+    Attribute attribute;
+    AttributeSet attributes;
+
     type::Enum::label_list enum_labels;
     type::Enum::Label enum_label;
     type::Bitset::label_list bitset_labels;
     type::Bitset::Label bitset_label;
     type::Scope::field_list scope_fields;
     type::Struct::field_list struct_fields;
+    type::Struct::field_list union_fields;
     type::Struct::field_list context_fields;
     type::Overlay::field_list overlay_fields;
     ctor::Map::element map_element;
     ctor::Map::element_list map_elements;
-    ctor::RegExp::pattern re_pattern;
     ctor::RegExp::pattern_list re_patterns;
-    function::attribute function_attribute;
-    function::attribute_list function_attributes;
 
     shared_ptr<hilti::Declaration> decl;
     shared_ptr<hilti::Statement> stmt;
@@ -55,6 +56,7 @@ struct yystype_hilti {
     shared_ptr<hilti::function::Parameter> param;
     shared_ptr<hilti::statement::try_::Catch> catch_;
     shared_ptr<hilti::type::struct_::Field> struct_field;
+    shared_ptr<hilti::type::union_::Field> union_field;
     shared_ptr<hilti::type::struct_::Field> context_field;
     shared_ptr<hilti::type::overlay::Field> overlay_field;
 
@@ -64,6 +66,7 @@ struct yystype_hilti {
     std::list<node_ptr<hilti::Expression>> exprs; // FIXME: This should be replaced with expr2.
     std::list<shared_ptr<hilti::Expression>> exprs2;
     std::list<node_ptr<hilti::statement::try_::Catch>> catches;
+    std::pair<shared_ptr<ID>, shared_ptr<Expression>> union_constant_field;
 
     std::list<string> strings;
 

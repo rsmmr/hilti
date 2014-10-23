@@ -1,5 +1,5 @@
 
->>> <Unresolved 'Connection'>
-wrong-context-usage.hlt:9-9: error, unknown type ID Connection [pass::hilti::IdResolver]
+>>> Connection
+wrong-context-usage.hlt:9-9: error, unknown ID Connection [pass::hilti::IdResolver]
 wrong-context-usage.hlt: Aborting due to verification error.
 error running hiltic, aborting

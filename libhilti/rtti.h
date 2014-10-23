@@ -59,6 +59,7 @@
 #define HLT_TYPE_SET_TIMER_COOKIE 47
 #define HLT_TYPE_UNSET 48
 #define HLT_TYPE_FUNCTION 49
+#define HLT_TYPE_UNION 50
 
 #define HLT_TYPE_ITERATOR_BYTES  100
 #define HLT_TYPE_ITERATOR_VECTOR 101
@@ -144,16 +145,16 @@ struct __hlt_type_info {
     /// if an objects reference count went down to zero and its about to be
     /// deleted. Can be null if no further cleanup is needed. The function
     /// must not fail.
-    void (*dtor)(const struct __hlt_type_info* ti, void* obj);
+    void (*dtor)(const struct __hlt_type_info* ti, void* obj, hlt_execution_context* ctx);
 
     /// XXX
-    void (*obj_dtor)(const struct __hlt_type_info* ti, void* obj);
+    void (*obj_dtor)(const struct __hlt_type_info* ti, void* obj, hlt_execution_context* ctx);
 
     /// If this is a value type, a function that will be called if an
     /// instance has been copied. The function is called after a bitwise copy
     /// has been made, but before any further operation is executed that
     /// involves it.
-    void (*cctor)(const struct __hlt_type_info* ti, void* obj);
+    void (*cctor)(const struct __hlt_type_info* ti, void* obj, hlt_execution_context* ctx);
 
     /// Initializes a previously allocated instance with a deep-copy of a
     /// non-atomic value. \a obj is a pointer to the source object of type \a
@@ -185,7 +186,7 @@ struct __hlt_type_info {
 
 /// Macro to define type information for an internal garbage collected type.
 #define __HLT_RTTI_GC_TYPE(id, type) \
-   void id##_dtor(hlt_type_info*, id*); \
+   void id##_dtor(hlt_type_info*, id*, hlt_execution_context*); \
    const hlt_type_info hlt_type_info_##id = { \
        type, \
        sizeof(id), \
@@ -197,16 +198,16 @@ struct __hlt_type_info {
        0, \
        (int16_t*)-1, \
        0, 0, 0, 0, 0, 0, \
-       (void (*)(const struct __hlt_type_info*, void *))__hlt_object_unref, \
-       (void (*)(const struct __hlt_type_info*, void *))id##_dtor, \
-       (void (*)(const struct __hlt_type_info*, void *))__hlt_object_ref, \
+       (void (*)(const struct __hlt_type_info*, void *, hlt_execution_context* ctx))__hlt_object_unref, \
+       (void (*)(const struct __hlt_type_info*, void *, hlt_execution_context* ctx))id##_dtor, \
+       (void (*)(const struct __hlt_type_info*, void *, hlt_execution_context* ctx))__hlt_object_ref, \
    }; \
 
 #define __HLT_DECLARE_RTTI_GC_TYPE(id) \
    extern const hlt_type_info hlt_type_info_##id; \
 
 /// Returns true if the two type informations refer to equivalent types.
-int8_t hlt_type_equal(const hlt_type_info* ti1, const hlt_type_info* ti2);
+int8_t __hlt_type_equal(const hlt_type_info* ti1, const hlt_type_info* ti2);
 
 // Include prototypes for compiler-generated type information.
 #include "type-info.h"

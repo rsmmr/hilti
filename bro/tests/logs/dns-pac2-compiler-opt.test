@@ -5,4 +5,6 @@
 # @TEST-EXEC: btest-diff output
 # @TEST-EXEC: TEST_DIFF_CANONIFIER=${SCRIPTS}/bro-log-canonifier btest-diff dns.log
 # @TEST-EXEC: TEST_DIFF_CANONIFIER=${SCRIPTS}/diff-canonifier    btest-diff dns.log.diff
+#
+# @TEST-KNOWN-FAILURE: Can't compile Bro's standard DNS scripts right now without a hack.
 

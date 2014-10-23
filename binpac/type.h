@@ -142,12 +142,10 @@ public:
     /// l: Associated location.
     PacType(const attribute_list& attrs,  const Location& l=Location::None);
 
-#if 0
     /// Returns the attributes associated with the type.
     ///
     /// \todo: Actually I don't think that types should have attributes.
     shared_ptr<AttributeSet> attributes() const;
-#endif
 
     ACCEPT_VISITOR(Type);
 
@@ -1138,6 +1136,13 @@ public:
     /// passed to the ctor). Primarily for internal use.
     void setAnonymous();
 
+    /// Returns true if there's another unit field with the same name.
+    bool aliased() const;
+
+    /// Marks this field as one sharing its name with another one in the same
+    /// unit. Mainly for internal use by normalizer, who detects aliasing.
+    void setAliased();
+
     /// Marks this item as created a by a ctor expression that didn't give it
     /// a name. Variables marked as such might treated differently when
     /// coercion union types.
@@ -1173,6 +1178,10 @@ public:
 
     ACCEPT_VISITOR_ROOT();
 
+    /// Sets the unit this item is part of. Only the unit itself should call
+    /// this.
+    void setUnit(type::Unit* unit);
+
 protected:
     friend class type::Unit;
 
@@ -1180,12 +1189,9 @@ protected:
     /// resolve the AST.
     void addHook(shared_ptr<binpac::Hook> hook);
 
-    /// Sets the unit this item is part of. Only the unit itself should call
-    /// this.
-    void setUnit(type::Unit* unit);
-
 private:
     bool _anonymous = false;
+    bool _aliased = false;
     bool _ctor_no_name = false;
     int _do_hooks = 1;
     node_ptr<ID> _id;
@@ -1239,6 +1245,14 @@ public:
                                           const Location& l=Location::None);
 
 
+    /// Returns a parent field associated with this field, if any.
+    Field* parent() const;
+
+    /// Associates a parent field with this one.
+    ///
+    /// parent: The parent.
+    void setParent(Field* parent);
+
     ACCEPT_VISITOR(Item);
 
 protected:
@@ -1270,6 +1284,7 @@ private:
     node_ptr<Expression> _cond;
     std::list<node_ptr<Expression>> _sinks;
     std::list<node_ptr<Expression>> _params;
+    Field* _parent = nullptr;
 };
 
 namespace field {
@@ -1576,7 +1591,10 @@ public:
     bool default_() const;
 
     /// Returns the case's implementation items.
-    unit_field_list items() const;
+    unit_field_list fields() const;
+
+    /// Returns a name uniquely identifying this switch.
+    std::string uniqueName();
 
     ACCEPT_VISITOR_ROOT();
 
@@ -1603,9 +1621,9 @@ public:
     ///
     /// l: Location associated with the item.
     Switch(shared_ptr<Expression> expr,
-           const case_list& cases, 
-           shared_ptr<Expression> cond = nullptr,           
-           const hook_list& hooks = hook_list(), 
+           const case_list& cases,
+           shared_ptr<Expression> cond = nullptr,
+           const hook_list& hooks = hook_list(),
            const Location& l=Location::None);
 
     /// Returns the switch's expression.
@@ -1613,6 +1631,17 @@ public:
 
     /// Returns the list of cases.
     case_list cases() const;
+
+    /// Returns true if there's no field storing information.
+    bool noFields() const;
+
+    /// Returns the case that a field is part of, or null if none.
+    ///
+    /// f: The field.
+    shared_ptr<switch_::Case> case_(shared_ptr<type::unit::Item> f);
+
+    /// Returns a name uniquely identifying this switch.
+    std::string uniqueName();
 
     ACCEPT_VISITOR(Item);
 
@@ -1758,6 +1787,11 @@ public:
     /// id: The item to look up.
     shared_ptr<unit::Item> item(shared_ptr<ID> id) const;
 
+    /// Returns the item of a given name, or null if there's no such item.
+    ///
+    /// name: The item to look up.
+    shared_ptr<unit::Item> item(const std::string& name) const;
+
     /// Traverses an ID path to a sub-item and returns it. For example, \c
     /// a.b.c descends down field \c a, then \c b, and finally returns \c c
     /// there. Returns null for the item if the path is not valid. The second
@@ -1863,6 +1897,18 @@ public:
     EmbeddedObject(const Location& l=Location::None);
 
     ACCEPT_VISITOR(TypedPacType);
+};
+
+/// Type representing a mark inside a bytes object.
+class Mark : public PacType
+{
+public:
+    /// Constructor.
+    ///
+    /// l: Associated location.
+    Mark(const Location& l=Location::None);
+
+    ACCEPT_VISITOR(PacType);
 };
 
 }

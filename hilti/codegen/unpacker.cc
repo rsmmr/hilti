@@ -97,7 +97,6 @@ static void _bytesUnpackFixed(CodeGen* cg, const UnpackArgs& args, const UnpackR
 
     // Not enough input.
     cg->pushBuilder(block_insufficient);
-    cg->llvmDtor(llvm_next, iter_type, false, "bytes.unpack.fixed");
     cg->llvmRaiseException("Hilti::WouldBlock", args.location);
     cg->popBuilder();
 
@@ -114,7 +113,7 @@ static void _bytesUnpackFixed(CodeGen* cg, const UnpackArgs& args, const UnpackR
         val = cg->llvmConstNull();
 
     cg->llvmCreateStore(val, result.value_ptr);
-    cg->llvmGCAssign(result.iter_ptr, llvm_next, iter_type, true);
+    cg->llvmCreateStore(llvm_next, result.iter_ptr);
 
     // Leave builder on stack.
 }
@@ -130,8 +129,6 @@ static void _bytesUnpackRunLength(CodeGen* cg, const UnpackArgs& args, const Unp
     nargs.begin = len.second;
 
     _bytesUnpackFixed(cg, nargs, result, skip, false);
-
-    cg->llvmDtor(nargs.begin, iter_type, false, "unpack.bytes.runlength");
 }
 
 static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool skip)
@@ -150,7 +147,6 @@ static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackR
 
     // Copy the start iterator.
     cg->llvmCreateStore(args.begin, result.iter_ptr);
-    cg->llvmCctor(result.iter_ptr, iter_type, true, "bytes.unpack.delim");
 
     // Enter loop.
     cg->llvmCreateBr(block_body);
@@ -176,13 +172,12 @@ static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackR
     cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
     params = { cur };
     auto next = cg->llvmCall("hlt::iterator_bytes_incr", params);
-    cg->llvmGCAssign(result.iter_ptr, next, iter_type, true);
+    cg->llvmCreateStore(next, result.iter_ptr);
     cg->llvmCreateBr(block_body);
     cg->popBuilder();
 
     // Not found.
     cg->pushBuilder(block_insufficient);
-    cg->llvmDtor(result.iter_ptr, iter_type, true, "bytes.unpack.delim");
     cg->llvmRaiseException("Hilti::WouldBlock", args.location);
     cg->popBuilder();
 
@@ -194,11 +189,13 @@ static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackR
         cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
         params = { begin, cur };
         auto match = cg->llvmCall("hlt::bytes_sub", params);
-        cg->llvmGCAssign(result.value_ptr, match, bytes_type, true);
+        cg->llvmCreateStore(match, result.value_ptr);
     }
 
-    else
-        cg->llvmGCClear(result.value_ptr, bytes_type, "bytes-unpack");
+    else {
+        auto init_val = cg->llvmInitVal(bytes_type);
+        cg->llvmCreateStore(init_val, result.value_ptr);
+    }
 
     // Move beyond delimiter.
     params = { delim };
@@ -207,7 +204,7 @@ static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackR
     cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
     params = { cur, len };
     next = cg->llvmCall("hlt::iterator_bytes_incr_by", params);
-    cg->llvmGCAssign(result.iter_ptr, next, iter_type, true);
+    cg->llvmCreateStore(next, result.iter_ptr);
 
     // Leave builder on stack.
 }
@@ -298,7 +295,6 @@ static void _integerUnpack(CodeGen* cg, const UnpackArgs& args, const UnpackResu
 
     // Copy the start iterator.
     cg->llvmCreateStore(args.begin, result.iter_ptr);
-    cg->llvmCctor(result.iter_ptr, iter_type, true, "integer.unpack");
 
     llvm::Value* unpacked = cg->llvmConstNull(itype);
 
@@ -470,7 +466,7 @@ void Unpacker::visit(type::Integer* t)
     ));
 
     cases.push_back(CodeGen::SwitchCase(
-        "uint64l", u64b,
+        "uint64b", u64b,
         [&] (CodeGen* cg) -> llvm::Value* { _integerUnpack(cg, args, result, 64, false, ABI::BigEndian, {7, 6, 5, 4, 3, 2, 1, 0}); return nullptr; }
     ));
 
@@ -489,7 +485,7 @@ static void _addrUnpack4(CodeGen* cg, const UnpackArgs& args, const UnpackResult
     auto addr = cg->llvmValueStruct(vals);
 
     cg->llvmCreateStore(addr, result.value_ptr);
-    cg->llvmGCAssign(result.iter_ptr, b.second, iter_type, true);
+    cg->llvmCreateStore(b.second, result.iter_ptr);
 }
 
 static void _addrUnpack6(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool nbo)
@@ -499,7 +495,6 @@ static void _addrUnpack6(CodeGen* cg, const UnpackArgs& args, const UnpackResult
     auto fmt = cg->llvmEnum(nbo ? "Hilti::Packed::Int64Big" : "Hilti::Packed::Int64Little");
     auto a = cg->llvmUnpack(builder::integer::type(64), args.begin, args.end, fmt, nullptr, nullptr, args.location);
     auto b = cg->llvmUnpack(builder::integer::type(64), a.second, args.end, fmt, nullptr, nullptr, args.location);
-    cg->llvmDtor(a.second, iter_type, false, "unpack.addr");
 
     CodeGen::value_list vals;
 
@@ -511,7 +506,7 @@ static void _addrUnpack6(CodeGen* cg, const UnpackArgs& args, const UnpackResult
     auto addr = cg->llvmValueStruct(vals);
 
     cg->llvmCreateStore(addr, result.value_ptr);
-    cg->llvmGCAssign(result.iter_ptr, b.second, iter_type, true);
+    cg->llvmCreateStore(b.second, result.iter_ptr);
 }
 
 void Unpacker::visit(type::Address* t)
@@ -588,7 +583,7 @@ static void _portUnpack(CodeGen* cg, const UnpackArgs& args, const UnpackResult&
     auto addr = cg->llvmValueStruct(vals, true);
 
     cg->llvmCreateStore(addr, result.value_ptr);
-    cg->llvmGCAssign(result.iter_ptr, port.second, iter_type, true);
+    cg->llvmCreateStore(port.second, result.iter_ptr);
 }
 
 void Unpacker::visit(type::Port* t)
@@ -638,7 +633,6 @@ void Unpacker::visit(type::Bool* t)
 
     // Copy the start iterator.
     cg()->llvmCreateStore(args.begin, result.iter_ptr);
-    cg()->llvmCctor(result.iter_ptr, iter_type, true, "integer.unpack");
 
     llvm::Value* value = cg()->llvmCallC("__hlt_bytes_extract_one", { result.iter_ptr, args.end }, true);
 

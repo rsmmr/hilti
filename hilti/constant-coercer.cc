@@ -137,4 +137,23 @@ void ConstantCoercer::visit(constant::Unset* t)
     setResult(std::make_shared<constant::Unset>(arg1()));
 }
 
+void ConstantCoercer::visit(constant::Union* t)
+{
+    setResult(nullptr);
+
+    auto dst_bool = ast::as<type::Bool>(arg1());
+
+    if ( dst_bool ) {
+        bool has_expr = t->expression().get();
+        auto c = new constant::Bool(has_expr, t->location());
+        setResult(shared_ptr<Constant>(c));
+    }
+
+    auto dst_union = ast::as<type::Union>(arg1());
+
+    if ( dst_union ) {
+        auto c = new constant::Union(dst_union, t->id(), t->expression(), t->location());
+        setResult(shared_ptr<Constant>(c));
+    }
+}
 

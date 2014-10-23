@@ -51,7 +51,7 @@ int64_t global_clear_table_bif(hlt_LibBro_BroAny* any, hlt_exception** excpt, hl
 			}
 
 	else
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
 
     return 0;
 	}
@@ -65,21 +65,21 @@ int64_t dns_clear_table_bif(hlt_LibBro_BroAny* any, hlt_exception** excpt, hlt_e
 // The following function are for testing purposes only.
 hlt_bytes* hilti_test_type_string_bif(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
-	GC_CCTOR(b, hlt_bytes);
+	GC_CCTOR(b, hlt_bytes, ctx);
 	return b;
 	}
 
 hlt_bytes* global_mangle_string_bif(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	hlt_bytes_append_raw_copy(b, (int8_t*) "MangledGlobal", 13, excpt, ctx);
-	GC_CCTOR(b, hlt_bytes);
+	GC_CCTOR(b, hlt_bytes, ctx);
 	return b;
 	}
 
 hlt_bytes* hiltitesting_mangle_string_bif(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	hlt_bytes_append_raw_copy(b, (int8_t*) "MangledModule", 13, excpt, ctx);
-	GC_CCTOR(b, hlt_bytes);
+	GC_CCTOR(b, hlt_bytes, ctx);
 	return b;
 	}
 

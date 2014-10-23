@@ -68,6 +68,7 @@ void hlt_init_jit(std::shared_ptr<hilti::CompilerContext> ctx, llvm::Module* mod
     _funcs.__hlt_globals_init = globals_init;
     _funcs.__hlt_globals_dtor = globals_dtor;
     _funcs.__hlt_globals_size = globals_size;
+    _funcs.__stackmap = 0; // TODO.
     __hlt_linker_set_functions(&_funcs);
 
     (*hlt_init_from_state)(__hlt_globals_object_no_init());

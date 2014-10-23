@@ -23,7 +23,7 @@
 ///
 /// excpt: &
 /// ctx: & 
-extern hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts a bitset into an integer representation. This function has the
 /// generic ``hlt_*_to_int`` signature. 

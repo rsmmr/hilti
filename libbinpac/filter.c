@@ -18,7 +18,7 @@ static struct __binpac_filter_definition filters[] = {
     { {0, 0}, 0, 0, 0, 0 },
 };
 
-void binpac_filter_dtor(hlt_type_info* ti, binpac_filter* filter)
+void binpac_filter_dtor(hlt_type_info* ti, binpac_filter* filter, hlt_execution_context* ctx)
 {
     // TODO: This is not consistnely called because HILTI is actually using
     // its own type info for the dummy struct type. We should unify that, but
@@ -40,19 +40,16 @@ binpac_filter* binpachilti_filter_add(binpac_filter* head, hlt_enum ftype, hlt_e
 
     if ( ! filter ) {
         hlt_string fname = hlt_string_from_asciiz("unknown filter type", excpt, ctx);
-        hlt_set_exception(excpt, &binpac_exception_filterunsupported, fname);
+        hlt_set_exception(excpt, &binpac_exception_filterunsupported, fname, ctx);
         return 0;
     }
 
     head = __binpachilti_filter_add(head, filter, excpt, ctx);
-    GC_DTOR(filter, binpac_filter);
     return head;
 }
 
 binpac_filter* __binpachilti_filter_add(binpac_filter* head, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    GC_CCTOR(filter, binpac_filter);
-
     if ( ! head )
         return filter;
 
@@ -60,8 +57,8 @@ binpac_filter* __binpachilti_filter_add(binpac_filter* head, binpac_filter* filt
         head = head->next;
 
     head->next = filter;
+    GC_CCTOR(filter, binpac_filter, ctx);
 
-    GC_CCTOR(head, binpac_filter);
     return head;
 }
 
@@ -76,18 +73,19 @@ void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt, hlt_ex
     for ( binpac_filter* f = head; f; f = n ) {
         n = f->next;
         (*f->def->close)(f, excpt, ctx);
-        (*f->def->dtor)(0, f);
-        GC_CLEAR(f->next, binpac_filter);
+        (*f->def->dtor)(0, f, ctx);
+
+        if ( f != head )
+            // The reference to the first filter is owned by the struct.
+            GC_CLEAR(f, binpac_filter, ctx);
     }
 }
 
 // We borrow this from sink.c
 extern void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx);
 
-hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx) // &ref(!)
 {
-    GC_CCTOR(data, hlt_bytes);
-
     binpac_filter* filter = head;
 
     if ( ! head )
@@ -100,13 +98,8 @@ hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_e
             // No more data going to come.
             hlt_bytes_freeze(new_data, 1, excpt, ctx);
 
-        GC_DTOR(data, hlt_bytes);
-
-        if ( *excpt ) {
-            // Error.
-            GC_DTOR(new_data, hlt_bytes);
+        if ( *excpt )
             return 0;
-        }
 
         binpac_dbg_print_data(0, new_data, filter, excpt, ctx);
 

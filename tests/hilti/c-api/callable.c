@@ -16,7 +16,6 @@ int main()
 
     hlt_callable* c = foo_create_void(&excpt, ctx);
     HLT_CALLABLE_RUN(c, 0, Foo_MyCallableVoid, &excpt, ctx);
-    GC_DTOR(c, hlt_callable);
 
     ///
     fprintf(stdout, "===\n");
@@ -33,10 +32,6 @@ int main()
     hlt_string_print(stdout, s, true, &excpt, ctx);
 
     //
-
-    GC_DTOR(s, hlt_string);
-    GC_DTOR(b, hlt_bytes);
-    GC_DTOR(c, hlt_callable);
 
     return 0;
 }

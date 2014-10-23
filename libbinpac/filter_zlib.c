@@ -24,7 +24,7 @@ void __binpac_filter_zlib_close(binpac_filter* filter_gen, hlt_exception** excpt
 
 binpac_filter* __binpac_filter_zlib_allocate(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __binpac_filter_zlib* filter = GC_NEW_CUSTOM_SIZE(binpac_filter, sizeof(__binpac_filter_zlib));
+    __binpac_filter_zlib* filter = GC_NEW_CUSTOM_SIZE(binpac_filter, sizeof(__binpac_filter_zlib), ctx);
     filter->zip = hlt_malloc(sizeof(z_stream));
 	filter->zip->zalloc = 0;
 	filter->zip->zfree = 0;
@@ -41,14 +41,14 @@ binpac_filter* __binpac_filter_zlib_allocate(hlt_exception** excpt, hlt_executio
 	if ( zip_status != Z_OK ) {
         __binpac_filter_zlib_close((binpac_filter*)filter, excpt, ctx);
         hlt_string fname = hlt_string_from_asciiz("inflateInit2 failed", excpt, ctx);
-        hlt_set_exception(excpt, &binpac_exception_filtererror, fname);
+        hlt_set_exception(excpt, &binpac_exception_filtererror, fname, ctx);
         return 0;
     }
 
     return (binpac_filter*)filter;
 }
 
-void __binpac_filter_zlib_dtor(hlt_type_info* ti, binpac_filter* filter)
+void __binpac_filter_zlib_dtor(hlt_type_info* ti, binpac_filter* filter, hlt_execution_context* ctx)
 {
     __binpac_filter_zlib_close(filter, 0, 0);
 }
@@ -59,7 +59,7 @@ hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* dat
 
     if ( ! filter->zip ) {
         // hlt_string fname = hlt_string_from_asciiz("more inflate data after close", excpt, ctx);
-        // hlt_set_exception(excpt, &binpac_exception_filtererror, fname);
+        // hlt_set_exception(excpt, &binpac_exception_filtererror, fname, ctx);
 
         // TODO: This can happen at least with our HTTP parser right now?
         return hlt_bytes_new(excpt, ctx);
@@ -95,7 +95,7 @@ hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* dat
                  zip_status != Z_BUF_ERROR ) {
                 __binpac_filter_zlib_close((binpac_filter*)filter, excpt, ctx);
                 hlt_string fname = hlt_string_from_asciiz("inflate failed", excpt, ctx);
-                hlt_set_exception(excpt, &binpac_exception_filtererror, fname);
+                hlt_set_exception(excpt, &binpac_exception_filtererror, fname, ctx);
                 return 0;
             }
 
@@ -116,9 +116,6 @@ hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* dat
 		} while ( filter->zip->avail_out == 0 );
 
     } while ( cookie );
-
-    GC_DTOR(begin, hlt_iterator_bytes);
-    GC_DTOR(end, hlt_iterator_bytes);
 
     return decoded ? decoded : hlt_bytes_new(excpt, ctx);
 }

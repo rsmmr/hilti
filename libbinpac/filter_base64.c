@@ -10,12 +10,12 @@ typedef struct {
 
 binpac_filter* __binpac_filter_base64_allocate(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __binpac_filter_base64* filter = GC_NEW_CUSTOM_SIZE(binpac_filter, sizeof(__binpac_filter_base64));
+    __binpac_filter_base64* filter = GC_NEW_CUSTOM_SIZE(binpac_filter, sizeof(__binpac_filter_base64), ctx);
     base64_init_decodestate(&filter->state);
     return (binpac_filter*)filter;
 }
 
-void __binpac_filter_base64_dtor(hlt_type_info* ti, binpac_filter* filter)
+void __binpac_filter_base64_dtor(hlt_type_info* ti, binpac_filter* filter, hlt_execution_context* ctx)
 {
     // Nothing to do.
 }
@@ -67,9 +67,6 @@ hlt_bytes* __binpac_filter_base64_decode(binpac_filter* filter_gen, hlt_bytes* d
             hlt_free(buffer);
 
     } while ( cookie );
-
-    GC_DTOR(begin, hlt_iterator_bytes);
-    GC_DTOR(end, hlt_iterator_bytes);
 
     return decoded ? decoded : hlt_bytes_new_from_data(0, 0, excpt, ctx);
 }

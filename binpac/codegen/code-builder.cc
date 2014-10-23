@@ -311,10 +311,9 @@ void CodeBuilder::visit(expression::ParserState* p)
         break;
 
      case expression::ParserState::PARAMETER: {
-         auto fname = hilti::builder::string::create(util::fmt("__p_%s", p->id()->name()));
+         auto fname = util::fmt("__p_%s", p->id()->name());
          auto ftype = cg()->hiltiType(p->type());
-         expr = cg()->moduleBuilder()->addTmp("param", ftype, nullptr, false);
-         cg()->builder()->addInstruction(expr, hilti::instruction::struct_::Get, cg()->hiltiSelf(), fname);
+         expr = cg()->hiltiItemGet(cg()->hiltiSelf(), fname, ftype);
          break;
      }
 

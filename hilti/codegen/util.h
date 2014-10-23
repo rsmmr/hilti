@@ -77,7 +77,7 @@ inline bool llvmVerifyModule(llvm::Module* module) {
     return ! llvm::verifyModule(*module, &out);
 #else
     return ! llvm::verifyModule(*module, llvm::PrintMessageAction);
-#endif    
+#endif
 }
 
 /// Returns true if LLVM's module verification indicates a well-formed

@@ -31,11 +31,11 @@ void CodeBuilder::visit(ctor::Unit* m)
         auto init = i.second;
         auto itype = (*var++)->type();
 
-        auto field = hilti::builder::string::create(id->name());
-
         cg()->builder()->beginTryCatch();
+
+        auto item = unit->item(id->name());
         auto val = hiltiExpression(init, itype);
-        cg()->builder()->addInstruction(hilti::instruction::struct_::Set, result, field, val);
+        cg()->hiltiItemSet(result, item, val);
 
         cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::AttributeNotSet")),
                                    hilti::builder::id::node("e"));
@@ -59,12 +59,7 @@ void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
     auto item = unit->item(attr->id());
     assert(item && item->type());
 
-    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->fieldType()), nullptr, false);
-    cg()->builder()->addInstruction(ival,
-                                    hilti::instruction::struct_::Get,
-                                    cg()->hiltiExpression(i->op1()),
-                                    hilti::builder::string::create(attr->id()->name()));
-
+    auto ival = cg()->hiltiItemGet(cg()->hiltiExpression(i->op1()), item);
     setResult(ival);
 }
 
@@ -79,10 +74,7 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
     auto expr = cg()->hiltiExpression(i->op3(), item->fieldType());
 
     auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->fieldType()), nullptr, false);
-    cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
-                                    uval,
-                                    hilti::builder::string::create(attr->id()->name()),
-                                    expr);
+    cg()->hiltiItemSet(uval, item, expr);
 
     cg()->hiltiRunFieldHooks(item, uval);
 
@@ -97,12 +89,7 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
     auto item = unit->item(attr->id());
     assert(item && item->type());
 
-    auto has = cg()->builder()->addTmp("has", hilti::builder::boolean::type());
-    cg()->builder()->addInstruction(has,
-                                    hilti::instruction::struct_::IsSet,
-                                    cg()->hiltiExpression(i->op1()),
-                                    hilti::builder::string::create(attr->id()->name()));
-
+    auto has = cg()->hiltiItemIsSet(cg()->hiltiExpression(i->op1()), item);
     setResult(has);
 }
 
@@ -114,27 +101,16 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::TryAttribute* i)
     auto item = unit->item(attr->id());
     assert(item && item->type());
 
-    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->fieldType()), nullptr, false);
-    setResult(ival);
-
     // If there's a default, the attribute access will always succeed.
     bool have_default = item->attributes()->has("default");
 
     if ( have_default ) {
-        cg()->builder()->addInstruction(ival,
-                                        hilti::instruction::struct_::Get,
-                                        cg()->hiltiExpression(i->op1()),
-                                        hilti::builder::string::create(attr->id()->name()));
-
+        auto ival = cg()->hiltiItemGet(cg()->hiltiExpression(i->op1()), item);
+        setResult(ival);
         return;
     }
 
-    auto has = cg()->builder()->addTmp("has", hilti::builder::boolean::type());
-
-    cg()->builder()->addInstruction(has,
-                                    hilti::instruction::struct_::IsSet,
-                                    cg()->hiltiExpression(i->op1()),
-                                    hilti::builder::string::create(attr->id()->name()));
+    auto has = cg()->hiltiItemIsSet(cg()->hiltiExpression(i->op1()), item);
 
     auto branches = cg()->builder()->addIfElse(has);
     auto attr_set = std::get<0>(branches);
@@ -142,10 +118,8 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::TryAttribute* i)
     auto done = std::get<2>(branches);
 
     cg()->moduleBuilder()->pushBuilder(attr_set);
-    cg()->builder()->addInstruction(ival,
-                                    hilti::instruction::struct_::Get,
-                                    cg()->hiltiExpression(i->op1()),
-                                    hilti::builder::string::create(attr->id()->name()));
+    auto ival = cg()->hiltiItemGet(cg()->hiltiExpression(i->op1()), item);
+    setResult(ival);
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());                                    ;
     cg()->moduleBuilder()->popBuilder(attr_set);
 
@@ -182,31 +156,24 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
 void CodeBuilder::visit(binpac::expression::operator_::unit::Input* i)
 {
     auto self = cg()->hiltiExpression(i->op1());
-    auto result = cg()->moduleBuilder()->addTmp("input", hilti::builder::iterator::typeBytes());
-    cg()->builder()->addInstruction(result, hilti::instruction::struct_::Get, self, hilti::builder::string::create("__input"));
+    auto result = cg()->hiltiItemGet(self, "__input", hilti::builder::iterator::typeBytes());
     setResult(result);
 }
 
 void CodeBuilder::visit(binpac::expression::operator_::unit::Offset* i)
 {
     auto self = cg()->hiltiExpression(i->op1());
+    auto input = cg()->hiltiItemGet(self, "__input", hilti::builder::iterator::typeBytes());
+    auto cur = cg()->hiltiItemGet(self, "__cur", hilti::builder::iterator::typeBytes());
 
     auto result = cg()->moduleBuilder()->addTmp("offset", hilti::builder::integer::type(64));
-    auto input = cg()->moduleBuilder()->addTmp("input", hilti::builder::iterator::typeBytes());
-    auto cur = cg()->moduleBuilder()->addTmp("cur", hilti::builder::iterator::typeBytes());
-
-    cg()->builder()->addInstruction(input, hilti::instruction::struct_::Get, self, hilti::builder::string::create("__input"));
-    cg()->builder()->addInstruction(cur, hilti::instruction::struct_::Get, self, hilti::builder::string::create("__cur"));
     cg()->builder()->addInstruction(result, hilti::instruction::bytes::Diff, input, cur);
-
     setResult(result);
 }
 
 void CodeBuilder::visit(binpac::expression::operator_::unit::SetPosition* i)
 {
     auto self = cg()->hiltiExpression(i->op1());
-
-    auto old = cg()->moduleBuilder()->addTmp("old_cur", hilti::builder::iterator::typeBytes());
     auto op1 = cg()->hiltiExpression(i->op1());
 
     auto tuple = ast::checkedCast<expression::Constant>(i->op3())->constant();
@@ -214,8 +181,8 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::SetPosition* i)
 
     auto param1 = cg()->hiltiExpression(*params.begin());
 
-    cg()->builder()->addInstruction(old, hilti::instruction::struct_::Get, self, hilti::builder::string::create("__cur"));
-    cg()->builder()->addInstruction(hilti::instruction::struct_::Set, self, hilti::builder::string::create("__cur"), param1);
+    auto old = cg()->hiltiItemGet(self, "__cur", hilti::builder::iterator::typeBytes());
+    cg()->hiltiItemSet(self, "__cur", param1);
 
     setResult(old);
 }
@@ -228,20 +195,15 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::AddFilter* i)
     // TODO: This cast here isn't ideal, better way?
     auto filter_type = cg()->hiltiCastEnum(cg()->hiltiExpression(filter), hilti::builder::type::byName("BinPACHilti::Filter"));
 
-    auto head = cg()->builder()->addTmp("filter", hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::ParseFilter")));
-
-    cg()->builder()->addInstruction(head,
-                                    hilti::instruction::struct_::GetDefault,
-                                    self,
-                                    hilti::builder::string::create("__filter"),
-                                    hilti::builder::reference::createNull());
+    auto ft = hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::ParseFilter"));
+    auto head = cg()->hiltiItemGet(self, "__filter", ft, hilti::builder::reference::createNull());
 
     cg()->builder()->addInstruction(head,
                                     hilti::instruction::flow::CallResult,
                                     hilti::builder::id::create("BinPACHilti::filter_add"),
                                     hilti::builder::tuple::create( { head, filter_type } ));
 
-    cg()->builder()->addInstruction(hilti::instruction::struct_::Set, self, hilti::builder::string::create("__filter"), head);
+    cg()->hiltiItemSet(self, "__filter", head);
 
     setResult(std::make_shared<hilti::expression::Void>());
 }
@@ -249,13 +211,9 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::AddFilter* i)
 void CodeBuilder::visit(binpac::expression::operator_::unit::Disconnect* i)
 {
     auto self = cg()->hiltiExpression(i->op1());
-    auto sink = cg()->builder()->addTmp("sink", cg()->hiltiType(std::make_shared<type::Sink>()));
 
-    cg()->builder()->addInstruction(sink,
-                                    hilti::instruction::struct_::GetDefault,
-                                    self,
-                                    hilti::builder::string::create("__sink"),
-                                    hilti::builder::reference::createNull());
+    auto ft = hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::Sink"));
+    auto sink = cg()->hiltiItemGet(self, "__sink", ft, hilti::builder::reference::createNull());
 
     cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
                                     hilti::builder::id::create("BinPACHilti::sink_disconnect"),
@@ -267,12 +225,7 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::Disconnect* i)
 void CodeBuilder::visit(binpac::expression::operator_::unit::MimeType* i)
 {
     auto self = cg()->hiltiExpression(i->op1());
-    auto mt = cg()->builder()->addLocal("mt", hilti::builder::reference::type(hilti::builder::bytes::type()));
-
-    cg()->builder()->addInstruction(mt,
-                                    hilti::instruction::struct_::Get,
-                                    self,
-                                    hilti::builder::string::create("__mimetype"));
-
+    auto ft = hilti::builder::reference::type(hilti::builder::bytes::type());
+    auto mt = cg()->hiltiItemGet(self, "__mimetype", ft);
     setResult(mt);
 }

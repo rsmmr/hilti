@@ -49,6 +49,11 @@ shared_ptr<Statement> StatementBuilder::currentStatement()
     return _stmts.size() ? _stmts.back() : nullptr;
 }
 
+passes::Liveness::LivenessSets StatementBuilder::liveness()
+{
+    return cg()->hiltiModule()->liveness()->liveness(currentStatement());
+}
+
 void StatementBuilder::preAccept(shared_ptr<ast::NodeBase> node)
 {
     auto stmt = ast::tryCast<Statement>(node);
@@ -58,16 +63,6 @@ void StatementBuilder::preAccept(shared_ptr<ast::NodeBase> node)
         return;
 
     _stmts.push_back(stmt);
-
-    if ( cg()->hiltiModule()->liveness() && cg()->hiltiModule()->liveness()->have(stmt) ) {
-        auto live = cg()->hiltiModule()->liveness()->liveness(stmt);
-
-        for ( auto v : *live.dead )
-            cg()->llvmClearLocalAfterInstruction(v->expression, "live.dead");
-
-        for ( auto v : *live.in )
-            cg()->llvmClearLocalOnException(v->expression);
-    }
 }
 
 void StatementBuilder::postAccept(shared_ptr<ast::NodeBase> node)
@@ -244,11 +239,7 @@ void StatementBuilder::visit(statement::try_::Catch* c)
         // Initialize the local variable providing access to the exception.
         auto name = c->variable()->internalName();
         auto local = cg()->llvmAddLocal(name, c->type());
-
-        // Can't init the local directly as that might end up in the wrong
-        // block.
-        // cg()->llvmCreateStore(cg()->llvmCurrentException(), addr);
-        cg()->llvmGCAssign(local, cg()->llvmCurrentException(), c->variable()->type(), false, true);
+        cg()->llvmCreateStore(cg()->llvmCurrentException(), local);
     }
 
     cg()->llvmClearException();
@@ -276,7 +267,7 @@ void StatementBuilder::visit(declaration::Variable* v)
     assert(block);
 
     bool live = local->init() ? cg()->hiltiModule()->liveness()->liveIn(block, local) : false;
-    auto init = live ? cg()->llvmValue(local->init(), local->type(), true) : nullptr;
+    auto init = live ? local->init() : nullptr;
 
     auto name = local->internalName();
     cg()->llvmAddLocal(name, local->type(), init);
@@ -314,22 +305,8 @@ void StatementBuilder::visit(declaration::Function* f)
             continue;
 
         auto init = cg()->llvmParameter(p);
-
-        if ( ! cg()->hiltiModule()->liveness()->liveIn(func->body(), p) ) {
-            // Will never be used, ignore.
-            if ( ftype->ccPlusOne() )
-                cg()->llvmDtor(init, p->type(), false, "unused-shadow-local");
-
-            continue;
-        }
-
         auto shadow = "__shadow_" + p->id()->name();
-        cg()->llvmAddLocal(shadow, p->type(), init);
-
-        // If it's a plusone function, the shadow takes ownership of the +1
-        // we got passed in. Otherwise, we need to ref once for the shadow.
-        if ( ! ftype->ccPlusOne() )
-            cg()->llvmCctor(cg()->llvmLocal(shadow), p->type(), true, "shadow-local");
+        cg()->llvmAddLocal(shadow, p->type(), std::make_shared<expression::CodeGen>(p->type(), init));
     }
 
     if ( hook_decl ) {
@@ -352,8 +329,8 @@ void StatementBuilder::visit(declaration::Function* f)
         cg()->pushBuilder(cont);
 
         // Check whether the hook's group is enabled.
-        CodeGen::expr_list args { builder::integer::create(hook_decl->hook()->group()) };
-        auto cont2 = cg()->llvmCall("hlt::hook_group_is_enabled", args, false);
+        CodeGen::expr_list args { builder::integer::create(ftype->attributes().getAsInt(attribute::GROUP, 0)) };
+        auto cont2 = cg()->llvmCall("hlt::hook_group_is_enabled", args, false, false);
 
         auto disabled = cg()->pushBuilder("disabled");
         cg()->llvmReturn(0, cg()->llvmConstInt(0, 1)); // Return false.

@@ -11,7 +11,7 @@
 #include "port.h"
 #include "string_.h"
 
-hlt_string hlt_port_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_port_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_PORT);
 
@@ -76,7 +76,7 @@ hlt_port hlt_port_from_asciiz(const char* s, hlt_exception** excpt, hlt_executio
     return p;
 
 error:
-    hlt_set_exception(excpt, &hlt_exception_conversion_error, 0);
+    hlt_set_exception(excpt, &hlt_exception_conversion_error, 0, ctx);
     return p;
 }
 

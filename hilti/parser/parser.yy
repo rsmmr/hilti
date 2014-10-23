@@ -76,15 +76,7 @@ using namespace hilti;
 %token <sval>  CPORT          "port"
 %token <dval>  CDOUBLE        "double"
 
-%token <sval>  ATTR_DEFAULT   "'&default'"
-%token <sval>  ATTR_GROUP     "'&group'"
-%token <sval>  ATTR_LIBHILTI  "'&libhilti'"
-%token <sval>  ATTR_NOSUB     "'&nosub'"
-%token <sval>  ATTR_FIRST_MATCH "'&first_match'"
-%token <sval>  ATTR_PRIORITY  "'&priority'"
-%token <sval>  ATTR_SCOPE     "'&scope'"
-%token <sval>  ATTR_DTOR      "'&libhilti_dtor'"
-%token <sval>  ATTR_NOYIELD   "'&noyield'"
+%token <sval>  ATTRIBUTE      "attribute"
 
 %token         ADDR           "'addr'"
 %token         AFTER          "'after'"
@@ -137,6 +129,7 @@ using namespace hilti;
 %token         TRY            "'try'"
 %token         TUPLE          "'tuple'"
 %token         TYPE           "'type'"
+%token         UNION          "'union'"
 %token         VECTOR         "'vector'"
 %token         VOID           "'void'"
 %token         WITH           "'with'"
@@ -154,11 +147,11 @@ using namespace hilti;
 %type <context_fields>   context_fields opt_context_fields
 %type <enum_label>       enum_label
 %type <enum_labels>      enum_labels
-%type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor opt_expr
+%type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor opt_expr ctor_regexp
 %type <exprs>            exprs opt_exprs
 %type <exprs2>           opt_tuple_elem_list tuple_elem_list tuple
-%type <function_attribute>   func_attr
-%type <function_attributes>  opt_func_attrs
+%type <attribute>        attribute attribute_
+%type <attributes>       attributes opt_attributes
 %type <id>               local_id scoped_id mnemonic label scope_field
 %type <map_element>      map_elem
 %type <map_elements>     map_elems opt_map_elems
@@ -168,15 +161,16 @@ using namespace hilti;
 %type <param>            param
 %type <result>           result
 %type <params>           param_list opt_param_list
-%type <re_pattern>       re_pattern
-%type <re_patterns>      ctor_regexp
+%type <re_patterns>      ctor_regexp_patterns
 %type <scope_fields>     scope_fields opt_scope_fields
 %type <stmt>             stmt instruction try_catch foreach
-%type <strings>          attr_list opt_attr_list
 %type <struct_field>     struct_field
 %type <struct_fields>    struct_fields opt_struct_fields
-%type <sval>             opt_exception_libtype attribute re_pattern_constant opt_struct_libhilti_dtor
-%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ overlay context scope opt_scope_ref function_type
+%type <union_field>      union_field
+%type <union_fields>     union_fields opt_union_fields
+%type <union_constant_field> union_constant_field
+%type <sval>             re_pattern_constant
+%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ union_ overlay context scope function_type
 %type <types>            type_list
 
 %%
@@ -217,20 +211,38 @@ global_decl   : global
               | export_
               ;
 
-global        : GLOBAL type scoped_id eol          { driver.moduleBuilder()->addGlobal($3, $2, nullptr, false, loc(@$)); }
-              | GLOBAL type scoped_id '=' expr eol { driver.moduleBuilder()->addGlobal($3, $2, $5, false, loc(@$)); }
-              | DECLARE GLOBAL type scoped_id eol  { if ( ! $4->scope().empty() )
-                                                         driver.moduleBuilder()->declareGlobal($4, $3, loc(@$));
-                                                     else
-                                                         error(@$, "declared global must be external to module");
+global        : GLOBAL type scoped_id opt_attributes eol
+                                                 { $2->setAttributes($4);
+                                                   driver.moduleBuilder()->addGlobal($3, $2, nullptr, false, loc(@$));
+                                                 }
+
+              | GLOBAL type scoped_id '=' expr opt_attributes eol
+                                                 { $2->setAttributes($6);
+                                                   driver.moduleBuilder()->addGlobal($3, $2, $5, false, loc(@$));
+                                                 }
+
+              | DECLARE GLOBAL type scoped_id opt_attributes eol
+                                                 { if ( ! $4->scope().empty() ) {
+                                                       $3->setAttributes($5);
+                                                       driver.moduleBuilder()->declareGlobal($4, $3, loc(@$));
                                                    }
+                                                   else
+                                                       error(@$, "declared global must be external to module");
+                                                 }
               ;
 
-const_        : CONST type local_id '=' expr eol  { driver.moduleBuilder()->addConstant($3, $2, $5, false, loc(@$)); }
+const_        : CONST type local_id '=' expr eol   { driver.moduleBuilder()->addConstant($3, $2, $5, false, loc(@$)); }
               ;
 
-local         : LOCAL type local_id eol          { driver.moduleBuilder()->addLocal($3, $2, 0, false, loc(@$)); }
-              | LOCAL type local_id '=' expr eol { driver.moduleBuilder()->addLocal($3, $2, $5, false, loc(@$)); }
+local         : LOCAL type local_id opt_attributes eol
+                                                   { $2->setAttributes($4);
+                                                     driver.moduleBuilder()->addLocal($3, $2, 0, false, loc(@$));
+                                                   }
+
+              | LOCAL type local_id '=' expr opt_attributes eol
+                                                   { $2->setAttributes($6);
+                                                     driver.moduleBuilder()->addLocal($3, $2, $5, false, loc(@$));
+                                                   }
               ;
 
 type_decl     : TYPE scoped_id '=' type eol       { driver.moduleBuilder()->addType($2, $4, false, loc(@$)); }
@@ -302,11 +314,9 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | LIST '<' '*' '>'                 { $$ = builder::list::typeAny(loc(@$)); }
               | MAP '<' type ',' type '>'        { $$ = builder::map::type($3, $5, loc(@$)); }
               | MAP '<' '*' '>'                  { $$ = builder::map::typeAny(loc(@$)); }
-              | REF '<' '*' '>'                  { $$ = builder::reference::typeAny(loc(@$)); }
               | REF '<' type '>'                 { $$ = builder::reference::type($3, loc(@$)); }
-              | REGEXP '<' opt_attr_list '>'     { $$ = builder::regexp::type($3, loc(@$)); }
-              | REGEXP                           { $$ = builder::regexp::type(std::list<string>(), loc(@$)); }
-              | REGEXP '<' '*' '>'               { $$ = builder::regexp::typeAny(loc(@$)); }
+              | REF '<' '*' '>'                  { $$ = builder::reference::typeAny(loc(@$)); }
+              | REGEXP                           { $$ = builder::regexp::type(loc(@$)); }
               | SET  '<' type '>'                { $$ = builder::set::type($3, loc(@$)); }
               | SET '<' '*' '>'                  { $$ = builder::set::typeAny(loc(@$)); }
               | TUPLE '<' '*' '>'                { $$ = builder::tuple::typeAny(loc(@$)); }
@@ -325,6 +335,7 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | enum_                            { $$ = $1; }
               | exception                        { $$ = $1; }
               | struct_                          { $$ = $1; }
+              | union_                           { $$ = $1; }
               | scope                            { $$ = $1; }
               | context                          { $$ = $1; }
               | overlay                          { $$ = $1; }
@@ -371,24 +382,20 @@ scope_fields  : scope_fields ',' scope_field     { $$ = $1; $$.push_back($3); }
 
 scope_field   : local_id                         { $$ = $1; }
 
-exception     : EXCEPTION '<' type '>' opt_exception_base opt_exception_libtype {
+exception     : EXCEPTION '<' type '>' opt_exception_base opt_attributes {
                                                  $$ = builder::exception::type($5, $3, loc(@$));
-                                                 ast::as<type::Exception>($$)->setLibraryType($6);
+                                                 $$->setAttributes($6);
                                                  }
-              | EXCEPTION opt_exception_base opt_exception_libtype {
+              | EXCEPTION opt_exception_base opt_attributes {
                                                  $$ = builder::exception::type($2, nullptr, loc(@$));
-                                                 ast::as<type::Exception>($$)->setLibraryType($3);
+                                                 $$->setAttributes($3);
               }
 
-struct_       : STRUCT opt_struct_libhilti_dtor  { driver.disableLineMode(); }
+struct_       : STRUCT opt_attributes            { driver.disableLineMode(); }
                   '{' opt_struct_fields '}'      { driver.enableLineMode();
                                                    $$ = builder::struct_::type($5, loc(@$));
-                                                   ast::as<type::Struct>($$)->setLibHiltiDtor($2);
+                                                   $$->setAttributes($2);
                                                  }
-
-opt_struct_libhilti_dtor:
-                ATTR_DTOR '=' CSTRING            { $$ = $3; }
-              | /* empty */                      { $$ = string(); }
 
 
 opt_struct_fields : struct_fields                { $$ = $1; }
@@ -397,8 +404,26 @@ opt_struct_fields : struct_fields                { $$ = $1; }
 struct_fields : struct_fields ',' struct_field   { $$ = $1; $$.push_back($3); }
               | struct_field                     { $$ = builder::struct_::field_list(); $$.push_back($1); }
 
-struct_field  : type local_id                    { $$ = builder::struct_::field($2, $1, nullptr, false, loc(@$)); }
-              | type local_id ATTR_DEFAULT '=' expr { $$ = builder::struct_::field($2, $1, $5, false, loc(@$)); }
+struct_field  : type local_id opt_attributes     { $1->setAttributes($3);
+                                                   $$ = builder::struct_::field($2, $1, nullptr, false, loc(@$));
+                                                 }
+
+union_        : UNION opt_attributes             { driver.disableLineMode(); }
+                    '{' opt_union_fields '}'     { driver.enableLineMode();
+                                                   $$ = builder::union_::type($5, loc(@$));
+                                                   $$->setAttributes($2);
+                                                 }
+              | UNION '<' type_list '>'          { $$ = builder::union_::type($3, loc(@$)); }
+
+opt_union_fields : union_fields                  { $$ = $1; }
+              | /* empty */                      { $$ = builder::union_::field_list(); }
+
+union_fields : union_fields ',' union_field      { $$ = $1; $$.push_back($3); }
+              | union_field                      { $$ = builder::union_::field_list(); $$.push_back($1); }
+
+union_field  : type local_id opt_attributes      { $1->setAttributes($3);
+                                                   $$ = builder::union_::field($2, $1, nullptr, false, loc(@$));
+                                                 }
 
 context       :                                  { driver.disableLineMode(); }
                   '{' opt_context_fields '}'     { driver.enableLineMode(); $$ = builder::context::type($3, loc(@$)); }
@@ -434,21 +459,22 @@ overlay_field : local_id ':' type AT CINTEGER local_id WITH expr opt_expr {
 opt_exception_base : ':' type                    { $$ = $2; }
               | /* empty */                      { $$ = nullptr; }
 
-opt_exception_libtype : ATTR_LIBHILTI '=' CSTRING { $$ = $3; }
-              | /* empty */                      { $$ = string(); }
+opt_attributes: attributes                       { $$ = $1; }
+              | /* empty */                      { $$ = AttributeSet(); }
 
+attributes    : attributes attribute             { $$ = $1; $$.add($2); }
+              | attribute                        { $$ = AttributeSet(); $$.add($1); }
 
-opt_attr_list : attr_list                        { $$ = $1; }
-              | /* empty */                      { $$ = std::list<string>(); }
+attribute     : attribute_                       { $$ = $1;
 
-attr_list     : attr_list ',' attribute          { $$ = $1; $1.push_back($3); }
-              | attribute                        { $$ = std::list<string> {$1}; }
+                                                   if ( ! $$ )
+                                                       error(@$, "unknown attribute");
+                                                 }
 
-attribute     : ATTR_DEFAULT                     { $$ = $1; }
-              | ATTR_GROUP                       { $$ = $1; }
-              | ATTR_LIBHILTI                    { $$ = $1; }
-              | ATTR_NOSUB                       { $$ = $1; }
-              | ATTR_SCOPE                       { $$ = $1; }
+attribute_    : ATTRIBUTE                        { $$ = Attribute(Attribute::nameToTag($1)); }
+              | ATTRIBUTE '=' CSTRING            { $$ = Attribute(Attribute::nameToTag($1), $3); }
+              | ATTRIBUTE '=' CINTEGER           { $$ = Attribute(Attribute::nameToTag($1), $3); }
+              | ATTRIBUTE '=' expr               { $$ = Attribute(Attribute::nameToTag($1), $3); }
 
 type_list     : type ',' type_list               { $$ = $3; $$.push_front($1); }
               | type                             { $$ = builder::type_list(); $$.push_back($1); }
@@ -481,28 +507,40 @@ constant      : CINTEGER                         { $$ = builder::integer::create
               | TIME '(' CDOUBLE ')'             { $$ = builder::time::create($3, loc(@$)); }
               | TIME '(' CINTEGER ')'            { $$ = builder::time::create((uint64_t)$3, loc(@$)); }
               | tuple                            { $$ = builder::tuple::create($1, loc(@$));  }
+              | UNION '<' type '>' '(' union_constant_field ')'
+                                                 { $$ = builder::union_::create($3, $6.first, $6.second, loc(@$)); }
+              | UNION '(' union_constant_field ')'
+                                                 { $$ = builder::union_::create(nullptr, $3.first, $3.second, loc(@$)); }
+              | UNION '(' ')'
+                                                 { $$ = builder::union_::create(loc(@$)); }
               ;
 
+union_constant_field
+              : local_id ':' expr                { $$ = std::make_pair($1, $3); }
+              | expr                             { $$ = std::make_pair(nullptr, $1); }
+
 ctor          : CBYTES                           { $$ = builder::bytes::create($1, loc(@$)); }
-              | ctor_regexp                      { $$ = builder::regexp::create($1, loc(@$)); }
+              | ctor_regexp                      { $$ = $1; }
               | LIST   '<' type '>' '(' opt_exprs ')' { $$ = builder::list::create($3, $6, loc(@$)); }
               | SET    '<' type '>' '(' opt_exprs ')' { $$ = builder::set::create($3, $6, loc(@$)); }
               | VECTOR '<' type '>' '(' opt_exprs ')' { $$ = builder::vector::create($3, $6, loc(@$)); }
-              | MAP    '<' type ',' type '>' '(' opt_map_elems ')'
-                                                 { $$ = builder::map::create($3, $5, $8, nullptr, loc(@$)); }
-              | MAP    '<' type ',' type '>' '(' opt_map_elems ')' ATTR_DEFAULT '=' expr
-              									 { $$ = builder::map::create($3, $5, $8, $12, loc(@$)); }
-              | CALLABLE '<' type '>'            '(' expr ',' '(' opt_exprs ')' ')'
+              | MAP    '<' type ',' type '>' '(' opt_map_elems ')' opt_attributes
+              									 { $$ = builder::map::create($3, $5, $8, nullptr, loc(@$));
+                                                   $$->type()->setAttributes($10);
+                                                 }
+              | CALLABLE '<' type '>' '(' expr ',' '(' opt_exprs ')' ')'
                                                  { $$ = builder::callable::create($3, builder::type_list(), $6, $9, loc(@$)); }
               | CALLABLE '<' type ',' type_list '>' '(' expr ',' '(' opt_exprs ')' ')'
                                                  { $$ = builder::callable::create($3, $5, $8, $11, loc(@$)); }
               ;
 
-ctor_regexp   : ctor_regexp '|' re_pattern       { $$ = $1; $$.push_back($3); }
-              | re_pattern                       { $$ = builder::regexp::re_pattern_list(); $$.push_back($1); }
+ctor_regexp   : ctor_regexp_patterns opt_attributes
+                                                 { $$ = builder::regexp::create($1, $2, loc(@$)); }
 
-re_pattern    : re_pattern_constant              { $$ = builder::regexp::pattern($1, ""); }
-              | re_pattern_constant IDENT        { $$ = builder::regexp::pattern($1, $2); }
+ctor_regexp_patterns
+              : ctor_regexp_patterns '|' re_pattern_constant
+                                                 { $$ = $1; $$.push_back($3); }
+              | re_pattern_constant              { $$ = builder::regexp::re_pattern_list(); $$.push_back($1); }
 
 re_pattern_constant : '/' { driver.enablePatternMode(); } CREGEXP { driver.disablePatternMode(); } '/' { $$ = $3; }
 
@@ -521,14 +559,14 @@ export_       : EXPORT scoped_id eol              { driver.moduleBuilder()->expo
               | EXPORT base_type eol             { driver.moduleBuilder()->exportType($2); }
               ;
 
-function      : opt_init opt_cc result local_id '(' opt_param_list ')' opt_scope_ref opt_func_attrs
-                                                 {  auto func = driver.moduleBuilder()->pushFunction($4, $3, $6, $2, $8, $9, true, loc(@$));
+function      : opt_init opt_cc result local_id '(' opt_param_list ')' opt_attributes
+                                                 {  auto func = driver.moduleBuilder()->pushFunction($4, $3, $6, $2, $8, true, loc(@$));
                                                     if ( $1 ) func->function()->setInitFunction();
                                                  }
                 body opt_nl                      {  auto func = driver.moduleBuilder()->popFunction(); }
 
-              | DECLARE opt_cc result scoped_id '(' opt_param_list ')' eol
-                                                 {  driver.moduleBuilder()->declareFunction($4, $3, $6, $2, loc(@$));
+              | DECLARE opt_cc result scoped_id '(' opt_param_list ')' opt_attributes eol
+                                                 {  driver.moduleBuilder()->declareFunction($4, $3, $6, $2, $8, loc(@$));
                                                     driver.moduleBuilder()->exportID($4);
                                                  }
 
@@ -539,25 +577,15 @@ function_type : opt_cc FUNCTION '(' opt_param_list ')' ARROW result
 opt_init      : INIT                             { $$ = true; }
               | /* empty */                      { $$ = false; }
 
-opt_scope_ref : ATTR_SCOPE '=' local_id          { $$ = builder::type::byName($3, loc(@$)); }
-              | /* empty */                      { $$ = nullptr; }
-
-hook          : HOOK result scoped_id '(' opt_param_list ')' opt_scope_ref opt_func_attrs
-                                                 {  driver.moduleBuilder()->pushHook($3, $2, $5, $7, $8, true, loc(@$)); }
+hook          : HOOK result scoped_id '(' opt_param_list ')' opt_attributes
+                                                 {  driver.moduleBuilder()->pushHook($3, $2, $5, $7, true, loc(@$)); }
 
                 body opt_nl                      {  driver.moduleBuilder()->popHook(); }
 
 
-              | DECLARE HOOK result scoped_id '(' opt_param_list ')' eol
-                                                 {  driver.moduleBuilder()->declareHook($4, $3, $6, loc(@$)); }
+              | DECLARE HOOK result scoped_id '(' opt_param_list ')' opt_attributes eol
+                                                 {  driver.moduleBuilder()->declareHook($4, $3, $6, $8, loc(@$)); }
               ;
-
-opt_func_attrs : func_attr opt_func_attrs        { $$ = $2; $$.push_back($1); }
-               | /* empty */                     { $$ = builder::function::attributes(); }
-
-func_attr     : ATTR_PRIORITY '=' CINTEGER       { $$ = builder::function::attribute($1, $3); }
-              | ATTR_GROUP '=' CINTEGER          { $$ = builder::function::attribute($1, $3); }
-              | ATTR_NOYIELD                     { $$ = builder::function::attribute($1, 0); }
 
 opt_cc        : CSTRING                          { if ( $1 == "HILTI" ) $$ = type::function::HILTI;
                                                    else if ( $1 == "C-HILTI" ) $$ = type::function::HILTI_C;

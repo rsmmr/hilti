@@ -27,7 +27,7 @@ int<32> foo2(int<32> a) &noyield  {
     return.result a
 }
 
-string foo3(string a) &noyield  {
+string foo3(string a) &noyield {
     a = string.concat a a
     return.result a
 }

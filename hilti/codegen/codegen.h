@@ -71,7 +71,7 @@ namespace symbols {
 /// at the C layer in libhilti.
 namespace hlt {
     /// Fields in %hlt.execution_context.
-    enum ExecutionContext { Globals = 12 };
+    enum ExecutionContext { Globals = 13 };
 
     /// Fields in %hlt.exception.
     enum Exception { Name = 0 };
@@ -460,6 +460,20 @@ public:
    /// Returns: The computed LLVM value.
    llvm::Value* llvmValue(shared_ptr<Expression> expr, shared_ptr<hilti::Type> coerce_to = nullptr, bool cctor = false);
 
+   /// Stores the LLVM value for a HILTI expression into an address.
+   ///
+   /// This method branches out the Loader to do its work.
+   ///
+   /// dst: The address where to store the value.
+   ///
+   /// expr: The expression to evaluate.
+   ///
+   /// coerce_to: If given, the expr is first coerced into this type before
+   /// it's evaluated. It's assumed that the coercion is legal and supported.
+   ///
+   /// cctor: XXX
+   void llvmValueInto(llvm::Value* dst, shared_ptr<Expression> expr, shared_ptr<hilti::Type> coerce_to = nullptr, bool cctor = false);
+
    /// Returns the address of a value referenced by an expression, if
    /// possible. For types that don't support taking their address, returns
    /// null.
@@ -494,32 +508,32 @@ public:
    /// of the box.
    llvm::Constant* llvmSizeOf(llvm::Type* t);
 
+   /// Returns the size of an LLVM type for the current target platform. Note
+   /// that the returned value is non-portable, if possible llvmSizeOf()
+   /// should be prefered.
+   uint64_t llvmSizeOfForTarget(llvm::Type* t);
+
    /// Stores an LLVM value at the location associated with a HILTI
-   /// expression. The value must already have its cctor called, either
-   /// implictly if its comming from llvmValue() or explicitly via
-   /// llvmCCtor().
+   /// expression.
    ///
    /// This method branches out to the Storer to do its work.
    ///
    /// target: The expression to evaluate to get the location where to store
    /// the value.
    ///
-   /// value: The value to store.
+   /// value: The value to store a +0.
    void llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value, bool dtor_first = true);
 
    /// Stores an LLVM value at the location associated with a HILTI
-   /// instruction's target operand. expression. The value must already have
-   /// its cctor called, either implictly if its comming from llvmValue() or
-   /// explicitly via llvmCCtor().
+   /// instruction's target operand. expression.
    ///
    /// This methods branches out to the Storer to do its work.
    ///
    /// instr: The instruction's which's target operand gives us the
    /// destination for the store operation.
    ///
-   /// value: The value to store.
+   /// value: The value to store at +0.
    void llvmStore(statement::Instruction* instr, llvm::Value* value, bool dtor_first = true);
-
 
    /// Unpacks an instance of a type from binary data (like in the \c unpack
    /// instruction). Exception semantics are as with \c unpack.
@@ -542,7 +556,7 @@ public:
    ///
    /// Returns: A pair in which the first element is the unpacked value and
    /// the second is an iterator pointing just beyond the last consumed byte.
-   /// Both tuples elements will have their cctor applied.
+   /// Neither tuple element will have its cctor applied.
    std::pair<llvm::Value*, llvm::Value*> llvmUnpack(
                    shared_ptr<Type> type, shared_ptr<Expression> begin,
                    shared_ptr<Expression> end, shared_ptr<Expression> fmt,
@@ -573,7 +587,7 @@ public:
    ///
    /// Returns: A pair in which the first element is the unpacked value and
    /// the second is an iterator pointing just beyond the last consumed byte.
-   /// Both tuples elements will have their cctor applied.
+   /// Neither tuple elements will have their cctor applied.
    std::pair<llvm::Value*, llvm::Value*> llvmUnpack(
                    shared_ptr<Type> type, llvm::Value* begin,
                    llvm::Value* end, llvm::Value* fmt,
@@ -614,8 +628,10 @@ public:
    ///
    /// dst: The destination type.
    ///
-   /// Returns: The coerce value, with its cctor already applied.
-   llvm::Value* llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst);
+   /// cctor: True if the result should have its cctor applied.
+   ///
+   /// Returns: The coerced value.
+   llvm::Value* llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst, bool cctor);
 
    /// Returns an LLVM type from \c libhilti.ll. The method looks up a name
    /// in the library and returns the corresponding type. It's an error if
@@ -684,7 +700,7 @@ public:
    ///
    /// type: The type to return the initalization value for.
    ///
-   /// Returns: The LLVM initialization value.
+   /// Returns: The LLVM initialization value at +0.
    llvm::Constant* llvmInitVal(shared_ptr<hilti::Type> type);
 
    /// Returns a pointer to the LLVM RTTI object for a HILTI type.
@@ -857,12 +873,16 @@ public:
    /// Returns the LLVM value corresponding to a HILTI string of given value.
    ///
    /// s: The string value.
+   ///
+   /// Returns: The value at +0.
    llvm::Value* llvmString(const string& s);
 
    /// Returns a pointer to the LLVM value corresponding to a HILTI string of
    /// given value.
    ///
    /// s: The string value.
+   ///
+   /// Returns: A pointer to the value at +0.
    llvm::Value* llvmStringPtr(const string& s);
 
    /// Returns an LLVM struct value with fields initialized. There's also a
@@ -933,8 +953,7 @@ public:
    /// Adds a new local variable to the current LLVM function. Locals created
    /// with this method should correspond to variables defined by the user at
    /// the HILTI level. To create internal temporaries for use by the code
-   /// generator, use llvmAddTmp() instead. Locals will be unrefed
-   /// automatically at function exit.
+   /// generator, use llvmAddTmp() instead.
    ///
    /// name: A name to use for the local. Note that it's not necessarily used
    /// literally and may be adpated further.
@@ -948,13 +967,13 @@ public:
    /// function.
    ///
    /// Returns: The new local variable.
-   llvm::Value* llvmAddLocal(const string& name, shared_ptr<Type> type, llvm::Value* init = 0);
+   llvm::Value* llvmAddLocal(const string& name, shared_ptr<Type> type, shared_ptr<Expression> init = 0);
 
    /// Adds a new local temporary variable to the current LLVM function.
    /// Temporaries don't correspond to a user-defined variable but are
-   /// created internally by the code generator to store intermediaries.
-   /// Locals will *not* be unrefed automatically at function exit. If you
-   /// need that, use llvmUnrefAtExit or llvmUnrefAfterInstruction.
+   /// created internally by the code generator to store intermediaries. They
+   /// are also not kept alive automatically across safepoints, you need to
+   /// cctor them as appropiate.
    ///
    /// name: A name to use for the temporary. Note that it's not necessarily
    /// used literally and may be adpated further.
@@ -984,7 +1003,7 @@ public:
    /// new one. Note that no type-check is done.
    ///
    /// Returns: The new temporary variable.
-   llvm::Value*    llvmAddTmp(const string& name, llvm::Value* init = 0, bool reuse = false);
+   llvm::Value*  llvmAddTmp(const string& name, llvm::Value* init = 0, bool reuse = false);
 
    typedef std::pair<string, shared_ptr<hilti::Type>> parameter;
    typedef std::vector<parameter> parameter_list;
@@ -1035,11 +1054,10 @@ public:
    llvm::Function* llvmAddFunction(const string& name, llvm::Type* rtype, llvm_parameter_list params, bool internal, bool force_name=false);
 
    typedef std::vector<shared_ptr<Expression>> expr_list;
+   typedef std::function<void (CodeGen* cg)> call_exception_callback_t;
 
    /// Generates an LLVM call to a HILTI function. This method handles all
-   /// calling conventions.  The return value will have its cctor function
-   /// called already (if necessary) to create a new copy. If that isn't
-   /// needed, llvmDtor() must be called on the result.
+   /// calling conventions.
    ///
    /// func: The HILTI function to call.
    ///
@@ -1047,17 +1065,19 @@ public:
    ///
    /// args: The parameters to evaluate and pass to the callee.
    ///
+   /// cctor_result: If true, the return value will have its cctor function
+   /// applied; if false, it will be returned at +0.
+   ///
    /// excpt_check: If false, the call will not be followed for a check
    /// whether the callee has raised an exception. Use that if you're sure
    /// that it won't, or if for some other reason you know it's not an issue.
    ///
    /// Returns: The call instruction created.
-   llvm::Value* llvmCall(shared_ptr<Function> func, const expr_list args, bool excpt_check=true);
+   llvm::Value* llvmCall(shared_ptr<Function> func, const expr_list args, bool cctor_result = false, bool excpt_check=true,
+                         call_exception_callback_t excpt_callback = [](CodeGen* cg){} );
 
    /// Generates an LLVM call to a HILTI function. This method handles all
-   /// calling conventions. The return value will have its cctor function
-   /// called already (if necessary) to create a new copy. If that isn't
-   /// needed, llvmDtor() must be called on the result.
+   /// calling conventions.
    ///
    /// llvm_func: The LLVM function corresponding to the HILTI function we
    /// want to call (usually retrieved via llvmFunction()).
@@ -1066,24 +1086,152 @@ public:
    ///
    /// args: The parameters to evaluate and pass to the callee.
    ///
+   /// cctor_result: If true, the return value will have its cctor function
+   /// applied; if false, it will be returned at +0.
+   ///
    /// excpt_check: If false, the call will not be followed for a check
    /// whether the callee has raised an exception. Use that if you're sure
    /// that it won't, or if for some other reason you know it's not an issue.
    ///
    /// Returns: The call instruction created.
-   llvm::Value* llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true);
+   llvm::Value* llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool cctor_result = false, bool excpt_check=true,
+                         call_exception_callback_t excpt_callback = [](CodeGen* cg){} );
+
+   /// Generates an LLVM call to a HILTI function. This method handles all
+   /// calling conventions.
+   ///
+   /// name: The name of the HILTI function to call, which must be resolvable
+   /// in the current module's scope.
+   ///
+   /// ftype: The type of the callee.
+   ///
+   /// args: The parameters to evaluate and pass to the callee.
+   ///
+   /// cctor_result: If true, the return value will have its cctor function
+   /// applied; if false, it will be returned at +0.
+   ///
+   /// excpt_check: If false, the call will not be followed for a check
+   /// whether the callee has raised an exception. Use that if you're sure
+   /// that it won't, or if for some other reason you know it's not an issue.
+   ///
+   /// Returns: The call instruction created.
+   llvm::Value* llvmCall(const string& name, const expr_list args, bool cctor_result = false, bool excpt_check=true,
+                         call_exception_callback_t excpt_callback = [](CodeGen* cg){} );
+
+   typedef std::vector<llvm::Value*> value_list;
+
+   /// Generates a straight LLVM call to a C function, without adapting
+   /// parameters to HILTI'c calling conventions.
+   ///
+   /// llvm_func: The function to call.
+   ///
+   /// args: The parameters to the call.
+   ///
+   /// add_hiltic_args: If true, the method does add the standard additional
+   /// \c C-HILTI arguments to the call.
+   ///
+   /// excpt_check: If false, the call will not be followed for a check
+   /// whether the callee has raised an exception. Use that if you're sure
+   /// that it won't, or if for some other reason you know it's not an issue.
+   ///
+   /// Returns: The call instruction created. The result value will be passed
+   /// straight through, so cctor semantics depend on the callee.
+   llvm::CallInst* llvmCallC(llvm::Value* llvm_func, const value_list& args, bool add_hiltic_args, bool excpt_check=true);
+
+   /// Generates a straight LLVM call to a C function defined in \c
+   /// libhilti.ll, without adapting parameters to HILTI'c calling
+   /// conventions.
+   ///
+   /// llvm_func: The function to call.
+   ///
+   /// args: The parameters to the call.
+   ///
+   /// add_hiltic_args: If true, the method does add the standard additional
+   /// \c C-HILTI arguments to the call.
+   ///
+   /// excpt_check: If false, the call will not be followed for a check
+   /// whether the callee has raised an exception. Use that if you're sure
+   /// that it won't, or if for some other reason you know it's not an issue.
+   ///
+   ///
+   /// Returns: The call instruction created. The result value will be passed
+   /// straight through, so cctor semantics depend on the callee.
+   llvm::CallInst* llvmCallC(const string& llvm_func, const value_list& args, bool add_hiltic_args, bool excpt_check=true);
+
+   /// Calls an LLVM intrinsic.
+   ///
+   /// intr: The intrinsic's ``INTR_*`` enum constant. See \c
+   /// include/llvm/Intrinsics.gen for list
+   ///
+   /// ty: The types determining the version to pick for overloaded intrinsics; empty if not needed.
+   ///
+   /// args: The arguments to call the intrinsic with.
+   ///
+   /// Returns: Whatever the intrinsic returns.
+   llvm::CallInst* llvmCallIntrinsic(llvm::Intrinsic::ID intr, std::vector<llvm::Type*> tys, const value_list& args);
+
+   /// Generates an llvm.expect intrinsic.
+   ///
+   /// v: The actual value.
+   ///
+   /// e: The expected value.
+   llvm::Value* llvmExpect(llvm::Value* v, llvm::Value* e);
+
+   /// Generates the code for a HILTI \c return or \c return.void statement.
+   /// This methods must be used instead of a plain LLVM \c return
+   /// instruction; it makes sure to run any necessary end-of-function
+   /// cleanup code.
+   ///
+   /// rtype: The type of the result. For void, either type::Void or null can
+   /// be used.
+   ///
+   /// result: The result to return from the current function, or null if the
+   /// return type is void. This comes in at +0.
+   ///
+   /// result_cctored: If true, the result is already cctored.
+   void llvmReturn(shared_ptr<Type> rtype = 0, llvm::Value* result = 0, bool result_cctored = false);
 
    /// Creates a new callable insance and binds a call to it. Arguments are
    /// the same as with the corresponding llvmCall() method.
    ///
+   /// ref: True for the callable returning values at +1, false for +0. In
+   /// the latter case, the result will have been added to the context's
+   /// nullbuffer so that at the next safepoint it will be deleted if not
+   /// further refs take place.
+   ///
+   /// cctor_callable: True if the callable should be returned at +1.
+   ///
    /// Returns: The callable, which can be executed with llvmCallableRun().
-   llvm::Value* llvmCallableBind(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true, bool deep_copy_args=false);
+   /// It will be returned at +0 or + 1, depending on cctor_callable.
+   llvm::Value* llvmCallableBind(shared_ptr<Function> func, shared_ptr<type::Function> ftype, const expr_list args, bool ref, bool excpt_check=true, bool deep_copy_args=false, bool cctor_callable = false);
+
+   /// Creates a new callable insance and binds a call to it. Arguments are
+   /// the same as with the corresponding llvmCall() method.
+   ///
+   /// ref: True for the callable returning values at +1, false for +0. In
+   /// the latter case, the result will have been added to the context's
+   /// nullbuffer so that at the next safepoint it will be deleted if not
+   /// further refs take place.
+   ///
+   /// cctor_callable: True if the callable should be returned at +1.
+   ///
+   /// Returns: The callable, which can be executed with llvmCallableRun().
+   /// It will be returned at +0 or + 1, depending on cctor_callable.
+   llvm::Value* llvmCallableBind(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool ref, bool excpt_check=true, bool deep_copy_args=false, bool cctor_callable = false);
 
    /// Creates a new callable insance and binds the execution of a hook to
    /// it.
    ///
+   /// ref: True for the callable returning values at +1, false for +0. In
+   /// the latter case, the result will have been added to the context's
+   /// nullbuffer so that at the next safepoint it will be deleted if not
+   /// further refs take place.
+   ///
+   /// cctor_callable: True if the callable should be returned at +1.
+   ///
    /// Returns: The callable, which can be executed with llvmCallableRun().
-   llvm::Value* llvmCallableBind(shared_ptr<Hook> hook, const expr_list args, bool deep_copy_args=false);
+   /// It will be returned at +0 or + 1, depending on cctor_callable.
+   llvm::Value* llvmCallableBind(shared_ptr<Hook> hook, const expr_list args, bool ref, bool excpt_check=true, bool deep_copy_args=false, bool cctor_callable = false);
 
    /// Executes a previously bound callable.
    ///
@@ -1093,7 +1241,9 @@ public:
    ///
    /// args: The (non-bound) arguments to the callable.
    ///
-   /// Returns: The return value for callables that have, or null for ones without.
+   /// Returns: The return value for callables that have, or null for ones
+   /// without. It will be returned at +0 or +1 depending on how that
+   /// callable was bound.
    llvm::Value* llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable, const expr_list args);
 
    /// Calls a HILTI function inside a newly created fiber. If the fiber
@@ -1106,7 +1256,7 @@ public:
    /// method.
    ///
    /// Returns: If the functin returns a value, the value. Otherwise, null.
-   llvm::Value* llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args);
+   llvm::Value* llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool cctor_result);
 
    /// Starts, or resumes, a fiber. If the fiber throws an exception, that
    /// will be set in the current context, including a YieldException if the
@@ -1119,6 +1269,8 @@ public:
    /// rtype: The type of the fiber's result if it returns one; null if not.
    ///
    /// Returns: If the fiber returns a value, the value. Otherwise, null.
+   /// Cctor semantics are determined by the fiber's code) (see
+   /// llvmCallInNewFiber().
    llvm::Value* llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype);
 
    /// Yields from inside a fiber. Must be used only when we indeed are
@@ -1149,9 +1301,12 @@ public:
    /// will be stored there. If none does, the current value will be left
    /// untouched.
    ///
+   /// cctor_result: If true, the result will have its cctor function
+   /// applied; if false, it will be returned at +0.
+   ///
    /// Returns: A boolean \c i1 LLVM value indicating whether any hook
    /// function has executed \c hook.stop (true) or not (false).
-   llvm::Value* llvmRunHook(shared_ptr<Hook> hook, const expr_list& args, llvm::Value* result);
+   llvm::Value* llvmRunHook(shared_ptr<Hook> hook, const expr_list& args, llvm::Value* result, bool cctor_result);
 
    /// Adds meta data for a hook implementation that the linker will
    /// evaluate. This is primarily meant for being called from the statement
@@ -1161,100 +1316,6 @@ public:
    ///
    /// llvm_func: The LLVM function corresponding to the hook implementation.
    void llvmAddHookMetaData(shared_ptr<Hook> hook, llvm::Value *llvm_func);
-
-   /// Generates an LLVM call to a HILTI function. This method handles all
-   /// calling conventions. The return value will have its cctor function
-   /// called already (if necessary) to create a new copy. If that isn't
-   /// needed, llvmDtor() must be called on the result.
-   ///
-   /// name: The name of the HILTI function to call, which must be resolvable
-   /// in the current module's scope.
-   ///
-   /// ftype: The type of the callee.
-   ///
-   /// args: The parameters to evaluate and pass to the callee.
-   ///
-   /// excpt_check: If false, the call will not be followed for a check
-   /// whether the callee has raised an exception. Use that if you're sure
-   /// that it won't, or if for some other reason you know it's not an issue.
-   ///
-   /// Returns: The call instruction created.
-   llvm::Value* llvmCall(const string& name, const expr_list args, bool excpt_check=true);
-
-   /// Generates the code for a HILTI \c return or \c return.void statement.
-   /// This methods must be used instead of a plain LLVM \c return
-   /// instruction; it makes sure to run any necessary end-of-function
-   /// cleanup code.
-   ///
-   /// rtype: The type of the result. For void, either type::Void or null can
-   /// be used.
-   ///
-   /// result: The result to return from the current function, or null if the
-   /// return type is void.
-   ///
-   /// result_cctored: If true, the result is already cctored.
-   void llvmReturn(shared_ptr<Type> rtype = 0, llvm::Value* result = 0, bool result_cctored = false);
-
-   typedef std::vector<llvm::Value*> value_list;
-
-   /// Generates a straight LLVM call to a C function, without adapting
-   /// parameters to HILTI'c calling conventions. Note that return value will
-   /// \a not have its cctor called.
-   ///
-   /// llvm_func: The function to call.
-   ///
-   /// args: The parameters to the call.
-   ///
-   /// add_hiltic_args: If true, the method does add the standard additional
-   /// \c C-HILTI arguments to the call.
-   ///
-   /// excpt_check: If false, the call will not be followed for a check
-   /// whether the callee has raised an exception. Use that if you're sure
-   /// that it won't, or if for some other reason you know it's not an issue.
-   ///
-   /// Returns: The call instruction created.
-   llvm::CallInst* llvmCallC(llvm::Value* llvm_func, const value_list& args, bool add_hiltic_args, bool excpt_check=true);
-
-   /// Generates a straight LLVM call to a C function defined in \c
-   /// libhilti.ll, without adapting parameters to HILTI'c calling
-   /// conventions. Note that return value will \a not have its cctor called.
-   ///
-   /// llvm_func: The function to call.
-   ///
-   /// args: The parameters to the call.
-   ///
-   /// add_hiltic_args: If true, the method does add the standard additional
-   /// \c C-HILTI arguments to the call.
-   ///
-   /// excpt_check: If false, the call will not be followed for a check
-   /// whether the callee has raised an exception. Use that if you're sure
-   /// that it won't, or if for some other reason you know it's not an issue.
-   ///
-   /// Returns: The call instruction created.
-   llvm::CallInst* llvmCallC(const string& llvm_func, const value_list& args, bool add_hiltic_args, bool excpt_check=true);
-
-   /// Calls an LLVM intrinsic.
-   ///
-   /// intr: The intrinsic's ``INTR_*`` enum constant. See \c
-   /// include/llvm/Intrinsics.gen for list
-   ///
-   /// ty: The types determining the version to pick for overloaded intrinsics; empty if not needed.
-   ///
-   /// args: The arguments to call the intrinsic with.
-   ///
-   /// Returns: Whatever the intrinsic returns.
-   llvm::CallInst* llvmCallIntrinsic(llvm::Intrinsic::ID intr, std::vector<llvm::Type*> tys, const value_list& args);
-
-   /// Generates an llvm.expect intrinsic.
-   ///
-   /// v: The actual value.
-   ///
-   /// e: The expected value.
-   llvm::Value* llvmExpect(llvm::Value* v, llvm::Value* e);
-
-   ///i = llvm.core.Function.intrinsic(self._llvm.module, intr, types)
-   ///return self.llvmSafeCall(i, args)
-
 
    /// Inserts code that checks with a \c C-HILTI function has raised an
    /// exception. If so, the code will reraise that as a HILTI exception.
@@ -1273,7 +1334,7 @@ public:
    ///
    /// arg: The exception's argument if the type takes one, or null if not.
    ///
-   /// Returns: The exception instance.
+   /// Returns: The exception instance at +0.
    llvm::Value* llvmExceptionNew(const string& exception, const Location& l, llvm::Value* arg);
 
    /// Returns the exception's argument as a void pointer.
@@ -1306,7 +1367,7 @@ public:
    ///
    /// loc: Location information to associate with the exception.
    ///
-   /// arg: The exception's argument if the type takes one, or null if not.
+   /// arg: The exception's argument if the type takes one, or null if not; at +0.
    void llvmRaiseException(const string& exception, const Location& l,  llvm::Value* arg = nullptr);
 
    /// Generates code to raise an exception. When executed, the code will
@@ -1522,42 +1583,6 @@ public:
    /// available.
    llvm::Value* llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm::Value* hight);
 
-#if 0
-   /// Increases the reference count of a garbage-collected object. This
-   /// method is safe to call also instances of types that are not reference
-   /// counted, and with null pointers; in both cases, it will just turn into
-   /// a no-op (either statically or at runtime). If it gets called with a
-   /// reference to a garbage collected object, that will be dereferenced
-   /// first.
-   ///
-   /// val: The value which's reference count to increase.
-   ///
-   /// type: The HILTI type of *val*.
-   void llvmRef(llvm::Value* val, shared_ptr<Type> type);
-
-   /// Decreases the reference count of a garbage-collected object. If it
-   /// goes to zero, the object will be freed and become invalid. This method
-   /// is safe to call also instances of types that are not reference
-   /// counted, and with null pointers; in both cases, it will just turn into
-   /// a no-op (either statically or at runtime). If it gets called with a
-   /// reference to a garbage collected object, that will be dereferenced
-   /// first.
-   ///
-   /// val: The value which's reference count to increase.
-   ///
-   /// type: The HILTI type of *val*.
-   void llvmUnref(llvm::Value* val, shared_ptr<Type> type);
-
-   /// Similar to llvmUnref but postpones the counter decrease until the end
-   /// of the current function.
-   ///
-   /// val: The value which's reference count to increase.
-   ///
-   /// type: The HILTI type of *val*.
-   void llvmUnrefAtReturn(llvm::Value* val, shared_ptr<Type> type);
-
-#endif
-
    /// Similar to llvmDtor but postpones the operation until the current
    /// instruction has been finished.
    ///
@@ -1567,10 +1592,15 @@ public:
    ///
    /// is_ptr: True if *val* is in fact a pointer to an instance of the type
    /// described by *type*; false if it's the instance itself.
+   ///
+   /// TODO: Do we still need this?
    void llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl);
 
    /// XXX.
    void llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl);
+
+   /// XXX. For heap values only. Runs their dtor without releasing memory.
+   void llvmDestroy(llvm::Value* val, shared_ptr<Type> type, const string& location_addl);
 
    /// XXX.
    void llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl);
@@ -1581,10 +1611,6 @@ public:
    /// XXXX
    void llvmGCClear(llvm::Value* addr, shared_ptr<Type> type, const string& tag);
 
-   /// XXXX
-   void llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type, const string& location_addl);
-
-   /// XXXX
    void llvmClearLocalAfterInstruction(shared_ptr<Expression> expr, const string& location_addl);
 
    /// XXXX
@@ -1592,6 +1618,20 @@ public:
 
    /// XXXX
    void llvmFlushLocalsClearedOnException();
+
+   /// XXXX
+   void llvmMemorySafepoint(const std::string& where);
+
+   /// XXXX Creates a stackmap for the current code location.
+   void llvmCreateStackmap();
+
+   /// XXX Ref/unref locals for get ref counts correct.
+   void llvmAdaptStackForSafepoint(bool pre);
+
+   /// XXX Returns all values currently live with theior types.
+   typedef std::tuple<llvm::Value*, shared_ptr<Type>, bool> live_value;
+   typedef std::list<live_value> live_list;
+   live_list liveValues();
 
    /// XXXX
    void llvmDebugPrint(const string& stream, const string& msg);
@@ -1607,6 +1647,9 @@ public:
 
    /// Prints a pointer to stderr at runtime, prefixed with an additional string.
    void llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr);
+
+   /// Print a HILTI object to stderr at runtime, prefixed with an additional string.
+   void llvmDebugPrintObject(const string& prefix, llvm::Value* ptr, shared_ptr<Type> type);
 
    /// A case for llvmSwitch().
    struct SwitchCase {
@@ -1740,8 +1783,12 @@ public:
    ///
    /// stype: The type, which must be a \a type::Struct.
    ///
+   /// ref: True for returning at +1, false for +0. In the latter case, the
+   /// result will have been added to the context's nullbuffer so that at the
+   /// next safepoint it will be deleted if not further refs take place.
+   ///
    /// Returns: The newly allocated instance.
-   llvm::Value* llvmStructNew(shared_ptr<Type> stype);
+   llvm::Value* llvmStructNew(shared_ptr<Type> stype, bool ref);
 
    // A callback to filter the value returned by llvmStructGet().  The
    // callback will be called with the value extracted from the struct
@@ -1752,7 +1799,7 @@ public:
    // but that doesn't compile with clang at the time of writing.
    typedef std::function<llvm::Value* (CodeGen* cg, llvm::Value* v)> struct_get_filter_callback_t;
 
-   // A callback to provide a default for unset fields with llvmStructGet(). 
+   // A callback to provide a default for unset fields with llvmStructGet().
    //
    // FIXME: We should be able to use just a nromal function pointer here
    // but that doesn't compile with clang at the time of writing.
@@ -1777,7 +1824,7 @@ public:
    /// l: A location to associate with the exception being generated for unset fields.
    ///
    /// Returns: The field's value, or the default if provided and the field
-   /// is not set. The returned value will have its cctor called already.
+   /// is not set, at +0.
    llvm::Value* llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, struct_get_default_callback_t default_, struct_get_filter_callback_t filter, const Location& l=Location::None);
 
    /// Extracts a field from a struct instance.
@@ -1799,14 +1846,14 @@ public:
    /// l: A location to associate with the exception being generated for unset fields.
    ///
    /// Returns: The field's value, or the default if provided and the field
-   /// is not set. The returned value will have its cctor called already.
+   /// is not set, at +0.
    llvm::Value* llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, int field, struct_get_default_callback_t default_, struct_get_filter_callback_t filter, const Location& l=Location::None);
 
    /// Sets a struct field.
    ///
    /// stype: The type, which must be a \a type::Struct.
    ///
-   /// sval: The struct instance.
+   /// sval: The struct instance at +0.
    ///
    /// field: The index of the field to set.
    ///
@@ -1818,7 +1865,7 @@ public:
    ///
    /// stype: The type, which must be a \a type::Struct.
    ///
-   /// sval: The struct instance.
+   /// sval: The struct instance at +0.
    ///
    /// field: The index of the field to set.
    ///
@@ -1829,7 +1876,7 @@ public:
    ///
    /// stype: The type, which must be a \a type::Struct.
    ///
-   /// sval: The struct instance.
+   /// sval: The struct instance at +0.
    ///
    /// field: The name of the field to set.
    ///
@@ -1841,7 +1888,7 @@ public:
    ///
    /// stype: The type, which must be a \a type::Struct.
    ///
-   /// sval: The struct instance.
+   /// sval: The struct instance at +0.
    ///
    /// field: The name of the field to set.
    ///
@@ -1931,7 +1978,7 @@ public:
    ///
    /// elems: The tuple elements.
    ///
-   /// Returns: The new tuple.
+   /// Returns: The new tuple at +0.
    llvm::Value* llvmTuple(const value_list& elems);
 
    /// Returns a a generic \a bytes end position.
@@ -1949,7 +1996,11 @@ public:
    /// and it must begin with an instance of \c hlt.gchdr. Note that this
    /// needs to be given separately, because the type information for \c type
    /// will reference to the pointer value, not the object itself.
-   llvm::Value* llvmObjectNew(shared_ptr<Type> type, llvm::StructType* llvm_type);
+   ///
+   /// ref: True for returning at +1, false for +0. In the latter case, the
+   /// result will have been added to the context's nullbuffer so that at the
+   /// next safepoint it will be deleted if not further refs take place.
+   llvm::Value* llvmObjectNew(shared_ptr<Type> type, llvm::StructType* llvm_type, bool ref);
 
    /// Allocates an instance of the given LLVM type. This generated code is
    /// guaranteed to return a valid object; if we're running out of the
@@ -2009,7 +2060,7 @@ public:
    ///
    /// data: A \a i8 pointer to bytes for the classifier to match on. The
    ///  *data* can become invalid after return from this method; if
-   ///  necessary, bytes will be copied. 
+   ///  necessary, bytes will be copied.
    ///
    /// len: Number of bytes that \a data is pointing to.
    ///
@@ -2045,7 +2096,7 @@ public:
    /// methods suports 8/16/32/64 values.
    ///
    /// val: The LLVM integer.
-   /// 
+   ///
    /// Returns: The converted integer.
    llvm::Value* llvmHtoN(llvm::Value* val);
 
@@ -2053,7 +2104,7 @@ public:
    /// methods suports 8/16/32/64 values.
    ///
    /// val: The LLVM integer.
-   /// 
+   ///
    /// Returns: The converted integer.
    llvm::Value* llvmNtoH(llvm::Value* val);
 
@@ -2120,7 +2171,7 @@ public:
    ///
    /// tag: A string value with the profiler's tag.
    ///
-   /// style: A enum value with the type of profiler. 
+   /// style: A enum value with the type of profiler.
    ///
    /// param: The argument for the \a style, if needed. Must be an int64.
    ///
@@ -2133,7 +2184,7 @@ public:
    ///
    /// tag: A string value with the profiler's tag.
    ///
-   /// style: A fully qualified enum label with the type of profiler. 
+   /// style: A fully qualified enum label with the type of profiler.
    ///
    /// param: The argument for the \a style, if needed.
    void llvmProfilerStart(const string& tag, const string& style = "", int64_t param = 0, llvm::Value* tmgr = nullptr);
@@ -2216,9 +2267,10 @@ private:
    void llvmTriggerExceptionHandling(bool known_exception);
 
    // Helper that implements both llvmCall() and llvmRunHook().
-   llvm::Value* llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook,
-                           shared_ptr<type::Function> ftype, const expr_list& args,
-                           llvm::Value* hook_result, bool excpt_check);
+   llvm::Value* llvmDoCall(llvm::Value* llvm_func, shared_ptr<Function> func, shared_ptr<Hook> hook,
+                           shared_ptr<type::Function> ftype, const expr_list& args, bool result_cctor,
+                           llvm::Value* hook_result, bool excpt_check,
+                           call_exception_callback_t excpt_callback = [](CodeGen* cg){});
 
    // Take a type from libhilti.ll and adapts it for use in the current
    // module. See implementation of llvmLibFunction() for more information.
@@ -2236,11 +2288,11 @@ private:
    llvm::Value* llvmCurrentLocation(const string& addl="");
 
    // Helper that implements the llvmCallableBind() methods.
-   llvm::Value* llvmDoCallableBind(llvm::Value* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true, bool deep_copy_args=false);
+   llvm::Value* llvmDoCallableBind(llvm::Value* llvm_func, shared_ptr<Function> func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list args, bool result_cctor, bool excpt_check=true, bool deep_copy_args=false, bool cctor_callable = false);
 
    // Helpers for llvmCallableBind() that builds the hlt.callable.func
    // object.
-   llvm::Value* llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name, const type::function::parameter_list& unbound_args);
+   llvm::Value* llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<Function> func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, bool result_cctor, bool excpt_check, llvm::StructType* sty, const string& name, const type::function::parameter_list& unbound_args);
 
    // Helper for calling hlt_string_from_data().
    llvm::Value* llvmStringFromData(const string& s);
@@ -2347,9 +2399,10 @@ private:
        bool is_init_func;
        llvm::Value* context;
        declaration::Function* leave_func = nullptr;
-       handler_list catches;
        std::list<shared_ptr<Expression>> locals_cleared_on_excpt;
+       handler_list catches;
        type::function::CallingConvention cc;
+       int stackmap_id = 0;
    };
 
    typedef std::list<std::unique_ptr<FunctionState>> function_list;

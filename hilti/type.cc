@@ -10,6 +10,46 @@
 
 using namespace hilti;
 
+Type::Type(const Location& l) : ast::Type<AstInfo>(l)
+{
+    _attributes = std::make_shared<AttributeSet>();
+    addChild(_attributes);
+}
+
+const AttributeSet& Type::attributes() const
+{
+    auto r = ast::tryCast<type::Reference>(const_cast<Type *>(this));
+
+    if ( r )
+        // Forward to main type.
+        return r->argType()->attributes();
+    else
+        return *_attributes;
+}
+
+
+AttributeSet& Type::attributes()
+{
+    auto r = ast::tryCast<type::Reference>(this);
+
+    if ( r )
+        // Forward to main type.
+        return r->argType()->attributes();
+    else
+        return *_attributes;
+}
+
+void Type::setAttributes(const AttributeSet& attrs)
+{
+    auto r = ast::tryCast<type::Reference>(this);
+
+    if ( r )
+        // Forward to main type.
+        r->argType()->setAttributes(attrs);
+    else
+        *_attributes = attrs;
+}
+
 string Type::render()
 {
     std::ostringstream s;
@@ -54,6 +94,7 @@ type::RegExp::~RegExp() {}
 type::Set::~Set() {}
 type::String::~String() {}
 type::Struct::~Struct() {}
+type::Union::~Union() {}
 type::Scope::~Scope() {}
 type::Time::~Time() {}
 type::Timer::~Timer() {}
@@ -65,6 +106,9 @@ type::Unset::~Unset() {}
 type::Vector::~Vector() {}
 type::Void::~Void() {}
 
+type::HiltiType::HiltiType(const Location& l) : Type(l)
+{
+}
 
 bool type::trait::Parameterized::equal(shared_ptr<hilti::Type> other) const
 {
@@ -155,6 +199,39 @@ type::Function::Function(const Location& l)
     _cc = function::CallingConvention::HILTI;
 }
 
+bool type::Function::mayTriggerSafepoint() const
+{
+    if ( attributes().has(attribute::SAFEPOINT) )
+        return true;
+
+    return mayYield();
+}
+
+bool type::Function::mayYield() const
+{
+    switch ( _cc ) {
+     case function::HILTI:
+     case function::HOOK:
+        // Default is may yield.
+        return ! attributes().has(attribute::NOYIELD);
+
+     case function::HILTI_C:
+        // Default is no yield.
+        return attributes().has(attribute::MAYYIELD);
+
+     case function::C:
+        return false;
+
+     case function::CALLABLE:
+        assert(false);
+        return false;
+
+     default:
+        assert(false);
+        return false;
+    }
+}
+
 type::HiltiFunction::~HiltiFunction()
 {
 }
@@ -168,6 +245,13 @@ type::function::Result::Result(shared_ptr<Type> type, bool constant, Location l)
     : ast::type::mixin::function::Result<AstInfo>(type, constant, l)
 {
 }
+
+type::Hook::Hook(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args,
+                 const Location& l) : Function(result, args, function::HOOK, l)
+{
+    setCcPlusOne(false); /* ccPplus is tricky for the linker. */
+}
+
 
 type::Tuple::Tuple(const Location& l) : ValueType(l)
 {
@@ -481,36 +565,16 @@ bool type::Scope::_equal(shared_ptr<Type> other) const
     return true;
 }
 
-type::trait::Parameterized::parameter_list type::RegExp::parameters() const
-{
-    uint64_t flags = 0;
-
-    for ( auto a : _attrs ) {
-        if ( a == "&nosub" )
-            flags |= 1;
-        else if ( a == "&first_match" )
-            flags |= 2;
-        else {
-            fprintf(stderr, "unknown regexp attribute '%s'", a.c_str());
-            abort();
-        }
-    }
-
-    parameter_list params = { shared_ptr<trait::parameter::Base>(new trait::parameter::Integer(flags)) };
-    return params;
-}
-
-type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_, bool internal, const Location& l)
-    : Node(l), _id(id), _type(type), _default(default_), _internal(internal)
+type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, bool internal, const Location& l)
+    : Node(l), _id(id), _type(type), _internal(internal)
 {
     addChild(_id);
     addChild(_type);
-    addChild(_default);
 }
 
 shared_ptr<Expression> type::struct_::Field::default_() const
 {
-    return _default;
+    return _type->attributes().getAsExpression(attribute::DEFAULT);
 }
 
 type::Struct::Struct(const Location& l) : HeapType(l)
@@ -534,8 +598,13 @@ void type::Struct::addField(shared_ptr<struct_::Field> field)
 
 shared_ptr<type::struct_::Field> type::Struct::lookup(shared_ptr<ID> id) const
 {
+    return lookup(id->name());
+}
+
+shared_ptr<type::struct_::Field> type::Struct::lookup(const std::string& name) const
+{
     for ( auto f : _fields ) {
-        if ( f->id()->name() == id->name() )
+        if ( f->id()->name() == name )
             return f;
     }
 
@@ -550,16 +619,6 @@ type::Struct::field_list type::Struct::sortedFields()
         return lhs->id()->name().compare(rhs->id()->name()) < 0; });
 
     return sorted;
-}
-
-void type::Struct::setLibHiltiDtor(const string& dtor)
-{
-    _dtor = dtor;
-}
-
-const string& type::Struct::libHiltiDtor() const
-{
-    return _dtor;
 }
 
 const type::trait::TypeList::type_list type::Struct::typeList() const
@@ -589,58 +648,104 @@ bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
     // Comparing the types by rendering them to avoid infinite recursion
     // for cycles.
     return const_cast<type::Struct *>(this)->render() == ty->render();
+}
 
-#if 0
-    // This version has problems when some type IDs come without namespace.
-    // But looks like can just render directly.
+type::Union::Union(const Location& l) : ValueType(l)
+{
+    setWildcard(true);
+}
 
-    auto other = ast::as<type::Struct>(ty);
+type::Union::Union(const field_list& fields, const Location& l) : ValueType(l)
+{
+    _fields = fields;
+    _anonymous = false;
 
-    if ( _fields.size() != other->_fields.size() )
-        return false;
+    for ( auto f : _fields )
+        addChild(f);
+}
 
-    auto i1 = _fields.begin();
-    auto i2 = other->_fields.begin();
+type::Union::Union(const type_list& types, const Location& l) : ValueType(l)
+{
+    _anonymous = true;
 
-    for ( ; i1 != _fields.end(); ++i1, ++i2 ) {
-        auto f1 = *i1;
-        auto f2 = *i2;
+    field_list fields;
 
-        if ( f1->id()->name() != f2->id()->name() )
-            return false;
+    int i = 0;
 
-        // Comparing the types by rendering them to avoid infinite recursion
-        // for cycles.
-        std::ostringstream t1;
-        passes::Printer(t1, true).run(f1->type());
-
-        std::ostringstream t2;
-        passes::Printer(t2, true).run(f2->type());
-
-        if ( t1.str() != t2.str() )
-            return false;
-
-        if ( f1->default_() && ! f2->default_() )
-            return false;
-
-        if ( f2->default_() && ! f1->default_() )
-            return false;
-
-        // Comparing the expression by rendering them.
-        if ( f1->default_() && f2->default_() ) {
-            std::ostringstream e1;
-            passes::Printer(e1, true).run(f1->default_());
-
-            std::ostringstream e2;
-            passes::Printer(e2, true).run(f2->default_());
-
-            if ( e1.str() != e2.str() )
-                return false;
-        }
+    for ( auto t : types ) {
+        auto id = std::make_shared<hilti::ID>(::util::fmt("f%d", ++i), l);
+        auto f = std::make_shared<hilti::type::struct_::Field>(id, t, false, l);
+        _fields.push_back(f);
     }
 
-    return true;
-#endif
+    for ( auto f : _fields )
+        addChild(f);
+}
+
+shared_ptr<type::union_::Field> type::Union::lookup(shared_ptr<ID> id) const
+{
+    return lookup(id->pathAsString());
+}
+
+shared_ptr<type::union_::Field> type::Union::lookup(const string& name) const
+{
+    for ( auto f : _fields ) {
+        if ( f->id()->name() == name )
+            return f;
+    }
+
+    return nullptr;
+}
+
+type::Union::field_list type::Union::fields(shared_ptr<Type> type) const
+{
+    field_list fields;
+
+    for ( auto f : _fields ) {
+        if ( f->type()->equal(type) )
+            fields.push_back(f);
+    }
+
+    return fields;
+}
+
+type::Union::field_list type::Union::sortedFields()
+{
+    field_list sorted = _fields;
+
+    sorted.sort([] (shared_ptr<union_::Field> lhs, shared_ptr<union_::Field> rhs) {
+        return lhs->id()->name().compare(rhs->id()->name()) < 0; });
+
+    return sorted;
+}
+
+const type::trait::TypeList::type_list type::Union::typeList() const
+{
+    type::trait::TypeList::type_list types;
+
+    for ( auto f : _fields )
+        types.push_back(f->type());
+
+    return types;
+}
+
+type::trait::Parameterized::parameter_list type::Union::parameters() const
+{
+    type::trait::Parameterized::parameter_list params;
+
+    for ( auto f : _fields ) {
+        auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(f->type()));
+        params.push_back(p);
+    }
+
+    return params;
+}
+
+bool type::Union::_equal(shared_ptr<hilti::Type> ty) const
+{
+    // Comparing the types by rendering them to avoid infinite recursion
+    // for cycles.
+    return const_cast<type::Union *>(this)->render() == ty->render();
 }
 
 bool type::Function::_equal(shared_ptr<hilti::Type> o) const

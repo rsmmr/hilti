@@ -100,6 +100,25 @@ static ffi_type* _llvmToCif(CodeGen* cg, llvm::Type* type)
          return cif;
      }
 
+     case llvm::Type::ArrayTyID: {
+         auto sty = llvm::cast<llvm::ArrayType>(type);
+         int n = sty->getNumElements();
+
+         ffi_type** elems_ffi = new ffi_type*[n+1];
+
+         for ( int i = 0; i < n; i++ )
+             elems_ffi[i] = _llvmToCif(cg, sty->getElementType());
+
+         elems_ffi[n] = 0;
+
+         auto cif = new ffi_type;
+         cif->size = cif->alignment = 0;
+         cif->type = FFI_TYPE_STRUCT;
+         cif->elements = elems_ffi;
+
+         return cif;
+    }
+
      case llvm::Type::HalfTyID:
      case llvm::Type::FloatTyID:
      case llvm::Type::X86_FP80TyID:
@@ -109,10 +128,9 @@ static ffi_type* _llvmToCif(CodeGen* cg, llvm::Type* type)
      case llvm::Type::MetadataTyID:
      case llvm::Type::X86_MMXTyID:
      case llvm::Type::FunctionTyID:
-     case llvm::Type::ArrayTyID:
      case llvm::Type::VectorTyID:
      default:
-        cg->internalError("unsupport argument type in llvmToCif");
+        cg->internalError(::util::fmt("unsupport argument type in llvmToCif: %s", type->getTypeID()));
     }
 
     assert(false); // cannot be reached.
@@ -220,7 +238,11 @@ abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& na
                     ssecount++;
                     break;
 
+                 case X86_64_NO_CLASS:
+                    break;
+
                  default:
+                    fprintf(stderr, "unsupported register form: %d\n", classes[j]);
                     abort();
                 }
             }

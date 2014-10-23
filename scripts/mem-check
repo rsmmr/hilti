@@ -39,12 +39,15 @@ for line in sorted:
             print >>sys.stderr, "Cannot parse |%s|" % line
             sys.exit(1)
 
-    if op == "free":
+    if op == "free" or op == "destroy":
         try:
             del objs[addr]
         except KeyError:
             pass
 
+        continue
+
+    if op == "safepoint":
         continue
 
     try:

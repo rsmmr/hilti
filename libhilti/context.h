@@ -13,8 +13,6 @@
 #include "profiler.h"
 #endif
 
-__HLT_DECLARE_RTTI_GC_TYPE(hlt_execution_context)
-
 struct __hlt_worker_thread;
 
 /// A per-thread execution context. This is however just the common header of
@@ -34,6 +32,7 @@ struct __hlt_execution_context {
     hlt_type_info* tcontext_type;       /// The type of the current threading context.
     __hlt_thread_mgr_blockable* blockable; /// A blockable set to go along with the next yield.
     hlt_timer_mgr* tmgr;                /// The context's timer manager.
+    __hlt_memory_nullbuffer* nullbuffer;  /// Null-buffer for delayed reference counting.
 
     // TODO: We should not compile this in non-profiling mode.
     __hlt_profiler_state* pstate;      /// State for ongoing profiling, or 0 if none.
@@ -46,11 +45,20 @@ struct __hlt_execution_context {
 
 /// Creates a new execution context.
 ///
+/// Note that execution contexts are not reference counted.
+///
 /// vid: The ID of the virtual thread the context will belong to.
 /// ~~HLT_VID_MAIN for the main (non-worker) thread.
 ///
-/// Returns: The new context.
-extern hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid);
+/// run_module_init: Whether to run the modules' init functions.
+///
+/// Returns: The new context at +1.
+extern hlt_execution_context* __hlt_execution_context_new_ref(hlt_vthread_id vid, int8_t run_module_init);
+
+/// Deletes an execution context.
+///
+/// ctx: The context to delete.
+void hlt_execution_context_delete(hlt_execution_context* ctx);
 
 /// Sets the exception field in an execution context. The object must be
 /// passed at +1.

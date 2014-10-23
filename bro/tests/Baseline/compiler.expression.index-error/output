@@ -1,2 +1,2 @@
 A
-error in <params>, line 1: event/function bro_init raised exception: IndexError (from /home/robin/work/binpacpp/hilti2/libhilti/map_set.c:342)
+error in <params>, line 1: event/function bro_init raised exception: IndexError (from /home/robin/work/binpacpp/hilti2/libhilti/map_set.c:350)

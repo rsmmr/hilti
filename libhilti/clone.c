@@ -65,7 +65,7 @@ void __hlt_clone_init_in_thread(__hlt_init_in_thread_callback cb, const hlt_type
     // or the corresponding native thread structure), and then execute once
     // we're back in that thread. Details to be figured out.
     hlt_string msg = hlt_string_from_asciiz("_hlt_clone_init_in_thread for different target threat", excpt, ctx);
-    hlt_set_exception(excpt, &hlt_exception_not_implemented, msg);
+    hlt_set_exception(excpt, &hlt_exception_not_implemented, msg, ctx);
 }
 
 int8_t _fastpath_clone(void* dstp, const hlt_type_info* ti, const void* srcp)
@@ -106,7 +106,7 @@ static void _slowpath_clone_recursive(void* dstp, const hlt_type_info* ti, const
 
         if ( cached ) {
             *(const void **)dstp = cached;
-            GC_CCTOR_GENERIC(dstp, ti);
+            GC_CCTOR_GENERIC(dstp, ti, ctx);
             return;
         }
     }
@@ -117,7 +117,7 @@ static void _slowpath_clone_recursive(void* dstp, const hlt_type_info* ti, const
         else
             memcpy(dstp, srcp, ti->size);
 
-        GC_CCTOR_GENERIC(dstp, ti);
+        GC_CCTOR_GENERIC(dstp, ti, ctx);
         return;
     }
 
@@ -126,13 +126,13 @@ static void _slowpath_clone_recursive(void* dstp, const hlt_type_info* ti, const
         if ( ti->gc ) {
             if ( ! ti->clone_alloc ) {
                 hlt_string tag = hlt_string_from_asciiz(ti->tag, excpt, ctx);
-                hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, tag);
+                hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, tag, ctx);
                 return;
             }
 
             *(void **)dstp = (*ti->clone_alloc)(ti, srcp, cstate, excpt, ctx);
 
-            if ( *excpt )
+            if ( hlt_check_exception(excpt) )
                 return;
         }
 
@@ -140,7 +140,7 @@ static void _slowpath_clone_recursive(void* dstp, const hlt_type_info* ti, const
 
         if ( ! ti->clone_init ) {
             hlt_string tag = hlt_string_from_asciiz(ti->tag, excpt, ctx);
-            hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, tag);
+            hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, tag, ctx);
             return;
         }
 
@@ -149,6 +149,6 @@ static void _slowpath_clone_recursive(void* dstp, const hlt_type_info* ti, const
         return;
     }
 
-    hlt_set_exception(excpt, &hlt_exception_internal_error, hlt_string_from_asciiz("unknown clone type", excpt, ctx));
+    hlt_set_exception(excpt, &hlt_exception_internal_error, hlt_string_from_asciiz("unknown clone type", excpt, ctx), ctx);
 }
 

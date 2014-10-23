@@ -165,6 +165,9 @@ int plugin::Bro_Hilti::Plugin::HookLoadFile(const std::string& file, const std::
 
 Val* plugin::Bro_Hilti::Plugin::HookCallFunction(const Func* func, val_list* args)
 	{
+	if ( func->GetKind() == BuiltinFunc::BUILTIN_FUNC )
+		return nullptr;
+
 	if ( BifConst::Hilti::compile_scripts )
 		return _manager->RuntimeCallFunction(func, args);
 

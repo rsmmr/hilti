@@ -35,6 +35,7 @@ declare "C-HILTI" string time_to_string(any d, int<32> options, caddr seen)
 declare "C-HILTI" string interval_to_string(any d, int<32> options, caddr seen)
 declare "C-HILTI" string vector_to_string(any l, int<32> options, caddr seen)
 declare "C-HILTI" string file_to_string(any f, int<32> options, caddr seen)
+declare "C-HILTI" string union_to_string(any s, int<32> options, caddr seen)
 
 declare "C-HILTI" int<64> int_to_int64(any n)
 declare "C-HILTI" int<64> bool_to_int64(any b)
@@ -63,6 +64,8 @@ declare "C-HILTI" int<64> bytes_hash(any s)
 declare "C-HILTI" bool    bytes_equal(any s1, any s2)
 declare "C-HILTI" int<64> struct_hash(any s)
 declare "C-HILTI" int<64> struct_equal(any s)
+declare "C-HILTI" int<64> union_hash(any s)
+declare "C-HILTI" int<64> union_equal(any s)
 
 declare "C-HILTI" any bytes_blockable(any s)
 
@@ -91,6 +94,8 @@ declare "C-HILTI" caddr tuple_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  tuple_clone_init(caddr dst, any src, caddr cstate)
 declare "C-HILTI" caddr channel_clone_alloc(any src, caddr cstate)
 declare "C-HILTI" void  channel_clone_init(caddr dst, any src, caddr cstate)
+declare "C-HILTI" caddr union_clone_alloc(any src, caddr cstate)
+declare "C-HILTI" void  union_clone_init(caddr dst, any src, caddr cstate)
 
 ###
 
@@ -99,6 +104,11 @@ declare "C-HILTI" void exception_dtor(ref<exception> b)
 ###
 
 declare "C-HILTI" void struct_dtor(any b)
+
+###
+
+declare "C-HILTI" void union_cctor(any b)
+declare "C-HILTI" void union_dtor(any b)
 
 ###
 
@@ -115,12 +125,11 @@ declare "C-HILTI" string string_decode(ref<bytes> b, Hilti::Charset charset)
 declare "C-HILTI" string string_substr(string s, int<64> pos, int<64> len)
 declare "C-HILTI" int<64> string_find(string s1, string s2)
 declare "C-HILTI" string string_join(string s, ref<list<*>> l)
-# declare "C-HILTI" tuple<string,iterator<bytes>> string_unpack(iterator<bytes> first, iterator<bytes> last, Hilti::Packed fmt)
 
 ###
 
 declare "C-HILTI" void bytes_dtor(ref<bytes> b)
-declare "C-HILTI" ref<bytes> bytes_new()
+declare "C-HILTI" ref<bytes> bytes_new() &noexception
 declare "C-HILTI" int<64> bytes_len(ref<bytes> b)
 declare "C-HILTI" bool bytes_empty(ref<bytes> b)
 declare "C-HILTI" void bytes_append(ref<bytes> b, ref<bytes> other)
@@ -145,6 +154,9 @@ declare "C-HILTI" tuple<ref<bytes>, ref<bytes>> bytes_split1(ref<bytes> b, ref<b
 declare "C-HILTI" ref<vector<ref<bytes>>> bytes_split(ref<bytes> b, ref<bytes> sep)
 declare "C-HILTI" bool bytes_starts_with(ref<bytes> b, ref<bytes> pat)
 declare "C-HILTI" ref<bytes> bytes_join(ref<bytes> b, ref<list<*>> l)
+declare "C-HILTI" void bytes_freeze(ref<bytes> b, bool freeze)
+declare "C-HILTI" bool bytes_is_frozen(ref<bytes> b)
+
 declare "C-HILTI" void bytes_append_object(ref<bytes> b, any o)
 declare "C-HILTI" any bytes_retrieve_object(iterator<bytes> b, type t)
 declare "C-HILTI" bool bytes_at_object(iterator<bytes> b)
@@ -152,13 +164,20 @@ declare "C-HILTI" bool bytes_at_object_of_type(iterator<bytes> b, type t)
 declare "C-HILTI" iterator<bytes> bytes_skip_object(iterator<bytes> b)
 declare "C-HILTI" iterator<bytes> bytes_next_object(iterator<bytes> b)
 
-declare "C-HILTI" void bytes_freeze(ref<bytes> b, bool freeze)
-declare "C-HILTI" bool bytes_is_frozen(ref<bytes> b)
+declare "C-HILTI" void bytes_append_mark(ref<bytes> b)
+declare "C-HILTI" iterator<bytes> bytes_next_mark(iterator<bytes> b)
+declare "C-HILTI" bool bytes_at_mark(iterator<bytes> b)
+
+declare "C-HILTI" void bytes_new_hoisted(ref<bytes> dst) &noexception
+declare "C-HILTI" void bytes_concat_hoisted(ref<bytes> dst, ref<bytes> b1, ref<bytes> b2)
+declare "C-HILTI" void bytes_sub_hoisted(ref<bytes> dst, iterator<bytes> start, iterator<bytes> last)
+declare "C-HILTI" void bytes_copy_hoisted(ref<bytes> dst, ref<bytes> b)
+declare "C-HILTI" void bytes_upper_hoisted(ref<bytes> dst, ref<bytes> b)
+declare "C-HILTI" void bytes_lower_hoisted(ref<bytes> dst, ref<bytes> b)
+declare "C-HILTI" void bytes_strip_hoisted(ref<bytes> dst, ref<bytes> b, Hilti::Side side, ref<bytes> chars)
+declare "C-HILTI" void bytes_join_hoisted(ref<bytes> dst, ref<bytes> b, ref<list<*>> l)
+
 declare "C-HILTI" bool iterator_bytes_is_frozen(iterator<bytes> pos)
-
-declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> last)
-declare "C-HILTI" any bytes_to_raw(ref<bytes> b)
-
 declare "C-HILTI" void iterator_bytes_dtor(iterator<bytes> pos)
 declare "C-HILTI" void iterator_bytes_cctor(iterator<bytes> pos)
 declare "C-HILTI" int<8> iterator_bytes_deref(iterator<bytes> pos)
@@ -187,7 +206,7 @@ declare "C-HILTI" int<16> hton16(int<16> v)
 ###
 #
 declare "C-HILTI" void channel_dtor(ref<channel<*>> c)
-declare "C-HILTI" ref<channel<*>> channel_new(type channel_type, int<64> capacity)
+declare "C-HILTI" ref<channel<*>> channel_new(type channel_type, int<64> capacity) &noexception
 declare "C-HILTI" void channel_write_try(ref<channel<*>> ch, any data)
 declare "C-HILTI" any channel_read_try(ref<channel<*>> ch)
 declare "C-HILTI" int<64> channel_size(ref<channel<*>> ch)
@@ -195,7 +214,7 @@ declare "C-HILTI" int<64> channel_size(ref<channel<*>> ch)
 # ###
 #
 declare "C-HILTI" void vector_dtor(ref<vector<*>> v)
-declare "C-HILTI" ref<vector<*>> vector_new(any def, ref<timer_mgr> mgr)
+declare "C-HILTI" ref<vector<*>> vector_new(any def, ref<timer_mgr> mgr) &noexception
 declare "C-HILTI" void vector_timeout(ref<vector<*>> m, Hilti::ExpireStrategy s, interval timeout)
 declare "C-HILTI" any vector_get(ref<vector<*>> v, int<64> idx)
 declare "C-HILTI" void vector_set(ref<vector<*>> v, int<64> idx, any value)
@@ -214,7 +233,7 @@ declare "C-HILTI" bool iterator_vector_eq(iterator<vector<*>> i1, iterator<vecto
 # ##
 #
 declare "C-HILTI" void list_dtor(ref<list<*>> l)
-declare "C-HILTI" ref<list<*>> list_new(type list_type, ref<timer_mgr> mgr)
+declare "C-HILTI" ref<list<*>> list_new(type list_type, ref<timer_mgr> mgr) &noexception
 declare "C-HILTI" void list_timeout(ref<list<*>> m, Hilti::ExpireStrategy s, interval timeout)
 declare "C-HILTI" void list_push_front(ref<list<*>> l, any val)
 declare "C-HILTI" void list_push_back(ref<list<*>> l, any val)
@@ -237,21 +256,21 @@ declare "C-HILTI" bool iterator_list_eq(iterator<list<*>> i1, iterator<list<*>> 
 #
 # ##
 #
-declare "C-HILTI" void regexp_dtor(ref<regexp<*>> re)
+declare "C-HILTI" void regexp_dtor(ref<regexp> re)
 declare "C-HILTI" void match_token_state_dtor(ref<match_token_state> ms)
-declare "C-HILTI" ref<regexp<*>> regexp_new(type regexp_type)
-declare "C-HILTI" ref<regexp<*>> regexp_new_from_regexp(type regexp_type, ref<regexp<*>> other)
-declare "C-HILTI" void regexp_compile(ref<regexp<*>> re, string pattern)
-declare "C-HILTI" void regexp_compile_set(ref<regexp<*>> re, ref<list<string>> patterns)
-declare "C-HILTI" int<32> regexp_string_find(ref<regexp<*>> re, string s)
-declare "C-HILTI" int<32> regexp_bytes_find(ref<regexp<*>> re, iterator<bytes> first, iterator<bytes> last)
-declare "C-HILTI" tuple<int<32>, tuple<iterator<bytes>,iterator<bytes>>> regexp_string_span(ref<regexp<*>> re, string s)
-declare "C-HILTI" tuple<int<32>, tuple<iterator<bytes>,iterator<bytes>>> regexp_bytes_span(ref<regexp<*>> re, iterator<bytes> first, iterator<bytes> last)
-declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_string_groups(ref<regexp<*>> re, string s)
-declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_bytes_groups(ref<regexp<*>> re, iterator<bytes> first, iterator<bytes> last)
-declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_string_match_token(ref<regexp<*>> re, string s)
-declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_bytes_match_token(ref<regexp<*>> re, iterator<bytes> first, iterator<bytes> last)
-declare "C-HILTI" ref<match_token_state>        regexp_match_token_init(ref<regexp<*>> re)
+declare "C-HILTI" ref<regexp> regexp_new(int<64> flags) &noexception
+declare "C-HILTI" ref<regexp> regexp_new_from_regexp(ref<regexp> other) &noexception
+declare "C-HILTI" void regexp_compile(ref<regexp> re, string pattern)
+declare "C-HILTI" void regexp_compile_set(ref<regexp> re, ref<list<string>> patterns)
+declare "C-HILTI" int<32> regexp_string_find(ref<regexp> re, string s)
+declare "C-HILTI" int<32> regexp_bytes_find(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
+declare "C-HILTI" tuple<int<32>, tuple<iterator<bytes>,iterator<bytes>>> regexp_string_span(ref<regexp> re, string s)
+declare "C-HILTI" tuple<int<32>, tuple<iterator<bytes>,iterator<bytes>>> regexp_bytes_span(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
+declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_string_groups(ref<regexp> re, string s)
+declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_bytes_groups(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
+declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_string_match_token(ref<regexp> re, string s)
+declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_bytes_match_token(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
+declare "C-HILTI" ref<match_token_state>        regexp_match_token_init(ref<regexp> re)
 declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_bytes_match_token_advance(ref<match_token_state> state, iterator<bytes> first, iterator<bytes> last)
 #
 # ##
@@ -260,7 +279,7 @@ declare "C-HILTI" void timer_dtor(ref<timer> t)
 declare "C-HILTI" void timer_mgr_dtor(ref<timer_mgr> mgr)
 declare "C-HILTI" void timer_update(ref<timer> t, time tim)
 declare "C-HILTI" void timer_cancel(ref<timer> t)
-declare "C-HILTI" ref<timer_mgr> timer_mgr_new()
+declare "C-HILTI" ref<timer_mgr> timer_mgr_new() &noexception
 declare "C-HILTI" void timer_mgr_schedule(ref<timer_mgr> mgr, time t, ref<timer> t)
 declare "C-HILTI" int<32> timer_mgr_advance(ref<timer_mgr> mgr, time tim)
 declare "C-HILTI" void timer_mgr_advance_global(time tim)
@@ -270,7 +289,7 @@ declare "C-HILTI" void timer_mgr_expire(ref<timer_mgr> mgr, bool fire)
 # ##
 #
 declare "C-HILTI" void map_dtor(ref<map<*>> m)
-declare "C-HILTI" ref<map<*>> map_new(type key, type value, ref<timer_mgr> mgr)
+declare "C-HILTI" ref<map<*>> map_new(type key, type value, ref<timer_mgr> mgr) &noexception
 declare "C-HILTI" any map_get(ref<map<*>> m, any key)
 declare "C-HILTI" any map_get_default(ref<map<*>> m, any key, any default)
 declare "C-HILTI" void map_insert(ref<map<*>> m, any key, any value)
@@ -312,7 +331,7 @@ declare "C-HILTI" bool iterator_set_eq(iterator<set<*>> i1, iterator<set<*>> i2)
 #
 declare "C-HILTI" void iosrc_dtor(ref<iosrc<*>> v)
 declare "C-HILTI" ref<iosrc<*>> iosrc_new_live(string interface)
-declare "C-HILTI" ref<iosrc<*>> iosrc_new_offline(string interface)
+declare "C-HILTI" ref<iosrc<*>> iosrc_new_offline(string fname)
 declare "C-HILTI" tuple<time, ref<bytes>> iosrc_read_try(ref<iosrc<*>> src, bool keep_link_layer)
 declare "C-HILTI" void iosrc_close(ref<iosrc<*>> src)
 
@@ -335,7 +354,7 @@ declare "C-HILTI" bool hook_group_is_enabled(int<64> group)
 # ##
 #
 declare "C-HILTI" void file_dtor(ref<file> b)
-declare "C-HILTI" ref<file> file_new()
+declare "C-HILTI" ref<file> file_new() &noexception
 # declare "C-HILTI" void file_open(ref<file> f, string path, int<16> mode, string charset)
 declare "C-HILTI" void file_open(ref<file> f, string path, Hilti::FileType ty, Hilti::FileMode mode, Hilti::Charset charset)
 declare "C-HILTI" void file_close(ref<file> f)
@@ -360,7 +379,7 @@ declare "C-HILTI" void profiler_stop(string tag)
 # ##
 #
 declare "C-HILTI" void classifier_dtor(ref<classifier<*>> c)
-declare "C-HILTI" ref<classifier<*>> classifier_new(int<64> num_fields, type rtype, type vtype)
+declare "C-HILTI" ref<classifier<*>> classifier_new(int<64> num_fields, type rtype, type vtype) &noexception
 declare "C-HILTI" void classifier_add(ref<classifier<*>> c, caddr fields, int<64> priority, any value)
 declare "C-HILTI" void classifier_add_no_prio(ref<classifier<*>> c, caddr fields, any value)
 declare "C-HILTI" void classifier_compile(ref<classifier<*>> c)

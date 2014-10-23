@@ -33,7 +33,7 @@ public:
    /// dst: The destination type.
    ///
    /// Returns: The coerce value.
-   llvm::Value* llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst);
+   llvm::Value* llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst, bool cctor);
 
 protected:
    void visit(type::Address* t) override;
@@ -42,6 +42,10 @@ protected:
    void visit(type::Reference* t) override;
    void visit(type::CAddr* t) override;
    void visit(type::Unset* t) override;
+   void visit(type::Union* t) override;
+
+private:
+    bool _cctor;
 };
 
 

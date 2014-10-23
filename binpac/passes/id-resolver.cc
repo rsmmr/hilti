@@ -352,6 +352,11 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
         nfield = type::unit::item::Field::createByType(type->typeValue(), name, condition, hooks, attributes, params, sinks, location);
 
     nfield->scope()->setParent(f->scope()->parent());
+    nfield->setParent(f->parent());
+    nfield->setUnit(f->unit().get());
+
+    if ( f->aliased() )
+        nfield->setAliased();
 
     assert(nfield);
     f->replace(nfield);

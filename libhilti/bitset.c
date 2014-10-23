@@ -12,7 +12,7 @@ typedef struct {
     const char* name;
 } Label;
 
-hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string sep = hlt_string_from_asciiz("|", excpt, ctx);
 
@@ -32,16 +32,13 @@ hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int3
             str = hlt_string_from_asciiz(labels->name, excpt, ctx);
 
         else {
-            GC_CCTOR(sep, hlt_string);
-            str = hlt_string_concat_and_unref(str, sep, excpt, ctx);
+            str = hlt_string_concat(str, sep, excpt, ctx);
             hlt_string n = hlt_string_from_asciiz(labels->name, excpt, ctx);
-            str = hlt_string_concat_and_unref(str, n, excpt, ctx);
+            str = hlt_string_concat(str, n, excpt, ctx);
         }
 
         ++labels;
     }
-
-    GC_DTOR(sep, hlt_string);
 
     if ( str )
         return str;

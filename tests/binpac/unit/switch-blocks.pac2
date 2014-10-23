@@ -14,11 +14,12 @@ export type test = unit {
                        b: bytes &length=1;
                        c: bytes &length=3;
                     }
-           *    -> b: bytes &length=4;
+           *    -> d: bytes &length=4;
            };
 
 
        on %done {
+          print self;
           print self.b;
           print self.c;
        }

@@ -60,7 +60,7 @@ void NormalizerCallBack::NormalizeFunction(const ::Func* f)
 	ODesc d;
 	f->Describe(&d);
 	auto hash = ::util::hash(d.Description());
-	auto nname = ::util::fmt("anonymous_function_%s", ::util::uitoa_n(hash, 64, 5));
+	auto nname = ::util::fmt("anonymous_function_%s", ::util::uitoa_n(hash, 62, 5));
 
 	const_cast<::Func *>(f)->SetName(nname.c_str());
 
