@@ -1250,7 +1250,13 @@ void Printer::visit(type::unit::item::field::Switch* s)
 {
     Printer& p = *this;
 
-    p << "switch ( " << s->expression() << " ) {" << endl;
+    p << "switch";
+
+    if ( s->expression() )
+        p << ( " << s->expression() << " );
+
+    p << " {" << endl;
+
     pushIndent();
 
     for ( auto c : s->cases() )
@@ -1297,12 +1303,13 @@ void Printer::visit(type::unit::item::field::switch_::Case* c)
 {
     Printer& p = *this;
 
-    if ( c->expressions().size() )
-        printList(c->expressions(), ", ");
-    else
-        p << "*";
+    if ( c->default_() )
+        p << "* -> ";
 
-    p << " -> ";
+    else if ( c->expressions().size() ) {
+        printList(c->expressions(), ", ");
+        p << " -> ";
+    }
 
     auto fields = c->fields();
 

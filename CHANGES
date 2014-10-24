@@ -1,4 +1,164 @@
 
+0.3-70 | 2014-10-24 16:51:21 -0700
+
+  * A new switch variant that dispatches based on look-ahead symbol.
+
+        type A = unit { [...] }
+        type B = unit { [...] }
+        type C = unit { [...] }
+
+        type test = unit {
+            [...]
+            switch {
+                a: A;
+                b: B;
+                c: C;
+            };
+            [...]
+        };
+
+    This figures out automatically whether to parse an A, B, or C.
+
+    One can specify a default case as well with the usual "* ->" syntax;
+    however, typically one can also just list a case that's a catch-all by
+    itself; e.g., a bytes field will act as the default automatically (but
+    obviously you can't have more than one of these).
+
+0.3-69 | 2014-10-24 16:37:04 -0700
+
+  * Optional tuple elements for BinPAC. If a tuple constructor uses
+    the "try attribute" operator (.?) to set one of its elements, the
+    type of that element will be become optional<T> (with T being the
+    type of the element). The Bro plugin uses this to allow leaving
+    record elements unset in *.evt files: when using tuples to
+    construct a Bro record, an optional element will transfer over to
+    the record accordingly.
+
+  * An "optional" type for BinPAC++.
+
+        print optional(b"ABC");
+
+  * A set of build system tweaks.
+
+  * Switching implementation of BinPAC++'s switch() statements to use
+    unions internally.
+
+  * Adding unions to HILTI.
+
+        - C-style, with names for fields:
+
+            type A = union {
+                int<64> i,
+                bool b,
+                string test
+            }
+
+        - C++-variant-style, with anonymous types:
+
+            type A = union<int<64>, bool, string>
+
+    Instructions for the first version:
+
+        union.init A "i" 42  # Instantiate with field set.
+        union.get a "i"      # Retrieve field.
+        union.is_set "i"     # Test field.
+
+    Instructions for the second version:
+
+        union.init A 42        # Instantiate with type set.
+        union.get a            # Get field, target determines type
+        union.is_set a int<64> # Test type.
+
+    The unit.init constructor syntax is pretty ugly, better use the
+    constructor syntax:
+
+        union<A>(test: "abc")
+        union<B>("abc")
+        union(test: "abc")
+        union("abc")
+
+    Once can dispatch unions based on the current type, similar to how
+    switch works:
+
+       local union<int<64>, bool, string> u
+       [...]
+       dispatch u @default ( (int<64>, @b1), (bool, @b2) )
+
+    Unions also coerce to booleans, yielding true if a value is set.
+
+  * Struct fields can now be marked as "anonymous", meaning that when
+    printed an runtime their field name won't be shown. This can
+    currently be set internally on the AST node only, it's not exposed
+    by the HILTI language.
+
+  * Support for BinPAC++ resynchronizing at marks.
+
+        type test2 = unit {
+           %synchronize-at = mark;
+           [...]
+        }
+
+  * Pac-driver gets an option -m to insert marks into input stream
+    (primarily for testing).
+
+  * Two HILTI instructions to set marks in bytes objects.
+
+        bytes.append_mark <b>
+            Appends an internal mark at the end of the bytes object <b>.
+            The mark is fully transparent to other instructions, and will
+            keep its location when more data is appended to the object.
+
+        bytes.next_mark <i>
+            Move the bytes iterator i forward to the next mark.
+
+  * Starting to add infrastructure to parse LLVM's stackmaps.
+    The code isn't complete yet, and what's there works only on Linux.
+
+  * Switching to delayed reference counting. This is a larger overhaul
+    of HILTI's runtime memory management. Rather than generally
+    keeping all reference counts up to date all the time (which
+    involves a lot of pretty much uncessary operations), we now
+    enforce correct reference counts only during explicit
+    "safepoints". In between safepoints, HILTI is free to skip
+    counting. For now, we trigger safepoints upon entry/exit into
+    HILTI (either from/to C, or from/to the thread scheduler), which
+    means that we can generally omit all reference counting operations
+    for objects that don't persist across these boundaries, including
+    for everything on the stack. Included with this come some internal
+    changes:
+
+        - Calling conventations have changed to return values at +0
+          (instead of +1).
+
+        - Handling of attributes have been unified inside the HILTI
+          compiler. Also moving regexp's attributes from type
+          information to the values.
+
+        - Heap values can now be "hoisted" to the stack if they don't
+          need to persist longer that the stack's lifetime. That
+          avoids having to allocate them dynamically. Currently that's
+          triggered with a &hoist attribute and works for bytes only;
+          however there's no correctness checks in place and must be
+          used only if it satisfies all the constraints. Eventually
+          HILTI will learn to identify the right situations and apply
+          &hoist itself as suitable.
+
+  * hilti-build now disables debugging when optimizions turned on.
+    Tests turn on debugging by default now.
+
+  * BACnet updates.
+      - Basic readproperty.
+      - Implement events for atomicreadfile
+      - Fix parsing of bacnet error apdus.
+      - Patch to make the bacnet_who_has_request_name actually work.
+      - Add support for I-Have, I-Am, Who-Has, Who-Is APDUs including Bro events.
+      - Add basic events for all application layer bacnet messages.
+      - Test updates and fixes.
+
+  * Port to LLVM 3.5.
+
+  * A larger set of smaller tweaks and bug fixes.
+
 0.3-15 | 2014-09-30 11:59:48 -0700
 
   * Minor documentation updates.

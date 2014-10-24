@@ -1568,7 +1568,7 @@ class Case : public Node
 public:
     /// Constructor.
     ///
-    /// exprs: Expression associated with the case. Empty to mark the default case.
+    /// exprs: Expression associated with the case.
     ///
     /// item: The item implementing the case.
     ///
@@ -1577,12 +1577,26 @@ public:
 
     /// Constructor.
     ///
-    /// exprs: Expression associated with the case. Empty to mark the default case.
+    /// exprs: Expression associated with the case.
     ///
     /// item: A set of items implementing the case.
     ///
     /// l: Location associated with the case.
     Case(const expression_list& exprs, const unit_field_list& items, const Location& l=Location::None);
+
+    /// Constructor for a default case.
+    ///
+    /// item: The item implementing the case.
+    ///
+    /// l: Location associated with the case.
+    Case(shared_ptr<type::unit::item::Field> item, const Location& l=Location::None);
+
+    /// Constructor for a default case.
+    ///
+    /// item: The item implementing the case.
+    ///
+    /// l: Location associated with the case.
+    Case(const unit_field_list& items, const Location& l=Location::None);
 
     /// Returns the case's expression.
     expression_list expressions() const;
@@ -1599,6 +1613,7 @@ public:
     ACCEPT_VISITOR_ROOT();
 
 private:
+    bool _default = false;
     std::list<node_ptr<Expression>> _exprs;
     std::list<node_ptr<type::unit::item::Field>> _items;
 };
@@ -1613,7 +1628,7 @@ public:
 
     /// Constructor.
     ///
-    /// expr: The switch's expression.
+    /// expr: The switch's expression. Can be null for a look-ahead switch.
     ///
     /// cases: The list of switch cases.
     ///

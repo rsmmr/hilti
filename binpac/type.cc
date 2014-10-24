@@ -1434,9 +1434,27 @@ unit::item::field::switch_::Case::Case(const expression_list& exprs, const unit_
         addChild(i);
 }
 
+unit::item::field::switch_::Case::Case(shared_ptr<type::unit::item::Field> item, const Location& l) : Node(l)
+{
+    _default = true;
+    _items.push_back(item);
+    addChild(_items.front());
+}
+
+unit::item::field::switch_::Case::Case(const unit_field_list& items, const Location& l) : Node(l)
+{
+    _default = true;
+
+    for ( auto i : items )
+        _items.push_back(i);
+
+    for ( auto i : _items )
+        addChild(i);
+}
+
 bool unit::item::field::switch_::Case::default_() const
 {
-    return _exprs.size() == 0;
+    return _default;
 }
 
 expression_list unit::item::field::switch_::Case::expressions() const

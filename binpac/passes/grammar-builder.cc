@@ -159,23 +159,63 @@ void GrammarBuilder::visit(type::unit::item::field::Switch* s)
     if ( ! _in_decl )
         return;
 
-    production::Switch::case_list cases;
-    shared_ptr<Production> default_ = nullptr;
+    if ( s->expression() ) {
+        // Switch by value of expression.
 
-    for ( auto c : s->cases() ) {
-        if ( c->default_() ) {
-            default_ = compileOne(c);
-            continue;
+        production::Switch::case_list cases;
+        shared_ptr<Production> default_ = nullptr;
+
+        for ( auto c : s->cases() ) {
+            if ( c->default_() ) {
+                default_ = compileOne(c);
+                continue;
+            }
+
+            auto pcase = std::make_pair(c->expressions(), compileOne(c));
+            cases.push_back(pcase);
         }
 
-        auto pcase = std::make_pair(c->expressions(), compileOne(c));
-        cases.push_back(pcase);
+        auto sym = "switch:" + s->id()->name();
+        auto prod = std::make_shared<production::Switch>(sym, s->expression(), cases, default_, s->location());
+        prod->pgMeta()->field = s->sharedPtr<type::unit::item::Field>();
+        setResult(prod);
     }
 
-    auto sym = "switch:" + s->id()->name();
-    auto prod = std::make_shared<production::Switch>(sym, s->expression(), cases, default_, s->location());
-    prod->pgMeta()->field = s->sharedPtr<type::unit::item::Field>();
-    setResult(prod);
+    else {
+        // Switch by look-ahead.
+        shared_ptr<Production> prev = nullptr;
+
+        int i = 1;
+        int d = 0;
+
+        for ( auto c : s->cases() ) {
+            auto p = compileOne(c);
+
+            if ( ! prev ) {
+                prev = p;
+
+                if ( c->default_() )
+                    d = 1;
+
+                continue;
+            }
+
+            if ( c->default_() )
+                d = 2;
+
+            auto sym = ::util::fmt("switch:%s:lha%d", s->id()->name(), ++i);
+            auto lah = std::make_shared<production::LookAhead>(sym, prev, p, s->location());
+
+            if ( d ) {
+                lah->setDefaultAlternative(d);
+                d = 0;
+            }
+
+            prev = lah;
+        }
+
+        setResult(prev);
+    }
 }
 
 void GrammarBuilder::visit(type::unit::item::field::AtomicType* t)

@@ -185,7 +185,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <ctor>             ctor
 %type <declaration>      global_decl type_decl var_decl const_decl func_decl hook_decl local_decl
 %type <declarations>     opt_global_decls opt_local_decls
-%type <expression>       expr expr2 opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr opt_unit_vector_len
+%type <expression>       expr expr2 opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr opt_unit_vector_len opt_unit_switch_expr
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
 %type <id>               local_id scoped_id dollar_id path_id hook_id opt_unit_field_name opt_hilti_id
 %type <statement>        stmt block
@@ -549,8 +549,11 @@ unit_field_in_container :
 unit_fields   : unit_field unit_fields         { $$ = $2; $$.push_front($1); }
               | unit_field                     { $$ = unit_field_list(); $$.push_back($1); }
 
-unit_switch   : SWITCH '(' expr ')' '{' unit_switch_cases '}' opt_unit_field_cond ';'
-                                                 { $$ = std::make_shared<type::unit::item::field::Switch>($3, $6, $8, hook_list(), loc(@$)); }
+unit_switch   : SWITCH opt_unit_switch_expr '{' unit_switch_cases '}' opt_unit_field_cond ';'
+                                                 { $$ = std::make_shared<type::unit::item::field::Switch>($2, $4, $6, hook_list(), loc(@$)); }
+
+opt_unit_switch_expr: '(' expr ')'               { $$ = $2; }
+              | /* empty */                      { $$ = nullptr; }
 
 unit_switch_cases
               : unit_switch_case unit_switch_cases
@@ -559,9 +562,10 @@ unit_switch_cases
 
 unit_switch_case
               : exprs ARROW '{' unit_fields '}'  { $$ = std::make_shared<type::unit::item::field::switch_::Case>($1, $4, loc(@$)); }
-              | '*'   ARROW '{' unit_fields '}'  { $$ = std::make_shared<type::unit::item::field::switch_::Case>(expression_list(), $4, loc(@$)); }
+              | '*'   ARROW '{' unit_fields '}'  { $$ = std::make_shared<type::unit::item::field::switch_::Case>($4, loc(@$)); }
               | exprs ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>($1, $3, loc(@$)); }
-              | '*'   ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>(expression_list(), $3, loc(@$)); }
+              | '*'   ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>($3, loc(@$)); }
+              | unit_field                       { $$ = std::make_shared<type::unit::item::field::switch_::Case>(expression_list(), $1, loc(@$)); }
 
 
 opt_type_attrs: type_attr opt_type_attrs         { $$ = $2; $$.push_front($1); }

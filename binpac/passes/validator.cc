@@ -726,6 +726,8 @@ void Validator::visit(type::unit::item::field::Switch* s)
 
     int defaults = 0;
 
+    bool have_expr = (s->expression() != nullptr);
+
     std::set<string> have;
 
     for ( auto c : s->cases() ) {
@@ -736,6 +738,16 @@ void Validator::visit(type::unit::item::field::Switch* s)
 
         if ( c->default_() )
             ++defaults;
+
+        if ( have_expr && ! c->default_() && c->expressions().empty() ) {
+            error(c, "case without expression");
+            break;
+        }
+
+        if ( ! have_expr && c->expressions().size() ) {
+            error(c, "case does not expect expression");
+            break;
+        }
 
         for ( auto e : c->expressions() ) {
             if ( ! e->canCoerceTo(s->expression()->type()) ) {

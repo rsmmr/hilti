@@ -495,8 +495,8 @@ std::pair<shared_ptr<Production>, shared_ptr<Production>> LookAhead::alternative
 
 std::pair<bool, bool> LookAhead::defaultAlternatives()
 {
-    bool d1 = false;
-    bool d2 = false;
+    bool d1 = (_default == 1);
+    bool d2 = (_default == 2);
 
     for ( auto t : _lahs.first ) {
         if ( ast::isA<production::Variable>(t) )
@@ -523,6 +523,11 @@ void LookAhead::setAlternatives(shared_ptr<Production> alt1, shared_ptr<Producti
     _alt2 = alt2;
     addChild(_alt1);
     addChild(_alt2);
+}
+
+void LookAhead::setDefaultAlternative(int i)
+{
+    _default = i;
 }
 
 static string _fmtAlt(const production::LookAhead* p, int i)

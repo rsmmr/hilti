@@ -532,8 +532,9 @@ public:
     std::pair<look_aheads, look_aheads> lookAheads() const;
 
     /// Returns a boolean for each alternative indicating whether the
-    /// corresponding look-ahead set contains a variable, which makes it a
-    /// default alternative if the other ones doesn't match.
+    /// corresponding look-ahead set is the default case. Any variable
+    /// production is automatically considered a default, others may be
+    /// marked as such via setDefaultAlternative().
     std::pair<bool, bool> defaultAlternatives();
 
     /// Returns the two alternatives.
@@ -545,6 +546,14 @@ public:
     ///
     /// alt2: The first alternative.
     void setAlternatives(shared_ptr<Production> alt1, shared_ptr<Production> alt2);
+
+    // Marks one of the two alterantives as default. Note that any variable
+    // production is automatically considered a default, independent of this
+    // setting.
+    //
+    // i: 1 sets alternative 1 to default, 2 alternative 2; anything set
+    // neither to be a default.
+    void setDefaultAlternative(int i);
 
     ACCEPT_VISITOR(NonTerminal);
 
@@ -560,6 +569,7 @@ protected:
     bool supportsSynchronize() override;
 
 private:
+    int _default = 0;
     std::pair<look_aheads, look_aheads> _lahs;
     node_ptr<Production> _alt1;
     node_ptr<Production> _alt2;
