@@ -91,6 +91,7 @@ void OperatorResolver::visit(expression::UnresolvedOperator* o)
          auto match = matches.front();
          auto nop = OperatorRegistry::globalRegistry()->resolveOperator(match.first, match.second, _module, o->location());
          o->replace(nop);
+         nop->setUsesTryAttribute(o->usesTryAttribute());
          break;
      }
 

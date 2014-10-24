@@ -23,7 +23,7 @@ Normalizer::~Normalizer()
 
 bool Normalizer::run(shared_ptr<ast::NodeBase> ast)
 {
-    return processAllPreOrder(ast);
+    return processAllPostOrder(ast);
 }
 
 void Normalizer::visit(declaration::Type* t)
@@ -146,5 +146,20 @@ void Normalizer::visit(statement::Return* r)
 
     if ( ast::isA<type::Unknown>(rtype) )
         rtype->replace(r->expression()->type());
+}
+
+void Normalizer::visit(binpac::expression::operator_::unit::TryAttribute* i)
+{
+    i->setUsesTryAttribute(true);
+}
+
+void Normalizer::visit(binpac::Expression* i)
+{
+    for ( auto n : i->childs(false) ) {
+        if ( auto e = ast::tryCast<Expression>(n) ) {
+            if ( e->usesTryAttribute() )
+                i->setUsesTryAttribute(true);
+        }
+    }
 }
 

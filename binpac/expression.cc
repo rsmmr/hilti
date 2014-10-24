@@ -14,7 +14,7 @@ string Expression::render()
     string r = s.str();
 
     if ( scope().size() )
-        r = r + " " + util::fmt("[scope: %s]", scope().c_str());
+        r += util::fmt(" [scope: %s]", scope().c_str());
 
     return r;
 }
@@ -87,6 +87,16 @@ shared_ptr<binpac::Expression> Expression::coerceTo(shared_ptr<Type> target)
         return std::make_shared<expression::Constant>(ConstantCoercer().coerceTo(const_->constant(), target));
 
     return std::make_shared<CoercedExpression>(sharedPtr<binpac::Expression>(), target, location());
+}
+
+bool Expression::usesTryAttribute()
+{
+    return _uses_try;
+}
+
+void Expression::setUsesTryAttribute(bool uses_try)
+{
+    _uses_try = uses_try;
 }
 
 expression::CustomExpression::CustomExpression(const Location& l) : Expression(l)

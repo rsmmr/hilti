@@ -9,8 +9,35 @@ void CodeBuilder::visit(constant::Tuple* t)
 {
     hilti::builder::tuple::element_list elems;
 
-    for ( auto e : t->value() )
-        elems.push_back(cg()->hiltiExpression(e));
+    for ( auto e : t->value() ) {
+
+        if ( ! e->usesTryAttribute() ) {
+            elems.push_back(cg()->hiltiExpression(e));
+            continue;
+        }
+
+        // Wrap it into an exception handler that return an unset optional if
+        // an BinPACHilti::AttributeNotSet is thrown.
+
+        ::hilti::builder::type_list tl = { cg()->hiltiType(e->type()) };
+        auto tmp = cg()->builder()->addTmp("opt", ::hilti::builder::union_::type(tl));
+
+        cg()->builder()->beginTryCatch();
+
+        auto he = ::hilti::builder::union_::create(cg()->hiltiExpression(e));
+        cg()->builder()->addInstruction(tmp, ::hilti::instruction::operator_::Assign, he);
+
+        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::AttributeNotSet")),
+                                   hilti::builder::id::node("e"));
+
+        // Nothing to do, default of tmp is right.
+
+        cg()->builder()->popCatch();
+
+        cg()->builder()->endTryCatch();
+
+        elems.push_back(tmp);
+    }
 
     auto result = hilti::builder::tuple::create(elems, t->location());
     setResult(result);

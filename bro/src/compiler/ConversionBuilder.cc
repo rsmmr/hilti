@@ -1097,24 +1097,78 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromTuple(shar
 	Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 				  ::hilti::builder::id::create("LibBro::bro_record_new"), args);
 
+	auto ttype = ast::checkedCast<::hilti::type::Tuple>(val->type());
+	auto htypes = ttype->typeList();
+	auto htype_iter = htypes.begin();
+
 	for ( int i = 0; i < type->NumFields(); i++ )
 		{
 		auto hidx = ::hilti::builder::integer::create(i);
+		auto htype = *htype_iter++;
 
-		auto tmp = Builder()->addTmp("field", HiltiType(type->FieldType(i)));
+		auto tmp = Builder()->addTmp("ufield", htype);
 
 		Builder()->addInstruction(tmp,
 					  ::hilti::instruction::tuple::Index,
 					  val,
 					  hidx);
 
-		auto tmp_h2b = RuntimeHiltiToVal(tmp, type->FieldType(i)); // XXX
+		if ( auto u = ast::tryCast<::hilti::type::Union>(htype) )
+			{
+			// We support unions of a single field here, as used by
+			// BinPAC++'s optional type. If the field is set, we just convert
+			// it; if not we leave the record field unset (which however must
+			// be declared optional).
 
-		Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
-					  ::hilti::builder::id::create("LibBro::bro_record_assign"),
-					  ::hilti::builder::tuple::create({ dst, hidx, tmp_h2b }));
+            if ( ! type->FieldDecl(i)->FindAttr(ATTR_OPTIONAL) ) {
+                    Error(::util::fmt("optional tuple element %d used with non-optional record field %s ",
+                                      i, type->FieldName(i)));
+                continue;
+            }
 
-		BroUnref(tmp_h2b);
+            auto fields = u->fields();
+			assert(fields.size() == 1);
+
+			auto b = Builder()->addIf(tmp);
+			auto set = std::get<0>(b);
+			auto cont = std::get<1>(b);
+
+			ModuleBuilder()->pushBuilder(set);
+			auto vtmp = Builder()->addTmp("uval", fields.front()->type());
+			Builder()->addInstruction(vtmp, ::hilti::instruction::union_::GetType, tmp);
+
+			auto tmp_h2b = RuntimeHiltiToVal(vtmp, type->FieldType(i)); // XXX
+
+			Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+						  ::hilti::builder::id::create("LibBro::bro_record_assign"),
+						  ::hilti::builder::tuple::create({ dst, hidx, tmp_h2b }));
+
+			BroUnref(tmp_h2b);
+
+			Builder()->addInstruction(::hilti::instruction::flow::Jump, cont->block());
+			ModuleBuilder()->popBuilder();
+
+			ModuleBuilder()->pushBuilder(cont);
+			}
+
+		else
+			{
+			// Standard case.
+			auto tmp = Builder()->addTmp("field", htype);
+
+			Builder()->addInstruction(tmp,
+						  ::hilti::instruction::tuple::Index,
+						  val,
+						  hidx);
+
+			auto tmp_h2b = RuntimeHiltiToVal(tmp, type->FieldType(i));
+
+			Builder()->addInstruction(::hilti::instruction::flow::CallVoid,
+						  ::hilti::builder::id::create("LibBro::bro_record_assign"),
+						  ::hilti::builder::tuple::create({ dst, hidx, tmp_h2b }));
+
+			BroUnref(tmp_h2b);
+			}
 		}
 
 	return dst;

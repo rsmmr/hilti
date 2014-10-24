@@ -33,6 +33,9 @@ protected:
     void visit(binpac::expression::operator_::unit::Offset* i);
     void visit(binpac::expression::operator_::unit::SetPosition* i);
 
+    void visit(binpac::Expression* i);
+    void visit(binpac::expression::operator_::unit::TryAttribute* i);
+
     void visit(statement::Return* r) override;
 };
 

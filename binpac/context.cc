@@ -6,6 +6,7 @@
 #include "context.h"
 #include "operator.h"
 #include "options.h"
+#include "expression.h"
 
 #include "parser/driver.h"
 
@@ -95,7 +96,15 @@ shared_ptr<binpac::Expression> binpac::CompilerContext::parseExpression(const st
     driver.forwardLoggingTo(this);
     driver.enableDebug(options().cgDebugging("scanner"), options().cgDebugging("parser"));
 
-    return driver.parseExpression(this, expr);
+    auto bexpr = driver.parseExpression(this, expr);
+
+    passes::Normalizer normalizer;
+
+    if ( normalizer.run(bexpr) )
+        return bexpr;
+
+    error(util::fmt("error normalizing expression %s", expr));
+    return nullptr;
 }
 
 static void _debugAST(binpac::CompilerContext* ctx, shared_ptr<binpac::Module> module, const ast::Logger& before)

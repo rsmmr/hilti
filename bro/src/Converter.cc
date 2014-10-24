@@ -286,7 +286,20 @@ void TypeConverter::visit(::hilti::type::Struct* u)
 
 	auto result = new ::RecordType(tdecls);
 	setResult(result);
-        }
+	}
+
+void TypeConverter::visit(::hilti::type::Union* u)
+	{
+	// The only way we can get a union is here is via the optional<T>
+	// type.
+	auto btype = ast::checkedCast<binpac::type::Optional>(arg1());
+
+	auto fields = u->fields();
+	assert(fields.size() == 1);
+
+	auto result = Convert(fields.front()->type(), btype->argType());
+	setResult(result);
+	}
 
 void ValueConverter::visit(::hilti::type::Reference* b)
 	{

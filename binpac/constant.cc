@@ -202,8 +202,12 @@ shared_ptr<Type> Tuple::type() const
 {
     type::Tuple::type_list types;
 
-    for ( auto e : _elems )
-        types.push_back(e->type());
+    for ( auto e : _elems ) {
+        if ( e->usesTryAttribute() )
+            types.push_back(std::make_shared<type::Optional>(e->type()));
+        else
+            types.push_back(e->type());
+    }
 
     return shared_ptr<type::Tuple>(new type::Tuple(types, location()));
 }

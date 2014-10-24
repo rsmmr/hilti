@@ -36,6 +36,16 @@ public:
     /// always returns false.
     virtual bool initializer() const;
 
+    /// Returns the expression as one that's using the TryAttribute operator,
+    /// either directly or inside one of each subexpressions.
+    bool usesTryAttribute();
+
+    /// Marks the expression as one that's using the TryAttribute operator,
+    /// either directly or inside one of each subexpressions.
+    ///
+    /// uses_try: True to flag the expression as such.
+    void setUsesTryAttribute(bool uses_try);
+
     // We use our own coercer.
     bool canCoerceTo(shared_ptr<Type> target) const override;
     shared_ptr<AIExpression> coerceTo(shared_ptr<Type> target) override;
@@ -45,6 +55,9 @@ public:
     operator string();
 
     ACCEPT_VISITOR_ROOT();
+
+protected:
+    bool _uses_try = false;
 };
 
 namespace expression {
