@@ -13,6 +13,7 @@ type FilterError = exception<string>
 type FilterUnsupported = exception<string>
 type AttributeNotSet = exception<string>
 type UndefinedValue = exception<string>
+type Backtrack = exception<string>
 
 type Parser = struct {
     string name,                  # Short descriptive name.

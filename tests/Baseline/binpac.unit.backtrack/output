@@ -1,0 +1,6 @@
+Foo.a <a=1, b=(not set), c=(not set)>
+Backtracking
+Bar.a <a=1, b=(not set), c=(not set)>
+Bar.b <a=1, b=2, c=(not set)>
+Bar.c <a=1, b=2, c=3>
+<a=1234, foo=(Null), bar=<a=1, b=2, c=3>, b=567890>

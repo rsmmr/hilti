@@ -600,6 +600,9 @@ void Validator::visit(type::unit::item::Field* f)
         if ( attr->key() == "length" )
             continue;
 
+        if ( attr->key() == "try" )
+            continue;
+
         bool found = false;
 
         for ( auto pattr : parseable->parseAttributes() ) {

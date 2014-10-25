@@ -375,10 +375,28 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
         pushState(pstate_length);
     }
 
+    shared_ptr<::hilti::Expression> try_position;
+
+    if ( field && field->attributes()->has("try") ) {
+        try_position = cg()->builder()->addTmp("try_pos", _hiltiTypeIteratorBytes());
+        cg()->builder()->addInstruction(try_position, hilti::instruction::operator_::Assign, state()->cur);
+        cg()->builder()->beginTryCatch();
+    }
+
     if ( result )
         success = processOne(node, result, f);
     else
         success = processOne(node);
+
+    if ( try_position ) {
+        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::Backtrack")),
+                                   hilti::builder::id::node("e"));
+
+        _hiltiAdvanceTo(try_position);
+        cg()->builder()->popCatch();
+
+        cg()->builder()->endTryCatch();
+    }
 
     if ( pstate_length ) {
         auto idx = cg()->moduleBuilder()->addTmp("idx", hilti::builder::integer::type(64));

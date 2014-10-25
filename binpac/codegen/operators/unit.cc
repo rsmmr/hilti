@@ -229,3 +229,10 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::MimeType* i)
     auto mt = cg()->hiltiItemGet(self, "__mimetype", ft);
     setResult(mt);
 }
+
+void CodeBuilder::visit(binpac::expression::operator_::unit::Backtrack* i)
+{
+    cg()->builder()->addThrow("BinPACHilti::Backtrack", ::hilti::builder::string::create("backtracking triggered"));
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+

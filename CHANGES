@@ -1,4 +1,14 @@
 
+0.3-72 | 2014-10-24 18:11:12 -0700
+
+  * Support for manual backtracking in a BinPAC++ grammar. If a field
+    is marked with &try, a later call to self.backtrack() anywhere
+    down in the parse tree, will return to that position and continue
+    there.
+
+  * When multiple exception handlers are defined in HILTI, choose the
+    most specific one.
+
 0.3-70 | 2014-10-24 16:51:21 -0700
 
   * A new switch variant that dispatches based on look-ahead symbol.

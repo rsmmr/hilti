@@ -293,6 +293,22 @@ opBegin(unit::MimeType : MethodCall)
     }
 opEnd
 
+static const string _doc_backtrack =
+   R"(
+       Abort parsing at the current position and returns back to the most revent ``&try`` attribute.
+       Turns into a parse error if there's no ``&try``.
+   )";
+
+opBegin(unit::Backtrack : MethodCall)
+    opOp1(std::make_shared<type::Unit>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("backtrack")))
+
+    opDoc(_doc_backtrack)
+
+    opResult() {
+        return std::make_shared<type::Void>();
+    }
+opEnd
 
 
 
