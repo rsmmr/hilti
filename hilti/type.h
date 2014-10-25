@@ -879,6 +879,10 @@ public:
    /// Returns true if this is the top-level root type.
    bool isRootType() const { return _libtype == "hlt_exception_unspecified"; }
 
+   /// Returns the level of this type inside the inheritance tree from the
+   /// root. Root is 0.
+   int level() const;
+
    ACCEPT_VISITOR(Type);
 
 private:

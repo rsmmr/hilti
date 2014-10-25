@@ -2389,7 +2389,15 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
 
     llvmBuildInstructionCleanup(false);
 
-    for ( auto c : _functions.back()->catches ) {
+    // Sort catches from most specific to least specific.
+    auto catches = _functions.back()->catches;
+
+    typedef std::pair<shared_ptr<Expression>, shared_ptr<type::Exception>> pa;
+    catches.sort([](const pa& a, const pa& b) {
+        return a.second->level() >= b.second->level(); // reverse sort
+    });
+
+    for ( auto c : catches ) {
         auto next = newBuilder("excpt-catch-next");
 
         if ( ! current )

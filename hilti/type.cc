@@ -337,6 +337,16 @@ type::Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Lo
     addChild(_base);
 }
 
+int type::Exception::level() const
+{
+    int i = 0;
+
+    for ( auto t = this; t; t = dynamic_cast<type::Exception *>(t->baseType().get()) )
+        i++;
+
+    return i;
+}
+
 type::trait::Parameterized::parameter_list type::Callable::parameters() const
 {
     type::trait::Parameterized::parameter_list params;
