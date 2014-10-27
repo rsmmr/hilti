@@ -1,0 +1,33 @@
+#
+# @TEST-EXEC:  printf "xxx1x23xxx456" | pac-driver-test %INPUT -p Test::test_yes >>output
+# @TEST-EXEC:  printf "xxx1x23xxx456" | pac-driver-test %INPUT -p Test::test_no    >>output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+%skip-pre = /x*/;
+
+export type test_yes = unit {
+  a: bytes &length=1;
+  b: bytes &length=2;
+  c: bytes &length=3;
+
+  on %done {
+    print self;
+    }
+};
+
+export type test_no = unit {
+  %skip-pre = None;
+
+  a: bytes &length=1;
+  b: bytes &length=2;
+  c: bytes &length=3;
+
+  on %done {
+    print self;
+    }
+};
+
+

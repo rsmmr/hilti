@@ -325,13 +325,6 @@ private:
     // Generates the HILTI code to report insufficient input during matching.
     shared_ptr<hilti::Expression> _hiltiInsufficientInputHandler(bool eod_ok = false, shared_ptr<hilti::Expression> iter = nullptr);
 
-    // Returns a BinPAC expression of type BinPAC::ByteOrder that specifies
-    // the byte-order for unpacking the field. If the field has a &byteorder
-    // attribute, that's used; if not the unit-wide default is taken. If none
-    // is defined, returns null; the caller should then use network order as
-    // default.
-    shared_ptr<binpac::Expression> _fieldByteOrder(shared_ptr<type::unit::item::Field> field, shared_ptr<type::Unit> unit);
-
     // Returns a HILTI expression of type Hilti::Packed specifying the unpack
     // format for an integer of the given width/signedness/byteorder
     // combiniation. The byteorder must be a BinPAC expression of type

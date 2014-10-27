@@ -694,6 +694,12 @@ void Validator::visit(type::unit::item::GlobalHook* g)
 
 void Validator::visit(type::unit::item::Property* p)
 {
+    auto prop = p->property();
+
+    if ( ::util::startsWith(prop->key(), "skip-") ) {
+        if ( prop->value() && ! ast::type::trait::hasTrait<type::trait::Parseable>(prop->value()->type()) )
+            error(p, "skip expression is not of parseable type");
+    }
 }
 
 void Validator::visit(type::unit::item::Variable* v)

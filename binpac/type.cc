@@ -1063,6 +1063,14 @@ shared_ptr<AttributeSet> unit::Item::attributes() const
     return _attrs;
 }
 
+shared_ptr<binpac::Expression> unit::Item::inheritedProperty(const string& property)
+{
+    if ( ! _unit )
+        return nullptr;
+
+    return _unit->inheritedProperty(property, this->sharedPtr<Item>());
+}
+
 void unit::Item::disableHooks()
 {
     --_do_hooks;
@@ -1267,6 +1275,7 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
 {
     _field = field;
     _field->scope()->setParent(scope());
+    _field->setUnit(unit().get());
 
     addChild(_field);
 
@@ -1349,13 +1358,6 @@ unit::item::field::container::List::List(shared_ptr<ID> id,
                                         const Location& l)
     : Container(id, field, cond, hooks, attrs, sinks, l)
 {
-    _field = field;
-    addChild(_field);
-}
-
-shared_ptr<unit::item::Field> unit::item::field::container::List::field() const
-{
-    return _field;
 }
 
 shared_ptr<binpac::Type> unit::item::field::container::List::type()
@@ -1364,7 +1366,7 @@ shared_ptr<binpac::Type> unit::item::field::container::List::type()
     // directly, but if we do, some checkedTrait later fail with random
     // crashes. Not sure what's going on, but storing the type via setType()
     // appears to fix the problem.
-    auto parseable = ast::type::tryTrait<type::trait::Parseable>(_field->type());
+    auto parseable = ast::type::tryTrait<type::trait::Parseable>(field()->type());
     setType(std::make_shared<type::List>(parseable->fieldType()));
     return unit::Item::type();
 }
@@ -1379,15 +1381,8 @@ unit::item::field::container::Vector::Vector(shared_ptr<ID> id,
                                         const Location& l)
     : Container(id, field, cond, hooks, attrs, sinks, l)
 {
-    _field = field;
     _length = length;
-    addChild(_field);
     addChild(_length);
-}
-
-shared_ptr<unit::item::Field> unit::item::field::container::Vector::field() const
-{
-    return _field;
 }
 
 shared_ptr<Expression> unit::item::field::container::Vector::length() const
@@ -1402,7 +1397,7 @@ shared_ptr<binpac::Type> unit::item::field::container::Vector::type()
     // directly, but if we do, some checkedTrait later fail with random
     // crashes. Not sure what's going on, but storing the type via setType()
     // appears to fix the problem.
-    auto parseable = ast::type::tryTrait<type::trait::Parseable>(_field->type());
+    auto parseable = ast::type::tryTrait<type::trait::Parseable>(field()->type());
     setType(std::make_shared<type::Vector>(parseable->fieldType()));
     return unit::Item::type();
 }
@@ -1507,6 +1502,7 @@ unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& 
         for ( auto f : c->fields() ) {
             f->scope()->setParent(scope());
             f->setParent(this);
+            f->setUnit(unit().get());
         }
     }
 }
@@ -1671,7 +1667,6 @@ unit_item_list Unit::flattenedItems() const
 
     return items;
 }
-
 
 std::list<shared_ptr<unit::item::Field>> Unit::fields() const
 {
@@ -1908,6 +1903,38 @@ bool Unit::ctorNoNames() const
     }
 
     return true;
+}
+
+shared_ptr<binpac::Expression> Unit::inheritedProperty(const string& pname, shared_ptr<type::unit::Item> item)
+{
+    shared_ptr<binpac::Expression> expr = nullptr;
+
+    shared_ptr<Attribute> item_property;
+    shared_ptr<Attribute> unit_property;
+    shared_ptr<Attribute> module_property;
+
+    auto module = firstParent<::binpac::Module>();
+
+    unit_property = property(pname) ? property(pname)->property() : nullptr;
+
+    if ( module )
+        module_property = module->property(pname);
+
+    if ( item && item->attributes()->has(pname) )
+        item_property = item->attributes()->lookup(pname);
+
+    // Take most specific one.
+
+    if ( item_property )
+        return item_property->value();
+
+    if ( unit_property )
+        return unit_property->value();
+
+    if ( module_property )
+        return module_property->value();
+
+    return nullptr;
 }
 
 Sink::Sink(const Location& l) : PacType(l)

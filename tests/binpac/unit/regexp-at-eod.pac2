@@ -1,0 +1,14 @@
+#
+# @TEST-EXEC:  printf "FooooooBaaaar" | pac-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+    a: /Fo*/;
+    b: /Ba*r/;
+    c: /X*/;
+
+    on %done { print self; }
+};

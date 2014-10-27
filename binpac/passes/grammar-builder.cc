@@ -53,6 +53,21 @@ shared_ptr<Production> GrammarBuilder::compileOne(shared_ptr<Node> n)
     _compiled.erase(n);
     _compiled.insert(std::make_pair(n, production));
 
+    if ( _skip_pre || _skip_post ) {
+        auto prods = Production::production_list();
+
+        if ( _skip_pre )
+            prods.push_back(compileOne(_skip_pre));
+
+        prods.push_back(production);
+
+        if ( _skip_post )
+            prods.push_back(compileOne(_skip_post));
+
+        auto name = util::fmt("skip%d", _skip_counter++);
+        production = std::make_shared<production::Sequence>(name, prods, nullptr, production->location());
+    }
+
     return production;
 }
 
@@ -111,10 +126,28 @@ void GrammarBuilder::visit(declaration::Type* d)
     unit->setGrammar(grammar);
 }
 
+static shared_ptr<type::unit::Item> _makeSkip(type::Unit* u, const std::string& pname)
+{
+    auto expr = u->inheritedProperty(pname);
+
+    if ( ! expr )
+        return nullptr;
+
+    auto ctor = ast::checkedCast<expression::Ctor>(expr)->ctor();
+    auto skip = std::make_shared<type::unit::item::field::Ctor>(std::make_shared<ID>(::util::fmt("__%s", pname)), ctor);
+    skip->setUnit(u);
+    skip->attributes()->add(std::make_shared<Attribute>("transient"));
+
+    return skip;
+}
+
 void GrammarBuilder::visit(type::Unit* u)
 {
     if ( ! _in_decl )
         return;
+
+    _skip_pre = _makeSkip(u, "skip-pre");
+    _skip_post = _makeSkip(u, "skip-post");
 
     auto prods = Production::production_list();
 

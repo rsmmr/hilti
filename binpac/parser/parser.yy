@@ -171,6 +171,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         STOP
 %token         OBJECT
 %token         OPTIONAL
+%token         NONE
 
 %token         ATTR_HILTI_ID
 
@@ -263,6 +264,7 @@ dollar_id     : DOLLAR_IDENT                     { $$ = std::make_shared<ID>($1,
 
 property      : PROPERTY ';'                     { $$ = std::make_shared<Attribute>($1, nullptr, loc(@$)); }
               | PROPERTY '=' expr ';'            { $$ = std::make_shared<Attribute>($1, $3, loc(@$)); }
+              | PROPERTY '=' NONE ';'            { $$ = std::make_shared<Attribute>($1, nullptr, loc(@$)); }
               | PROPERTY '=' base_type ';'       { auto e = std::make_shared<expression::Type>($3, loc(@$));
                                                    $$ = std::make_shared<Attribute>($1, e, loc(@$));
                                                  }

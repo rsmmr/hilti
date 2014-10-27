@@ -921,6 +921,11 @@ static void _setFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> u, share
 
 shared_ptr<hilti::Expression> CodeGen::_hiltiItemOp(HiltiItemOp i, shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, const std::string& fname, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> addl_op)
 {
+    bool transient = false;
+
+    if ( auto f = ast::tryCast<type::unit::item::Field>(field) )
+        transient = f->transient();
+
     if ( field && field->aliased() )
         // Aliased fields are stored at the top-level, and clearing the field
         // here will direct the functions called be low to access it here.
@@ -931,6 +936,9 @@ shared_ptr<hilti::Expression> CodeGen::_hiltiItemOp(HiltiItemOp i, shared_ptr<hi
 
     switch ( i ) {
      case GET: {
+         if ( transient )
+             return hiltiDefault(field->fieldType(), false, false);
+
          auto result = builder()->addTmp("item", ftype);
          _getFieldInStruct(this, result, unit, fn, field, unit, false);
          return result;
@@ -940,24 +948,34 @@ shared_ptr<hilti::Expression> CodeGen::_hiltiItemOp(HiltiItemOp i, shared_ptr<hi
          if ( _switch(field) )
              internalError("_hiltItemOp does not implement GET_DEFAULT for switches");
 
+         if ( transient )
+             return hiltiDefault(field->fieldType(), false, false);
+
          auto result = builder()->addTmp("item", ftype);
          builder()->addInstruction(result, hilti::instruction::struct_::GetDefault, unit, fn, addl_op);
          return result;
      }
 
      case IS_SET: {
+         if ( transient )
+             return ::hilti::builder::boolean::create(false);
+
          auto result = builder()->addTmp("is_set", ::hilti::builder::boolean::type());
          _getFieldInStruct(this, result, unit, fn, field, unit, true);
          return result;
      }
 
      case SET: {
-         _setFieldInStruct(this, unit, fn, addl_op, field);
+         if ( ! transient )
+             _setFieldInStruct(this, unit, fn, addl_op, field);
+
          return nullptr;
      }
 
      case PRESET_DEFAULT: {
-         _presetDefaultInStruct(this, unit, fn, addl_op, field, unit);
+         if ( ! transient )
+             _presetDefaultInStruct(this, unit, fn, addl_op, field, unit);
+
          return nullptr;
      }
 
@@ -965,7 +983,9 @@ shared_ptr<hilti::Expression> CodeGen::_hiltiItemOp(HiltiItemOp i, shared_ptr<hi
          if ( _switch(field) )
              internalError("_hiltItemOp does not implement UNSET for switches");
 
-         builder()->addInstruction(hilti::instruction::struct_::Unset, unit, fn);
+         if ( ! transient )
+             builder()->addInstruction(hilti::instruction::struct_::Unset, unit, fn);
+
          return nullptr;
      }
 

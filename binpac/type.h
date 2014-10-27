@@ -1163,6 +1163,14 @@ public:
     /// Returns the attributes associated with the item.
     shared_ptr<AttributeSet> attributes() const;
 
+    // Returns a BinPAC expression associated with a property defined by the
+    // item unit, or the module it's in. If the has a corresponding
+    // attribute, that's checked first. The returned expression is the
+    // most-specific one, i.e., the item is checked first, then the unit,
+    // then the module. Returns null if none of them defines the
+    // property/attribute.
+    shared_ptr<binpac::Expression> inheritedProperty(const string& property);
+
     /// Disables code generation for this item's hooks. Calls to \a
     /// disableHook and \a enableHook must match for code generation to
     /// happen.
@@ -1469,7 +1477,7 @@ public:
          const expression_list& sinks = expression_list(),
          const Location& l=Location::None);
 
-    /// Returns the regular expression.
+    /// Returns the contained field.
     shared_ptr<Field> field() const;
 
     ACCEPT_VISITOR(Field);
@@ -1505,15 +1513,9 @@ public:
          const expression_list& sinks = expression_list(),
          const Location& l=Location::None);
 
-    /// Returns the field to parse to fill the container.
-    shared_ptr<Field> field() const;
-
     shared_ptr<binpac::Type> type() override;
 
     ACCEPT_VISITOR(Container);
-
-private:
-    node_ptr<Field> _field;
 };
 
 // A vector field.
@@ -1544,9 +1546,6 @@ public:
          const expression_list& sinks = expression_list(),
          const Location& l=Location::None);
 
-    /// Returns the field to parse vector elements.
-    shared_ptr<Field> field() const;
-
     /// Returns the expression indicating the length of the parsed vector.
     shared_ptr<Expression> length() const;
 
@@ -1555,7 +1554,6 @@ public:
     ACCEPT_VISITOR(Container);
 
 private:
-    node_ptr<Field> _field;
     node_ptr<Expression> _length;
 };
 
@@ -1859,6 +1857,14 @@ public:
     /// Returns true if all items have ctorNoName() set. As that must be the
     /// case for either all items or none, returning false means the latter.
     bool ctorNoNames() const;
+
+    // Returns a BinPAC expression associated with a property defined by the
+    // unit, or the module it's in. If a item is specified and has a
+    // corresponding attribute, that's checked as well. The returned
+    // expression is the most-specific one, i.e., the item is checked first,
+    // then the unit, then the module. Returns null if none of them defines
+    // the property/attribute.
+    shared_ptr<binpac::Expression> inheritedProperty(const string& property, shared_ptr<type::unit::Item> item = nullptr);
 
     bool _equal(shared_ptr<binpac::Type> other) const override;
 

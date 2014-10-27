@@ -162,6 +162,7 @@ __clear               return token::CLEAR;
 
 False                 yylval->bval = 0; return token::CBOOL;
 True                  yylval->bval = 1; return token::CBOOL;
+None                  return token::NONE;
 
 {attribute}           yylval->sval = yytext; return token::ATTRIBUTE;
 {property}            yylval->sval = yytext; return token::PROPERTY;

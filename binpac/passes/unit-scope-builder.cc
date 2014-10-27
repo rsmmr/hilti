@@ -38,7 +38,6 @@ void UnitScopeBuilder::visit(declaration::Type* t)
         uscope->insert(p->id(), std::make_shared<expression::ParserState>(expression::ParserState::PARAMETER, p->id(), unit));
 
     for ( auto i : unit->flattenedItems() ) {
-
         auto iscope = i->scope();
 
         iscope->setParent(uscope);

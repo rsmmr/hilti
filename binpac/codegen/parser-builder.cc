@@ -919,6 +919,9 @@ static shared_ptr<hilti::type::struct_::Field> _convertField(CodeGen* cg, shared
     if ( ! f->type() )
         return nullptr;
 
+    if ( f->transient() )
+        return nullptr;
+
     if ( ast::isA<binpac::type::Void>(f->type()) )
         return nullptr;
 
@@ -1325,24 +1328,26 @@ void ParserBuilder::_startingProduction(shared_ptr<Production> p, shared_ptr<typ
 
     // Initalize the struct field with the HILTI default value if not already
     // set.
-    auto not_set = cg()->hiltiItemIsSet(state()->self, field);
-    cg()->builder()->addInstruction(not_set, hilti::instruction::boolean::Not, not_set);
+    if ( ! field->transient() ) {
+        auto not_set = cg()->hiltiItemIsSet(state()->self, field);
+        cg()->builder()->addInstruction(not_set, hilti::instruction::boolean::Not, not_set);
 
-    auto branches = cg()->builder()->addIf(not_set);
-    auto set_default = std::get<0>(branches);
-    auto cont = std::get<1>(branches);
+        auto branches = cg()->builder()->addIf(not_set);
+        auto set_default = std::get<0>(branches);
+        auto cont = std::get<1>(branches);
 
-    cg()->moduleBuilder()->pushBuilder(set_default);
-    auto ftype = field->fieldType();
-    auto def = cg()->hiltiDefault(ftype, false, false);
+        cg()->moduleBuilder()->pushBuilder(set_default);
+        auto ftype = field->fieldType();
+        auto def = cg()->hiltiDefault(ftype, false, false);
 
-    if ( def )
-        cg()->hiltiItemSet(state()->self, field, def);
+        if ( def )
+            cg()->hiltiItemSet(state()->self, field, def);
 
-    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
-    cg()->moduleBuilder()->popBuilder(set_default);
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+        cg()->moduleBuilder()->popBuilder(set_default);
 
-    cg()->moduleBuilder()->pushBuilder(cont);
+        cg()->moduleBuilder()->pushBuilder(cont);
+    }
 
    // Leave builder on stack.
 }
@@ -2186,30 +2191,6 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiInsufficientInputHandler(bool
     _hiltiDebugShowInput("after resume", state()->cur);
 
     return result;
-}
-
-shared_ptr<binpac::Expression> ParserBuilder::_fieldByteOrder(shared_ptr<type::unit::item::Field> field, shared_ptr<type::Unit> unit)
-{
-    shared_ptr<binpac::Expression> order = nullptr;
-
-    auto module = unit->firstParent<Module>();
-    assert(module);
-
-    // See if the module, unit, or field has a byte order property defined.
-    auto module_order = module->property("byteorder");
-    auto unit_order = unit->property("byteorder");
-    auto field_order = field->attributes()->lookup("byteorder");
-
-    if ( field_order )
-        order = field_order->value();
-
-    else if ( unit_order )
-        order = unit_order->property()->value();
-
-    else if ( module_order )
-        order = module_order->value();
-
-    return order;
 }
 
 shared_ptr<hilti::Expression> ParserBuilder::_hiltiIntUnpackFormat(int width, bool signed_, shared_ptr<binpac::Expression> byteorder)
@@ -3460,7 +3441,7 @@ void ParserBuilder::visit(type::Address* a)
     auto v6 = field->attributes()->has("ipv6");
     assert((v4 || v6) && ! (v4 && v6));
 
-    auto byteorder = _fieldByteOrder(field, state()->unit);
+    auto byteorder = field->inheritedProperty("byteorder");
     auto hltbo = byteorder ? cg()->hiltiExpression(byteorder) : hilti::builder::id::create("BinPAC::ByteOrder::Big");
 
     string big, little, host;
@@ -3659,7 +3640,7 @@ void ParserBuilder::visit(type::Integer* i)
     auto field = arg1();
 
     auto iters = hilti::builder::tuple::create({ state()->cur, _hiltiEod() });
-    auto byteorder = _fieldByteOrder(field, state()->unit);
+    auto byteorder = field->inheritedProperty("byteorder");
     auto fmt = _hiltiIntUnpackFormat(i->width(), i->signed_(), byteorder);
 
     auto result = hiltiUnpack(i->sharedPtr<type::Integer>(), iters, fmt);

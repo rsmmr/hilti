@@ -49,7 +49,10 @@ private:
     int _in_decl;
     int _unit_counter = 1;
     int _case_counter = 1;
+    int _skip_counter = 1;
     std::map<string, int> _counters;
+    std::shared_ptr<type::unit::Item> _skip_pre;
+    std::shared_ptr<type::unit::Item> _skip_post;
 
     typedef std::map<shared_ptr<Node>, shared_ptr<Production>> production_map;
     static production_map _compiled;
