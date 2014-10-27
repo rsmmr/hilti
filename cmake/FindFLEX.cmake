@@ -5,6 +5,7 @@
 #  FLEX_EXECUTABLE - the path to the flex executable
 #  FLEX_VERSION - the version of flex
 #  FLEX_LIBRARIES - The flex libraries
+#  FLEX_INCLUDE_DIR - Include directory where to find the skeleton.
 #
 # The minimum required version of flex can be specified using the
 # standard syntax, e.g. FIND_PACKAGE(FLEX 2.5.13)
@@ -116,6 +117,13 @@ IF(FLEX_EXECUTABLE)
     STRING(REGEX REPLACE "^flex (.*)$" "\\1"
       FLEX_VERSION "${FLEX_version_output}")
   ENDIF()
+
+  # Find the FlexLexer.h header. Try our best to find the one associated
+  # with the flex binary we're actually using.
+  # From https://github.com/28msec/zorba/blob/master/cmake_modules/CMakeUseFlex.cmake
+  GET_FILENAME_COMPONENT(_flex_path "${FLEX_EXECUTABLE}" PATH)
+  GET_FILENAME_COMPONENT(_flex_hint "${_flex_path}/../include" ABSOLUTE)
+  FIND_PATH(FLEX_INCLUDE_DIR FlexLexer.h HINTS "${_flex_hint}")
 
   #============================================================
   # FLEX_TARGET (public macro)

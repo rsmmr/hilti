@@ -24,7 +24,8 @@ FindRequiredPackage(LLVM)
 include (CheckIncludeFiles)
 check_include_files (alloca.h HAVE_ALLOCA_H)
 
-include_directories( ${LLVM_INCLUDE_DIR})
+include_directories(${LLVM_INCLUDE_DIR})
+include_directories(${FLEX_INCLUDE_DIR})
 
 include(DefaultCompilerSettings)
 
