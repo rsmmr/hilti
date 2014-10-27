@@ -260,6 +260,9 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
 
         if ( ! bc )
             fatalError("parsing bitcode failed", i, bc.getError().message());
+
+        linkInModule(&linker, *bc);
+
 #else
         llvm::OwningPtr<llvm::MemoryBuffer> buffer;
 
@@ -270,9 +273,9 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
 
         if ( ! bc )
             fatalError("parsing bitcode failed", i, err);
-#endif
 
-        linkInModule(&linker, *bc);
+        linkInModule(&linker, bc);
+#endif
     }
 
     // Link native library.
