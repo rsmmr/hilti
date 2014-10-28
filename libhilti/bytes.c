@@ -638,10 +638,13 @@ int8_t hlt_bytes_empty(hlt_bytes* b, hlt_exception** excpt, hlt_execution_contex
 
 void __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx, int8_t reuse)
 {
-    if ( ! len )
+    if ( ! len ) {
+        hlt_free(raw);
         return;
+    }
 
     if ( __is_frozen(b) ) {
+        hlt_free(raw);
         hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
         return;
     }

@@ -358,4 +358,18 @@ int jrx_can_transition(jrx_match_state* ms)
     return can;
 }
 
+int jrx_current_accept(jrx_match_state* ms)
+{
+    if ( (ms->dfa->options & JRX_OPTION_STD_MATCHER) ) {
+        if ( ! ms->accepts )
+            return 0;
 
+        jrx_match_accept acc = _pick_accept(ms->accepts);
+        return acc.aid ? acc.aid : 0;
+    }
+
+    else {
+        jrx_dfa_state* state = dfa_get_state(ms->dfa, ms->state);
+        return state->accepts ? vec_dfa_accept_get(state->accepts, 0).aid : 0;
+    }
+}

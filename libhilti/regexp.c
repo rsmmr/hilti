@@ -521,8 +521,12 @@ static int _match_token_advance(hlt_match_token_state* state,
 
     state->ms.offset = 1; // See below why 1.
 
-    if ( hlt_iterator_bytes_eq(begin, end, excpt, ctx) )
-        return -1;
+    if ( hlt_iterator_bytes_eq(begin, end, excpt, ctx) ) {
+        if ( final && state->acc <= 0 )
+            state->acc = jrx_current_accept(&state->ms);
+
+        return final ? state->acc : -1;
+    }
 
     do {
         cookie = hlt_bytes_iterate_raw(&block, cookie, begin, end, excpt, ctx);
