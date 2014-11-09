@@ -566,13 +566,13 @@ int main(int argc, char** argv)
 
 #ifdef PAC_DRIVER_JIT
     auto options = std::make_shared<binpac::Options>();
+
+    options->generate_parsers = true;
+    options->generate_composers = false;
 #else
     ::Options _options;
     ::Options* options = &_options;
 #endif
-
-    options->generate_parsers = true;
-    options->generate_composers = false;
 
     char ch;
     while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:c")) != -1) {
@@ -641,11 +641,11 @@ int main(int argc, char** argv)
             break;
          }
 
+#ifdef PAC_DRIVER_JIT
          case 'c':
             options->generate_composers = true;
             break;
 
-#ifdef PAC_DRIVER_JIT
          case 'I':
             options->libdirs_pac2.push_back(optarg);
             break;
