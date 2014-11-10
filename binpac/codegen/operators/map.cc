@@ -19,7 +19,7 @@ void CodeBuilder::visit(ctor::Map* m)
         elems.push_back(std::make_pair(k, v));
     }
 
-    auto result = hilti::builder::map::create(ktype, vtype, elems, nullptr, m->location());
+    auto result = hilti::builder::map::create(ktype, vtype, elems, nullptr, ::hilti::AttributeSet(), m->location());
     setResult(result);
 }
 

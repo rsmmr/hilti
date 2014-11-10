@@ -9,7 +9,7 @@
 namespace hilti {
 
 /// Base class for AST variable nodes.
-class Variable : public ast::Variable<AstInfo>
+class Variable : public ast::Variable<AstInfo>, public NodeWithAttributes
 {
 public:
    /// Constructor.
@@ -22,7 +22,7 @@ public:
    ///
    /// l: Associated location.
    Variable(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const Location& l=Location::None)
-       : ast::Variable<AstInfo>(id, type, init, l) {}
+       : ast::Variable<AstInfo>(id, type, init, l), NodeWithAttributes(this) {}
 
    ACCEPT_VISITOR_ROOT();
 };

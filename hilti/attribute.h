@@ -40,13 +40,14 @@ enum Tag {
  * Context where an attribute can be used.
  */
 enum Context {
-    EXCEPTION,      /// Associated with exceptions.
     FUNCTION,       /// Associated with functions.
     MAP,            /// Associated with a map.
     REGEXP,         /// Associated with regexps.
-    STRUCT,         /// Associated with structs.
     STRUCT_FIELD,   /// Associated with struct fields.
     VARIABLE,       /// Associated with variables.
+    CTOR,           /// Associated with a constructor expression.
+    CONST,          /// Associated with a constant expression.
+    TYPE_,          /// Associated with a type.
     ANY,            /// Wildcard
 };
 
@@ -343,6 +344,35 @@ public:
 
 private:
     std::vector<Attribute> _attributes;
+};
+
+/**
+ * Convienence base clase for other AST nodes that have attributes associated
+ * with them.
+ */
+class NodeWithAttributes {
+public:
+   /// Constructor.
+   ///
+   /// n: The node the attributes are associated with.
+   NodeWithAttributes(Node* n);
+
+   /// Returns the attributes associated with the declaration.
+   const AttributeSet& attributes() const;
+
+   /// Returns the attributes associated with the declaration. This may be
+   /// modified to change the attributes.
+   AttributeSet& attributes();
+
+   /// Replaces the current set of attributes with the ones given.
+   void setAttributes(const AttributeSet& attrs);
+
+   /// Adds attributes to the current set.
+   void addAttributes(const AttributeSet& attrs);
+
+private:
+   Node* _node;
+   node_ptr<AttributeSet> _attributes = nullptr;
 };
 
 }

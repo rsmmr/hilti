@@ -967,7 +967,7 @@ public:
    /// function.
    ///
    /// Returns: The new local variable.
-   llvm::Value* llvmAddLocal(const string& name, shared_ptr<Type> type, shared_ptr<Expression> init = 0);
+   llvm::Value* llvmAddLocal(const string& name, shared_ptr<Type> type, shared_ptr<Expression> init = 0, bool hoisted = false);
 
    /// Adds a new local temporary variable to the current LLVM function.
    /// Temporaries don't correspond to a user-defined variable but are
@@ -1256,7 +1256,7 @@ public:
    /// method.
    ///
    /// Returns: If the functin returns a value, the value. Otherwise, null.
-   llvm::Value* llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool cctor_result);
+   llvm::Value* llvmCallInNewFiber(shared_ptr<Function> func, const expr_list args, bool cctor_result);
 
    /// Starts, or resumes, a fiber. If the fiber throws an exception, that
    /// will be set in the current context, including a YieldException if the
@@ -1594,7 +1594,7 @@ public:
    /// described by *type*; false if it's the instance itself.
    ///
    /// TODO: Do we still need this?
-   void llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl);
+   void llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, bool is_hoisted, const string& location_addl);
 
    /// XXX.
    void llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl);
@@ -2125,7 +2125,7 @@ public:
    /// type: The type of the local.
    ///
    /// Returns: An expression referencing the local.
-   shared_ptr<hilti::Expression> makeLocal(const string& name, shared_ptr<Type> type);
+   shared_ptr<hilti::Expression> makeLocal(const string& name, shared_ptr<Type> type, const AttributeSet& attrs = AttributeSet());
 
    /// Returns the LLVM function that initialized the module.
    llvm::Function* llvmModuleInitFunction();
@@ -2375,8 +2375,8 @@ private:
    typedef std::list<IRBuilder*> builder_list;
    typedef std::map<string, int> label_map;
    typedef std::map<string, IRBuilder*> builder_map;
-   typedef std::map<string, std::pair<llvm::Value*, shared_ptr<Type>>> local_map;
-   typedef std::multimap<shared_ptr<Statement>, std::tuple<llvm::Value*, bool, shared_ptr<Type>, bool, string>> dtor_map;
+   typedef std::map<string, std::tuple<llvm::Value*, shared_ptr<Type>, bool>> local_map;
+   typedef std::multimap<shared_ptr<Statement>, std::tuple<llvm::Value*, bool, shared_ptr<Type>, bool, bool, string>> dtor_map;
    typedef std::multimap<shared_ptr<Statement>, std::tuple<shared_ptr<Expression>, string>> dtor_expr_map;
    typedef std::list<std::pair<llvm::BasicBlock*, llvm::Value*>> exit_point_list;
 
@@ -2389,7 +2389,6 @@ private:
        label_map labels;
        local_map locals;
        local_map tmps;
-       local_map dtor_at_exit;
        exit_point_list exits;
        dtor_map dtors_after_ins;
        dtor_expr_map dtors_after_ins_exprs;

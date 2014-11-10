@@ -122,7 +122,7 @@ void CodeBuilder::visit(declaration::Variable* v)
     auto global = ast::as<variable::Global>(var);
 
     if ( local ) {
-        auto local = cg()->moduleBuilder()->addLocal(id, type, nullptr, nullptr, v->location());
+        auto local = cg()->moduleBuilder()->addLocal(id, type, nullptr, ::hilti::AttributeSet(), false, v->location());
         auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true, false);
 
         if ( hltinit )
@@ -130,7 +130,7 @@ void CodeBuilder::visit(declaration::Variable* v)
     }
 
     else if ( global ) {
-        auto global = cg()->moduleBuilder()->addGlobal(id, type, nullptr, nullptr, v->location());
+        auto global = cg()->moduleBuilder()->addGlobal(id, type, nullptr, ::hilti::AttributeSet(), false, v->location());
         cg()->moduleBuilder()->pushModuleInit();
 
         auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true, false);

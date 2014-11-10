@@ -18,7 +18,7 @@ using namespace hilti;
 namespace hilti {
 
 /// Base class for all AST nodes representing a type.
-class Type : public ast::Type<AstInfo>
+class Type : public ast::Type<AstInfo>, public NodeWithAttributes
 {
 public:
    /// Constructor.
@@ -39,16 +39,6 @@ public:
    /// to a module, these IDs will be accessible via scoping relative to the
    /// declaration. The returned scope should not have its parent set.
    virtual shared_ptr<hilti::Scope> typeScope() { return nullptr; }
-
-   /// Returns the attributes associated with the function's type.
-   const AttributeSet& attributes() const;
-
-   /// Returns the attributes associated with the function's type. This may
-   /// be modified to change the attributes.
-   AttributeSet& attributes();
-
-   /// Replaces the current set of attributes with the one given.
-   void setAttributes(const AttributeSet& attrs);
 
    ACCEPT_VISITOR_ROOT();
 
@@ -1656,7 +1646,7 @@ public:
 namespace struct_ {
 
 /// Definition of one struct field.
-class Field : public Node
+class Field : public Node, public NodeWithAttributes
 {
 public:
    /// id:  The name of the field.

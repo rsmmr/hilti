@@ -14,14 +14,14 @@
 namespace hilti {
 
 /// Base class for ctor nodes. A ctor instantiates a HeapType.
-class Ctor : public ast::Ctor<AstInfo>
+class Ctor : public ast::Ctor<AstInfo>, public NodeWithAttributes
 {
 public:
    /// Constructor.
    ///
    /// l: An associated location.
    Ctor(const Location& l=Location::None)
-       : ast::Ctor<AstInfo>(l) {}
+       : ast::Ctor<AstInfo>(l), NodeWithAttributes(this) {}
 
    /// Returns a fully flattened list of all atomic sub-expressions.
    ///
@@ -236,18 +236,10 @@ public:
    ///
    /// l: An associated location.
    RegExp(const pattern_list& patterns,
-          const hilti::AttributeSet& attrs = hilti::AttributeSet(),
           const Location& l=Location::None);
 
    /// Returns the patterns.
    const pattern_list& patterns() const { return _patterns; }
-
-   /// Returns the patterns' attributes.
-   const AttributeSet& attributes() const { return *_attributes; }
-
-   /// Returns the attributes associated with the function's type. This may
-   /// be modified to change the attributes.
-   AttributeSet& attributes() { return *_attributes; }
 
    /// Returns the type of the constructed object. Pattern constants are
    /// always of type \c regexp<>. To add further type attributes, they need
@@ -258,7 +250,6 @@ public:
 
 private:
    node_ptr<Type> _type;
-   node_ptr<AttributeSet> _attributes;
    pattern_list _patterns;
 };
 

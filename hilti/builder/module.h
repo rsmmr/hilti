@@ -535,7 +535,7 @@ public:
    /// l: An associated location.
    ///
    /// Returns: An expression referencing the global.
-   shared_ptr<hilti::expression::Variable> addGlobal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
+   shared_ptr<hilti::expression::Variable> addGlobal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const AttributeSet& attrs = AttributeSet(), bool force_unique = false, const Location& l = Location::None);
 
    /// Returns true if there is already a global declaration under a given id.
    ///
@@ -559,7 +559,7 @@ public:
    /// l: An associated location.
    ///
    /// Returns: An expressing referencing the declared global.
-   shared_ptr<hilti::expression::Variable>  declareGlobal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, const Location& l = Location::None);
+   shared_ptr<hilti::expression::Variable> declareGlobal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, const AttributeSet& attrs = AttributeSet(), const Location& l = Location::None);
 
    /// Add a declaration for a global variable to the module, without
    /// defining the global itself. This can be only used for IDs external to
@@ -573,7 +573,7 @@ public:
    /// l: An associated location.
    ///
    /// Returns: An expressing referencing the declared global.
-   shared_ptr<hilti::expression::Variable> declareGlobal(const std::string& name, shared_ptr<Type> type, const Location& l = Location::None);
+   shared_ptr<hilti::expression::Variable> declareGlobal(const std::string& name, shared_ptr<Type> type, const AttributeSet& attrs = AttributeSet(), const Location& l = Location::None);
 
    /// Adds a global variable to the module.
    ///
@@ -590,7 +590,7 @@ public:
    /// l: An associated location.
    ///
    /// Returns: An expression referencing the global.
-   shared_ptr<hilti::expression::Variable> addGlobal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
+   shared_ptr<hilti::expression::Variable> addGlobal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const AttributeSet& attrs = AttributeSet(), bool force_unique = false, const Location& l = Location::None);
 
    /// Adds a global constant to the module.
    ///
@@ -643,7 +643,7 @@ public:
    /// l: An associated location.
    ///
    /// Returns: An expression referencing the local.
-   shared_ptr<hilti::expression::Variable> addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
+   shared_ptr<hilti::expression::Variable> addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const AttributeSet& attrs = AttributeSet(), bool force_unique = false, const Location& l = Location::None);
 
    /// Adds a local variable to the current function.
    ///
@@ -660,7 +660,7 @@ public:
    /// l: An associated location.
    ///
    /// Returns: An expression referencing the local.
-   shared_ptr<hilti::expression::Variable> addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
+   shared_ptr<hilti::expression::Variable> addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const AttributeSet& attrs = AttributeSet(), bool force_unique = false, const Location& l = Location::None);
 
    /// Returns true if a local of a given name already exists in the current
    /// function.
@@ -794,7 +794,7 @@ protected:
    friend class BlockBuilder;
 
 private:
-   shared_ptr<hilti::expression::Variable> _addLocal(shared_ptr<statement::Block> stmt, shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
+   shared_ptr<hilti::expression::Variable> _addLocal(shared_ptr<statement::Block> stmt, shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const AttributeSet& attrs = AttributeSet(), bool force_unique = false, const Location& l = Location::None);
 
    struct DeclarationMapValue {
        std::string kind = "";

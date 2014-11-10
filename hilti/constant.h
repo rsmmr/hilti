@@ -16,14 +16,14 @@
 namespace hilti {
 
 /// Base class for constant nodes.
-class Constant : public ast::Constant<AstInfo>
+class Constant : public ast::Constant<AstInfo>, public NodeWithAttributes
 {
 public:
    /// Constructor.
    ///
    /// l: An associated location.
    Constant(const Location& l=Location::None)
-       : ast::Constant<AstInfo>(l) {}
+       : ast::Constant<AstInfo>(l), NodeWithAttributes(this) {}
 
    /// Returns a fully flattened list of all atomic sub-expressions.
    ///

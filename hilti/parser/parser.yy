@@ -212,20 +212,14 @@ global_decl   : global
               ;
 
 global        : GLOBAL type scoped_id opt_attributes eol
-                                                 { $2->setAttributes($4);
-                                                   driver.moduleBuilder()->addGlobal($3, $2, nullptr, false, loc(@$));
-                                                 }
+                                                 { auto d = driver.moduleBuilder()->addGlobal($3, $2, nullptr, $4, false, loc(@$)); }
 
               | GLOBAL type scoped_id '=' expr opt_attributes eol
-                                                 { $2->setAttributes($6);
-                                                   driver.moduleBuilder()->addGlobal($3, $2, $5, false, loc(@$));
-                                                 }
+                                                 { driver.moduleBuilder()->addGlobal($3, $2, $5, $6, false, loc(@$)); }
 
               | DECLARE GLOBAL type scoped_id opt_attributes eol
-                                                 { if ( ! $4->scope().empty() ) {
-                                                       $3->setAttributes($5);
-                                                       driver.moduleBuilder()->declareGlobal($4, $3, loc(@$));
-                                                   }
+                                                 { if ( ! $4->scope().empty() )
+                                                       driver.moduleBuilder()->declareGlobal($4, $3, $5, loc(@$));
                                                    else
                                                        error(@$, "declared global must be external to module");
                                                  }
@@ -235,14 +229,10 @@ const_        : CONST type local_id '=' expr eol   { driver.moduleBuilder()->add
               ;
 
 local         : LOCAL type local_id opt_attributes eol
-                                                   { $2->setAttributes($4);
-                                                     driver.moduleBuilder()->addLocal($3, $2, 0, false, loc(@$));
-                                                   }
+                                                   { driver.moduleBuilder()->addLocal($3, $2, 0, $4, false, loc(@$)); }
 
               | LOCAL type local_id '=' expr opt_attributes eol
-                                                   { $2->setAttributes($6);
-                                                     driver.moduleBuilder()->addLocal($3, $2, $5, false, loc(@$));
-                                                   }
+                                                   { driver.moduleBuilder()->addLocal($3, $2, $5, $6, false, loc(@$)); }
               ;
 
 type_decl     : TYPE scoped_id '=' type eol       { driver.moduleBuilder()->addType($2, $4, false, loc(@$)); }
@@ -404,8 +394,7 @@ opt_struct_fields : struct_fields                { $$ = $1; }
 struct_fields : struct_fields ',' struct_field   { $$ = $1; $$.push_back($3); }
               | struct_field                     { $$ = builder::struct_::field_list(); $$.push_back($1); }
 
-struct_field  : type local_id opt_attributes     { $1->setAttributes($3);
-                                                   $$ = builder::struct_::field($2, $1, nullptr, false, loc(@$));
+struct_field  : type local_id opt_attributes     { $$ = builder::struct_::field($2, $1, nullptr, $3, false, loc(@$));
                                                  }
 
 union_        : UNION opt_attributes             { driver.disableLineMode(); }
@@ -421,9 +410,7 @@ opt_union_fields : union_fields                  { $$ = $1; }
 union_fields : union_fields ',' union_field      { $$ = $1; $$.push_back($3); }
               | union_field                      { $$ = builder::union_::field_list(); $$.push_back($1); }
 
-union_field  : type local_id opt_attributes      { $1->setAttributes($3);
-                                                   $$ = builder::union_::field($2, $1, nullptr, false, loc(@$));
-                                                 }
+union_field  : type local_id opt_attributes      { $$ = builder::union_::field($2, $1, nullptr, $3, false, loc(@$)); }
 
 context       :                                  { driver.disableLineMode(); }
                   '{' opt_context_fields '}'     { driver.enableLineMode(); $$ = builder::context::type($3, loc(@$)); }
@@ -525,9 +512,7 @@ ctor          : CBYTES                           { $$ = builder::bytes::create($
               | SET    '<' type '>' '(' opt_exprs ')' { $$ = builder::set::create($3, $6, loc(@$)); }
               | VECTOR '<' type '>' '(' opt_exprs ')' { $$ = builder::vector::create($3, $6, loc(@$)); }
               | MAP    '<' type ',' type '>' '(' opt_map_elems ')' opt_attributes
-              									 { $$ = builder::map::create($3, $5, $8, nullptr, loc(@$));
-                                                   $$->type()->setAttributes($10);
-                                                 }
+              									 { $$ = builder::map::create($3, $5, $8, nullptr, $10, loc(@$)); }
               | CALLABLE '<' type '>' '(' expr ',' '(' opt_exprs ')' ')'
                                                  { $$ = builder::callable::create($3, builder::type_list(), $6, $9, loc(@$)); }
               | CALLABLE '<' type ',' type_list '>' '(' expr ',' '(' opt_exprs ')' ')'

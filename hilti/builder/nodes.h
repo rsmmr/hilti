@@ -669,6 +669,7 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
     ftype->setAttributes(attrs);
 
     auto func = std::make_shared<Function>(id, ftype, module, body, l);
+
     return std::make_shared<declaration::Function>(func, l);
 }
 
@@ -803,12 +804,9 @@ inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
 /// Returns: The type node.
 inline shared_ptr<hilti::type::Function> type(shared_ptr<hilti::function::Result> result = nullptr,
 					      const hilti::function::parameter_list& params = hilti::function::parameter_list(),
-                          const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                           const Location& l=Location::None)
 {
-    auto t = std::make_shared<hilti::type::Hook>(result, params, l);
-    t->setAttributes(attrs);
-    return t;
+    return std::make_shared<hilti::type::Hook>(result, params, l);
 }
 
 }
@@ -1577,11 +1575,14 @@ typedef ctor::Map::element_list element_list;
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, shared_ptr<Expression> def = nullptr, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, shared_ptr<Expression> def = nullptr, const AttributeSet& attrs = AttributeSet(), const Location& l=Location::None)
 {
     auto c = std::make_shared<ctor::Map>(ktype, vtype, elems, l);
+
+    c->setAttributes(attrs);
+
     if ( def )
-        c->type()->attributes().add(attribute::DEFAULT, def);
+        c->attributes().add(attribute::DEFAULT, def);
 
     return std::make_shared<hilti::expression::Ctor>(c, l);
 }
@@ -1722,7 +1723,8 @@ inline shared_ptr<hilti::expression::Ctor> create(const re_pattern_list& pattern
                                                   const hilti::AttributeSet& attrs = hilti::AttributeSet(),
                                                   const Location& l=Location::None)
 {
-    auto c = std::make_shared<ctor::RegExp>(patterns, attrs, l);
+    auto c = std::make_shared<ctor::RegExp>(patterns, l);
+    c->setAttributes(attrs);
     return std::make_shared<hilti::expression::Ctor>(c, l);
 }
 
@@ -1846,12 +1848,59 @@ inline shared_ptr<hilti::type::Struct> typeAny(const Location& l=Location::None)
 /// ctor expressions and list conversions.
 ///
 /// l: Location associated with the field.
+inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, const AttributeSet& attrs = AttributeSet(), bool internal = false, const Location& l=Location::None)
+{
+    auto field = std::make_shared<hilti::type::struct_::Field>(id, type, internal, l);
+
+    field->setAttributes(attrs);
+
+    if ( default_ )
+        field->attributes().add(attribute::DEFAULT, default_);
+
+    return field;
+}
+
+/// Instanties a struct field for its type description.
+///
+/// id:  The name of the field.
+///
+/// type: The type of the field.
+///
+/// default_: An optional default value, null if no default.
+///
+/// internal: If true, the field will not be printed when the struct
+/// type is rendered as a string. Internal IDS are also skipped from
+/// ctor expressions and list conversions.
+///
+/// l: Location associated with the field.
 inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, bool internal = false, const Location& l=Location::None)
 {
-    if ( default_ )
-        type->attributes().add(attribute::DEFAULT, default_);
+    return field(id, type, default_, AttributeSet(), internal, l);
+}
 
-    return std::make_shared<hilti::type::struct_::Field>(id, type, internal, l);
+/// Instanties a struct field for its type description.
+///
+/// name:  The name of the field.
+///
+/// type: The type of the field.
+///
+/// default_: An optional default value, null if no default.
+///
+/// internal: If true, the field will not be printed when the struct
+/// type is rendered as a string. Internal IDS are also skipped from
+/// ctor expressions and list conversions.
+///
+/// l: Location associated with the field.
+inline shared_ptr<hilti::type::struct_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_, const AttributeSet& attrs, bool internal = false, const Location& l=Location::None)
+{
+    auto field = std::make_shared<hilti::type::struct_::Field>(id::node(name), type, internal, l);
+
+    field->setAttributes(attrs);
+
+    if ( default_ )
+        field->attributes().add(attribute::DEFAULT, default_);
+
+    return field;
 }
 
 /// Instanties a struct field for its type description.
@@ -1869,12 +1918,8 @@ inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_p
 /// l: Location associated with the field.
 inline shared_ptr<hilti::type::struct_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, bool internal = false, const Location& l=Location::None)
 {
-    if ( default_ )
-        type->attributes().add(attribute::DEFAULT, default_);
-
-    return std::make_shared<hilti::type::struct_::Field>(id::node(name), type, internal, l);
+    return field(name, type, default_, AttributeSet(), internal, l);
 }
-
 
 }
 
@@ -1927,12 +1972,16 @@ inline shared_ptr<hilti::type::Union> typeAny(const Location& l=Location::None) 
 /// ctor expressions and list conversions.
 ///
 /// l: Location associated with the field.
-inline shared_ptr<hilti::type::union_::Field> field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, bool internal = false, const Location& l=Location::None)
+inline shared_ptr<hilti::type::union_::Field> field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, const AttributeSet& attrs = AttributeSet(), bool internal = false, const Location& l=Location::None)
 {
-    if ( default_ )
-        type->attributes().add(attribute::DEFAULT, default_);
+    auto field = std::make_shared<hilti::type::union_::Field>(id, type, internal, l);
 
-    return std::make_shared<hilti::type::union_::Field>(id, type, internal, l);
+    field->setAttributes(attrs);
+
+    if ( default_ )
+        field->attributes().add(attribute::DEFAULT, default_);
+
+    return field;
 }
 
 /// Instanties a union field for its type description.
@@ -1948,9 +1997,11 @@ inline shared_ptr<hilti::type::union_::Field> field(shared_ptr<ID> id, shared_pt
 /// ctor expressions and list conversions.
 ///
 /// l: Location associated with the field.
-inline shared_ptr<hilti::type::union_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, const Location& l=Location::None)
+inline shared_ptr<hilti::type::union_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, const AttributeSet& attrs = AttributeSet(), const Location& l=Location::None)
 {
-    return std::make_shared<hilti::type::union_::Field>(id::node(name), type, l);
+    auto f = std::make_shared<hilti::type::union_::Field>(id::node(name), type, l);
+    f->setAttributes(attrs);
+    return f;
 }
 
 /// Instantiates an AST expression node representing a union constant that
@@ -2157,7 +2208,6 @@ inline shared_ptr<hilti::Expression> break_(const Location& l=Location::None)
 }
 
 }
-
 
 #endif
 

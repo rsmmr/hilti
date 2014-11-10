@@ -238,7 +238,8 @@ void StatementBuilder::visit(statement::try_::Catch* c)
     if ( c->variable() ) {
         // Initialize the local variable providing access to the exception.
         auto name = c->variable()->internalName();
-        auto local = cg()->llvmAddLocal(name, c->type());
+        auto hoisted = c->variable()->attributes()->has(attribute::HOIST);
+        auto local = cg()->llvmAddLocal(name, c->type(), nullptr, hoisted);
         cg()->llvmCreateStore(cg()->llvmCurrentException(), local);
     }
 
@@ -270,7 +271,7 @@ void StatementBuilder::visit(declaration::Variable* v)
     auto init = live ? local->init() : nullptr;
 
     auto name = local->internalName();
-    cg()->llvmAddLocal(name, local->type(), init);
+    cg()->llvmAddLocal(name, local->type(), init, var->attributes().has(attribute::HOIST));
 }
 
 void StatementBuilder::visit(declaration::Function* f)
@@ -388,7 +389,7 @@ void StatementBuilder::visit(statement::ForEach* f)
     // Add the local iteration variable..
     auto v = ast::as<expression::Variable>(var)->variable();
     auto local = ast::as<variable::Local>(v);
-    cg()->llvmAddLocal(local->internalName(), local->type());
+    cg()->llvmAddLocal(local->internalName(), local->type(), nullptr, v->attributes().has(attribute::HOIST));
 
     auto end = cg()->makeLocal("end",  iterable->iterType());
     auto iter = cg()->makeLocal("iter", iterable->iterType());

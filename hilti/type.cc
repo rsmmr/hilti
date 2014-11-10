@@ -10,44 +10,10 @@
 
 using namespace hilti;
 
-Type::Type(const Location& l) : ast::Type<AstInfo>(l)
+Type::Type(const Location& l) : ast::Type<AstInfo>(l), NodeWithAttributes(this)
 {
     _attributes = std::make_shared<AttributeSet>();
     addChild(_attributes);
-}
-
-const AttributeSet& Type::attributes() const
-{
-    auto r = ast::tryCast<type::Reference>(const_cast<Type *>(this));
-
-    if ( r )
-        // Forward to main type.
-        return r->argType()->attributes();
-    else
-        return *_attributes;
-}
-
-
-AttributeSet& Type::attributes()
-{
-    auto r = ast::tryCast<type::Reference>(this);
-
-    if ( r )
-        // Forward to main type.
-        return r->argType()->attributes();
-    else
-        return *_attributes;
-}
-
-void Type::setAttributes(const AttributeSet& attrs)
-{
-    auto r = ast::tryCast<type::Reference>(this);
-
-    if ( r )
-        // Forward to main type.
-        r->argType()->setAttributes(attrs);
-    else
-        *_attributes = attrs;
 }
 
 string Type::render()
@@ -210,19 +176,19 @@ bool type::Function::mayTriggerSafepoint() const
 bool type::Function::mayYield() const
 {
     switch ( _cc ) {
-     case function::HILTI:
-     case function::HOOK:
+     case type::function::HILTI:
+     case type::function::HOOK:
         // Default is may yield.
         return ! attributes().has(attribute::NOYIELD);
 
-     case function::HILTI_C:
+     case type::function::HILTI_C:
         // Default is no yield.
         return attributes().has(attribute::MAYYIELD);
 
-     case function::C:
+     case type::function::C:
         return false;
 
-     case function::CALLABLE:
+     case type::function::CALLABLE:
         assert(false);
         return false;
 
@@ -576,7 +542,7 @@ bool type::Scope::_equal(shared_ptr<Type> other) const
 }
 
 type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, bool internal, const Location& l)
-    : Node(l), _id(id), _type(type), _internal(internal)
+    : Node(l), NodeWithAttributes(this), _id(id), _type(type), _internal(internal)
 {
     addChild(_id);
     addChild(_type);
@@ -584,7 +550,7 @@ type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, boo
 
 shared_ptr<Expression> type::struct_::Field::default_() const
 {
-    return _type->attributes().getAsExpression(attribute::DEFAULT);
+    return attributes().getAsExpression(attribute::DEFAULT);
 }
 
 type::Struct::Struct(const Location& l) : HeapType(l)

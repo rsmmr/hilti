@@ -17,7 +17,8 @@ struct _LoadResult
    llvm::Value* value;  // XXX
    bool cctor;          // XXX
    bool is_ptr;         // XXX
-   bool stored_in_dst; // XXX
+   bool stored_in_dst;  // XXX
+   bool is_hoisted;     // XXX
 };
 
 /// Visitor that generates the code for loading the value of an HILTI
@@ -130,12 +131,13 @@ public:
 
 protected:
    /// XXX
-   void setResult(llvm::Value* _value, bool _cctor, bool _is_ptr, bool _stored_in_dst = false) {
+   void setResult(llvm::Value* _value, bool _cctor, bool _is_ptr, bool _stored_in_dst = false, bool _is_hoisted = false) {
        _LoadResult result;
        result.value = _value;
        result.cctor = _cctor;
        result.is_ptr = _is_ptr;
        result.stored_in_dst = _stored_in_dst;
+       result.is_hoisted = _is_hoisted;
        CGVisitor<_LoadResult, shared_ptr<Type>>::setResult(result);
    }
 

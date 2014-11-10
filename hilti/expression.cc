@@ -7,6 +7,11 @@
 #include "expression.h"
 #include "passes/printer.h"
 
+bool Expression::hoisted()
+{
+    return false;
+}
+
 string Expression::render()
 {
     std::ostringstream s;
@@ -48,4 +53,9 @@ std::list<shared_ptr<hilti::Expression>> expression::Ctor::flatten()
         l.merge(ctor()->flatten());
 
     return l;
+}
+
+bool expression::Variable::hoisted()
+{
+    return variable()->attributes().has(attribute::HOIST);
 }

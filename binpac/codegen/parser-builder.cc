@@ -934,7 +934,7 @@ static shared_ptr<hilti::type::struct_::Field> _convertField(CodeGen* cg, shared
     auto sfield = hilti::builder::struct_::field(name, type, nullptr, false, f->location());
 
     if ( f->anonymous() )
-        sfield->type()->attributes().add(hilti::attribute::CANREMOVE);
+        sfield->attributes().add(hilti::attribute::CANREMOVE);
 
     return sfield;
 }
@@ -1130,7 +1130,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
 
     for ( auto f : fields ) {
         if ( util::startsWith(f->id()->name(), "__") )
-            f->type()->attributes().add(hilti::attribute::CANREMOVE);
+            f->attributes().add(hilti::attribute::CANREMOVE);
     }
 
     auto s = hilti::builder::struct_::type(fields, u->location());

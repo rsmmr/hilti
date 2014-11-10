@@ -30,6 +30,10 @@ public:
    /// returned list should contain just the epxression itself.
    virtual std::list<shared_ptr<hilti::Expression>> flatten() = 0;
 
+   /// Returns true if this expression accesses a hoisted value.
+   /// Can be overridden by derived classes. The default implementation returns always false.
+   virtual bool hoisted();
+
    /// Returns a readable one-line representation of the expression.
    string render() override;
 
@@ -104,6 +108,8 @@ public:
        : hilti::Expression(l), ast::expression::mixin::Variable<AstInfo>(this, var) {}
 
    std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
+
+   bool hoisted() override;
 
    ACCEPT_VISITOR(hilti::Expression);
 };

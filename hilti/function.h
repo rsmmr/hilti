@@ -19,7 +19,6 @@ typedef type::function::parameter_list parameter_list;
 
 }
 
-
 /// AST node for a function.
 class Function : public ast::Function<AstInfo>
 {
