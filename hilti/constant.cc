@@ -1,6 +1,7 @@
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 
 #include "id.h"
 #include "expression.h"

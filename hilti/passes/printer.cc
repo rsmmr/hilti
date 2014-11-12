@@ -1,5 +1,6 @@
 
 #include <arpa/inet.h>
+#include <sys/socket.h>
 
 #include "hilti/hilti-intern.h"
 
