@@ -1,0 +1,545 @@
+# PDF 1.7
+# =======
+#
+# Source: https://www.adobe.com/devnet/pdf/pdf_reference_archive.html
+
+module PDF;
+
+# At the most fundamental level, a PDF file is a sequence of 8-bit bytes. These
+# bytes can be grouped into tokens according to the syntax rules described
+# below. One or more tokens are assembled to form higher-level syntactic
+# entities, principally objects, which are the basic data values from which a
+# PDF document is constructed.
+#
+# PDF can be entirely represented using byte values corresponding to the
+# visible printable subset of the ASCII character set, but is not restricted to
+# it. The data values of some objects may be expressed in binary.
+#
+# The PDF character set is divided into three classes, called regular,
+# delimiter, and white-space characters. This classification determines the
+# grouping of characters into tokens, except within strings, streams, and
+# comments; different rules apply in those contexts.
+#
+# All characters except the white-space characters and delimiters are referred
+# to as regular characters. These characters include 8-bit binary characters
+# that are outside the ASCII character set. A sequence of consecutive regular
+# characters comprises a single token.
+
+# Whitespace can be any of the following bytes:
+#
+#   - NUL
+#   - HT (tab)
+#   - LF (line feed)
+#   - FF (form feed)
+#   - CR (carriage return)
+#   - SP (space)
+#
+const Whitespace = /(\x00|\x09|\x0a|\x0c|\x0d|\x20)+/;
+
+# Delimiter separate syntactic entities such as strings, arrays, names, and
+# comments. Any of these characters terminates the entity preceding it and is
+# not included in the entity.
+const Delimiter = /[()<>\[\]{}\%]/;
+
+# Any occurrence of the percent sign character (%) outside a string or stream
+# introduces a comment. The comment consists of all characters between the
+# percent sign and the end of the line, including regular, delimiter, space,
+# and tab characters. PDF ignores comments, treating them as if they were
+# single whitespace characters.
+const Comment = /%.*$/;
+
+# The end-of-line marker---a carriage return, line feed, or both.
+const EOL = /\r?\n$/;
+
+%skip-pre = Whitespace;
+%skip-post = Whitespace;
+
+# ==============================================================================
+#                                   Objects
+# ==============================================================================
+
+# Object
+# ======
+#
+# PDF supports eight basic types of objects:
+#
+#   - Boolean values
+#   - Integer and real numbers
+#   - Strings
+#   - Names
+#   - Arrays
+#   - Dictionaries
+#   - Streams
+#   - The null object
+#
+# Objects may be labeled so that they can be referred to by other objects. A
+# labeled object is called an indirect object.
+
+type Object = unit {
+  value: switch {
+    bool    : Boolean;
+    num     : Number;
+    str     : String;
+    name    : Name;
+    array   : Array;
+    dict    : Dictionary;
+    stream  : Stream;
+    null    : Null;
+    ind_obj : IndirectObject;
+    ind_ref : IndirectReference;
+  }
+};
+
+# Null
+# ====
+#
+# The null object has a type and value that are unequal to those of any other
+# object. There is only one object of type null, denoted by the keyword null.
+# An indirect object reference  to a nonexistent object is treated the same as
+# a null object. Specifying the null object as the value of a dictionary entry
+#  is equivalent to omitting the entry entirely.
+
+const Null = /null/;
+
+# Booleans
+# ========
+#
+# PDF provides boolean objects identified by the keywords "true" and "false".
+# Boolean objects can be used as the values of array elements and dictionary
+# entries, and can also occur in PostScript calculator functions as the results
+# of boolean and relational operators and as operands to the conditional
+# operators if and ifelse.
+
+type Boolean = unit {
+  value : /true|false/ &convert=$$.startswith(b"t");
+};
+
+# Numbers
+# =======
+#
+# PDF provides two types of numeric objects: integer and real. Integer objects
+# repesent mathematical integers within a certain interval centered at 0. Real
+# objects approximate mathematical real numbers, but with limited range and
+# precision; they are typically represented in fixed-point form rather than
+# floating-point form. The range and precision of numbers are limited by the
+# internal representations used in the computer on which the PDF
+# consumer application is running.
+
+type Number = unit {
+  real: Double;
+};
+
+# Strings
+# =======
+#
+# There exist two types of strings: a *literal* and *hex* strings.
+#
+# A literal string is written as an arbitrary number of characters enclosed in
+# parentheses. Any characters may appear in a string except unbalanced
+# parentheses and the backslash, which must be treated specially. Balanced
+# pairs of parentheses within a string require no special treatment.
+#
+# Within a literal string, the backslash (\) is used as an escape character for
+# various purposes, such as to include newline characters, nonprinting ASCII
+# characters, unbalanced parentheses, or the backslash character itself in the
+# string. If the character after the backslash does not match any of the below
+# patterns, the backslash is ignored.
+#
+#   - \n Line feed (LF)
+#   - \r Carriage return (CR)
+#   - \t Horizontal tab (HT)
+#   - \b Backspace (BS)
+#   - \f Form feed (FF)
+#   - \( Left parenthesis
+#   - \) Right parenthesis
+#   - \\ Backslash
+#   - \ddd Character code ddd (octal)
+#
+# The number ddd may consist of one, two, or three octal digits, with
+# high-order overflow ignored. E.g., \053 and \53 represent the same character.
+#
+# A backslash at the very end of the line splits a string across multiple
+# lines. E.g.,
+#
+#     (These \
+#     two strings \
+#     are the same.)
+#     (These two strings are the same.)
+#
+# If an end-of-line marker appears within a literal string without a preceding
+# backslash, the result is equivalent to \n (regardless of whether the
+# end-of-line marker was a carriage return, a line feed, or both).
+#
+# Strings may also be written in hexadecimal form, which is useful for including
+# arbitrary binary data in a PDF file. A hexadecimal string is written as a
+# sequence of hexadecimal digits (0–9 and either A–F or a–f) enclosed within
+# angle brackets (< and >):
+#
+#     <4E6F762073686D6F7A206B6120706F702E>
+#
+# Each pair of hexadecimal digits defines one byte of the string. White-space
+# characters (such as space, tab, carriage return, line feed, and form feed) are
+# ignored. If the final digit of a hexadecimal string is missing—that is, if
+# there is an odd number of digits, the final digit is assumed to be 0. For
+# example, <901FA> is a 3-byte string containing the characters whose
+# hexadecimal codes are 90, 1F, and A0.
+
+type LiteralStringContents = unit {
+  %skip-pre = None;
+  %skip-post = None;
+
+  value : bytes &until=/[^\\]\)/;
+
+  on %done {
+    print self.value;
+    # TODO
+    # handle escaped chars + '\' at EOL
+  };
+};
+
+type LiteralStringParenthetical = unit {
+  %skip-pre = None;
+  %skip-post = None;
+
+  lparen : /\(/;
+   value : LiteralStringContents;
+  rparen : /\)/;
+};
+
+type LiteralString = unit {
+  %skip-pre = None;
+  %skip-post = None;
+
+        : /\(/;
+  value : switch {
+            p : list<LiteralStringParenthetical>;
+            b : LiteralStringContents;
+          };
+        : /\)/;
+};
+
+# TODO
+# - pairwise byte conversion
+# - handle final 0-digit for odd chars
+type HexString = unit {
+  %skip-pre = None;
+  %skip-post = None;
+
+        : /</;
+  value : /[a-zA-Z0-9]+/
+        : />/;
+};
+
+type String = unit {
+  value: switch {
+    lit: LiteralString;
+    hex: HexString;
+  }
+};
+
+# Names
+# =====
+#
+# A name object is an atomic symbol uniquely defined by a sequence of
+# characters. Uniquely defined means that any two name objects made up of the
+# same sequence of characters are identically the same object. Atomic means
+# that a name has no internal structure; although it is defined by a sequence
+# of characters, those characters are not "elements" of the name.
+#
+# A slash character (/) introduces a name. The slash is not part of the name
+# but is a prefix indicating that the following sequence of characters
+# constitutes a name. The name may include any regular characters, but not
+# delimiter or white-space characters. A name may contain any character except
+# NUL specified as #XX where XX is a byte sequence, e.g., /A#42 = /AB.
+# Uppercase and lowercase letters are considered distinct.
+# The length of a name is subject to an implementation limit.
+
+type Name = unit {
+  value : /\/([a-zA-Z00-9+]|#[a-zA-Z0-9][a-zA-Z0-9])+/ &convert=$$.strip(Binpac::Side::Left, b"/");
+};
+
+# Arrays
+# ======
+#
+# A container of objects, e.g., [549 3.14 false (Ralph) /SomeName].
+# The number of elements in an array is subject to an implementation limit.
+# PDF directly supports only one-dimensional arrays. Arrays of higher dimension
+# can be constructed by using arrays as elements of arrays, nested to any
+# depth.
+
+type Array = unit {
+        : /\[/;
+  value : vector<Object>;
+        : /\]/
+}
+
+# Dictionaries
+# ============
+#
+# A dictionary object is an associative table containing pairs of objects,
+# known as the dictionary’s entries. The first element of each entry is the
+# *key* and the second element is the *value*. The key must be a name and value
+# can be any kind of object.
+#
+# Example:
+# << /Type /Example
+#    /Subtype /DictionaryExample
+#    /Version 0.01
+#    /IntegerItem 12
+#    /StringItem (a string)
+#    /Subdictionary <<
+#      /Item1 0.4
+#      /Item2 true
+#      /LastItem (not!)
+#      /VeryLastItem (OK)
+#    >>
+# >>
+#
+# The number of entries in a dictionary is subject to an implementation limit.
+#
+# By convention, the **Type** entry of such a dictionary identifies the type of
+# object the dictionary describes. In some cases, a **Subtype** entry
+# (sometimes abbreviated S) is used to further identify a specialized
+# subcategory of the general type. The value of the Type or Subtype entry is
+# always a name.
+#
+
+type Dictionary = unit {
+        : /<</
+  value : map<Name, Object>;
+        : />>/
+};
+
+# Stream
+# ======
+#
+# A sequence of bytes. Unlike strings, streams can be parsed incrementally by
+# the application and can have unlimited length.
+#
+# A stream consists of a dictionary followed by zero or more bytes bracketed
+# between the keywords stream and endstream. All streams must be indirect
+# objects and the stream dictionary must be a direct object. The keyword
+# "stream" that follows the stream dictionary should be followed by an
+# end-of-line marker consisting of either a carriage return and a line feed or
+# just a line feed, and not by a carriage return alone. The sequence of bytes
+# that make up a stream lie between the stream and endstream keywords; the
+# stream dictionary specifies the exact number of bytes. It is recommended that
+# there be an end-of-line marker after the data and before endstream; this
+# marker is not included in the stream length.
+# Example:
+#
+#   dictionary
+#   stream
+#   ... Zero or more bytes ...
+#   endstream
+#
+# Every stream dictionary has a Length entry that indicates how many bytes of
+# the PDF file are used for the stream’s data. (If the stream has a filter,
+# Length is the number of bytes of encoded data.)
+#
+
+type Stream = unit {
+  dict  : Dictionary;
+        : /stream/;
+        : EOL;
+  data  : bytes;
+        : /endstream/;
+
+  #on %done {
+  #  # TODO: lookup stream properties in dictionary and handle them accordingly,
+  #  # such as checking for /Filter /FlateDecode and applying it to the byte
+  #  # stream.
+  #}
+};
+
+# Indirect Objects
+# ================
+#
+# Any object in a PDF file may be labeled as an indirect object. This gives the
+# object a unique object identifier by which other objects can refer to it (for
+# example, as an element of an array or as the value of a dictionary entry).
+# The object identifier consists of two parts:
+#
+#   1. A positive integer object number. Indirect objects are often numbered
+#      sequentially within a PDF file, but this is not required; object numbers
+#      may be assigned in any arbitrary order.
+#   2. A non-negative integer generation number. In a newly created file, all
+#      indirect objects have generation numbers of 0. Nonzero generation
+#      numbers may be introduced when the file is later updateda.
+#
+# Together, the combination of an object number and a generation number
+# uniquely identifies an indirect object. The object retains the same object
+# number and generation number throughout its existence, even if its value is
+# modified.
+#
+# The definition of an indirect object in a PDF file consists of its object
+# number and generation number, followed by the value of the object bracketed
+# between the keywords "obj" and "endobj". For example, the definition
+#
+#     12 0 obj
+#     ( Brillig )
+#     endobj
+#
+# defines an indirect string object with an object number of 12, a generation
+# number of 0, and the value Brillig.
+#
+# The object can be referred to from elsewhere in the file by an indirect
+# reference consisting of the object number, the generation number, and the
+# keyword R:
+#
+#   12 0 R
+#
+
+type IndirectObject = unit {
+  id          : Integer;
+  generation  : Integer;
+              : /obj/;
+  object      : Object;
+              : /endobj/;
+};
+
+type IndirectReference = unit {
+  id          : Integer;
+  generation  : Integer;
+              : /R/;
+};
+
+# ==============================================================================
+#                               File Structure
+# ==============================================================================
+
+# A canonical PDF file initially consists of four elements:
+#
+#  1. A one-line header identifying the version of the PDF specification to
+#     which the file conforms.
+#  2. A body containing the objects that make up the document contained in the
+#     file.
+#  3. A cross-reference table containing information about the indirect
+#     objects in the file.
+#  4. A trailer giving the location of the cross-reference table and of certain
+#     special objects within the body of the file.
+#
+# As a matter of convention, the tokens in a PDF file are arranged into lines.
+# Each line is terminated by an end-of-line (EOL) marker. PDF files with binary
+# data may have arbitrarily long lines. However, to increase compatibility with
+# other applications that process PDF files, lines that are not part of stream
+# object data are limited to no more than 255 characters, with one exception:
+# beginning with PDF 1.3, an exception is made to the restriction on line
+# length in the case of the Contents string of a signature dictionary.
+
+type File = unit {
+  header  : Header;
+  body    : Body;
+  xref    : XrefTable;
+  trailer : Trailer;
+};
+
+type Header = unit {
+                : /%PDF-/;
+  version_major : Integer;
+                : /\./;
+  version_minor : Integer;
+};
+
+# The body of a PDF file consists of a sequence of indirect objects
+# representing the contents of a document. The objects represent components of
+# the document such as fonts, pages, and sampled images. Beginning with PDF
+# 1.5, the body can also contain object streams, each of which contains a
+# sequence of indirect objects
+
+type Body = list<IndirectObject>;
+
+# The cross-reference table contains information that permits random access to
+# indirect objects within the file so that the entire file need not be read to
+# locate any particular object. The table contains a one-line entry for each
+# indirect object, specifying the location of that object within the body of the
+# file. The cross-reference table is the only part of a PDF file with a fixed
+# format, which permits entries in the table to be accessed randomly.
+#
+# Each cross-reference section begins with a line containing the keyword xref.
+# Following this line are one or more cross-reference subsections, which may
+# appear in any order.
+#
+# Each cross-reference subsection contains entries for a contiguous range of
+# object numbers. The subsection begins with a line containing two numbers
+# separated by a space: the object number of the first object in this
+# subsection and the number of entries in the subsection. Following this line
+# are the cross-reference entries themselves, one per line. Each entry is
+# exactly 20 bytes long, including the end-of-line marker. There are two kinds
+# of cross-reference entries: one for objects that are in use and another for
+# objects that have been deleted and therefore are free. Both types of entries
+# have similar basic formats, distinguished by the keyword n (for an in-use
+# entry) or f (for a free entry). The format of an entry is
+#
+#   nnnnnnnnnn ggggg [nf] eol
+#
+# where
+#
+#   nnnnnnnnnn is a 10-digit byte offset
+#   ggggg      is a 5-digit generation number
+#   n          is a literal keyword identifying this as an in-use entry
+#   f          is a literal keyword identifying this as free entry
+#   eol        is a 2-character end-of-line sequence
+#
+# The free entries in the cross-reference table form a linked list, with each
+# free entry containing the object number of the next. The first entry in the
+# table (object number 0) is always free and has a generation number of 65,535;
+# it is the head of the linked list of free objects.
+#
+# The following example shows a cross-reference section consisting of a single
+# subsection with six entries: four that are in use (objects number 1, 2, 4,
+# and 5) and two that are free (objects number 0 and 3). Object number 3 has
+# been deleted, and the next object created with that object number is given a
+# generation number of 7.
+#
+#     xref
+#     0 6
+#     0000000003 65535 f
+#     0000000017 00000 n
+#     0000000081 00000 n
+#     0000000000 00007 f
+#     0000000331 00000 n
+#     0000000409 00000 n
+#
+
+type XrefSection = unit {
+          : /xref/;
+  entries : list<XrefSubsection>;
+};
+
+type XrefSubsection = unit {
+  first  : Integer;
+  n      : Integer;
+         : EOL;
+  entries: vector<XrefEntry>;
+};
+
+type XrefEntry = unit {
+  offset     : bytes &length=10 &convert=$$.to_uint();
+             : / /;
+  generation : bytes &length=5 &convert=$$.to_uint();
+             : / /;
+  free       : /[fn]/ &convert=$$.startswith(b"f");
+             : / \r\n/;
+};
+
+type XrefTable = list<XrefSection>;
+
+# The trailer of a PDF file enables an application reading the file to quickly
+# find the cross-reference table and certain special objects. Applications
+# should read a PDF from its end.
+#
+# The last line of the file contains only the end-of-file marker, %%EOF.
+# The two preceding lines contain the keyword "startxref" and the byte offset
+# from the beginning of the file to the beginning of the xref keyword in the
+# last cross-reference section. The startxref line is preceded by the trailer
+# dictionary, consisting of the keyword trailer followed by a series of
+# key-value pairs enclosed in double angle brackets (<<...>>).
+
+type Trailer = unit {
+       : /trailer/
+  data : Dictionary;
+       : /startxref/;
+  xref : Integer;
+       : /%%EOF/;
+};
