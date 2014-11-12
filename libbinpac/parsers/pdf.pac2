@@ -184,26 +184,23 @@ type Number = unit {
 # example, <901FA> is a 3-byte string containing the characters whose
 # hexadecimal codes are 90, 1F, and A0.
 
-type LiteralStringContents = unit {
-  %skip-pre = None;
-  %skip-post = None;
-
-  value : bytes &until=/[^\\]\)/;
-
-  on %done {
-    print self.value;
-    # TODO
-    # handle escaped chars + '\' at EOL
-  };
-};
+# TODO
+# - Enumerate all ASCII characters except '(' and ')'
+# - Ignore backspace followed by EOL
+const LiteralStringToken = /([[all-but-parens]]|\\[nrtbf()\\]|\\[0-9]{1,3})*/
 
 type LiteralStringParenthetical = unit {
   %skip-pre = None;
   %skip-post = None;
 
-  lparen : /\(/;
-   value : LiteralStringContents;
-  rparen : /\)/;
+  switch {
+    contents : LiteralStringToken
+             : switch {
+                      : /\(/;
+                 data : LiteralStringContents;
+                      : /\)/;
+               };
+  };
 };
 
 type LiteralString = unit {
@@ -211,10 +208,7 @@ type LiteralString = unit {
   %skip-post = None;
 
         : /\(/;
-  value : switch {
-            p : list<LiteralStringParenthetical>;
-            b : LiteralStringContents;
-          };
+  value : list<LiteralStringParenthetical> &raw;
         : /\)/;
 };
 
