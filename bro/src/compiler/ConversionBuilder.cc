@@ -877,7 +877,9 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroBaseType(share
 	case TYPE_COUNT:
 	case TYPE_COUNTER:
 		{
-		auto args = ::hilti::builder::tuple::create( { val } );
+		auto ext = Builder()->addTmp("ext", ::hilti::builder::integer::type(64));
+		Builder()->addInstruction(ext, ::hilti::instruction::integer::ZExt, val);
+		auto args = ::hilti::builder::tuple::create( { ext } );
 		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 					  ::hilti::builder::id::create("LibBro::h2b_integer_unsigned"), args);
 		return dst;
@@ -909,7 +911,9 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroBaseType(share
 
 	case TYPE_INT:
 		{
-		auto args = ::hilti::builder::tuple::create( { val } );
+		auto ext = Builder()->addTmp("ext", ::hilti::builder::integer::type(64));
+		Builder()->addInstruction(ext, ::hilti::instruction::integer::SExt, val);
+		auto args = ::hilti::builder::tuple::create( { ext } );
 		Builder()->addInstruction(dst, ::hilti::instruction::flow::CallResult,
 					  ::hilti::builder::id::create("LibBro::h2b_integer_signed"), args);
 		return dst;

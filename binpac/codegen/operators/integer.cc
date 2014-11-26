@@ -32,7 +32,8 @@ static shared_ptr<binpac::type::Integer> _intResultType(binpac::expression::Reso
 
 void CodeBuilder::visit(constant::Integer* i)
 {
-    auto result = hilti::builder::integer::create(i->value(), i->location());
+    auto itype = ast::checkedCast<type::Integer>(i->type());
+    auto result = cg()->hiltiConstantInteger(i->value(), itype->signed_());
     setResult(result);
 }
 
@@ -299,23 +300,6 @@ void CodeBuilder::visit(expression::operator_::integer::ShiftRight* i)
     auto op1 = cg()->hiltiExpression(i->op1(), rtype);
     auto op2 = cg()->hiltiExpression(i->op2(), rtype);
     cg()->builder()->addInstruction(result, hilti::instruction::integer::Shr, op1, op2);
-    setResult(result);
-}
-
-void CodeBuilder::visit(expression::operator_::integer::Attribute* i)
-{
-    auto itype = ast::checkedCast<type::Integer>(i->op1()->type());
-    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
-
-    auto bits = itype->bits(attr->id());
-    assert(bits);
-
-    auto result = cg()->hiltiExtractsBitsFromInteger(hiltiExpression(i->op1()), itype,
-                                                     hilti::builder::integer::create(bits->lower()),
-                                                     hilti::builder::integer::create(bits->upper()));
-
-    result = cg()->hiltiApplyAttributesToValue(result, bits->attributes());
-
     setResult(result);
 }
 

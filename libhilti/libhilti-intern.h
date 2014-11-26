@@ -58,5 +58,7 @@
 #include "classifier.h"
 #include "hutil.h"
 #include "clone.h"
+#include "struct.h"
+#include "union.h"
 
 #endif

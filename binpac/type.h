@@ -143,8 +143,6 @@ public:
     PacType(const attribute_list& attrs,  const Location& l=Location::None);
 
     /// Returns the attributes associated with the type.
-    ///
-    /// \todo: Actually I don't think that types should have attributes.
     shared_ptr<AttributeSet> attributes() const;
 
     ACCEPT_VISITOR(Type);
@@ -436,6 +434,104 @@ private:
     shared_ptr<Scope> _scope = nullptr;
 };
 
+namespace bitfield {
+
+/// Class describing one element of an integer's bitfield.
+class Bits : public Node
+{
+public:
+    /// Constructor.
+    ///
+    /// id: The name associated with the bits.
+    ///
+    /// lower: The lower bit of the range.
+    ///
+    /// upper: The upper bit of the range (inclusive).
+    ///
+    /// attrs: Optional type attributes associated with the bits.
+    ///
+    /// l: Associated location.
+    Bits(shared_ptr<ID> id, int lower, int upper, int parent_width, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
+
+    /// Returns the name associated with the bits.
+    shared_ptr<ID> id() const;
+
+    /// Returns the lower bit of the range.
+    int lower() const;
+
+    /// Returns the upper bit of the range (inclusive).
+    int upper() const;
+
+    /// Returns the attributes associated with the bits.
+    shared_ptr<AttributeSet> attributes() const;
+
+    /// Returns the type final type with which this bit range is to be
+    /// stored. This takes into account a potential &convert attribute.
+    shared_ptr<Type> fieldType() const;
+
+    ACCEPT_VISITOR_ROOT();
+
+private:
+    node_ptr<ID> _id;
+    node_ptr<AttributeSet> _attrs;
+    int _lower;
+    int _upper;
+    int _parent_width;
+};
+
+}
+
+/// Type for bitfields. Bitfields have an underlying integer value of a given
+/// size and extract a set of bitranges from it, identified by an ID for each name,
+/// Type for integer values.
+class Bitfield : public PacType, public trait::Parameterized, public trait::Parseable, public trait::Hashable
+{
+public:
+    typedef std::list<shared_ptr<bitfield::Bits>> bits_list;
+
+    /// Constructor.
+    ///
+    /// width: The bit width for the underlying integer.
+    ///
+    /// l: Associated location.
+    Bitfield(int width, const bits_list& bits, const Location& l=Location::None);
+
+    /// Constructore creating an integer type matching any other integer type.
+    Bitfield(const Location& l=Location::None);
+
+    /// Returns the types bit width.
+    int width() const;
+
+    /// Associated names with subsets of bits.
+    void setBits(const bits_list& bits);
+
+    /// Returns the bit order for interpreting bit ranges. This returns an
+    /// expression of type BinPAC::BitOrder.
+    shared_ptr<Expression> bitOrder();
+
+    /// Sets the bit ordering used to interpret bit ranges. Default is LSB0.
+    ///
+    /// order: The order to set. The must be an expression of type type
+    /// BinPAC::BitOrder..
+    void setBitOrder(shared_ptr<Expression> order);
+
+    /// Returns the names associated with subsets of bits.
+    bits_list bits() const;
+
+    /// Returns the bits associated with a given name, or null if no such name.
+    shared_ptr<bitfield::Bits> bits(shared_ptr<ID> id) const;
+
+    type_parameter_list parameters() const override;
+    std::list<ParseAttribute> parseAttributes() const override;
+
+    ACCEPT_VISITOR(PacType);
+
+private:
+    std::list<node_ptr<bitfield::Bits>> _bits;
+    node_ptr<Expression> _bit_order;
+    int _width;
+};
+
 /// Type for enums.
 class Enum : public PacType {
 public:
@@ -529,54 +625,10 @@ public:
     ACCEPT_VISITOR(PacType);
 };
 
-namespace integer {
-
-/// Class describing one element of an integer's bitfield.
-class Bits : public Node
-{
-public:
-    /// Constructor.
-    ///
-    /// id: The name associated with the bits.
-    ///
-    /// lower: The lower bit of the range.
-    ///
-    /// upper: The upper bit of the range (inclusive).
-    ///
-    /// attrs: Optional type attributes associated with the bits.
-    ///
-    /// l: Associated location.
-    Bits(shared_ptr<ID> id, int lower, int upper, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
-
-    /// Returns the name associated with the bits.
-    shared_ptr<ID> id() const;
-
-    /// Returns the lower bit of the range.
-    int lower() const;
-
-    /// Returns the upper bit of the range (inclusive).
-    int upper() const;
-
-    /// Returns the attributes associated with the bits.
-    shared_ptr<AttributeSet> attributes() const;
-
-    ACCEPT_VISITOR_ROOT();
-
-private:
-    node_ptr<ID> _id;
-    node_ptr<AttributeSet> _attrs;
-    int _lower;
-    int _upper;
-};
-
-}
-
 /// Type for integer values.
 class Integer : public PacType, public trait::Parameterized, public trait::Parseable, public trait::Hashable
 {
 public:
-    typedef std::list<shared_ptr<integer::Bits>> bits_list;
-
     /// Constructor.
     ///
     /// width: The bit width for the type.
@@ -595,25 +647,6 @@ public:
     /// Returns true if it's a signed integer type.
     bool signed_() const;
 
-    /// Associated names with subsets of bits.
-    void setBits(const bits_list& bits);
-
-    /// Returns the bit order for interpreting bit ranges. This returns an
-    /// expression of type BinPAC::BitOrder.
-    shared_ptr<Expression> bitOrder();
-
-    /// Sets the bit ordering used to interpret bit ranges. Default is LSB0.
-    ///
-    /// order: The order to set. The must be an expression of type type
-    /// BinPAC::BitOrder..
-    void setBitOrder(shared_ptr<Expression> order);
-
-    /// Returns the names associated with subsets of bits.
-    bits_list bits() const;
-
-    /// Returns the bits associated with a given name, or null if no such name.
-    shared_ptr<integer::Bits> bits(shared_ptr<ID> id) const;
-
     bool _equal(shared_ptr<binpac::Type> other) const override;
     type_parameter_list parameters() const override;
     std::list<ParseAttribute> parseAttributes() const override;
@@ -627,8 +660,6 @@ public:
     ACCEPT_VISITOR(PacType);
 
 private:
-    std::list<node_ptr<integer::Bits>> _bits;
-    node_ptr<Expression> _bit_order;
     int _width;
     int _signed;
 };
@@ -1047,9 +1078,6 @@ public:
 
     /// Constructore creating an IOSrc type matching any other (i.e., \c regexp<*>).
     RegExp(const Location& l=Location::None);
-
-    /// Returns the enum label for the type of RegExp.
-    shared_ptr<AttributeSet> attributes() const;
 
     bool _equal(shared_ptr<binpac::Type> other) const override;
     type_parameter_list parameters() const override;

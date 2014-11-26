@@ -39,6 +39,8 @@ struct yystype_hilti {
     type::Struct::field_list union_fields;
     type::Struct::field_list context_fields;
     type::Overlay::field_list overlay_fields;
+    type::Tuple::element_list tuple_type_elems;
+    type::Tuple::element tuple_type_elem;
     ctor::Map::element map_element;
     ctor::Map::element_list map_elements;
     ctor::RegExp::pattern_list re_patterns;

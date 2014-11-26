@@ -102,6 +102,14 @@ void Printer::printAttributes(const AttributeSet& attrs)
     }
 }
 
+void Printer::printTypeAttributes(Type* t)
+{
+    if ( _omit_type_attributes )
+        return;
+
+    printAttributes(t->attributes());
+}
+
 void Printer::visit(Module* m)
 {
     setPrintOriginalIDs(false);
@@ -467,7 +475,7 @@ void Printer::visit(declaration::Function* f)
 
     p << ')';
 
-    printAttributes(func->type()->attributes());
+    printTypeAttributes(func->type().get());
 
     p << endl;
 
@@ -534,7 +542,7 @@ void Printer::visit(type::HiltiFunction * t)
     printList(t->parameters(), ", ");
     p << ") -> " << t->result();
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Hook* t)
@@ -542,7 +550,7 @@ void Printer::visit(type::Hook* t)
     Printer& p = *this;
     p << "<hook>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(ID* i)
@@ -562,7 +570,7 @@ void Printer::visit(type::Void* i)
     Printer& p = *this;
     p << "void";
 
-    printAttributes(i->attributes());
+    printTypeAttributes(i);
 }
 
 void Printer::visit(type::Unknown* i)
@@ -587,13 +595,13 @@ void Printer::visit(type::Union* t)
         p << "union<";
         printList(t->typeList(), ", ");
         p << ">";
-        printAttributes(t->attributes());
+        printTypeAttributes(t);
         return;
     }
 
     if ( ! t->fields().size() ) {
         p << " union { }" << endl;
-        printAttributes(t->attributes());
+        printTypeAttributes(t);
         return;
     }
 
@@ -623,7 +631,7 @@ void Printer::visit(type::Union* t)
     popIndent();
 
     p << "}";
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
     p << endl << endl;
 }
 
@@ -639,7 +647,7 @@ void Printer::visit(type::Integer* i)
     else
         p << "int<" << i->width() << ">";
 
-    printAttributes(i->attributes());
+    printTypeAttributes(i);
 }
 
 void Printer::visit(type::String* i)
@@ -650,7 +658,7 @@ void Printer::visit(type::String* i)
     Printer& p = *this;
     p << "string";
 
-    printAttributes(i->attributes());
+    printTypeAttributes(i);
 }
 
 void Printer::visit(type::Label* i)
@@ -661,7 +669,7 @@ void Printer::visit(type::Label* i)
     Printer& p = *this;
     p << "label";
 
-    printAttributes(i->attributes());
+    printTypeAttributes(i);
 }
 
 void Printer::visit(type::Bool* b)
@@ -672,7 +680,7 @@ void Printer::visit(type::Bool* b)
     Printer& p = *this;
     p << "bool";
 
-    printAttributes(b->attributes());
+    printTypeAttributes(b);
 }
 
 void Printer::visit(type::Reference* t)
@@ -691,7 +699,7 @@ void Printer::visit(type::Reference* t)
 
     disableTypeIDs();
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Exception* e)
@@ -713,7 +721,7 @@ void Printer::visit(type::Exception* e)
 
     disableTypeIDs();
 
-    printAttributes(e->attributes());
+    printTypeAttributes(e);
 }
 
 void Printer::visit(type::Bytes* b)
@@ -724,7 +732,7 @@ void Printer::visit(type::Bytes* b)
     Printer& p = *this;
     p << "bytes";
 
-    printAttributes(b->attributes());
+    printTypeAttributes(b);
 }
 
 void Printer::visit(type::Tuple* t)
@@ -736,14 +744,32 @@ void Printer::visit(type::Tuple* t)
 
     if ( ! t->wildcard() ) {
         p << "tuple<";
-        printList(t->typeList(), ", ");
+
+        enableTypeIDs();
+
+        bool first = true;
+
+        for ( auto m : ::util::zip2(t->names(), t->typeList()) ) {
+
+            if ( ! first )
+                p << ", ";
+
+            if ( m.first )
+                p << m.first->name() << ": ";
+
+            p << m.second;
+            first = false;
+        }
+
+        disableTypeIDs();
+
         p << ">";
     }
 
     else
         p << "tuple<*>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::TypeType* t)
@@ -757,7 +783,7 @@ void Printer::visit(type::TypeType* t)
     else
         p << "(no type)";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Address* c)
@@ -768,7 +794,7 @@ void Printer::visit(type::Address* c)
     Printer& p = *this;
     p << "addr";
 
-    printAttributes(c->attributes());
+    printTypeAttributes(c);
 }
 
 void Printer::visit(type::Bitset* c)
@@ -795,7 +821,7 @@ void Printer::visit(type::Bitset* c)
         first = false;
     }
 
-    printAttributes(c->attributes());
+    printTypeAttributes(c);
 }
 
 void Printer::visit(type::Scope* s)
@@ -821,7 +847,7 @@ void Printer::visit(type::Scope* s)
 
     p << "} " << endl;
 
-    printAttributes(s->attributes());
+    printTypeAttributes(s);
 }
 
 void Printer::visit(type::CAddr* c)
@@ -832,7 +858,7 @@ void Printer::visit(type::CAddr* c)
     Printer& p = *this;
     p << "caddr";
 
-    printAttributes(c->attributes());
+    printTypeAttributes(c);
 }
 
 void Printer::visit(type::Double* c)
@@ -843,7 +869,7 @@ void Printer::visit(type::Double* c)
     Printer& p = *this;
     p << "double";
 
-    printAttributes(c->attributes());
+    printTypeAttributes(c);
 }
 
 void Printer::visit(type::Enum* c)
@@ -878,7 +904,7 @@ void Printer::visit(type::Enum* c)
 
     p << " }";
 
-    printAttributes(c->attributes());
+    printTypeAttributes(c);
 }
 
 void Printer::visit(type::Interval* c)
@@ -889,7 +915,7 @@ void Printer::visit(type::Interval* c)
     Printer& p = *this;
     p << "interval";
 
-    printAttributes(c->attributes());
+    printTypeAttributes(c);
 }
 
 void Printer::visit(type::Time* c)
@@ -900,7 +926,7 @@ void Printer::visit(type::Time* c)
     Printer& p = *this;
     p << "time";
 
-    printAttributes(c->attributes());
+    printTypeAttributes(c);
 }
 
 void Printer::visit(type::Network* c)
@@ -911,7 +937,7 @@ void Printer::visit(type::Network* c)
     Printer& p = *this;
     p << "net";
 
-    printAttributes(c->attributes());
+    printTypeAttributes(c);
 }
 
 void Printer::visit(type::Port* c)
@@ -922,7 +948,7 @@ void Printer::visit(type::Port* c)
     Printer& p = *this;
     p << "port";
 
-    printAttributes(c->attributes());
+    printTypeAttributes(c);
 }
 
 void Printer::visit(type::Callable* t)
@@ -946,7 +972,7 @@ void Printer::visit(type::Callable* t)
 
     p << ">";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Channel* t)
@@ -961,7 +987,7 @@ void Printer::visit(type::Channel* t)
     else
         p << "channel<*>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Classifier* t)
@@ -976,7 +1002,7 @@ void Printer::visit(type::Classifier* t)
     else
         p << "classifier<*>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::File* t)
@@ -987,7 +1013,7 @@ void Printer::visit(type::File* t)
     Printer& p = *this;
     p << "file";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::IOSource* t)
@@ -1002,7 +1028,7 @@ void Printer::visit(type::IOSource* t)
     else
         p << "iosrc<*>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::List* t)
@@ -1017,7 +1043,7 @@ void Printer::visit(type::List* t)
     else
         p << "list<*>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Map* t)
@@ -1034,7 +1060,7 @@ void Printer::visit(type::Map* t)
     else
         p << "map<*>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Vector* t)
@@ -1049,7 +1075,7 @@ void Printer::visit(type::Vector* t)
     else
         p << "vector<*>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Set* t)
@@ -1064,7 +1090,7 @@ void Printer::visit(type::Set* t)
     else
         p << "set<*>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Overlay* t)
@@ -1107,7 +1133,7 @@ void Printer::visit(type::Overlay* t)
     popIndent();
     p << "}" << endl << endl;
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::OptionalArgument* t)
@@ -1126,7 +1152,7 @@ void Printer::visit(type::RegExp* t)
     Printer& p = *this;
     p << "regexp";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::MatchTokenState* t)
@@ -1137,7 +1163,7 @@ void Printer::visit(type::MatchTokenState* t)
     Printer& p = *this;
     p << "match_token_state";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Struct* t)
@@ -1193,7 +1219,7 @@ void Printer::visit(type::Struct* t)
     popIndent();
 
     p << "}";
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
     p << endl << endl;
 }
 
@@ -1205,7 +1231,7 @@ void Printer::visit(type::Timer* t)
     Printer& p = *this;
     p << "timer";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::TimerMgr* t)
@@ -1216,7 +1242,7 @@ void Printer::visit(type::TimerMgr* t)
     Printer& p = *this;
     p << "timer_mgr";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Iterator* t)
@@ -1231,7 +1257,7 @@ void Printer::visit(type::Iterator* t)
     else
         p << "iterator<*>";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(type::Unset* t)
@@ -1242,7 +1268,7 @@ void Printer::visit(type::Unset* t)
     Printer& p = *this;
     p << "<type \"unset\">";
 
-    printAttributes(t->attributes());
+    printTypeAttributes(t);
 }
 
 void Printer::visit(constant::Integer* i)
@@ -1424,6 +1450,8 @@ void Printer::visit(constant::Union* c)
         p << c->expression();
 
     p << ")";
+
+    printAttributes(c->type()->attributes());
 }
 
 void Printer::visit(ctor::Bytes* c)

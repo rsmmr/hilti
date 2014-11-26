@@ -22,7 +22,7 @@ void CodeBuilder::visit(expression::operator_::time::CastDouble* i)
 
 void CodeBuilder::visit(expression::operator_::time::CastInteger* i)
 {
-    auto result = builder()->addTmp("i", hilti::builder::integer::type(64));
+    auto result = builder()->addTmp("i", cg()->hiltiType(i->type()));
     auto op1 = cg()->hiltiExpression(i->op1());
     cg()->builder()->addInstruction(result, hilti::instruction::time::AsInt, op1);
     setResult(result);
@@ -70,7 +70,7 @@ void CodeBuilder::visit(expression::operator_::time::Lower* i)
 
 void CodeBuilder::visit(expression::operator_::time::Nsecs* i)
 {
-    auto result = builder()->addTmp("ns", hilti::builder::integer::type(64));
+    auto result = builder()->addTmp("ns", cg()->hiltiType(i->type()));
     auto op1 = cg()->hiltiExpression(i->op1());
     cg()->builder()->addInstruction(result, hilti::instruction::time::Nsecs, op1);
     setResult(result);

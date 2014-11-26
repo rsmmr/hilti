@@ -102,7 +102,7 @@ void CodeBuilder::visit(binpac::expression::operator_::sink::AddFilter* i)
 void CodeBuilder::visit(expression::operator_::sink::Size* i)
 {
     auto sink = cg()->hiltiExpression(i->op1());
-    auto size = cg()->builder()->addTmp("size", hilti::builder::integer::type(64));
+    auto size = cg()->builder()->addTmp("size", cg()->hiltiType(i->type()));
 
     cg()->builder()->addInstruction(size,
                                     hilti::instruction::flow::CallResult,

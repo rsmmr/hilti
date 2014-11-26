@@ -55,18 +55,19 @@ static void _add_asciiz(const char* asciiz, int8_t* buffer, hlt_string_size* bpo
     }
 }
 
-static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple, int *type_param, hlt_string_size* i, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _do_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, int *type_param, hlt_string_size* i, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     static const int tmp_size = 32;
     char tmp[tmp_size];
 
     const int8_t* p = fmt->bytes;
 
-    int16_t* offsets = (int16_t *)type->aux;
-
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
     hlt_type_info* fmt_type = types[*type_param];
-    const void *fmt_arg = *type_param < type->num_params ? tuple + offsets[(*type_param)++] : 0;
+
+    hlt_tuple_element e = hlt_tuple_get_type(type, *type_param, excpt, ctx);
+    const void *fmt_arg = *type_param < type->num_params ? hlt_tuple_get(type, tuple, *type_param, excpt, ctx) : 0;
+    (*type_param)++;
 
     switch ( p[(*i)++] ) {
 
@@ -171,7 +172,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
 
 }
 
-hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx) //
+hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, hlt_exception** excpt, hlt_execution_context* ctx) //
 {
     assert(type->type == HLT_TYPE_TUPLE);
 

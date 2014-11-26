@@ -5,16 +5,16 @@ import Hilti
 void run()
 {
 
-  local int<32> __y_0x4228cb8_1
-  local iterator<list<int<32>>> __end_0x4228cb8_1
-  local iterator<list<int<32>>> __iter_0x4228cb8_1
-  local bool __cmp_0x4228cb8_1
-  local ref<list<int<32>>> __iterable_0x4228cb8_1
-  local int<32> __x_0x4477098_1
-  local iterator<list<int<32>>> __end_0x4477098_1
-  local iterator<list<int<32>>> __iter_0x4477098_1
-  local bool __cmp_0x4477098_1
-  local ref<list<int<32>>> __iterable_0x4477098_1
+  local int<32> __y_0x3f7e808_1
+  local iterator<list<int<32>>> __end_0x3f7e808_1
+  local iterator<list<int<32>>> __iter_0x3f7e808_1
+  local bool __cmp_0x3f7e808_1
+  local ref<list<int<32>>> __iterable_0x3f7e808_1
+  local int<32> __x_0x45b0648_1
+  local iterator<list<int<32>>> __end_0x45b0648_1
+  local iterator<list<int<32>>> __iter_0x45b0648_1
+  local bool __cmp_0x45b0648_1
+  local ref<list<int<32>>> __iterable_0x45b0648_1
   local ref<list<int<32>>> l
   local string s
   local string addl
@@ -38,141 +38,141 @@ void run()
   
   @__loop_entry_2:
       # pred: { [0099] } succ: { [0101] }
-      # def: { run%__iterable_0x4477098_1.2 } clear: { <none> } mod: { run%l.2 } read: { <none> }
-      # live-in: { run%l.2 } live-out: { run%__iterable_0x4477098_1.2, run%l.2 }
+      # def: { run%__iterable_0x45b0648_1.2 } clear: { <none> } mod: { run%l.2 } read: { <none> }
+      # live-in: { run%l.2 } live-out: { run%__iterable_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0100] __iterable_0x4477098_1 = assign l
+      [0100] __iterable_0x45b0648_1 = assign l
       # pred: { [0100] } succ: { [0102] }
-      # def: { run%__iter_0x4477098_1.2 } clear: { <none> } mod: { <none> } read: { run%__iterable_0x4477098_1.2 }
-      # live-in: { run%__iterable_0x4477098_1.2, run%l.2 } live-out: { run%__iter_0x4477098_1.2, run%__iterable_0x4477098_1.2, run%l.2 }
+      # def: { run%__iter_0x45b0648_1.2 } clear: { <none> } mod: { <none> } read: { run%__iterable_0x45b0648_1.2 }
+      # live-in: { run%__iterable_0x45b0648_1.2, run%l.2 } live-out: { run%__iter_0x45b0648_1.2, run%__iterable_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0101] __iter_0x4477098_1 = begin __iterable_0x4477098_1
+      [0101] __iter_0x45b0648_1 = begin __iterable_0x45b0648_1
       # pred: { [0101] } succ: { [0103] }
-      # def: { run%__end_0x4477098_1.2 } clear: { <none> } mod: { <none> } read: { run%__iterable_0x4477098_1.2 }
-      # live-in: { run%__iter_0x4477098_1.2, run%__iterable_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 }
-      # now-dead: { run%__iterable_0x4477098_1.2 }
-      [0102] __end_0x4477098_1 = end __iterable_0x4477098_1
+      # def: { run%__end_0x45b0648_1.2 } clear: { <none> } mod: { <none> } read: { run%__iterable_0x45b0648_1.2 }
+      # live-in: { run%__iter_0x45b0648_1.2, run%__iterable_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 }
+      # now-dead: { run%__iterable_0x45b0648_1.2 }
+      [0102] __end_0x45b0648_1 = end __iterable_0x45b0648_1
       # pred: { [0102] } succ: { [0105] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
       [0103] jump @__loop_cond_2
   
   @__loop_cond_2:
       # pred: { [0103], [0131] } succ: { [0106] }
-      # def: { run%__cmp_0x4477098_1.2 } clear: { <none> } mod: { <none> } read: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2 }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 } live-out: { run%__cmp_0x4477098_1.2, run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 }
+      # def: { run%__cmp_0x45b0648_1.2 } clear: { <none> } mod: { <none> } read: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2 }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 } live-out: { run%__cmp_0x45b0648_1.2, run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0105] __cmp_0x4477098_1 = equal __iter_0x4477098_1 __end_0x4477098_1
+      [0105] __cmp_0x45b0648_1 = equal __iter_0x45b0648_1 __end_0x45b0648_1
       # pred: { [0105] } succ: { [0108], [0134] }
-      # def: { <none> } clear: { <none> } mod: { <none> } read: { run%__cmp_0x4477098_1.2 }
-      # live-in: { run%__cmp_0x4477098_1.2, run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 }
-      # now-dead: { run%__cmp_0x4477098_1.2 }
-      [0106] if.else __cmp_0x4477098_1 @__loop_end_2 @__loop_deref_2
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { run%__cmp_0x45b0648_1.2 }
+      # live-in: { run%__cmp_0x45b0648_1.2, run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 }
+      # now-dead: { run%__cmp_0x45b0648_1.2 }
+      [0106] if.else __cmp_0x45b0648_1 @__loop_end_2 @__loop_deref_2
   
   @__loop_deref_2:
       # pred: { [0106] } succ: { [0109] }
-      # def: { run%__x_0x4477098_1.2 } clear: { <none> } mod: { <none> } read: { run%__iter_0x4477098_1.2 }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # def: { run%__x_0x45b0648_1.2 } clear: { <none> } mod: { <none> } read: { run%__iter_0x45b0648_1.2 }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0108] __x_0x4477098_1 = deref __iter_0x4477098_1
+      [0108] __x_0x45b0648_1 = deref __iter_0x45b0648_1
       # pred: { [0108] } succ: { [0111] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
       [0109] jump @__loop_body_2
   
   @__loop_body_2:
       # pred: { [0109] } succ: { [0112] }
-      # def: { run%__iterable_0x4228cb8_1.2 } clear: { <none> } mod: { run%l.2 } read: { <none> }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%__iterable_0x4228cb8_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # def: { run%__iterable_0x3f7e808_1.2 } clear: { <none> } mod: { run%l.2 } read: { <none> }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%__iterable_0x3f7e808_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0111] __iterable_0x4228cb8_1 = assign l
+      [0111] __iterable_0x3f7e808_1 = assign l
       # pred: { [0111] } succ: { [0113] }
-      # def: { run%__iter_0x4228cb8_1.2 } clear: { <none> } mod: { <none> } read: { run%__iterable_0x4228cb8_1.2 }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%__iterable_0x4228cb8_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__iterable_0x4228cb8_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # def: { run%__iter_0x3f7e808_1.2 } clear: { <none> } mod: { <none> } read: { run%__iterable_0x3f7e808_1.2 }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%__iterable_0x3f7e808_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__iterable_0x3f7e808_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0112] __iter_0x4228cb8_1 = begin __iterable_0x4228cb8_1
+      [0112] __iter_0x3f7e808_1 = begin __iterable_0x3f7e808_1
       # pred: { [0112] } succ: { [0114] }
-      # def: { run%__end_0x4228cb8_1.2 } clear: { <none> } mod: { <none> } read: { run%__iterable_0x4228cb8_1.2 }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__iterable_0x4228cb8_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
-      # now-dead: { run%__iterable_0x4228cb8_1.2 }
-      [0113] __end_0x4228cb8_1 = end __iterable_0x4228cb8_1
+      # def: { run%__end_0x3f7e808_1.2 } clear: { <none> } mod: { <none> } read: { run%__iterable_0x3f7e808_1.2 }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__iterable_0x3f7e808_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
+      # now-dead: { run%__iterable_0x3f7e808_1.2 }
+      [0113] __end_0x3f7e808_1 = end __iterable_0x3f7e808_1
       # pred: { [0113] } succ: { [0116] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # live-in: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
       [0114] jump @__loop_cond_1
   
   @__loop_cond_1:
       # pred: { [0114], [0126] } succ: { [0117] }
-      # def: { run%__cmp_0x4228cb8_1.2 } clear: { <none> } mod: { <none> } read: { run%__end_0x4228cb8_1.2, run%__iter_0x4228cb8_1.2 }
-      # live-in: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__cmp_0x4228cb8_1.2, run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # def: { run%__cmp_0x3f7e808_1.2 } clear: { <none> } mod: { <none> } read: { run%__end_0x3f7e808_1.2, run%__iter_0x3f7e808_1.2 }
+      # live-in: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__cmp_0x3f7e808_1.2, run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0116] __cmp_0x4228cb8_1 = equal __iter_0x4228cb8_1 __end_0x4228cb8_1
+      [0116] __cmp_0x3f7e808_1 = equal __iter_0x3f7e808_1 __end_0x3f7e808_1
       # pred: { [0116] } succ: { [0119], [0129] }
-      # def: { <none> } clear: { <none> } mod: { <none> } read: { run%__cmp_0x4228cb8_1.2 }
-      # live-in: { run%__cmp_0x4228cb8_1.2, run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
-      # now-dead: { run%__cmp_0x4228cb8_1.2 }
-      [0117] if.else __cmp_0x4228cb8_1 @__loop_end_1 @__loop_deref_1
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { run%__cmp_0x3f7e808_1.2 }
+      # live-in: { run%__cmp_0x3f7e808_1.2, run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
+      # now-dead: { run%__cmp_0x3f7e808_1.2 }
+      [0117] if.else __cmp_0x3f7e808_1 @__loop_end_1 @__loop_deref_1
   
   @__loop_deref_1:
       # pred: { [0117] } succ: { [0120] }
-      # def: { run%__y_0x4228cb8_1.2 } clear: { <none> } mod: { <none> } read: { run%__iter_0x4228cb8_1.2 }
-      # live-in: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%__y_0x4228cb8_1.2, run%l.2 }
+      # def: { run%__y_0x3f7e808_1.2 } clear: { <none> } mod: { <none> } read: { run%__iter_0x3f7e808_1.2 }
+      # live-in: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%__y_0x3f7e808_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0119] __y_0x4228cb8_1 = deref __iter_0x4228cb8_1
+      [0119] __y_0x3f7e808_1 = deref __iter_0x3f7e808_1
       # pred: { [0119] } succ: { [0122] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%__y_0x4228cb8_1.2, run%l.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%__y_0x4228cb8_1.2, run%l.2 }
+      # live-in: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%__y_0x3f7e808_1.2, run%l.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%__y_0x3f7e808_1.2, run%l.2 }
       # now-dead: { <none> }
       [0120] jump @__loop_body_1
   
   @__loop_body_1:
       # pred: { [0120] } succ: { [0123] }
-      # def: { run%s.2 } clear: { <none> } mod: { run%__x_0x4477098_1.2, run%__y_0x4228cb8_1.2 } read: { <none> }
-      # live-in: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%__y_0x4228cb8_1.2, run%l.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2, run%s.2 }
-      # now-dead: { run%__y_0x4228cb8_1.2 }
-      [0122] s = call Hilti::fmt ("%d %d", (__x_0x4477098_1, __y_0x4228cb8_1))
+      # def: { run%s.2 } clear: { <none> } mod: { run%__x_0x45b0648_1.2, run%__y_0x3f7e808_1.2 } read: { <none> }
+      # live-in: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%__y_0x3f7e808_1.2, run%l.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2, run%s.2 }
+      # now-dead: { run%__y_0x3f7e808_1.2 }
+      [0122] s = call Hilti::fmt ("%d %d", (__x_0x45b0648_1, __y_0x3f7e808_1))
       # pred: { [0122] } succ: { [0124] }
       # def: { <none> } clear: { <none> } mod: { run%s.2 } read: { <none> }
-      # live-in: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2, run%s.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # live-in: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2, run%s.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { run%s.2 }
       [0123] call Hilti::print (s)
       # pred: { [0123] } succ: { [0125] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # live-in: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
       [0124] jump @__loop_next_1
   
   @__loop_next_1:
       # pred: { [0124] } succ: { [0126] }
-      # def: { run%__iter_0x4228cb8_1.2 } clear: { <none> } mod: { <none> } read: { run%__iter_0x4228cb8_1.2 }
-      # live-in: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # def: { run%__iter_0x3f7e808_1.2 } clear: { <none> } mod: { <none> } read: { run%__iter_0x3f7e808_1.2 }
+      # live-in: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0125] __iter_0x4228cb8_1 = incr __iter_0x4228cb8_1
+      [0125] __iter_0x3f7e808_1 = incr __iter_0x3f7e808_1
       # pred: { [0125] } succ: { [0116] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4228cb8_1.2, run%__end_0x4477098_1.2, run%__iter_0x4228cb8_1.2, run%__iter_0x4477098_1.2, run%__x_0x4477098_1.2, run%l.2 }
+      # live-in: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x3f7e808_1.2, run%__end_0x45b0648_1.2, run%__iter_0x3f7e808_1.2, run%__iter_0x45b0648_1.2, run%__x_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
       [0126] jump @__loop_cond_1
   
   @__loop_end_1:
       # pred: { [0117] } succ: { [0130] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 }
-      # now-dead: { run%__end_0x4228cb8_1.2, run%__iter_0x4228cb8_1.2, run%__x_0x4477098_1.2 }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 }
+      # now-dead: { run%__end_0x3f7e808_1.2, run%__iter_0x3f7e808_1.2, run%__x_0x45b0648_1.2 }
       [0129] jump @__loop_next_2
   
   @__loop_next_2:
       # pred: { [0129] } succ: { [0131] }
-      # def: { run%__iter_0x4477098_1.2 } clear: { <none> } mod: { <none> } read: { run%__iter_0x4477098_1.2 }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 }
+      # def: { run%__iter_0x45b0648_1.2 } clear: { <none> } mod: { <none> } read: { run%__iter_0x45b0648_1.2 }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
-      [0130] __iter_0x4477098_1 = incr __iter_0x4477098_1
+      [0130] __iter_0x45b0648_1 = incr __iter_0x45b0648_1
       # pred: { [0130] } succ: { [0105] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 } live-out: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 }
+      # live-in: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 } live-out: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 }
       # now-dead: { <none> }
       [0131] jump @__loop_cond_2
   
@@ -180,7 +180,7 @@ void run()
       # pred: { [0106] } succ: { [0135] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
-      # now-dead: { run%__end_0x4477098_1.2, run%__iter_0x4477098_1.2, run%l.2 }
+      # now-dead: { run%__end_0x45b0648_1.2, run%__iter_0x45b0648_1.2, run%l.2 }
       [0134] call Hilti::print ("B", True)
       # pred: { [0134] } succ: { <none> }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }

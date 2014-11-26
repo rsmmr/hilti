@@ -138,6 +138,7 @@ protected:
     void visit(statement::try_::Catch* c) override;
     void visit(type::Address* a) override;
     void visit(type::Any* a) override;
+    void visit(type::Bitfield* b) override;
     void visit(type::Bitset* b) override;
     void visit(type::Block* b) override;
     void visit(type::Bool* b) override;

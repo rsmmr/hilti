@@ -12,6 +12,7 @@ template<typename T>
 shared_ptr<T> _sptr(T* ptr) { return shared_ptr<T>(ptr); }
 
 typedef std::list<shared_ptr<hilti::Type>> type_list;
+typedef std::list<shared_ptr<hilti::ID>> id_list;
 
 typedef AttributeSet attribute_set;
 
@@ -191,6 +192,7 @@ inline shared_ptr<hilti::type::Double> type(const Location& l=Location::None) {
 namespace tuple {
 
 typedef hilti::constant::Tuple::element_list element_list;
+typedef hilti::type::Tuple::element_list type_element_list;
 
 /// Instantiates an AST expression node representing a tuple constant.
 ///
@@ -205,7 +207,7 @@ inline shared_ptr<hilti::expression::Constant> create(const element_list elems, 
     return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
-/// Instantiates a type::Tuple type.
+/// Instantiates a type::Tuple type with anonymous tuple elements.
 ///
 /// types: The types of the tuple's elements.
 ///
@@ -214,6 +216,27 @@ inline shared_ptr<hilti::expression::Constant> create(const element_list elems, 
 /// Returns: The type node.
 inline shared_ptr<hilti::type::Tuple> type(const type_list& types, const Location& l=Location::None) {
     return std::make_shared<hilti::type::Tuple>(types, l);
+}
+
+/// Instantiates a type::Tuple type with named tuple elements.
+///
+/// elems: The tuple elements with their names and types.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Tuple> type(const type_element_list& elems, const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Tuple>(elems, l);
+}
+
+/// Instantiates a single entry for creating a tuple type with named elements.
+///
+/// name: The name of the element, or null for leaving it unset.
+///
+/// type: The type of the element.
+inline hilti::type::Tuple::element type_element(shared_ptr<hilti::ID> id, shared_ptr<hilti::Type> type)
+{
+    return std::make_pair(id, type);
 }
 
 /// Instantiates a type::Tuple type that matches any other tuple type (i.e., \c tuple<*>).
@@ -262,7 +285,7 @@ namespace reference {
 /// Returns: The expression node.
 inline shared_ptr<hilti::expression::Constant> createNull(const Location& l=Location::None)
 {
-    auto c = std::make_shared<constant::Reference>(l);
+    auto c = std::make_shared<constant::Reference>(std::make_shared<type::CAddr>(), l);
     return std::make_shared<hilti::expression::Constant>(c, l);
 }
 

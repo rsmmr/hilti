@@ -1,4 +1,4 @@
-<a=SSH-2, b=11824, c=11599, d=3.140000, e=1.2.3.4, f=2001:db8::1428:57ab, g=True, h=MyString, s={ 3, 1, 2 }, v=[0: A, 1: B, 2: C], l=[A, B, C]>
+<a=SSH-2, b=11824, c=11599, d=3.140000, e=1.2.3.4, f=2001:db8::1428:57ab, g=True, h=MyString>
 [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp]
 T
 SSH-2

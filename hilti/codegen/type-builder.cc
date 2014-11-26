@@ -5,6 +5,7 @@
 
 #include "type-builder.h"
 #include "codegen.h"
+#include "../passes/printer.h"
 
 #include "../../libhilti/rtti.h"
 #include "../../libhilti/port.h"
@@ -126,8 +127,15 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_onl
             ti->equal = "hlt::default_equal";
     }
 
-    if ( ! ti->name.size() )
-        ti->name = type->render();
+    if ( ! ti->name.size() ) {
+        std::ostringstream s;
+        passes::Printer p(s, true);
+        p._print_type_ids = -1000000; // Hack to disable them.
+        p.setOmitTypeAttributes(true);
+        p.setQualifyTypeIDs(true);
+        p.run(type);
+        ti->name = s.str();
+    }
 
     if ( ti->llvm_type && ! ti->init_val && type::hasTrait<type::trait::ValueType>(type) )
         ti->init_val = cg()->llvmConstNull(ti->llvm_type);
@@ -231,6 +239,15 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     if ( ptype )
         num_params = ptype->parameters().size();
 
+    shared_ptr<Expression> hostapp_type;
+
+    if ( rt ) {
+        if ( rt->argType() )
+            hostapp_type = rt->argType()->attributes().getAsExpression(attribute::HOSTAPP_TYPE);
+    }
+    else
+        hostapp_type = type->attributes().getAsExpression(attribute::HOSTAPP_TYPE);
+
     vals.push_back(cg()->llvmConstInt(ti->id, 16));
     vals.push_back(sizeof_);
     vals.push_back(object_size);
@@ -251,6 +268,19 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     vals.push_back(ti->cctor_func ? ti->cctor_func : _lookupFunction(ti->cctor));
     vals.push_back(ti->clone_init_func ? ti->clone_init_func : _lookupFunction(ti->clone_init));
     vals.push_back(ti->clone_alloc_func ? ti->clone_alloc_func : _lookupFunction(ti->clone_alloc));
+
+    if ( hostapp_type ) {
+        auto n = type->id() ? type->id()->name() : ::util::fmt("%p", type.get());
+        auto h = cg()->llvmValue(hostapp_type);
+        auto p = cg()->llvmAddConst("hostapp_expr_" + n, llvm::cast<llvm::Constant>(h));
+        vals.push_back(cg()->llvmCastConst(p, cg()->llvmTypePtr()));
+        vals.push_back(cg()->llvmRtti(hostapp_type->type()));
+    }
+
+    else {
+        vals.push_back(cg()->llvmConstNull(cg()->llvmTypePtr()));
+        vals.push_back(cg()->llvmConstNull(cg()->llvmTypePtr()));
+    }
 
     if ( ptype ) {
         // Add type parameters.
@@ -504,25 +534,40 @@ void TypeBuilder::visit(type::Tuple* t)
 
     auto init_val = cg()->llvmConstStruct(elems);
 
-    // Aux information is an array with the fields' offsets. We calculate the
-    // offsets via a sizeof-style hack ...
-    std::vector<llvm::Constant*> offsets;
-    auto null = cg()->llvmConstNull(cg()->llvmTypePtr(init_val->getType()));
+    /// Type information for a tuple includes the elements' offsets in the
+    /// ``aux`` entry as a concatenation of pairs (ASCIIZ*, offset), where
+    /// ASCIIZ is a field's name (if names, null if not); and offset its
+    /// offset in the value. Aux information is a list of tuple <const char*,
+    /// int16_t>.
+    ///
     auto zero = cg()->llvmGEPIdx(0);
+    auto null = cg()->llvmConstNull(cg()->llvmTypePtr(init_val->getType()));
 
-    for ( int i = 0; i < t->typeList().size(); ++i ) {
-        auto offset = cg()->llvmGEP(null, zero, cg()->llvmGEPIdx(i));
-        offsets.push_back(llvm::ConstantExpr::getPtrToInt(offset, cg()->llvmTypeInt(16)));
+    CodeGen::constant_list array;
+
+    int i = 0;
+
+    for ( auto id : t->names() ) {
+        std::string n = id ? id->name() : string();
+        auto name = cg()->llvmConstAsciizPtr(n);
+
+        auto idx = cg()->llvmGEPIdx(i);
+        auto offset = cg()->llvmGEP(null, zero, idx);
+        offset = llvm::ConstantExpr::getPtrToInt(offset, cg()->llvmTypeInt(16));
+
+        CodeGen::constant_list pair { name, offset };
+        array.push_back(cg()->llvmConstStruct(pair));
+
+        ++i;
     }
 
-    llvm::Constant* aux;
-    if ( offsets.size() ) {
-        auto cval = cg()->llvmConstArray(offsets);
-        aux = cg()->llvmAddConst("offsets", cval);
-    }
+    llvm::GlobalVariable* aux = nullptr;
 
-    else
-        aux = cg()->llvmConstNull();
+    if ( array.size() ) {
+        auto aval = cg()->llvmConstArray(array);
+        aux = cg()->llvmAddConst("tuple-elements", aval);
+        aux->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
+    }
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_TUPLE;
@@ -562,7 +607,7 @@ void TypeBuilder::visit(type::Reference* b)
         return;
     }
 
-    // ref<*>
+    // ref<*> || null
     TypeInfo* ti = new TypeInfo(b);
     ti->id = HLT_TYPE_ANY;
     ti->init_val = cg()->llvmConstNull();

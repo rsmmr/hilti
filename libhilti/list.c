@@ -261,11 +261,6 @@ void hlt_list_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_
         __hlt_clone_init_in_thread(_clone_init_in_thread, ti, dstp, cstate, excpt, ctx);
 }
 
-const hlt_type_info* hlt_list_type(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
-{
-    return l->type;
-}
-
 void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     l->timeout = timeout;
@@ -290,6 +285,8 @@ void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_
 
 void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    // fprintf(stderr, "%s|%s\n", l->type->tag, type->tag);
+
     assert(__hlt_type_equal(l->type, type));
 
     __hlt_list_node* n = _make_node(l, val, excpt, ctx);
@@ -446,6 +443,11 @@ void* hlt_iterator_list_deref(const hlt_iterator_list i, hlt_exception** excpt, 
     return &i.node->data;
 }
 
+const hlt_type_info* hlt_iterator_deref_type(const hlt_iterator_list i, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return i.list->type;
+}
+
 int8_t hlt_iterator_list_eq(const hlt_iterator_list i1, const hlt_iterator_list i2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( i1.node )
@@ -488,4 +490,14 @@ hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_
     }
 
     return hlt_string_concat(s, postfix, excpt, ctx);
+}
+
+const hlt_type_info* hlt_list_element_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return ((hlt_type_info**) &type->type_params)[0];
+}
+
+const hlt_type_info* hlt_list_element_type_from_list(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return l->type;
 }

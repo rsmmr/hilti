@@ -56,7 +56,7 @@ struct yystype_binpac {
     shared_ptr<binpac::type::unit::item::Field> unit_field;
     shared_ptr<binpac::type::unit::item::field::switch_::Case> switch_case;
     shared_ptr<binpac::statement::try_::Catch> catch_;
-    shared_ptr<binpac::type::integer::Bits> bits_spec;
+    shared_ptr<binpac::type::bitfield::Bits> bits_spec;
 
     binpac::attribute_list attributes;
     binpac::parameter_list params;
@@ -70,7 +70,7 @@ struct yystype_binpac {
     binpac::unit_item_list unit_items;
     binpac::unit_field_list unit_fields;
     binpac::type::unit::item::field::Switch::case_list switch_cases;
-    binpac::type::Integer::bits_list bits;
+    binpac::type::Bitfield::bits_list bits;
     binpac::ctor::RegExp::pattern_list re_patterns;
     binpac::type::function::CallingConvention cc;
 

@@ -1,15 +1,15 @@
 RUN 1
-hilti: uncaught exception in worker thread, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions-2/exceptions.hlt:12-14)
-hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti2/libhilti/threading.c:548)
+hilti: uncaught exception in worker thread, DivisionByZero (from /home/robin/work/hilti/tests/.tmp/hilti.threads.exceptions-2/exceptions.hlt:12-14)
+hilti: uncaught exception, ThreadException (from /home/robin/work/hilti/libhilti/threading.c:654)
 RUN 2
-hilti: uncaught exception in worker thread, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions-2/exceptions.hlt:12-14)
-hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti2/libhilti/threading.c:548)
+hilti: uncaught exception in worker thread, DivisionByZero (from /home/robin/work/hilti/tests/.tmp/hilti.threads.exceptions-2/exceptions.hlt:12-14)
+hilti: uncaught exception, ThreadException (from /home/robin/work/hilti/libhilti/threading.c:654)
 RUN 3
-hilti: uncaught exception in worker thread, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions-2/exceptions.hlt:12-14)
-hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti2/libhilti/threading.c:548)
+hilti: uncaught exception in worker thread, DivisionByZero (from /home/robin/work/hilti/tests/.tmp/hilti.threads.exceptions-2/exceptions.hlt:12-14)
+hilti: uncaught exception, ThreadException (from /home/robin/work/hilti/libhilti/threading.c:654)
 RUN 4
-hilti: uncaught exception in worker thread, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions-2/exceptions.hlt:12-14)
-hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti2/libhilti/threading.c:548)
+hilti: uncaught exception in worker thread, DivisionByZero (from /home/robin/work/hilti/tests/.tmp/hilti.threads.exceptions-2/exceptions.hlt:12-14)
+hilti: uncaught exception, ThreadException (from /home/robin/work/hilti/libhilti/threading.c:654)
 RUN 5
-hilti: uncaught exception in worker thread, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions-2/exceptions.hlt:12-14)
-hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti2/libhilti/threading.c:548)
+hilti: uncaught exception in worker thread, DivisionByZero (from /home/robin/work/hilti/tests/.tmp/hilti.threads.exceptions-2/exceptions.hlt:12-14)
+hilti: uncaught exception, ThreadException (from /home/robin/work/hilti/libhilti/threading.c:654)

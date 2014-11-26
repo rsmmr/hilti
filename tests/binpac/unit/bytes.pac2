@@ -6,4 +6,9 @@ module Mini;
 export type test = unit {
        a: bytes &length=4;
        b: bytes &length=6;
+
+       on %done {
+        print self;
+        print self.a;
+        }
 };

@@ -1,3 +1,3 @@
 <no pattern>
 /Foo/ | /Bar/ | /Hurz/
-hilti: uncaught exception, PatternError (from /Users/robin/work/binpacpp/hilti2/libhilti/regexp.c:441)
+hilti: uncaught exception, PatternError (from /home/robin/work/hilti/libhilti/regexp.c:461)

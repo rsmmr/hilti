@@ -1,6 +1,6 @@
   call void @hlt_bytes_concat_hoisted(%hlt.bytes.1* %"run%b.2", %hlt.bytes.1* %5, %hlt.bytes.1* %8, %hlt.exception.5** %__tmp_excpt, %hlt.execution_context.0* %__ctx)
   call void @hlt_bytes_concat_hoisted(%hlt.bytes.1* %"run%b.2", %hlt.bytes.1* %21, %hlt.bytes.1* %24, %hlt.exception.5** %__tmp_excpt, %hlt.execution_context.0* %__ctx)
-  call void @hlt_bytes_new_from_data_copy_hoisted(%hlt.bytes.1* %"run%b.2", i8* getelementptr inbounds ([6 x i8]* @.hlt.bytes.Main.0x4328c30, i32 0, i32 0), i64 6, %hlt.exception.5** %__tmp_excpt, %hlt.execution_context.0* %__ctx)
+  call void @hlt_bytes_new_from_data_copy_hoisted(%hlt.bytes.1* %"run%b.2", i8* getelementptr inbounds ([6 x i8]* @.hlt.bytes.Main.0x4205c10, i32 0, i32 0), i64 6, %hlt.exception.5** %__tmp_excpt, %hlt.execution_context.0* %__ctx)
   %34 = call %hlt.iterator.bytes.4 @hlt_bytes_offset(%hlt.bytes.1* %"run%b.2", i64 2, %hlt.exception.5** %__tmp_excpt, %hlt.execution_context.0* %__ctx)
   %39 = call %hlt.iterator.bytes.4 @hlt_bytes_offset(%hlt.bytes.1* %"run%b.2", i64 4, %hlt.exception.5** %__tmp_excpt, %hlt.execution_context.0* %__ctx)
   call void @hlt_bytes_sub_hoisted(%hlt.bytes.1* %"run%c.2", %hlt.iterator.bytes.4 %44, %hlt.iterator.bytes.4 %45, %hlt.exception.5** %__tmp_excpt, %hlt.execution_context.0* %__ctx)

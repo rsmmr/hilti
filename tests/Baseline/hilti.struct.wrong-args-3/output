@@ -1,5 +1,5 @@
 
 >>> i = struct.get a "b"
-wrong-args.hlt:19-19: error, type bool is not compatible with target type int<64> [pass::hilti::Validator]
+wrong-args.hlt:19-20: error, type bool is not compatible with target type int<64> [pass::hilti::Validator]
 wrong-args.hlt: Aborting due to verification error.
 error running hiltic, aborting

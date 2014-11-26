@@ -391,6 +391,21 @@ void Validator::visit(type::Any* a)
 {
 }
 
+void Validator::visit(type::Bitfield* bm)
+{
+    auto w = bm->width();
+
+    if ( bm->bits().size() ) {
+        if ( w != 8 && w != 16 && w != 32 && w != 64 )
+            error(bm, "bitfield's width must be 8, 16, 32, or 64");
+    }
+
+    for ( auto b : bm->bits() ) {
+        if ( b->lower() > b->upper() || b->lower() < 0 || b->upper() >= w )
+            error(b, "invalid bit range");
+    }
+}
+
 void Validator::visit(type::Bitset* b)
 {
 }
@@ -437,20 +452,6 @@ void Validator::visit(type::Hook* h)
 
 void Validator::visit(type::Integer* i)
 {
-    auto w = i->width();
-
-    if ( i->bits().size() ) {
-        if ( w != 8 && w != 16 && w != 32 && w != 64 )
-            error(i, "bitfield's width must be 8, 16, 32, or 64");
-
-        if ( i->signed_() )
-            error(i, "bitfield's underlying integer type must be unsigned");
-    }
-
-    for ( auto b : i->bits() ) {
-        if ( b->lower() > b->upper() || b->lower() < 0 || b->upper() >= w )
-            error(b, "invalid bit range");
-    }
 }
 
 void Validator::visit(type::Interval* i)

@@ -80,7 +80,7 @@ type RDataSOA = unit(msg: Message) {
 };
 
 type Name = unit(msg: Message) {
-    : list<Label(msg, self)> &until($$.len == 0 || $$.len.compressed != 0);
+    : list<Label(msg, self)> &until($$.len.offset == 0 || $$.len.compressed != 0);
 
     # Parsed labels are collected in this list.
     var labels: list<bytes>;
@@ -101,7 +101,7 @@ type Label = unit(msg: Message, name: Name) {
         };
 
     switch ( self.len.compressed ) {
-        0 ->    label: bytes &length=self.len {
+        0 ->    label: bytes &length=self.len.offset {
                     name.labels.push_back(self.label);
                     }
 

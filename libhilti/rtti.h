@@ -180,7 +180,16 @@ struct __hlt_type_info {
     /// that case.
     void* (*clone_alloc)(const hlt_type_info* ti, const void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
 
-    // Type-parameters start here. The format is type-specific.
+    /// A host application may associate further custom data with a type. If
+    /// so, this will point to the start of that data; it's null otherwise.
+    void *hostapp_value;
+
+    /// If hostapp_expr is set, the type information for the value.
+    const hlt_type_info* hostapp_type;
+
+    // Type-parameters start here. The format is type-specific. They are
+    // followed by further custom data that a host application may add;
+    // "host_data" points to the start of that.
     char type_params[];
 };
 

@@ -34,6 +34,7 @@ static const AttributeDef Attributes[] = {
     { attribute::FIRSTMATCH,    attribute::REGEXP,       attribute::NONE,       "first_match",   "<insert doc>" },
     { attribute::GROUP,         attribute::FUNCTION,     attribute::INTEGER,    "group",         "<insert doc>" },
     { attribute::HOIST,         attribute::VARIABLE,     attribute::NONE,       "hoist",         "<insert doc>" },
+    { attribute::HOSTAPP_TYPE,  attribute::TYPE_,        attribute::EXPRESSION, "hostapp_type",  "<insert doc>" },
     { attribute::LIBHILTI,      attribute::TYPE_,        attribute::STRING,     "libhilti",      "<insert doc>" },
     { attribute::LIBHILTI_DTOR, attribute::TYPE_,        attribute::STRING,     "libhilti_dtor", "<insert doc>" },
     { attribute::MAYYIELD,      attribute::FUNCTION,     attribute::NONE,       "mayyield",      "<insert doc>" },
@@ -183,7 +184,7 @@ shared_ptr<Expression> AttributeSet::getAsExpression(attribute::Tag tag, shared_
     auto a = _attributes[tag];
 
     if ( ! a._value )
-        return nullptr;
+        return default_;
 
     return ast::checkedCast<Expression>(a._value);
 }

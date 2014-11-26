@@ -19,12 +19,11 @@ void CodeBuilder::visit(constant::Tuple* t)
         // Wrap it into an exception handler that return an unset optional if
         // an BinPACHilti::AttributeNotSet is thrown.
 
-        ::hilti::builder::type_list tl = { cg()->hiltiType(e->type()) };
-        auto tmp = cg()->builder()->addTmp("opt", ::hilti::builder::union_::type(tl));
+        auto tmp = cg()->builder()->addTmp("opt", cg()->hiltiTypeOptional(e->type()));
 
         cg()->builder()->beginTryCatch();
 
-        auto he = ::hilti::builder::union_::create(cg()->hiltiExpression(e));
+        auto he = cg()->hiltiConstantOptional(e);
         cg()->builder()->addInstruction(tmp, ::hilti::instruction::operator_::Assign, he);
 
         cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::AttributeNotSet")),

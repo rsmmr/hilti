@@ -47,7 +47,7 @@ void CodeBuilder::visit(expression::operator_::set::Delete* i)
 void CodeBuilder::visit(expression::operator_::set::Size* i)
 {
     auto op1 = cg()->hiltiExpression(i->op1());
-    auto result = cg()->builder()->addTmp("size", hilti::builder::integer::type(64));
+    auto result = cg()->builder()->addTmp("size", cg()->hiltiType(i->type()));
     cg()->builder()->addInstruction(result, hilti::instruction::set::Size, op1);
     setResult(result);
 }

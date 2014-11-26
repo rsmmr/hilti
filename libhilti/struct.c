@@ -224,5 +224,65 @@ int8_t hlt_struct_equal(const hlt_type_info* type1, const void* obj1, const hlt_
     return 1;
 }
 
+int hlt_struct_size(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( type->type != HLT_TYPE_STRUCT ) {
+        hlt_set_exception(excpt, &hlt_exception_type_error, 0, ctx);
+        return 0;
+    }
+
+    return type->num_params;
+}
+
+int8_t hlt_struct_is_set(const hlt_type_info* type, void* obj, int index, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( type->type != HLT_TYPE_STRUCT ) {
+        hlt_set_exception(excpt, &hlt_exception_type_error, 0, ctx);
+        return 0;
+    }
+
+    uint32_t mask = *((uint32_t*)(obj + sizeof(__hlt_gchdr)));
+    uint32_t is_set = (mask & (1 << index));
+    return is_set;
+}
+
+void* hlt_struct_get(const hlt_type_info* type, void* obj, int index, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( type->type != HLT_TYPE_STRUCT ) {
+        hlt_set_exception(excpt, &hlt_exception_type_error, 0, ctx);
+        return 0;
+    }
+
+    if ( index < 0 || index >= type->num_params ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
+        return 0;
+    }
+
+    struct field* array = (struct field *)type->aux;
+    return obj + array[index].offset;
+}
+
+hlt_struct_field hlt_struct_get_type(const hlt_type_info* type, int index, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_struct_field f = { 0, 0 };
+
+    if ( type->type != HLT_TYPE_STRUCT ) {
+        hlt_set_exception(excpt, &hlt_exception_type_error, 0, ctx);
+        return f;
+    }
+
+    if ( index < 0 || index >= type->num_params ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
+        return f;
+    }
+
+    hlt_type_info** types = (hlt_type_info**) &type->type_params;
+    struct field* array = (struct field *)type->aux;
+
+    f.type = types[index];
+    f.name = array[index].field;
+
+    return f;
+}
 
 

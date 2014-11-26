@@ -204,7 +204,7 @@ extern hlt_iterator_map hlt_map_end(hlt_exception** excpt, hlt_execution_context
 /// Returns: An iterator advanced by one element.
 extern hlt_iterator_map hlt_iterator_map_incr(hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx);
 
-/// Dereferences a map iterator.
+/// Dereferences a map iterator, returning the both the key and the value.
 ///
 /// m: The map.
 ///
@@ -223,6 +223,40 @@ extern hlt_iterator_map hlt_iterator_map_incr(hlt_iterator_map i, hlt_exception*
 /// for restarting its expiration timer.
 extern void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Dereferences a map iterator, returning the key.
+///
+/// m: The map.
+///
+/// i: The iterator.
+///
+/// excpt: &
+///
+/// Returns: The key at the position the iterator points to.
+///
+/// Raises: InvalidIterator if the iterator does not refer to a deferencable
+/// position.
+///
+/// Note: Dereferencing an iterator does not count as an access to the entry
+/// for restarting its expiration timer.
+extern void* hlt_iterator_map_deref_key(hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Dereferences a map iterator, returning the value.
+///
+/// m: The map.
+///
+/// i: The iterator.
+///
+/// excpt: &
+///
+/// Returns: The value at the position the iterator points to.
+///
+/// Raises: InvalidIterator if the iterator does not refer to a deferencable
+/// position.
+///
+/// Note: Dereferencing an iterator does not count as an access to the entry
+/// for restarting its expiration timer.
+extern void* hlt_iterator_map_deref_value(hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Compares two map iterators whether they are refering to the same element.
 ///
 /// i1: The first iterator.
@@ -233,6 +267,20 @@ extern void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map
 ///
 /// Returns: True if both iterators are equal.
 extern int8_t hlt_iterator_map_eq(hlt_iterator_map i1, hlt_iterator_map i2, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Returns the key type of map.
+///
+/// m: The map.
+///
+/// excpt: &
+extern const hlt_type_info* hlt_map_key_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Returns the value type of map.
+///
+/// m: The map.
+///
+/// excpt: &
+extern const hlt_type_info* hlt_map_value_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
 
 ////////// Sets.
 
@@ -370,5 +418,12 @@ extern void* hlt_iterator_set_deref(hlt_iterator_set i, hlt_exception** excpt, h
 ///
 /// Returns: True if both iterators are equal.
 extern int8_t hlt_iterator_set_eq(hlt_iterator_set i1, hlt_iterator_set i2, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Returns the element type of set.
+///
+/// s: The set.
+///
+/// excpt: &
+extern const hlt_type_info* hlt_set_element_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

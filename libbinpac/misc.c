@@ -1,12 +1,12 @@
 
 #include "misc.h"
 
-hlt_string binpac_fmt_string(hlt_string fmt, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx) // &noref
+hlt_string binpac_fmt_string(hlt_string fmt, const hlt_type_info* type, void* tuple, hlt_exception** excpt, hlt_execution_context* ctx) // &noref
 {
     return hilti_fmt(fmt, type, tuple, excpt, ctx);
 }
 
-hlt_bytes* binpac_fmt_bytes(hlt_bytes* fmt, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx) // &noref
+hlt_bytes* binpac_fmt_bytes(hlt_bytes* fmt, const hlt_type_info* type, void* tuple, hlt_exception** excpt, hlt_execution_context* ctx) // &noref
 {
     // TODO: We hardcode the character set here for now. Pass as additional
     // parameter?

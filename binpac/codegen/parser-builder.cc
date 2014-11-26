@@ -11,6 +11,10 @@
 #include "../attribute.h"
 #include "../options.h"
 
+extern "C" {
+#include "../../libbinpac/rtti.h"
+}
+
 using namespace binpac;
 using namespace binpac::codegen;
 
@@ -1140,11 +1144,11 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         s->setID(uid);
         s->setScope(cg()->moduleBuilder()->module()->id()->name());
 
-        if ( u->id()->isScoped() && ! cg()->moduleBuilder()->declared(uid) )
+        if ( u->id()->isScoped() )
             // An externally defined unit. We define it locally again so that we
             // don't need to import the other HILTI module (because we might not
             // have it ...)
-            cg()->moduleBuilder()->addType(uid, s);
+            cg()->hiltiAddType(u->id(), s, u);
     }
 
     return s;
@@ -1153,7 +1157,8 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
 shared_ptr<hilti::Expression> ParserBuilder::_allocateParseObject(shared_ptr<Type> unit, bool store_in_self)
 {
     auto rt = cg()->hiltiType(unit);
-    auto ut = ast::checkedCast<hilti::type::Reference>(rt)->argType();
+    auto uid = cg()->hiltiTypeID(unit);
+    auto ut = hilti::builder::type::byName(uid);
 
     auto pobj = store_in_self ? state()->self : cg()->builder()->addTmp("pobj", rt);
 
@@ -1375,13 +1380,10 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
         else
             value = cg()->hiltiItemGet(state()->self, field);
 
-        if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type())) {
+        if ( cg()->options().debug > 0
+             && ! ast::isA<type::Unit>(field->type())
+             && ! ast::isA<type::Bitfield>(field->type()) ) {
             cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", field->id()->name()), value);
-
-            if ( auto bf = ast::tryCast<type::Integer>(field->type()) ){
-                if ( bf->bits().size() )
-                    _hiltiDebugBitfield(value, bf);
-            }
         }
     }
 
@@ -1499,28 +1501,6 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
     if ( cg()->options().debug > 0 )
         cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (len: %s; cur: %s; end: %s; global-end: %s eod: %s; lit-mode: %s; frozen: %s (%s); trimming %d; at object %d)",
                                      hilti::builder::string::create(tag), next, len, idx, state()->end, gidx, eod, mode, frozen2, frozen1, state()->trim, at);
-}
-
-void ParserBuilder::_hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type)
-{
-    shared_ptr<hilti::Expression> i = cg()->builder()->addTmp("bits", cg()->hiltiType(type));
-
-    cg()->builder()->debugPushIndent();
-
-    for ( auto b : type->bits() ) {
-        auto bits = cg()->hiltiExtractsBitsFromInteger(value, type,
-                                                   hilti::builder::integer::create(b->lower()),
-                                                   hilti::builder::integer::create(b->upper()));
-
-        auto j = cg()->hiltiApplyAttributesToValue(bits, b->attributes());
-
-        if ( bits == j )
-            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", b->id()->name()), bits);
-        else
-            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s (%%s)", b->id()->name()), j, bits);
-    }
-
-    cg()->builder()->debugPopIndent();
 }
 
 std::pair<bool, string> ParserBuilder::_hookName(const string& path)
@@ -3476,6 +3456,45 @@ void ParserBuilder::visit(type::Address* a)
 
     auto iters = hilti::builder::tuple::create({ state()->cur, _hiltiEod() });
     auto result = hiltiUnpack(a->sharedPtr<type::Address>(), iters, fmt);
+    setResult(result);
+}
+
+void ParserBuilder::visit(type::Bitfield* btype)
+{
+    auto field = arg1();
+
+    auto iters = hilti::builder::tuple::create({ state()->cur, _hiltiEod() });
+    auto byteorder = field->inheritedProperty("byteorder");
+    auto fmt = _hiltiIntUnpackFormat(btype->width(), false, byteorder);
+
+    auto ni = std::make_shared<type::Integer>(btype->width(), false);
+    auto value = hiltiUnpack(ni, iters, fmt);
+
+    ::hilti::builder::tuple::element_list elems;
+
+    cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", field->id()->name()), value);
+
+    cg()->builder()->debugPushIndent();
+
+    for ( auto b : btype->bits() ) {
+        auto bits = cg()->hiltiExtractsBitsFromInteger(value, std::make_shared<type::Integer>(btype->width(), false),
+                                                   btype->bitOrder(),
+                                                   hilti::builder::integer::create(b->lower()),
+                                                   hilti::builder::integer::create(b->upper()));
+
+        auto j = cg()->hiltiApplyAttributesToValue(bits, b->attributes());
+
+        elems.push_back(j);
+
+        if ( bits == j )
+            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", b->id()->name()), bits);
+        else
+            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s (%%s)", b->id()->name()), j, bits);
+    }
+
+    cg()->builder()->debugPopIndent();
+
+    auto result = ::hilti::builder::tuple::create(elems);
     setResult(result);
 }
 

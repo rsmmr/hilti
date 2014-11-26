@@ -1,2 +1,2 @@
-(1,string,<unset>,foo)
-(1,string,<unset>,Xfoo)
+(1, string, (not set), foo)
+(1, string, (not set), Xfoo)

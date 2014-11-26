@@ -166,6 +166,7 @@ protected:
     void visit(production::Loop* l) override;
 
     void visit(type::Address* a) override;
+    void visit(type::Bitfield* b) override;
     void visit(type::Bitset* b) override;
     void visit(type::Bool* b) override;
     void visit(type::Bytes* b) override;
@@ -260,9 +261,6 @@ private:
 
     // Prints the upcoming input bytes to binpac-verbose.
     void _hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur);
-
-    // Helper producing the "binpac" debugging output for a bitfield.
-    void _hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type);
 
     // Executes a hook. \a self is the self parameter to pass to the hook. \a
     // id is the full path to the hooked element, including the module. \a

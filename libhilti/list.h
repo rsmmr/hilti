@@ -21,9 +21,6 @@ typedef struct __hlt_iterator_list __hlt_list_timer_cookie;
 // Creates a new list.
 extern hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Returns the type of list elements.
-extern const hlt_type_info* hlt_list_type(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
-
 /// Actives automatic expiration of list entries.
 // extern void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx);
 
@@ -72,11 +69,20 @@ extern hlt_iterator_list hlt_iterator_list_incr(const hlt_iterator_list i, hlt_e
 // Returns the element located by an iterator.
 extern void* hlt_iterator_list_deref(const hlt_iterator_list i, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Returns the type of the element that dereferencing a list iterator yields.
+extern const hlt_type_info* hlt_iterator_deref_type(const hlt_iterator_list i, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Returns true if two iterator locate the same element.
 extern int8_t hlt_iterator_list_eq(const hlt_iterator_list i1, const hlt_iterator_list i2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Converts a list into a string.
 extern hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Returns the element type of a list.
+extern const hlt_type_info* hlt_list_element_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Returns the element type of a list.
+extern const hlt_type_info* hlt_list_element_type_from_list(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Called by an expiring timer to remove an element from the list.
 ///

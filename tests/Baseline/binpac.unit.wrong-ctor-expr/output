@@ -1,4 +1,4 @@
 
 >>> <ctor::Unit>
 wrong-ctor-expr.pac2:16-16: error, in union ctor either all fields or none must have a name [pass::binpac::Validator]
-compiling 0x4a8a9d0 failed
+compiling 0x31b4570 failed

@@ -99,6 +99,47 @@ public:
     /// Returns: The HILTI type.
     shared_ptr<hilti::Type> hiltiType(shared_ptr<Type> type, id_list* deps = nullptr);
 
+    /// Returns the HILTI type associated with a BinPAC++ integer type.
+    ///
+    /// width: The width of the interger type.
+    ///
+    /// signed_: True if creating a signed integer type, false for unsigned.
+    ///
+    /// Returns: The HILTI type.
+    shared_ptr<hilti::Type> hiltiTypeInteger(int width, bool signed_);
+
+    /// Returns the HILTI type associated with a BinPAC++ optional type.
+    ///
+    /// t: The type the optional is wrapping, or null for a wildcard type.
+    ///
+    /// Returns: The HILTI type.
+    shared_ptr<hilti::Type> hiltiTypeOptional(shared_ptr<Type> t);
+
+    /// Returns a HILTI constant expression of BinPAC++ integer type.
+    ///
+    /// value: The constant's value.
+    ///
+    /// signed_: True if creating a signed integer constant, false for
+    /// unsigned.
+    ///
+    /// Returns: The HILTI type.
+    shared_ptr<hilti::Expression> hiltiConstantInteger(int value, bool signed_);
+
+    /// Returns a HILTI constant expression of BinPAC++ optional type.
+    ///
+    /// value: The optional's value, or null for unset.
+    ///
+    /// Returns: The HILTI type.
+    shared_ptr<hilti::Expression> hiltiConstantOptional(shared_ptr<Expression> value = 0);
+
+    /// Returns the HILTI name that is associated with a BinPAC++ type. This
+    /// is curently defined only for units.
+    ///
+    /// type: The type to return the name for, which must be a unit type.
+    ///
+    /// Returns: The HILTI ID>
+    shared_ptr<hilti::ID> hiltiTypeID(shared_ptr<Type> type);
+
     /// Coerces a HILTI expression of one BinPAC type into another. The
     /// method assumes that the coercion is legel.
     ///
@@ -189,6 +230,25 @@ public:
     ///
     /// Returns: The type.
     shared_ptr<hilti::Type> hiltiTypeParseObjectRef(shared_ptr<type::Unit> unit);
+
+    /// Adds a global constant with a unit's auxiliary type information.
+    ///
+    /// unit: The unit type.
+    ///
+    /// htype:: The HILTI struct type that corresponds to the unit type.
+    ///
+    /// Returns: An expression referencing the global constant.
+    shared_ptr<hilti::Expression> hiltiAddParseObjectTypeInfo(shared_ptr<Type> unit);
+
+    /// Adds a global type to the current module. The method may augment the
+    /// type with further meta-information as necessary.
+    ///
+    /// id: The ID to associate the type with.
+    ///
+    /// htype: The HILTI type to add to the module.
+    ///
+    /// btype: The BinPAC++ type that htype corresponds to.
+    void hiltiAddType(shared_ptr<ID> id, shared_ptr<hilti::Type> htype, shared_ptr<Type> btype);
 
     /// Adds an external implementation of a unit hook.
     ///
@@ -309,7 +369,7 @@ public:
     shared_ptr<hilti::Expression> hiltiCharset(shared_ptr<Expression> expr);
 
     /// XXX
-    shared_ptr<hilti::Expression> hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<hilti::Expression> lower, shared_ptr<hilti::Expression> upper);
+    shared_ptr<hilti::Expression> hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<Expression> border, shared_ptr<hilti::Expression> lower, shared_ptr<hilti::Expression> upper);
 
     /// Extracts the value for a unit field. If a field is not set, but a
     /// default has been preset, that default will be returned.
@@ -434,6 +494,22 @@ public:
     ///
     /// Returns: A boolean HILTI expression being true if the field has a value currently.
     shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit, const string& field);
+
+    /// Computes the path to a field inside the unit structure in terms of
+    /// indices followed. In the simplest cast of a field being stored at the
+    /// top-level of a unit's underlying struct, this will return just \c {
+    /// idx }. If a field is stored nested more deeply (like inside a union),
+    /// the returned list will list the successive indices to get there.
+    /// Note, the indices correspond to what \c {struct,union}::index()
+    /// return, not the physical ones (which for a union would always be
+    /// zero).
+    ///
+    /// unit: The unit type that the field is part of.
+    ///
+    /// f: The field.
+    ///
+    /// Returns: A HILTI tuple of int<64> representing the path to \a f.
+    shared_ptr<hilti::Expression> hiltiItemComputePath(shared_ptr<hilti::Type> unit, shared_ptr<binpac::type::unit::Item> f);
 
 private:
     enum HiltiItemOp { GET, GET_DEFAULT, SET, PRESET_DEFAULT, UNSET, IS_SET };

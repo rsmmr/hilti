@@ -7,13 +7,7 @@ using namespace binpac::codegen;
 
 void CodeBuilder::visit(constant::Optional* o)
 {
-    std::shared_ptr<::hilti::Expression> c;
-
-    if ( o->value() )
-        c = hilti::builder::union_::create(cg()->hiltiExpression(o->value()));
-    else
-        c = hilti::builder::union_::create();
-
+    auto c = cg()->hiltiConstantOptional(o->value());
     setResult(c);
 }
 

@@ -59,4 +59,12 @@ extern hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, 
 /// \hlt_to_int64
 extern int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
 
+/// Returns the bit width of an integer type.
+///
+/// type: The integer type.
+///
+/// \hlt_c
+extern int64_t hlt_int_width(const hlt_type_info* type, hlt_exception** expt, hlt_execution_context* ctx);
+
+
 #endif

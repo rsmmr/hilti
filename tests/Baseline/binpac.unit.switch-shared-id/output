@@ -2,15 +2,19 @@ b1
 Hook!
 Hook2!
 b 2
+<a=1, b=2, c=34567>
 b2
 Hook!
 Hook2!
 b 23
+<a=2, b=23, c=45678>
 b3
 Hook!
 Hook2!
 b 234
+<a=3, b=234, c=56789>
 def
 Hook!
 Hook2!
 b 2345
+<a=4, b=2345, c=67890>

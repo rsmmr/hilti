@@ -1,1 +1,1 @@
-hilti: uncaught exception, UndefinedValue (from /Users/robin/work/binpacpp/hilti2/tests/.tmp/struct.get-expt/get-expt.hlt:25-25)
+hilti: uncaught exception, UndefinedValue (from /home/robin/work/hilti/tests/.tmp/hilti.struct.get-expt/get-expt.hlt:25-26)

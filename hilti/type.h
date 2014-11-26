@@ -41,9 +41,6 @@ public:
    virtual shared_ptr<hilti::Scope> typeScope() { return nullptr; }
 
    ACCEPT_VISITOR_ROOT();
-
-private:
-   node_ptr<AttributeSet> _attributes;
 };
 
 namespace type {
@@ -781,18 +778,40 @@ private:
 class Tuple : public ValueType, public trait::Parameterized, public trait::TypeList {
 public:
    typedef std::list<shared_ptr<hilti::Type>> type_list;
+   typedef std::list<shared_ptr<hilti::ID>> id_list;
 
-   /// Constructor.
+   typedef std::pair<shared_ptr<hilti::ID>, shared_ptr<hilti::Type>> element;
+   typedef std::list<element> element_list;
+
+   /// Constructor for a tuple type with anonymous elements
    ///
    /// types: The types of the tuple's elements.
    ///
    /// l: Associated location.
    Tuple(const type_list& types, const Location& l=Location::None);
 
+   /// Constructor for a tuple type with named elements
+   ///
+   /// elems: The elements of the tuple with name and type.
+   ///
+   /// l: Associated location.
+   Tuple(const element_list& elems, const Location& l=Location::None);
+
    /// Constructor for a wildcard tuple type matching any other.
    ///
    /// l: Associated location.
    Tuple(const Location& l=Location::None);
+
+   /// Returns a list of names associated with the tuple elements, which will
+   /// have exactly as many entries as the tuple has elements. If no names
+   /// have been associated with the type, the list will contains nullptrs
+   /// only.
+   id_list names() const;
+
+   /// Associated a list of names with the tuple elements.
+   ///
+   /// names: The names. There must be exactly one list element per type.
+   void setNames(const id_list& names);
 
    const trait::TypeList::type_list typeList() const override;
    parameter_list parameters() const override;
@@ -805,6 +824,7 @@ public:
 
 private:
    std::list<node_ptr<hilti::Type>> _types;
+   std::list<node_ptr<hilti::ID>> _names;
 };
 
 /// Type for types.
@@ -1721,6 +1741,10 @@ public:
    /// Returns the field of a given name, or null if no such field.
    shared_ptr<struct_::Field> lookup(const std::string& name) const;
 
+   /// Returns the 0-based index of the field of a given name, or -1 if no
+   /// such field.
+   int index(const std::string& name) const;
+
    const trait::TypeList::type_list typeList() const override;
    parameter_list parameters() const override;
 
@@ -1814,6 +1838,10 @@ public:
    /// Returns the field of a given name. If there's no such field, including
    /// if this is a union with anonymous fields, returns null.
    shared_ptr<union_::Field> lookup(shared_ptr<ID> id) const;
+
+   /// Returns the 0-based index of the field of a given name, or -1 if no
+   /// such field.
+   int index(const std::string& name) const;
 
    const trait::TypeList::type_list typeList() const override;
    parameter_list parameters() const override;

@@ -24,9 +24,13 @@ public:
    /// cfg: If true, include control/data flow information in output if available.
    Printer(std::ostream& out, bool single_line = false, bool cfg = false);
 
+   /// Don't print type attributes.
+   void setOmitTypeAttributes(bool omit) { _omit_type_attributes = omit; }
+
    bool includeFlow() const;
    void printFlow(Statement* stmt, const string& prefix = "");
    bool printTypeID(Type* t);
+   void printTypeAttributes(Type* t);
    void printAttributes(const AttributeSet& attrs);
 
 protected:
@@ -133,6 +137,7 @@ protected:
 private:
    Module* _module = nullptr;
    bool _cfg;
+   bool _omit_type_attributes = false;
 };
 
 }

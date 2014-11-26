@@ -59,7 +59,7 @@ void CodeBuilder::visit(expression::operator_::vector::Reserve* i)
 
 void CodeBuilder::visit(expression::operator_::vector::Size* i)
 {
-    auto result = builder()->addTmp("size", hilti::builder::integer::type(64));
+    auto result = builder()->addTmp("size", cg()->hiltiType(i->type()));
     auto op1 = cg()->hiltiExpression(i->op1());
     cg()->builder()->addInstruction(result, hilti::instruction::vector::Size, op1);
     setResult(result);

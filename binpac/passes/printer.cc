@@ -764,6 +764,15 @@ void Printer::visit(type::Any* a)
     p << "any";
 }
 
+void Printer::visit(type::Bitfield* b)
+{
+    if ( printTypeID(b) )
+        return;
+
+    Printer& p = *this;
+    p << "<bitfield>";
+}
+
 void Printer::visit(type::Bitset* c)
 {
     if ( printTypeID(c) )

@@ -170,3 +170,46 @@ int8_t hlt_union_equal(const hlt_type_info* type1, const void* obj1, const hlt_t
     return (t->equal)(t, &u1->data, t, &u2->data, excpt, ctx);
 }
 
+int8_t hlt_union_is_set(hlt_union* u, int64_t idx, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( idx < 0 )
+        return u->field >= 0;
+
+    return u->field == idx;
+}
+
+void* hlt_union_get(hlt_union* u, int64_t idx, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( idx < 0 || u->field == idx )
+        return (u->field >= 0) ? &u->data : 0;
+    else
+        return 0;
+}
+
+hlt_union_field hlt_union_get_type(const hlt_type_info* type, hlt_union* u, int idx, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_union_field f = { 0, 0 };
+
+    if ( type->type != HLT_TYPE_UNION ) {
+        hlt_set_exception(excpt, &hlt_exception_type_error, 0, ctx);
+        return f;
+    }
+
+    if ( idx < 0 ) {
+        if ( ! u ) {
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
+            return f;
+        }
+
+        if ( u->field < 0 )
+            return f;
+
+        idx = u->field;
+    }
+
+    struct __field* fields = (struct __field *)type->aux;
+
+    f.type = fields[idx].type;
+    f.name = fields[idx].name;
+    return f;
+}

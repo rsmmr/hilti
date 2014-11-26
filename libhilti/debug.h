@@ -13,7 +13,7 @@
 # define DBG_LOG(...)
 #endif
 
-extern void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, char* tuple, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Initializes libhilti's debugging subsystem if compiled in. If not, this
 /// is just a no-op. The function is called from hlt_init().

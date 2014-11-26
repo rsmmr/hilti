@@ -226,17 +226,36 @@ void TypeConverter::visit(::hilti::type::Interval* t)
 
 void TypeConverter::visit(::hilti::type::Tuple* t)
 	{
-	auto btype = ast::checkedCast<binpac::type::Tuple>(arg1());
-
 	auto tdecls = new ::type_decl_list;
 
-	auto i = 0;
-
-	for ( auto m : ::util::zip2(t->typeList(), btype->typeList()) )
+	if ( auto bmtype = ast::tryCast<binpac::type::Bitfield>(arg1()) )
 		{
-		auto name = ::util::fmt("f%d", i++);
-		auto td = new ::TypeDecl(Convert(m.first, m.second), copy_string(name.c_str()), 0, true);
-		tdecls->append(td);
+		// A bitmap.
+		for ( auto m : ::util::zip2(t->typeList(), bmtype->bits()) )
+			{
+			auto name = m.second->id()->name();
+			auto td = new ::TypeDecl(Convert(m.first, m.second->fieldType()), copy_string(name.c_str()), 0, true);
+			tdecls->append(td);
+			}
+		}
+
+	else
+		{
+		// An actual tuple
+		auto btype = ast::checkedCast<binpac::type::Tuple>(arg1());
+		auto names = t->names();
+
+		auto i = 0;
+		auto n = names.begin();
+
+		for ( auto m : ::util::zip2(t->typeList(), btype->typeList()) )
+			{
+			auto name = *n ? (*n)->name() : ::util::fmt("f%d", i);
+			auto td = new ::TypeDecl(Convert(m.first, m.second), copy_string(name.c_str()), 0, true);
+			tdecls->append(td);
+			++n;
+			++i;
+			}
 		}
 
 	auto result = new ::RecordType(tdecls);
@@ -439,7 +458,6 @@ void ValueConverter::visit(::hilti::type::Tuple* t)
 	{
 	auto val = arg1();
 	auto dst = arg2();
-	auto ttype = ast::checkedCast<binpac::type::Tuple>(arg3());
 
 	BroType* btype = nullptr;
 
@@ -447,10 +465,10 @@ void ValueConverter::visit(::hilti::type::Tuple* t)
 		btype = _bro_type_hints.back()->AsRecordType();
 
 	else
-		btype = type_converter->Convert(t->sharedPtr<::hilti::Type>(), ttype);
+		btype = type_converter->Convert(t->sharedPtr<::hilti::Type>(), arg3());
 
-	auto hval = mbuilder->RuntimeHiltiToVal(val, btype);
-	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, hval);
+	auto result = mbuilder->ConversionBuilder()->ConvertHiltiToBro(val, btype);
+	Builder()->addInstruction(dst, ::hilti::instruction::operator_::Assign, result);
 
 	setResult(true);
 	}

@@ -46,7 +46,7 @@ void CodeBuilder::visit(ctor::Unit* m)
     }
 
     // Ensure we emit the unit type itself.
-    cg()->moduleBuilder()->addType(cg()->hiltiID(unit->id()), hunit, false, unit->location());
+    cg()->hiltiAddType(unit->id(), hunit, unit);
 
     setResult(result);
 }
@@ -166,7 +166,7 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::Offset* i)
     auto input = cg()->hiltiItemGet(self, "__input", hilti::builder::iterator::typeBytes());
     auto cur = cg()->hiltiItemGet(self, "__cur", hilti::builder::iterator::typeBytes());
 
-    auto result = cg()->moduleBuilder()->addTmp("offset", hilti::builder::integer::type(64));
+    auto result = cg()->moduleBuilder()->addTmp("offset", cg()->hiltiType(i->type()));
     cg()->builder()->addInstruction(result, hilti::instruction::bytes::Diff, input, cur);
     setResult(result);
 }

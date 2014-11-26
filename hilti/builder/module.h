@@ -1,4 +1,3 @@
-
 #ifndef HILTI_BUILDER_MODULE_H
 #define HILTI_BUILDER_MODULE_H
 
@@ -683,8 +682,8 @@ public:
    ///
    /// l: An associated location.
    ///
-   /// Returns: An expression referencing the type.
-   shared_ptr<hilti::expression::Type> addType(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool force_unique = false, const Location& l = Location::None);
+   /// Returns: The added type.
+   shared_ptr<hilti::Type> addType(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool force_unique = false, const Location& l = Location::None);
 
    /// Adds a type declaration to the module.
    ///
@@ -699,8 +698,8 @@ public:
    ///
    /// l: An associated location.
    ///
-   /// Returns: An expression referencing the type.
-   shared_ptr<hilti::expression::Type> addType(const std::string& id, shared_ptr<Type> type, bool force_unique = false, const Location& l = Location::None);
+   /// Returns: The added type.
+   shared_ptr<hilti::Type> addType(const std::string& id, shared_ptr<Type> type, bool force_unique = false, const Location& l = Location::None);
 
    /// Returns true if a type of a given name already exists in the current
    /// function.
@@ -709,6 +708,20 @@ public:
    /// Returns true if a type of a given name already exists in the current
    /// function.
    bool hasType(shared_ptr<hilti::ID> id);
+
+   /// XXX
+   shared_ptr<Type> lookupType(shared_ptr<hilti::ID> id);
+   shared_ptr<Type> lookupType(const std::string& id);
+
+   /// Resolves a yet unknown type. If the type passed in is yet unknown, the
+   /// function looks it up and returns the one it finds. If it doesn't find
+   /// any, that's an error and it aborts. If the type passed in is already
+   /// resolved, returns it directly.
+   ///
+   /// t: The type to resolve.
+   ///
+   /// Returns: The resolved type.
+   shared_ptr<Type> resolveType(shared_ptr<Type> type);
 
    /// Adds a context declaration to the module. Note that only a module must
    /// have at most one contecct declaration.

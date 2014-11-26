@@ -42,7 +42,7 @@ void CodeBuilder::visit(expression::operator_::bytes::PlusAssign* i)
 void CodeBuilder::visit(expression::operator_::bytes::Size* i)
 {
     auto op1 = cg()->hiltiExpression(i->op1());
-    auto size = cg()->builder()->addTmp("item", hilti::builder::integer::type(64));
+    auto size = cg()->builder()->addTmp("item", cg()->hiltiType(i->type()));
     cg()->builder()->addInstruction(size, hilti::instruction::bytes::Length, op1);
     setResult(size);
 }
@@ -174,7 +174,7 @@ void CodeBuilder::visit(expression::operator_::bytes::ToInt* i)
     auto base = callParameter(i->op3(), 0);
     auto hbase = base ? cg()->hiltiExpression(base) : hilti::builder::integer::create(10);
 
-    auto result = cg()->builder()->addTmp("i", hilti::builder::integer::type(64));
+    auto result = cg()->builder()->addTmp("i", cg()->hiltiType(i->type()));
     cg()->builder()->addInstruction(result, hilti::instruction::bytes::ToIntFromAscii, op1, hbase);
     setResult(result);
 }
@@ -185,7 +185,7 @@ void CodeBuilder::visit(expression::operator_::bytes::ToUInt* i)
     auto base = callParameter(i->op3(), 0);
     auto hbase = base ? cg()->hiltiExpression(base) : hilti::builder::integer::create(10);
 
-    auto result = cg()->builder()->addTmp("u", hilti::builder::integer::type(64));
+    auto result = cg()->builder()->addTmp("u", cg()->hiltiType(i->type()));
     cg()->builder()->addInstruction(result, hilti::instruction::bytes::ToIntFromAscii, op1, hbase);
     setResult(result);
 }
@@ -196,7 +196,7 @@ void CodeBuilder::visit(expression::operator_::bytes::ToIntBinary* i)
     auto op1 = cg()->hiltiExpression(i->op1());
     auto order = cg()->hiltiByteOrder(callParameter(i->op3(), 0));
 
-    auto result = cg()->builder()->addTmp("i", hilti::builder::integer::type(64));
+    auto result = cg()->builder()->addTmp("i", cg()->hiltiType(i->type()));
     cg()->builder()->addInstruction(result, hilti::instruction::bytes::ToIntFromBinary, op1, order);
 
     setResult(result);
@@ -207,7 +207,7 @@ void CodeBuilder::visit(expression::operator_::bytes::ToUIntBinary* i)
     auto op1 = cg()->hiltiExpression(i->op1());
     auto order = cg()->hiltiByteOrder(callParameter(i->op3(), 0));
 
-    auto result = cg()->builder()->addTmp("i", hilti::builder::integer::type(64));
+    auto result = cg()->builder()->addTmp("i", cg()->hiltiType(i->type()));
     cg()->builder()->addInstruction(result, hilti::instruction::bytes::ToIntFromBinary, op1, order);
 
     setResult(result);

@@ -147,7 +147,7 @@ using namespace hilti;
 %type <context_fields>   context_fields opt_context_fields
 %type <enum_label>       enum_label
 %type <enum_labels>      enum_labels
-%type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor opt_expr ctor_regexp
+%type <expr>             expr expr_lhs opt_default_expr tuple_elem constant union_constant ctor opt_expr ctor_regexp
 %type <exprs>            exprs opt_exprs
 %type <exprs2>           opt_tuple_elem_list tuple_elem_list tuple
 %type <attribute>        attribute attribute_
@@ -170,8 +170,10 @@ using namespace hilti;
 %type <union_fields>     union_fields opt_union_fields
 %type <union_constant_field> union_constant_field
 %type <sval>             re_pattern_constant
-%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ union_ overlay context scope function_type
+%type <type>             base_type base_type_no_attrs type enum_ bitset exception opt_exception_base struct_ union_ overlay context scope function_type tuple_type
 %type <types>            type_list
+%type <tuple_type_elem>  tuple_type_elem
+%type <tuple_type_elems> tuple_type_elems
 
 %%
 
@@ -235,7 +237,11 @@ local         : LOCAL type local_id opt_attributes eol
                                                    { driver.moduleBuilder()->addLocal($3, $2, $5, $6, false, loc(@$)); }
               ;
 
-type_decl     : TYPE scoped_id '=' type eol       { driver.moduleBuilder()->addType($2, $4, false, loc(@$)); }
+type_decl     : TYPE scoped_id '=' type opt_attributes eol
+                                                 {
+                                                 $4->addAttributes($5);
+                                                 driver.moduleBuilder()->addType($2, $4, false, loc(@$));
+                                                 }
 
 context_decl  : CONTEXT context eol              { driver.moduleBuilder()->addContext($2, loc(@$)); }
 
@@ -276,7 +282,8 @@ operands      : /* empty */                      { $$ = make_ops(nullptr, nullpt
               | expr expr expr                   { $$ = make_ops(nullptr, $1, $2, $3); }
               ;
 
-base_type     : ANY                              { $$ = builder::any::type(loc(@$)); }
+base_type_no_attrs
+              : ANY                              { $$ = builder::any::type(loc(@$)); }
               | ADDR                             { $$ = builder::address::type(loc(@$)); }
               | BOOL                             { $$ = builder::boolean::type(loc(@$)); }
               | BYTES                            { $$ = builder::bytes::type(loc(@$)); }
@@ -309,8 +316,6 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | REGEXP                           { $$ = builder::regexp::type(loc(@$)); }
               | SET  '<' type '>'                { $$ = builder::set::type($3, loc(@$)); }
               | SET '<' '*' '>'                  { $$ = builder::set::typeAny(loc(@$)); }
-              | TUPLE '<' '*' '>'                { $$ = builder::tuple::typeAny(loc(@$)); }
-              | TUPLE '<' type_list '>'          { $$ = builder::tuple::type($3, loc(@$)); }
               | VECTOR '<' type '>'              { $$ = builder::vector::type($3, loc(@$)); }
               | VECTOR '<' '*' '>'               { $$ = builder::vector::typeAny(loc(@$)); }
               | CALLABLE '<' type '>'            { $$ = builder::callable::type($3, builder::type_list(), loc(@$)); }
@@ -321,6 +326,7 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | CLASSIFIER '<' '*' '>'           { $$ = builder::classifier::typeAny(loc(@$)); }
               | TYPE                             { $$ = builder::type::typeAny(loc(@$)); }
 
+              | tuple_type                       { $$ = $1; }
               | bitset                           { $$ = $1; }
               | enum_                            { $$ = $1; }
               | exception                        { $$ = $1; }
@@ -331,6 +337,9 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | overlay                          { $$ = $1; }
               | function_type                    { $$ = $1; }
               ;
+
+base_type     : base_type_no_attrs opt_attributes
+                                                 { $$ = $1; $$->addAttributes($2); }
 
 type          : base_type                        { $$ = $1; }
               | scoped_id                        { $$ = builder::type::byName($1, loc(@$)); }
@@ -359,6 +368,22 @@ bitset_label  : local_id                         { $$ = std::make_pair($1, -1); 
               | local_id '=' CINTEGER            { $$ = std::make_pair($1, $3); }
               ;
 
+tuple_type    : TUPLE '<' '*' '>'                { $$ = builder::tuple::typeAny(loc(@$)); }
+              | TUPLE '<' tuple_type_elems '>'   { $$ = builder::tuple::type($3, loc(@$)); }
+              ;
+
+tuple_type_elems
+              : tuple_type_elem ',' tuple_type_elems
+                                                 { $$ = $3; $$.push_front($1); }
+              | tuple_type_elem                  { $$ = builder::tuple::type_element_list(); $$.push_back($1); }
+              ;
+
+tuple_type_elem
+              : type                             { $$ = builder::tuple::type_element(nullptr, $1); }
+              | local_id ':' type                { $$ = builder::tuple::type_element($1, $3); }
+              ;
+
+
 scope         : SCOPE                            { driver.disableLineMode(); }
                  '{' opt_scope_fields '}'        { driver.enableLineMode(); $$ = builder::scope::type($4, loc(@$)); }
               ;
@@ -374,17 +399,17 @@ scope_field   : local_id                         { $$ = $1; }
 
 exception     : EXCEPTION '<' type '>' opt_exception_base opt_attributes {
                                                  $$ = builder::exception::type($5, $3, loc(@$));
-                                                 $$->setAttributes($6);
+                                                 $$->addAttributes($6);
                                                  }
               | EXCEPTION opt_exception_base opt_attributes {
                                                  $$ = builder::exception::type($2, nullptr, loc(@$));
-                                                 $$->setAttributes($3);
+                                                 $$->addAttributes($3);
               }
 
 struct_       : STRUCT opt_attributes            { driver.disableLineMode(); }
                   '{' opt_struct_fields '}'      { driver.enableLineMode();
                                                    $$ = builder::struct_::type($5, loc(@$));
-                                                   $$->setAttributes($2);
+                                                   $$->addAttributes($2);
                                                  }
 
 
@@ -394,13 +419,12 @@ opt_struct_fields : struct_fields                { $$ = $1; }
 struct_fields : struct_fields ',' struct_field   { $$ = $1; $$.push_back($3); }
               | struct_field                     { $$ = builder::struct_::field_list(); $$.push_back($1); }
 
-struct_field  : type local_id opt_attributes     { $$ = builder::struct_::field($2, $1, nullptr, $3, false, loc(@$));
-                                                 }
+struct_field  : type local_id opt_attributes     { $$ = builder::struct_::field($2, $1, nullptr, $3, false, loc(@$)); }
 
 union_        : UNION opt_attributes             { driver.disableLineMode(); }
                     '{' opt_union_fields '}'     { driver.enableLineMode();
                                                    $$ = builder::union_::type($5, loc(@$));
-                                                   $$->setAttributes($2);
+                                                   $$->addAttributes($2);
                                                  }
               | UNION '<' type_list '>'          { $$ = builder::union_::type($3, loc(@$)); }
 
@@ -494,7 +518,9 @@ constant      : CINTEGER                         { $$ = builder::integer::create
               | TIME '(' CDOUBLE ')'             { $$ = builder::time::create($3, loc(@$)); }
               | TIME '(' CINTEGER ')'            { $$ = builder::time::create((uint64_t)$3, loc(@$)); }
               | tuple                            { $$ = builder::tuple::create($1, loc(@$));  }
-              | UNION '<' type '>' '(' union_constant_field ')'
+| union_constant opt_attributes    { $$ = $1; ast::checkedCast<expression::Constant>($1)->constant()->setAttributes($2); }
+
+union_constant: UNION '<' type '>' '(' union_constant_field ')'
                                                  { $$ = builder::union_::create($3, $6.first, $6.second, loc(@$)); }
               | UNION '(' union_constant_field ')'
                                                  { $$ = builder::union_::create(nullptr, $3.first, $3.second, loc(@$)); }

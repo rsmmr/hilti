@@ -1,2 +1,2 @@
 A
-hilti: uncaught exception, myException2 with argument 'hallo' (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/exceptions.throw-3/throw.hlt:14-15)
+hilti: uncaught exception, myException2 with argument 'hallo' (from /home/robin/work/hilti/tests/.tmp/hilti.exceptions.throw-3/throw.hlt:14-15)

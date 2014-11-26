@@ -133,6 +133,31 @@ hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt
     return dst;
 }
 
+hlt_string hlt_string_concat_asciiz(hlt_string s1, const char* s2, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_string_size len1 = s1 ? s1->len : 0;
+    hlt_string_size len2 = strlen(s2);
+
+    if ( ! len1 )
+        return hlt_string_from_asciiz(s2, excpt, ctx);
+
+    if ( ! len2 )
+        return s1;
+
+    hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + len1 + len2, ctx);
+
+    if ( ! dst ) {
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0, ctx);
+        return 0;
+    }
+
+    dst->len = len1 + len2;
+    memcpy(dst->bytes, s1->bytes, len1);
+    memcpy(dst->bytes + len1, s2, len2);
+
+    return dst;
+}
+
 hlt_string hlt_string_substr(hlt_string s, hlt_string_size pos, hlt_string_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     int32_t dummy;
@@ -291,6 +316,14 @@ hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt, hlt
     dst->len = len;
     memcpy(&dst->bytes, asciiz, len);
     return dst;
+}
+
+int64_t hlt_string_to_asciiz(int8_t* dst, size_t dst_len, hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    int64_t len = (s->len < (dst_len - 1)) ? s->len : (dst_len - 1);
+    memcpy(dst, &s->bytes, len);
+    dst[len] = '\0';
+    return len;
 }
 
 hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -636,7 +669,7 @@ char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_co
 
 hlt_string hlt_string_join(hlt_string sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    const hlt_type_info* ti = hlt_list_type(l, excpt, ctx);
+    const hlt_type_info* ti = hlt_list_element_type_from_list(l, excpt, ctx);
     hlt_iterator_list i = hlt_list_begin(l, excpt, ctx);
     hlt_iterator_list end = hlt_list_end(l, excpt, ctx);
 

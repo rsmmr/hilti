@@ -20,6 +20,7 @@ enum Tag {
     FIRSTMATCH,
     GROUP,
     HOIST,
+    HOSTAPP_TYPE,
     LIBHILTI,
     LIBHILTI_DTOR,
     MAYYIELD,

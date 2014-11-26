@@ -12,8 +12,6 @@ using namespace hilti;
 
 Type::Type(const Location& l) : ast::Type<AstInfo>(l), NodeWithAttributes(this)
 {
-    _attributes = std::make_shared<AttributeSet>();
-    addChild(_attributes);
 }
 
 string Type::render()
@@ -231,6 +229,53 @@ type::Tuple::Tuple(const type_list& types, const Location& l) : ValueType(l)
 
     for ( auto t : _types )
         addChild(t);
+}
+
+type::Tuple::Tuple(const element_list& elems, const Location& l)
+{
+    for ( auto e : elems ) {
+        _names.push_back(e.first);
+        _types.push_back(e.second);
+    }
+
+    for ( auto n : _names )
+        addChild(n);
+
+    for ( auto t : _types )
+        addChild(t);
+}
+
+type::Tuple::id_list type::Tuple::names() const
+{
+    id_list names;
+
+    if ( _names.empty() ) {
+        for ( auto t : _types )
+            names.push_back(nullptr);
+    }
+
+    else {
+        for ( auto i : _names )
+            names.push_back(i);
+    }
+
+    return names;
+}
+
+void type::Tuple::setNames(const id_list& names)
+{
+    assert(names.size() == _types.size());
+
+    for ( auto i : _names )
+        removeChild(i);
+
+    _names.clear();
+
+    for ( auto i : names )
+        _names.push_back(i);
+
+    for ( auto i : _names )
+        addChild(i);
 }
 
 type::trait::Parameterized::parameter_list type::Tuple::parameters() const
@@ -587,6 +632,20 @@ shared_ptr<type::struct_::Field> type::Struct::lookup(const std::string& name) c
     return nullptr;
 }
 
+int type::Struct::index(const std::string& name) const
+{
+    int idx = 0;
+
+    for ( auto f : _fields ) {
+        if ( f->id()->name() == name )
+            return idx;
+
+        ++idx;
+    }
+
+    return -1;
+}
+
 type::Struct::field_list type::Struct::sortedFields()
 {
     field_list sorted = _fields;
@@ -671,6 +730,20 @@ shared_ptr<type::union_::Field> type::Union::lookup(const string& name) const
     }
 
     return nullptr;
+}
+
+int type::Union::index(const std::string& name) const
+{
+    int idx = 0;
+
+    for ( auto f : _fields ) {
+        if ( f->id()->name() == name )
+            return idx;
+
+        ++idx;
+    }
+
+    return -1;
 }
 
 type::Union::field_list type::Union::fields(shared_ptr<Type> type) const

@@ -66,6 +66,8 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
     return std::make_shared<type::unit::item::field::container::Vector>(name, elem, length, nullptr, hooks, attribute_list(), expression_list(), l);
 }
 
+static int _int_width = 0;
+
 %}
 
 %token <sval>  SCOPED_IDENT   "scoped identifier"
@@ -477,20 +479,19 @@ id_with_int   : local_id                         { $$ = std::make_pair($1, -1); 
               | local_id '=' CINTEGER            { $$ = std::make_pair($1, $3); }
               ;
 
-bitfield      : BITFIELD '(' CINTEGER ')' '{' bitfield_bits '}'
-                                                 { auto itype = std::make_shared<type::Integer>($3, false, loc(@$));
-                                                   itype->setBits($6);
-                                                   $$ = itype;
-                                                 }
+bitfield      : BITFIELD '(' CINTEGER ')'
+                                                 { _int_width = $3; }
+                '{' bitfield_bits '}'
+                                                 { $$ = std::make_shared<type::Bitfield>($3, $7, loc(@$)); }
 
 bitfield_bits:  bitfield_bits_spec bitfield_bits { $$ = $2; $$.push_front($1); }
-              | /* empty */                      { $$ = type::Integer::bits_list(); }
+              | /* empty */                      { $$ = type::Bitfield::bits_list(); }
 
 bitfield_bits_spec
               : local_id ':' CINTEGER DOTDOT CINTEGER opt_type_attrs ';'
-                                                 { $$ = std::make_shared<type::integer::Bits>($1, $3, $5, $6, loc(@$)); }
+                                                 { $$ = std::make_shared<type::bitfield::Bits>($1, $3, $5, _int_width, $6, loc(@$)); }
               | local_id ':' CINTEGER opt_type_attrs ';'
-                                                 { $$ = std::make_shared<type::integer::Bits>($1, $3, $3, $4, loc(@$)); }
+                                                 { $$ = std::make_shared<type::bitfield::Bits>($1, $3, $3, _int_width, $4, loc(@$)); }
 
 opt_unit_params
               : '(' opt_params ')'               { $$ = $2; }

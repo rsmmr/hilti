@@ -407,3 +407,9 @@ hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int3
 
     return s;
 }
+
+const hlt_type_info* hlt_vector_element_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return ((hlt_type_info**) &type->type_params)[0];
+}
+

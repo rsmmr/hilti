@@ -3,10 +3,10 @@
 #empty_field	(empty)
 #unset_field	-
 #path	test.failure
-#open	2013-12-20-19-26-44
+#open	2014-11-24-16-08-24
 #fields	id.orig_h	id.orig_p	id.resp_h	id.resp_p	status	country
 #types	addr	port	addr	port	string	string
 1.2.3.4	1234	2.3.4.5	80	failure	US
 1.2.3.4	1234	2.3.4.5	80	failure	UK
 1.2.3.4	1234	2.3.4.5	80	failure	MX
-#close	2013-12-20-19-26-44
+#close	2014-11-24-16-08-24

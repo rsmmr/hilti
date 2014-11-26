@@ -240,25 +240,6 @@ opBegin(integer::Power)
     }
 opEnd
 
-opBegin(integer::Attribute)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::MemberAttribute>())
-
-    opDoc("Access a bitfield element.")
-
-    opValidate() {
-        auto itype = ast::checkedCast<type::Integer>(op1()->type());
-        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
-
-        if ( ! itype->bits(attr->id()) )
-            error(op2(), "unknown bitfield element");
-    }
-
-    opResult() {
-        return op1()->type();
-    }
-opEnd
-
 opBegin(integer::BitAnd)
     opOp1(std::make_shared<type::Integer>())
     opOp2(std::make_shared<type::Integer>())

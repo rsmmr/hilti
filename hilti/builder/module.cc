@@ -660,7 +660,7 @@ shared_ptr<hilti::Expression> ModuleBuilder::addConstant(const std::string& id, 
     return addConstant(std::make_shared<ID>(id, l), type, init, force_unique, l);
 }
 
-shared_ptr<hilti::expression::Type> ModuleBuilder::addType(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool force_unique, const Location& l)
+shared_ptr<hilti::Type> ModuleBuilder::addType(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool force_unique, const Location& l)
 {
     if ( id->isScoped() )
         id = std::make_shared<ID>(id->pathAsString(_module->id()), id->location());
@@ -677,10 +677,10 @@ shared_ptr<hilti::expression::Type> ModuleBuilder::addType(shared_ptr<hilti::ID>
 
     type->setID(id);
     type->setScope(_module->id()->name());
-    return std::make_shared<hilti::expression::Type>(decl->type(), l);
+    return std::make_shared<hilti::type::Unknown>(id, l);
 }
 
-shared_ptr<hilti::expression::Type> ModuleBuilder::addType(const std::string& id, shared_ptr<Type> type, bool force_unique, const Location& l)
+shared_ptr<hilti::Type> ModuleBuilder::addType(const std::string& id, shared_ptr<Type> type, bool force_unique, const Location& l)
 {
     return addType(std::make_shared<ID>(id, l), type, force_unique, l);
 }
@@ -697,10 +697,35 @@ bool ModuleBuilder::hasType(shared_ptr<hilti::ID> id)
     return d != _globals.end();
 }
 
+shared_ptr<Type> ModuleBuilder::lookupType(shared_ptr<hilti::ID> id)
+{
+    id = _normalizeID(id);
+    auto d = _globals.find(id->pathAsString(_module->id()));
+    return d != _globals.end() ? (*d).second.type : nullptr;
+}
+
+shared_ptr<Type> ModuleBuilder::lookupType(const std::string& id)
+{
+    return lookupType(std::make_shared<ID>(id));
+}
+
+shared_ptr<Type> ModuleBuilder::resolveType(shared_ptr<Type> type)
+{
+    if ( auto u = ast::tryCast<::hilti::type::Unknown>(type) ) {
+        type = lookupType(u->id());
+
+        if ( ! type )
+            fatalError(::util::fmt("module builder cannot resolve type %s", u->id()->name()), type);
+    }
+
+    return type;
+}
+
 shared_ptr<hilti::expression::Type> ModuleBuilder::addContext(shared_ptr<Type> type, const Location& l)
 {
     auto id = std::make_shared<hilti::ID>("Context", l);
-    return addType(id, type, false, l);
+    auto t = addType(id, type, false, l);
+    return std::make_shared<hilti::expression::Type>(t, l);
 }
 
 shared_ptr<hilti::expression::Variable> ModuleBuilder::addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, const AttributeSet& attrs, bool force_unique, const Location& l)

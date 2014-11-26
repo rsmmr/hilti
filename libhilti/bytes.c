@@ -2152,7 +2152,7 @@ hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* pat, hlt_exce
 
 static void _hlt_bytes_join_into(hlt_bytes* dst, hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    const hlt_type_info* ti = hlt_list_type(l, excpt, ctx);
+    const hlt_type_info* ti = hlt_list_element_type_from_list(l, excpt, ctx);
     hlt_iterator_list i = hlt_list_begin(l, excpt, ctx);
     hlt_iterator_list end = hlt_list_end(l, excpt, ctx);
 
