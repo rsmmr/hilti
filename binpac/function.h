@@ -56,10 +56,14 @@ public:
     /// run-time, debug mode is enabled (via the C function
     /// ~~binpac_enable_debug).
     ///
+    /// args: Arguments, if the hook takes any, or an empty list otherwise.
+    ///
     /// l: Location associated with the node.
     Hook(shared_ptr<binpac::Statement> body = nullptr,
          int prio = 0, bool debug = false,
-         bool foreach = false, const Location& l=Location::None);
+         bool foreach = false,
+         parameter_list args = parameter_list(),
+         const Location& l=Location::None);
 
     /// Returns the hook's body.
     shared_ptr<statement::Block> body() const;
@@ -77,6 +81,10 @@ public:
     /// Returns true if this hooks is marked with \c foreach.
     bool foreach() const;
 
+    /// Returns the hooks paramaters. The list will be empty if it doesn't
+    /// take any.
+    parameter_list parameters() const;
+
     /// Sets the unit type that this hook is part of. Should be called only
     /// form the resolver passes.
     void setUnit(shared_ptr<type::Unit> unit);
@@ -93,6 +101,7 @@ private:
     int _prio;
     bool _debug;
     bool _foreach;
+    std::list<node_ptr<type::function::Parameter>> _args;
 };
 
 }

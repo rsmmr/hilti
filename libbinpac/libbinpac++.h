@@ -7,8 +7,10 @@
 
 #include <libhilti/libhilti.h>
 
-#include "rtti.h"
 #include "libbinpac/autogen/binpac-hlt.h"
+#include "libbinpac/autogen/binpachilti-hlt.h"
+
+#include "rtti.h"
 
 /// The main entry function to a BinPAC-generated parser.
 typedef void* binpac_parse_function(hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -21,6 +23,12 @@ typedef void __binpac_resume_sink_function(hlt_exception* yield, hlt_exception**
 // Internal function to create an instance of a parser.
 struct binpac_sink;
 typedef void* __binpac_new_function(struct binpac_sink* sink, hlt_bytes* mimetype, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Internal functions to trigger specific hooks.
+typedef void __binpac_gap_hook(void* pobj, void* cookie, uint64_t seq, uint64_t len, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void __binpac_skip_hook(void* pobj, void* cookie, uint64_t seq, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void __binpac_overlap_hook(void* pobj, void* cookie, uint64_t seq, hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void __binpac_undelivered_hook(void* pobj, void* cookie, uint64_t seq, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Structure defining an BinPAC generated parser.
 ///
@@ -37,10 +45,16 @@ typedef struct __binpac_parser {
     binpac_resume_function* resume_func; /// The C function resuming parsing after a yield.
     hlt_type_info* type_info;            /// Type information for the parsed struct.
 
-    __binpac_parse_sink_function* parse_func_sink;   // The C function performing the parsing for sink.write. For internal use only. 
+    __binpac_parse_sink_function* parse_func_sink;   // The C function performing the parsing for sink.write. For internal use only.
     __binpac_resume_sink_function* resume_func_sink; // The C function resuming sink parsing after a yield. For internal use only.
     __binpac_new_function* new_func;                 // C function to create a new instance of the parser. May be None of not supported.
                                                      // Note that this function must not take any further parser parameters.
+
+    __binpac_gap_hook* hook_gap;                 // Hook to signal a gap in the input stream.
+    __binpac_skip_hook* hook_skip;               // Hook to signal explicitly skipping parts of the input stream.
+    __binpac_overlap_hook* hook_overlap;         // Hook to report an ambigious overlap in data chunks.
+    __binpac_undelivered_hook* hook_undelivered; // Hook to report an chunk that could not be put into sequence.
+
 } binpac_parser;
 
 /// Must be called exactly once at program startup to initialize the BinPAC

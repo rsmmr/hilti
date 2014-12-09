@@ -321,14 +321,20 @@ public:
     /// field: The field.
     ///
     /// data: The data to write into the sink.
-    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data);
+    ///
+    /// seq: The sequence corresponding to the first byte passed in, or null
+    /// for appending at the end of the input stream.
+    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq = nullptr);
 
     /// Writes a new chunk of data into a sink.
     ///
     /// sink: The sink to write to.
     ///
     /// data: The data to write into the sink.
-    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data);
+    ///
+    /// seq: The sequence corresponding to the first byte passed in, or null
+    /// for appending at the end of the input stream.
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq = nullptr);
 
     /// Writes a new chunk of data into a sink.
     ///
@@ -337,7 +343,10 @@ public:
     /// end: End iterator of data to write.
     ///
     /// data: The data to write into the sink.
-    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end);
+    ///
+    /// seq: The sequence corresponding to the first byte passed in, or null
+    /// for appending at the end of the input stream.
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end, shared_ptr<hilti::Expression> seq);
 
     /// Applies transformation attributes (such as \a convert) to a value, if
     /// present.

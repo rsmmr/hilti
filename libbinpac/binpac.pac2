@@ -39,6 +39,20 @@ type Filter = enum {
 };
 # %end-Filter
 
+# %begin-ReassemblyPolicy
+# The policy for handling overlapping input chunks for a sink during
+# reassembly.
+#
+# TODO: Add more policies, we only support the trivial one for now.
+type ReassemblyPolicy = enum {
+    # Use the data passed in first. This is the default policy
+    # if not specified otherwise. It's also the only one available in
+    # auto-trim mode.
+    First = 1
+};
+
+# %end-ReassemblyPolicy
+
 # %begin-base64_encode
 # Function for base64 encoding a bytes object.
 import "HILTI-C" bytes base64_encode(b: bytes);

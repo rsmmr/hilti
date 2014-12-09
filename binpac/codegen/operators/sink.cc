@@ -11,7 +11,7 @@ void CodeBuilder::visit(binpac::expression::operator_::sink::Close* i)
 
     cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
                                     hilti::builder::id::create("BinPACHilti::sink_close"),
-                                    hilti::builder::tuple::create( { sink } ));
+                                    hilti::builder::tuple::create( { sink, cg()->hiltiCookie() } ));
 
     setResult(std::make_shared<hilti::expression::Void>());
 }
@@ -78,8 +78,9 @@ void CodeBuilder::visit(binpac::expression::operator_::sink::Write* i)
 {
     auto sink = cg()->hiltiExpression(i->op1());
     auto data = cg()->hiltiExpression(callParameter(i->op3(), 0));
+    auto seq = callParameter(i->op3(), 1);
 
-    cg()->hiltiWriteToSink(sink, data);
+    cg()->hiltiWriteToSink(sink, data, seq ? cg()->hiltiExpression(seq) : nullptr);
 
     setResult(std::make_shared<hilti::expression::Void>());
 }
@@ -110,3 +111,93 @@ void CodeBuilder::visit(expression::operator_::sink::Size* i)
                                     hilti::builder::tuple::create( { sink } ));
     setResult(size);
 }
+
+void CodeBuilder::visit(expression::operator_::sink::Sequence* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto size = cg()->builder()->addTmp("seq", cg()->hiltiType(i->type()));
+
+    cg()->builder()->addInstruction(size,
+                                    hilti::instruction::flow::CallResult,
+                                    hilti::builder::id::create("BinPACHilti::sink_sequence"),
+                                    hilti::builder::tuple::create( { sink } ));
+    setResult(size);
+}
+
+void CodeBuilder::visit(expression::operator_::sink::Gap* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto seq = cg()->hiltiExpression(callParameter(i->op3(), 0));
+    auto len = cg()->hiltiExpression(callParameter(i->op3(), 1));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_gap"),
+                                    hilti::builder::tuple::create( { sink, seq, len, cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(expression::operator_::sink::Skip* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto seq = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_skip"),
+                                    hilti::builder::tuple::create( { sink, seq, cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(expression::operator_::sink::Trim* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto seq = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_trim"),
+                                    hilti::builder::tuple::create( { sink, seq, cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(expression::operator_::sink::SetInitialSequenceNumber* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto seq = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_set_initial_sequence_number"),
+                                    hilti::builder::tuple::create( { sink, seq, cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(expression::operator_::sink::SetAutoTrim* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto enabled = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_set_auto_trim"),
+                                    hilti::builder::tuple::create( { sink, enabled, cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(expression::operator_::sink::SetPolicy* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto policy = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    auto p = cg()->builder()->addTmp("p", ::hilti::builder::integer::type(64));
+
+    cg()->builder()->addInstruction(p, hilti::instruction::enum_::ToInt, policy);
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_set_policy"),
+                                    hilti::builder::tuple::create( { sink, p, cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+

@@ -3,7 +3,7 @@
 #include "sink.h"
 #include "exceptions.h"
 
-#include <autogen/binpac-hlt.h>
+#include <autogen/binpachilti-hlt.h>
 
 __HLT_RTTI_GC_TYPE(binpac_filter, HLT_TYPE_BINPAC_FILTER);
 
@@ -82,7 +82,7 @@ void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt, hlt_ex
 }
 
 // We borrow this from sink.c
-extern void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpac_dbg_deliver(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx);
 
 hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx) // &ref(!)
 {
@@ -101,7 +101,7 @@ hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_e
         if ( *excpt )
             return 0;
 
-        binpac_dbg_print_data(0, new_data, filter, excpt, ctx);
+        binpac_dbg_deliver(0, new_data, filter, excpt, ctx);
 
         data = new_data;
         head = head->next;

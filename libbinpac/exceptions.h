@@ -17,4 +17,10 @@ extern hlt_exception_type binpac_exception_filtererror;
 /// Raised when a ~~Filter not supported by the run-time system has been requested.
 extern hlt_exception_type binpac_exception_filterunsupported;
 
+/// Raised when a value is used that wasn't expected or valid.
+extern hlt_exception_type binpac_exception_valueerror;
+
+/// Raised when a feature is used that's not yet implemented.
+extern hlt_exception_type binpac_exception_notimplemented;
+
 #endif

@@ -35,6 +35,8 @@ public:
     void visit(declaration::Type* t) override;
     void visit(declaration::Constant* t) override;
     void visit(declaration::Function* t) override;
+    void visit(declaration::Hook* h) override;
+    void visit(type::unit::item::GlobalHook* g) override;
 
 private:
     CompilerContext* _context;

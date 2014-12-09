@@ -25,7 +25,8 @@ void Function::setHiltiFunctionID(shared_ptr<ID> id)
 }
 
 Hook::Hook(shared_ptr<binpac::Statement> body,
-           int prio, bool debug, bool foreach, const Location& l)
+           int prio, bool debug, bool foreach, parameter_list args,
+           const Location& l)
     : Node(l)
 {
     _body = body;
@@ -34,6 +35,12 @@ Hook::Hook(shared_ptr<binpac::Statement> body,
     _foreach = foreach;
 
     addChild(_body);
+
+    for ( auto a : args )
+        _args.push_back(a);
+
+    for ( auto a : _args )
+        addChild(a);
 }
 
 shared_ptr<statement::Block> Hook::body() const
@@ -54,6 +61,16 @@ bool Hook::debug() const
 bool Hook::foreach() const
 {
     return _foreach;
+}
+
+parameter_list Hook::parameters() const
+{
+    parameter_list args;
+
+    for ( auto a : _args )
+        args.push_back(a);
+
+    return args;
 }
 
 shared_ptr<type::Unit> Hook::unit() const
