@@ -50,6 +50,7 @@ add_dependencies(hilti-doc hilti-rt hilti-rt-dbg)
 
 add_subdirectory(pac-driver)
 add_subdirectory(pac-dump)
+add_subdirectory(wireshark)
 
 add_custom_command(
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof

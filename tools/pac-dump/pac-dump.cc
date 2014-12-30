@@ -222,7 +222,7 @@ int main(int argc, char** argv)
     auto options = std::make_shared<binpac::Options>();
 
     char ch;
-    while ((ch = getopt(argc, argv, "Ojdpf:I:")) != -1) {
+    while ((ch = getopt(argc, argv, "OjdpfI:")) != -1) {
 
         switch (ch) {
 
