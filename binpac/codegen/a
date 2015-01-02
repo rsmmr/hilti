@@ -1,0 +1,7 @@
+    // begin  - int64 with the start offset, or -1 if not available.
+    // end    - int64 with the end offset, or -1 if not available.
+
+    /// Offset in input where raw data for this item begins. -1 if not
+    /// available. If will not be available if \c value is not set, or of the
+    /// parser wasn't configured to record this information.
+    int64_t begin;

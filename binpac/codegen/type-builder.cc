@@ -106,18 +106,25 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type, b
 shared_ptr<hilti::Expression> TypeBuilder::hiltiAddParseObjectTypeInfo(shared_ptr<Type> unit)
 {
     // Build the aux hostapp data to describe the unit items for the runtime.
-    // The built expression is a list of tuples, one for each item of the
-    // form:
+    // The built expression is a tuple:
+    //
+    //   idx_begins: Index of vector with offsets where fields begin; or -1 if not available.
+    //   idx_ends:   Index of vector with offsets where fields end; or -1 if not available.
+    //   items:      Items as a list of tuples.
+    //
+    // The items list has one element for each item of the form:
     //
     // type   - HILTI type of the item's value.
     // kind   - The item type as a BINPAC_UNIT_ITEM_* constant.
     // hide   - Boolean that's true if the &hide attribute is present.
+    // idx    - A unique index for this items among all parent unit items.
     // path   - A tuple of int<64> that describe the access path to the item from the top-level unit.
     //
     // Note that when changing anything here, libbinpac/rtti.c must be
     // adapted accordingly.
 
     auto u = ast::checkedCast<type::Unit>(unit);
+    auto hu = ast::checkedCast<hilti::type::Struct>(cg()->hiltiTypeParseObject(u));
 
     ::hilti::builder::tuple::element_list items;
 
@@ -146,11 +153,12 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiAddParseObjectTypeInfo(shared_pt
             // Don't record any other items.
             continue;
 
-        auto path = cg()->hiltiItemComputePath(cg()->hiltiTypeParseObject(u), i);
+        auto path = cg()->hiltiItemComputePath(hu, i);
 
         ::hilti::builder::tuple::element_list t;
         t.push_back(::hilti::builder::integer::create(kind));
         t.push_back(::hilti::builder::boolean::create(i->attributes()->has("hide")));
+        t.push_back(::hilti::builder::integer::create(i->parentIndex()));
         t.push_back(path);
 
         items.push_back(::hilti::builder::tuple::create(t));
@@ -158,7 +166,13 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiAddParseObjectTypeInfo(shared_pt
         seen.insert(i->id()->name());
     }
 
-    auto t = hilti::builder::tuple::create(items);
+    auto idx_begins = ::hilti::builder::integer::create(hu->index("__begins"));
+    auto idx_ends = ::hilti::builder::integer::create(hu->index("__ends"));
+    auto titems = hilti::builder::tuple::create(items);
+
+    ::hilti::builder::tuple::element_list outer = { idx_begins, idx_ends, titems };
+    auto t = hilti::builder::tuple::create(outer);
+
     auto id = ::util::fmt("__%s_fields", cg()->hiltiID(unit->id(), true)->name());
     return cg()->moduleBuilder()->addConstant(id, t->type(), t);
 }

@@ -34,6 +34,7 @@ static struct option long_options[] = {
     { "llvm", no_argument, 0, 'l' },
     { "optimize", no_argument, 0, 'O' },
     { "add-stdlibs", no_argument, 0, 's' },
+    { "offsets", no_argument, 0, 'f' },
     { 0, 0, 0, 0 }
 };
 
@@ -60,6 +61,7 @@ void usage()
             "  -O | --optimize       Optimize generated code (for -l         [Default: off].\n"
             "  -P | --prototypes     Generate C API prototypes for generated module.\n"
             "  -s | --add-stdlibs    Add standard HILTI runtime libraries (for -l).\n"
+            "  -f | --offsets        Generate code to record field offsets.\n"
             "\n";
 }
 
@@ -82,7 +84,7 @@ int main(int argc, char** argv)
     shared_ptr<binpac::Options> options = std::make_shared<binpac::Options>();
 
     while ( true ) {
-        int c = getopt_long(argc, argv, "AcdD:o:nOPWlspI:vh", long_options, 0);
+        int c = getopt_long(argc, argv, "AcdD:o:nOPWlspI:vfh", long_options, 0);
 
         if ( c < 0 )
             break;
@@ -98,6 +100,10 @@ int main(int argc, char** argv)
 
          case 'd':
             options->debug = true;
+            break;
+
+         case 'f':
+            options->record_offsets = true;
             break;
 
          case 'D':

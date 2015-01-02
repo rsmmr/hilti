@@ -100,6 +100,9 @@ protected:
     /// Returns the current parsing state.
     shared_ptr<ParserState> state() const;
 
+    /// Returns true if the unit needs buffering.
+    bool buffering(shared_ptr<binpac::type::Unit> unit) const;
+
     typedef std::function<void ()> unpack_callback;
 
     /// Generates a HILTI ``unpack`` instruction wrapped in error handling
@@ -414,6 +417,9 @@ private:
 
     // Advances the current input position by the given number of bytes.
     void _hiltiAdvanceBy(shared_ptr<hilti::Expression> n);
+
+    /// Records the current position in either the begin or end array.
+    void _hiltiRecordOffset(shared_ptr<type::unit::item::Field> field, bool use_begin);
 
     typedef shared_ptr<hilti::Expression> InputPosition;
 

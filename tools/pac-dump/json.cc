@@ -343,6 +343,12 @@ static void json_dump_unit(const hlt_type_info* type, void* obj, int indent, hlt
             newline(indent);
         }
 
+        if ( item.begin || item.end ) {
+            fprintf(stdout, "__offsets_%s: [%" PRId64 ", %" PRId64 "],",
+                    item.name, item.begin, item.end);
+            newline(indent);
+        }
+
         if ( item.name )
             fputs(item.name, stdout);
         else

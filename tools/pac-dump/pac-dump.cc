@@ -58,6 +58,8 @@ static void usage(const char* prog)
     fprintf(stderr, "    -j            Output JSON.\n");
     fprintf(stderr, "    -I            Add directory to import path.\n");
     fprintf(stderr, "    -O            Optimize generated code.             [Default: off].\n");
+    fprintf(stderr, "    -d            Enable debug mode for JIT compilation\n");
+    fprintf(stderr, "    -f            Include field offsets in JSON output.\n");
 
     exit(1);
 }
@@ -220,12 +222,16 @@ int main(int argc, char** argv)
     auto options = std::make_shared<binpac::Options>();
 
     char ch;
-    while ((ch = getopt(argc, argv, "Ojp:I:")) != -1) {
+    while ((ch = getopt(argc, argv, "Ojdpf:I:")) != -1) {
 
         switch (ch) {
 
           case 'p':
             parser = optarg;
+            break;
+
+         case 'f':
+            options->record_offsets = true;
             break;
 
           case 'j':
@@ -238,6 +244,10 @@ int main(int argc, char** argv)
 
          case 'O':
             options->optimize = true;
+            break;
+
+          case 'd':
+            options->debug = true;
             break;
 
           case 'h':

@@ -111,6 +111,7 @@ static void usage(const char* prog)
     fprintf(stderr, "    -m <off>      Set mark at offset <off>; can be given multiple times\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
+    fprintf(stderr, "    -f            Generate code to record field offsets.\n");
 #ifdef PAC_DRIVER_JIT
     fprintf(stderr, "    -I            Add directory to import path.\n");
     fprintf(stderr, "    -d            Enable debug mode for JIT compilation\n");
@@ -539,7 +540,7 @@ int main(int argc, char** argv)
 #endif
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:f")) != -1) {
 
         switch (ch) {
 
@@ -557,6 +558,10 @@ int main(int argc, char** argv)
 
           case 'g':
             ++driver_debug;
+            break;
+
+         case 'f':
+            options->record_offsets = true;
             break;
 
           case 'B':

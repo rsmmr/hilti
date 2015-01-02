@@ -1,0 +1,3 @@
+Offset in input where raw data for this item begins. -1 if not
+available. If will not be available if \c value is not set, or of the
+parser wasn't configured to record this information.

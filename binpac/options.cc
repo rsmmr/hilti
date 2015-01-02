@@ -15,6 +15,8 @@ Options::Options()
         libdirs_pac2.push_back(p);
         libdirs_hlt.push_back(p);
     }
+
+    record_offsets = false;
 }
 
 Options::string_set Options::cgDebugLabels() const

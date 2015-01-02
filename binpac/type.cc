@@ -1022,6 +1022,24 @@ shared_ptr<ID> unit::Item::id() const
     return _id;
 }
 
+int unit::Item::parentIndex() const
+{
+    if (  ! _unit )
+        return -1;
+
+    int j = 0;
+
+    for ( auto i : _unit->flattenedItems() ) {
+        if ( i.get() == this )
+            return j;
+
+        j++;
+    }
+
+    assert(false);
+    return -1;
+}
+
 bool unit::Item::anonymous() const
 {
     return _anonymous;

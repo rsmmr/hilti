@@ -1141,6 +1141,11 @@ public:
     /// ID was passed to the constructor.
     shared_ptr<ID> id() const;
 
+    /// Returns an index for this items that's unique across all items part
+    /// of the parent unit. Returns -1 if this item does not (yet) have a
+    /// parent unit.
+    int parentIndex() const;
+
     /// Returns the item's type. If not overridden, this returns the type
     /// passed into the constructor, or set later via setType().
     virtual shared_ptr<binpac::Type> type();

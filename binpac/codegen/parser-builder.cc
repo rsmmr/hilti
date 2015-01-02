@@ -227,7 +227,7 @@ bool ParserBuilder::parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* 
         auto nfunc = _newParseFunction(name, state()->unit, result ? vtype : nullptr);
         cg()->moduleBuilder()->cacheNode("parse-func", name, nfunc);
 
-        if ( state()->unit->buffering() )
+        if ( buffering(state()->unit) )
             state()->trim = hilti::builder::boolean::create(false);
 
         if ( ! _hiltiParse(node, result, f) )
@@ -304,6 +304,9 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
 
     if ( prod )
         field = ast::tryCast<type::unit::item::Field>(prod->pgMeta()->field);
+
+    if ( field && cg()->options().record_offsets )
+        _hiltiRecordOffset(field, true);
 
     if ( field && field->condition() ) {
         // Evaluate if() condition.
@@ -859,6 +862,11 @@ shared_ptr<ParserState> ParserBuilder::state() const
     return _states.back();
 }
 
+bool ParserBuilder::buffering(shared_ptr<binpac::type::Unit> unit) const
+{
+    return cg()->options().record_offsets || unit->buffering();
+}
+
 void ParserBuilder::pushState(shared_ptr<ParserState> state)
 {
     _states.push_back(state);
@@ -1084,7 +1092,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
     }
 
     // Additional fields when input buffering is enabled.
-    if ( u->buffering() ) {
+    if ( buffering(u) ) {
         // The input() position.
         auto input = hilti::builder::struct_::field("__input", _hiltiTypeIteratorBytes(), nullptr, true);
 
@@ -1093,6 +1101,16 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
 
         fields.push_back(input);
         fields.push_back(cur);
+    }
+
+    if ( cg()->options().record_offsets ) {
+        auto v = hilti::builder::vector::type(hilti::builder::integer::type(64));
+        auto rt = hilti::builder::reference::type(v);
+        auto begins = hilti::builder::struct_::field("__begins", rt, nullptr, true);
+        auto ends = hilti::builder::struct_::field("__ends", rt, nullptr, true);
+
+        fields.push_back(begins);
+        fields.push_back(ends);
     }
 
     // Additional fields when exported to support sinks and filters.
@@ -1205,8 +1223,14 @@ void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params
         }
     }
 
-    if ( cur && u->buffering() )
+    if ( cur && buffering(u) )
         cg()->hiltiItemSet(state()->self, "__input", cur);
+
+    if ( cg()->options().record_offsets ) {
+        auto v = hilti::builder::vector::create(hilti::builder::integer::type(64), {});
+        cg()->hiltiItemSet(state()->self, "__begins", v);
+        cg()->hiltiItemSet(state()->self, "__ends", v);
+    }
 
     if ( u->exported() ) {
         cg()->hiltiItemSet(state()->self, "__parser", _hiltiParserDefinition(u));
@@ -1261,7 +1285,7 @@ void ParserBuilder::_finalizeParseObject(bool success)
     }
 
     // Clear the input positions.
-    if ( unit->buffering() ) {
+    if ( buffering(unit) ) {
         cg()->builder()->addInstruction(hilti::instruction::struct_::Unset,
                                         state()->self,
                                         hilti::builder::string::create("__input"));
@@ -1379,6 +1403,9 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
 
         else
             value = cg()->hiltiItemGet(state()->self, field);
+
+        if ( cg()->options().record_offsets )
+            _hiltiRecordOffset(field, false);
 
         if ( cg()->options().debug > 0
              && ! ast::isA<type::Unit>(field->type())
@@ -2269,13 +2296,13 @@ bool ParserBuilder::storingValues()
 
 void ParserBuilder::_hiltiSaveInputPostion()
 {
-    if ( state()->unit->buffering() )
+    if ( buffering(state()->unit) )
         cg()->hiltiItemSet(state()->self, "__cur", state()->cur);
 }
 
 void ParserBuilder::_hiltiUpdateInputPostion()
 {
-    if ( ! state()->unit->buffering() )
+    if ( ! buffering(state()->unit) )
         return;
 
     auto ncur = cg()->hiltiItemGet(state()->self, "__cur", hilti::builder::iterator::typeBytes());
@@ -2284,7 +2311,7 @@ void ParserBuilder::_hiltiUpdateInputPostion()
 
 void ParserBuilder::_hiltiTrimInput()
 {
-    if ( ! state()->unit->buffering() ) {
+    if ( ! buffering(state()->unit) ) {
         auto branches = cg()->builder()->addIf(state()->trim);
         auto trim = std::get<0>(branches);
         auto done = std::get<1>(branches);
@@ -2372,7 +2399,7 @@ void ParserBuilder::_hiltiFilterInput(bool resume)
             cg()->builder()->addInstruction(state()->advcur, hilti::instruction::operator_::Assign, begin);
         }
 
-        if ( state()->unit->buffering() ) {
+        if ( buffering(state()->unit) ) {
             cg()->hiltiItemSet(state()->self, "__input", begin);
             cg()->hiltiItemSet(state()->self, "__cur", begin);  // TODO: Do we need this one?
         }
@@ -2427,6 +2454,30 @@ void ParserBuilder::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_
     cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
                                     hilti::builder::id::create("BinPACHilti::sink_write"),
                                     hilti::builder::tuple::create( { sink, data, cg()->hiltiCookie() } ));
+}
+
+void ParserBuilder::_hiltiRecordOffset(shared_ptr<type::unit::item::Field> field, bool use_begin)
+{
+    assert(field);
+
+    auto hu = ast::checkedCast<hilti::type::Struct>(cg()->hiltiTypeParseObject(state()->unit));
+
+    auto vt = hilti::builder::vector::type(hilti::builder::integer::type(64));
+    auto rvt = hilti::builder::reference::type(vt);
+    auto v = cg()->moduleBuilder()->addTmp("offvec", rvt);
+
+    auto input = cg()->hiltiItemGet(state()->self, "__input", hilti::builder::iterator::typeBytes());
+    auto cur = state()->cur;
+    auto offset = cg()->moduleBuilder()->addTmp("offset", hilti::builder::integer::type(64));
+    cg()->builder()->addInstruction(offset, hilti::instruction::bytes::Diff, input, cur);
+
+    auto idx = field->parentIndex();
+    auto tag = (use_begin ? "__begins" : "__ends");
+
+    _hiltiDebugShowInput(::util::fmt("Recording %s offset", tag), state()->cur);
+
+    cg()->builder()->addInstruction(v, hilti::instruction::struct_::Get, state()->self, hilti::builder::string::create(tag));
+    cg()->builder()->addInstruction(hilti::instruction::vector::Set, v, hilti::builder::integer::create(idx), offset);
 }
 
 void ParserBuilder::_hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<Production> p)

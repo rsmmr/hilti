@@ -117,9 +117,31 @@ binpac_unit_cookie binpac_unit_iterate(binpac_unit_item* dst, const hlt_type_inf
         return 0;
     }
 
-    // Get the 2nd tuple element, which lists all the items.
-    void* items = hlt_tuple_get(type->hostapp_type, type->hostapp_value, 1, excpt, ctx);
-    const hlt_type_info* titems = hlt_tuple_get_type(type->hostapp_type, 1, excpt, ctx).type;
+    // Get the 2nd tuple element, which has the unit specific data.
+    void* unit_info = hlt_tuple_get(type->hostapp_type, type->hostapp_value, 1, excpt, ctx);
+    const hlt_type_info* tunit_info = hlt_tuple_get_type(type->hostapp_type, 1, excpt, ctx).type;
+
+    if ( tunit_info->type != HLT_TYPE_TUPLE ) {
+        hlt_set_exception(excpt, &hlt_exception_type_error, 0, ctx);
+        return 0;
+    }
+
+    // In there, get the 1st and 2nd elements, which have the indices of the
+    // begin/end arrays, or -1 if not available.
+    int64_t idx_begins = *((int64_t*) hlt_tuple_get(tunit_info, unit_info, 0, excpt, ctx));
+    int64_t idx_ends = *((int64_t*) hlt_tuple_get(tunit_info, unit_info, 1, excpt, ctx));
+
+    hlt_vector* vec_begins = 0;
+    hlt_vector* vec_ends = 0;
+
+    if ( unit && idx_begins >= 0 && idx_ends >= 0 ) {
+        vec_begins = *((hlt_vector**) hlt_struct_get(type, unit, idx_begins, excpt, ctx));
+        vec_ends = *((hlt_vector**) hlt_struct_get(type, unit, idx_ends, excpt, ctx));
+    }
+
+    // Get the 3rd element, which lists all the items.
+    void* items = hlt_tuple_get(tunit_info, unit_info, 2, excpt, ctx);
+    const hlt_type_info* titems = hlt_tuple_get_type(tunit_info, 2, excpt, ctx).type;
 
     if ( titems->type != HLT_TYPE_TUPLE ) {
         hlt_set_exception(excpt, &hlt_exception_type_error, 0, ctx);
@@ -127,8 +149,8 @@ binpac_unit_cookie binpac_unit_iterate(binpac_unit_item* dst, const hlt_type_inf
     }
 
 #if 0
-    fprintf(stderr, "\n| unit=%p unit_tag=%s idx=%lu item_value=%p\n",
-            unit, type->tag, idx - 1, unit);
+    fprintf(stderr, "\n| unit=%p unit_tag=%s idx=%lu item_value=%p idx_begins=%ld idx_ends=%ld \n",
+            unit, type->tag, idx - 1, unit, idx_begins, idx_ends);
 #endif
 
 //    if ( unit )
@@ -150,12 +172,14 @@ binpac_unit_cookie binpac_unit_iterate(binpac_unit_item* dst, const hlt_type_inf
     //
     // kind      - The item type as a BINPAC_UNIT_ITEM_* constant.
     // hide      - Boolean that's true if the &hide attribute is present.
+    // idx    - A unique index for this items among all parent unit items.
     // path      - A tuple of int<64>s that describe the access path to the item from the top-level unit.
-    //
+
     binpac_unit_item_kind ikind = *(binpac_unit_item_kind*) hlt_tuple_get(tcur, cur, 0, excpt, ctx);
     int8_t ihide = *((uint8_t*) hlt_tuple_get(tcur, cur, 1, excpt, ctx));
-    void* ipath = hlt_tuple_get(tcur, cur, 2, excpt, ctx);
-    const hlt_type_info* ipath_type = hlt_tuple_get_type(tcur, 2, excpt, ctx).type;
+    int64_t iidx = *((int64_t*) hlt_tuple_get(tcur, cur, 2, excpt, ctx));
+    void* ipath = hlt_tuple_get(tcur, cur, 3, excpt, ctx);
+    const hlt_type_info* ipath_type = hlt_tuple_get_type(tcur, 3, excpt, ctx).type;
 
     dst->kind = ikind;
     dst->hide = ihide;
@@ -165,6 +189,8 @@ binpac_unit_cookie binpac_unit_iterate(binpac_unit_item* dst, const hlt_type_inf
     const hlt_type_info* ti = type;
     void* value = unit;
     const char* name = 0;
+    int64_t begin = -1;
+    int64_t end = -1;
 
     for ( int i = 0; i < hlt_tuple_length(ipath_type, excpt, ctx); i++ ) {
 
@@ -211,11 +237,21 @@ binpac_unit_cookie binpac_unit_iterate(binpac_unit_item* dst, const hlt_type_inf
     dst->value = value;
     dst->type = ti;
 
+    if ( vec_begins && vec_ends ) {
+        dst->begin = *((int64_t*)hlt_vector_get(vec_begins, iidx, excpt, ctx));
+        dst->end = *((int64_t*)hlt_vector_get(vec_ends, iidx, excpt, ctx));
+    }
+
+    else {
+        dst->begin = -1;
+        dst->end = -1;
+    }
+
     assert(ti && type);
 
 #if 0
-    fprintf(stderr, "unit=%p unit_tag=%s idx=%lu name=%s item_type=%d item_tag=%s item_value=%p kind=%d hide=%d\n",
-            unit, type->tag, idx - 1, name, ti->type, ti->tag, dst->value, (int)dst->kind, (int)dst->hide);
+    fprintf(stderr, "unit=%p unit_tag=%s idx=%lu name=%s item_type=%d item_tag=%s item_value=%p kind=%d hide=%d begin=%ld end=%ld\n",
+            unit, type->tag, idx - 1, name, ti->type, ti->tag, dst->value, (int)dst->kind, (int)dst->hide, dst->begin, dst->end);
 #endif
 
     return idx + 1;

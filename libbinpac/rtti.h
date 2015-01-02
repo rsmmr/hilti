@@ -83,6 +83,16 @@ struct __binpac_unit_item {
     /// reference<T> this will be a pointer to the *reference*; not the
     /// object. You need to dereference that once to get the object.
     void* value;
+
+    /// Offset in input where raw data for this item begins. -1 if not
+    /// available. If will not be available if \c value is not set, or of the
+    /// parser wasn't configured to record this information.
+    int64_t begin;
+
+    /// Offset in input where raw data for this item ends. -1 if not
+    /// available. If will not be available if \c value is not set, or of the
+    /// parser wasn't configured to record this information.
+    int64_t end;
 };
 
 typedef struct __binpac_unit_item binpac_unit_item;
