@@ -10,6 +10,7 @@
 #include "loader.h"
 #include "storer.h"
 #include "unpacker.h"
+#include "packer.h"
 #include "field-builder.h"
 #include "coercer.h"
 #include "stmt-builder.h"
@@ -28,6 +29,7 @@ CodeGen::CodeGen(CompilerContext* ctx, const path_list& libdirs)
     : _loader(new Loader(this)),
       _storer(new Storer(this)),
       _unpacker(new Unpacker(this)),
+      _packer(new Packer(this)),
       _field_builder(new FieldBuilder(this)),
       _stmt_builder(new StatementBuilder(this)),
       _coercer(new Coercer(this)),
@@ -390,6 +392,37 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
 
     return std::make_pair(val, iter);
 }
+
+llvm::Value* CodeGen::llvmPack(shared_ptr<Expression> value,
+                               shared_ptr<Expression> fmt, shared_ptr<Expression> arg,
+                               const Location& location)
+{
+    PackArgs args;
+    args.value = value ? llvmValue(value) : nullptr;
+    args.type = value ? value->type() : nullptr;
+    args.fmt = fmt ? llvmValue(fmt) : nullptr;
+    args.arg = arg ? llvmValue(arg) : nullptr;
+    args.arg_type = arg ? arg->type() : nullptr;
+    args.location = location;
+
+    return _packer->llvmPack(args);
+}
+
+llvm::Value* CodeGen::llvmPack(llvm::Value* value, shared_ptr<Type> type, llvm::Value* fmt,
+                              llvm::Value* arg, shared_ptr<Type> arg_type,
+                              const Location& location)
+{
+    PackArgs args;
+    args.value = value;
+    args.type = type;
+    args.fmt = fmt;
+    args.arg = arg;
+    args.arg_type = arg_type;
+    args.location = location;
+
+    return _packer->llvmPack(args);
+}
+
 
 llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
 {
@@ -3419,6 +3452,19 @@ llvm::Value* CodeGen::llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm
     auto mask = builder()->CreateLShr(llvmConstInt(-1, width), bits);
 
     value = builder()->CreateLShr(value, low);
+
+    return builder()->CreateAnd(value, mask);
+}
+
+llvm::Value* CodeGen::llvmInsertBits(llvm::Value* value, llvm::Value* low, llvm::Value* high)
+{
+    value = builder()->CreateShl(value, low);
+
+    auto width = llvm::cast<llvm::IntegerType>(value->getType())->getBitWidth();
+
+    auto bits = builder()->CreateSub(llvmConstInt(width, width), high);
+    bits = builder()->CreateSub(bits, llvmConstInt(1, width));
+    auto mask = builder()->CreateLShr(llvmConstInt(-1, width), bits);
 
     return builder()->CreateAnd(value, mask);
 }

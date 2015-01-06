@@ -283,6 +283,17 @@ void Composer::_finishedProduction(shared_ptr<Production> p)
     cg()->builder()->addComment("");
 }
 
+void Composer::hiltiPack(shared_ptr<type::unit::item::Field> field,
+                         shared_ptr<hilti::Expression> op1,
+                         shared_ptr<hilti::Expression> op2,
+                         shared_ptr<hilti::Expression> op3)
+{
+    auto rbytes = hilti::builder::reference::type(hilti::builder::bytes::type());
+    auto packed = cg()->builder()->addTmp("packed", rbytes);
+    cg()->builder()->addInstruction(packed, hilti::instruction::operator_::Pack, op1, op2, op3);
+    _hiltiDataComposed(packed, field);
+}
+
 void Composer::_hiltiDataComposed(shared_ptr<hilti::Expression> data, shared_ptr<type::unit::item::Field> field)
 {
     assert(field);
@@ -528,4 +539,18 @@ void Composer::visit(type::Bytes* b)
         auto eod = cg()->hiltiExpression(until->value());
         _hiltiDataComposed(eod, field);
     }
+}
+
+void Composer::visit(type::Integer* i)
+{
+    auto field = arg1();
+    assert(field);
+
+    auto val = cg()->hiltiItemGet(state()->self, field);
+
+    auto byteorder = field->inheritedProperty("byteorder");
+
+    auto fmt = cg()->hiltiIntPackFormat(i->width(), i->signed_(), byteorder);
+
+    hiltiPack(field, val, fmt);
 }

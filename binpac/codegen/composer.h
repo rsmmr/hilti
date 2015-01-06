@@ -100,6 +100,7 @@ protected:
     void visit(expression::Type* c) override;
 
     void visit(type::Bytes* b) override;
+    void visit(type::Integer* i) override;
 
 #if 0
     void visit(constant::Address* a) override;
@@ -120,7 +121,6 @@ protected:
     void visit(type::Double* d) override;
     void visit(type::Enum* e) override;
     void visit(type::EmbeddedObject* o) override;
-    void visit(type::Integer* i) override;
     void visit(type::Interval* i) override;
     void visit(type::List* l) override;
     void visit(type::Network* n) override;
@@ -167,6 +167,17 @@ private:
 
     // Called just after a production has been composed.
     void _finishedProduction(shared_ptr<Production> p);
+
+    /// Generates a HILTI ``pack`` instruction and passes the data on to the
+    /// host application.
+    ///
+    /// field: The field associated with the data.
+    ///
+    /// op1, op2, op3: Same as with the regular ``pack`` instruction.
+    void hiltiPack(shared_ptr<type::unit::item::Field> field,
+                   shared_ptr<hilti::Expression> op1,
+                   shared_ptr<hilti::Expression> op2,
+                   shared_ptr<hilti::Expression> op3 = nullptr);
 
     /// Generates code to pass a chunk of composed data to host application.
     /// The data will be associated with the current position in the compose

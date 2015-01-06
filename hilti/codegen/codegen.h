@@ -81,6 +81,7 @@ class Coercer;
 class Loader;
 class Storer;
 class Unpacker;
+class Packer;
 class FieldBuilder;
 class StatementBuilder;
 class TypeBuilder;
@@ -535,6 +536,15 @@ public:
    /// value: The value to store at +0.
    void llvmStore(statement::Instruction* instr, llvm::Value* value, bool dtor_first = true);
 
+   /// Returns: A pair in which the first element is the unpacked value and
+   /// the second is an iterator pointing just beyond the last consumed byte.
+   /// Neither tuple elements will have their cctor applied.
+   std::pair<llvm::Value*, llvm::Value*> llvmUnpack(
+                   shared_ptr<Type> type, llvm::Value* begin,
+                   llvm::Value* end, llvm::Value* fmt,
+                   llvm::Value* arg = nullptr, shared_ptr<Type> arg_type = nullptr,
+                   const Location& location = Location::None);
+
    /// Unpacks an instance of a type from binary data (like in the \c unpack
    /// instruction). Exception semantics are as with \c unpack.
    ///
@@ -563,16 +573,12 @@ public:
                    shared_ptr<Expression> arg = nullptr,
                    const Location& location = Location::None);
 
-   /// Unpacks an instance of a type from binary data (like in the \c unpack
-   /// instruction). Exception semantics are as with \c unpack.
+   /// Packs an instance of a type into binary data (like in the \c pack
+   /// instruction).
    ///
-   /// type: The type to unpack an instance of.
+   /// value: The value to pack.
    ///
-   /// begin: A byte iterator marking the first input byte.
-   ///
-   /// end: A byte iterator marking the position one beyond the last
-   /// consumable input byte. *end* may be null to indicate unpacking until
-   /// the end of the bytes object is encountered.
+   /// type: The type of *value*.
    ///
    /// fmt: Specifies the binary format of the input bytes as one of the
    /// ``Hilti::Packed`` labels.
@@ -585,14 +591,31 @@ public:
    ///
    /// l: A location associagted with the unpack operaton.
    ///
-   /// Returns: A pair in which the first element is the unpacked value and
-   /// the second is an iterator pointing just beyond the last consumed byte.
-   /// Neither tuple elements will have their cctor applied.
-   std::pair<llvm::Value*, llvm::Value*> llvmUnpack(
-                   shared_ptr<Type> type, llvm::Value* begin,
-                   llvm::Value* end, llvm::Value* fmt,
-                   llvm::Value* arg = nullptr, shared_ptr<Type> arg_type = nullptr,
-                   const Location& location = Location::None);
+   /// Returns: The packed value as a bytes instance.
+   llvm::Value* llvmPack(llvm::Value* value, shared_ptr<Type> type, llvm::Value* fmt,
+                         llvm::Value* arg = nullptr, shared_ptr<Type> arg_type = nullptr,
+                         const Location& location = Location::None);
+
+   /// Packs an instance of a type into binary data (like in the \c pack
+   /// instruction).
+   ///
+   /// value: The value to pack.
+   ///
+   /// type: The type of *value*.
+   ///
+   /// fmt: Specifies the binary format of the input bytes as one of the
+   /// ``Hilti::Packed`` labels.
+   ///
+   /// arg: Additional format-specific parameter, required by some formats;
+   /// nullptr if not.
+   ///
+   /// l: A location associagted with the unpack operaton.
+   ///
+   /// Returns: The packed value as a bytes instance.
+   llvm::Value* llvmPack(shared_ptr<Expression> value,
+                         shared_ptr<Expression> fmt,
+                         shared_ptr<Expression> arg = nullptr,
+                         const Location& location = Location::None);
 
    /// Returns a global's index in the module-wide array of globals. Each
    /// module keeps an array with all its globals as part of HILTI's
@@ -1583,6 +1606,18 @@ public:
    /// available.
    llvm::Value* llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm::Value* hight);
 
+   /// Fits an integer value into a range of bits. All three arguments must
+   /// be of same bitwidth.
+   ///
+   /// value: The original integer value.
+   ///
+   /// low: The number of the range's low bit.
+   ///
+   /// high: The number of the range's high bit.
+   ///
+   /// Returns: The result  where now *value* is shifted so that it spans from *low* to *high*.
+   llvm::Value* llvmInsertBits(llvm::Value* value, llvm::Value* low, llvm::Value* hight);
+
    /// Similar to llvmDtor but postpones the operation until the current
    /// instruction has been finished.
    ///
@@ -2352,6 +2387,7 @@ private:
    unique_ptr<Loader> _loader;
    unique_ptr<Storer> _storer;
    unique_ptr<Unpacker> _unpacker;
+   unique_ptr<Packer> _packer;
    unique_ptr<FieldBuilder> _field_builder;
    unique_ptr<StatementBuilder> _stmt_builder;
    unique_ptr<Coercer> _coercer;
