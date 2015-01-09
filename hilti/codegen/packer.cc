@@ -68,7 +68,7 @@ static void _bytesPackRunLength(CodeGen* cg, const PackArgs& args, const PackRes
     auto len = cg->llvmCall("hlt::bytes_len", { b });
     auto packed = cg->llvmPack(len, builder::integer::type(64), args.arg, nullptr, nullptr, args.location);
 
-    cg->llvmCallC("hlt_bytes_append", { packed, args.value }, true);
+    cg->llvmCallC("__hlt_bytes_append", { packed, args.value }, true);
     cg->llvmCreateStore(packed, result);
 }
 
@@ -327,12 +327,12 @@ static void _addrPack6(CodeGen* cg, const PackArgs& args, const PackResult& resu
     auto tmp2 = cg->llvmPack(b, builder::integer::type(64), fmt, nullptr, nullptr, args.location);
 
     if ( nbo ) {
-        cg->llvmCallC("hlt_bytes_append", { tmp1, tmp2 }, true);
+        cg->llvmCallC("__hlt_bytes_append", { tmp1, tmp2 }, true);
         cg->llvmCreateStore(tmp1, result);
     }
 
     else {
-        cg->llvmCallC("hlt_bytes_append", { tmp2, tmp1 }, true);
+        cg->llvmCallC("__hlt_bytes_append", { tmp2, tmp1 }, true);
         cg->llvmCreateStore(tmp2, result);
     }
 }
@@ -448,28 +448,5 @@ void Packer::visit(type::Port* t)
 
 void Packer::visit(type::Bool* t)
 {
-#if 0
-    auto iter_type = builder::iterator::typeBytes();
-
-    auto args = arg1();
-    auto result = arg2();
-
-    // Format can only Hilti::Packed::Bool.
-
-    // Copy the start iterator.
-    cg()->llvmCreateStore(args.begin, result.iter_ptr);
-
-    llvm::Value* value = cg()->llvmCallC("__hlt_bytes_extract_one", { result.iter_ptr, args.end }, true);
-
-    // Select subset of bits if requested.
-    if ( args.arg ) {
-        auto bit = cg()->builder()->CreateTrunc(args.arg, cg()->llvmTypeInt(8));
-        value = cg()->llvmExtractBits(value, bit, bit);
-    }
-
-    auto Packed = cg()->builder()->CreateICmpNE(value, cg()->llvmConstInt(0, 8));
-
-    cg()->llvmCreateStore(Packed, result.value_ptr);
-#endif
 }
 

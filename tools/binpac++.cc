@@ -27,13 +27,14 @@ static struct option long_options[] = {
     { "help",    no_argument, 0, 'h' },
     { "print",   no_argument, 0, 'p' },
     { "print-always",   no_argument, 0, 'W' },
-    { "cfg",   no_argument, 0, 'c' },
+    { "cfg",   no_argument, 0, 'C' },
     { "prototypes", no_argument, 0, 'P' },
     { "output",  required_argument, 0, 'o' },
     { "version", no_argument, 0, 'v' },
     { "llvm", no_argument, 0, 'l' },
     { "optimize", no_argument, 0, 'O' },
     { "add-stdlibs", no_argument, 0, 's' },
+    { "compose", no_argument, 0, 'c' },
     { 0, 0, 0, 0 }
 };
 
@@ -47,7 +48,8 @@ void usage()
             "Options:\n"
             "\n"
             "  -A | --ast            Dump intermediary ASTs to stderr.\n"
-            "  -c | --cfg            When outputting HILTI code, include control/data flow information.\n"
+            "  -c | --compose        Generate composing code as well\n"
+            "  -C | --cfg            When outputting HILTI code, include control/data flow information.\n"
             "  -d | --debug          Debug level for the generated code. Each time increases level. [Default: 0]\n"
             "  -D | --cgdebug <type> Debug output during code generation; type can be " << dbgstr << ".\n"
             "  -h | --help           Print usage information.\n"
@@ -86,7 +88,7 @@ int main(int argc, char** argv)
     options->generate_composers = false;
 
     while ( true ) {
-        int c = getopt_long(argc, argv, "AcdD:o:nOPWlspI:vht:", long_options, 0);
+        int c = getopt_long(argc, argv, "AcCdD:o:nOPWlspI:vht:", long_options, 0);
 
         if ( c < 0 )
             break;
@@ -97,6 +99,10 @@ int main(int argc, char** argv)
             break;
 
          case 'c':
+            options->generate_composers = true;
+            break;
+
+         case 'C':
             cfg = true;
             break;
 

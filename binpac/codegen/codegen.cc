@@ -784,15 +784,25 @@ void CodeGen::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hi
     return hiltiWriteToSink(sink, data);
 }
 
-shared_ptr<hilti::Expression> CodeGen::hiltiApplyAttributesToValue(shared_ptr<hilti::Expression> val, shared_ptr<AttributeSet> attrs)
+shared_ptr<hilti::Expression> CodeGen::hiltiApplyAttributesToValue(shared_ptr<hilti::Expression> val, shared_ptr<AttributeSet> attrs, bool composing)
 {
     auto convert = attrs->lookup("convert");
 
-    if ( convert ) {
+    if ( convert && ! composing ) {
         hiltiBindDollarDollar(val);
         auto dd = builder()->addTmp("__dollardollar", val->type());
         builder()->addInstruction(dd, hilti::instruction::operator_::Assign, val);
         val = hiltiExpression(convert->value());
+        hiltiUnbindDollarDollar();
+    }
+
+    auto convert_back = attrs->lookup("convert_back");
+
+    if ( convert_back && composing ) {
+        hiltiBindDollarDollar(val);
+        auto dd = builder()->addTmp("__dollardollar", val->type());
+        builder()->addInstruction(dd, hilti::instruction::operator_::Assign, val);
+        val = hiltiExpression(convert_back->value());
         hiltiUnbindDollarDollar();
     }
 

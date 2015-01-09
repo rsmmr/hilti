@@ -59,11 +59,12 @@ inline shared_ptr<Expression> makeOp(binpac::operator_::Kind kind, const express
 inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit::item::Field> elem,
                                                            shared_ptr<ID> name,
                                                            shared_ptr<Expression> length,
+                                                           type::unit::item::Field::Kind kind,
                                                            const hook_list& hooks,
                                                            const Location& l
                                                            )
 {
-    return std::make_shared<type::unit::item::field::container::Vector>(name, elem, length, nullptr, hooks, attribute_list(), expression_list(), l);
+    return std::make_shared<type::unit::item::field::container::Vector>(name, elem, length, kind, nullptr, hooks, attribute_list(), expression_list(), l);
 }
 
 %}
@@ -109,6 +110,8 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         FOREACH
 %token         GLOBAL
 %token         GEQ
+%token         HOOK_PARSE
+%token         HOOK_COMPOSE
 %token         IF
 %token         IMPORT
 %token         IN
@@ -188,7 +191,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <declarations>     opt_global_decls opt_local_decls
 %type <expression>       expr expr2 opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr opt_unit_vector_len opt_unit_switch_expr
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
-%type <id>               local_id scoped_id dollar_id path_id hook_id opt_unit_field_name opt_hilti_id
+%type <id>               local_id scoped_id dollar_id path_id hook_id opt_hilti_id
 %type <statement>        stmt block
 %type <statements>       stmts opt_stmts
 %type <type>             base_type type enum_ bitset unit atomic_type container_type bitfield
@@ -218,6 +221,9 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <unit_ctor_item>   unit_ctor_item
 %type <unit_ctor_items>  unit_ctor_items opt_unit_ctor_items
 %type <ival>             opt_priority
+%type <hook_kind>        opt_hook_kind
+%type <field_kind>       field_kind
+%type <field_name_and_kind> opt_unit_field_name_and_kind
 %%
 
 %token PREC_HIGH;
@@ -519,40 +525,40 @@ unit_global_hook : ON hook_id unit_hooks         { $$ = std::make_shared<type::u
 
 unit_prop     : property                         { $$ = std::make_shared<type::unit::item::Property>($1, loc(@$)); }
 
-unit_field    : opt_unit_field_name base_type opt_field_args opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = type::unit::item::Field::createByType($2, $1, $6, ($4 ? hook_list() : $8), $5, $3, $7, loc(@$));
+unit_field    : opt_unit_field_name_and_kind base_type opt_field_args opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = type::unit::item::Field::createByType($2, $1.first, $1.second, $6, ($4 ? hook_list() : $8), $5, $3, $7, loc(@$));
                                                    if ( $4 )
-                                                       $$ = makeVectorField($$, $1, $4, $8, loc(@$));
+                                                       $$ = makeVectorField($$, $1.first, $4, $1.second, $8, loc(@$));
                                                  }
 
-              | opt_unit_field_name constant opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::Constant>($1, $2, $5, ($3 ? hook_list() : $7), $4, $6, loc(@$));
-                                                   if ( $3 ) $$ = makeVectorField($$, $1, $3, $7, loc(@$));
+              | opt_unit_field_name_and_kind constant opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::field::Constant>($1.first, $2, $1.second, $5, ($3 ? hook_list() : $7), $4, $6, loc(@$));
+                                                   if ( $3 ) $$ = makeVectorField($$, $1.first, $3, $1.second, $7, loc(@$));
                                                  }
 
-              | opt_unit_field_name ctor opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::Ctor>($1, $2, $5, ($3 ? hook_list() : $7), $4, $6, loc(@$));
-                                                   if ( $3 ) $$ = makeVectorField($$, $1, $3, $7, loc(@$));
+              | opt_unit_field_name_and_kind ctor opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::field::Ctor>($1.first, $2, $1.second, $5, ($3 ? hook_list() : $7), $4, $6, loc(@$));
+                                                   if ( $3 ) $$ = makeVectorField($$, $1.first, $3, $1.second, $7, loc(@$));
                                                  }
 
-              | opt_unit_field_name LIST '<' unit_field_in_container '>' opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::container::List>($1, $4, $8, ($6 ? hook_list() : $10), $7, $9, loc(@$));
-                                                  if ( $6 ) $$ = makeVectorField($$, $1, $6, $10, loc(@$));
+              | opt_unit_field_name_and_kind LIST '<' unit_field_in_container '>' opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::field::container::List>($1.first, $4, $1.second, $8, ($6 ? hook_list() : $10), $7, $9, loc(@$));
+                                                  if ( $6 ) $$ = makeVectorField($$, $1.first, $6, $1.second, $10, loc(@$));
                                                  }
 
-              | opt_unit_field_name scoped_id opt_field_args opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::Unknown>($1, $2, $6, ($4 ? hook_list() : $8), $5, $3, $7, loc(@$));
-                                                  if ( $4 ) $$ = makeVectorField($$, $1, $4, $8, loc(@$));
+              | opt_unit_field_name_and_kind scoped_id opt_field_args opt_unit_vector_len opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::field::Unknown>($1.first, $2, $1.second, $6, ($4 ? hook_list() : $8), $5, $3, $7, loc(@$));
+                                                  if ( $4 ) $$ = makeVectorField($$, $1.first, $4, $1.second, $8, loc(@$));
                                                  }
 
 unit_field_in_container :
-              local_id opt_field_args          { $$ = std::make_shared<type::unit::item::field::Unknown>(nullptr, $1, nullptr, hook_list(), attribute_list(), $2, expression_list(), loc(@$)); }
+                local_id opt_field_args          { $$ = std::make_shared<type::unit::item::field::Unknown>(nullptr, $1, type::unit::item::Field::PARSE_COMPOSE, nullptr, hook_list(), attribute_list(), $2, expression_list(), loc(@$)); }
 
 unit_fields   : unit_field unit_fields         { $$ = $2; $$.push_front($1); }
               | unit_field                     { $$ = unit_field_list(); $$.push_back($1); }
 
 unit_switch   : SWITCH opt_unit_switch_expr '{' unit_switch_cases '}' opt_unit_field_cond ';'
-                                                 { $$ = std::make_shared<type::unit::item::field::Switch>($2, $4, $6, hook_list(), loc(@$)); }
+                                                 { $$ = std::make_shared<type::unit::item::field::Switch>($2, $4, type::unit::item::Field::PARSE_COMPOSE, $6, hook_list(), loc(@$)); }
 
 opt_unit_switch_expr: '(' expr ')'               { $$ = $2; }
               | /* empty */                      { $$ = nullptr; }
@@ -580,9 +586,13 @@ type_attr     : ATTRIBUTE '(' expr ')'           { $$ = std::make_shared<Attribu
 opt_field_args: '(' opt_exprs ')'                { $$ = $2; }
               | /* empty */                      { $$ = expression_list(); }
 
-opt_unit_field_name
-              : local_id ':'                     { $$ = $1; }
-              | ':'                              { $$ = nullptr; }
+opt_unit_field_name_and_kind
+              : local_id field_kind              { $$ = std::make_pair($1, $2); }
+              | field_kind                       { $$ = std::make_pair(nullptr, $1); }
+
+field_kind    : ':'                              { $$ = type::unit::item::Field::PARSE_COMPOSE; }
+              | '<'                              { $$ = type::unit::item::Field::PARSE; }
+              | '>'                              { $$ = type::unit::item::Field::COMPOSE; }
 
 opt_unit_field_cond
               : IF '(' expr ')'                  { $$ = $3; }
@@ -602,9 +612,9 @@ opt_unit_vector_len
 unit_hooks    : unit_hook unit_hooks             { $$ = $2; $2.push_front($1); }
               | unit_hook                        { $$ = { $1 }; }
 
-unit_hook     : opt_debug opt_priority opt_foreach
+unit_hook     : opt_debug opt_priority opt_foreach opt_hook_kind
                                                  { driver.pushScope(std::make_shared<Scope>(driver.module()->body()->scope())); }
-block                                            { $$ = std::make_shared<Hook>($5, Hook::PARSE_COMPOSE, $2, $1, $3, loc(@$)); driver.popScope(); }
+                block                            { $$ = std::make_shared<Hook>($6, $4, $2, $1, $3, loc(@$)); driver.popScope(); }
 
 opt_debug     : PROPERTY                         { $$ = ($1 == "%debug");
                                                    if ( ! $$ ) error(@$, "unexpected property, only %debug permitted");
@@ -619,6 +629,11 @@ opt_priority  : PRIORITY '=' CINTEGER            { $$ = $3; };
 
 opt_foreach   : FOREACH                          { $$ = true; }
               | /* empty */                      { $$ = false; }
+
+opt_hook_kind : HOOK_COMPOSE                     { $$ = Hook::COMPOSE; }
+              | HOOK_PARSE                       { $$ = Hook::PARSE; }
+              | /* empty */                      { $$ = Hook::PARSE; }
+
 
               /* When adding rules here, add leading keywords to the precedence declaration above. */
 constant      : CINTEGER                         { $$ = std::make_shared<constant::Integer>($1, 64, loc(@$)); }

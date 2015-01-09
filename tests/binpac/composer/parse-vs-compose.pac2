@@ -4,6 +4,8 @@
 module Mini;
 
 export type test = unit {
-       a: bytes &length=4;
-       b: bytes &length=6;
+       a  :  bytes &length=2;
+       b1 <  int<16> &byteorder=BinPAC::ByteOrder::Little;
+       b1 >  int<16> &byteorder=BinPAC::ByteOrder::Big;
+       c  :  bytes &length=2;
 };

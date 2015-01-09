@@ -5,6 +5,7 @@
 #include <ast/visitor.h>
 
 #include "../common.h"
+#include "../type.h"
 #include "cg-visitor.h"
 
 namespace binpac {
@@ -25,6 +26,10 @@ public:
     /// Returns the type of the currently composed unit. The method must only
     /// be called when composing is in progress.
     shared_ptr<type::Unit> unit() const;
+
+    /// Returns the currently composed value. The method must only
+    /// be called when composing is in progress.
+    shared_ptr<hilti::Expression> hiltiObject(shared_ptr<type::unit::item::Field> field = nullptr) const;
 
     // Creates the host-facing composer function.
     //
@@ -70,6 +75,10 @@ protected:
     /// additional logic around it.
     void compose(shared_ptr<Node> node, shared_ptr<type::unit::item::Field> field = nullptr);
 
+    /// Compose a given entity. This verson accepts an explicit pointer to
+    /// the value to compose.
+    void compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj, shared_ptr<type::unit::item::Field> field = nullptr);
+
     /// Returns the current composing state.
     shared_ptr<ComposerState> state() const;
 
@@ -92,6 +101,8 @@ protected:
     void visit(production::Variable* v) override;
     void visit(production::Loop* l) override;
 
+    void visit(constant::Integer* i) override;
+
     void visit(ctor::Bytes* b) override;
     void visit(ctor::RegExp* r) override;
 
@@ -101,6 +112,7 @@ protected:
 
     void visit(type::Bytes* b) override;
     void visit(type::Integer* i) override;
+    void visit(type::Address* a) override;
 
 #if 0
     void visit(constant::Address* a) override;
@@ -108,14 +120,12 @@ protected:
     void visit(constant::Bool* b) override;
     void visit(constant::Double* d) override;
     void visit(constant::Enum* e) override;
-    void visit(constant::Integer* i) override;
     void visit(constant::Interval* i) override;
     void visit(constant::Network* n) override;
     void visit(constant::Port* p) override;
     void visit(constant::String* s) override;
     void visit(constant::Time* t) override;
 
-    void visit(type::Address* a) override;
     void visit(type::Bitset* b) override;
     void visit(type::Bool* b) override;
     void visit(type::Double* d) override;
@@ -160,10 +170,19 @@ private:
 
     /// Generates the body code for composing a given node. Same parameters as
     /// compose().
-    void _hiltiCompose(shared_ptr<Node> node, shared_ptr<type::unit::item::Field> f);
+    void _hiltiCompose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj, shared_ptr<type::unit::item::Field> f);
+
+    /// Composes a container value.
+    void _hiltiComposeContainer(shared_ptr<hilti::Expression> value, shared_ptr<Production> body, shared_ptr<type::unit::item::field::Container> container);
 
     // Called just before a production is being composed.
     void _startingProduction(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field);
+
+    // Called juest before starting to compose a unit.
+    void _startingUnit();
+
+    // Called just after composing a unit.
+    void _finishedUnit();
 
     // Called just after a production has been composed.
     void _finishedProduction(shared_ptr<Production> p);
@@ -187,6 +206,9 @@ private:
     // Calls a compose function with the current composing state.
     void _hiltiCallComposeFunction(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func);
 
+    // Run a field's hooks.
+    void _hiltiRunFieldHooks(shared_ptr<type::unit::item::Field> field);
+
     // Prints the given message to the binpac-compose debug stream.
     void _hiltiDebug(const string& msg);
 
@@ -209,6 +231,7 @@ private:
     void _hiltiFilterOutput();
 
     std::list<shared_ptr<ComposerState>> _states;
+    shared_ptr<hilti::Expression> _object;
 };
 
 }

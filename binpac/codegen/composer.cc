@@ -87,6 +87,27 @@ shared_ptr<binpac::type::Unit> Composer::unit() const
     return state()->unit;
 }
 
+shared_ptr<hilti::Expression> Composer::hiltiObject(shared_ptr<type::unit::item::Field> field) const
+{
+    shared_ptr<hilti::Expression> val = nullptr;
+
+    if ( field ) {
+        val = cg()->hiltiItemGet(state()->self, field);
+        val = cg()->hiltiApplyAttributesToValue(val, field->attributes(), true);
+    }
+
+    else if ( _object )
+        val = _object;
+
+    else {
+        assert(arg1());
+        val = cg()->hiltiItemGet(state()->self, arg1());
+        val = cg()->hiltiApplyAttributesToValue(val, arg1()->attributes(), true);
+    }
+
+    return val;
+}
+
 shared_ptr<ComposerState> Composer::state() const
 {
     assert(_states.size());
@@ -106,13 +127,26 @@ void Composer::popState()
 
 void Composer::compose(shared_ptr<Node> node, shared_ptr<type::unit::item::Field> field)
 {
+    compose(node, nullptr, field);
+}
+
+void Composer::compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj, shared_ptr<type::unit::item::Field> field)
+{
     auto prod = ast::tryCast<Production>(node);
 
     if ( ! prod || prod->atomic() )
-        return _hiltiCompose(node, field);
+        return _hiltiCompose(node, obj, field);
 
     // We wrap productions into their own functions to handle cycles
     // correctly.
+
+    // If we got an obj, and are parsing a unit, we need push a new state.
+    auto child = ast::tryCast<production::ChildGrammar>(node);
+    if ( child && obj) {
+        auto pstate = std::make_shared<ComposerState>(child->childType(), obj);
+        pushState(pstate);
+        obj = hilti::builder::id::create("__self");
+    }
 
     auto name = util::fmt("__compose_%s_%s", state()->unit->id()->name(), prod->symbol());
     name = util::strreplace(name, ":", "_");
@@ -125,7 +159,7 @@ void Composer::compose(shared_ptr<Node> node, shared_ptr<type::unit::item::Field
         auto nfunc = _newComposeFunction(name, state()->unit);
         cg()->moduleBuilder()->cacheNode("compose-func", name, nfunc);
 
-        _hiltiCompose(node, field);
+        _hiltiCompose(node, obj, field);
 
         _finishComposeFunction();
 
@@ -135,6 +169,11 @@ void Composer::compose(shared_ptr<Node> node, shared_ptr<type::unit::item::Field
     // Call the function.
     auto efunc = ast::checkedCast<hilti::expression::Function>(func);
     _hiltiCallComposeFunction(state()->unit, efunc);
+
+    if ( child && obj ) {
+        popState();
+    }
+
 }
 
 shared_ptr<hilti::Expression> Composer::hiltiCreateHostFunction(shared_ptr<type::Unit> unit)
@@ -167,7 +206,7 @@ shared_ptr<hilti::Expression> Composer::hiltiCreateHostFunction(shared_ptr<type:
         cg()->builder()->debugPushIndent();
     }
 
-     _hiltiCallComposeFunction(unit, pfunc);
+    _hiltiCallComposeFunction(unit, pfunc);
 
     if ( cg()->options().debug > 0 )
         cg()->builder()->debugPopIndent();
@@ -192,7 +231,9 @@ shared_ptr<hilti::Expression> Composer::hiltiCreateComposeFunction(shared_ptr<ty
     auto func = _newComposeFunction(name, unit);
     cg()->moduleBuilder()->cacheNode("create-compose-function", name, func);
 
-    _hiltiCompose(grammar->root(), nullptr);
+    _startingUnit();
+    _hiltiCompose(grammar->root(), nullptr, nullptr);
+    _finishedUnit();
 
     _finishComposeFunction();
 
@@ -222,7 +263,7 @@ void Composer::_finishComposeFunction()
     cg()->moduleBuilder()->popFunction();
 }
 
-void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<type::unit::item::Field> f)
+void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj, shared_ptr<type::unit::item::Field> f)
 {
     shared_ptr<type::unit::item::Field> field;
     shared_ptr<hilti::builder::BlockBuilder> cont;
@@ -234,6 +275,10 @@ void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<type::unit::item:
     if ( prod )
         field = ast::tryCast<type::unit::item::Field>(prod->pgMeta()->field);
 
+    if ( field && ! field->forComposing() )
+        // Skip
+        return;
+
     if ( field && field->condition() ) {
         // Evaluate if() condition.
         auto blocks = cg()->builder()->addIf(cg()->hiltiExpression(field->condition()));
@@ -242,16 +287,22 @@ void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<type::unit::item:
         cg()->moduleBuilder()->pushBuilder(true_);
     }
 
-    if ( field && field->attributes()->has("parse") )
-        // Skip
-        return;
-
     if ( field && field->attributes()->has("try") ) {
         // TODO: If field is not set, ignore it.
         internalError("compose for &try not implemented");
     }
 
+    if ( field )
+        _hiltiRunFieldHooks(field);
+
+    setDefaultResult(0); // Ignored.
+    shared_ptr<hilti::Expression> old_object = _object;
+
+    if ( obj )
+        _object = obj;
+
     processOne(node, f);
+    _object = old_object;
 
     if ( true_ ) {
         cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
@@ -260,9 +311,51 @@ void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<type::unit::item:
     }
 }
 
+void Composer::_hiltiComposeContainer(shared_ptr<hilti::Expression> value, shared_ptr<Production> body, shared_ptr<type::unit::item::field::Container> container)
+{
+    auto iterable = ast::type::checkedTrait<type::trait::Iterable>(container->fieldType());
+    assert(iterable);
+
+    auto i = cg()->builder()->addTmp("i", cg()->hiltiType(iterable->iterType()));
+    auto elem = cg()->builder()->addTmp("elem", cg()->hiltiType(iterable->elementType()));
+    auto end = cg()->builder()->addTmp("end", cg()->hiltiType(iterable->iterType()));
+    auto atend = cg()->builder()->addTmp("atend", hilti::builder::boolean::type());
+
+    auto cont = cg()->moduleBuilder()->newBuilder("container-done");
+    auto compose_one = cg()->moduleBuilder()->newBuilder("container-compose-one");
+    auto loop = cg()->moduleBuilder()->newBuilder("container-loop");
+
+    cg()->builder()->addInstruction(i, hilti::instruction::operator_::Begin, value);
+    cg()->builder()->addInstruction(end, hilti::instruction::operator_::End, value);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
+
+    cg()->moduleBuilder()->pushBuilder(loop);
+    cg()->builder()->addInstruction(atend, hilti::instruction::operator_::Equal, i, end);
+    cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, atend, cont->block(), compose_one->block());
+    cg()->moduleBuilder()->popBuilder(loop);
+
+    cg()->moduleBuilder()->pushBuilder(compose_one);
+
+    cg()->builder()->addInstruction(elem, hilti::instruction::operator_::Deref, i);
+    compose(body, elem, container->field());
+
+    cg()->builder()->addInstruction(i, hilti::instruction::operator_::Incr, i);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
+
+    cg()->moduleBuilder()->popBuilder(compose_one);
+
+    cg()->moduleBuilder()->pushBuilder(cont);
+}
+
 void Composer::_hiltiCallComposeFunction(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func)
 {
     cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid, func, state()->hiltiArguments());
+}
+
+void Composer::_hiltiRunFieldHooks(shared_ptr<type::unit::item::Field> field)
+{
+    assert(field);
+    cg()->hiltiRunFieldHooks(state()->unit, field, state()->self, true, state()->cookie);
 }
 
 void Composer::_hiltiFilterOutput()
@@ -278,9 +371,20 @@ void Composer::_startingProduction(shared_ptr<Production> p, shared_ptr<type::un
     _hiltiDebugVerbose(util::fmt("composing %s", util::strtrim(p->render().c_str())));
 }
 
+void Composer::_startingUnit()
+{
+    cg()->hiltiRunHook(state()->unit, state()->self, cg()->hookForUnit(state()->unit, "%init", true), nullptr, false, nullptr, true, state()->cookie);
+}
+
+void Composer::_finishedUnit()
+{
+    cg()->hiltiRunHook(state()->unit, state()->self, cg()->hookForUnit(state()->unit, "%done", true), nullptr, false, nullptr, true, state()->cookie);
+}
+
 void Composer::_finishedProduction(shared_ptr<Production> p)
 {
     cg()->builder()->addComment("");
+    _object = nullptr;
 }
 
 void Composer::hiltiPack(shared_ptr<type::unit::item::Field> field,
@@ -301,7 +405,7 @@ void Composer::_hiltiDataComposed(shared_ptr<hilti::Expression> data, shared_ptr
     if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type()))
         cg()->builder()->addDebugMsg("binpac-compose", util::fmt("%s = %%s", field->id()->name()), data);
 
-    auto obj = cg()->hiltiItemGet(state()->self, field);
+    auto obj = (field->anonymous() ? hilti::builder::reference::createNull() : hiltiObject());
 
     hilti::builder::tuple::element_list args = { data, obj, state()->cookie };
     cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid, state()->output_function, hilti::builder::tuple::create(args));
@@ -369,12 +473,30 @@ void Composer::visit(expression::Type* t)
     processOne(type, &value, field);
 }
 
+void Composer::visit(constant::Integer* i)
+{
+    auto field = arg1();
+    assert(field);
+
+    auto t = ast::checkedCast<type::Integer>(i->type());
+
+    cg()->builder()->addComment(util::fmt("Integer constant: %s", field->id()->name()));
+
+    auto e = std::make_shared<expression::Constant>(i->sharedPtr<constant::Integer>());
+    auto d = cg()->hiltiExpression(e);
+
+    auto byteorder = field->inheritedProperty("byteorder");
+    auto fmt = cg()->hiltiIntPackFormat(t->width(), t->signed_(), byteorder);
+
+    hiltiPack(field, d, fmt);
+}
+
 void Composer::visit(ctor::Bytes* b)
 {
     auto field = arg1();
     assert(field);
 
-    cg()->builder()->addComment(util::fmt("Bytes constant: %s", field->id()->name()));
+    cg()->builder()->addComment(util::fmt("Bytes ctor: %s", field->id()->name()));
 
     auto e = std::make_shared<expression::Ctor>(b->sharedPtr<ctor::Bytes>());
     auto d = cg()->hiltiExpression(e);
@@ -388,8 +510,7 @@ void Composer::visit(ctor::RegExp* r)
 
     cg()->builder()->addComment(util::fmt("RegExp ctor: %s", field->id()->name()));
 
-    auto b = cg()->hiltiItemGet(state()->self, field);
-    _hiltiDataComposed(b, field);
+    _hiltiDataComposed(hiltiObject(field), field);
 }
 
 void Composer::visit(production::Boolean* b)
@@ -406,10 +527,34 @@ void Composer::visit(production::Boolean* b)
 void Composer::visit(production::ChildGrammar* c)
 {
     auto field = c->pgMeta()->field;
+    assert(field);
 
     _startingProduction(c->sharedPtr<Production>(), field);
 
-    internalError("composing production::ChildGrammar not implemented");
+    auto child = c->childType();
+    auto child_func = cg()->hiltiComposeFunction(child);
+    auto child_self = (_object ? hilti::builder::id::create("__self") : hiltiObject(field));
+
+    auto cstate = state()->clone();
+    cstate->unit = child;
+    cstate->self = child_self;
+    pushState(cstate);
+
+    if ( cg()->options().debug > 0 ) {
+        if ( ! field->anonymous() )
+            _hiltiDebug(field->id()->name());
+        else
+            _hiltiDebug(field->type()->render());
+
+        cg()->builder()->debugPushIndent();
+    }
+
+    _hiltiCallComposeFunction(child, child_func);
+
+    if ( cg()->options().debug > 0 )
+        cg()->builder()->debugPopIndent();
+
+    popState();
 
     _finishedProduction(c->sharedPtr<Production>());
 }
@@ -420,7 +565,7 @@ void Composer::visit(production::Enclosure* c)
 
     _startingProduction(c->sharedPtr<Production>(), field);
 
-    internalError("composing production::Enclosure not implemented");
+    compose(c->child(), field);
 
     _finishedProduction(c->sharedPtr<Production>());
 }
@@ -431,7 +576,10 @@ void Composer::visit(production::Counter* c)
 
     _startingProduction(c->sharedPtr<Production>(), field);
 
-    internalError("composing production::Counter not implemented");
+    if ( auto cont = ast::tryCast<type::unit::item::field::Container>(field) )
+        _hiltiComposeContainer(hiltiObject(field), c->body(), cont);
+    else
+        internalError(::util::fmt("composing counter of field %s not implemented", field->render()));
 
     _finishedProduction(c->sharedPtr<Production>());
 }
@@ -522,7 +670,16 @@ void Composer::visit(production::Loop* l)
 
     _startingProduction(l->sharedPtr<Production>(), field);
 
-    internalError("composing production::Loop not implemented");
+    if ( auto cont = ast::tryCast<type::unit::item::field::Container>(field) ) {
+        _hiltiComposeContainer(hiltiObject(field), l->body(), cont);
+
+        if ( auto until = field->attributes()->lookup("until") ) {
+            // TODO: What?
+        }
+    }
+
+    else
+        internalError(::util::fmt("composing loop of field %s not implemented", field->render()));
 
     _finishedProduction(l->sharedPtr<Production>());
 }
@@ -532,8 +689,7 @@ void Composer::visit(type::Bytes* b)
     auto field = arg1();
     assert(field);
 
-    auto data = cg()->hiltiItemGet(state()->self, field);
-    _hiltiDataComposed(data, field);
+    _hiltiDataComposed(hiltiObject(), field);
 
     if ( auto until = field->attributes()->lookup("until") ) {
         auto eod = cg()->hiltiExpression(until->value());
@@ -546,11 +702,53 @@ void Composer::visit(type::Integer* i)
     auto field = arg1();
     assert(field);
 
-    auto val = cg()->hiltiItemGet(state()->self, field);
-
     auto byteorder = field->inheritedProperty("byteorder");
-
     auto fmt = cg()->hiltiIntPackFormat(i->width(), i->signed_(), byteorder);
 
-    hiltiPack(field, val, fmt);
+    hiltiPack(field, hiltiObject(), fmt);
+}
+
+void Composer::visit(type::Address* i)
+{
+    auto field = arg1();
+    assert(field);
+
+    auto v4 = field->attributes()->has("ipv4");
+    auto v6 = field->attributes()->has("ipv6");
+    assert((v4 || v6) && ! (v4 && v6));
+
+    auto byteorder = field->inheritedProperty("byteorder");
+    auto hltbo = byteorder ? cg()->hiltiExpression(byteorder) : hilti::builder::id::create("BinPAC::ByteOrder::Big");
+
+    string big, little, host;
+
+    if ( v4 ) {
+        host = "IPv4";
+        little= "IPv4Little";
+        big = "IPv4Big";
+        // FIXME: We don't have HILTI enums for little endian addresses.
+    }
+    else {
+        host = "IPv6";
+        little= "IPv6Little";
+        big = "IPv6Big";
+    }
+
+    auto t1 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::ByteOrder::Little"),
+        hilti::builder::id::create(string("Hilti::Packed::") + little) });
+
+    auto t2 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::ByteOrder::Big"),
+        hilti::builder::id::create(string("Hilti::Packed::") + big) });
+
+    auto t3 = hilti::builder::tuple::create({
+        hilti::builder::id::create("BinPAC::ByteOrder::Host"),
+        hilti::builder::id::create(string("Hilti::Packed::") + host) });
+
+    auto tuple = hilti::builder::tuple::create({ t1, t2, t3 });
+    auto fmt = cg()->moduleBuilder()->addTmp("fmt", hilti::builder::type::byName("Hilti::Packed"));
+    cg()->builder()->addInstruction(fmt, hilti::instruction::Misc::SelectValue, hltbo, tuple);
+
+    hiltiPack(field, hiltiObject(), fmt);
 }

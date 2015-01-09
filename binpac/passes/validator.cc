@@ -588,6 +588,9 @@ void Validator::visit(type::unit::item::Field* f)
         if ( attr->key() == "convert" )
             continue;
 
+        if ( attr->key() == "convert_back" )
+            continue;
+
         if ( attr->key() == "parse" )
             continue;
 

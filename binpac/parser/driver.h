@@ -10,6 +10,7 @@
 #include "../declaration.h"
 #include "../ctor.h"
 #include "../type.h"
+#include "../function.h"
 #include "../context.h"
 #include "../visitor-interface.h"
 
@@ -73,12 +74,15 @@ struct yystype_binpac {
     binpac::type::Integer::bits_list bits;
     binpac::ctor::RegExp::pattern_list re_patterns;
     binpac::type::function::CallingConvention cc;
+    binpac::Hook::Kind hook_kind;
+    binpac::type::unit::item::Field::Kind field_kind;
 
     std::list<string> strings;
     std::list<std::pair<shared_ptr<binpac::ID>, int>> id_and_ints;
 
     std::pair<shared_ptr<binpac::Type>, shared_ptr<binpac::Expression>> type_and_expr;
     std::pair<shared_ptr<binpac::ID>, int> id_and_int;
+    std::pair<shared_ptr<binpac::ID>, binpac::type::unit::item::Field::Kind> field_name_and_kind;
 };
 
 #define YYSTYPE yystype_binpac

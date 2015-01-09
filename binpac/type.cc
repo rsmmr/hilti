@@ -1088,6 +1088,7 @@ bool unit::Item::hooksEnabled()
 
 unit::item::Field::Field(shared_ptr<ID> id,
                          shared_ptr<binpac::Type> type,
+                         Kind kind,
                          shared_ptr<Expression> cond,
                          const hook_list& hooks,
                          const attribute_list& attrs,
@@ -1096,6 +1097,7 @@ unit::item::Field::Field(shared_ptr<ID> id,
                          const Location& l)
     : Item(id, type, hooks, attrs, l)
 {
+    _kind = kind;
     _cond = cond;
     addChild(_cond);
 
@@ -1126,6 +1128,7 @@ shared_ptr<Type> unit::item::Field::fieldType()
 
 shared_ptr<unit::item::Field> unit::item::Field::createByType(shared_ptr<Type> type,
                                                               shared_ptr<ID> id,
+                                                              Kind kind,
                                                               shared_ptr<Expression> condition,
                                                               const hook_list& hooks,
                                                               const attribute_list& attributes,
@@ -1134,16 +1137,35 @@ shared_ptr<unit::item::Field> unit::item::Field::createByType(shared_ptr<Type> t
                                                               const Location& location)
 {
     if ( auto unit = ast::tryCast<type::Unit>(type) )
-        return std::make_shared<type::unit::item::field::Unit>(id, unit, condition, hooks, attributes, parameters, sinks, location);
+        return std::make_shared<type::unit::item::field::Unit>(id, unit, kind, condition, hooks, attributes, parameters, sinks, location);
 
     if ( auto list = ast::tryCast<type::List>(type) ) {
-        auto field = createByType(list->argType(), nullptr, nullptr, hook_list(), attribute_list(), expression_list(), expression_list(), location);
-        return std::make_shared<type::unit::item::field::container::List>(id, field, condition, hooks, attributes, sinks, location);
+        auto field = createByType(list->argType(), nullptr, kind, nullptr, hook_list(), attribute_list(), expression_list(), expression_list(), location);
+        return std::make_shared<type::unit::item::field::container::List>(id, field, kind, condition, hooks, attributes, sinks, location);
     }
 
-    return std::make_shared<type::unit::item::field::AtomicType>(id, type, condition, hooks, attributes, sinks, location);
+    return std::make_shared<type::unit::item::field::AtomicType>(id, type, kind, condition, hooks, attributes, sinks, location);
 }
 
+unit::item::Field::Kind unit::item::Field::kind() const
+{
+    return _kind;
+}
+
+void unit::item::Field::setKind(Kind kind)
+{
+    _kind = kind;
+}
+
+bool unit::item::Field::forComposing() const
+{
+    return _kind == COMPOSE || _kind == PARSE_COMPOSE;
+}
+
+bool unit::item::Field::forParsing() const
+{
+    return _kind == PARSE || _kind == PARSE_COMPOSE;
+}
 
 bool unit::item::Field::transient() const
 {
@@ -1188,12 +1210,13 @@ void unit::item::Field::setParent(Field* parent)
 
 unit::item::field::Constant::Constant(shared_ptr<ID> id,
                                       shared_ptr<binpac::Constant> const_,
+                                      Kind kind,
                                       shared_ptr<Expression> cond,
                                       const hook_list& hooks,
                                       const attribute_list& attrs,
                                       const expression_list& sinks,
                                       const Location& l)
-    : Field(id, const_->type(), cond, hooks, attrs, expression_list(), sinks, l)
+    : Field(id, const_->type(), kind, cond, hooks, attrs, expression_list(), sinks, l)
 {
     _const = const_;
     addChild(_const);
@@ -1206,13 +1229,14 @@ shared_ptr<binpac::Constant> unit::item::field::Constant::constant() const
 
 unit::item::field::Unknown::Unknown(shared_ptr<ID> id,
                                     shared_ptr<binpac::ID> scope_id,
+                                    Kind kind,
                                     shared_ptr<Expression> cond,
                                     const hook_list& hooks,
                                     const attribute_list& attrs,
                                     const expression_list& params,
                                     const expression_list& sinks,
                                     const Location& l)
-    : Field(id, nullptr, cond, hooks, attrs, params, sinks, l)
+    : Field(id, nullptr, kind, cond, hooks, attrs, params, sinks, l)
 {
     _scope_id = scope_id;
     addChild(_scope_id);
@@ -1224,36 +1248,39 @@ shared_ptr<binpac::ID> unit::item::field::Unknown::scopeID() const
 }
 
 unit::item::field::AtomicType::AtomicType(shared_ptr<ID> id,
-                       shared_ptr<binpac::Type> type,
-                       shared_ptr<Expression> cond,
-                       const hook_list& hooks,
-                       const attribute_list& attrs,
-                       const expression_list& sinks,
-                       const Location& l)
-    : Field(id, type, cond, hooks, attrs, expression_list(), sinks, l)
+                                          shared_ptr<binpac::Type> type,
+                                          Kind kind,
+                                          shared_ptr<Expression> cond,
+                                          const hook_list& hooks,
+                                          const attribute_list& attrs,
+                                          const expression_list& sinks,
+                                          const Location& l)
+    : Field(id, type, kind, cond, hooks, attrs, expression_list(), sinks, l)
 {
 }
 
 unit::item::field::Unit::Unit(shared_ptr<ID> id,
-                       shared_ptr<binpac::Type> type,
-                       shared_ptr<Expression> cond,
-                       const hook_list& hooks,
-                       const attribute_list& attrs,
-                       const expression_list& params,
-                       const expression_list& sinks,
-                       const Location& l)
-    : Field(id, type, cond, hooks, attrs, params, sinks, l)
+                              shared_ptr<binpac::Type> type,
+                              Kind kind,
+                              shared_ptr<Expression> cond,
+                              const hook_list& hooks,
+                              const attribute_list& attrs,
+                              const expression_list& params,
+                              const expression_list& sinks,
+                              const Location& l)
+    : Field(id, type, kind, cond, hooks, attrs, params, sinks, l)
 {
 }
 
 unit::item::field::Ctor::Ctor(shared_ptr<ID> id,
-                           shared_ptr<binpac::Ctor> ctor,
-                           shared_ptr<Expression> cond,
-                           const hook_list& hooks,
-                           const attribute_list& attrs,
-                           const expression_list& sinks,
-                           const Location& l)
-    : Field(id, ctor->type(), cond, hooks, attrs, expression_list(), sinks, l)
+                              shared_ptr<binpac::Ctor> ctor,
+                              Kind kind,
+                              shared_ptr<Expression> cond,
+                              const hook_list& hooks,
+                              const attribute_list& attrs,
+                              const expression_list& sinks,
+                              const Location& l)
+    : Field(id, ctor->type(), kind, cond, hooks, attrs, expression_list(), sinks, l)
 {
     _ctor = ctor;
     addChild(_ctor);
@@ -1266,12 +1293,13 @@ shared_ptr<binpac::Ctor> unit::item::field::Ctor::ctor() const
 
 unit::item::field::Container::Container(shared_ptr<ID> id,
                                         shared_ptr<Field> field,
+                                        Kind kind,
                                         shared_ptr<Expression> cond,
                                         const hook_list& hooks,
                                         const attribute_list& attrs,
                                         const expression_list& sinks,
                                         const Location& l)
-    : Field(id, std::make_shared<type::Bytes>(), cond, hooks, attrs, expression_list(), sinks, l)
+    : Field(id, std::make_shared<type::Bytes>(), kind, cond, hooks, attrs, expression_list(), sinks, l)
 {
     _field = field;
     _field->scope()->setParent(scope());
@@ -1350,13 +1378,14 @@ shared_ptr<unit::item::Field> unit::item::field::Container::field() const
 }
 
 unit::item::field::container::List::List(shared_ptr<ID> id,
-                                        shared_ptr<Field> field,
-                                        shared_ptr<Expression> cond,
-                                        const hook_list& hooks,
-                                        const attribute_list& attrs,
-                                        const expression_list& sinks,
-                                        const Location& l)
-    : Container(id, field, cond, hooks, attrs, sinks, l)
+                                         shared_ptr<Field> field,
+                                         Kind kind,
+                                         shared_ptr<Expression> cond,
+                                         const hook_list& hooks,
+                                         const attribute_list& attrs,
+                                         const expression_list& sinks,
+                                         const Location& l)
+    : Container(id, field, kind, cond, hooks, attrs, sinks, l)
 {
 }
 
@@ -1372,14 +1401,15 @@ shared_ptr<binpac::Type> unit::item::field::container::List::type()
 }
 
 unit::item::field::container::Vector::Vector(shared_ptr<ID> id,
-                                        shared_ptr<Field> field,
-                                        shared_ptr<Expression> length,
-                                        shared_ptr<Expression> cond,
-                                        const hook_list& hooks,
-                                        const attribute_list& attrs,
-                                        const expression_list& sinks,
-                                        const Location& l)
-    : Container(id, field, cond, hooks, attrs, sinks, l)
+                                             shared_ptr<Field> field,
+                                             shared_ptr<Expression> length,
+                                             Kind kind,
+                                             shared_ptr<Expression> cond,
+                                             const hook_list& hooks,
+                                             const attribute_list& attrs,
+                                             const expression_list& sinks,
+                                             const Location& l)
+    : Container(id, field, kind, cond, hooks, attrs, sinks, l)
 {
     _length = length;
     addChild(_length);
@@ -1486,8 +1516,8 @@ std::string unit::item::field::switch_::Case::uniqueName()
     return ::util::uitoa_n(::util::hash(s), 62, 5);
 }
 
-unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, shared_ptr<Expression> cond, const hook_list& hooks, const Location& l)
-    : Field(nullptr, nullptr, cond, hooks, attribute_list(), expression_list(), expression_list(), l)
+unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, Kind kind, shared_ptr<Expression> cond, const hook_list& hooks, const Location& l)
+    : Field(nullptr, nullptr, kind, cond, hooks, attribute_list(), expression_list(), expression_list(), l)
 {
     _expr = expr;
     addChild(_expr);

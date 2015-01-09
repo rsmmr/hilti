@@ -301,6 +301,10 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
     if ( prod )
         field = ast::tryCast<type::unit::item::Field>(prod->pgMeta()->field);
 
+    if ( field && ! field->forParsing() )
+        // Skip
+        return true;
+
     if ( field && field->condition() ) {
         // Evaluate if() condition.
         auto blocks = cg()->builder()->addIf(cg()->hiltiExpression(field->condition()));

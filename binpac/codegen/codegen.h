@@ -333,7 +333,7 @@ public:
     ///
     /// Returns: The transformed value, which may be just \c val if no
     /// transformation applied.
-    shared_ptr<hilti::Expression> hiltiApplyAttributesToValue(shared_ptr<hilti::Expression> val, shared_ptr<AttributeSet> attrs);
+    shared_ptr<hilti::Expression> hiltiApplyAttributesToValue(shared_ptr<hilti::Expression> val, shared_ptr<AttributeSet> attrs, bool composing=false);
 
     /// XXX
     void hiltiImportType(shared_ptr<ID> id, shared_ptr<Type> t);

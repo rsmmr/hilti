@@ -109,6 +109,10 @@ void Normalizer::visit(type::unit::item::Field* f)
         if ( border )
             itype->setBitOrder(border->value());
     }
+
+    // If the field has a &parse, we ignore it for composing.
+    if ( f->attributes()->has("parse") )
+        f->setKind(type::unit::item::Field::PARSE);
 }
 
 void Normalizer::visit(type::unit::item::field::Container* c)

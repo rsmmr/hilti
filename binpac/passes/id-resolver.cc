@@ -329,6 +329,7 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
     auto expr = exprs.front();
 
     auto attributes = f->attributes()->attributes();
+    auto kind = f->kind();
     auto condition = f->condition();
     auto hooks = f->hooks();
     auto name = f->id();
@@ -343,13 +344,13 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
     auto type = ast::tryCast<expression::Type>(expr);
 
     if ( ctor )
-        nfield = std::make_shared<type::unit::item::field::Ctor>(name, ctor->ctor(), condition, hooks, attributes, sinks, location);
+        nfield = std::make_shared<type::unit::item::field::Ctor>(name, ctor->ctor(), kind, condition, hooks, attributes, sinks, location);
 
     if ( constant )
-        nfield = std::make_shared<type::unit::item::field::Constant>(name, constant->constant(), condition, hooks, attributes, sinks, location);
+        nfield = std::make_shared<type::unit::item::field::Constant>(name, constant->constant(), kind, condition, hooks, attributes, sinks, location);
 
     if ( type )
-        nfield = type::unit::item::Field::createByType(type->typeValue(), name, condition, hooks, attributes, params, sinks, location);
+        nfield = type::unit::item::Field::createByType(type->typeValue(), name, kind, condition, hooks, attributes, params, sinks, location);
 
     nfield->scope()->setParent(f->scope()->parent());
     nfield->setParent(f->parent());

@@ -391,6 +391,13 @@ void TypeBuilder::visit(type::iterator::Bytes* b)
 
 void TypeBuilder::visit(type::iterator::List* l)
 {
+    auto ltype = ast::checkedCast<type::List>(l->argType());
+    auto etype = hiltiType(ltype->elementType());
+    auto ctype = hilti::builder::list::type(etype);
+
+    TypeInfo ti;
+    ti.hilti_type = std::make_shared<hilti::type::iterator::List>(ctype, l->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::iterator::Regexp* r)
