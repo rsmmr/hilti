@@ -367,7 +367,9 @@ void processParseObject(binpac_parser* p, void* pobj)
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
 
+    GC_CCTOR_GENERIC(&pobj, p->type_info, ctx);
     p->compose_func(pobj, composeOutput, 0, &excpt, ctx);
+    GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
 
     check_exception(excpt);
 }
@@ -398,7 +400,6 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 
         processParseObject(p, pobj);
 
-        GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
         GC_DTOR(input, hlt_bytes, ctx);
         check_exception(excpt);
         dump_memstats();
@@ -451,7 +452,6 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 
             void *pobj = (*p->parse_func)(incr_input, 0, &excpt, ctx);
             processParseObject(p, pobj);
-            GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
         }
 
         else {
@@ -460,7 +460,6 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 
             void *pobj = (*p->resume_func)(resume, &excpt, ctx);
             processParseObject(p, pobj);
-            GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
         }
 
         GC_DTOR(cur_end, hlt_iterator_bytes, ctx);
