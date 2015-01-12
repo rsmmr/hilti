@@ -101,6 +101,7 @@ statement::try_::Catch
 Type
 type::Address
 type::Any
+type::Bitfield
 type::Bitset
 type::Bool
 type::Block
@@ -138,7 +139,7 @@ type::UnknownElementType
 type::Unset
 type::Vector
 type::Void
-type::integer::Bits
+type::bitfield::Bits
 type::iterator::Bytes
 type::iterator::List
 type::iterator::Regexp

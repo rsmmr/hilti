@@ -22,13 +22,14 @@ public:
    /// l: An associated location.
    ///
    /// \todo: We don't use the AST's new linkage attribute yet.
-   Declaration(shared_ptr<hilti::ID> id, const Location& l=Location::None)
-       : ast::Declaration<AstInfo>(id, LOCAL, l) {}
+   Declaration(shared_ptr<hilti::ID> id, const Location& l=Location::None);
 
    /// Returns a readable one-line representation of the declaration.
    string render() override;
 
    ACCEPT_VISITOR_ROOT();
+
+private:
 };
 
 namespace declaration {

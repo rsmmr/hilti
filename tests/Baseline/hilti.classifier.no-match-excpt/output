@@ -1,1 +1,1 @@
-hilti: uncaught exception, IndexError (from /home/robin/work/binpacpp/hilti/libhilti/classifier.c:187)
+hilti: uncaught exception, IndexError (from /home/robin/work/hilti/libhilti/classifier.c:225)

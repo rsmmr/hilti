@@ -1,6 +1,6 @@
-Foo.a <a=1, b=(not set), c=(not set)>
+Foo.a <a=1>
 Error, backtracking
-Bar.a <a=1, b=(not set), c=(not set)>
-Bar.b <a=1, b=2, c=(not set)>
+Bar.a <a=1>
+Bar.b <a=1, b=2>
 Bar.c <a=1, b=2, c=3>
 <a=1234, foo=(Null), bar=<a=1, b=2, c=3>, b=567890>

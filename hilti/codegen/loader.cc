@@ -33,7 +33,7 @@ llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type
 
         else {
             if ( result.cctor )
-                cg()->llvmDtorAfterInstruction(result.value, type, result.is_ptr, "Loader.normResult");
+                cg()->llvmDtorAfterInstruction(result.value, type, result.is_ptr, result.is_hoisted, "Loader.normResult");
         }
     }
 
@@ -161,9 +161,9 @@ void Loader::visit(variable::Local* v)
     auto name = v->internalName();
     assert(name.size());
 
-    auto hoist = v->type()->attributes().has(attribute::HOIST);
+    auto hoisted = v->attributes().has(attribute::HOIST);
     auto addr = cg()->llvmLocal(name);
-    setResult(addr, false, ! hoist);
+    setResult(addr, false, ! hoisted, hoisted);
 }
 
 void Loader::visit(variable::Global* v)

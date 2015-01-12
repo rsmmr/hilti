@@ -2,8 +2,8 @@
 
 [<qname=<labels=[www, joelonsoftware, com, ]>, qtype=1, qclass=1>]
 
-[<name=<labels=[www, joelonsoftware, com, ]>, ty=CNAME, class=1, ttl=2187, rdlen=2, a=(not set), <labels=<labels=[joelonsoftware, com, ]>>>, <name=<labels=[joelonsoftware, com, ]>, ty=A, class=1, ttl=2188, rdlen=4, a=64.34.80.173, (not set)>]
+[<name=<labels=[www, joelonsoftware, com, ]>, ty=CNAME, class=1, ttl=2187, rdlen=2, labels=<labels=[joelonsoftware, com, ]>>, <name=<labels=[joelonsoftware, com, ]>, ty=A, class=1, ttl=2188, rdlen=4, a=64.34.80.173>]
 
-[<name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=16, a=(not set), <labels=<labels=[dns3, fogcreek, com, ]>>>, <name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=7, a=(not set), <labels=<labels=[dns5, fogcreek, com, ]>>>]
+[<name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=16, labels=<labels=[dns3, fogcreek, com, ]>>, <name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=7, labels=<labels=[dns5, fogcreek, com, ]>>]
 
 []

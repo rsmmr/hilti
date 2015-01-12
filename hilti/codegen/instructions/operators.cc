@@ -47,7 +47,7 @@ void StatementBuilder::visit(statement::instruction::operator_::Unequal* i)
 
 void StatementBuilder::visit(statement::instruction::operator_::Assign* i)
 {
-    if ( ! i->target()->type()->attributes().has(attribute::HOIST) ) {
+    if ( ! i->target()->hoisted() ) {
         auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
         cg()->llvmStore(i, op1);
     }

@@ -1,1 +1,1 @@
-hilti: uncaught exception, WouldBlock (from /Users/robin/work/binpacpp/hilti/libhilti/channel.c:180)
+hilti: uncaught exception, WouldBlock (from /home/robin/work/hilti/libhilti/channel.c:253)

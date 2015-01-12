@@ -2,4 +2,4 @@ b1 2345
 b2 <not set>
 b1 <not set>
 b2 2345
-hilti: uncaught exception, BinPACHilti::ParseError with argument 'no matching switch case' (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/binpac.unit.switch-no-default/switch-no-default.hb5175.tmp.hlt:161-162)
+hilti: uncaught exception, BinPACHilti::ParseError with argument 'no matching switch case' (from <no location>:)

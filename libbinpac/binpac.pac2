@@ -63,3 +63,4 @@ import "HILTI-C" string fmt(format: string, args: tuple<*>) &hilti_id=BinPAC::fm
 # mktime(3) equivalent.
 import "HILTI-C" time mktime(y: uint<64>, m: uint<64>, d: uint<64>, H: uint<64>, M: uint<64>, S: uint<64>) &hilti_id=BinPAC::mktime;
 # %end-mktime
+

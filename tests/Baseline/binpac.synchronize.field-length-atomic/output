@@ -1,2 +1,2 @@
-%sync <a=1234, b=, c=(not set)>
+%sync <a=1234, b=>
 %done <a=1234, b=, c=90>

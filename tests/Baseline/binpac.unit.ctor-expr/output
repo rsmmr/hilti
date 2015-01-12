@@ -1,2 +1,2 @@
-<a=1, b=string, c=(not set), d=foo>
-<_i1=1, _i2=string, _i3=(not set), _i4=foo>
+<a=1, b=string, d=foo>
+<_i1=1, _i2=string, _i4=foo>

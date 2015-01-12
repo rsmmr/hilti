@@ -174,7 +174,7 @@ string scopedID(Printer<AstInfo>* printer, Expr expr, Id id)
 template<typename AstInfo, typename Ty, typename Module>
 bool printTypeID(Printer<AstInfo>* printer, Ty* t, Module* module)
 {
-    if ( ! printer->_print_type_ids )
+    if ( printer->_print_type_ids <= 0 )
         return false;
 
     if ( ! t->id() )

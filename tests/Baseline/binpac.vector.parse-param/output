@@ -1,3 +1,3 @@
 []
-[0: <line=[0: AAA\x0a, 1: BBB\x0a]>]
-<lines=[0: <line=[0: AAA\x0a, 1: BBB\x0a]>, 1: <line=[0: CCC\x0a, 1: DDD\x0a]>], last=EEE\x0a>
+[<line=[AAA\x0a, BBB\x0a]>]
+<lines=[<line=[AAA\x0a, BBB\x0a]>, <line=[CCC\x0a, DDD\x0a]>], last=EEE\x0a>

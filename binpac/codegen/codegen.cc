@@ -93,9 +93,7 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
                 auto unit = ast::tryCast<type::Unit>(type);
                 auto hlttype = unit ? hiltiTypeParseObject(unit) : hiltiType(type);
 
-                auto hid = hiltiID(id);
-                if ( ! moduleBuilder()->declared(hid) )
-                    moduleBuilder()->addType(hid, hlttype);
+                hiltiAddType(id, hlttype, type);
 
                 done.insert(t.first);
             }
@@ -165,6 +163,48 @@ shared_ptr<hilti::Type> CodeGen::hiltiType(shared_ptr<Type> type, id_list* deps)
 {
     assert(_compiling);
     return _type_builder->hiltiType(type, deps);
+}
+
+shared_ptr<hilti::Type> CodeGen::hiltiTypeInteger(int width, bool signed_)
+{
+    return hiltiType(std::make_shared<type::Integer>(width, signed_));
+}
+
+shared_ptr<hilti::Type> CodeGen::hiltiTypeOptional(shared_ptr<Type> t)
+{
+    return t ? hiltiType(std::make_shared<type::Optional>(t))
+             : hiltiType(std::make_shared<type::Optional>());
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiConstantInteger(int value, bool signed_)
+{
+    auto c = ::hilti::builder::integer::create(value);
+
+    // Make sure we get out attributes.
+    auto attrs = hiltiTypeInteger(64, signed_)->attributes();
+    c->type()->setAttributes(attrs);
+    return c;
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiConstantOptional(shared_ptr<Expression> value)
+{
+    std::shared_ptr<::hilti::expression::Constant> c;
+
+    if ( value )
+        c = hilti::builder::union_::create(hiltiExpression(value));
+    else
+        c = hilti::builder::union_::create();
+
+    // Make sure we get our attributes.
+    auto attrs = hiltiTypeOptional(value ? value->type() : nullptr)->attributes();
+    c->constant()->setAttributes(attrs);
+    return c;
+}
+
+shared_ptr<hilti::ID> CodeGen::hiltiTypeID(shared_ptr<Type> type)
+{
+    assert(_compiling);
+    return _type_builder->hiltiTypeID(type);
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiDefault(shared_ptr<Type> type, bool null_on_default, bool can_be_unset)
@@ -268,6 +308,38 @@ shared_ptr<hilti::Type> CodeGen::hiltiTypeParseObject(shared_ptr<type::Unit> uni
 shared_ptr<hilti::Type> CodeGen::hiltiTypeParseObjectRef(shared_ptr<type::Unit> u)
 {
     return hilti::builder::reference::type(hiltiTypeParseObject(u));
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiAddParseObjectTypeInfo(shared_ptr<Type> unit)
+{
+    auto e = ast::tryCast<hilti::Expression>(_mbuilder->lookupNode("parse-obj-typeinfo", unit->id()->name()));
+
+    if ( e )
+        return e;
+
+    e = _type_builder->hiltiAddParseObjectTypeInfo(unit);
+
+    _mbuilder->cacheNode("parse-obj-typeinfo", unit->id()->name(), e);
+    return e;
+}
+
+void CodeGen::hiltiAddType(shared_ptr<ID> id, shared_ptr<hilti::Type> htype, shared_ptr<Type> btype)
+{
+    auto hid = hiltiID(id);
+
+    // If the ID is already declared, we assume it's equivalent.
+    if ( moduleBuilder()->declared(hid) )
+        return;
+
+    moduleBuilder()->addType(hid, htype, false, htype->location());
+
+    if ( auto unit = ast::tryCast<type::Unit>(btype) ) {
+        auto hostapp_type = hiltiAddParseObjectTypeInfo(unit);
+        auto i = ::hilti::builder::integer::create(BINPAC_TYPE_UNIT);
+        ::hilti::builder::tuple::element_list elems = { i, hostapp_type };
+        auto t = ::hilti::builder::tuple::create(elems);
+        htype->attributes().add(::hilti::attribute::HOSTAPP_TYPE, t);
+    }
 }
 
 void CodeGen::hiltiExportParser(shared_ptr<type::Unit> unit)
@@ -760,7 +832,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiFunctionNew(shared_ptr<type::Unit> u
 
 shared_ptr<hilti::Expression> CodeGen::hiltiCastEnum(shared_ptr<hilti::Expression> val, shared_ptr<hilti::Type> dst)
 {
-    auto i = builder()->addTmp("eval", hilti::builder::integer::type(64));
+    auto i = builder()->addTmp("eval", hiltiTypeInteger(64, false));
     auto e = builder()->addTmp("enum", dst);
     builder()->addInstruction(i, hilti::instruction::enum_::ToInt, val);
     builder()->addInstruction(e, hilti::instruction::enum_::FromInt, i);
@@ -876,10 +948,10 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCharset(shared_ptr<Expression> expr)
     return result;
 }
 
-shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<hilti::Expression> lower_in, shared_ptr<hilti::Expression> upper_in)
+shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<Expression> border, shared_ptr<hilti::Expression> lower_in, shared_ptr<hilti::Expression> upper_in)
 {
     auto itype = ast::checkedCast<type::Integer>(type);
-    auto hitype = hiltiType(itype);
+    auto hitype = hiltiTypeInteger(itype->width(), false);
     auto lower = builder()->addTmp("lower", hitype);
     auto upper = builder()->addTmp("upper", hitype);
     auto tmp = builder()->addTmp("tmpbits", hitype);
@@ -927,7 +999,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(shared_ptr<h
         fatalError("type BinPAC::BitOrder missing");
 
     auto etype = ast::checkedCast<expression::Type>(etype_expr)->typeValue();
-    auto eval = hiltiExpression(itype->bitOrder(), etype);
+    auto eval = hiltiExpression(border, etype);
 
     builder()->addSwitch(eval, bdefault, cases);
 
@@ -966,25 +1038,34 @@ static bool _usingStructForItems(shared_ptr<binpac::type::unit::Item> f)
     return c && (c->fields().size() > 1);
 }
 
-static shared_ptr<hilti::Type> _structType(const string& uniq)
+static shared_ptr<hilti::Type> _structType(CodeGen* cg, const string& uniq)
 {
     auto n = ::util::fmt("__struct_%s", uniq);
+
+    if ( auto t = cg->moduleBuilder()->lookupType(n) )
+        return t;
+
     return hilti::builder::type::byName(n);
 }
 
 static shared_ptr<hilti::Expression> _structTmp(CodeGen* cg, const string& uniq)
 {
-    auto stype = ::hilti::builder::reference::type(_structType(uniq));
+    auto stype = ::hilti::builder::reference::type(_structType(cg, uniq));
     auto s = cg->moduleBuilder()->addTmp("s", stype);
     return s;
 }
 
-static shared_ptr<hilti::Expression> _structFieldName(const string& uniq)
+static std::string _structFieldNameAsString(const string& uniq)
 {
-    return ::hilti::builder::string::create(::util::fmt("items_%s", uniq));
+    return ::util::fmt("items_%s", uniq);
 }
 
-static shared_ptr<hilti::Type> _unionType(const string& uniq)
+static shared_ptr<hilti::Expression> _structFieldName(const string& uniq)
+{
+    return ::hilti::builder::string::create(_structFieldNameAsString(uniq));
+}
+
+static shared_ptr<hilti::Type> _unionType(CodeGen* cg, const string& uniq)
 {
     auto n = ::util::fmt("__union_%s", uniq);
     return hilti::builder::type::byName(n);
@@ -992,14 +1073,19 @@ static shared_ptr<hilti::Type> _unionType(const string& uniq)
 
 static shared_ptr<hilti::Expression> _unionTmp(CodeGen* cg, const string& uniq)
 {
-    auto utype = _unionType(uniq);
+    auto utype = _unionType(cg, uniq);
     auto u = cg->moduleBuilder()->addTmp("u", utype);
     return u;
 }
 
+static std::string _unionFieldNameAsString(const string& uniq)
+{
+    return ::util::fmt("switch_%s", uniq);
+}
+
 static shared_ptr<hilti::Expression> _unionFieldName(const string& uniq)
 {
-    return ::hilti::builder::string::create(::util::fmt("switch_%s", uniq));
+    return ::hilti::builder::string::create(_unionFieldNameAsString(uniq));
 }
 
 typedef std::function<void (void)> _callback_t;
@@ -1043,6 +1129,10 @@ static void _presetDefaultInStruct(CodeGen* cg, shared_ptr<hilti::Expression> s,
 
 static void _setFieldInStruct(CodeGen* cg, shared_ptr<hilti::Expression> s, shared_ptr<hilti::Expression> fn, shared_ptr<hilti::Expression> value, shared_ptr<binpac::type::unit::Item> f);
 static void _setFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> u, shared_ptr<hilti::Expression> fn, shared_ptr<hilti::Expression> value, shared_ptr<binpac::type::unit::Item> f);
+
+static void _computeFieldPathInStruct(CodeGen* cg, shared_ptr<hilti::Type> s, shared_ptr<binpac::type::unit::Item> f, shared_ptr<binpac::ID> fn, ::hilti::builder::tuple::element_list* path);
+static void _computeFieldPathInUnion(CodeGen* cg, shared_ptr<hilti::Type> u, shared_ptr<binpac::type::unit::Item> f, shared_ptr<binpac::ID> fn, ::hilti::builder::tuple::element_list* path);
+
 
 static void _getFieldInStruct(CodeGen* cg, shared_ptr<hilti::Expression> result, shared_ptr<hilti::Expression> s, shared_ptr<hilti::Expression> fn, shared_ptr<binpac::type::unit::Item> f, shared_ptr<hilti::Expression> top_level_s, bool op_is_set)
 {
@@ -1206,7 +1296,7 @@ static void _setFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> u, share
     auto sw = _switch(f);
     assert(sw);
 
-    auto utype = _unionType(sw->uniqueName());
+    auto utype = _unionType(cg, sw->uniqueName());
 
     if ( _usingStructForItems(f) ) {
         auto c = sw->case_(f);
@@ -1221,7 +1311,7 @@ static void _setFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> u, share
 
                [&] () { // Struct field in union is not set.
                    cg->builder()->addInstruction(s, ::hilti::instruction::struct_::New,
-                                                ::hilti::builder::type::create(_structType(c->uniqueName())));
+                                                ::hilti::builder::type::create(_structType(cg, c->uniqueName())));
                    cg->builder()->addInstruction(u, ::hilti::instruction::operator_::Assign,
                                                 ::hilti::builder::union_::create(utype, sfn, s));
                });
@@ -1233,6 +1323,45 @@ static void _setFieldInUnion(CodeGen* cg, shared_ptr<hilti::Expression> u, share
         cg->builder()->addInstruction(u, ::hilti::instruction::operator_::Assign,
                                          ::hilti::builder::union_::create(utype, fn, value));
     }
+}
+
+static void _computeFieldPathInStruct(CodeGen* cg, shared_ptr<hilti::Type> s, shared_ptr<binpac::type::unit::Item> f, shared_ptr<binpac::ID> fn, ::hilti::builder::tuple::element_list* path)
+{
+    if ( auto rt = ast::tryCast<::hilti::type::Reference>(s) )
+        s = rt->argType();
+
+    s = cg->moduleBuilder()->resolveType(s);
+
+    auto stype = ast::checkedCast<::hilti::type::Struct>(s);
+
+    if ( auto sw = _switch(f) ) {
+        auto ufn = _unionFieldNameAsString(sw->uniqueName());
+
+        path->push_back(::hilti::builder::integer::create(stype->index(ufn)));
+        _computeFieldPathInUnion(cg, stype->lookup(ufn)->type(), f, fn, path);
+    }
+
+    else
+        path->push_back(::hilti::builder::integer::create(stype->index(fn->name())));
+}
+
+static void _computeFieldPathInUnion(CodeGen* cg, shared_ptr<hilti::Type> u, shared_ptr<binpac::type::unit::Item> f, shared_ptr<binpac::ID> fn, ::hilti::builder::tuple::element_list* path)
+{
+    u = cg->moduleBuilder()->resolveType(u);
+    auto utype = ast::checkedCast<::hilti::type::Union>(u);
+
+    if ( _usingStructForItems(f) ) {
+        auto sw = _switch(f);
+        auto c = sw->case_(f);
+        assert(c);
+        auto sfn = _structFieldNameAsString(c->uniqueName());
+
+        path->push_back(::hilti::builder::integer::create(utype->index(sfn)));
+        return _computeFieldPathInStruct(cg, utype->lookup(sfn)->type(), nullptr, fn, path);
+    }
+
+    else
+        path->push_back(::hilti::builder::integer::create(utype->index(fn->name())));
 }
 
 shared_ptr<hilti::Expression> CodeGen::_hiltiItemOp(HiltiItemOp i, shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, const std::string& fname, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> addl_op)
@@ -1379,6 +1508,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiItemIsSet(shared_ptr<hilti::Expressi
     return _hiltiItemOp(IS_SET, unit, nullptr, field, nullptr, nullptr);
 }
 
+<<<<<<< HEAD
 shared_ptr<hilti::Expression> CodeGen::hiltiIntPackFormat(int width, bool signed_, shared_ptr<binpac::Expression> byteorder)
 {
     auto hltbo = byteorder ? hiltiExpression(byteorder) : hilti::builder::id::create("BinPAC::ByteOrder::Big");
@@ -1547,6 +1677,19 @@ void CodeGen::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit)
                               hilti::builder::string::create("resume_func"), f);
 
     // Compose functions.
+=======
+shared_ptr<hilti::Expression> CodeGen::hiltiItemComputePath(shared_ptr<hilti::Type> unit, shared_ptr<binpac::type::unit::Item> f)
+{
+    auto id = f->id();
+
+    if ( f && f->aliased() )
+        f = nullptr;
+
+    ::hilti::builder::tuple::element_list path;
+    _computeFieldPathInStruct(this, unit, f, id, &path);
+    return ::hilti::builder::tuple::create(path);
+}
+>>>>>>> 014df6ac6bd5b6fe506bb97d1baf65b131d1d4c6
 
     if ( options().generate_composers )
         builder()->addInstruction(funcs, hilti::instruction::caddr::Function, _composer->hiltiCreateHostFunction(unit));

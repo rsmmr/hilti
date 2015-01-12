@@ -127,7 +127,7 @@ string statement::Instruction::signature() const
 
 bool statement::Instruction::hoisted() const
 {
-    return _ops[0] && _ops[0]->type()->attributes().has(attribute::HOIST);
+    return _ops[0] && _ops[0]->hoisted();
 }
 
 void statement::Block::addStatement(shared_ptr<Statement> stmt)

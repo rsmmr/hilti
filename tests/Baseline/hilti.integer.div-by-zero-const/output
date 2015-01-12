@@ -1,5 +1,5 @@
 
 >>> i = int.div 100 0
-div-by-zero-const.hlt:13-13: error, Division by zero [pass::hilti::Validator]
+div-by-zero-const.hlt:13-14: error, Division by zero [pass::hilti::Validator]
 div-by-zero-const.hlt: Aborting due to verification error.
 error running hiltic, aborting

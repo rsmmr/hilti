@@ -223,18 +223,23 @@ shared_ptr<Type> constant::Union::type() const
     if ( _utype )
         return _utype;
 
-    if ( ! _expr )
-        return std::make_shared<type::Union>();
+    shared_ptr<Type> t;
 
-    if ( _id ) {
+    if ( ! _expr )
+        t = std::make_shared<type::Union>();
+
+    else if ( _id ) {
         type::Union::field_list fields = { std::make_shared<type::union_::Field>(_id, _expr->type()) };
-        return std::make_shared<type::Union>(fields, location());
+        t = std::make_shared<type::Union>(fields, location());
     }
 
     else {
         type::trait::TypeList::type_list fields = { _expr->type() };
-        return std::make_shared<type::Union>(fields, location());
+        t = std::make_shared<type::Union>(fields, location());
     }
+
+    t->setAttributes(attributes());
+    return t;
 }
 
 std::list<shared_ptr<hilti::Expression>> constant::Union::flatten()

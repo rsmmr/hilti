@@ -6,7 +6,6 @@ using namespace hilti;
 
 Function::Function(shared_ptr<ID> id, shared_ptr<hilti::type::Function> ftype, shared_ptr<Module> module, shared_ptr<Statement> body, const Location& l)
     : ast::Function<AstInfo>(id, ftype, module, body, l)
-
 {
 }
 

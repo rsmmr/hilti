@@ -13,7 +13,7 @@ void CodeBuilder::visit(constant::Double* d)
 
 void CodeBuilder::visit(expression::operator_::double_::CastInteger* i)
 {
-    auto result = builder()->addTmp("i", hilti::builder::integer::type(64));
+    auto result = builder()->addTmp("i", cg()->hiltiType(i->type()));
     auto op1 = cg()->hiltiExpression(i->op1());
 
     if ( ast::checkedCast<type::Integer>(i->type())->signed_() )

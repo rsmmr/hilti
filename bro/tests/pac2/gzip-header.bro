@@ -3,7 +3,15 @@
 # @TEST-EXEC: btest-diff output
 #
 
-event gzip::member(f: fa_file, method: count, flags: count , mtime: time, xflags: count, os: gzip::OS)
+type Flags: record  {
+        ftext: count;
+        fhrcr: count;
+        fextra: count;
+        fname: count;
+        fcomment: count;
+};
+
+event gzip::member(f: fa_file, method: count, flags: Flags, mtime: time, xflags: count, os: gzip::OS)
 {
     print f$id, method, flags, fmt("%.6f", mtime), xflags, os;
 }

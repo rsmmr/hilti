@@ -82,12 +82,10 @@ PacType::PacType(const attribute_list& attrs,  const Location& l) : binpac::Type
     _attrs = std::make_shared<AttributeSet>(attrs, l);
 }
 
-#if 0
 shared_ptr<AttributeSet> PacType::attributes() const
 {
     return _attrs;
 }
-#endif
 
 TypedPacType::TypedPacType(const Location& l) : PacType(l)
 {
@@ -335,6 +333,131 @@ bool Bitset::_equal(shared_ptr<Type> other) const
     return true;
 }
 
+bitfield::Bits::Bits(shared_ptr<ID> id, int lower, int upper, int parent_width, const attribute_list& attrs, const Location& l)
+{
+    _id = id;
+    _attrs = std::make_shared<AttributeSet>(attrs);
+    _lower = lower;
+    _upper = upper;
+    _parent_width = parent_width;
+
+    addChild(_id);
+    addChild(_attrs);
+}
+
+shared_ptr<ID> bitfield::Bits::id() const
+{
+    return _id;
+}
+
+
+int bitfield::Bits::lower() const
+{
+    return _lower;
+}
+
+
+int bitfield::Bits::upper() const
+{
+    return _upper;
+}
+
+shared_ptr<AttributeSet> bitfield::Bits::attributes() const
+{
+    return _attrs;
+}
+
+shared_ptr<Type> bitfield::Bits::fieldType() const
+{
+    auto convert = _attrs->lookup("convert");
+
+    if ( convert )
+        return convert->value()->type();
+
+    else
+        return std::make_shared<type::Integer>(_parent_width, false);
+}
+
+Bitfield::Bitfield(int width, const bits_list& bits, const Location& l)
+{
+    _width = width;
+
+    setBits(bits);
+    setBitOrder(std::make_shared<expression::ID>(std::make_shared<ID>("BinPAC::BitOrder::LSB0")));
+}
+
+Bitfield::Bitfield(const Location& l) : PacType(l)
+{
+    _width = 0;
+    setWildcard(true);
+}
+
+int Bitfield::width() const
+{
+    return _width;
+}
+
+void Bitfield::setBits(const bits_list& bits)
+{
+    for ( auto b : _bits )
+        removeChild(b);
+
+    _bits.clear();
+
+    for ( auto b : bits )
+        _bits.push_back(b);
+
+    for ( auto b : _bits )
+        addChild(b);
+}
+
+Bitfield::bits_list Bitfield::bits() const
+{
+    bits_list bits;
+    for ( auto b : _bits )
+        bits.push_back(b);
+
+    return bits;
+}
+
+shared_ptr<bitfield::Bits> Bitfield::bits(shared_ptr<ID> id) const
+{
+    for ( auto b : _bits ) {
+        if ( *b->id() == *id )
+            return b;
+    }
+
+    return nullptr;
+}
+
+shared_ptr<Expression> Bitfield::bitOrder()
+{
+    return _bit_order;
+}
+
+void Bitfield::setBitOrder(shared_ptr<Expression> order)
+{
+    removeChild(_bit_order);
+    _bit_order = order;
+    addChild(_bit_order);
+}
+
+std::list<trait::Parseable::ParseAttribute> Bitfield::parseAttributes() const
+{
+    return {
+        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false },
+        { "bitorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::BitOrder")), nullptr, false },
+    };
+}
+
+trait::Parameterized::type_parameter_list Bitfield::parameters() const
+{
+    type_parameter_list params;
+    auto p = std::make_shared<trait::parameter::Integer>(_width);
+    params.push_back(p);
+    return params;
+}
+
 Enum::Enum(const label_list& labels, const Location& l) : PacType(l)
 {
     int next = 1;
@@ -434,55 +557,10 @@ Time::Time(const Location& l) : PacType(l)
 {
 }
 
-integer::Bits::Bits(shared_ptr<ID> id, int lower, int upper, const attribute_list& attrs, const Location& l)
-{
-    _id = id;
-    _attrs = std::make_shared<AttributeSet>(attrs);
-    _lower = lower;
-    _upper = upper;
-
-    addChild(_id);
-    addChild(_attrs);
-}
-
-shared_ptr<integer::Bits> Integer::bits(shared_ptr<ID> id) const
-{
-    for ( auto b : _bits ) {
-        if ( *b->id() == *id )
-            return b;
-    }
-
-    return nullptr;
-}
-
-shared_ptr<ID> integer::Bits::id() const
-{
-    return _id;
-}
-
-
-int integer::Bits::lower() const
-{
-    return _lower;
-}
-
-
-int integer::Bits::upper() const
-{
-    return _upper;
-}
-
-shared_ptr<AttributeSet> integer::Bits::attributes() const
-{
-    return _attrs;
-}
-
 Integer::Integer(int width, bool sign, const Location& l) : PacType(l)
 {
     _width = width;
     _signed = sign;
-
-    setBitOrder(std::make_shared<expression::ID>(std::make_shared<ID>("BinPAC::BitOrder::LSB0")));
 }
 
 Integer::Integer(const Location& l) : PacType(l)
@@ -502,41 +580,6 @@ bool Integer::signed_() const
     return _signed;
 }
 
-void Integer::setBits(const bits_list& bits)
-{
-    for ( auto b : _bits )
-        removeChild(b);
-
-    _bits.clear();
-
-    for ( auto b : bits )
-        _bits.push_back(b);
-
-    for ( auto b : _bits )
-        addChild(b);
-}
-
-Integer::bits_list Integer::bits() const
-{
-    bits_list bits;
-    for ( auto b : _bits )
-        bits.push_back(b);
-
-    return bits;
-}
-
-shared_ptr<Expression> Integer::bitOrder()
-{
-    return _bit_order;
-}
-
-void Integer::setBitOrder(shared_ptr<Expression> order)
-{
-    removeChild(_bit_order);
-    _bit_order = order;
-    addChild(_bit_order);
-}
-
 bool Integer::_equal(shared_ptr<binpac::Type> other) const
 {
     auto iother = ast::checkedCast<type::Integer>(other);
@@ -551,7 +594,6 @@ std::list<trait::Parseable::ParseAttribute> Integer::parseAttributes() const
 {
     return {
         { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false },
-        { "bitorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::BitOrder")), nullptr, false },
     };
 }
 
@@ -907,11 +949,6 @@ RegExp::RegExp(const attribute_list& attrs, const Location& l) : PacType(l)
 RegExp::RegExp(const Location& l) : PacType(l)
 {
     setWildcard(true);
-}
-
-shared_ptr<AttributeSet> RegExp::attributes() const
-{
-    return _attrs;
 }
 
 bool RegExp::_equal(shared_ptr<binpac::Type> other) const

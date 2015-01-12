@@ -113,7 +113,7 @@ type CharacterString = unit(msg: Message) {
 };
 
 type Name = unit(msg: Message) {
-    : list<Label(msg, self)> &transient &until($$.len == 0 || $$.len.compressed != 0);
+    : list<Label(msg, self)> &until($$.len.offset == 0 || $$.len.compressed != 0);
 
     # Parsed labels are collected in this list.
     var labels: bytes = b"";
@@ -134,7 +134,7 @@ type Label = unit(msg: Message, name: Name) {
         };
 
     switch ( self.len.compressed ) {
-        0 ->    label: bytes &length=self.len {
+        0 ->    label: bytes &length=self.len.offset {
                     name.labels += b".";
                     name.labels += self.label;
                     }

@@ -184,6 +184,7 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<
     ftype->setAttributes(attrs);
 
     auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, l);
+
     return pushFunction(func, no_body);
 }
 
@@ -573,7 +574,7 @@ bool ModuleBuilder::declared(std::string& name) const
     return declared(std::make_shared<hilti::ID>(name));
 }
 
-shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
+shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, const AttributeSet& attrs, bool force_unique, const Location& l)
 {
     auto t = _uniqueDecl(id, type, "global", &_globals, (force_unique ? MAKE_UNIQUE : CHECK_UNIQUE), true);
     id = t.first;
@@ -581,6 +582,7 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(shared_ptr<ID> 
 
     if ( ! decl ) {
         auto var = std::make_shared<variable::Global>(id, type, init, l);
+        var->setAttributes(attrs);
         decl = std::make_shared<declaration::Variable>(id, var, l);
         _module->body()->addDeclaration(decl);
         _addDecl(id, type, "global", &_globals, decl);
@@ -589,12 +591,12 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(shared_ptr<ID> 
     return std::make_shared<hilti::expression::Variable>(decl->variable(), l);
 }
 
-shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
+shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, const AttributeSet& attrs, bool force_unique, const Location& l)
 {
-    return addGlobal(std::make_shared<ID>(id, l), type, init, force_unique, l);
+    return addGlobal(std::make_shared<ID>(id, l), type, init, attrs, force_unique, l);
 }
 
-shared_ptr<hilti::expression::Variable> ModuleBuilder::declareGlobal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, const Location& l)
+shared_ptr<hilti::expression::Variable> ModuleBuilder::declareGlobal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, const AttributeSet& attrs, const Location& l)
 {
     if ( id->scope().empty() ) {
         error("declared globals must be external", id);
@@ -612,6 +614,7 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::declareGlobal(shared_ptr<
 
     else {
         auto var = std::make_shared<variable::Global>(id, type, nullptr, l);
+        var->setAttributes(attrs);
         decl = std::make_shared<declaration::Variable>(id, var, l);
         decl->setLinkage(Declaration::IMPORTED);
         _module->body()->addDeclaration(decl);
@@ -621,9 +624,9 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::declareGlobal(shared_ptr<
     return std::make_shared<hilti::expression::Variable>(decl->variable(), l);
 }
 
-shared_ptr<hilti::expression::Variable> ModuleBuilder::declareGlobal(const std::string& id, shared_ptr<Type> type, const Location& l)
+shared_ptr<hilti::expression::Variable> ModuleBuilder::declareGlobal(const std::string& id, shared_ptr<Type> type, const AttributeSet& attrs, const Location& l)
 {
-    return declareGlobal(::std::make_shared<ID>(id, l), type, l);
+    return declareGlobal(::std::make_shared<ID>(id, l), type, attrs, l);
 }
 
 shared_ptr<hilti::Expression> ModuleBuilder::addConstant(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
@@ -657,7 +660,7 @@ shared_ptr<hilti::Expression> ModuleBuilder::addConstant(const std::string& id, 
     return addConstant(std::make_shared<ID>(id, l), type, init, force_unique, l);
 }
 
-shared_ptr<hilti::expression::Type> ModuleBuilder::addType(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool force_unique, const Location& l)
+shared_ptr<hilti::Type> ModuleBuilder::addType(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool force_unique, const Location& l)
 {
     if ( id->isScoped() )
         id = std::make_shared<ID>(id->pathAsString(_module->id()), id->location());
@@ -674,10 +677,10 @@ shared_ptr<hilti::expression::Type> ModuleBuilder::addType(shared_ptr<hilti::ID>
 
     type->setID(id);
     type->setScope(_module->id()->name());
-    return std::make_shared<hilti::expression::Type>(decl->type(), l);
+    return std::make_shared<hilti::type::Unknown>(id, l);
 }
 
-shared_ptr<hilti::expression::Type> ModuleBuilder::addType(const std::string& id, shared_ptr<Type> type, bool force_unique, const Location& l)
+shared_ptr<hilti::Type> ModuleBuilder::addType(const std::string& id, shared_ptr<Type> type, bool force_unique, const Location& l)
 {
     return addType(std::make_shared<ID>(id, l), type, force_unique, l);
 }
@@ -694,18 +697,43 @@ bool ModuleBuilder::hasType(shared_ptr<hilti::ID> id)
     return d != _globals.end();
 }
 
+shared_ptr<Type> ModuleBuilder::lookupType(shared_ptr<hilti::ID> id)
+{
+    id = _normalizeID(id);
+    auto d = _globals.find(id->pathAsString(_module->id()));
+    return d != _globals.end() ? (*d).second.type : nullptr;
+}
+
+shared_ptr<Type> ModuleBuilder::lookupType(const std::string& id)
+{
+    return lookupType(std::make_shared<ID>(id));
+}
+
+shared_ptr<Type> ModuleBuilder::resolveType(shared_ptr<Type> type)
+{
+    if ( auto u = ast::tryCast<::hilti::type::Unknown>(type) ) {
+        type = lookupType(u->id());
+
+        if ( ! type )
+            fatalError(::util::fmt("module builder cannot resolve type %s", u->id()->name()), type);
+    }
+
+    return type;
+}
+
 shared_ptr<hilti::expression::Type> ModuleBuilder::addContext(shared_ptr<Type> type, const Location& l)
 {
     auto id = std::make_shared<hilti::ID>("Context", l);
-    return addType(id, type, false, l);
+    auto t = addType(id, type, false, l);
+    return std::make_shared<hilti::expression::Type>(t, l);
 }
 
-shared_ptr<hilti::expression::Variable> ModuleBuilder::addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
+shared_ptr<hilti::expression::Variable> ModuleBuilder::addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, const AttributeSet& attrs, bool force_unique, const Location& l)
 {
-    return _addLocal(_currentBody()->stmt, id, type, init, force_unique, l);
+    return _addLocal(_currentBody()->stmt, id, type, init, attrs, force_unique, l);
 }
 
-shared_ptr<hilti::expression::Variable> ModuleBuilder::_addLocal(shared_ptr<statement::Block> stmt, shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
+shared_ptr<hilti::expression::Variable> ModuleBuilder::_addLocal(shared_ptr<statement::Block> stmt, shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, const AttributeSet& attrs, bool force_unique, const Location& l)
 {
     auto t = _uniqueDecl(id, type, "local", &_currentFunction()->locals, (force_unique ? MAKE_UNIQUE : CHECK_UNIQUE), false);
     id = t.first;
@@ -713,6 +741,7 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::_addLocal(shared_ptr<stat
 
     if ( ! decl ) {
         auto var = std::make_shared<variable::Local>(id, type, init, l);
+        var->setAttributes(attrs);
         decl = std::make_shared<declaration::Variable>(id, var, l);
         stmt->addDeclaration(decl);
         _addDecl(id, type, "local", &_currentFunction()->locals, decl);
@@ -721,9 +750,9 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::_addLocal(shared_ptr<stat
     return std::make_shared<hilti::expression::Variable>(decl->variable(), l);
 }
 
-shared_ptr<hilti::expression::Variable> ModuleBuilder::addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
+shared_ptr<hilti::expression::Variable> ModuleBuilder::addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, const AttributeSet& attrs, bool force_unique, const Location& l)
 {
-    return addLocal(std::make_shared<ID>(id, l), type, init, force_unique, l);
+    return addLocal(std::make_shared<ID>(id, l), type, init, attrs, force_unique, l);
 }
 
 bool ModuleBuilder::hasLocal(const std::string& id)

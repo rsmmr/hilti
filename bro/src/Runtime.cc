@@ -381,37 +381,37 @@ void* libbro_get_event_handler(hlt_bytes* name, hlt_exception** excpt, hlt_execu
 	return ev && ev.Ptr() ? ev.Ptr() : &no_handler;
 	}
 
-void libbro_raise_event(void* hdl, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+void libbro_raise_event(void* hdl, const hlt_type_info* type, void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	EventHandler* ev = (EventHandler*) hdl;
 
 	if ( ev == &no_handler )
 		return;
 
-	int16_t* offsets = (int16_t *)type->aux;
+	int len = hlt_tuple_length(type, excpt, ctx);
 
-	val_list* vals = new val_list(type->num_params);
+	val_list* vals = new val_list(len);
 
-	for ( int i = 0; i < type->num_params; i++ )
+	for ( int i = 0; i < len; i++ )
 		{
-		Val* broval = *((Val**)(((char*)tuple) + offsets[i]));
+		Val* broval = *(Val**) hlt_tuple_get(type, tuple, i, excpt, ctx);
 		vals->append(broval);
 		}
 
 	mgr.QueueEvent(EventHandlerPtr(ev), vals);
 	}
 
-::Val* libbro_call_legacy_result(::Val* val, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+::Val* libbro_call_legacy_result(::Val* val, const hlt_type_info* type, void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto func = val->AsFunc();
 
-	int16_t* offsets = (int16_t *)type->aux;
+	int len = hlt_tuple_length(type, excpt, ctx);
 
-	val_list* vals = new val_list;
+	val_list* vals = new val_list(len);
 
-	for ( int i = 0; i < type->num_params; i++ )
+	for ( int i = 0; i < len; i++ )
 		{
-		Val* broval = *((Val**)(((char*)tuple) + offsets[i]));
+		Val* broval = *(Val**) hlt_tuple_get(type, tuple, i, excpt, ctx);
 		vals->append(broval);
 		}
 
@@ -450,7 +450,7 @@ void libbro_object_unref(::BroObj* obj)
 	::Unref(obj);
 	}
 
-void libbro_call_legacy_void(::Val* func, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+void libbro_call_legacy_void(::Val* func, const hlt_type_info* type, void* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto result = libbro_call_legacy_result(func, type, tuple, excpt, ctx);
 	Unref(result);

@@ -66,6 +66,17 @@ extern hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt, hlt_e
 /// Returns: The concatenation.
 extern hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Concatenates a ASCIIZ string to a HILTI string.
+///
+/// s1: The first string.
+///
+/// s2: The second string in null-terminated UTF8.
+///
+/// \hlt_c
+///
+/// Returns: The concatenation.
+extern hlt_string hlt_string_concat_asciiz(hlt_string s1, const char* s2, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Extracts a substring from a string.
 ///
 /// s: The string to extract from.
@@ -162,6 +173,21 @@ extern hlt_string hlt_string_copy(hlt_string s, hlt_exception** excpt, hlt_execu
 ///
 /// Returns: The new HILTI string.
 extern hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Converts a string into a raw C array, using a UTF8 representation. It
+/// will always add a null byte at the end. If the string itself contains
+/// null bytes, the result is undefined.
+///
+/// dst: Buffer where to copy the raw C array to.
+///
+/// dst_len: Maximum number of bytes available in dst. If smaller than the
+/// the size of the string object, the converted string will be truncated.
+/// ///
+///
+/// \hlt_c
+///
+/// Returns: The length of converted string, excluding the final null byte.
+extern int64_t hlt_string_to_asciiz(int8_t* dst, size_t dst_len, hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Instantiates a new string from a C byte array. The bytes are assumed to
 /// be encoded in UTF8.

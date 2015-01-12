@@ -34,8 +34,9 @@ static const AttributeDef Attributes[] = {
     { attribute::FIRSTMATCH,    attribute::REGEXP,       attribute::NONE,       "first_match",   "<insert doc>" },
     { attribute::GROUP,         attribute::FUNCTION,     attribute::INTEGER,    "group",         "<insert doc>" },
     { attribute::HOIST,         attribute::VARIABLE,     attribute::NONE,       "hoist",         "<insert doc>" },
-    { attribute::LIBHILTI,      attribute::EXCEPTION,    attribute::STRING,     "libhilti",      "<insert doc>" },
-    { attribute::LIBHILTI_DTOR, attribute::STRUCT,       attribute::STRING,     "libhilti_dtor", "<insert doc>" },
+    { attribute::HOSTAPP_TYPE,  attribute::TYPE_,        attribute::EXPRESSION, "hostapp_type",  "<insert doc>" },
+    { attribute::LIBHILTI,      attribute::TYPE_,        attribute::STRING,     "libhilti",      "<insert doc>" },
+    { attribute::LIBHILTI_DTOR, attribute::TYPE_,        attribute::STRING,     "libhilti_dtor", "<insert doc>" },
     { attribute::MAYYIELD,      attribute::FUNCTION,     attribute::NONE,       "mayyield",      "<insert doc>" },
     { attribute::NOEXCEPTION,   attribute::FUNCTION,     attribute::NONE,       "noexception",   "<insert doc>" },
     { attribute::NOSAFEPOINT,   attribute::FUNCTION,     attribute::NONE,       "nosafepoint",   "<insert doc>" },
@@ -183,7 +184,7 @@ shared_ptr<Expression> AttributeSet::getAsExpression(attribute::Tag tag, shared_
     auto a = _attributes[tag];
 
     if ( ! a._value )
-        return nullptr;
+        return default_;
 
     return ast::checkedCast<Expression>(a._value);
 }
@@ -285,4 +286,47 @@ AttributeSet& AttributeSet::operator=(const AttributeSet& other)
     }
 
     return *this;
+}
+
+NodeWithAttributes::NodeWithAttributes(Node* n)
+{
+    _node = n;
+}
+
+const AttributeSet& NodeWithAttributes::attributes() const
+{
+    static AttributeSet empty;
+
+    return _attributes ? *_attributes : empty;
+}
+
+AttributeSet& NodeWithAttributes::attributes()
+{
+    if ( ! _attributes ) {
+        _attributes = std::make_shared<AttributeSet>();
+        _node->addChild(_attributes);
+    }
+
+    return *_attributes;
+}
+
+void NodeWithAttributes::setAttributes(const AttributeSet& attrs)
+{
+    if ( ! _attributes ) {
+        _attributes = std::make_shared<AttributeSet>();
+        _node->addChild(_attributes);
+    }
+
+    *_attributes = attrs;
+}
+
+void NodeWithAttributes::addAttributes(const AttributeSet& attrs)
+{
+    if ( ! _attributes ) {
+        _attributes = std::make_shared<AttributeSet>();
+        _node->addChild(_attributes);
+    }
+
+    for ( auto a : attrs.all() )
+        _attributes->add(a);
 }

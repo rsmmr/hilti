@@ -62,6 +62,9 @@ extern int8_t hlt_iterator_vector_eq(hlt_iterator_vector i1, hlt_iterator_vector
 // Converts a vector into a string.
 extern hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Returns the element type of a vector.
+extern const hlt_type_info* hlt_vector_element_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Called by an expiring timer to remove an element from the vector.
 ///
 /// cookie: The cookie identifying the element to be removed.

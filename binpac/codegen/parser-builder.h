@@ -145,6 +145,7 @@ protected:
     void visit(production::Loop* l) override;
 
     void visit(type::Address* a) override;
+    void visit(type::Bitfield* b) override;
     void visit(type::Bitset* b) override;
     void visit(type::Bool* b) override;
     void visit(type::Bytes* b) override;
@@ -230,8 +231,39 @@ private:
     // Prints the upcoming input bytes to binpac-verbose.
     void _hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur);
 
+<<<<<<< HEAD
     // Helper producing the "binpac" debugging output for a bitfield.
     void _hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type);
+=======
+    // Executes a hook. \a self is the self parameter to pass to the hook. \a
+    // id is the full path to the hooked element, including the module. \a
+    // foreach must be true if this is a \c forach hook. \a dolllardollar is
+    // the value for the \a $$ identifier within the hook, if it takes one
+    // (or null). If \a foreach is true, returns a boolean expression that is
+    // true if the hook has called "hook.stop true". If \a foreach is false,
+    // returns null.
+    shared_ptr<hilti::Expression> _hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar = nullptr);
+
+    // Defines a hook's implementation. <id> is the full path to the hooked
+    // element, including the module. <forach> is true if this is a \c
+    // &foreach hook. The ID of \a hook is ignored. \a dollardollar, if
+    // given, is the type for the \a $$ identifier within the hook, if it
+    // takes one. If <debug> is true, the hook will only be compiled in at
+    // non-zero debugging levels, and it will only be executed at run-time if
+    // explicitly enabled via libbinpac.
+    void _hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar = nullptr, int priority = 0);
+
+    // Returns the full path ID for the hook referecing a unit item.
+    shared_ptr<ID> _hookForItem(shared_ptr<type::Unit>, shared_ptr<type::unit::Item> item, bool foreach, bool private_);
+
+    // Returns the full path ID for the hook referecing a unit-global hook.
+    shared_ptr<ID> _hookForUnit(shared_ptr<type::Unit>, const string& name);
+
+    // Computes the canonical hook name, given the full path. The returned
+    // boolean indicates whether the hook is a local one (i.e., within the
+    // same module; true) or cross-module (false).
+    std::pair<bool, string> _hookName(const string& path);
+>>>>>>> 014df6ac6bd5b6fe506bb97d1baf65b131d1d4c6
 
     // Scans for a look-ahead symbol out of an expected set and sets the
     // state()->lah* accordingly if found. Raises a parse error if not.

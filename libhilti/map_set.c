@@ -136,6 +136,16 @@ void __hlt_map_timer_cookie_dtor(hlt_type_info* ti, __hlt_map_timer_cookie* c, h
     GC_DTOR(c->map, hlt_map, ctx);
 }
 
+const hlt_type_info* hlt_map_key_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return ((hlt_type_info**) &type->type_params)[0];
+}
+
+const hlt_type_info* hlt_map_value_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return ((hlt_type_info**) &type->type_params)[1];
+}
+
 void hlt_set_dtor(hlt_type_info* ti, hlt_set* s, hlt_execution_context* ctx)
 {
     for ( khiter_t i = kh_begin(s); i != kh_end(s); i++ ) {
@@ -607,15 +617,40 @@ void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map i, hlt
     if ( ! i.map->cache_result )
         i.map->cache_result = hlt_malloc(tuple->size);
 
-    int16_t* offsets = (int16_t *)tuple->aux;
-    hlt_type_info** types = (hlt_type_info**) &tuple->type_params;
+    hlt_tuple_element e0 = hlt_tuple_get_type(tuple, 0, excpt, ctx);
+    hlt_tuple_element e1 = hlt_tuple_get_type(tuple, 1, excpt, ctx);
 
     void *result = i.map->cache_result;
 
-    memcpy(result + offsets[0], key, types[0]->size);
-    memcpy(result + offsets[1], val, types[1]->size);
+    void* v0 = hlt_tuple_get(tuple, result, 0, excpt, ctx);
+    void* v1 = hlt_tuple_get(tuple, result, 1, excpt, ctx);
+
+    memcpy(v0, key, e0.type->size);
+    memcpy(v1, val, e1.type->size);
 
     return result;
+}
+
+void* hlt_iterator_map_deref_key(hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( ! i.map ) {
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
+        return 0;
+    }
+
+    // Build return tuple.
+    return kh_key(i.map, i.iter);
+}
+
+void* hlt_iterator_map_deref_value(hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( ! i.map ) {
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
+        return 0;
+    }
+
+    // Build return tuple.
+    return kh_value(i.map, i.iter).val;
 }
 
 int8_t hlt_iterator_map_eq(hlt_iterator_map i1, hlt_iterator_map i2, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -970,4 +1005,9 @@ hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t
     s = hlt_string_concat(s, postfix, excpt, ctx);
 
     return s;
+}
+
+const hlt_type_info* hlt_set_element_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return ((hlt_type_info**) &type->type_params)[0];
 }

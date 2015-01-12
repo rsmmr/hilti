@@ -1,11 +1,11 @@
-<name=hilti/enum/, mode=0000775, uid=0001751, gid=0001751, size=0, mktime=1383328418, chksum=5826, typeflag=5, linkname=, magic=ustar , filetype=DIR, filelen=0>
-<name=hilti/enum/scoped-type.hlt, mode=0000664, uid=0001751, gid=0001751, size=281, mktime=1383328418, chksum=7333, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=281>
-<name=hilti/enum/global-init.hlt, mode=0000664, uid=0001751, gid=0001751, size=238, mktime=1383328418, chksum=7312, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=238>
-<name=hilti/enum/dup-label.hlt, mode=0000664, uid=0001751, gid=0001751, size=273, mktime=1383328418, chksum=7085, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=273>
-<name=hilti/enum/eq.hlt, mode=0000664, uid=0001751, gid=0001751, size=534, mktime=1383328418, chksum=6415, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=534>
-<name=hilti/enum/to-int.hlt, mode=0000664, uid=0001751, gid=0001751, size=422, mktime=1383328418, chksum=6811, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=422>
-<name=hilti/enum/print.hlt, mode=0000664, uid=0001751, gid=0001751, size=544, mktime=1383328418, chksum=6754, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=544>
-<name=hilti/enum/val-assign.hlt, mode=0000664, uid=0001751, gid=0001751, size=534, mktime=1383328418, chksum=7214, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=534>
-<name=hilti/enum/wrong-labels.hlt, mode=0000664, uid=0001751, gid=0001751, size=499, mktime=1383328418, chksum=7437, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=499>
-<name=hilti/enum/prototypes.hlt, mode=0000664, uid=0001751, gid=0001751, size=170, mktime=1383328418, chksum=7330, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=170>
-<name=hilti/enum/from-init.hlt, mode=0000664, uid=0001751, gid=0001751, size=374, mktime=1383328418, chksum=7126, typeflag=0, linkname=, magic=ustar , filetype=REG, filelen=374>
+<name=hilti/enum/, mode=0000775, uid=0001751, gid=0001751, size=0>
+<name=hilti/enum/scoped-type.hlt, mode=0000664, uid=0001751, gid=0001751, size=281>
+<name=hilti/enum/global-init.hlt, mode=0000664, uid=0001751, gid=0001751, size=238>
+<name=hilti/enum/dup-label.hlt, mode=0000664, uid=0001751, gid=0001751, size=273>
+<name=hilti/enum/eq.hlt, mode=0000664, uid=0001751, gid=0001751, size=534>
+<name=hilti/enum/to-int.hlt, mode=0000664, uid=0001751, gid=0001751, size=422>
+<name=hilti/enum/print.hlt, mode=0000664, uid=0001751, gid=0001751, size=544>
+<name=hilti/enum/val-assign.hlt, mode=0000664, uid=0001751, gid=0001751, size=534>
+<name=hilti/enum/wrong-labels.hlt, mode=0000664, uid=0001751, gid=0001751, size=499>
+<name=hilti/enum/prototypes.hlt, mode=0000664, uid=0001751, gid=0001751, size=170>
+<name=hilti/enum/from-init.hlt, mode=0000664, uid=0001751, gid=0001751, size=374>

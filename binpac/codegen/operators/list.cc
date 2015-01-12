@@ -37,7 +37,7 @@ void CodeBuilder::visit(expression::operator_::list::PushBack* i)
 
 void CodeBuilder::visit(expression::operator_::list::Size* i)
 {
-    auto result = builder()->addTmp("size", hilti::builder::integer::type(64));
+    auto result = builder()->addTmp("size", cg()->hiltiType(i->type()));
     auto op1 = cg()->hiltiExpression(i->op1());
     cg()->builder()->addInstruction(result, hilti::instruction::list::Size, op1);
     setResult(result);

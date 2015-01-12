@@ -1,5 +1,5 @@
 
 >>> HTTP::Test
-<no location>:: error, grammar Test, production list:lines:l2 (/home/robin/work/binpacpp/hilti2/tests/.tmp/binpac.list.ambigious/ambigious.pac2:15-15) is ambigious for look-ahead symbol(s) { /[^\n]+\n/ (regexp) }
+<no location>:: error, grammar Test, production list:lines:l2 (/home/robin/work/hilti/tests/.tmp/binpac.list.ambigious/ambigious.pac2:15-15) is ambigious for look-ahead symbol(s) { /[^\n]+\n/ (regexp) }
  [pass::binpac::Validator]
 ambigious.pac2: Aborting due to input error.

@@ -10,44 +10,8 @@
 
 using namespace hilti;
 
-Type::Type(const Location& l) : ast::Type<AstInfo>(l)
+Type::Type(const Location& l) : ast::Type<AstInfo>(l), NodeWithAttributes(this)
 {
-    _attributes = std::make_shared<AttributeSet>();
-    addChild(_attributes);
-}
-
-const AttributeSet& Type::attributes() const
-{
-    auto r = ast::tryCast<type::Reference>(const_cast<Type *>(this));
-
-    if ( r )
-        // Forward to main type.
-        return r->argType()->attributes();
-    else
-        return *_attributes;
-}
-
-
-AttributeSet& Type::attributes()
-{
-    auto r = ast::tryCast<type::Reference>(this);
-
-    if ( r )
-        // Forward to main type.
-        return r->argType()->attributes();
-    else
-        return *_attributes;
-}
-
-void Type::setAttributes(const AttributeSet& attrs)
-{
-    auto r = ast::tryCast<type::Reference>(this);
-
-    if ( r )
-        // Forward to main type.
-        r->argType()->setAttributes(attrs);
-    else
-        *_attributes = attrs;
 }
 
 string Type::render()
@@ -210,19 +174,19 @@ bool type::Function::mayTriggerSafepoint() const
 bool type::Function::mayYield() const
 {
     switch ( _cc ) {
-     case function::HILTI:
-     case function::HOOK:
+     case type::function::HILTI:
+     case type::function::HOOK:
         // Default is may yield.
         return ! attributes().has(attribute::NOYIELD);
 
-     case function::HILTI_C:
+     case type::function::HILTI_C:
         // Default is no yield.
         return attributes().has(attribute::MAYYIELD);
 
-     case function::C:
+     case type::function::C:
         return false;
 
-     case function::CALLABLE:
+     case type::function::CALLABLE:
         assert(false);
         return false;
 
@@ -265,6 +229,53 @@ type::Tuple::Tuple(const type_list& types, const Location& l) : ValueType(l)
 
     for ( auto t : _types )
         addChild(t);
+}
+
+type::Tuple::Tuple(const element_list& elems, const Location& l)
+{
+    for ( auto e : elems ) {
+        _names.push_back(e.first);
+        _types.push_back(e.second);
+    }
+
+    for ( auto n : _names )
+        addChild(n);
+
+    for ( auto t : _types )
+        addChild(t);
+}
+
+type::Tuple::id_list type::Tuple::names() const
+{
+    id_list names;
+
+    if ( _names.empty() ) {
+        for ( auto t : _types )
+            names.push_back(nullptr);
+    }
+
+    else {
+        for ( auto i : _names )
+            names.push_back(i);
+    }
+
+    return names;
+}
+
+void type::Tuple::setNames(const id_list& names)
+{
+    assert(names.size() == _types.size());
+
+    for ( auto i : _names )
+        removeChild(i);
+
+    _names.clear();
+
+    for ( auto i : names )
+        _names.push_back(i);
+
+    for ( auto i : _names )
+        addChild(i);
 }
 
 type::trait::Parameterized::parameter_list type::Tuple::parameters() const
@@ -576,7 +587,7 @@ bool type::Scope::_equal(shared_ptr<Type> other) const
 }
 
 type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, bool internal, const Location& l)
-    : Node(l), _id(id), _type(type), _internal(internal)
+    : Node(l), NodeWithAttributes(this), _id(id), _type(type), _internal(internal)
 {
     addChild(_id);
     addChild(_type);
@@ -584,7 +595,7 @@ type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, boo
 
 shared_ptr<Expression> type::struct_::Field::default_() const
 {
-    return _type->attributes().getAsExpression(attribute::DEFAULT);
+    return attributes().getAsExpression(attribute::DEFAULT);
 }
 
 type::Struct::Struct(const Location& l) : HeapType(l)
@@ -619,6 +630,20 @@ shared_ptr<type::struct_::Field> type::Struct::lookup(const std::string& name) c
     }
 
     return nullptr;
+}
+
+int type::Struct::index(const std::string& name) const
+{
+    int idx = 0;
+
+    for ( auto f : _fields ) {
+        if ( f->id()->name() == name )
+            return idx;
+
+        ++idx;
+    }
+
+    return -1;
 }
 
 type::Struct::field_list type::Struct::sortedFields()
@@ -705,6 +730,20 @@ shared_ptr<type::union_::Field> type::Union::lookup(const string& name) const
     }
 
     return nullptr;
+}
+
+int type::Union::index(const std::string& name) const
+{
+    int idx = 0;
+
+    for ( auto f : _fields ) {
+        if ( f->id()->name() == name )
+            return idx;
+
+        ++idx;
+    }
+
+    return -1;
 }
 
 type::Union::field_list type::Union::fields(shared_ptr<Type> type) const

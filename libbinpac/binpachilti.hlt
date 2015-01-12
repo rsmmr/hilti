@@ -45,7 +45,7 @@ declare "C-HILTI" void register_parser(ref<Parser> parser, type pobj)
 type Sink = struct {
     # We leave this empty here as we access this struct only from C.
     # See sink.c for it's definition.
-}
+} &hostapp_type=(32)
 
 # Type place-holder for the user-defined parser argument.
 type UserCookie = caddr
@@ -77,6 +77,9 @@ type Filter = enum {
 declare "C-HILTI" ref<ParseFilter> filter_add(ref<ParseFilter> head, Filter ftype)
 declare "C-HILTI" void filter_close(ref<ParseFilter> head)
 declare "C-HILTI" ref<bytes> filter_decode(ref<ParseFilter> head, ref<bytes> data)
+
+# Printing.
+declare "C-HILTI" void print(any obj, bool newline = True)
 
 # Debugging.
 declare "C-HILTI" void enable_debugging(bool enabled)

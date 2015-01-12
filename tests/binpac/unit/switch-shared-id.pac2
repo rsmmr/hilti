@@ -32,6 +32,10 @@ export type test = unit {
        on b {
            print "Hook!";
            }
+
+       on %done {
+        print self;
+        }
 };
 
 on test::b {

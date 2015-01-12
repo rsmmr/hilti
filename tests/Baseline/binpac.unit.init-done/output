@@ -1,4 +1,4 @@
-INIT-unit <a=(not set), b=(not set)>
-INIT-module <a=(not set), b=(not set)>
+INIT-unit <>
+INIT-module <>
 DONE-unit <a=1234, b=567890>
 DONE-module <a=1234, b=567890>

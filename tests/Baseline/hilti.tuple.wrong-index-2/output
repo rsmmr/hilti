@@ -1,4 +1,4 @@
 
 >>> b = tuple.index a b
-wrong-index.hlt:8-8: error, operand must be a constant [pass::hilti::Validator]
+wrong-index.hlt:8-9: error, operand must be a constant [pass::hilti::Validator]
 error running hiltic, aborting

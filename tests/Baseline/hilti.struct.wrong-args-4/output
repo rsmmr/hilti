@@ -1,5 +1,5 @@
 
 >>> struct.set a "b" 3.41
-wrong-args.hlt:19-19: error, operand type double is not compatible with type bool [pass::hilti::Validator]
+wrong-args.hlt:19-20: error, operand type double is not compatible with type bool [pass::hilti::Validator]
 wrong-args.hlt: Aborting due to verification error.
 error running hiltic, aborting

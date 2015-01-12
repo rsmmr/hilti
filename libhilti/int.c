@@ -152,3 +152,14 @@ int64_t hlt_int_flip(int64_t v, int64_t n, hlt_exception** excpt, hlt_execution_
 {
     return (hlt_flip64(v) >> (64 - n*8));
 }
+
+int64_t hlt_int_width(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( type->type != HLT_TYPE_INTEGER ) {
+        hlt_set_exception(excpt, &hlt_exception_type_error, 0, ctx);
+        return 0;
+    }
+
+    int64_t *width = (int64_t*) &(type->type_params);
+    return *width;
+}

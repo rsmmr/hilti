@@ -32,14 +32,14 @@ shared_ptr<hilti::statement::Block> BlockBuilder::statement() const
     return _block_stmt;
 }
 
-shared_ptr<hilti::expression::Variable> BlockBuilder::addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
+shared_ptr<hilti::expression::Variable> BlockBuilder::addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, const AttributeSet& attrs, bool force_unique, const Location& l)
 {
-    return _mbuilder->_addLocal(_block_stmt, id, type, init, force_unique, l);
+    return _mbuilder->_addLocal(_block_stmt, id, type, init, attrs, force_unique, l);
 }
 
-shared_ptr<hilti::expression::Variable> BlockBuilder::addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
+shared_ptr<hilti::expression::Variable> BlockBuilder::addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, const AttributeSet& attrs, bool force_unique, const Location& l)
 {
-    return addLocal(std::make_shared<ID>(id, l), type, init, force_unique, l);
+    return addLocal(std::make_shared<ID>(id, l), type, init, attrs, force_unique, l);
 }
 
 shared_ptr<hilti::expression::Variable> BlockBuilder::addTmp(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool reuse, const Location& l)

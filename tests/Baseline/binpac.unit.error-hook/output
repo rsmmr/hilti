@@ -1,3 +1,3 @@
-<a=1234, b=(not set)>
+<a=1234>
 Error <a=1234, b=567\x0a>
-hilti: uncaught exception, ParseError with argument '&length area not fully parsed' (from /home/robin/work/binpacpp/hilti2/tests/.tmp/binpac.unit.error-hook/error-hook.hb16716.tmp.hlt:784-785)
+hilti: uncaught exception, ParseError with argument '&length area not fully parsed' (from /home/robin/work/hilti/tests/.tmp/binpac.unit.error-hook/error-hook.hb24526.tmp.hlt:968-969)

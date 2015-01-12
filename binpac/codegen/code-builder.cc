@@ -9,6 +9,11 @@
 #include "../function.h"
 #include "../grammar.h"
 #include "../constant.h"
+#include "../attribute.h"
+
+extern "C" {
+#include "../../libbinpac/rtti.h"
+}
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -94,13 +99,9 @@ void CodeBuilder::visit(declaration::Hook* h)
 void CodeBuilder::visit(declaration::Type* t)
 {
     auto unit = ast::tryCast<type::Unit>(t->type());
-
-    auto id = cg()->hiltiID(t->id());
     auto type = unit ? cg()->hiltiTypeParseObject(unit) : cg()->hiltiType(t->type());
 
-    // If the ID is already declared, we assume it's equivalent.
-    if ( ! (int)cg()->moduleBuilder()->declared(id) )
-        cg()->moduleBuilder()->addType(id, type, false, t->location());
+    cg()->hiltiAddType(t->id(), type, unit);
 
     // If this is an exported unit type, generate the parsing functions for
     // it.
@@ -122,7 +123,7 @@ void CodeBuilder::visit(declaration::Variable* v)
     auto global = ast::as<variable::Global>(var);
 
     if ( local ) {
-        auto local = cg()->moduleBuilder()->addLocal(id, type, nullptr, nullptr, v->location());
+        auto local = cg()->moduleBuilder()->addLocal(id, type, nullptr, ::hilti::AttributeSet(), false, v->location());
         auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true, false);
 
         if ( hltinit )
@@ -130,7 +131,7 @@ void CodeBuilder::visit(declaration::Variable* v)
     }
 
     else if ( global ) {
-        auto global = cg()->moduleBuilder()->addGlobal(id, type, nullptr, nullptr, v->location());
+        auto global = cg()->moduleBuilder()->addGlobal(id, type, nullptr, ::hilti::AttributeSet(), false, v->location());
         cg()->moduleBuilder()->pushModuleInit();
 
         auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true, false);
@@ -396,7 +397,7 @@ void CodeBuilder::visit(statement::NoOp* n)
 void CodeBuilder::visit(statement::Print* p)
 {
     auto loc = p->location();
-    auto print = hilti::builder::id::create("Hilti::print", loc);
+    auto print = hilti::builder::id::create("BinPACHilti::print", loc);
 
     auto exprs = p->expressions();
 

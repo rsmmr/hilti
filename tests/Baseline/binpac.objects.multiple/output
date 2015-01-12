@@ -1,1 +1,1 @@
-<a=1234, b=test1, c=5678, d=test2, e=test3, f=90>
+<a=1234, b=object(test1), c=5678, d=object(test2), e=object(test3), f=90>

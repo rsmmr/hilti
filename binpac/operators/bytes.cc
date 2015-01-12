@@ -219,6 +219,36 @@ opBegin(bytes::ToIntBinary : MethodCall)
     }
 opEnd
 
+opBegin(bytes::ToTime : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_time")))
+    opCallArg1("base", std::make_shared<type::OptionalArgument>(type::Integer::unsignedInteger(64)))
+
+    opDoc("Interprets the ``bytes`` as representing a number of seconds since the epoch in the form of an ASCII-encoded number and converts it into a time value, using a base of *base*. If *base* is not given, the default is 10.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Time>();
+    }
+opEnd
+
+opBegin(bytes::ToTimeBinary : MethodCall)
+    opOp1(std::make_shared<type::Bytes>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("to_time")))
+    opCallArg1("byte_order", std::make_shared<type::Enum>())
+
+    opDoc("Interprets the ``bytes`` as representing as number of seconds since the epoch in the form of an binary number encoded with the given byte order, and converts it into a time value.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Time>();
+    }
+opEnd
+
 opBegin(bytes::Decode : MethodCall)
     opOp1(std::make_shared<type::Bytes>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("decode")))

@@ -5,6 +5,10 @@
 #include "../common.h"
 #include "cg-visitor.h"
 
+extern "C" {
+#include "../../libbinpac/rtti.h"
+}
+
 namespace binpac {
 namespace codegen {
 
@@ -12,9 +16,12 @@ namespace codegen {
 struct TypeInfo {
     typedef std::function<shared_ptr<hilti::Expression> (CodeGen* cg, shared_ptr<binpac::Type> t)> expression_callback;
 
-    ///  // The corresponding HILTI type. If null, one can't create instances
-    ///  of this type.
+    /// The corresponding HILTI type. If null, one can't create instances of
+    /// this type.
     shared_ptr<hilti::Type>       hilti_type = nullptr;
+
+    /// An name optionally associated with the type.
+    shared_ptr<hilti::ID>         hilti_id = nullptr;
 
     /// The default HILTI value for instances of this type that aren't
     /// explicitly initialized. If null, we use HILTI's default for the type.
@@ -50,6 +57,14 @@ public:
     /// Returns: The HILTI type, or null if not defined.
     shared_ptr<hilti::Type> hiltiType(shared_ptr<Type> type, id_list* deps = nullptr);
 
+    /// Returns the HILTI name that is associated with a BinPAC++ type. This
+    /// is curently defined only for units.
+    ///
+    /// type: The type to return the name for, which must be a unit type.
+    ///
+    /// Returns: The HILTI ID>
+    shared_ptr<hilti::ID> hiltiTypeID(shared_ptr<Type> type);
+
     /// Returns the default value for instances of a BinPAC type that aren't
     /// further intiailized.
     ///
@@ -65,9 +80,19 @@ public:
     /// Returns: The HILTI value, or null for HILTI's default.
     shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default, bool can_be_unset);
 
+    /// Adds a global constant with a unit's auxiliary type information.
+    ///
+    /// unit: The unit type.
+    ///
+    /// htype:: The HILTI struct type that corresponds to the unit type.
+    ///
+    /// Returns: An expression referencing the global constant.
+    shared_ptr<hilti::Expression> hiltiAddParseObjectTypeInfo(shared_ptr<Type> unit);
+
 protected:
     void visit(type::Address* a) override;
     void visit(type::Any* a) override;
+    void visit(type::Bitfield* b) override;
     void visit(type::Bitset* b) override;
     void visit(type::Block* b) override;
     void visit(type::Bool* b) override;
@@ -123,6 +148,9 @@ protected:
     void visit(type::unit::item::field::switch_::Case* c) override;
 
 private:
+    shared_ptr<::hilti::Type> _buildType(shared_ptr<::hilti::Type> type, int pac_type, shared_ptr<::hilti::Expression> aux = nullptr);
+    void _addHostType(shared_ptr<::hilti::Type> type, int pac_type, shared_ptr<::hilti::Expression> aux = nullptr);
+
     id_list* _deps;
 
 };

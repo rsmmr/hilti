@@ -1,4 +1,4 @@
-Sub2 in progress <s1=34, s2=(not set)>
-Sub in progress <s1=34, s2=(not set)>
+Sub2 in progress <s1=34>
+Sub in progress <s1=34>
 Sub2  <s1=34, s2=567>
 hilti: uncaught exception, BinPACHilti::ParseError with argument '&length area not fully parsed' (from <no location>:)

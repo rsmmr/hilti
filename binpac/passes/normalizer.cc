@@ -100,14 +100,14 @@ void Normalizer::visit(type::unit::item::Field* f)
             attributes->add(std::make_shared<Attribute>(pattr.key, pattr.default_, true, f->location()));
     }
 
-    // Set type's bit order for integer fields.
-    auto itype = ast::tryCast<type::Integer>(f->type());
+    // Set type's bit order for bitmask fields.
+    auto btype = ast::tryCast<type::Bitfield>(f->type());
 
-    if ( itype ) {
+    if ( btype ) {
         auto border = f->attributes()->lookup("bitorder");
 
         if ( border )
-            itype->setBitOrder(border->value());
+            btype->setBitOrder(border->value());
     }
 
     // If the field has a &parse, we ignore it for composing.

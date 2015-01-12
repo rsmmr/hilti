@@ -21,10 +21,10 @@ public:
    /// Returns an expression referencing the block. The expression can
    /// directly be used with instructions taking a label argument, just as
    /// branch instructions.
-   shared_ptr<hilti::Expression> block() const;
+   shared_ptr<::hilti::Expression> block() const;
 
    /// Returns the block statement wrapped by this builder.
-   shared_ptr<hilti::statement::Block> statement() const;
+   shared_ptr<::hilti::statement::Block> statement() const;
 
    /// Returns the ModuleBuilder() that this builder is associated with.
    ModuleBuilder* moduleBuilder() const;
@@ -43,7 +43,7 @@ public:
    /// aren't equivalent; if they are, returns the existing one.
    ///
    /// Returns: An expression referencing the local.
-   shared_ptr<hilti::expression::Variable> addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<hilti::Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
+   shared_ptr<::hilti::expression::Variable> addLocal(shared_ptr<::hilti::ID> id, shared_ptr<Type> type, shared_ptr<::hilti::Expression> init = nullptr, const AttributeSet& attrs = AttributeSet(), bool force_unique = false, const Location& l = Location::None);
 
    /// Adds a local variable to the block's scope.
    ///
@@ -59,7 +59,7 @@ public:
    /// aren't equivalent; if they are, returns the existing one.
    ///
    /// Returns: An expression referencing the local.
-   shared_ptr<hilti::expression::Variable> addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<hilti::Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
+   shared_ptr<::hilti::expression::Variable> addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<::hilti::Expression> init = nullptr, const AttributeSet& attrs = AttributeSet(), bool force_unique = false, const Location& l = Location::None);
 
    /// Adds a temporary variable to the current function. This is a
    /// convininece method that just forwards to the corresponding
@@ -79,7 +79,7 @@ public:
    ///
    /// Returns: An expression referencing the variable.
    ///
-   shared_ptr<hilti::expression::Variable> addTmp(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<hilti::Expression> init = nullptr, bool reuse = false, const Location& l = Location::None);
+   shared_ptr<::hilti::expression::Variable> addTmp(shared_ptr<::hilti::ID> id, shared_ptr<Type> type, shared_ptr<::hilti::Expression> init = nullptr, bool reuse = false, const Location& l = Location::None);
 
    /// Adds a temporary variable to the current function. This is a
    /// convininece method that just forwards to the corresponding
@@ -99,7 +99,7 @@ public:
    ///
    /// Returns: An expression referencing the variable.
    ///
-   shared_ptr<hilti::expression::Variable> addTmp(const std::string& id, shared_ptr<Type> type, shared_ptr<hilti::Expression> init = nullptr, bool reuse = false, const Location& l = Location::None);
+   shared_ptr<::hilti::expression::Variable> addTmp(const std::string& id, shared_ptr<Type> type, shared_ptr<::hilti::Expression> init = nullptr, bool reuse = false, const Location& l = Location::None);
 
    /// Assocatiates a comment with the block. When the block is printed, the
    /// comment will be included.
@@ -132,10 +132,10 @@ public:
    /// op3: The third operand, if the instruction needs one.
    ///
    /// Returns: The new instruction that has been added to the block.
-   shared_ptr<statement::Instruction> addInstruction(shared_ptr<hilti::Instruction> ins,
-                                                     shared_ptr<hilti::Expression> op1 = nullptr,
-                                                     shared_ptr<hilti::Expression> op2 = nullptr,
-                                                     shared_ptr<hilti::Expression> op3 = nullptr,
+   shared_ptr<statement::Instruction> addInstruction(shared_ptr<::hilti::Instruction> ins,
+                                                     shared_ptr<::hilti::Expression> op1 = nullptr,
+                                                     shared_ptr<::hilti::Expression> op2 = nullptr,
+                                                     shared_ptr<::hilti::Expression> op3 = nullptr,
                                                      const Location& l = Location::None
                                                      );
 
@@ -156,11 +156,11 @@ public:
    /// op3: The third operand, if the instruction needs one.
    ///
    /// Returns: The new instruction that has been added to the block.
-   shared_ptr<statement::Instruction> addInstruction(shared_ptr<hilti::Expression> target,
-                                                     shared_ptr<hilti::Instruction> ins,
-                                                     shared_ptr<hilti::Expression> op1 = nullptr,
-                                                     shared_ptr<hilti::Expression> op2 = nullptr,
-                                                     shared_ptr<hilti::Expression> op3 = nullptr,
+   shared_ptr<statement::Instruction> addInstruction(shared_ptr<::hilti::Expression> target,
+                                                     shared_ptr<::hilti::Instruction> ins,
+                                                     shared_ptr<::hilti::Expression> op1 = nullptr,
+                                                     shared_ptr<::hilti::Expression> op2 = nullptr,
+                                                     shared_ptr<::hilti::Expression> op3 = nullptr,
                                                      const Location& l = Location::None
                                                      );
 
@@ -171,7 +171,7 @@ public:
    /// Returns: A tuple corresponding to two blocks: (1) the one to execute
    /// if \a cond is true, and (2) the one where to continue execution in
    /// either case.
-   std::tuple<shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>> addIf(shared_ptr<hilti::Expression> cond, const Location& l = Location::None);
+   std::tuple<shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>> addIf(shared_ptr<::hilti::Expression> cond, const Location& l = Location::None);
 
    /// Helper to adds an \a if/else construct.
    ///
@@ -180,7 +180,7 @@ public:
    /// Returns: A tuple corresponding to three blocks: (1) the one to execute
    /// if \a cond is true, (2) the one to execute if \a cond is true, and (3)
    /// the one where to continue execution in either case.
-   std::tuple<shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>> addIfElse(shared_ptr<hilti::Expression> cond, const Location& l = Location::None);
+   std::tuple<shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>> addIfElse(shared_ptr<::hilti::Expression> cond, const Location& l = Location::None);
 
    /// Helper to add a simple not-fmt debug message.
    ///
@@ -195,19 +195,19 @@ public:
    ///
    /// msg: The message itself.
    void addDebugMsg(const std::string& stream, const std::string& msg,
-                 shared_ptr<hilti::Expression> arg1,
-                 shared_ptr<hilti::Expression> arg2 = nullptr,
-                 shared_ptr<hilti::Expression> arg3 = nullptr,
-                 shared_ptr<hilti::Expression> arg4 = nullptr,
-                 shared_ptr<hilti::Expression> arg5 = nullptr,
-                 shared_ptr<hilti::Expression> arg6 = nullptr,
-                 shared_ptr<hilti::Expression> arg7 = nullptr,
-                 shared_ptr<hilti::Expression> arg8 = nullptr,
-                 shared_ptr<hilti::Expression> arg9 = nullptr,
-                 shared_ptr<hilti::Expression> arg10 = nullptr,
-                 shared_ptr<hilti::Expression> arg11 = nullptr,
-                 shared_ptr<hilti::Expression> arg12 = nullptr,
-                 shared_ptr<hilti::Expression> arg13 = nullptr
+                 shared_ptr<::hilti::Expression> arg1,
+                 shared_ptr<::hilti::Expression> arg2 = nullptr,
+                 shared_ptr<::hilti::Expression> arg3 = nullptr,
+                 shared_ptr<::hilti::Expression> arg4 = nullptr,
+                 shared_ptr<::hilti::Expression> arg5 = nullptr,
+                 shared_ptr<::hilti::Expression> arg6 = nullptr,
+                 shared_ptr<::hilti::Expression> arg7 = nullptr,
+                 shared_ptr<::hilti::Expression> arg8 = nullptr,
+                 shared_ptr<::hilti::Expression> arg9 = nullptr,
+                 shared_ptr<::hilti::Expression> arg10 = nullptr,
+                 shared_ptr<::hilti::Expression> arg11 = nullptr,
+                 shared_ptr<::hilti::Expression> arg12 = nullptr,
+                 shared_ptr<::hilti::Expression> arg13 = nullptr
                  );
 
    /// Helper to increase the debugging indent.
@@ -226,9 +226,9 @@ public:
    /// excpt: The fully-qualified name of the exception.
    ///
    /// arg: The argument, or null.
-   void addThrow(const std::string& excpt, shared_ptr<hilti::Expression> arg = nullptr);
+   void addThrow(const std::string& excpt, shared_ptr<::hilti::Expression> arg = nullptr);
 
-   typedef std::list<std::pair<shared_ptr<hilti::Expression>, shared_ptr<hilti::builder::BlockBuilder>>> case_list;
+   typedef std::list<std::pair<shared_ptr<::hilti::Expression>, shared_ptr<::hilti::builder::BlockBuilder>>> case_list;
 
    /// Helper to create a switch statement.
    ///
@@ -237,8 +237,8 @@ public:
    /// default_: The default branch.
    ///
    /// cases: The list of switch cases.
-   void addSwitch(shared_ptr<hilti::Expression> expr,
-                  shared_ptr<hilti::builder::BlockBuilder> default_,
+   void addSwitch(shared_ptr<::hilti::Expression> expr,
+                  shared_ptr<::hilti::builder::BlockBuilder> default_,
                   const case_list& cases);
 
    /// XXX
@@ -261,9 +261,9 @@ protected:
 
 private:
    ModuleBuilder* _mbuilder;
-   shared_ptr<hilti::statement::Block> _block_stmt;
-   shared_ptr<hilti::expression::Block> _block_expr;
-   shared_ptr<hilti::statement::Block> _body;
+   shared_ptr<::hilti::statement::Block> _block_stmt;
+   shared_ptr<::hilti::expression::Block> _block_expr;
+   shared_ptr<::hilti::statement::Block> _body;
    std::list<std::string> _next_comments;
 };
 

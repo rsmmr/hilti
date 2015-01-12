@@ -4,6 +4,10 @@
 
 using namespace hilti;
 
+Declaration::Declaration(shared_ptr<hilti::ID> id, const Location& l) : ast::Declaration<AstInfo>(id, LOCAL, l)
+{
+}
+
 string Declaration::render()
 {
     std::ostringstream s;

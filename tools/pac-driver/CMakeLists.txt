@@ -15,10 +15,10 @@ add_executable(pac-driver pac-driver.cc)
 
 set_target_properties(pac-driver PROPERTIES COMPILE_DEFINITIONS "PAC_DRIVER_JIT=1")
 
-add_dependencies(pac-driver libhilti-rt libbinpac-rt)
+add_dependencies(pac-driver libhilti-rt libhilti-rt-dbg libbinpac-rt libbinpac-dbg)
 
 target_link_libraries(pac-driver binpacxx ${HILTI_LIBS}
-    binpac-rt
+    binpac-rt-dbg
     ${LLVM_LIBS} ${LLVM_LDFLAGS}
     pcap ${PAPI} z
     )

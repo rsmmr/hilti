@@ -40,6 +40,7 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/parser.cc  PROPERTIES GENERATED 1)
 set(operators
     operators/address.cc
     operators/bool.cc
+    operators/bitfield.cc
     operators/bytes.cc
     operators/double.cc
     operators/enum.cc
@@ -130,6 +131,7 @@ add_library (binpacxx STATIC
     codegen/operators/address.cc
     codegen/operators/bitset.cc
     codegen/operators/bool.cc
+    codegen/operators/bitfield.cc
     codegen/operators/bytes.cc
     codegen/operators/double.cc
     codegen/operators/double.cc

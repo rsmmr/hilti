@@ -318,7 +318,6 @@ private:
    std::list<std::pair<type::Struct*, llvm::Function*>> _struct_dtors;
 
    bool _rtti_type_only = false;
-
 };
 
 

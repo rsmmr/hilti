@@ -1,5 +1,5 @@
-{ 3: CCC, 1: AAA, 2: BBB }
-{  }
+{3: CCC, 1: AAA, 2: BBB}
+{}
 True
 False
 BBB
@@ -13,8 +13,8 @@ XXX
 0
 0
 0
-{  }
-{  }
+{}
+{}
 True
 True
 False

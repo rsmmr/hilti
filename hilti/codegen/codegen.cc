@@ -242,7 +242,7 @@ llvm::Value* CodeGen::llvmLocal(const string& name)
         internalError("unknown local " + name);
     }
 
-    return i->second.first;
+    return std::get<0>(i->second);
 }
 
 llvm::Value* CodeGen::llvmGlobal(shared_ptr<Variable> var)
@@ -1231,7 +1231,7 @@ llvm::GlobalVariable* CodeGen::llvmAddGlobal(const string& name, llvm::Constant*
     return llvmAddGlobal(name, init->getType(), init, use_name_as_is);
 }
 
-llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, shared_ptr<Expression> init)
+llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, shared_ptr<Expression> init, bool hoisted)
 {
     auto llvm_type = llvmType(type);
 
@@ -1251,7 +1251,7 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, sh
     auto builder = newBuilder(&block, true);
     llvm::Value* local = 0;
 
-    if ( ! type->attributes().has(attribute::HOIST) ) {
+    if ( ! hoisted ) {
         if ( init )
             llvm_init = llvmValue(init, type, false);
 
@@ -1280,7 +1280,7 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, sh
             llvmValueInto(local, init, type);
     }
 
-    _functions.back()->locals.insert(make_pair(name, std::make_pair(local, type)));
+    _functions.back()->locals.insert(make_pair(name, std::make_tuple(local, type, hoisted)));
 
     delete builder;
     return local;
@@ -1296,7 +1296,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
 
         auto i = _functions.back()->tmps.find(tname);
         if ( i != _functions.back()->tmps.end() ) {
-            auto tmp = i->second.first;
+            auto tmp = std::get<0>(i->second);
             llvmCreateStore(init, tmp);
             return tmp;
         }
@@ -1321,7 +1321,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
         popBuilder();
     }
 
-    _functions.back()->tmps.insert(make_pair(tname, std::make_pair(tmp, nullptr)));
+    _functions.back()->tmps.insert(std::make_tuple(tname, std::make_tuple(tmp, nullptr, false)));
 
     return tmp;
 }
@@ -1670,8 +1670,8 @@ void CodeGen::llvmAddHookMetaData(shared_ptr<Hook> hook, llvm::Value *llvm_func)
     // Record priority and group.
     auto ftype = ast::checkedCast<type::Hook>(hook->type());
 
-    int64_t priority = ftype->attributes().getAsInt(attribute::PRIORITY, 0);
-    int64_t group = ftype->attributes().getAsInt(attribute::GROUP, 0);
+    int64_t priority = hook->type()->attributes().getAsInt(attribute::PRIORITY, 0);
+    int64_t group = hook->type()->attributes().getAsInt(attribute::GROUP, 0);
 
     vals.push_back(llvmConstInt(priority, 64));
     vals.push_back(llvmConstInt(group, 64));
@@ -1815,7 +1815,7 @@ void CodeGen::llvmBuildExitBlock()
     --_in_build_exit;
 }
 
-void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl)
+void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, bool is_hoisted, const string& location_addl)
 {
     auto tmp = llvmAddTmp("dtor", val->getType());
     auto stmt = _stmt_builder->currentStatement();
@@ -1824,7 +1824,7 @@ void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, 
     // aren't directly associated with a statement.
 
     llvmGCAssign(tmp, val, type, true);
-    _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(tmp, is_ptr, type, false, location_addl)));
+    _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(tmp, is_ptr, type, false, is_hoisted, location_addl)));
 }
 
 void CodeGen::llvmMemorySafepoint(const std::string& where)
@@ -1873,7 +1873,7 @@ CodeGen::live_list CodeGen::liveValues()
             auto val = llvmValueAddress(l->expression);
             auto type = l->expression->type();
 
-            if ( type->attributes().has(attribute::HOIST) )
+            if ( l->expression->hoisted() )
                 continue;
 
             assert(val);
@@ -1972,7 +1972,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
 
         auto type = expr->type();
 
-        if ( type->attributes().has(attribute::HOIST) ) {
+        if ( expr->hoisted() ) {
             auto tmp = llvmValue(expr);
             llvmDestroy(tmp, type, "instr-cleanup-1-hoist/" + loc_addl);
             continue;
@@ -1981,7 +1981,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
         auto tmp = llvmValueAddress(expr);
 
         for ( auto l : _functions.back()->locals ) {
-            if ( l.second.first == tmp ) {
+            if ( std::get<0>(l.second) == tmp ) {
                 llvmGCClear(tmp, type, "instr-cleanup-1/" + loc_addl);
                 break;
             }
@@ -1995,13 +1995,14 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
         auto ptr = std::get<1>(unref);
         auto type = std::get<2>(unref);
         auto local = std::get<3>(unref);
-        auto loc_addl = std::get<4>(unref);
+        auto hoisted = std::get<4>(unref);
+        auto loc_addl = std::get<5>(unref);
 
         if ( local ) {
             if ( dont_do_locals )
                 continue;
 
-            if ( type->attributes().has(attribute::HOIST) ) {
+            if ( hoisted ) {
                 llvmDestroy(tmp, type, "instr-cleanup-2-hoist/" + loc_addl);
                 continue;
             }
@@ -2009,8 +2010,8 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
             // See if we indeed know that address as a local. If not, it's a
             // const parameter that we don't need to unref.
             for ( auto l : _functions.back()->locals ) {
-                if ( l.second.first == tmp ) {
-                    llvmGCClear(l.second.first, l.second.second, string("instr-cleanup-2/") + loc_addl);
+                if ( std::get<0>(l.second) == tmp ) {
+                    llvmGCClear(std::get<0>(l.second), std::get<1>(l.second), string("instr-cleanup-2/") + loc_addl);
                 }
             }
 
@@ -2073,10 +2074,11 @@ void CodeGen::llvmBuildFunctionCleanup()
 {
     // Need to destroy locals hoisted to the stack.
     for ( auto l : _functions.back()->locals ) {
-        auto val = l.second.first;
-        auto type = l.second.second;
+        auto val = std::get<0>(l.second);
+        auto type = std::get<1>(l.second);
+        auto hoisted = std::get<2>(l.second);
 
-        if ( type->attributes().has(attribute::HOIST) )
+        if ( hoisted )
             llvmDestroy(val, type, "function-cleanup-hoist");
     }
 }
@@ -2446,7 +2448,7 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
 
     for ( auto l : _functions.back()->locals_cleared_on_excpt ) {
 
-        if ( l->type()->attributes().has(attribute::HOIST) ) {
+        if ( l->hoisted() ) {
             auto tmp = llvmValue(l);
             llvmDestroy(tmp, l->type(), "trigger-excpt-handling/hoist");
             continue;
@@ -2632,7 +2634,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     llvm::Value* result = 0;
 
-    if ( ! ftype->mayYield() ) {
+    if ( ! func->type()->mayYield() ) {
         llvmDebugPrint("hilti-flow", ::util::fmt("entering entry wrapper for %s", func->id()->pathAsString()));
         result = llvmCall(func, params, true, false); // +1 as otherwise the subsequent safepoint would delete it.
         // When we use a fiber, that takes care of inserting a safepoint.
@@ -2644,7 +2646,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     else {
         llvmDebugPrint("hilti-flow", ::util::fmt("entering entry fiber for %s", func->id()->pathAsString()));
         // +1 as otherwise the subsequent safepoint would delete it.
-        result = llvmCallInNewFiber(llvmFunction(func), ftype, params, true);
+        result = llvmCallInNewFiber(func, params, true);
         llvmDebugPrint("hilti-flow", ::util::fmt("left entry fiber for %s", func->id()->pathAsString()));
     }
 
@@ -2664,7 +2666,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     popFunction();
 
-    if ( ! ftype->mayYield() )
+    if ( ! func->type()->mayYield() )
         return std::make_pair(rf1, nullptr);
 
     // Build the resume function.
@@ -2721,8 +2723,9 @@ llvm::Value* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function
     return result;
 }
 
-llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool result_cctored)
+llvm::Value* CodeGen::llvmCallInNewFiber(shared_ptr<Function> func, const expr_list args, bool result_cctored)
 {
+    auto ftype = func->type();
     auto rtype = ftype->result()->type();
 
     // Create a struct value with all the arguments, plus the current context.
@@ -2742,27 +2745,28 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
     }
 
     // Create a function that receives the parameter struct and then calls the actual function.
+    auto llvm_func = llvmFunction(func);
     auto name = llvm_func->getName().str();
 
-    llvm::Function* func = nullptr;
+    llvm::Function* lfunc = nullptr;
 
     llvm::Value* f = lookupCachedValue("fiber-func", name);
 
     if ( f )
-        func = llvm::cast<llvm::Function>(f);
+        lfunc = llvm::cast<llvm::Function>(f);
 
-    if ( ! func) {
+    if ( ! lfunc) {
         llvm_parameter_list params = {
             std::make_pair("fiber", llvmTypePtr(llvmLibType("hlt.fiber"))),
             std::make_pair("fiber.args", llvmTypePtr(sty))
         };
 
-        func = llvmAddFunction(string(".fiber.run") + name, llvmTypeVoid(), params, true, type::function::C);
+        lfunc = llvmAddFunction(string(".fiber.run") + name, llvmTypeVoid(), params, true, type::function::C);
 
-        pushFunction(func);
+        pushFunction(lfunc);
 
-        auto fiber = func->arg_begin();
-        auto fsval = builder()->CreateLoad(++func->arg_begin());
+        auto fiber = lfunc->arg_begin();
+        auto fsval = builder()->CreateLoad(++lfunc->arg_begin());
 
         value_list cargs { fiber };
         _functions.back()->context = llvmCallC("hlt_fiber_context", cargs, false, false);
@@ -2776,7 +2780,7 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
             fargs.push_back(builder::codegen::create(args[i]->type(), val));
         }
 
-        auto result = llvmCall(llvm_func, ftype, fargs, result_cctored, false);
+        auto result = llvmDoCall(llvm_func, func, nullptr, ftype, fargs, result_cctored, nullptr, false);
 
         llvmProfilerStop("fiber/inner");
 
@@ -2793,7 +2797,7 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
 
         popFunction();
 
-        cacheValue("fiber-func", name, func);
+        cacheValue("fiber-func", name, lfunc);
     }
 
     // Create the fiber and start it.
@@ -2801,7 +2805,7 @@ llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type
     llvmProfilerStart("fiber/create");
 
     auto tmp = llvmAddTmp("fiber.arg", sty, sval, true);
-    auto funcp = builder()->CreateBitCast(func, llvmTypePtr());
+    auto funcp = builder()->CreateBitCast(lfunc, llvmTypePtr());
     auto svalp = builder()->CreateBitCast(tmp, llvmTypePtr());
 
     value_list cargs { funcp, llvmExecutionContext(), svalp, llvmExecutionContext() };
@@ -4274,7 +4278,7 @@ void CodeGen::llvmInstruction(shared_ptr<Expression> target, const string& mnemo
     _stmt_builder->llvmStatement(resolved, false);
 }
 
-shared_ptr<hilti::Expression> CodeGen::makeLocal(const string& name, shared_ptr<Type> type)
+shared_ptr<hilti::Expression> CodeGen::makeLocal(const string& name, shared_ptr<Type> type, const AttributeSet& attrs)
 {
     string n = "__" + name;
 
@@ -4284,7 +4288,7 @@ shared_ptr<hilti::Expression> CodeGen::makeLocal(const string& name, shared_ptr<
     while ( _functions.back()->locals.find(unique_name) != _functions.back()->locals.end() )
         unique_name = ::util::fmt("%s.%d", n.c_str(), ++idx);
 
-    llvmAddLocal(unique_name, type);
+    llvmAddLocal(unique_name, type, nullptr, false);
 
     auto id = std::make_shared<ID>(unique_name);
     auto var = std::make_shared<variable::Local>(id, type);
