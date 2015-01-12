@@ -1,0 +1,26 @@
+# $Id$
+#
+# @TEST-EXEC:  printf '\377\377\377\377' | pac-driver-test -c %INPUT | hexdump -C >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import BinPAC;
+
+export type test = unit {
+
+    f1: bitfield(32) {
+        x1: 0;
+        x2: 1..2;
+        x3: 3..4;
+        x4: 5..31;
+        };
+
+    on f1 {
+#        print self;
+#        print self.f1;
+#        print self.f1.x1;
+#        print self.f1.x2;
+#        print self.f1.x3;
+        }
+};

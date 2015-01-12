@@ -89,6 +89,8 @@ shared_ptr<binpac::type::Unit> Composer::unit() const
 
 shared_ptr<hilti::Expression> Composer::hiltiObject(shared_ptr<type::unit::item::Field> field) const
 {
+    // TODO: Implementation and usage of this method is quite a hack. Can we
+    // streamline that?
     shared_ptr<hilti::Expression> val = nullptr;
 
     if ( field ) {
@@ -300,6 +302,8 @@ void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<hilti::Expression
 
     if ( obj )
         _object = obj;
+    else if ( field )
+        _object = 0;
 
     processOne(node, f);
     _object = old_object;
@@ -643,10 +647,42 @@ void Composer::visit(production::Sequence* s)
 void Composer::visit(production::Switch* s)
 {
     auto field = s->pgMeta()->field;
+    assert(field);
 
     _startingProduction(s->sharedPtr<Production>(), field);
 
-    internalError("composing production::Switch not implemented");
+    auto cont = cg()->moduleBuilder()->newBuilder("switch-cont");
+
+    hilti::builder::BlockBuilder::case_list cases;
+
+    // Build the branches.
+    for ( auto c : s->alternatives() ) {
+        auto builder = cg()->moduleBuilder()->pushBuilder("switch-case");
+        compose(c.second);
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+        cg()->moduleBuilder()->popBuilder(builder);
+
+        for ( auto e : c.first ) {
+            auto expr = cg()->hiltiExpression(e, s->expression()->type());
+            cases.push_back(std::make_pair(expr, builder));
+        }
+    }
+
+    // Build default branch, raising a parse error if none given.
+    auto default_ = cg()->moduleBuilder()->pushBuilder("switch-default");
+
+    if ( s->default_() )
+        compose(s->default_());
+    else
+        _hiltiComposeError("no matching switch case");
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+    cg()->moduleBuilder()->popBuilder(default_);
+
+    auto expr = cg()->hiltiExpression(s->expression(), s->expression()->type());
+    cg()->builder()->addSwitch(expr, default_, cases);
+
+    cg()->moduleBuilder()->pushBuilder(cont);
 
     _finishedProduction(s->sharedPtr<Production>());
 }
@@ -751,4 +787,34 @@ void Composer::visit(type::Address* i)
     cg()->builder()->addInstruction(fmt, hilti::instruction::Misc::SelectValue, hltbo, tuple);
 
     hiltiPack(field, hiltiObject(), fmt);
+}
+
+void Composer::visit(type::Bitfield* btype)
+{
+    auto field = arg1();
+    assert(field);
+
+    auto width = btype->width();
+    auto byteorder = field->inheritedProperty("byteorder");
+
+    auto bval = hiltiObject();
+    auto ival = cg()->builder()->addTmp("ival", hilti::builder::integer::type(width));
+    auto elem = cg()->builder()->addTmp("elem", hilti::builder::integer::type(width));
+
+    int i = 0;
+
+    for ( auto b : btype->bits() ) {
+        cg()->builder()->addInstruction(elem, hilti::instruction::tuple::Index, bval, hilti::builder::integer::create(i++));
+        auto nelem = cg()->hiltiApplyAttributesToValue(elem, btype->attributes());
+
+        auto bits = cg()->hiltiInsertBitsIntoInteger(nelem, std::make_shared<type::Integer>(width, false),
+                                                     btype->bitOrder(),
+                                                     hilti::builder::integer::create(b->lower()),
+                                                     hilti::builder::integer::create(b->upper()));
+
+        cg()->builder()->addInstruction(ival, hilti::instruction::integer::Or, ival, bits);
+    }
+
+    auto fmt = cg()->hiltiIntPackFormat(width, false, byteorder);
+    hiltiPack(field, ival, fmt);
 }

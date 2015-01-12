@@ -862,8 +862,6 @@ shared_ptr<hilti::Expression> CodeGen::hiltiApplyAttributesToValue(shared_ptr<hi
 
     if ( convert && ! composing ) {
         hiltiBindDollarDollar(val);
-        auto dd = builder()->addTmp("__dollardollar", val->type());
-        builder()->addInstruction(dd, hilti::instruction::operator_::Assign, val);
         val = hiltiExpression(convert->value());
         hiltiUnbindDollarDollar();
     }
@@ -872,8 +870,6 @@ shared_ptr<hilti::Expression> CodeGen::hiltiApplyAttributesToValue(shared_ptr<hi
 
     if ( convert_back && composing ) {
         hiltiBindDollarDollar(val);
-        auto dd = builder()->addTmp("__dollardollar", val->type());
-        builder()->addInstruction(dd, hilti::instruction::operator_::Assign, val);
         val = hiltiExpression(convert_back->value());
         hiltiUnbindDollarDollar();
     }
@@ -1008,6 +1004,82 @@ shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(shared_ptr<h
     //
 
     builder()->addInstruction(result, hilti::instruction::integer::Mask, value, lower, upper);
+
+    return result;
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiInsertBitsIntoInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<Expression> border, shared_ptr<hilti::Expression> lower_in, shared_ptr<hilti::Expression> upper_in)
+{
+    auto itype = ast::checkedCast<type::Integer>(type);
+    auto hitype = hiltiTypeInteger(itype->width(), false);
+    auto lower = builder()->addTmp("lower", hitype);
+    auto upper = builder()->addTmp("upper", hitype);
+    auto tmp = builder()->addTmp("tmpbits", hitype);
+
+    builder()->addInstruction(lower, hilti::instruction::operator_::Assign, lower_in);
+    builder()->addInstruction(upper, hilti::instruction::operator_::Assign, upper_in);
+
+    /// TODO: This code here for the bitorder is identical with the
+    /// corresponding part in hiltiExtractBitsFromInteger(). Should factor
+    /// that out.
+
+    // Apply bit order.
+
+    hilti::builder::BlockBuilder::case_list cases;
+
+    auto done = moduleBuilder()->newBuilder("bitorder-done");
+
+    auto blsb0 = moduleBuilder()->pushBuilder("lsb0");
+    // Nothing to do.
+    builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    moduleBuilder()->popBuilder(blsb0);
+
+    auto bmsb0 = moduleBuilder()->pushBuilder("msb0");
+
+    // Invert indices.
+    auto w = hilti::builder::integer::create(itype->width() - 1);
+    builder()->addInstruction(tmp, hilti::instruction::integer::Sub, w, upper);
+    builder()->addInstruction(upper, hilti::instruction::integer::Sub, w, lower);
+    builder()->addInstruction(lower, hilti::instruction::operator_::Assign, tmp);
+
+    builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    moduleBuilder()->popBuilder(bmsb0);
+
+    auto bdefault = moduleBuilder()->pushBuilder("unknown");
+    builder()->addInternalError("unexpected bit order");
+    builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    moduleBuilder()->popBuilder(bdefault);
+
+    auto elsb0 = hilti::builder::id::create(hiltiID(std::make_shared<ID>("BinPAC::BitOrder::LSB0")));
+    auto emsb0 = hilti::builder::id::create(hiltiID(std::make_shared<ID>("BinPAC::BitOrder::MSB0")));
+
+    cases.push_back(std::make_pair(elsb0, blsb0));
+    cases.push_back(std::make_pair(emsb0, bmsb0));
+
+    auto etype_expr = module()->body()->scope()->lookupUnique(std::make_shared<ID>("BinPAC::BitOrder"));
+    if ( ! etype_expr )
+        fatalError("type BinPAC::BitOrder missing");
+
+    auto etype = ast::checkedCast<expression::Type>(etype_expr)->typeValue();
+    auto eval = hiltiExpression(border, etype);
+
+    builder()->addSwitch(eval, bdefault, cases);
+
+    moduleBuilder()->pushBuilder(done);
+
+    //// End of common code.
+
+    auto result = builder()->addTmp("bits", hitype);
+    builder()->addInstruction(result, hilti::instruction::integer::Shl, value, lower);
+
+    auto rshift = builder()->addTmp("rshift", hitype);
+    builder()->addInstruction(rshift, hilti::instruction::integer::Sub, hilti::builder::integer::create(itype->width()), upper);
+    builder()->addInstruction(rshift, hilti::instruction::integer::Sub, rshift, hilti::builder::integer::create(1));
+
+    auto mask = builder()->addTmp("mask", hitype);
+    builder()->addInstruction(mask, hilti::instruction::integer::Shr, hilti::builder::integer::create(-1), rshift);
+
+    builder()->addInstruction(result, hilti::instruction::integer::And, result, mask);
 
     return result;
 }

@@ -1,4 +1,4 @@
-
+                                        
 #ifndef BINPAC_CODEGEN_CODEGEN_H
 #define BINPAC_CODEGEN_CODEGEN_H
 
@@ -414,6 +414,9 @@ public:
 
     /// XXX
     shared_ptr<hilti::Expression> hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<Expression> border, shared_ptr<hilti::Expression> lower, shared_ptr<hilti::Expression> upper);
+
+    /// XXX
+    shared_ptr<hilti::Expression> hiltiInsertBitsIntoInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<Expression> border, shared_ptr<hilti::Expression> lower, shared_ptr<hilti::Expression> upper);
 
     /// Extracts the value for a unit field. If a field is not set, but a
     /// default has been preset, that default will be returned.

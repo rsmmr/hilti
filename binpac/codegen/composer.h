@@ -113,6 +113,7 @@ protected:
     void visit(type::Bytes* b) override;
     void visit(type::Integer* i) override;
     void visit(type::Address* a) override;
+    void visit(type::Bitfield* b) override;
 
 #if 0
     void visit(constant::Address* a) override;

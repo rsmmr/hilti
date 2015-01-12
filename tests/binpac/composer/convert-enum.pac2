@@ -1,0 +1,39 @@
+#
+# @TEST-EXEC:  printf '\000\012\000\012\377\377\000\002' | pac-driver-test -c %INPUT | hexdump -b >output
+# @TEST-EXEC:  btest-diff output
+#
+#
+# Note: Composing doesn't generally work automatically with
+# &convert=...; normally you need to use &convert_back=... to explicitly
+# tell BinPAC++ how to do the inversion (see convert.pac2).
+# However, the normalizer hardcodes some magic to automate the common case of
+# &convert=<Enum>($$), for which it adds a corresponding &convert_back
+# automatically. This test is exercising that.
+#
+
+module Mini;
+
+import BinPAC;
+
+type Foo = enum {
+    A = 10,
+    B,
+    C = 20
+    };
+
+type Bar = enum {
+    D = 0,
+    E = 1,
+    F = 2
+    };
+
+export type test = unit {
+    a: uint16;
+    b : uint16 &convert=Foo($$);
+    c : uint16 &convert=Foo($$);
+    d : uint16 &convert=Bar($$);
+
+    on %done {
+#        print self;
+        }
+};

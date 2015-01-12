@@ -31,7 +31,7 @@ public:
     /// Returns: True if no error were encountered.
     bool run(shared_ptr<ast::NodeBase> ast) override;
 
- protected:
+protected:
     void visit(declaration::Type* t) override;
 };
 
