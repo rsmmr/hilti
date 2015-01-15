@@ -64,3 +64,19 @@ import "HILTI-C" string fmt(format: string, args: tuple<*>) &hilti_id=BinPAC::fm
 import "HILTI-C" time mktime(y: uint<64>, m: uint<64>, d: uint<64>, H: uint<64>, M: uint<64>, S: uint<64>) &hilti_id=BinPAC::mktime;
 # %end-mktime
 
+# %begin-sha256
+# Function for computing a sha256 hash of a bytes object. Takes an
+# seed (which can be emoty) and can limit result value to a given
+# length (or 0 for all).
+#
+# TODO: Should have default arguments.
+#
+import "HILTI-C" bytes sha256(b: bytes, seed: bytes, len: uint64);
+# %end-sha256
+
+# %begin-sha256
+# Function randomizing an IP address (consistently when given the same
+# key.)
+#
+import "HILTI-C" addr anonymize(a: addr, seed: uint64);
+# %end-sha256

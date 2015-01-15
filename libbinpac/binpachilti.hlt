@@ -8,6 +8,7 @@ import Hilti
 
 type ParseSuccess = exception<string>
 type ParseError = exception<string>
+type ComposeError = exception<string>
 type UnitAlreadyConnected = exception
 type FilterError = exception<string>
 type FilterUnsupported = exception<string>
