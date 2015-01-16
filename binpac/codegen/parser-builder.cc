@@ -1420,16 +1420,6 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::I
     cg()->moduleBuilder()->popHook();
 }
 
-shared_ptr<hilti::Expression> ParserBuilder::hiltiSelf()
-{
-    return state()->self;
-}
-
-shared_ptr<hilti::Expression> ParserBuilder::hiltiCookie()
-{
-    return _states.size() ? state()->cookie : hilti::builder::reference::createNull();
-}
-
 shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar)
 {
     if ( item && ! item->hooksEnabled() ) {
@@ -3201,7 +3191,7 @@ void ParserBuilder::visit(type::Bitfield* btype)
 
     auto iters = hilti::builder::tuple::create({ state()->cur, _hiltiEod() });
     auto byteorder = field->inheritedProperty("byteorder");
-    auto fmt = _hiltiIntUnpackFormat(btype->width(), false, byteorder);
+    auto fmt = cg()->hiltiIntPackFormat(btype->width(), false, byteorder);
 
     auto ni = std::make_shared<type::Integer>(btype->width(), false);
     auto value = hiltiUnpack(ni, iters, fmt);
