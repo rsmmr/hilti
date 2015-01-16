@@ -1,18 +1,18 @@
 === Grammar my-grammar
-        Epsilon: <eps> -> ()
-      LookAhead: A   -> {b"a" (id 1), b"b" (id 2), b"c" (id 3)}: <eps> | {b"a" (id 1)}: a
-       Sequence: ABA -> A B A
-       Sequence: AD  -> A D
-      LookAhead: B   -> {b"a" (id 1)}: <eps> | {b"b" (id 2)}: bD
-      LookAhead: C   -> {b"a" (id 1), b"c" (id 3)}: AD | {b"b" (id 2)}: b
-      LookAhead: D   -> {b"a" (id 1)}: aA | {b"c" (id 3)}: c
- (*)  LookAhead: S   -> {b"a" (id 1), b"b" (id 2)}: ABA | {b"c" (id 3)}: cC
-           Ctor: a   -> b"a" (bytes/id 1)
-       Sequence: aA  -> a A
-           Ctor: b   -> b"b" (bytes/id 2)
-       Sequence: bD  -> b D
-           Ctor: c   -> b"c" (bytes/id 3)
-       Sequence: cC  -> c C
+        Epsilon: <eps> -> () (-)
+      LookAhead: A   -> {b"a" (id 1), b"b" (id 2), b"c" (id 3)}: <eps> | {b"a" (id 1)}: a (-)
+       Sequence: ABA -> A B A (-)
+       Sequence: AD  -> A D (-)
+      LookAhead: B   -> {b"a" (id 1)}: <eps> | {b"b" (id 2)}: bD (-)
+      LookAhead: C   -> {b"a" (id 1), b"c" (id 3)}: AD | {b"b" (id 2)}: b (-)
+      LookAhead: D   -> {b"a" (id 1)}: aA | {b"c" (id 3)}: c (-)
+ (*)  LookAhead: S   -> {b"a" (id 1), b"b" (id 2)}: ABA | {b"c" (id 3)}: cC (-)
+           Ctor: a   -> b"a" (bytes/id 1) (-)
+       Sequence: aA  -> a A (-)
+           Ctor: b   -> b"b" (bytes/id 2) (-)
+       Sequence: bD  -> b D (-)
+           Ctor: c   -> b"c" (bytes/id 3) (-)
+       Sequence: cC  -> c C (-)
 
   -- Epsilon:
      A = 1
