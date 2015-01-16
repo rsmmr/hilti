@@ -18,10 +18,6 @@ export type Message = unit {
     answer:     list<ResourceRecord(self)> &count=self.header.ancount;
     authority:  list<ResourceRecord(self)> &count=self.header.nscount;
     additional: list<ResourceRecord(self)> &count=self.header.arcount;
-
-    on %done  {
-#        print self;
-    }
 };
 
 type Header = unit {
@@ -120,10 +116,6 @@ type Label = unit(msg: Message, name: Name) {
     ptr_addl_byte > uint8 if ( self.adjust > 0 ) !> {
         self.ptr_addl_byte = cast<uint8>(self.ptr.len.addl_byte);
       }
-
-    on label !> {
-       self.label = self.label.upper(); #BinPAC::sha1(self.label).substr(0, |self.label|);
-    }
 
     on %done {
         if ( self.adjust > 0 )
