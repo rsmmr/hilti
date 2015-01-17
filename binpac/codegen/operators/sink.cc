@@ -5,6 +5,18 @@
 using namespace binpac;
 using namespace binpac::codegen;
 
+void CodeBuilder::visit(binpac::expression::operator_::sink::New* i)
+{
+    auto stype = std::make_shared<type::Sink>();
+    auto result = cg()->builder()->addTmp("sink", cg()->hiltiType(stype));
+
+    cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult,
+                                    hilti::builder::id::create("BinPACHilti::sink_new"),
+                                    hilti::builder::tuple::create({}));
+
+    setResult(result);
+}
+
 void CodeBuilder::visit(binpac::expression::operator_::sink::Close* i)
 {
     auto sink = cg()->hiltiExpression(i->op1());

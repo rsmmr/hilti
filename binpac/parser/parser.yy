@@ -761,6 +761,7 @@ expr2         : scoped_id                        { $$ = std::make_shared<express
               | ADD expr '[' expr ']'            { $$ = makeOp(operator_::Add, { $2, $4 }, loc(@$)); }
               | DELETE expr '[' expr ']'         { $$ = makeOp(operator_::Delete, { $2, $4 }, loc(@$)); }
               | CAST '<' type '>' '(' expr ')'   { $$ = makeOp(operator_::Cast, { $6, std::make_shared<expression::Type>($3) }, loc(@$)); }
+              | NEW SINK                         { $$ = makeOp(operator_::New, { std::make_shared<expression::Type>(std::make_shared<type::Sink>()) }, loc(@$)); }
               | NEW id_expr                      { $$ = makeOp(operator_::New, {$2 }, loc(@$)); }
               | NEW id_expr tuple_expr           { $$ = makeOp(operator_::New, {$2, $3}, loc(@$)); }
 
