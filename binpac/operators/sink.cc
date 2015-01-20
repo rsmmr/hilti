@@ -7,6 +7,19 @@ static const string _doc_connect =
     excpetion is thrown. However, a sink can have more than one unit connected.
    )";
 
+opBegin(sink::New)
+    opOp1(std::make_shared<type::TypeType>(std::make_shared<type::Sink>()))
+
+    opDoc("Instantiates a new sink.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Sink>();
+    }
+opEnd
+
 opBegin(sink::Connect : MethodCall)
     opOp1(std::make_shared<type::Sink>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect")))
