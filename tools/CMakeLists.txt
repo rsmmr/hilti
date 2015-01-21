@@ -49,6 +49,7 @@ target_link_libraries(hilti-doc binpacxx ${HILTI_LIBS})
 add_dependencies(hilti-doc hilti-rt hilti-rt-dbg)
 
 add_subdirectory(pac-driver)
+add_subdirectory(pac-dump)
 
 add_custom_command(
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof
