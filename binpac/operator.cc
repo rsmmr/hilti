@@ -46,7 +46,7 @@ bool Operator::match(const expression_list& ops, bool coerce, expression_list* n
         // fprintf(stderr, "  X %s\n", typeid(*(*o).get()).name());
         // fprintf(stderr, "  X %s\n", typeid(*(*o)->type().get()).name());
 
-        if ( t == types.end() )
+        if ( t == types.end() || ! *t )
             // Too many arguments.
             return false;
 
