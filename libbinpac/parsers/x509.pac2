@@ -109,10 +109,12 @@ type tbscertificate = unit {
     self.version = self.version_data.body.num_value + 1;
   }
   serialnumber_head: asn1::ASN1Header if ( self.version_head.tag.class == asn1::ASN1Class::context-specific ); # otherwhise we have to use version_head
-  var serial: int64;
   switch ( self.version_head.tag.data.class ) {
-    0 -> serialNumber_raw: asn1::ASN1Body(self.version_head);
-    2 -> serialNumber_raw: asn1::ASN1Body(self.serialnumber_head);
+    0 -> serial: bytes &length=self.version_head.len.len;
+    2 -> serial: bytes &length=self.serialnumber_head.len.len;
+# This would be nicer -- but it leads to problems with the (common) case of more than 64-bit serial numbers
+#    0 -> serialNumber_raw: asn1::ASN1Body(self.version_head);
+#    2 -> serialNumber_raw: asn1::ASN1Body(self.serialnumber_head);
   };
   signature: algorithmidentifier;
 
@@ -125,7 +127,6 @@ type tbscertificate = unit {
         self.read_length = self.read_length + self.serialnumber_head.total_length;
     }
     self.read_length = self.read_length + self.signature.head.total_length + self.issuer.head.total_length + self.validity.head.total_length + self.subject.head.total_length + self.subjectPublicKeyInfo.head.total_length;
-    self.serial = self.serialNumber_raw.num_value;
   }
   # here there may be extension or other stuff if we have not exceeded the length.
   : bytes &length=( self.tbscertificate_head.len.len - self.read_length); # for now - do not parse it.
@@ -133,6 +134,7 @@ type tbscertificate = unit {
 };
 
 export type certificate = unit {
+  %mimetype = "application/pkix-cert";
   certificate_head: asn1::ASN1Header;
 
   certificate: tbscertificate;

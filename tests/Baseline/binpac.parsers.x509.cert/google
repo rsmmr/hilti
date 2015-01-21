@@ -7,7 +7,7 @@ Name oid:  2.5.4.7  value:  Mountain View
 Name oid:  2.5.4.10  value:  Google Inc
 Name oid:  2.5.4.3  value:  *.google.com
 Version:  3
-Serial number:  1263020097705851079
+Serial number:  \x11\x87&\x16K\xef\xb8\xc7
 Valid from:  131120144311Z
 Valid till:  140320000000Z
 Signature algorithm:  1.2.840.113549.1.1.5

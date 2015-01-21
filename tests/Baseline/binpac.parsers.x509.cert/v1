@@ -7,7 +7,7 @@ Name oid:  2.5.4.10  value:  GTE Corporation
 Name oid:  2.5.4.11  value:  GTE CyberTrust Solutions, Inc.
 Name oid:  2.5.4.3  value:  GTE CyberTrust Global Root
 Version:  1
-Serial number:  421
+Serial number:  \x01\xa5
 Valid from:  980813002900Z
 Valid till:  180813235900Z
 Signature algorithm:  1.2.840.113549.1.1.4

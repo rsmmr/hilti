@@ -1,0 +1,38 @@
+#
+# @TEST-EXEC:  cat %DIR/data.ms-root-certs.sst | HILTI_DEBUG= pac-driver-test %INPUT ${PARSERS}/ms-cert.pac2 ${PARSERS}/asn1.pac2 ${PARSERS}/x509.pac2 -- -p MSCerts::DocSigSerializedCertStore >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module PrintCerts;
+
+import parsers/ms-cert;
+import parsers/asn1;
+import parsers/x509;
+
+import "HILTI-C" void Hilti::terminate();
+
+global x509_sink: sink;
+
+on MSCerts::SerializedCertificateEntry::certificate
+{
+    x509_sink = new sink;
+    #x509_sink.connect(new Certs);
+    x509_sink.connect_mime_type(b"application/pkix-cert");
+    x509_sink.write(self.certificate);
+
+    # There are many certs in the store. We're happy once we get one.
+    Hilti::terminate();
+}
+
+on x509::tbscertificate::%done {
+  print "Version: ", self.version;
+  print "Serial number: ", self.serial;
+  print "Valid from: ", self.validity.not_before;
+  print "Valid till: ", self.validity.not_after;
+  print "Signature algorithm: ", self.signature.algorithm;
+  print "Public key algorithm: ", self.subjectPublicKeyInfo.algorithm.algorithm;
+}
+
+on x509::cert_issuer_component::%done {
+  print "Name oid: ", self.tpe, " value: ", self.value;
+}

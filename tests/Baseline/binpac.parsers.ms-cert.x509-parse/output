@@ -1,0 +1,16 @@
+Name oid:  2.5.4.6  value:  US
+Name oid:  2.5.4.10  value:  VeriSign, Inc.
+Name oid:  2.5.4.11  value:  VeriSign Trust Network
+Name oid:  2.5.4.11  value:  (c) 1999 VeriSign, Inc. - For authorized use only
+Name oid:  2.5.4.3  value:  VeriSign Class 4 Public Primary Certification Authority - G3
+Name oid:  2.5.4.6  value:  US
+Name oid:  2.5.4.10  value:  VeriSign, Inc.
+Name oid:  2.5.4.11  value:  VeriSign Trust Network
+Name oid:  2.5.4.11  value:  (c) 1999 VeriSign, Inc. - For authorized use only
+Name oid:  2.5.4.3  value:  VeriSign Class 4 Public Primary Certification Authority - G3
+Version:  1
+Serial number:  \x00\xec\xa0\xa7\x8bnuj\x01\xcf\xc4|\xcc/\x94^\xd7
+Valid from:  991001000000Z
+Valid till:  360716235959Z
+Signature algorithm:  1.2.840.113549.1.1.5
+Public key algorithm:  1.2.840.113549.1.1.1
