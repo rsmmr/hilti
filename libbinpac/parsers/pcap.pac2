@@ -462,6 +462,7 @@ type TCPPacket = unit(len: uint64, src_ip: addr, dst_ip: addr) {
   options: bytes &length=(self.flags.data_offset - 5)*4;
 
   data :bytes &length=(len - self.offset()) { # packet content
+    #print BinPAC::fmt("%s got sequence %u", (self.fourtuple, self.sequence_number));
     if ( self.flags.syn == 1 && self.flags.ack == 0 ) { # new connection
       tcp_sinks[self.fourtuple] = new sink;
       tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
@@ -482,7 +483,6 @@ type TCPPacket = unit(len: uint64, src_ip: addr, dst_ip: addr) {
         tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
         }
       tcp_sinks[self.fourtuple].write(self.data, cast<uint64>(self.sequence_number) );
-      #tcp_sequence[self.fourtuple] = 10000;
     }
 
     if ( self.flags.fin == 1 && self.fourtuple in tcp_sinks ) {

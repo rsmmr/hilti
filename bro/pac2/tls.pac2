@@ -140,11 +140,16 @@ type ClientCertificateType = enum {
 };
 
 export type Message = unit {
+  %mimetype = "port-tcp/443";
+
   var handshakesink: sink;
   var alertsink: sink;
   var record_version: TLSVersion = TLSVersion::UNDEF;
+  var encrypted: bool = False;
 
-  records: list<RecordFragment(self.handshakesink, self.alertsink, self.record_version)>;
+  records: list<RecordFragment(self.handshakesink, self.alertsink, self.record_version, self.encrypted)>
+    # ugly hack -- when I set the bool from the recordfragment the change seems to be ignored.
+    foreach { self.encrypted = $$.encrypted; }
 
   on %init {
     self.handshakesink.connect(new Handshake(self.record_version));
@@ -152,14 +157,18 @@ export type Message = unit {
   }
 };
 
-type RecordFragment = unit(handshakesink: sink, alertsink: sink, record_version: TLSVersion) {
-  content_type: uint8 &convert=ContentType($$);
+type RecordFragment = unit(handshakesink: sink, alertsink: sink, record_version: TLSVersion, encrypted: bool) {
+  var encrypted: bool;
+
+  content_type: uint8 &convert=ContentType($$) {
+    self.encrypted = encrypted;
+  }
   version: uint16 &convert=TLSVersion($$) {
     record_version = self.version;
   }
   length: uint16;
 
-  var encrypted: bool = False;
+  : bytes &length=self.length if ( self.encrypted == True );
 
   switch ( self.content_type ) {
     ContentType::handshake -> : bytes &length=self.length -> handshakesink;
@@ -167,8 +176,10 @@ type RecordFragment = unit(handshakesink: sink, alertsink: sink, record_version:
     ContentType::change_cipher_spec -> : bytes &length=self.length {
       # everything in this connection will be encrypted from now on.
       # close all sinks
-      handshakesink.close();
-      alertsink.close();
+      # FIXME - cannot close sinks at the moment - uncomment when tests/binpac/sink/lists.pac2 works again
+      #handshakesink.close();
+      #alertsink.close();
+      self.encrypted = True;
     }
 #   ContentType::heartbeat -> : bytes &length=self.length -> heartbeatsink;
     ContentType::application_data -> : bytes &length=self.length; # encrypted application data.
@@ -239,8 +250,14 @@ type Certificate = unit {
 };
 
 type certificate_message = unit {
+  var cert_sink: sink;
+
   length: bytes &length=3 &convert=$$.to_uint(BinPAC::ByteOrder::Network);
-  cert: bytes &length=self.length; # certificates, forward to whatever
+  cert: bytes &length=self.length -> self.cert_sink;
+
+  on %init {
+    self.cert_sink.connect_mime_type(b"application/pkix-cert");
+  }
 };
 
 type Random = unit {

@@ -1,0 +1,33 @@
+# @TEST-EXEC: cp ${DIST}/bro/pac2/tls.pac2 .
+# @TEST-EXEC: cat ${DIST}/bro/tests/Traces/tls/ecdsa-cert.pcap | HILTI_DEBUG= HILTI_BUILD_FLAGS= PAC_DRIVER_TEST_DEBUG=0 pac-driver-test %INPUT ${PARSERS}/pcap.pac2 tls.pac2 ${PARSERS}/asn1.pac2 ${PARSERS}/x509.pac2 -- -p pcap::PcapFile 2>&1 >output
+# @TEST-EXEC: btest-diff output
+
+module Test;
+
+import TLS;
+import parsers/asn1;
+import parsers/x509;
+
+on TLS::Handshake_message::%done {
+  print self;
+}
+
+on TLS::RecordFragment::%done {
+  if ( self.encrypted == True ) {
+    print self;
+  }
+}
+
+on x509::tbscertificate::%done {
+  print "Version: ", self.version;
+  print "Serial number: ", self.serial;
+  print "Valid from: ", self.validity.not_before;
+  print "Valid till: ", self.validity.not_after;
+  print "Signature algorithm: ", self.signature.algorithm;
+  print "Public key algorithm: ", self.subjectPublicKeyInfo.algorithm.algorithm;
+}
+
+on x509::cert_issuer_component::%done {
+  print "Name oid: ", self.tpe, " value: ", self.value;
+}
+
