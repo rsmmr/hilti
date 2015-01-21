@@ -465,11 +465,11 @@ type TCPPacket = unit(len: uint64, src_ip: addr, dst_ip: addr) {
     if ( self.flags.syn == 1 && self.flags.ack == 0 ) { # new connection
       tcp_sinks[self.fourtuple] = new sink;
       tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
-			tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
+      tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
     } else if ( self.flags.syn == 1 && self.flags.ack == 1 ) { # new connection - other side
       tcp_sinks[self.fourtuple] = new sink;
       tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
-			tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
+      tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
     }
 
     if ( |self.data| > 0 ) {
@@ -479,15 +479,15 @@ type TCPPacket = unit(len: uint64, src_ip: addr, dst_ip: addr) {
         # connect it now...
         tcp_sinks[self.fourtuple] = new sink;
         tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
-				tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
+        tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
         }
       tcp_sinks[self.fourtuple].write(self.data, cast<uint64>(self.sequence_number) );
-			#tcp_sequence[self.fourtuple] = 10000;
+      #tcp_sequence[self.fourtuple] = 10000;
     }
 
     if ( self.flags.fin == 1 && self.fourtuple in tcp_sinks ) {
       tcp_sinks[self.fourtuple].close();
-			delete tcp_sinks[self.fourtuple];
+      delete tcp_sinks[self.fourtuple];
     }
   }
 };
