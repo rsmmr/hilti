@@ -2,11 +2,11 @@
 
 (add-to-list 'auto-mode-alist '("\\.pac2\\'" . binpacpp-mode))
 
-(setq binpacpp-functions '("to_uint" "split1" "mod"))
+(setq binpacpp-functions '("to_uint" "split1" "mod" "length" "transient" "convert"))
 
 (setq binpacpp-keywords '("enum" "type" "unit" "var" "module" "export" "self" "switch" "on"))
 
-(setq binpacpp-types '("bytes" "uint8" "uint16" "uint32" "uint64" "&length" "&transient" "&convert" "list"))
+(setq binpacpp-types '("bytes" "uint8" "uint16" "uint32" "uint64" "list"  "const"))
 
 (setq binpacpp-constants '("%done" "%init" "0x0"))
 
@@ -37,6 +37,7 @@
         (modify-syntax-entry ?\n "> b" synTable)
         ;;(modify-syntax-entry ?. "w" synTable)
         (modify-syntax-entry ?_ "w" synTable)
+	;;(modify-syntax-entry ?= "-" synTable)
         ;;(modify-syntax-entry ?@ "w" synTable)
         synTable))
 
