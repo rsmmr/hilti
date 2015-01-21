@@ -542,7 +542,6 @@ public:
     /// Returns: A boolean HILTI expression being true if the field has a value currently.
     shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit, const string& field);
 
-<<<<<<< HEAD
     // Returns a HILTI expression of type Hilti::Packed specifying the
     // (un-)pack format for an integer of the given
     // width/signedness/byteorder combiniation.
@@ -559,7 +558,7 @@ public:
     //
     // unit: The unit to return the instance for.
     shared_ptr<hilti::Expression> hiltiParserDefinition(shared_ptr<type::Unit> unit);
-=======
+
     /// Computes the path to a field inside the unit structure in terms of
     /// indices followed. In the simplest cast of a field being stored at the
     /// top-level of a unit's underlying struct, this will return just \c {
@@ -575,7 +574,6 @@ public:
     ///
     /// Returns: A HILTI tuple of int<64> representing the path to \a f.
     shared_ptr<hilti::Expression> hiltiItemComputePath(shared_ptr<hilti::Type> unit, shared_ptr<binpac::type::unit::Item> f);
->>>>>>> 014df6ac6bd5b6fe506bb97d1baf65b131d1d4c6
 
 private:
     enum HiltiItemOp { GET, GET_DEFAULT, SET, PRESET_DEFAULT, UNSET, IS_SET };

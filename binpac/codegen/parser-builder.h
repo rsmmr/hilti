@@ -231,10 +231,6 @@ private:
     // Prints the upcoming input bytes to binpac-verbose.
     void _hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur);
 
-<<<<<<< HEAD
-    // Helper producing the "binpac" debugging output for a bitfield.
-    void _hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type);
-=======
     // Executes a hook. \a self is the self parameter to pass to the hook. \a
     // id is the full path to the hooked element, including the module. \a
     // foreach must be true if this is a \c forach hook. \a dolllardollar is
@@ -263,7 +259,6 @@ private:
     // boolean indicates whether the hook is a local one (i.e., within the
     // same module; true) or cross-module (false).
     std::pair<bool, string> _hookName(const string& path);
->>>>>>> 014df6ac6bd5b6fe506bb97d1baf65b131d1d4c6
 
     // Scans for a look-ahead symbol out of an expected set and sets the
     // state()->lah* accordingly if found. Raises a parse error if not.

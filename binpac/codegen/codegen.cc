@@ -1580,7 +1580,6 @@ shared_ptr<hilti::Expression> CodeGen::hiltiItemIsSet(shared_ptr<hilti::Expressi
     return _hiltiItemOp(IS_SET, unit, nullptr, field, nullptr, nullptr);
 }
 
-<<<<<<< HEAD
 shared_ptr<hilti::Expression> CodeGen::hiltiIntPackFormat(int width, bool signed_, shared_ptr<binpac::Expression> byteorder)
 {
     auto hltbo = byteorder ? hiltiExpression(byteorder) : hilti::builder::id::create("BinPAC::ByteOrder::Big");
@@ -1749,19 +1748,6 @@ void CodeGen::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit)
                               hilti::builder::string::create("resume_func"), f);
 
     // Compose functions.
-=======
-shared_ptr<hilti::Expression> CodeGen::hiltiItemComputePath(shared_ptr<hilti::Type> unit, shared_ptr<binpac::type::unit::Item> f)
-{
-    auto id = f->id();
-
-    if ( f && f->aliased() )
-        f = nullptr;
-
-    ::hilti::builder::tuple::element_list path;
-    _computeFieldPathInStruct(this, unit, f, id, &path);
-    return ::hilti::builder::tuple::create(path);
-}
->>>>>>> 014df6ac6bd5b6fe506bb97d1baf65b131d1d4c6
 
     if ( options().generate_composers )
         builder()->addInstruction(funcs, hilti::instruction::caddr::Function, _composer->hiltiCreateHostFunction(unit));
@@ -1814,6 +1800,18 @@ shared_ptr<hilti::Expression> CodeGen::hiltiItemComputePath(shared_ptr<hilti::Ty
     builder()->addInstruction(hilti::instruction::flow::ReturnVoid);
 
     moduleBuilder()->popFunction();
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiItemComputePath(shared_ptr<hilti::Type> unit, shared_ptr<binpac::type::unit::Item> f)
+{
+    auto id = f->id();
+
+    if ( f && f->aliased() )
+        f = nullptr;
+
+    ::hilti::builder::tuple::element_list path;
+    _computeFieldPathInStruct(this, unit, f, id, &path);
+    return ::hilti::builder::tuple::create(path);
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiParserDefinition(shared_ptr<type::Unit> unit)

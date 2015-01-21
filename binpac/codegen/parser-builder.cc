@@ -1293,28 +1293,6 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
                                      hilti::builder::string::create(tag), next, len, idx, state()->end, gidx, eod, mode, frozen2, frozen1, state()->trim, at);
 }
 
-<<<<<<< HEAD
-void ParserBuilder::_hiltiDebugBitfield(shared_ptr<hilti::Expression> value, shared_ptr<type::Integer> type)
-{
-    shared_ptr<hilti::Expression> i = cg()->builder()->addTmp("bits", cg()->hiltiType(type));
-
-    cg()->builder()->debugPushIndent();
-
-    for ( auto b : type->bits() ) {
-        auto bits = cg()->hiltiExtractsBitsFromInteger(value, type,
-                                                   hilti::builder::integer::create(b->lower()),
-                                                   hilti::builder::integer::create(b->upper()));
-
-        auto j = cg()->hiltiApplyAttributesToValue(bits, b->attributes());
-
-        if ( bits == j )
-            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", b->id()->name()), bits);
-        else
-            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s (%%s)", b->id()->name()), j, bits);
-    }
-
-    cg()->builder()->debugPopIndent();
-=======
 std::pair<bool, string> ParserBuilder::_hookName(const string& path)
 {
     bool local = false;
@@ -1512,7 +1490,6 @@ shared_ptr<binpac::ID> ParserBuilder::_hookForUnit(shared_ptr<type::Unit> unit, 
     hook = string("__hook_") + hook;
 
     return std::make_shared<binpac::ID>(hook);
->>>>>>> 014df6ac6bd5b6fe506bb97d1baf65b131d1d4c6
 }
 
 void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod, const std::list<shared_ptr<production::Terminal>>& terms, bool must_find)
