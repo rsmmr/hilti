@@ -87,7 +87,9 @@ static const string _doc_write =
     before passing on, according to the sequence number *seq* provided; *seq* is interpreted
     relative to the inital sequence number set with *set_initial_sequence_number*, or 0 if
     not otherwise set. If not sequence number is provided, the data is assumed to represent
-    a chunk to be appended to the current end of the input stream.
+    a chunk to be appended to the current end of the input stream. If *len* is provided,
+    the data is assumed to represent that many bytes inside the sequence space; if not provided, *len*
+    defaults to the length of *b*.
 
     If no units are connected, the call does not
     have any effect. If one parsing unit throws an exception, parsing of
@@ -108,6 +110,7 @@ opBegin(sink::Write : MethodCall)
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("write")))
     opCallArg1("b", std::make_shared<type::Bytes>())
     opCallArg2("seq", std::make_shared<type::OptionalArgument>(_makeUInt64()))
+    opCallArg3("len", std::make_shared<type::OptionalArgument>(_makeUInt64()))
 
     opDoc(_doc_write)
 

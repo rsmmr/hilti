@@ -2528,21 +2528,28 @@ void ParserBuilder::_hiltiFilterInput(bool resume)
 }
 
 
-void ParserBuilder::hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq)
+void ParserBuilder::hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len)
 {
     // Pass into any attached sinks.
     for ( auto s: field->sinks() ) {
         auto sink = cg()->hiltiExpression(s);
-        hiltiWriteToSink(sink, data, seq);
+        hiltiWriteToSink(sink, data, seq, len);
     }
 }
 
-void ParserBuilder::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq)
+void ParserBuilder::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len)
 {
     if ( seq ) {
-        cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
-                                        hilti::builder::id::create("BinPACHilti::sink_write"),
-                                        hilti::builder::tuple::create( { sink, data, seq, cg()->hiltiCookie() } ));
+        if ( len ) {
+            cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                            hilti::builder::id::create("BinPACHilti::sink_write_custom_length"),
+                                            hilti::builder::tuple::create( { sink, data, seq, len, cg()->hiltiCookie() } ));
+        }
+        else {
+            cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                            hilti::builder::id::create("BinPACHilti::sink_write"),
+                                            hilti::builder::tuple::create( { sink, data, seq, cg()->hiltiCookie() } ));
+        }
     }
 
     else {
