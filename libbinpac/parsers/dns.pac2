@@ -48,7 +48,7 @@ type Question = unit(msg: Message) {
 
 type ResourceRecord = unit(msg: Message) {
     name:   Name(msg);
-    ty:     uint16 &convert=RDType($$) &convert_back=cast<uint16>(self.ty);
+    ty:     uint16 &convert=RDType($$);
     class:  uint16;
     ttl:    uint32;
     rdlen:  uint16;
