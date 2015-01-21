@@ -1,0 +1,14 @@
+# @TEST-EXEC: cat ${DIST}/bro/tests/Traces/http/get.trace | pac-driver-test %INPUT ${PARSERS}/pcap.pac2 -- -p pcap::PcapFile 2>&1 >output
+# @TEST-EXEC: btest-diff output
+
+module Test;
+
+export type Test = unit {
+  %mimetype = "port-tcp/80";
+
+  a: bytes &eod;
+
+  on %done {
+    print self.a;
+  }
+};

@@ -1,6 +1,12 @@
 IP: From 192.150.186.169 to 192.150.186.8 with protocol UDP
+UDP: sourceport 55587 to 53
 IP: From 192.150.186.8 to 192.150.186.169 with protocol UDP
+UDP: sourceport 53 to 55587
 IP: From 192.150.186.169 to 192.150.186.8 with protocol UDP
+UDP: sourceport 55588 to 53
 IP: From 192.150.186.8 to 192.150.186.169 with protocol UDP
+UDP: sourceport 53 to 55588
 IP: From 192.150.186.169 to 192.150.186.8 with protocol UDP
+UDP: sourceport 55589 to 53
 IP: From 192.150.186.8 to 192.150.186.169 with protocol UDP
+UDP: sourceport 53 to 55589

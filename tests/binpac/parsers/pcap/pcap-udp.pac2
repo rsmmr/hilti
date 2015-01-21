@@ -3,18 +3,16 @@
 #
 # @TEST-EXEC: cat ${DIST}/bro/tests/Traces/dns.trace | pac-driver-test %INPUT ${PARSERS}/pcap.pac2 2>&1 >output
 # @TEST-EXEC: btest-diff output
-#
-# @TEST-KNOWN-FAILURE: Depends on list/eof.pac2 being fixed.
 
 module Test;
 
 import BinPAC;
 import parsers/pcap;
 
-on pcap::IPV4Packet::%done {
+on pcap::IPV4Packet::options {
 	print "IP: From", self.source, "to", self.destination, "with protocol", self.protocol;
 }
 
-#on pcap::UDPPacket::%done {
-#  print "UDP: sourceport", self.source_port, "to", self.destination_port;
-#}
+on pcap::UDPPacket::%done {
+  print BinPAC::fmt("UDP: sourceport %u to %u", (self.source_port, self.destination_port));
+}

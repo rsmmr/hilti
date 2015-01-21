@@ -403,14 +403,14 @@ type IPV4Packet = unit(len: uint64) {
   options: bytes &length=(self.head.ihl - 5);
 
   switch ( self.protocol ) {
-    ProtocolNumber::UDP -> : UDPPacket(len - self.offset());
-    ProtocolNumber::TCP -> : TCPPacket(len - self.offset());
+    ProtocolNumber::UDP -> : UDPPacket(len - self.offset(), self.source, self.destination);
+    ProtocolNumber::TCP -> : TCPPacket(len - self.offset(), self.source, self.destination);
     * -> : bytes &length=(len - self.offset());
   };
 
 };
 
-type UDPPacket = unit(len: uint64) {
+type UDPPacket = unit(len: uint64, src_ip: addr, dst_ip: addr) {
   var lower_port: uint16; # used for protocol identification. Kind of cheating...
   var parser: sink;
 
@@ -428,14 +428,20 @@ type UDPPacket = unit(len: uint64) {
   data: bytes &length=(len - self.offset()) -> self.parser;
 };
 
-type TCPPacket = unit(len: uint64) {
+global tcp_sinks: map<string, sink>;
+
+type TCPPacket = unit(len: uint64, src_ip: addr, dst_ip: addr) {
   var lower_port: uint16; # used for protocol identification. Kind of cheating...
+
+  var fourtuple: string;
 
   source_port: uint16;
   destination_port: uint16{
     self.lower_port = self.source_port;
     if ( self.destination_port < self.lower_port )
       self.lower_port = self.destination_port;
+
+    self.fourtuple = BinPAC::fmt("%s %u %s %u", (src_ip, self.source_port, dst_ip, self.destination_port));
   }
   sequence_number: uint32;
   ack_number: uint32;
@@ -455,5 +461,34 @@ type TCPPacket = unit(len: uint64) {
   urgend_pointer: uint16;
   options: bytes &length=(self.flags.data_offset - 5)*4;
 
-  :bytes &length=(len - self.offset()); # packet content
+  data :bytes &length=(len - self.offset()) { # packet content
+    if ( self.flags.syn == 1 && self.flags.ack == 0 ) { # new connection
+      tcp_sinks[self.fourtuple] = new sink;
+      tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
+			tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
+    } else if ( self.flags.syn == 1 && self.flags.ack == 1 ) { # new connection - other side
+      tcp_sinks[self.fourtuple] = new sink;
+      tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
+			tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
+    }
+
+    if ( |self.data| > 0 ) {
+      if ( !(self.fourtuple in tcp_sinks) )
+        {
+        # connection where we have not seen the beginning?
+        # connect it now...
+        tcp_sinks[self.fourtuple] = new sink;
+        tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
+				tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
+        }
+      tcp_sinks[self.fourtuple].write(self.data, cast<uint64>(self.sequence_number) );
+			#tcp_sequence[self.fourtuple] = 10000;
+    }
+
+    if ( self.flags.fin == 1 && self.fourtuple in tcp_sinks ) {
+      tcp_sinks[self.fourtuple].close();
+			delete tcp_sinks[self.fourtuple];
+    }
+  }
 };
+
