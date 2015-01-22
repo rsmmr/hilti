@@ -12,3 +12,24 @@ export type Test = unit {
     print self.a;
   }
 };
+
+export type Test2 = unit {
+  %mimetype = "port-tcp-origin/80";
+
+  a: bytes &eod;
+
+  on %done {
+    print "To origin", |self.a|;
+  }
+};
+
+export type Test3 = unit {
+  %mimetype = "port-tcp-destination/80";
+
+  a: bytes &eod;
+
+  on %done {
+    print "To destination", |self.a|;
+  }
+};
+

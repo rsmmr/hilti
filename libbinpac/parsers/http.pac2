@@ -29,6 +29,7 @@ bool reply_code_needs_body(status: uint64)
 }
 
 export type Requests = unit {
+    %mimetype = "port-tcp-destination/80";
     :  list<Request> &transient;
 };
 
@@ -38,6 +39,7 @@ type Request = unit {
 };
 
 export type Replies = unit {
+    %mimetype = "port-tcp-origin/80";
     :  list<Reply> &transient;
 };
 

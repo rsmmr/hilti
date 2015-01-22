@@ -1,0 +1,15 @@
+# @TEST-EXEC: cat ${DIST}/bro/tests/Traces/http/get.trace | HILTI_DEBUG= HILTI_BUILD_FLAGS= PAC_DRIVER_TEST_DEBUG=0 pac-driver-test %INPUT ${PARSERS}/pcap.pac2 ${PARSERS}/http.pac2 -- -p pcap::PcapFile 2>&1 >output
+# @TEST-EXEC: btest-diff output
+
+module Test;
+
+import BinPAC;
+import parsers/http;
+
+on HTTP::Request::%done {
+  print BinPAC::fmt("HTTP %s for %s", (self.request.method, self.request.uri));
+}
+
+on HTTP::Reply::%done {
+  print BinPAC::fmt("HTTP Reply: %u %s (%u bytes)", (self.reply.status, self.reply.reason, self.message.body.data_len));
+}

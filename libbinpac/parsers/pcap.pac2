@@ -421,6 +421,10 @@ type UDPPacket = unit(len: uint64, src_ip: addr, dst_ip: addr) {
       self.lower_port = self.destination_port;
 
     self.parser.connect_mime_type(BinPAC::fmt(b"port-udp/%u", (self.lower_port, 1)));
+    if ( self.destination_port == self.lower_port )
+      self.parser.connect_mime_type(BinPAC::fmt(b"port-udp-destination/%u", (self.lower_port, 1)));
+    else
+      self.parser.connect_mime_type(BinPAC::fmt(b"port-udp-origin/%u", (self.lower_port, 1)));
   }
   length: uint16;
   checksum: uint16;
@@ -466,10 +470,18 @@ type TCPPacket = unit(len: uint64, src_ip: addr, dst_ip: addr) {
     if ( self.flags.syn == 1 && self.flags.ack == 0 ) { # new connection
       tcp_sinks[self.fourtuple] = new sink;
       tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
+      if ( self.destination_port == self.lower_port )
+        tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp-destination/%u", (self.lower_port, 1)));
+      else
+        tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp-origin/%u", (self.lower_port, 1)));
       tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
     } else if ( self.flags.syn == 1 && self.flags.ack == 1 ) { # new connection - other side
       tcp_sinks[self.fourtuple] = new sink;
       tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
+      if ( self.destination_port == self.lower_port )
+        tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp-destination/%u", (self.lower_port, 1)));
+      else
+        tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp-origin/%u", (self.lower_port, 1)));
       tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
     }
 
@@ -480,6 +492,10 @@ type TCPPacket = unit(len: uint64, src_ip: addr, dst_ip: addr) {
         # connect it now...
         tcp_sinks[self.fourtuple] = new sink;
         tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp/%u", (self.lower_port, 1)));
+        if ( self.destination_port == self.lower_port )
+          tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp-destination/%u", (self.lower_port, 1)));
+        else
+          tcp_sinks[self.fourtuple].connect_mime_type(BinPAC::fmt(b"port-tcp-origin/%u", (self.lower_port, 1)));
         tcp_sinks[self.fourtuple].set_initial_sequence_number(cast<uint64>(self.sequence_number + 1));
         }
       tcp_sinks[self.fourtuple].write(self.data, cast<uint64>(self.sequence_number) );
