@@ -11,10 +11,16 @@ type SerializedPropertyEntry = unit {
 };
 
 type SerializedCertificateEntry = unit {
-        id           : uint32(0x00000020);
-        encodingType : uint32;
-        len          : uint32;
-        certificate  : bytes &length=self.len;
+        var x509_sink : sink;
+
+        id            : uint32(0x00000020);
+        encodingType  : uint32;
+        len           : uint32;
+        certificate   : bytes &length=self.len -> self.x509_sink;
+
+        on %init {
+                self.x509_sink.connect_mime_type(b"application/pkix-cert");
+        }
 };
 
 type CertStoreCertificateGroup = unit {
@@ -29,6 +35,10 @@ type EndElementMarkerEntry = unit {
 };
 
 export type DocSigSerializedCertStore = unit {
+        %mimetype = "application/vnd.ms-pki.certstore";
+        %mimetype = "application/vnd.ms-pkicertstore";
+        %mimetype = "APPLICATION/VND.MS-PKICERTSTORE"; # hack because currently the mime-type is not normalized
+
         version          : uint32;
         fileType         : uint32;
         # This list is terminated by a look ahead to the EndElementMarkerEntry.id field.

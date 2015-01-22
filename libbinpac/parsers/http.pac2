@@ -85,7 +85,7 @@ type Message = unit(body_default: bool, is_request: bool) {
     body:       Body(self, self.delivery_mode) if ( self.has_body );
 
     var content_length: uint64;
-	var content_encoding: bytes;
+    var content_encoding: bytes;
     var content_type: tuple<bytes, bytes> = (b"TEXT", b"PLAIN");
     var content_type_parameter: bytes;
     var transfer_encoding: bytes;
@@ -93,7 +93,7 @@ type Message = unit(body_default: bool, is_request: bool) {
 
     var has_body: bool;
     var is_request: bool;
-	var use_content_length: bool = True;
+    var use_content_length: bool = True;
     var delivery_mode: DeliveryMode;
 
     on %init {
@@ -179,27 +179,28 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
             self.data.connect_mime_type(msg.content_type[0] + b"/" + msg.content_type[1]);
 
         if ( msg?.content_encoding ) {
-		    if ( msg.content_encoding == b"gzip" ) {
+        if ( msg.content_encoding == b"gzip" ) {
                 self.data.add_filter(BinPAC::Filter::GZIP);
                 msg.use_content_length = False;
-				}
+        }
 
-		    if ( msg.content_encoding == b"deflate" ) {
+        if ( msg.content_encoding == b"deflate" ) {
                 self.data.add_filter(BinPAC::Filter::ZLIB);
                 msg.use_content_length = False;
-				}
+        }
         }
 
         self.content = new Content(msg);
+        self.data.connect_mime_type(BinPAC::fmt("%s/%s", (msg.content_type[0], msg.content_type[1])));
         self.data.connect(self.content);
     }
 
-	on %done {
-	    # FIXME: Currently the sink becomes invalid after parsing for
-		# the current instance finished. That's not great. See
-		# ParserBuilder::_finalizeParseObject() to fix.
-		self.data_len = |self.data|;
-		}
+  on %done {
+      # FIXME: Currently the sink becomes invalid after parsing for
+    # the current instance finished. That's not great. See
+    # ParserBuilder::_finalizeParseObject() to fix.
+    self.data_len = |self.data|;
+    }
 };
 
 export type Content = unit(msg: Message) {
