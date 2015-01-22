@@ -1,9 +1,9 @@
-<id=13928, qdcount=1, ancount=2, nscount=2, arcount=0>
+<id=13928, flags=(qr=1, opcode=0, aa=0, tc=0, rd=1, ra=1, z=0, rcode=0), qdcount=1, ancount=2, nscount=2, arcount=0, rejected=False>
 
 [<qname=<labels=[www, joelonsoftware, com, ]>, qtype=1, qclass=1>]
 
-[<name=<labels=[www, joelonsoftware, com, ]>, ty=CNAME, class=1, ttl=2187, rdlen=2, labels=<labels=[joelonsoftware, com, ]>>, <name=<labels=[joelonsoftware, com, ]>, ty=A, class=1, ttl=2188, rdlen=4, a=64.34.80.173>]
+[<name=<labels=[www, joelonsoftware, com, ]>, ty=CNAME, class=1, ttl=2187.000000s, rdlen=2, labels=<labels=[joelonsoftware, com, ]>>, <name=<labels=[joelonsoftware, com, ]>, ty=A, class=1, ttl=2188.000000s, rdlen=4, a=64.34.80.173>]
 
-[<name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=16, labels=<labels=[dns3, fogcreek, com, ]>>, <name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=7, labels=<labels=[dns5, fogcreek, com, ]>>]
+[<name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188.000000s, rdlen=16, labels=<labels=[dns3, fogcreek, com, ]>>, <name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188.000000s, rdlen=7, labels=<labels=[dns5, fogcreek, com, ]>>]
 
 []

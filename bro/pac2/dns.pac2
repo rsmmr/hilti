@@ -15,7 +15,7 @@ global dns_skip_all_addl = Bro::get_const_bool("dns_skip_all_addl");
 type RDType = enum {
     A = 1, NS = 2, MD = 3, MF = 4, CNAME = 5, SOA = 6, MB = 7, MG = 8, MR = 9,
     NULL = 10, WKS = 11, PTR = 12, HINFO = 13, MINFO = 14, MX = 15, TXT = 16,
-    AAAA = 28, NBS = 32, SRV= 33, A6 = 38, EDNS = 41 };
+    AAAA = 28, NBS = 32, SRV = 33, A6 = 38, EDNS = 41 };
 
 type RRType = enum {
     ANSWER = 1, AUTH = 2, ADDL = 3
