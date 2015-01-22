@@ -147,9 +147,7 @@ export type Message = unit {
   var record_version: TLSVersion = TLSVersion::UNDEF;
   var encrypted: bool = False;
 
-  records: list<RecordFragment(self.handshakesink, self.alertsink, self.record_version, self.encrypted)>
-    # ugly hack -- when I set the bool from the recordfragment the change seems to be ignored.
-    foreach { self.encrypted = $$.encrypted; }
+  records: list<RecordFragment(self)>;
 
   on %init {
     self.handshakesink.connect(new Handshake(self.record_version));
@@ -157,37 +155,32 @@ export type Message = unit {
   }
 };
 
-type RecordFragment = unit(handshakesink: sink, alertsink: sink, record_version: TLSVersion, encrypted: bool) {
-  var encrypted: bool;
-
-  content_type: uint8 &convert=ContentType($$) {
-    self.encrypted = encrypted;
-  }
+type RecordFragment = unit(message: Message) {
+  content_type: uint8 &convert=ContentType($$);
   version: uint16 &convert=TLSVersion($$) {
-    record_version = self.version;
+    message.record_version = self.version;
   }
   length: uint16;
 
-  : bytes &length=self.length if ( self.encrypted == True );
+  : bytes &length=self.length if ( message.encrypted == True );
 
   switch ( self.content_type ) {
-    ContentType::handshake -> : bytes &length=self.length -> handshakesink;
-    ContentType::alert -> : bytes &length=self.length -> alertsink;
+    ContentType::handshake -> : bytes &length=self.length -> message.handshakesink;
+    ContentType::alert -> : bytes &length=self.length -> message.alertsink;
     ContentType::change_cipher_spec -> : bytes &length=self.length {
       # everything in this connection will be encrypted from now on.
       # close all sinks
       # FIXME - cannot close sinks at the moment - uncomment when tests/binpac/sink/lists.pac2 works again
-      #handshakesink.close();
-      #alertsink.close();
-      self.encrypted = True;
+      #message.handshakesink.close();
+      #message.alertsink.close();
+      message.encrypted = True;
     }
-#   ContentType::heartbeat -> : bytes &length=self.length -> heartbeatsink;
+#   ContentType::heartbeat -> : bytes &length=self.length -> message.heartbeatsink;
     ContentType::application_data -> : bytes &length=self.length; # encrypted application data.
     * -> : bytes &length=self.length { print "unhandled type", self.content_type; }
-  } if ( self.encrypted == False );
+  } if ( message.encrypted == False );
 };
 
-# note - this will mostly be garbage because it is encrypted.
 export type Alert = unit {
   alerts: list<Alert_message>;
 };
