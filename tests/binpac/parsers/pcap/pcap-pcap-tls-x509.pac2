@@ -1,13 +1,13 @@
-# @TEST-EXEC: xzcat %DIR/ms-root-http.pcap.xz | HILTI_DEBUG= HILTI_BUILD_FLAGS= PAC_DRIVER_TEST_DEBUG=0 pac-driver-test %INPUT ${PARSERS}/pcap.pac2 ${PARSERS}/http.pac2 ${PARSERS}/ms-cert.pac2 ${PARSERS}/asn1.pac2 ${PARSERS}/x509.pac2 -- -p pcap::PcapFile 2>&1 >output
+# pcap containing an http connection containing a pcap containing a tls connection containing a cert
+#
+# @TEST-EXEC: cp ${DIST}/bro/pac2/tls.pac2 .
+# @TEST-EXEC: xzcat %DIR/pcap-ssl.pcap.xz | HILTI_DEBUG= HILTI_BUILD_FLAGS= PAC_DRIVER_TEST_DEBUG=0 pac-driver-test %INPUT ${PARSERS}/pcap.pac2 ${PARSERS}/http.pac2 ${PARSERS}/asn1.pac2 ${PARSERS}/x509.pac2 ./tls.pac2 -- -p pcap::PcapFile 2>&1 >output
 # @TEST-EXEC: btest-diff output
 
 module Test;
 
-import parsers/ms-cert;
 import parsers/asn1;
 import parsers/x509;
-
-import "HILTI-C" void Hilti::terminate();
 
 on x509::tbscertificate::%done {
   print "Version: ", self.version;
@@ -22,8 +22,3 @@ on x509::cert_issuer_component::%done {
   print "Name oid: ", self.tpe, " value: ", self.value;
 }
 
-on MSCerts::SerializedCertificateEntry::certificate
-{
-    # There are many certs in the store. We're happy once we get one.
-    Hilti::terminate();
-}

@@ -1,0 +1,30 @@
+Name oid:  2.5.4.6  value:  GB
+Name oid:  2.5.4.8  value:  Greater Manchester
+Name oid:  2.5.4.7  value:  Salford
+Name oid:  2.5.4.10  value:  COMODO CA Limited
+Name oid:  2.5.4.3  value:  COMODO ECC Domain Validation Secure Server CA
+Name oid:  2.5.4.11  value:  Domain Control Validated
+Name oid:  2.5.4.11  value:  PositiveSSL
+Name oid:  2.5.4.3  value:  pantz.org
+Version:  3
+Serial number:  \x00\xf0\xaf\xbb\xf5X\xbfM\x1bq\xfe\xd9\xcb3y>\xe4
+Valid from:  141108000000Z
+Valid till:  191107235959Z
+Signature algorithm:  1.2.840.10045.4.3.2
+Public key algorithm:  1.2.840.10045.2.1
+Name oid:  2.5.4.6  value:  GB
+Name oid:  2.5.4.8  value:  Greater Manchester
+Name oid:  2.5.4.7  value:  Salford
+Name oid:  2.5.4.10  value:  COMODO CA Limited
+Name oid:  2.5.4.3  value:  COMODO ECC Certification Authority
+Name oid:  2.5.4.6  value:  GB
+Name oid:  2.5.4.8  value:  Greater Manchester
+Name oid:  2.5.4.7  value:  Salford
+Name oid:  2.5.4.10  value:  COMODO CA Limited
+Name oid:  2.5.4.3  value:  COMODO ECC Domain Validation Secure Server CA
+Version:  3
+Serial number:  Q\x06\x01\xe6;Pg<U\xeeN\x19\xda0L\xa8
+Valid from:  140313000000Z
+Valid till:  290312235959Z
+Signature algorithm:  1.2.840.10045.4.3.3
+Public key algorithm:  1.2.840.10045.2.1

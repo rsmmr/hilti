@@ -188,6 +188,8 @@ type EtherType = enum {
 };
 
 export type PcapFile = unit {
+  %mimetype = "application/vnd.tcpdump.pcap";
+  %mimetype = "APPLICATION/VND.TCPDUMP.PCAP"; # FIXME - should not be necessary
   magic_number: uint32;
 
   switch ( self.magic_number ) {
