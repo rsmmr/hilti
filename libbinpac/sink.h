@@ -116,6 +116,25 @@ extern void binpachilti_sink_append(binpac_sink* sink, hlt_bytes* data, void* us
 /// ctx: &
 extern void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, uint64_t seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Writes data into a sink. The data will be inserted into the byte stream
+/// at the given position. This version can associate a custom length with
+/// the chunk for reassembly. 
+///
+/// sink: The sink to write to.
+///
+/// data: The data to write into the sink.
+///
+/// seq: The sequence number of first byte of *data*, relative to the initial
+///      sequence number set with \a binpachilti_sink_set_initial_sequence().
+///
+/// len: The length to associate with the chunk within the reaseembly
+/// sequence space. The caller is in charge of ensuring consistency across
+/// different writes.
+///
+/// excpt: &
+/// ctx: &
+extern void binpachilti_sink_write_custom_length(binpac_sink* sink, hlt_bytes* data, uint64_t seq, uint64_t len, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Reports a gap in the input stream, i.e., data that for sure will be not
 /// be seen anymore. If processing reaches a gap, it will stop there and
 /// report it. However, a gap can be skipped over with \a

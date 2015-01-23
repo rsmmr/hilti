@@ -1,0 +1,41 @@
+#
+# @TEST-EXEC:  pac-driver-test %INPUT -p Mini::Main </dev/null >output
+# @TEST-EXEC:  btest-diff output
+
+
+module Mini;
+
+export type Main = unit {
+
+    var data : sink;
+
+    on %init {
+        self.data.connect(new Sub);
+        self.data.write(b"44444", 4, 1);
+        self.data.write(b"33333", 3, 1);
+        self.data.write(b"22222", 2, 1);
+        self.data.write(b"11111", 1, 1);
+        self.data.write(b"00000", 0, 1);
+    }
+};
+
+export type Sub = unit {
+    s: bytes &eod;
+
+    on %done {
+        print self.s;
+    }
+
+    on %gap(seq: uint<64>, len: uint<64>)  {
+        print "Gap at input position", seq, "length", len;
+        }
+
+    on %skip(seq: uint<64>){
+       print "Skipped to position", seq;
+        }
+
+    on %undelivered(seq: uint<64>, data: bytes) {
+        print "Undelivered data at position", seq, ":", data;
+        }
+};
+

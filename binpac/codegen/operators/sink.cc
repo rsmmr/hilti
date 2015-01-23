@@ -91,8 +91,12 @@ void CodeBuilder::visit(binpac::expression::operator_::sink::Write* i)
     auto sink = cg()->hiltiExpression(i->op1());
     auto data = cg()->hiltiExpression(callParameter(i->op3(), 0));
     auto seq = callParameter(i->op3(), 1);
+    auto len = callParameter(i->op3(), 2);
 
-    cg()->hiltiWriteToSink(sink, data, seq ? cg()->hiltiExpression(seq) : nullptr);
+    cg()->hiltiWriteToSink(sink,
+                           data,
+                           seq ? cg()->hiltiExpression(seq) : nullptr,
+                           len ? cg()->hiltiExpression(len) : nullptr);
 
     setResult(std::make_shared<hilti::expression::Void>());
 }

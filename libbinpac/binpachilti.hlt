@@ -63,6 +63,7 @@ declare "C-HILTI" void sink_connect(ref<Sink> sink, any pobj, ref<Parser> parser
 declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj) &safepoint
 declare "C-HILTI" void sink_append(ref<Sink> sink, ref<bytes> data, UserCookie user) &mayyield &safepoint
 declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, int<64> seq, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_write_custom_length(ref<Sink> sink, ref<bytes> data, int<64> seq, int<64> len, UserCookie user) &mayyield &safepoint
 declare "C-HILTI" void sink_gap(ref<Sink> sink, int<64> seq, int<64> len, UserCookie user) &mayyield &safepoint
 declare "C-HILTI" void sink_skip(ref<Sink> sink, int<64> seq, UserCookie user) &mayyield &safepoint
 declare "C-HILTI" void sink_trim(ref<Sink> sink, int<64> seq, UserCookie user) &mayyield &safepoint

@@ -966,6 +966,14 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, uint64_t seq, vo
     __new_block(sink, data, (seq - sink->initial_seq), len, user, excpt, ctx);
 }
 
+void binpachilti_sink_write_custom_length(binpac_sink* sink, hlt_bytes* data, uint64_t seq, uint64_t len, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( ! __check_seq(sink, seq, user, excpt, ctx) )
+        return;
+
+    __new_block(sink, data, (seq - sink->initial_seq), len, user, excpt, ctx);
+}
+
 void binpachilti_sink_gap(binpac_sink* sink, uint64_t seq, uint64_t len, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
