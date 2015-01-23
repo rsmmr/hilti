@@ -43,3 +43,18 @@ opBegin(enum_::CastInteger : Cast)
         return std::make_shared<type::Integer>();
     }
 opEnd
+
+opBegin(enum_::CoerceBool : Coerce)
+    opOp1(std::make_shared<type::Enum>())
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Bool>()))
+
+    opDoc("Enums coerce to boolean, returning true if the value corresponds to a known label.")
+
+    opValidate() {
+    }
+
+    opResult() {
+        return std::make_shared<type::Bool>();
+    }
+opEnd
+

@@ -48,7 +48,7 @@ static hlt_string _enum_to_string(const hlt_type_info* type, void* obj, __hlt_po
 
 static hlt_string _uint_to_string(const hlt_type_info* type, void* obj, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return hlt_object_to_string(type, obj, 0, excpt, ctx);
+    return hlt_object_to_string(type, obj, HLT_CONVERT_UNSIGNED, excpt, ctx);
 }
 
 static hlt_string _sint_to_string(const hlt_type_info* type, void* obj, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
