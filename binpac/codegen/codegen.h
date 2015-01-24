@@ -289,6 +289,17 @@ public:
     /// Returns the HILTI type for the cookie argument.
     shared_ptr<hilti::Type> hiltiTypeCookie();
 
+    /// Confirms a parser by turning of DFD "try mode" if it's active.
+    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit);
+
+    /// Disables the current parser by throwing a corresponding signal to the
+    /// host application.
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg);
+
+    /// Disables the current parser by throwing a corresponding signal to the
+    /// host application.
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg);
+
     /// Returns the HILTI-level name for a function.
     shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<binpac::Function> func, const string& scope = "");
 

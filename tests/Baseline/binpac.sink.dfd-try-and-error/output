@@ -1,0 +1,6 @@
+Sub1  <x=AB, y=1, z=DE>
+Main <a=.., b=AB, c=1DE, d=.., data=<sink>>
+Sub2  <x=AB, y=2, z=DE>
+Main <a=.., b=AB, c=2DE, d=.., data=<sink>>
+Sub3  <x=AB, y=3, z=DE>
+Main <a=.., b=AB, c=3DE, d=.., data=<sink>>

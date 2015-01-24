@@ -662,6 +662,7 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiFunctionNew(shared_ptr<type::U
 
     params.push_back(hilti::builder::function::parameter("__sink", _hiltiTypeSink(), false, nullptr));
     params.push_back(hilti::builder::function::parameter("__mimetype", _hiltiTypeBytes(), false, nullptr));
+    params.push_back(hilti::builder::function::parameter("__try_mode", hilti::builder::boolean::type(), false, nullptr));
     params.push_back(hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr));
 
     auto func = cg()->moduleBuilder()->pushFunction(name, rtype, params);
@@ -677,7 +678,7 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiFunctionNew(shared_ptr<type::U
     for ( auto p : state()->unit->parameters() )
         uparams.push_back(std::make_pair(hilti::builder::id::create(p->id()->name()), p->type()));
 
-    _prepareParseObject(uparams, nullptr, hilti::builder::id::create("__sink"), hilti::builder::id::create("__mimetype"));
+    _prepareParseObject(uparams, nullptr, hilti::builder::id::create("__sink"), hilti::builder::id::create("__mimetype"), hilti::builder::id::create("__try_mode"));
 
     cg()->builder()->addInstruction(hilti::instruction::flow::ReturnResult, pobj);
 
@@ -788,6 +789,22 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiCallParseFunction(shared_ptr<
         //                           hilti::builder::id::node(id));
         cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("Hilti::Exception")),
                                    hilti::builder::id::node(id));
+
+
+        if ( state()->unit->exported() ) {
+            // If we are in try mode, disable parsing instead of rethrowing
+            // the error.
+            auto try_mode = cg()->hiltiItemGet(state()->self, "__try_mode", hilti::builder::boolean::type());
+            auto blocks = cg()->builder()->addIf(try_mode);
+            auto true_ = std::get<0>(blocks);
+            auto cont = std::get<1>(blocks);
+
+            cg()->moduleBuilder()->pushBuilder(true_);
+            hiltiDisable(state()->self, state()->unit, "parse error in child");
+            cg()->moduleBuilder()->popBuilder(true_);
+
+            cg()->moduleBuilder()->pushBuilder(cont);
+        }
 
         _hiltiParseError(hilti::builder::id::create(id));
 
@@ -1107,6 +1124,9 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         // The MIME types associated with our input.
         auto mtype = hilti::builder::struct_::field("__mimetype", _hiltiTypeBytes(), nullptr, true);
 
+        // True if we are in DFD's identify-the-content mode.
+        auto try_mode = hilti::builder::struct_::field("__try_mode", hilti::builder::boolean::type(), nullptr, true);
+
         // The filter chain attached to this parser.
         auto filter = hilti::builder::struct_::field("__filter", _hiltiTypeFilter(), nullptr, true);
 
@@ -1125,6 +1145,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         fields.push_back(self);
         fields.push_back(sink);
         fields.push_back(mtype);
+        fields.push_back(try_mode);
         fields.push_back(filter);
         fields.push_back(filter_dec);
         fields.push_back(filter_cur);
@@ -1167,7 +1188,7 @@ shared_ptr<hilti::Expression> ParserBuilder::_allocateParseObject(shared_ptr<Typ
     return pobj;
 }
 
-void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> cur = nullptr, shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> mimetype)
+void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> cur = nullptr, shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> mimetype, shared_ptr<hilti::Expression> try_mode)
 {
     // Initialize the parameter fields.
     auto arg = params.begin();
@@ -1213,6 +1234,11 @@ void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params
 
         if ( mimetype )
             cg()->hiltiItemSet(state()->self, "__mimetype", mimetype);
+
+        if ( try_mode )
+            cg()->hiltiItemSet(state()->self, "__try_mode", try_mode);
+        else
+            cg()->hiltiItemSet(state()->self, "__try_mode", hilti::builder::boolean::create(false));
 
         if ( sink )
             cg()->hiltiItemSet(state()->self, "__sink", sink);
@@ -1498,9 +1524,11 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
     cg()->builder()->addInstruction(gend, hilti::instruction::operator_::End, state()->data);
     cg()->builder()->addInstruction(gidx, hilti::instruction::bytes::Index, gend);
 
+    auto try_mode = cg()->hiltiItemGet(state()->self, "__try_mode", hilti::builder::boolean::type());
+
     if ( cg()->options().debug > 0 )
-        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (len: %s; cur: %s; end: %s; global-end: %s eod: %s; lit-mode: %s; frozen: %s (%s); trimming %d; at object %d)",
-                                     hilti::builder::string::create(tag), next, len, idx, state()->end, gidx, eod, mode, frozen2, frozen1, state()->trim, at);
+        cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (len: %s; cur: %s; end: %s; global-end: %s eod: %s; try-mode: %s lit-mode: %s; frozen: %s (%s); trimming %d; at object %d)",
+                                     hilti::builder::string::create(tag), next, len, idx, state()->end, gidx, eod, try_mode, mode, frozen2, frozen1, state()->trim, at);
 }
 
 std::pair<bool, string> ParserBuilder::_hookName(const string& path)
@@ -2006,8 +2034,59 @@ shared_ptr<hilti::builder::BlockBuilder> ParserBuilder::_hiltiAddMatchTokenError
     return b;
 }
 
+void ParserBuilder::hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit)
+{
+    // If we are in try mode, disable that.
+    auto try_mode = cg()->hiltiItemGet(self, "__try_mode", hilti::builder::boolean::type());
+    auto blocks = cg()->builder()->addIf(try_mode);
+    auto true_ = std::get<0>(blocks);
+    auto cont = std::get<1>(blocks);
+
+    cg()->moduleBuilder()->pushBuilder(true_);
+    cg()->hiltiItemSet(self, "__try_mode", hilti::builder::boolean::create(1));
+    _hiltiRunHook(unit, self, _hookForUnit(unit, "%confirmed"), nullptr, false, nullptr);
+    cg()->moduleBuilder()->popBuilder(true_);
+
+    cg()->moduleBuilder()->pushBuilder(cont);}
+
+void ParserBuilder::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg)
+{
+    return hiltiDisable(self, unit, hilti::builder::string::create(msg));
+}
+
+void ParserBuilder::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg)
+{
+    _hiltiDebugVerbose("triggering disabling of parser");
+
+    _hiltiRunHook(unit, self, _hookForUnit(unit, "%disabled"), nullptr, false, nullptr);
+
+    auto etype = builder::type::byName("BinPACHilti::ParserDisabled");
+    auto dst = hilti::builder::id::create("__parse_error_excpt");
+    auto pe = state()->parse_error_handler ? state()->parse_error_handler : ::hilti::builder::label::create("@__parse_error");
+
+    cg()->builder()->addInstruction(dst, ::hilti::instruction::exception::NewWithArg,
+                                    hilti::builder::type::create(etype),
+                                    msg);
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, pe);
+}
+
 void ParserBuilder::_hiltiParseError(const string& msg)
 {
+    if ( state()->unit->exported() ) {
+        // If we are in try mode, disable parsing instead of throwing parse error.
+        auto try_mode = cg()->hiltiItemGet(state()->self, "__try_mode", hilti::builder::boolean::type());
+        auto blocks = cg()->builder()->addIf(try_mode);
+        auto true_ = std::get<0>(blocks);
+        auto cont = std::get<1>(blocks);
+
+        cg()->moduleBuilder()->pushBuilder(true_);
+        hiltiDisable(state()->self, state()->unit, msg);
+        cg()->moduleBuilder()->popBuilder(true_);
+
+        cg()->moduleBuilder()->pushBuilder(cont);
+    }
+
     _hiltiDebugVerbose("triggering parse error");
 
     auto etype = builder::type::byName("BinPACHilti::ParseError");

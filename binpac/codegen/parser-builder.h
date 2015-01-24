@@ -78,6 +78,17 @@ public:
     /// (assuming parsing is in process; if not aborts());
     shared_ptr<hilti::Expression> hiltiCookie();
 
+    /// Confirms a parser by turning of DFD "try mode" if it's active.
+    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit);
+
+    /// Disables the current parser by throwing a corresponding signal to the
+    /// host application.
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg);
+
+    /// Disables the current parser by throwing a corresponding signal to the
+    /// host application.
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg);
+
     /// Writes a new chunk of data into a field's sinks.
     ///
     /// field: The field.
@@ -219,7 +230,7 @@ private:
 
     // Initializes the current parse object before starting the parsing
     // process.
-    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> cur, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
+    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> cur, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr, shared_ptr<hilti::Expression> try_mode = nullptr);
 
     // Finalizes the current parser when the parsing process has finished.
     void _finalizeParseObject(bool success);

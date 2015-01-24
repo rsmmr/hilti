@@ -504,6 +504,21 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCookie()
     return _parser_builder->hiltiCookie();
 }
 
+void CodeGen::hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit)
+{
+    _parser_builder->hiltiConfirm(self, unit);
+}
+
+void CodeGen::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg)
+{
+    _parser_builder->hiltiDisable(self, unit, msg);
+}
+
+void CodeGen::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg)
+{
+    _parser_builder->hiltiDisable(self, unit, msg);
+}
+
 shared_ptr<hilti::Type> CodeGen::hiltiTypeCookie()
 {
     return hilti::builder::type::byName("BinPACHilti::UserCookie");

@@ -236,3 +236,20 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::Backtrack* i)
     setResult(std::make_shared<hilti::expression::Void>());
 }
 
+void CodeBuilder::visit(binpac::expression::operator_::unit::Confirm* i)
+{
+    auto self = cg()->hiltiExpression(i->op1());
+    auto unit = ast::checkedCast<binpac::type::Unit>(i->op1()->type());
+    cg()->hiltiConfirm(self, unit);
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::unit::Disable* i)
+{
+    auto self = cg()->hiltiExpression(i->op1());
+    auto unit = ast::checkedCast<binpac::type::Unit>(i->op1()->type());
+    auto msg = cg()->hiltiExpression(callParameter(i->op3(), 0));
+    cg()->hiltiDisable(self, unit, msg);
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+

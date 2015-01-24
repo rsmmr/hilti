@@ -20,7 +20,7 @@ typedef void __binpac_resume_sink_function(hlt_exception* yield, hlt_exception**
 
 // Internal function to create an instance of a parser.
 struct binpac_sink;
-typedef void* __binpac_new_function(struct binpac_sink* sink, hlt_bytes* mimetype, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void* __binpac_new_function(struct binpac_sink* sink, hlt_bytes* mimetype, int8_t try_mode, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Structure defining an BinPAC generated parser.
 ///

@@ -65,6 +65,45 @@ opBegin(sink::ConnectMimeTypeString : MethodCall)
     }
 opEnd
 
+static const string _doc_connect_mime_type_try =
+   R"(
+    Similar to ~~connect_mime_type, but connects parsers in "dynamic format detection" mode,
+    in which they disable themselves gracefully if they decide they cannot parse the input.
+   )";
+
+opBegin(sink::TryConnectMimeTypeBytes : MethodCall)
+    opOp1(std::make_shared<type::Sink>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("try_connect_mime_type")))
+    opCallArg1("b", std::make_shared<type::Bytes>())
+
+    opDoc(_doc_connect)
+
+    opValidate() {
+        type_list args = { std::make_shared<type::Bytes>() };
+        checkCallArgs(op3(), args);
+    }
+
+    opResult() {
+        return std::make_shared<type::Void>();
+    }
+opEnd
+
+opBegin(sink::TryConnectMimeTypeString : MethodCall)
+    opOp1(std::make_shared<type::Sink>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("try_connect_mime_type")))
+    opCallArg1("b", std::make_shared<type::String>())
+
+    opDoc(_doc_connect)
+
+    opValidate() {
+        type_list args = { std::make_shared<type::String>() };
+        checkCallArgs(op3(), args);
+    }
+
+    opResult() {
+        return std::make_shared<type::Void>();
+    }
+opEnd
 
 static const string _doc_write =
    R"(

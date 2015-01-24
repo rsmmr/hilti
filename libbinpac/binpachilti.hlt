@@ -8,6 +8,7 @@ import Hilti
 
 type ParseSuccess = exception<string>
 type ParseError = exception<string>
+type ParserDisabled = exception<string> &libhilti="binpac_exception_parserdisabled"
 type UnitAlreadyConnected = exception
 type FilterError = exception<string>
 type FilterUnsupported = exception<string>
@@ -55,8 +56,8 @@ declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj) &safepoint
 declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, UserCookie user) &mayyield &safepoint
 declare "C-HILTI" void sink_close(ref<Sink> sink) &safepoint
 declare "C-HILTI" void sink_add_filter(ref<Sink> sink, Filter ftype) &safepoint
-declare "C-HILTI" void sink_connect_mimetype_bytes(ref<Sink> sink, ref<bytes> mtype, UserCookie user )&safepoint
-declare "C-HILTI" void sink_connect_mimetype_string(ref<Sink> sink, string mtype, UserCookie user) &safepoint
+declare "C-HILTI" void sink_connect_mimetype_bytes(ref<Sink> sink, ref<bytes> mtype, bool try_mode, UserCookie user )&safepoint
+declare "C-HILTI" void sink_connect_mimetype_string(ref<Sink> sink, string mtype, bool try_mode, UserCookie user) &safepoint
 declare "C-HILTI" int<64> sink_size(ref<Sink> sink)
 
 # Support functions for filters.

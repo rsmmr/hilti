@@ -57,7 +57,7 @@ void CodeBuilder::visit(binpac::expression::operator_::sink::ConnectMimeTypeStri
 
     cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
                                     hilti::builder::id::create("BinPACHilti::sink_connect_mimetype_string"),
-                                    hilti::builder::tuple::create( { sink, mtype, cg()->hiltiCookie() } ));
+                                    hilti::builder::tuple::create( { sink, mtype, hilti::builder::boolean::create(false), cg()->hiltiCookie() } ));
 
     setResult(std::make_shared<hilti::expression::Void>());
 }
@@ -69,7 +69,31 @@ void CodeBuilder::visit(binpac::expression::operator_::sink::ConnectMimeTypeByte
 
     cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
                                     hilti::builder::id::create("BinPACHilti::sink_connect_mimetype_bytes"),
-                                    hilti::builder::tuple::create( { sink, mtype, cg()->hiltiCookie() } ));
+                                    hilti::builder::tuple::create( { sink, mtype, hilti::builder::boolean::create(false), cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::sink::TryConnectMimeTypeString* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto mtype = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_connect_mimetype_string"),
+                                    hilti::builder::tuple::create( { sink, mtype, hilti::builder::boolean::create(true), cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::sink::TryConnectMimeTypeBytes* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto mtype = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_connect_mimetype_bytes"),
+                                    hilti::builder::tuple::create( { sink, mtype, hilti::builder::boolean::create(true), cg()->hiltiCookie() } ));
 
     setResult(std::make_shared<hilti::expression::Void>());
 }
