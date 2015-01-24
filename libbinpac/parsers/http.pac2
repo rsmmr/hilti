@@ -32,7 +32,8 @@ export type Requests = unit {
     :  list<Request> &transient;
 };
 
-type Request = unit {
+export type Request = unit {
+    %port = 12345/tcp;
     request: RequestLine;
     message: Message(False, True);
 };

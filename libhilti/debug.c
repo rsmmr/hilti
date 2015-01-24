@@ -106,6 +106,7 @@ void __hlt_debug_done()
 void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, char* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     char* s = hlt_string_to_native(stream, excpt, ctx);
+
     int want = _want_stream(s, excpt, ctx);
 
     if ( ! want ) {

@@ -13,6 +13,9 @@ type RDType = enum {
     AAAA = 28, NBS = 32, A6 = 38, EDNS = 41 };
 
 export type Message = unit {
+    %port = 53/udp;
+    %description = "Spicy DNS parser";
+
     header:     Header;
     question:   list<Question(self)>       &count=self.header.qdcount;
     answer:     list<ResourceRecord(self)> &count=self.header.ancount;
@@ -84,6 +87,11 @@ type Name = unit(msg: Message) {
 
     # Parsed labels are collected in this list.
     var labels: list<bytes>;
+    var name: bytes;
+
+    on %done {
+        self.name = b".".join(self.labels);
+        }
 };
 
 type Pointer = unit(msg: Message, label: Label) {

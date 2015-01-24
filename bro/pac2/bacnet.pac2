@@ -1362,6 +1362,7 @@ export type BVLC_function = enum {
 export type Message = unit {
   %mimetype = "protocol/bacnet";
   %mimetype = "port-udp/47808";
+  %port = 47808/udp;
 
   # outer protocol exposed to UDP is BVLC
   tpe: uint8(0x81);

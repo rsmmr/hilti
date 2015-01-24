@@ -140,6 +140,9 @@ type ClientCertificateType = enum {
 };
 
 export type Message = unit {
+  %port = 443/tcp;
+  %description = "Spicy TLS Dissector";
+
   var handshakesink: sink;
   var alertsink: sink;
   var record_version: TLSVersion = TLSVersion::UNDEF;
