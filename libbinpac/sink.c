@@ -110,6 +110,12 @@ static void __finish_parser(binpac_sink* sink, __parser_state* state, hlt_except
             assert(false);
         }
 
+        else if ( sink_excpt && sink_excpt->type == &binpac_exception_parserdisabled ) {
+            // Disabled, nothing to do.
+            DBG_LOG("binpac-sinks", "- final writing to sink %p disabled for parser %p", sink, state->pobj);
+            GC_DTOR(sink_excpt, hlt_exception, ctx);
+        }
+
         else
             *excpt = sink_excpt;
     }
@@ -362,6 +368,7 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
         else if ( sink_excpt && sink_excpt->type == &binpac_exception_parserdisabled ) {
             // Disabled
             DBG_LOG("binpac-sinks", "- writing to sink %p disabled for parser %p", sink, s->pobj);
+            GC_DTOR(sink_excpt, hlt_exception, ctx);
             sink_excpt = 0;
             __parser_state* next = s->next;
             // This guy is finished, remove.

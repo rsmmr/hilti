@@ -164,6 +164,9 @@ public:
     /// Returns: The new input position.
     shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<Production> p, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur);
 
+    /// XXXX
+    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur);
+
     /// Returns the default value for instances of a BinPAC type that aren't
     /// further intiailized.
     ///

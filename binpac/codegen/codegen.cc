@@ -716,6 +716,11 @@ shared_ptr<hilti::Expression> CodeGen::hiltiSynchronize(shared_ptr<Production> p
     return _synchronizer->hiltiSynchronize(p, data, cur);
 }
 
+shared_ptr<hilti::Expression> CodeGen::hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur)
+{
+    return _synchronizer->hiltiSynchronize(unit, data, cur);
+}
+
 static binpac::type::unit::item::field::Switch* _switch(shared_ptr<binpac::type::unit::Item> item)
 {
     auto f = ast::tryCast<binpac::type::unit::item::Field>(item);

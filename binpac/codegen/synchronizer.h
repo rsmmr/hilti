@@ -43,12 +43,16 @@ public:
     /// Returns: The new input position.
     shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<Production> p, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur);
 
+    /// XXX
+    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur);
+
 protected:
     SynchronizerState* state();
 
     void visit(ctor::Bytes* b) override;
     void visit(ctor::RegExp* b) override;
 
+    void visit(type::Unit* u) override;
     void visit(type::EmbeddedObject* o) override;
     void visit(type::Mark* o) override;
 

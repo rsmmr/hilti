@@ -755,6 +755,37 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiCreateHostFunction(shared_ptr
         cg()->builder()->debugPushIndent();
     }
 
+    if ( unit->supportsSynchronize() ) {
+        auto try_mode = cg()->hiltiItemGet(state()->self, "__try_mode", hilti::builder::boolean::type());
+        auto blocks = cg()->builder()->addIf(try_mode);
+        auto true_ = std::get<0>(blocks);
+        auto cont = std::get<1>(blocks);
+
+        cg()->moduleBuilder()->pushBuilder(true_);
+
+        cg()->builder()->beginTryCatch();
+        _hiltiSynchronize(unit, state());
+
+        // TODO: We shouldn't need to make this unique here, but we do.
+        static int e_count = 0;
+        auto id = ::util::fmt("__e_x_%d", ++e_count);
+
+        // TODO: Unclear if we should catch just ParseErrors here, or any
+        // exception. For now we catch them all.
+        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("Hilti::Exception")),
+                                   hilti::builder::id::node(id));
+
+        hiltiDisable(state()->self, state()->unit, "parse error in child", true);
+
+        cg()->builder()->popCatch();
+
+        cg()->builder()->endTryCatch();
+
+        cg()->moduleBuilder()->popBuilder(true_);
+
+        cg()->moduleBuilder()->pushBuilder(cont);
+    }
+
     auto presult = _hiltiCallParseFunction(unit, pfunc, false, nullptr);
 
     if ( cg()->options().debug > 0 )
@@ -2047,28 +2078,39 @@ void ParserBuilder::hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<
     _hiltiRunHook(unit, self, _hookForUnit(unit, "%confirmed"), nullptr, false, nullptr);
     cg()->moduleBuilder()->popBuilder(true_);
 
-    cg()->moduleBuilder()->pushBuilder(cont);}
-
-void ParserBuilder::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg)
-{
-    return hiltiDisable(self, unit, hilti::builder::string::create(msg));
+    cg()->moduleBuilder()->pushBuilder(cont);
 }
 
-void ParserBuilder::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg)
+void ParserBuilder::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg, bool throw_directly)
+{
+    return hiltiDisable(self, unit, hilti::builder::string::create(msg), throw_directly);
+}
+
+void ParserBuilder::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg, bool throw_directly)
 {
     _hiltiDebugVerbose("triggering disabling of parser");
 
     _hiltiRunHook(unit, self, _hookForUnit(unit, "%disabled"), nullptr, false, nullptr);
 
     auto etype = builder::type::byName("BinPACHilti::ParserDisabled");
-    auto dst = hilti::builder::id::create("__parse_error_excpt");
     auto pe = state()->parse_error_handler ? state()->parse_error_handler : ::hilti::builder::label::create("@__parse_error");
 
-    cg()->builder()->addInstruction(dst, ::hilti::instruction::exception::NewWithArg,
-                                    hilti::builder::type::create(etype),
-                                    msg);
+    if ( throw_directly ) {
+        auto dst = cg()->builder()->addTmp("excpt", hilti::builder::reference::type(etype));
+        cg()->builder()->addInstruction(dst, ::hilti::instruction::exception::NewWithArg,
+                                        hilti::builder::type::create(etype),
+                                        msg);
+        cg()->builder()->addInstruction(hilti::instruction::exception::Throw, dst);
+    }
 
-    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, pe);
+    else {
+        auto dst = hilti::builder::id::create("__parse_error_excpt");
+        cg()->builder()->addInstruction(dst, ::hilti::instruction::exception::NewWithArg,
+                                        hilti::builder::type::create(etype),
+                                        msg);
+
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, pe);
+    }
 }
 
 void ParserBuilder::_hiltiParseError(const string& msg)
@@ -2517,6 +2559,22 @@ void ParserBuilder::_hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState
     _hiltiDebugShowInput("input pre-sync", state()->cur);
 
     auto ncur = cg()->hiltiSynchronize(p, state()->data, state()->cur);
+    _hiltiAdvanceTo(ncur);
+
+    _hiltiRunHook(hook_state->unit, hook_state->self, _hookForUnit(hook_state->unit, "%sync"), nullptr, false, nullptr);
+
+    _hiltiDebugShowInput("input post-sync", state()->cur);
+}
+
+void ParserBuilder::_hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<ParserState> hook_state)
+{
+    cg()->builder()->addComment(util::fmt("Synchronizing on unit: %s", unit->render()));
+
+    _hiltiDebug("*** resynchronizing ***");
+    _hiltiDebugVerbose(util::fmt("synchronizing on unit: %s", unit->render()));
+    _hiltiDebugShowInput("input pre-sync", state()->cur);
+
+    auto ncur = cg()->hiltiSynchronize(unit, state()->data, state()->cur);
     _hiltiAdvanceTo(ncur);
 
     _hiltiRunHook(hook_state->unit, hook_state->self, _hookForUnit(hook_state->unit, "%sync"), nullptr, false, nullptr);

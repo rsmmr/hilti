@@ -83,11 +83,11 @@ public:
 
     /// Disables the current parser by throwing a corresponding signal to the
     /// host application.
-    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg);
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg, bool throw_directly = false);
 
     /// Disables the current parser by throwing a corresponding signal to the
     /// host application.
-    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg);
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg, bool throw_directly = false);
 
     /// Writes a new chunk of data into a field's sinks.
     ///
@@ -379,6 +379,9 @@ private:
 
     // Synchronize parsing with a given production.
     void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<Production> p);
+
+    // Synchronize parsing with a given unit.
+    void _hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<ParserState> hook_state);
 
     // Synchronize parsing by moving ahead a given number of bytes.
     void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> i);

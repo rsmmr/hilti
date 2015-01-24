@@ -377,7 +377,7 @@ bool ChildGrammar::supportsSynchronize()
 
     auto utype = ast::checkedCast<type::Unit>(type());
 
-    if ( utype->property("synchronize-after") || utype->property("synchronize-at") )
+    if ( utype->supportsSynchronize() )
         return true;
 
     return false;
