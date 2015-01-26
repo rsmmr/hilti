@@ -154,8 +154,7 @@ type Header = unit(msg: Message) {
 };
 
 type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
-    data: bytes &length=msg.content_length;
-    #data : bytes &eod;
+    data: bytes &eod;
     #switch ( delivery_mode ) {
     #  DeliveryMode::EndOfData -> data : bytes &eod;
     #  DeliveryMode::Length    -> data : bytes &length=msg.content_length;

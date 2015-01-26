@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
+#include <signal.h>
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -52,6 +53,7 @@ static void usage(const char* prog)
     fprintf(stderr, "  Options:\n\n");
     fprintf(stderr, "    -P <port>     Bind to given port.                  [Default: 8080]\n");
     fprintf(stderr, "    -O            Optimize generated code.             [Default: off].\n\n");
+    fprintf(stderr, "    -d            Enable debug mode.\n");
 
     exit(1);
 }
@@ -70,6 +72,18 @@ static void check_exception(hlt_exception* excpt)
             exit(1);
         }
     }
+}
+
+static bool check_exception_recoverable(hlt_exception* excpt)
+{
+    if ( excpt ) {
+        hlt_execution_context* ctx = hlt_global_execution_context();
+        hlt_exception_print_uncaught(excpt, ctx);
+        GC_DTOR(excpt, hlt_exception, ctx);
+        return true;
+    }
+
+    return false;
 }
 
 extern "C" {
@@ -202,7 +216,7 @@ void sendOutput(hlt_bytes* data, void** obj, hlt_type_info* type, void* user, hl
 
     do {
         cookie = hlt_bytes_iterate_raw(&block, cookie, start, end, excpt, ctx);
-        fwrite(block.start, 1, (block.end - block.start), stdout);
+        //fwrite(block.start, 1, (block.end - block.start), stdout);
         assert(send_socket != -1);
         send(send_socket, block.start, (block.end - block.start), 0);
         current_request.append((const char*) block.start, (block.end - block.start));
@@ -261,6 +275,15 @@ int connect_serv(const char* host) {
     return sock;
 }
 
+void ignore_sigpipe()
+{
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = SIG_IGN;
+    act.sa_flags = SA_RESTART;
+    sigaction(SIGPIPE, &act, NULL);
+}
+
 void listen(unsigned int port) {
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
@@ -281,7 +304,7 @@ void listen(unsigned int port) {
         exit(1);
     }
 
-    if ( listen( s, 10 ) != 0 ) {
+    if ( listen( s, 100 ) != 0 ) {
         fprintf(stderr, "Could not listen\n");
         exit(1);
     }
@@ -309,6 +332,12 @@ void listen(unsigned int port) {
 
             int n = read(conn, buffer, 999);
             fprintf(stderr, "Read %d bytes, sending to spicy...\n", n);
+            //fprintf(stderr, "%s\n", buffer);
+            if ( n < 10 ) {
+                // not an http request..
+                close(conn);
+                continue;
+            }
             // I know this is dirty as hell - hope that we get the entire request in the first chunk
             int8_t* copy = (int8_t*) hlt_malloc(n);
             hlt_bytes* input = hlt_bytes_new(&excpt, ctx);
@@ -316,7 +345,10 @@ void listen(unsigned int port) {
             hlt_bytes_append_raw(input, copy, n, &excpt, ctx);
             check_exception(excpt);
 
+            hlt_bytes_freeze(input, 1, &excpt, ctx);
+
             void *pobj = (*request->parse_func)(input, 0, &excpt, ctx);
+            check_exception(excpt);
 
             // now hilti should be done parsing and we should hopefully have gotten our callback...
             fprintf(stderr, "%s request for http://%s/%s\n", method, host, uri);
@@ -328,6 +360,7 @@ void listen(unsigned int port) {
                 //sendOutput(cache.at(cache_key(std::string(host), std::string(uri))), 0, 0, 0, &excpt, ctx);
                 //std::cerr << cache.at(cache_key(std::string(host), std::string(uri))) << std::endl;
 
+                GC_DTOR(input, hlt_bytes, ctx);
                 close(conn);
                 continue;
             }
@@ -343,6 +376,7 @@ void listen(unsigned int port) {
 
             fprintf(stderr, "Sending request to server...\n");
             sendData(sock, request, pobj);
+            GC_DTOR(input, hlt_bytes, ctx);
 
             fprintf(stderr, "Parsing server reply...\n");
             // we store the reply in a single hlt_bytes variable before passing it on to the parser
@@ -362,15 +396,17 @@ void listen(unsigned int port) {
 
             current_request = "";
 
+            hlt_bytes_freeze(reply_bytes, 1, &excpt, ctx);
             void *robj = (*reply->parse_func)(reply_bytes, 0, &excpt, ctx);
+            check_exception(excpt);
 
             fprintf(stderr, "Done parsing reply, sending to requestor...\n");
             sendData(conn, reply, robj);
 
+            GC_DTOR(reply_bytes, hlt_bytes, ctx);
             if ( strncmp(method, "GET", 3) == 0 )
               cache.insert(std::make_pair(cache_key(std::string(host), std::string(uri)), current_request));
 
-            check_exception(excpt);
             close(sock);
         }
 
@@ -391,12 +427,16 @@ int main(int argc, char** argv)
     unsigned int port = 8080;
 
     char ch;
-    while ((ch = getopt(argc, argv, "OP:")) != -1) {
+    while ((ch = getopt(argc, argv, "OP:d")) != -1) {
 
         switch (ch) {
 
           case 'P':
             port = strtoul(optarg, nullptr, 10);
+            break;
+
+         case 'd':
+            options->debug = true;
             break;
 
          case 'O':
@@ -431,6 +471,8 @@ int main(int argc, char** argv)
       fprintf(stderr, "Could not find http request or reply parsers\n");
       exit(1);
     }
+
+    ignore_sigpipe();
 
     listen(port);
 
