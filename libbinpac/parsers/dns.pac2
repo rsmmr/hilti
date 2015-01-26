@@ -13,6 +13,7 @@ type RDType = enum {
     AAAA = 28, NBS = 32, SRV = 33, A6 = 38, EDNS = 41 };
 
 export type Message = unit {
+    %mimetype = "port-udp/53";
     header:     Header;
     question:   list<Question(self)>       &count=self.header.qdcount;
     answer:     list<ResourceRecord(self)> &count=self.header.ancount;

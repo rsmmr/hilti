@@ -1,0 +1,12 @@
+#
+# @TEST-EXEC: cat ${DIST}/bro/tests/Traces/dns.trace | pac-driver-test -p pcap::PcapFile %INPUT ${PARSERS}/pcap.pac2 ${PARSERS}/dns.pac2 >output
+# @TEST-EXEC: btest-diff output
+
+module Test;
+
+import BinPAC;
+import parsers/dns;
+
+on DNS::Message::%done {
+	print self;
+}
