@@ -219,7 +219,7 @@ private:
 
     // Initializes the current parse object before starting the parsing
     // process.
-    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> cur, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
+    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
 
     // Finalizes the current parser when the parsing process has finished.
     void _finalizeParseObject(bool success);
