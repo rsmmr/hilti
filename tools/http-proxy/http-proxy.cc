@@ -180,6 +180,35 @@ bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> opt
     return true;
 }
 
+void composeOutput(hlt_bytes* data, void** obj, hlt_type_info* type, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes_block block;
+    hlt_iterator_bytes start = hlt_bytes_begin(data, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(data, excpt, ctx);
+
+    void* cookie = 0;
+
+    do {
+        cookie = hlt_bytes_iterate_raw(&block, cookie, start, end, excpt, ctx);
+        fwrite(block.start, 1, (block.end - block.start), stdout);
+    } while ( cookie );
+}
+
+void processParseObject(binpac_parser* p, void* pobj)
+{
+    if ( ! p->compose_func )
+        return;
+
+    hlt_execution_context* ctx = hlt_global_execution_context();
+    hlt_exception* excpt = 0;
+
+    GC_CCTOR_GENERIC(&pobj, p->type_info, ctx);
+    p->compose_func(pobj, composeOutput, 0, &excpt, ctx);
+    GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
+
+    check_exception(excpt);
+}
+
 void listen(unsigned int port) {
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
@@ -237,6 +266,8 @@ void listen(unsigned int port) {
 
             // now hilti should be done parsing and we should hopefully have gotten our callback...
             fprintf(stderr, "Request for http://%s/%s\n", host, uri);
+
+            processParseObject(request, pobj);
         }
 
         close(conn);
@@ -252,7 +283,7 @@ int main(int argc, char** argv)
 
     auto options = std::make_shared<binpac::Options>();
     options->jit = true;
-    options->generate_composers = false;
+    options->generate_composers = true;
     unsigned int port = 8080;
 
     char ch;
@@ -290,9 +321,9 @@ int main(int argc, char** argv)
     hlt_execution_context* ctx = hlt_global_execution_context();
 
     request = findParser("HTTPProd::Request");
-    reply = findParser("HTTPProd::Reply");
+    //reply = findParser("HTTPProd::Reply");
 
-    if ( ! request || ! reply ) {
+    if ( ! request ) { // || ! reply ) {
       fprintf(stderr, "Could not find http request or reply parsers\n");
       exit(1);
     }

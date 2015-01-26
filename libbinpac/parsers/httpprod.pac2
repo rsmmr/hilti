@@ -49,14 +49,14 @@ export type Request = unit {
 #    :  list<Reply> &transient;
 #};
 
-export type Reply = unit {
-    reply: ReplyLine;
-    message: Message(reply_code_needs_body(self.reply.status), False);
-
-		on %done {
-			print self;
-		}
-};
+#export type Reply = unit {
+#    reply: ReplyLine;
+#    message: Message(reply_code_needs_body(self.reply.status), False);
+#
+#		on %done {
+#			print self;
+#		}
+#};
 
 type Version = unit {
     :        /HTTP\//;
@@ -68,7 +68,9 @@ export type RequestLine = unit {
     :        WhiteSpace;
     uri:     URI;
     :        WhiteSpace;
-    version: Version;
+    version: Version {
+			self.version.number = b"1.0"; # always downgrade to HTTP/1.0
+		}
     :        NewLine;
 };
 
@@ -90,22 +92,25 @@ on ReplyLine::reason %debug {
     }
 
 type Message = unit(body_default: bool, is_request: bool) {
-    headers:    list<Header(self)>;
-    end_of_hdr: NewLine;
+    headers:    list<Header(self)> &until($$.end == True);
+		end_of_hdr: bytes &length=0 {
+			# push proxy line here, if we really want one...
+		}
+#    end_of_hdr: NewLine;
     body:       Body(self, self.delivery_mode) if ( self.has_body );
-
+#
     var content_length: uint64;
-	var content_encoding: bytes;
+	  var content_encoding: bytes;
     var content_type: tuple<bytes, bytes> = (b"TEXT", b"PLAIN");
     var content_type_parameter: bytes;
     var transfer_encoding: bytes;
     var multipart_boundary: bytes;
-
+#
     var has_body: bool;
     var is_request: bool;
-	var use_content_length: bool = True;
+  	var use_content_length: bool = True;
     var delivery_mode: DeliveryMode;
-
+#
     on %init {
         self.has_body = body_default;
         self.is_request = is_request;
@@ -117,33 +122,36 @@ type Message = unit(body_default: bool, is_request: bool) {
         if ( self?.content_length && self.content_length > 0 )
             self.delivery_mode = DeliveryMode::Length;
 
-        if ( self.content_type[0] == b"MULTIPART" ) {
-            local boundary : bytes;
-
-            boundary = self.content_type_parameter.match(/boundary="([^"]*)"/, 1);
-
-            if ( ! |boundary| )
-                boundary = self.content_type_parameter.match(/boundary=([^ ;]*)/, 1);
-
-            self.delivery_mode = DeliveryMode::Multipart;
-            self.multipart_boundary = b"--" + boundary + b"--\r\n";
-        }
-
-        if ( self?.transfer_encoding && self.transfer_encoding == b"chunked" )
-            self.delivery_mode = DeliveryMode::Chunked;
+#        if ( self.content_type[0] == b"MULTIPART" ) {
+#            local boundary : bytes;
+#
+#            boundary = self.content_type_parameter.match(/boundary="([^"]*)"/, 1);
+#
+#            if ( ! |boundary| )
+#                boundary = self.content_type_parameter.match(/boundary=([^ ;]*)/, 1);
+#
+#            self.delivery_mode = DeliveryMode::Multipart;
+#            self.multipart_boundary = b"--" + boundary + b"--\r\n";
+#        }
+#
+#        if ( self?.transfer_encoding && self.transfer_encoding == b"chunked" )
+#            self.delivery_mode = DeliveryMode::Chunked;
     }
 };
 
-const HeaderName  = /[^:\r\n]+/;
+const HeaderName  = /[^:\r\n]*/;
 const HeaderValue = /[^\r\n]*/;
 
 type Header = unit(msg: Message) {
-    name:    HeaderName &convert=$$.upper();
-    :        /:[\t ]*/;
-    content: HeaderValue;
-    :        NewLine;
+	  var end: bool = False;
 
-    on content {
+    name:    HeaderName &convert=$$.upper() {
+			if ( |self.name| == 0 || self.name == b"\n" || self.name == b"\r\n" ) {
+				self.end = True;
+			}
+		}
+    :        /:[\t ]*/ if ( ! self.end );
+    content: HeaderValue if ( ! self.end ) {
         if ( self.name == b"CONTENT-LENGTH" ) {
             msg.content_length = self.content.to_uint();
             msg.has_body = True;
@@ -166,71 +174,76 @@ type Header = unit(msg: Message) {
 
 				if ( self.name == b"HOST" )
             set_host(self.content);
+				if ( self.name == b"CONNECTION" )
+						self.content = b"close";   # I don't want to support keep-alive from servers.
+
         }
+		:        NewLine if ( ! self.end );
+
 };
 
 type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
 
     switch ( delivery_mode ) {
 
-      DeliveryMode::EndOfData -> : bytes &eod &chunked -> self.data;
-
-      DeliveryMode::Length    -> : bytes &length=msg.content_length &chunked -> self.data;
-
-      DeliveryMode::Multipart -> : list<FullLine> &transient &until($$ == msg.multipart_boundary)
-                                   foreach { self.data.write($$); }
-
-      DeliveryMode::Chunked   -> : Chunks(self, msg);
+      DeliveryMode::EndOfData -> : bytes &eod;
+#
+      DeliveryMode::Length    -> : bytes &length=msg.content_length;
+#
+#      DeliveryMode::Multipart -> : list<FullLine> &transient &until($$ == msg.multipart_boundary)
+#                                   foreach { self.data.write($$); }
+#
+#      DeliveryMode::Chunked   -> : Chunks(self, msg);
     };
-
-    var data: sink;
-    var data_len: uint64;
-    var content: Content;
-
-    on %init {
-        if ( msg.content_type[0] != b"" && msg.content_type[1] != b"" )
-            self.data.connect_mime_type(msg.content_type[0] + b"/" + msg.content_type[1]);
-
-        if ( msg?.content_encoding ) {
-		    if ( msg.content_encoding == b"gzip" ) {
-                self.data.add_filter(BinPAC::Filter::GZIP);
-                msg.use_content_length = False;
-				}
-
-		    if ( msg.content_encoding == b"deflate" ) {
-                self.data.add_filter(BinPAC::Filter::ZLIB);
-                msg.use_content_length = False;
-				}
-        }
-
-        self.content = new Content(msg);
-        self.data.connect(self.content);
-    }
-
+#
+#    var data: sink;
+#    var data_len: uint64;
+#    var content: Content;
+#
+#    on %init {
+#        if ( msg.content_type[0] != b"" && msg.content_type[1] != b"" )
+#            self.data.connect_mime_type(msg.content_type[0] + b"/" + msg.content_type[1]);
+#
+#        if ( msg?.content_encoding ) {
+#		    if ( msg.content_encoding == b"gzip" ) {
+#                self.data.add_filter(BinPAC::Filter::GZIP);
+#                msg.use_content_length = False;
+#				}
+#
+#		    if ( msg.content_encoding == b"deflate" ) {
+#                self.data.add_filter(BinPAC::Filter::ZLIB);
+#                msg.use_content_length = False;
+#				}
+#        }
+#
+#        self.content = new Content(msg);
+#        self.data.connect(self.content);
+#    }
+#
 	on %done {
 	    # FIXME: Currently the sink becomes invalid after parsing for
 		# the current instance finished. That's not great. See
 		# ParserBuilder::_finalizeParseObject() to fix.
-		self.data_len = |self.data|;
+#		self.data_len = |self.data|;
 		}
 };
-
-export type Content = unit(msg: Message) {
-    data: bytes &chunked &eod;
-};
-
-type Chunks = unit(body: Body, msg: Message) {
-    :        list<Chunk(body)> &transient &until($$.length == 0);
-    trailer: list<Header(msg)> &transient
-                { msg.headers += self.trailer; }
-    :        NewLine;
-};
-
-type Chunk = unit(body: Body) {
-    length:    HexInteger &convert=$$.to_uint(16);
-    :          OptionalWhiteSpace;
-    extension: RestOfLine;
-    :          NewLine;
-    :          bytes &length=self.length &chunked -> body.data;
-    :          NewLine if ( self.length != 0 );
-};
+#
+#export type Content = unit(msg: Message) {
+#    data: bytes &chunked &eod;
+#};
+#
+#type Chunks = unit(body: Body, msg: Message) {
+#    :        list<Chunk(body)> &transient &until($$.length == 0);
+##    trailer: list<Header(msg)> &transient &until($$.end == True)
+##                { msg.headers += self.trailer; }
+#    :        NewLine;
+#};
+#
+#type Chunk = unit(body: Body) {
+#    length:    HexInteger &convert=$$.to_uint(16);
+#    :          OptionalWhiteSpace;
+#    extension: RestOfLine;
+#    :          NewLine;
+#    :          bytes &length=self.length &chunked -> body.data;
+#    :          NewLine if ( self.length != 0 );
+#};
