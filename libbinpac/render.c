@@ -24,7 +24,12 @@ static hlt_string _bool_to_string(const hlt_type_info* type, void* obj, __hlt_po
 
 static hlt_string _bytes_to_string(const hlt_type_info* type, void* obj, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return hlt_object_to_string(type, obj, 0, excpt, ctx);
+    hlt_string s = hlt_object_to_string(type, obj, 0, excpt, ctx);
+
+    hlt_string prefix = hlt_string_from_asciiz("b\"", excpt, ctx);
+    s = hlt_string_concat(prefix, s, excpt, ctx);
+    s = hlt_string_concat_asciiz(s, "\"", excpt, ctx);
+    return s;
 }
 
 static hlt_string _double_to_string(const hlt_type_info* type, void* obj, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -192,7 +197,16 @@ static hlt_string _sink_to_string(const hlt_type_info* type, void* obj, __hlt_po
 
 static hlt_string _string_to_string(const hlt_type_info* type, void* obj, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+#if 1
     hlt_string s = *(hlt_string *)obj;
+#else
+    // TODO: We should differentiate if we are just printing out a string, in
+    // which case we don't want quotes. Or if we are nested inside another
+    // objects, in which we do.
+    hlt_string prefix = hlt_string_from_asciiz("\"", excpt, ctx);
+    s = hlt_string_concat(prefix, s, excpt, ctx);
+    s = hlt_string_concat_asciiz(s, "\"", excpt, ctx);
+#endif
     return s;
 }
 
