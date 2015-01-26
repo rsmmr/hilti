@@ -747,6 +747,9 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiCreateHostFunction(shared_ptr
         _prepareParseObject(params);
     }
 
+    if ( unit->buffering() )
+        cg()->hiltiItemSet(state()->self, "__input", state()->cur);
+
     auto pfunc = cg()->hiltiParseFunction(unit);
 
     if ( cg()->options().debug > 0 ) {
@@ -773,9 +776,6 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiCallParseFunction(shared_ptr<
 
     if ( catch_parse_error )
         cg()->builder()->beginTryCatch();
-
-    if ( unit->buffering() )
-        cg()->hiltiItemSet(state()->self, "__input", state()->cur);
 
     cg()->builder()->addInstruction(presult, hilti::instruction::flow::CallResult, func, state()->hiltiArguments());
 
@@ -2921,6 +2921,9 @@ void ParserBuilder::visit(production::ChildGrammar* c)
     pushState(pstate);
 
     _prepareParseObject(params);
+
+    if ( state()->unit->buffering() )
+        cg()->hiltiItemSet(state()->self, "__input", state()->cur);
 
     auto child_func = cg()->hiltiParseFunction(child);
 
