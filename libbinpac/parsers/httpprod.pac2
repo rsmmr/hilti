@@ -39,10 +39,10 @@ export type Request = unit {
     request: RequestLine;
     message: Message(False, True);
 
-		on %done {
-			print self;
-			set_uri(self.request.uri);
-		}
+    on %done {
+      print self;
+      set_uri(self.request.uri);
+    }
 };
 
 #export type Replies = unit {
@@ -53,9 +53,9 @@ export type Request = unit {
 #    reply: ReplyLine;
 #    message: Message(reply_code_needs_body(self.reply.status), False);
 #
-#		on %done {
-#			print self;
-#		}
+#   on %done {
+#     print self;
+#   }
 #};
 
 type Version = unit {
@@ -69,8 +69,8 @@ export type RequestLine = unit {
     uri:     URI;
     :        WhiteSpace;
     version: Version {
-			self.version.number = b"1.0"; # always downgrade to HTTP/1.0
-		}
+      self.version.number = b"1.0"; # always downgrade to HTTP/1.0
+    }
     :        NewLine;
 };
 
@@ -92,15 +92,15 @@ on ReplyLine::reason %debug {
     }
 
 type Message = unit(body_default: bool, is_request: bool) {
-    headers:    list<Header(self)> &until($$.end == True);
-		end_of_hdr: bytes &length=0 {
-			# push proxy line here, if we really want one...
-		}
+    headers:    list<Header(self)> &until_including($$.end == True);
+    end_of_hdr: bytes &length=0 {
+      # push proxy line here, if we really want one...
+    }
 #    end_of_hdr: NewLine;
     body:       Body(self, self.delivery_mode) if ( self.has_body );
 #
     var content_length: uint64;
-	  var content_encoding: bytes;
+    var content_encoding: bytes;
     var content_type: tuple<bytes, bytes> = (b"TEXT", b"PLAIN");
     var content_type_parameter: bytes;
     var transfer_encoding: bytes;
@@ -108,7 +108,7 @@ type Message = unit(body_default: bool, is_request: bool) {
 #
     var has_body: bool;
     var is_request: bool;
-  	var use_content_length: bool = True;
+    var use_content_length: bool = True;
     var delivery_mode: DeliveryMode;
 #
     on %init {
@@ -143,14 +143,14 @@ const HeaderName  = /[^:\r\n]*/;
 const HeaderValue = /[^\r\n]*/;
 
 type Header = unit(msg: Message) {
-	  var end: bool = False;
+    var end: bool = False;
 
     name:    HeaderName &convert=$$.upper() {
-			if ( |self.name| == 0 || self.name == b"\n" || self.name == b"\r\n" ) {
-				self.end = True;
-			}
-		}
-    :        /:[\t ]*/ if ( ! self.end );
+      if ( |self.name| == 0 ) {
+        self.end = True;
+      }
+    }
+    : /:[\t ]*/ if ( ! self.end );
     content: HeaderValue if ( ! self.end ) {
         if ( self.name == b"CONTENT-LENGTH" ) {
             msg.content_length = self.content.to_uint();
@@ -172,13 +172,14 @@ type Header = unit(msg: Message) {
             msg.content_type_parameter = ct[1].strip();
             }
 
-				if ( self.name == b"HOST" )
+        if ( self.name == b"HOST" )
             set_host(self.content);
-				if ( self.name == b"CONNECTION" )
-						self.content = b"close";   # I don't want to support keep-alive from servers.
+
+        if ( self.name == b"CONNECTION" )
+            self.content = b"close";   # I don't want to support keep-alive from servers.
 
         }
-		:        NewLine if ( ! self.end );
+    : NewLine;
 
 };
 
@@ -205,27 +206,27 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
 #            self.data.connect_mime_type(msg.content_type[0] + b"/" + msg.content_type[1]);
 #
 #        if ( msg?.content_encoding ) {
-#		    if ( msg.content_encoding == b"gzip" ) {
+#       if ( msg.content_encoding == b"gzip" ) {
 #                self.data.add_filter(BinPAC::Filter::GZIP);
 #                msg.use_content_length = False;
-#				}
+#       }
 #
-#		    if ( msg.content_encoding == b"deflate" ) {
+#       if ( msg.content_encoding == b"deflate" ) {
 #                self.data.add_filter(BinPAC::Filter::ZLIB);
 #                msg.use_content_length = False;
-#				}
+#       }
 #        }
 #
 #        self.content = new Content(msg);
 #        self.data.connect(self.content);
 #    }
 #
-	on %done {
-	    # FIXME: Currently the sink becomes invalid after parsing for
-		# the current instance finished. That's not great. See
-		# ParserBuilder::_finalizeParseObject() to fix.
-#		self.data_len = |self.data|;
-		}
+  on %done {
+      # FIXME: Currently the sink becomes invalid after parsing for
+    # the current instance finished. That's not great. See
+    # ParserBuilder::_finalizeParseObject() to fix.
+#   self.data_len = |self.data|;
+    }
 };
 #
 #export type Content = unit(msg: Message) {

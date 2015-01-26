@@ -4,6 +4,8 @@
 #include <sys/resource.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <errno.h>
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -29,6 +31,7 @@ binpac_parser* reply = 0;
 typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
 binpac_parsers_func JitParsers = nullptr;
 binpac::CompilerContext* PacContext = nullptr;
+int send_socket = -1;
 
 char uri[URI_LENGTH];
 char host[URI_LENGTH];
@@ -180,7 +183,7 @@ bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> opt
     return true;
 }
 
-void composeOutput(hlt_bytes* data, void** obj, hlt_type_info* type, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void sendOutput(hlt_bytes* data, void** obj, hlt_type_info* type, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes_block block;
     hlt_iterator_bytes start = hlt_bytes_begin(data, excpt, ctx);
@@ -191,22 +194,57 @@ void composeOutput(hlt_bytes* data, void** obj, hlt_type_info* type, void* user,
     do {
         cookie = hlt_bytes_iterate_raw(&block, cookie, start, end, excpt, ctx);
         fwrite(block.start, 1, (block.end - block.start), stdout);
+        assert(send_socket != -1);
+        send(send_socket, block.start, (block.end - block.start), 0);
     } while ( cookie );
 }
 
-void processParseObject(binpac_parser* p, void* pobj)
-{
+void sendData(int sock, binpac_parser* p, void* pobj) {
     if ( ! p->compose_func )
         return;
 
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
 
+    // ok, this is unbelievably dirty... get the sendoutput method to use our socket.
+    send_socket = sock;
+
     GC_CCTOR_GENERIC(&pobj, p->type_info, ctx);
-    p->compose_func(pobj, composeOutput, 0, &excpt, ctx);
+    p->compose_func(pobj, sendOutput, 0, &excpt, ctx);
     GC_DTOR_GENERIC(&pobj, p->type_info, ctx);
 
+    send_socket = -1;
+
     check_exception(excpt);
+}
+
+int connect_serv(const char* host) {
+    uint16_t port = 80;
+
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if ( sock == -1 ) {
+        fprintf(stderr, "Error while creating listen socket\n");
+        return -1;
+    }
+
+    struct hostent *server = gethostbyname(host);
+    if ( server == nullptr ) {
+        fprintf(stderr, "Could not lookup destination host %s\n", host);
+        return -1;
+    }
+
+    struct sockaddr_in serveraddr;
+    memset(&serveraddr, 0, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    memcpy(&serveraddr.sin_addr.s_addr, server->h_addr, server->h_length);
+    serveraddr.sin_port = htons(port);
+
+    if ( connect(sock, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0 ) {
+        fprintf(stderr, "Could not connect to %s:%d -- %s\n", host, port, strerror(errno));
+        return -1;
+    }
+
+    return sock;
 }
 
 void listen(unsigned int port) {
@@ -267,7 +305,27 @@ void listen(unsigned int port) {
             // now hilti should be done parsing and we should hopefully have gotten our callback...
             fprintf(stderr, "Request for http://%s/%s\n", host, uri);
 
-            processParseObject(request, pobj);
+            // try connecting to respective server...
+            fprintf(stderr, "Opening connection to server...\n");
+            int sock = connect_serv(host);
+            if ( sock < 0 ) {
+                fprintf(stderr, "Could not connect to server, aborting\n");
+                close(conn);
+                continue;
+            }
+
+            fprintf(stderr, "Sending request to server...\n");
+            sendData(sock, request, pobj);
+
+            fprintf(stderr, "Parsing server reply...\n");
+            do {
+              memset(buffer, 0, 1000);
+              n = read(sock, buffer, 999);
+              fprintf(stderr, "%s", buffer);
+              send(conn, buffer, n, 0);
+            } while ( n != 0 );
+            fprintf(stderr, "Done parsing server reply\n");
+            close(sock);
         }
 
         close(conn);
