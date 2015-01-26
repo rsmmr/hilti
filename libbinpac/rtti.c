@@ -127,9 +127,12 @@ binpac_unit_cookie binpac_unit_iterate(binpac_unit_item* dst, const hlt_type_inf
     }
 
 #if 0
-    fprintf(stderr, "| unit=%p unit_tag=%s idx=%lu item_value=%p\n",
+    fprintf(stderr, "\n| unit=%p unit_tag=%s idx=%lu item_value=%p\n",
             unit, type->tag, idx - 1, unit);
 #endif
+
+//    if ( unit )
+//        hilti_print(type, &unit, 1, excpt, ctx);
 
     if ( idx > titems->num_params )
         return 0; // End reached.
@@ -197,8 +200,8 @@ binpac_unit_cookie binpac_unit_iterate(binpac_unit_item* dst, const hlt_type_inf
         }
 
 #if 0
-        fprintf(stderr, "  j=%lu unit=%p unit_tag=%s idx=%lu name=%s item_type=%d item_tag=%s item_value=%p kind=%d hide=%d skip=%d\n",
-                j, unit, type->tag, idx - 1, name, ti->type, ti->tag, value, (int)dst->kind, (int)dst->hide, skip);
+        fprintf(stderr, "  j=%lu unit=%p unit_tag=%s idx=%lu name=%s item_type=%d item_tag=%s item_value=%p kind=%d hide=%d\n",
+                j, unit, type->tag, idx - 1, name, ti->type, ti->tag, value, (int)dst->kind, (int)dst->hide);
 #endif
     }
 
@@ -211,8 +214,8 @@ binpac_unit_cookie binpac_unit_iterate(binpac_unit_item* dst, const hlt_type_inf
     assert(ti && type);
 
 #if 0
-    fprintf(stderr, "unit=%p unit_tag=%s idx=%lu name=%s item_type=%d item_tag=%s item_value=%p kind=%d hide=%d skip=%d\n",
-            unit, type->tag, idx - 1, name, ti->type, ti->tag, dst->value, (int)dst->kind, (int)dst->hide, skip);
+    fprintf(stderr, "unit=%p unit_tag=%s idx=%lu name=%s item_type=%d item_tag=%s item_value=%p kind=%d hide=%d\n",
+            unit, type->tag, idx - 1, name, ti->type, ti->tag, dst->value, (int)dst->kind, (int)dst->hide);
 #endif
 
     return idx + 1;

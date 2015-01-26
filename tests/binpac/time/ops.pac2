@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  pac-driver-test %INPUT >output      
+# @TEST-EXEC:  pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
 
@@ -25,6 +25,9 @@ print cast<double>(t);
 print cast<uint64>(t2);
 
 print t.nsecs();
+
+print b"1296522456".to_time();
+print b"\x4D\x47\x5C\xD8".to_time(BinPAC::ByteOrder::Big);
 
 
 
