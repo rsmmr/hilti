@@ -1,17 +1,8 @@
-#
-# TODO:
-#
-# - Continued headers
-# - decode URIs
-# - connection: keep-alive, close
-# - software versions
-# - partial content
-
 module HTTPProd;
 
 import BinPAC;
 
-import "BINPAC-HILTI-C" void set_uri(uri: bytes);
+import "BINPAC-HILTI-C" void set_uri(method: bytes, uri: bytes);
 import "BINPAC-HILTI-C" void set_host(host: bytes);
 
 type DeliveryMode = enum { EndOfData, Length, Multipart, Chunked };
@@ -28,12 +19,8 @@ const OptionalWhiteSpace = /[ \t]*/;
 
 bool reply_code_needs_body(status: uint64)
 {
-   return status <= 99 || (status >= 200 && status != 204 && status != 304);
+    return status <= 99 || (status >= 200 && status != 204 && status != 304);
 }
-
-#export type Requests = unit {
-#    :  list<Request> &transient;
-#};
 
 export type Request = unit {
     request: RequestLine;
@@ -41,22 +28,18 @@ export type Request = unit {
 
     on %done {
       print self;
-      set_uri(self.request.uri);
+      set_uri(self.request.method, self.request.uri);
     }
 };
 
-#export type Replies = unit {
-#    :  list<Reply> &transient;
-#};
+export type Reply = unit {
+    reply: ReplyLine;
+    message: Message(reply_code_needs_body(self.reply.status), False);
 
-#export type Reply = unit {
-#    reply: ReplyLine;
-#    message: Message(reply_code_needs_body(self.reply.status), False);
-#
-#   on %done {
-#     print self;
-#   }
-#};
+    on %done {
+      print self;
+    }
+};
 
 type Version = unit {
     :        /HTTP\//;
@@ -81,7 +64,10 @@ on RequestLine::version %debug {
 type ReplyLine = unit {
     version: Version;
     :        WhiteSpace;
-    status:  Integer &convert=$$.to_uint();
+    var status: uint64;
+    status_raw:  Integer {
+      self.status = self.status_raw.to_uint(); # generator bug workaround
+    }
     :        OptionalWhiteSpace;
     reason:  RestOfLine;
     :        NewLine;
@@ -96,7 +82,6 @@ type Message = unit(body_default: bool, is_request: bool) {
     end_of_hdr: bytes &length=0 {
       # push proxy line here, if we really want one...
     }
-#    end_of_hdr: NewLine;
     body:       Body(self, self.delivery_mode) if ( self.has_body );
 #
     var content_length: uint64;
@@ -121,21 +106,6 @@ type Message = unit(body_default: bool, is_request: bool) {
     on end_of_hdr {
         if ( self?.content_length && self.content_length > 0 )
             self.delivery_mode = DeliveryMode::Length;
-
-#        if ( self.content_type[0] == b"MULTIPART" ) {
-#            local boundary : bytes;
-#
-#            boundary = self.content_type_parameter.match(/boundary="([^"]*)"/, 1);
-#
-#            if ( ! |boundary| )
-#                boundary = self.content_type_parameter.match(/boundary=([^ ;]*)/, 1);
-#
-#            self.delivery_mode = DeliveryMode::Multipart;
-#            self.multipart_boundary = b"--" + boundary + b"--\r\n";
-#        }
-#
-#        if ( self?.transfer_encoding && self.transfer_encoding == b"chunked" )
-#            self.delivery_mode = DeliveryMode::Chunked;
     }
 };
 
@@ -184,67 +154,10 @@ type Header = unit(msg: Message) {
 };
 
 type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
-
-    switch ( delivery_mode ) {
-
-      DeliveryMode::EndOfData -> : bytes &eod;
-#
-      DeliveryMode::Length    -> : bytes &length=msg.content_length;
-#
-#      DeliveryMode::Multipart -> : list<FullLine> &transient &until($$ == msg.multipart_boundary)
-#                                   foreach { self.data.write($$); }
-#
-#      DeliveryMode::Chunked   -> : Chunks(self, msg);
-    };
-#
-#    var data: sink;
-#    var data_len: uint64;
-#    var content: Content;
-#
-#    on %init {
-#        if ( msg.content_type[0] != b"" && msg.content_type[1] != b"" )
-#            self.data.connect_mime_type(msg.content_type[0] + b"/" + msg.content_type[1]);
-#
-#        if ( msg?.content_encoding ) {
-#       if ( msg.content_encoding == b"gzip" ) {
-#                self.data.add_filter(BinPAC::Filter::GZIP);
-#                msg.use_content_length = False;
-#       }
-#
-#       if ( msg.content_encoding == b"deflate" ) {
-#                self.data.add_filter(BinPAC::Filter::ZLIB);
-#                msg.use_content_length = False;
-#       }
-#        }
-#
-#        self.content = new Content(msg);
-#        self.data.connect(self.content);
-#    }
-#
-  on %done {
-      # FIXME: Currently the sink becomes invalid after parsing for
-    # the current instance finished. That's not great. See
-    # ParserBuilder::_finalizeParseObject() to fix.
-#   self.data_len = |self.data|;
-    }
+    data: bytes &length=msg.content_length;
+    #data : bytes &eod;
+    #switch ( delivery_mode ) {
+    #  DeliveryMode::EndOfData -> data : bytes &eod;
+    #  DeliveryMode::Length    -> data : bytes &length=msg.content_length;
+    #};
 };
-#
-#export type Content = unit(msg: Message) {
-#    data: bytes &chunked &eod;
-#};
-#
-#type Chunks = unit(body: Body, msg: Message) {
-#    :        list<Chunk(body)> &transient &until($$.length == 0);
-##    trailer: list<Header(msg)> &transient &until($$.end == True)
-##                { msg.headers += self.trailer; }
-#    :        NewLine;
-#};
-#
-#type Chunk = unit(body: Body) {
-#    length:    HexInteger &convert=$$.to_uint(16);
-#    :          OptionalWhiteSpace;
-#    extension: RestOfLine;
-#    :          NewLine;
-#    :          bytes &length=self.length &chunked -> body.data;
-#    :          NewLine if ( self.length != 0 );
-#};
