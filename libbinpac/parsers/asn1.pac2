@@ -100,8 +100,6 @@ type ASN1String = unit(tag: ASN1Tag, len: uint64) {
       ASN1Type::BMPString -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(BinPAC::Charset::UTF16BE);
       ASN1Type::UniversalString -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(BinPAC::Charset::UTF32BE);
     };
-
-#    on %done { print "String: ", self.value; }
 };
 
 type oidnibble = unit {

@@ -42,6 +42,7 @@ type AmfType = enum {
 };
 
 export type Requests = unit {
+  %mimetype = "port-tcp-destination/1935";
    : uint8(0x3); # version or something like that
    : bytes &length=1536; # challenge - first step.
    : bytes &length=1536; # challenge - second step.
@@ -59,10 +60,10 @@ export type Amf = unit {
 };
 
 type rtmp_message = unit {
-  var message_length : uint32;
-  var chunk_length : uint32;
+  var message_length : uint64;
+  var chunk_length : uint64;
   var amfsink : sink;
-  var submessage_count : uint32;
+  var submessage_count : uint64;
 
   header : rtmp_header {
     # The first header has to specify the messave length. And the chunk length.
@@ -99,7 +100,7 @@ type rtmp_message = unit {
   }
 };
 
-type rtmp_submessage = unit(chunk_length: uint32, message_length: uint32, amfsink: sink) {
+type rtmp_submessage = unit(chunk_length: uint64, message_length: uint64, amfsink: sink) {
   header: rtmp_header;
   body: bytes &length=( (message_length < chunk_length) ? message_length : chunk_length ) -> amfsink {
     if ( message_length < chunk_length )
@@ -117,22 +118,11 @@ type rtmp_header = unit {
 
   ts : bytes &length=3 if ( self.head.size <= 2);
 
-  # Todo - parse 3-byte length nicer when syntax is available
-  # len : bytes &length=3 if ( self.head.size == 0 || self.head.size == 1);
-
-  var message_length : uint32 = 0;
-  len_first : uint8 if ( self.head.size <= 1 );
-  len_second : uint16 if ( self.head.size <= 1 );
+  message_length : bytes &length=3 &convert=$$.to_uint(BinPAC::ByteOrder::Network) if ( self.head.size <= 1);
 
   tpe_raw : bytes &length=1 if ( self.head.size <= 1 );
   tpe : uint8 &convert=TypeId($$) &parse(self.tpe_raw) if ( self.head.size <= 1 );
   routing : bytes &length=4 if ( self.head.size == 0 );
-
-  on %done {
-    if ( self.head.size == 0 || self.head.size == 1 ) {
-      self.message_length = ( self.len_first << 16 ) | self.len_second;
-    }
-  }
 };
 
 type amf_string = unit {
@@ -145,7 +135,7 @@ type amf_packet = unit {
   tpe: uint8 &parse(self.type_raw) &convert=AmfType($$);
 
   switch ( self.tpe ) {
-    AmfType::Numeric -> amf_number : bytes &length=8; # Fixme - this actually is a double. Reading doubles from the network does not work yet.
+    AmfType::Numeric -> amf_number : bytes &length=8; # double
     AmfType::Boolean -> amf_boolean : uint8;
     AmfType::String -> amf_string : amf_string;
     AmfType::Null -> : void;
@@ -165,6 +155,7 @@ type amf_object_entry = unit {
 };
 
 export type Replies = unit {
+  %mimetype = "port-tcp-origin/1935";
    : uint8(0x03); # version perhaps
   server_challenge: bytes &length=1536;
   client_challenge: bytes &length=1536;

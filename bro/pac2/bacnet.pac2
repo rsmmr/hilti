@@ -1,7 +1,5 @@
 module BACnet;
 
-#import Bro;
-
 # This module implements a BACnet parser.
 #
 # When used on IP, BACnet is a protocol, which is layered on top

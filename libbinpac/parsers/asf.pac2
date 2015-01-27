@@ -19,10 +19,8 @@ type asf_extended_content_description_descriptor = unit {
 
   switch ( self.data_type ) {
     ValueDataType::Unicode, ValueDataType::ByteArray -> string_value : bytes &length=self.data_length;
-    ValueDataType::Uint64 -> uint64_value : uint64;
-    ValueDataType::Bool, ValueDataType::Uint32 -> uint32_value : uint32;
-    ValueDataType::Uint16 -> uint16_value : uint16;
-    # * -> int_value : bytes &length=self.data_length $$.to_uint(BinPAC::ByteOrder::Little); <- replace the preceeding 3 cases with this once $$.to_uint works
+    ValueDataType::Uint64, ValueDataType::Bool, ValueDataType::Uint32,
+    ValueDataType::Uint16 -> uint_value : bytes &length=self.data_length &convert=$$.to_uint(BinPAC::ByteOrder::Little);
   };
 };
 

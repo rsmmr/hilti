@@ -1,9 +1,9 @@
 Total header size:  5806
 Number of header objects:  8
-Extended content description:  <name_length=28, name=S\x00f\x00O\x00r\x00i\x00g\x00i\x00n\x00a\x00l\x00F\x00P\x00S\x00\x00\x00, data_type=Uint32, data_length=4, uint32_value=-1265499136>
+Extended content description:  <name_length=28, name=S\x00f\x00O\x00r\x00i\x00g\x00i\x00n\x00a\x00l\x00F\x00P\x00S\x00\x00\x00, data_type=Uint32, data_length=4, uint_value=299700>
 Extended content description:  <name_length=28, name=W\x00M\x00F\x00S\x00D\x00K\x00V\x00e\x00r\x00s\x00i\x00o\x00n\x00\x00\x00, data_type=Unicode, data_length=30, string_value=1\x001\x00.\x000\x00.\x006\x000\x000\x001\x00.\x007\x000\x000\x000\x00\x00\x00>
 Extended content description:  <name_length=26, name=W\x00M\x00F\x00S\x00D\x00K\x00N\x00e\x00e\x00d\x00e\x00d\x00\x00\x00, data_type=Unicode, data_length=22, string_value=0\x00.\x000\x00.\x000\x00.\x000\x000\x000\x000\x00\x00\x00>
-Extended content description:  <name_length=12, name=I\x00s\x00V\x00B\x00R\x00\x00\x00, data_type=Bool, data_length=4, uint32_value=0>
+Extended content description:  <name_length=12, name=I\x00s\x00V\x00B\x00R\x00\x00\x00, data_type=Bool, data_length=4, uint_value=0>
 Content information: 
 Title:  W\x00i\x00l\x00d\x00l\x00i\x00f\x00e\x00 \x00i\x00n\x00 \x00H\x00D\x00\x00\x00
 Author:  
