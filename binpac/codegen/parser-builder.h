@@ -86,7 +86,10 @@ public:
     ///
     /// seq: The sequence corresponding to the first byte passed in, or null
     /// for appending at the end of the input stream.
-    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq);
+    ///
+    /// len: The length inside the sequence space; defaults to length of
+    /// data.
+    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
 
     /// Writes a new chunk of data into a sink.
     ///
@@ -96,7 +99,10 @@ public:
     ///
     /// seq: The sequence corresponding to the first byte passed in, or null
     /// for appending at the end of the input stream.
-    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq);
+    ///
+    /// len: The length inside the sequence space; defaults to length of
+    /// data.
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
 
 protected:
     /// Parse a given entity. This a wrapper around processOne() that adds
@@ -226,7 +232,7 @@ private:
 
     // Initializes the current parse object before starting the parsing
     // process.
-    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> cur, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
+    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
 
     // Finalizes the current parser when the parsing process has finished.
     void _finalizeParseObject(bool success);

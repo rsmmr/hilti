@@ -324,7 +324,10 @@ public:
     ///
     /// seq: The sequence corresponding to the first byte passed in, or null
     /// for appending at the end of the input stream.
-    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq = nullptr);
+    ///
+    /// len: The length inside the sequence space; defaults to length of
+    /// data.
+    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq = nullptr, shared_ptr<hilti::Expression> len = nullptr);
 
     /// Writes a new chunk of data into a sink.
     ///
@@ -334,7 +337,10 @@ public:
     ///
     /// seq: The sequence corresponding to the first byte passed in, or null
     /// for appending at the end of the input stream.
-    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq = nullptr);
+    ///
+    /// len: The length inside the sequence space; defaults to length of
+    /// data.
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq = nullptr, shared_ptr<hilti::Expression> len = nullptr);
 
     /// Writes a new chunk of data into a sink.
     ///
@@ -346,7 +352,10 @@ public:
     ///
     /// seq: The sequence corresponding to the first byte passed in, or null
     /// for appending at the end of the input stream.
-    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end, shared_ptr<hilti::Expression> seq);
+    ///
+    /// len: The length inside the sequence space; defaults to length of
+    /// data.
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
 
     /// Applies transformation attributes (such as \a convert) to a value, if
     /// present.
