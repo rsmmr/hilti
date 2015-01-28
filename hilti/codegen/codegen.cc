@@ -3583,6 +3583,9 @@ void CodeGen::llvmDebugPopIndent()
 
 void CodeGen::llvmDebugPrintString(const string& str)
 {
+    if ( ! options().debug )
+        return;
+
     auto s = llvmConstAsciizPtr(str);
     value_list args = { s, llvmExecutionContext() };
     llvmCallC(llvmLibFunction("__hlt_debug_print_str"), args, false);
@@ -3590,6 +3593,9 @@ void CodeGen::llvmDebugPrintString(const string& str)
 
 void CodeGen::llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr)
 {
+    if ( ! options().debug )
+        return;
+
     auto s = llvmConstAsciizPtr(prefix);
     auto p = builder()->CreateBitCast(ptr, llvmTypePtr());
     value_list args = { s, p, llvmExecutionContext() };
@@ -3598,6 +3604,9 @@ void CodeGen::llvmDebugPrintPointer(const string& prefix, llvm::Value* ptr)
 
 void CodeGen::llvmDebugPrintObject(const string& prefix, llvm::Value* ptr, shared_ptr<Type> type)
 {
+    if ( ! options().debug )
+        return;
+
     auto s = llvmConstAsciizPtr(prefix);
     auto p = builder()->CreateBitCast(ptr, llvmTypePtr());
     value_list args = { s, p, llvmRtti(type), llvmExecutionContext() };

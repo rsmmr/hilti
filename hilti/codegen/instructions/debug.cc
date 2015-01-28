@@ -35,6 +35,9 @@ void StatementBuilder::visit(statement::instruction::debug::InternalError* i)
 
 void StatementBuilder::visit(statement::instruction::debug::Msg* i)
 {
+    if ( cg()->options().debug == 0 )
+        return;
+
     CodeGen::expr_list args = { i->op1(), i->op2(), i->op3() };
     cg()->llvmCall("hlt::debug_printf", args);
 }
