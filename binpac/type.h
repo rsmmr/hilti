@@ -1718,6 +1718,7 @@ public:
              shared_ptr<binpac::Type> type,
              shared_ptr<Expression> default_,
              const hook_list& hooks = hook_list(),
+             const attribute_list& attrs = attribute_list(),
              const Location& l=Location::None);
 
     /// Returns the variable's default, or null if none. This is just a

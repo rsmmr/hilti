@@ -226,7 +226,7 @@ Unit::Unit(const item_list& items, const Location& l) : Ctor(l)
         if ( no_id )
             id = std::make_shared<ID>(::util::fmt("_i%d", ++cnt));
 
-        auto ui = std::make_shared<type::unit::item::Variable>(id, type, def, hook_list(), location());
+        auto ui = std::make_shared<type::unit::item::Variable>(id, type, def, hook_list(), attribute_list(), location());
 
         if ( no_id )
             ui->setCtorNoName();
