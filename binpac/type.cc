@@ -1595,11 +1595,11 @@ std::string unit::item::field::Switch::uniqueName()
     return ::util::uitoa_n(::util::hash(s), 62, 5);
 }
 
-unit::item::Variable::Variable(shared_ptr<binpac::ID> id, shared_ptr<binpac::Type> type, shared_ptr<Expression> default_, const hook_list& hooks, const Location& l)
-    : Item(id, type, hooks,
-           default_ ? attribute_list({ std::make_shared<Attribute>("default", default_) }) : attribute_list(),
-           l)
+unit::item::Variable::Variable(shared_ptr<binpac::ID> id, shared_ptr<binpac::Type> type, shared_ptr<Expression> default_, const hook_list& hooks, const attribute_list& attrs, const Location& l)
+    : Item(id, type, hooks, attrs, l)
 {
+    if ( default_ )
+        attributes()->add(std::make_shared<Attribute>("default", default_));
 }
 
 shared_ptr<Expression> unit::item::Variable::default_() const

@@ -513,8 +513,9 @@ unit_item     : unit_var                         { $$ = $1; }
               | unit_global_hook                 { $$ = $1; }
               | unit_prop                        { $$ = $1; }
 
-unit_var      : VAR local_id ':' type opt_init_expr opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::Variable>($2, $4, $5, $6, loc(@$)); }
+unit_var      : VAR local_id ':' type opt_init_expr opt_type_attrs opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::Variable>($2, $4, $5, $7, $6, loc(@$));
+                                                 }
 
 unit_global_hook : ON hook_id unit_hooks         { $$ = std::make_shared<type::unit::item::GlobalHook>($2, $3, loc(@$)); }
 

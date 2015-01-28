@@ -83,7 +83,12 @@ type Name = unit(msg: Message) {
     : list<Label(msg, self)> &until($$.len.offset == 0 || $$.len.compressed != 0);
 
     # Parsed labels are collected in this list.
-    var labels: list<bytes>;
+    var labels: list<bytes> &hide;
+    var name: bytes;
+
+    on %done {
+        self.name = b".".join(self.labels);
+        }
 };
 
 type Pointer = unit(msg: Message, label: Label) {
