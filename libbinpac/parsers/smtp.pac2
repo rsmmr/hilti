@@ -1,0 +1,13 @@
+
+module SMTP;
+
+export type Greeting = unit {
+            : /220 /;
+    domain  : /[^\r\n ]*/;
+		        : / ?/;
+    protocol: /(E?SMTP)?/;
+		        : / ?/;
+    software: /[^\r\n]*/;
+
+    on %done { print self; }
+};

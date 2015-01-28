@@ -1,0 +1,5 @@
+#
+# @TEST-EXEC:  echo "220 scone.icsi.berkeley.edu ESMTP Postfix" | pac-driver-test %INPUT ${PARSERS}/smtp.pac2 >output
+# @TEST-EXEC:  echo "220 ees-ppworker-sdsc-01.sdsc.berkeley.edu ESMTP Wed, 28 Jan 2015 11:19:02 -0800" | pac-driver-test %INPUT ${PARSERS}/smtp.pac2 >>output
+# @TEST-EXEC:  echo "220 scone.icsi.berkeley.edu ESMTP Postfix" | pac-driver-test %INPUT ${PARSERS}/smtp.pac2 >>output
+# @TEST-EXEC:  btest-diff output
