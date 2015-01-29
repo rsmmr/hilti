@@ -311,6 +311,8 @@ void listen(unsigned int port) {
     }
 
     for (;;) {
+        fprintf(stderr, "Waiting for connection...\n");
+
         struct sockaddr_in sourceAddr;
         socklen_t addrLen = sizeof(sourceAddr);
         int conn = accept(s, (struct sockaddr *) &sourceAddr, &addrLen);
@@ -342,6 +344,7 @@ void listen(unsigned int port) {
             // I know this is dirty as hell - hope that we get the entire request in the first chunk
             int8_t* copy = (int8_t*) hlt_malloc(n);
             hlt_bytes* input = hlt_bytes_new(&excpt, ctx);
+            GC_CCTOR(input, hlt_bytes, ctx);
             memcpy(copy, buffer, n);
             hlt_bytes_append_raw(input, copy, n, &excpt, ctx);
             check_exception(excpt);
@@ -383,6 +386,7 @@ void listen(unsigned int port) {
             // we store the reply in a single hlt_bytes variable before passing it on to the parser
             // for the moment...
             hlt_bytes* reply_bytes = hlt_bytes_new(&excpt, ctx);
+            GC_CCTOR(reply_bytes, hlt_bytes, ctx);
             do {
               memset(buffer, 0, 1000);
               n = read(sock, buffer, 999);
@@ -472,6 +476,9 @@ int main(int argc, char** argv)
       fprintf(stderr, "Could not find http request or reply parsers\n");
       exit(1);
     }
+
+    GC_CCTOR(request, hlt_BinPACHilti_Parser, ctx);
+    GC_CCTOR(reply, hlt_BinPACHilti_Parser, ctx);
 
     ignore_sigpipe();
 
