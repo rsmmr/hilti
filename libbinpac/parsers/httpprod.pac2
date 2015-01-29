@@ -24,20 +24,18 @@ bool reply_code_needs_body(status: uint64)
 
 export type Request = unit {
     request: RequestLine;
-    message: Message(False, True);
+    message: Message(False, True, self.request.nl);
 
     on %done {
-      print self;
       set_uri(self.request.method, self.request.uri);
     }
 };
 
 export type Reply = unit {
     reply: ReplyLine;
-    message: Message(reply_code_needs_body(self.reply.status), False);
+    message: Message(reply_code_needs_body(self.reply.status), False, self.reply.nl);
 
     on %done {
-      print self;
     }
 };
 
@@ -54,7 +52,7 @@ export type RequestLine = unit {
     version: Version {
       self.version.number = b"1.0"; # always downgrade to HTTP/1.0
     }
-    :        NewLine;
+    nl :      NewLine;
 };
 
 on RequestLine::version %debug {
@@ -70,18 +68,20 @@ type ReplyLine = unit {
     }
     :        OptionalWhiteSpace;
     reason:  RestOfLine;
-    :        NewLine;
+    nl :     NewLine;
 };
 
 on ReplyLine::reason %debug {
     print "reply  ", self.version.number, "|", self.status, "|", self.reason;
     }
 
-type Message = unit(body_default: bool, is_request: bool) {
-    headers:    list<Header(self)> &until_including($$.end == True);
-    end_of_hdr: bytes &length=0 {
-      # push proxy line here, if we really want one...
+type Message = unit(body_default: bool, is_request: bool, newline: bytes) {
+    proxied:    bytes &length=0 {
+      if ( is_request )
+          self.proxied = BinPAC::fmt (b"Connection-Proxied: true%s", (newline, 1));
     }
+    headers:    list<Header(self)> &until_including($$.end == True);
+    end_of_hdr: bytes &length=0;
     body:       Body(self, self.delivery_mode) if ( self.has_body );
 #
     var content_length: uint64;
@@ -106,6 +106,8 @@ type Message = unit(body_default: bool, is_request: bool) {
     on end_of_hdr {
         if ( self?.content_length && self.content_length > 0 )
             self.delivery_mode = DeliveryMode::Length;
+
+
     }
 };
 

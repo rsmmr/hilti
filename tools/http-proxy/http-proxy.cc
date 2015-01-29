@@ -34,6 +34,8 @@ typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_co
 binpac_parsers_func JitParsers = nullptr;
 binpac::CompilerContext* PacContext = nullptr;
 int send_socket = -1;
+bool verbose = false;
+bool disable_cache = false;
 
 char uri[URI_LENGTH];
 char host[URI_LENGTH];
@@ -53,8 +55,10 @@ static void usage(const char* prog)
     fprintf(stderr, "%s [options]\n\n", prog);
     fprintf(stderr, "  Options:\n\n");
     fprintf(stderr, "    -P <port>     Bind to given port.                  [Default: 8080]\n");
-    fprintf(stderr, "    -O            Optimize generated code.             [Default: off].\n\n");
+    fprintf(stderr, "    -O            Optimize generated code.             [Default: off].\n");
     fprintf(stderr, "    -d            Enable debug mode.\n");
+    fprintf(stderr, "    -D            Disable caching.\n\n");
+    fprintf(stderr, "    -v            Enable verbose output.\n\n");
 
     exit(1);
 }
@@ -311,7 +315,8 @@ void listen(unsigned int port) {
     }
 
     for (;;) {
-        fprintf(stderr, "Waiting for connection...\n");
+        if ( verbose )
+            fprintf(stderr, "Waiting for connection...\n");
 
         struct sockaddr_in sourceAddr;
         socklen_t addrLen = sizeof(sourceAddr);
@@ -322,7 +327,8 @@ void listen(unsigned int port) {
           exit(1);
         }
 
-        fprintf(stderr, "Connection accepted, trying to parse it...\n");
+        if ( verbose )
+            fprintf(stderr, "Connection accepted, trying to parse it...\n");
 
         //while (1) {
         {
@@ -334,7 +340,8 @@ void listen(unsigned int port) {
             current_request = "";
 
             int n = read(conn, buffer, 999);
-            fprintf(stderr, "Read %d bytes, sending to spicy...\n", n);
+            if ( verbose )
+                fprintf(stderr, "Read %d bytes, sending to spicy...\n", n);
             //fprintf(stderr, "%s\n", buffer);
             if ( n < 10 ) {
                 // not an http request..
@@ -355,11 +362,13 @@ void listen(unsigned int port) {
             check_exception(excpt);
 
             // now hilti should be done parsing and we should hopefully have gotten our callback...
-            fprintf(stderr, "%s request for http://%s/%s\n", method, host, uri);
+            if ( verbose )
+                fprintf(stderr, "%s request for http://%s/%s\n", method, host, uri);
 
             // look if we already have it in our cache - if yes, send back.
             if ( cache.find(cache_key(std::string(host), std::string(uri))) != cache.end() ) {
-                fprintf(stderr, "Found cached value for url, sending to requestor...\n");
+                if ( verbose )
+                    fprintf(stderr, "Found cached value for url, sending to requestor...\n");
                 sendData(conn, cache.at(cache_key(std::string(host), std::string(uri))));
                 //sendOutput(cache.at(cache_key(std::string(host), std::string(uri))), 0, 0, 0, &excpt, ctx);
                 //std::cerr << cache.at(cache_key(std::string(host), std::string(uri))) << std::endl;
@@ -370,7 +379,8 @@ void listen(unsigned int port) {
             }
 
             // try connecting to respective server...
-            fprintf(stderr, "Opening connection to server...\n");
+            if ( verbose )
+                fprintf(stderr, "Opening connection to server...\n");
             int sock = connect_serv(host);
             if ( sock < 0 ) {
                 fprintf(stderr, "Could not connect to server, aborting\n");
@@ -378,11 +388,13 @@ void listen(unsigned int port) {
                 continue;
             }
 
-            fprintf(stderr, "Sending request to server...\n");
+            if ( verbose )
+                fprintf(stderr, "Sending request to server...\n");
             sendData(sock, request, pobj);
             GC_DTOR(input, hlt_bytes, ctx);
 
-            fprintf(stderr, "Parsing server reply...\n");
+            if ( verbose )
+                fprintf(stderr, "Parsing server reply...\n");
             // we store the reply in a single hlt_bytes variable before passing it on to the parser
             // for the moment...
             hlt_bytes* reply_bytes = hlt_bytes_new(&excpt, ctx);
@@ -397,7 +409,8 @@ void listen(unsigned int port) {
               check_exception(excpt);
               //send(conn, buffer, n, 0);
             } while ( n != 0 );
-            fprintf(stderr, "Done receiving server reply, sending to parser...\n");
+            if ( verbose )
+                fprintf(stderr, "Done receiving server reply, sending to parser...\n");
 
             current_request = "";
 
@@ -405,11 +418,12 @@ void listen(unsigned int port) {
             void *robj = (*reply->parse_func)(reply_bytes, 0, &excpt, ctx);
             check_exception(excpt);
 
-            fprintf(stderr, "Done parsing reply, sending to requestor...\n");
+            if ( verbose )
+                fprintf(stderr, "Done parsing reply, sending to requestor...\n");
             sendData(conn, reply, robj);
 
             GC_DTOR(reply_bytes, hlt_bytes, ctx);
-            if ( strncmp(method, "GET", 3) == 0 )
+            if ( strncmp(method, "GET", 3) == 0  && ! disable_cache )
               cache.insert(std::make_pair(cache_key(std::string(host), std::string(uri)), current_request));
 
             close(sock);
@@ -432,7 +446,7 @@ int main(int argc, char** argv)
     unsigned int port = 8080;
 
     char ch;
-    while ((ch = getopt(argc, argv, "OP:d")) != -1) {
+    while ((ch = getopt(argc, argv, "OP:dvD")) != -1) {
 
         switch (ch) {
 
@@ -442,6 +456,14 @@ int main(int argc, char** argv)
 
          case 'd':
             options->debug = true;
+            break;
+
+         case 'D':
+            disable_cache = true;
+            break;
+
+         case 'v':
+            verbose = true;
             break;
 
          case 'O':
