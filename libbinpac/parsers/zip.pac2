@@ -1,0 +1,38 @@
+
+module ZIP;
+
+import BinPAC;
+import MSTime;
+
+%byteorder = BinPAC::ByteOrder::Little;
+
+export type Archive = unit {
+    : list<File>;
+    : Directory;
+};
+
+type Directory = unit {
+    : b"PK\x01\x02";
+    # ...
+};
+
+type File = unit {
+    : b"PK\x03\x04";
+    version:        uint<16>;
+    flags:          uint<16>;
+    compression:    uint<16>;
+    time_:          MSTime::Time;
+    crc:            uint<32>;
+    csize:          uint<32>;
+    usize:          uint<32>;
+    fnlen:          uint<16>;
+    xlen:           uint<16>;
+    fname:          bytes &length=self.fnlen;
+    :               bytes &length=self.xlen;
+
+    :               bytes &length=self.csize;
+
+    on %done {
+        # print self.usize, self.time_.t, self.fname;
+        }
+};
