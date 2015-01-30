@@ -97,14 +97,26 @@ public:
     /// field: The field.
     ///
     /// data: The data to write into the sinks.
-    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data);
+    ///
+    /// seq: The sequence corresponding to the first byte passed in, or null
+    /// for appending at the end of the input stream.
+    ///
+    /// len: The length inside the sequence space; defaults to length of
+    /// data.
+    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
 
     /// Writes a new chunk of data into a sink.
     ///
     /// sink: The sink to write to.
     ///
     /// data: The data to write into the sink.
-    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data);
+    ///
+    /// seq: The sequence corresponding to the first byte passed in, or null
+    /// for appending at the end of the input stream.
+    ///
+    /// len: The length inside the sequence space; defaults to length of
+    /// data.
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
 
 protected:
     /// Parse a given entity. This a wrapper around processOne() that adds
@@ -213,6 +225,7 @@ protected:
 
 private:
     typedef std::list<std::pair<shared_ptr<hilti::Expression>, shared_ptr<Type>>> hilti_expression_type_list;
+    typedef std::list<shared_ptr<hilti::Expression>> hilti_expression_list;
 
     // Pushes an empty parse function with the right standard signature. If
     // value_type is given, the function return tuple will contain an
@@ -251,6 +264,16 @@ private:
     // hook.
     void _newValueForField(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value);
 
+    // Returns a function that can be called from C to trigger a global unit hook.
+    shared_ptr<hilti::Expression> _hiltiFunctionGlobalHook(shared_ptr<type::Unit> unit, const std::string& hook, parameter_list params);
+
+    // Creates the host-facing parser function. If sink is true, we generate
+    // a slightly different version for internal use with sinks.
+    shared_ptr<hilti::Expression> _hiltiCreateHostFunction(shared_ptr<type::Unit> unit, bool sink);
+
+    // Creates the init function that registers a parser with the binpac runtime.
+    void _hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> parse_host, shared_ptr<hilti::Expression> parse_sink);
+
     // Calls a parse function with the current parsing state.
     shared_ptr<hilti::Expression> _hiltiCallParseFunction(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func, bool catch_parse_error, shared_ptr<hilti::Type> presult_value_type);
 
@@ -268,12 +291,13 @@ private:
 
     // Executes a hook. \a self is the self parameter to pass to the hook. \a
     // id is the full path to the hooked element, including the module. \a
-    // foreach must be true if this is a \c forach hook. \a dolllardollar is
-    // the value for the \a $$ identifier within the hook, if it takes one
-    // (or null). If \a foreach is true, returns a boolean expression that is
-    // true if the hook has called "hook.stop true". If \a foreach is false,
-    // returns null.
-    shared_ptr<hilti::Expression> _hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar = nullptr);
+    // args is a list of any additional parameters the hooks takes; an
+    // empty list if none. foreach must be true if this is a \c forach hook.
+    // \a dolllardollar is the value for the \a $$ identifier within the
+    // hook, if it takes one (or null). If \a foreach is true, returns a
+    // boolean expression that is true if the hook has called "hook.stop
+    // true". If \a foreach is false, returns null.
+    shared_ptr<hilti::Expression> _hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, hilti_expression_list args, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar = nullptr);
 
     // Defines a hook's implementation. <id> is the full path to the hooked
     // element, including the module. <forach> is true if this is a \c
@@ -282,7 +306,9 @@ private:
     // takes one. If <debug> is true, the hook will only be compiled in at
     // non-zero debugging levels, and it will only be executed at run-time if
     // explicitly enabled via libbinpac.
-    void _hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar = nullptr, int priority = 0);
+    //
+    // TODO: Cleanup the arguments here.
+    void _hiltiDefineHook(shared_ptr<Hook> hook, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar = nullptr, int priority = 0);
 
     // Returns the full path ID for the hook referecing a unit item.
     shared_ptr<ID> _hookForItem(shared_ptr<type::Unit>, shared_ptr<type::unit::Item> item, bool foreach, bool private_);

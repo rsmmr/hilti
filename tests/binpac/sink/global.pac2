@@ -8,6 +8,10 @@ module Mini;
 
 global data : sink;
 
+# The test works with this line. The global sink
+# probably doesn't get initialized.
+# data = new sink;
+
 export type Main = unit {
     a: bytes &length=2;
 

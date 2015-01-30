@@ -168,3 +168,28 @@ void ScopeBuilder::visit(declaration::Function* f)
     }
 }
 
+void ScopeBuilder::visit(declaration::Hook* h)
+{
+    auto hook = h->hook();
+
+    // Add parameters to body's scope.
+    auto scope = ast::checkedCast<statement::Block>(hook->body())->scope();
+
+    for ( auto p : hook->parameters() ) {
+        auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
+        scope->insert(p->id(), pexpr, true);
+    }
+}
+
+void ScopeBuilder::visit(type::unit::item::GlobalHook* g)
+{
+    for ( auto hook : g->hooks() ) {
+        // Add parameters to body's scope.
+        auto scope = ast::checkedCast<statement::Block>(hook->body())->scope();
+
+        for ( auto p : hook->parameters() ) {
+            auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
+            scope->insert(p->id(), pexpr, true);
+        }
+    }
+}

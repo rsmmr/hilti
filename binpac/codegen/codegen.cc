@@ -854,21 +854,21 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCastEnum(shared_ptr<hilti::Expressio
     return e;
 }
 
-void CodeGen::hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data)
+void CodeGen::hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len)
 {
-    _parser_builder->hiltiWriteToSinks(field, data);
+    _parser_builder->hiltiWriteToSinks(field, data, seq, len);
 }
 
-void CodeGen::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data)
+void CodeGen::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len)
 {
-    _parser_builder->hiltiWriteToSink(sink, data);
+    _parser_builder->hiltiWriteToSink(sink, data, seq, len);
 }
 
-void CodeGen::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end)
+void CodeGen::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len)
 {
     auto data = builder()->addTmp("data", hilti::builder::reference::type(hilti::builder::bytes::type()));
     builder()->addInstruction(data, hilti::instruction::bytes::Sub, begin, end);
-    return hiltiWriteToSink(sink, data);
+    return hiltiWriteToSink(sink, data, seq, len);
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiApplyAttributesToValue(shared_ptr<hilti::Expression> val, shared_ptr<AttributeSet> attrs, bool composing)

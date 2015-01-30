@@ -1364,7 +1364,7 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
         auto push_back = std::make_shared<expression::UnresolvedOperator>(operator_::MethodCall, ops, l);
         body_push->addStatement(std::make_shared<statement::Expression>(push_back, l));
 
-        auto hook_push = std::make_shared<binpac::Hook>(body_push, binpac::Hook::PARSE, 254, false, true, l);
+        auto hook_push = std::make_shared<binpac::Hook>(body_push, binpac::Hook::PARSE, 254, false, true, parameter_list(), l);
         addHook(hook_push);
     }
 
@@ -1395,7 +1395,7 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
         }
 
         auto prio = until_including ? -255 : 255;
-        auto hook = std::make_shared<binpac::Hook>(body, binpac::Hook::PARSE, prio, false, true, l);
+        auto hook = std::make_shared<binpac::Hook>(body, binpac::Hook::PARSE, prio, false, true, parameter_list(), l);
         addHook(hook);
 
         if ( until )

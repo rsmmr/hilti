@@ -203,7 +203,7 @@ static int _int_width = 0;
 %type <bval>             opt_debug opt_foreach opt_param_const opt_param_clear
 %type <parameter>        param
 %type <result>           rtype
-%type <parameters>       params opt_params opt_unit_params
+%type <parameters>       params opt_params opt_unit_params opt_hook_params
 %type <hook>             unit_hook
 %type <hooks>            unit_hooks opt_unit_hooks
 %type <unit_item>        unit_item unit_prop unit_global_hook unit_var unit_switch
@@ -614,9 +614,13 @@ opt_unit_vector_len
 unit_hooks    : unit_hook unit_hooks             { $$ = $2; $2.push_front($1); }
               | unit_hook                        { $$ = { $1 }; }
 
-unit_hook     : opt_debug opt_priority opt_foreach opt_hook_kind
+unit_hook     : opt_hook_params opt_debug opt_priority opt_foreach opt_hook_kind
                                                  { driver.pushScope(std::make_shared<Scope>(driver.module()->body()->scope())); }
-                block                            { $$ = std::make_shared<Hook>($6, $4, $2, $1, $3, loc(@$)); driver.popScope(); }
+                block                            { $$ = std::make_shared<Hook>($7, $5, $3, $2, $4, $1, loc(@$)); driver.popScope(); }
+
+opt_hook_params
+              : '(' opt_params ')'               { $$ = $2; }
+              | /* empty */                      { $$ = parameter_list(); }
 
 opt_debug     : PROPERTY                         { $$ = ($1 == "%debug");
                                                    if ( ! $$ ) error(@$, "unexpected property, only %debug permitted");
@@ -773,6 +777,7 @@ expr2         : scoped_id                        { $$ = std::make_shared<express
               | ADD expr '[' expr ']'            { $$ = makeOp(operator_::Add, { $2, $4 }, loc(@$)); }
               | DELETE expr '[' expr ']'         { $$ = makeOp(operator_::Delete, { $2, $4 }, loc(@$)); }
               | CAST '<' type '>' '(' expr ')'   { $$ = makeOp(operator_::Cast, { $6, std::make_shared<expression::Type>($3) }, loc(@$)); }
+              | NEW SINK                         { $$ = makeOp(operator_::New, { std::make_shared<expression::Type>(std::make_shared<type::Sink>()) }, loc(@$)); }
               | NEW id_expr                      { $$ = makeOp(operator_::New, {$2 }, loc(@$)); }
               | NEW id_expr tuple_expr           { $$ = makeOp(operator_::New, {$2, $3}, loc(@$)); }
 

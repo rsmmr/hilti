@@ -1012,14 +1012,20 @@ llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llv
     params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg()->llvmTypePtr(cg()->llvmTypeExecutionContext())));
 
     auto func = cg()->llvmAddFunction(name, cg()->llvmTypeVoid(), params, false);
-    func->setLinkage(llvm::GlobalValue::LinkOnceODRLinkage);
 
-    if ( external_name.size() )
+    if ( external_name.size() ) {
         func->setCallingConv(llvm::CallingConv::C);
+        func->setLinkage(llvm::GlobalValue::ExternalLinkage);
+    }
+
+    else
+        func->setLinkage(llvm::GlobalValue::LinkOnceODRLinkage);
+
 
     cg()->cacheValue("dtor-struct", name, func);
 
-    _struct_dtors.push_back(std::make_pair(t, func));
+   if ( ! external_name.size() )
+        _struct_dtors.push_back(std::make_pair(t, func));
 
     return func;
 }

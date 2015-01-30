@@ -37,12 +37,19 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -std=gnu89 -D_GNU_SOURCE")
 ### Generate the C prototypes.
 
 add_custom_command(
-    OUTPUT   ${autogen}/binpac-hlt.h
-    COMMAND  ${hiltic} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt -o ${autogen}/binpac-hlt.h
+    OUTPUT   ${autogen}/binpachilti-hlt.h
+    COMMAND  ${hiltic} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt -o ${autogen}/binpachilti-hlt.h
     DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt ${hiltic}
 )
 
+add_custom_command(
+    OUTPUT   ${autogen}/binpac-hlt.h
+    COMMAND  ${hiltic} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${autogen}/binpac.hlt -o ${autogen}/binpac-hlt.h
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt ${autogen}/binpac.hlt ${hiltic}
+)
+
 SET_SOURCE_FILES_PROPERTIES(${autogen}/binpac-hlt.h PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${autogen}/binpachilti-hlt.h PROPERTIES GENERATED 1)
 
 ### Generate HILTI code for BinPAC standard library code.
 
@@ -93,6 +100,7 @@ set(SRCS
     3rdparty/rc4/rc4.c
 
     ${autogen}/binpac-hlt.h
+    ${autogen}/binpachilti-hlt.h
 )
 
 add_library(binpac-rt-dbg       STATIC ${SRCS} ${autogen}/binpachilti.o)
