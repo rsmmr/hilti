@@ -1,5 +1,7 @@
 module T104;
 
+#author: Robert Udd
+#Parser for IEC 60870-5-104
 
 import BinPAC;
 const ioa_length = 3;
@@ -11,9 +13,24 @@ type Modes = enum {
     U = 3
 };
 
+### Info object code structure
+# Level Symbol  Description
+#   1   M_      Monitored information
+#       C_      Control information
+#       P_      Parameter
+#       F_      File transfer
+#   2   Various See actual usage
+#   3   _Nx     Not time tagged
+#       _Tx     Time tagged
+#       _xA     Type A: status and normalized, with quality
+#       _xB     Type B: scaled, with quality
+#       _xC     Type C: short floating point, with quality
+#       _xD     Type D: normalized without quality
+#
+
 type Info_obj_code= enum {
     #process information in monitoring direction 1-29
-    M_SP_NA_1 = 1, #present in pcap implemented
+    M_SP_NA_1 = 1, #implemented
     M_SP_TA_1 = 2,
     M_DP_NA_1 = 3,
     M_DP_TA_1 = 4,
@@ -21,7 +38,7 @@ type Info_obj_code= enum {
     M_ST_TA_1 = 6,
     M_BO_NA_1 = 7,
     M_BO_TA_1 = 8,
-    M_ME_NA_1 = 9, #present in pcap implemented
+    M_ME_NA_1 = 9, #implemented
     M_ME_TA_1 = 10,
     M_ME_NB_1 = 11,
     M_ME_TB_1 = 12,
@@ -36,7 +53,7 @@ type Info_obj_code= enum {
     M_ME_ND_1 = 21,
     #22-29 reserved
     #process information in monitoring direction cont’d 30-44
-    M_SP_TB_1 = 30, #present in pcap
+    M_SP_TB_1 = 30, #implemented
     M_DP_TB_1 = 31,
     M_ST_TB_1 = 32,
     M_BO_TB_1 = 33,
@@ -49,7 +66,7 @@ type Info_obj_code= enum {
     M_EP_TF_1 = 40,
     #41-44 reserved
     #process information in control direction 45-51
-    C_SC_NA_1 = 45, #present in pcap 
+    C_SC_NA_1 = 45, #implemented
     C_DC_NA_1 = 46,
     C_RC_NA_1 = 47,
     C_SE_NA_1 = 48,
@@ -60,7 +77,7 @@ type Info_obj_code= enum {
     M_EI_NA_1 = 70,
     #71-99 reserved
     #system information in control direction 100-109
-    C_IC_NA_1 = 100, #present in pcap implemented
+    C_IC_NA_1 = 100, #implemented
     C_CI_NA_1 = 101,
     C_RD_NA_1 = 102,
     C_CS_NA_1 = 103,
@@ -85,6 +102,7 @@ type Info_obj_code= enum {
     #127 reserved
 };
 
+#Cause of transmission
 type Cot_code = enum {
     #process information in monitoring direction 1-29
     Not_used = 0,
@@ -153,14 +171,9 @@ export type Apci = unit {
         2 -> asdu : Asdu;
         * -> : b"";
     };
-
-    
-   # #if (self.ctrl.beginswith(b"\")) {    
-   on %done {
-   #print "INIT APCI";
-   }
+ 
     on %done {
-   # print self;
+    #print self;
     }
 };
 
@@ -196,6 +209,16 @@ type Asdu = unit {
      }
 }; 
 
+type CP24TIME2A = unit {
+    milli : uint<16> &byteorder = BinPAC::ByteOrder::Little;
+    minute : uint<8>;
+
+    on %done {
+    #remove unwanted bits
+     self.minute = self.minute & 63;
+     }
+}
+
 type CP56TIME2A = unit {
     milli : uint<16> &byteorder = BinPAC::ByteOrder::Little;
     minute : uint<8>;
@@ -226,8 +249,7 @@ type Single_Point_Without_Time = unit (seq : bool){ #1
 type Single_Point_With_Time2 = unit (seq : bool){ #2 only SEQ=0 allowed
     info_obj_addr: bytes &length=ioa_length if (!seq); #not 100% sure that the length is always correct
     single_point_information_with_quality_descriptor : SIQ;
-    cp24time2a : bytes &length=3; #TODO waiting on BP support for time
-    on %init {
+    cp24time2a : CP24TIME2A;
     #print "INIT 2";
     }
 };
@@ -244,7 +266,7 @@ type Measured_Normalized_Value = unit (seq : bool){ #9
 type Single_Point_With_Time30 = unit (seq : bool){ #30 only SEQ=0 allowed
     info_obj_addr: bytes &length=ioa_length if (!seq); #not 100% sure that the length is always correct
     single_point_information_with_quality_descriptor : SIQ;
-    cp56time2a : CP56TIME2A;#bytes &length=7; #TODO waiting on BP support for time
+    cp56time2a : CP56TIME2A;#bytes &length=7;
     on %init {
     #print "INIT 30";
     }
