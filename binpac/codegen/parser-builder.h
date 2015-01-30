@@ -57,6 +57,41 @@ public:
     // the %init hook.
     shared_ptr<hilti::Expression> hiltiFunctionNew(shared_ptr<type::Unit> unit);
 
+    /// Adds an external implementation of a unit hook.
+    ///
+    /// id: The hook's ID (full path).
+    ///
+    /// hook: The hook itself.
+    void hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
+
+    /// Generates code to execute the hooks associated with an unit item.
+    /// This must only be called while a unit is being parsed.
+    ///
+    /// item: The item.
+    ///
+    /// self: The expression to pass as the hook's \a self argument. Must
+    /// match the type of the unit that \a item is part of.
+    void hiltiRunFieldHooks(shared_ptr<type::unit::Item> item, shared_ptr<hilti::Expression> self);
+
+    /// Returns a HILTI expression referencing the current parser object
+    /// (assuming parsing is in process; if not aborts());
+    shared_ptr<hilti::Expression> hiltiSelf();
+
+    /// Returns a HILTI expression referencing the current user cookie.
+    /// (assuming parsing is in process; if not aborts());
+    shared_ptr<hilti::Expression> hiltiCookie();
+
+    /// Confirms a parser by turning of DFD "try mode" if it's active.
+    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit);
+
+    /// Disables the current parser by throwing a corresponding signal to the
+    /// host application.
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg, bool throw_directly = false);
+
+    /// Disables the current parser by throwing a corresponding signal to the
+    /// host application.
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg, bool throw_directly = false);
+
     /// Writes a new chunk of data into a field's sinks.
     ///
     /// field: The field.
@@ -198,7 +233,7 @@ private:
 
     // Initializes the current parse object before starting the parsing
     // process.
-    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
+    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr, shared_ptr<hilti::Expression> try_mode = nullptr);
 
     // Finalizes the current parser when the parsing process has finished.
     void _finalizeParseObject(bool success);
@@ -330,6 +365,9 @@ private:
 
     // Synchronize parsing with a given production.
     void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<Production> p);
+
+    // Synchronize parsing with a given unit.
+    void _hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<ParserState> hook_state);
 
     // Synchronize parsing by moving ahead a given number of bytes.
     void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> i);

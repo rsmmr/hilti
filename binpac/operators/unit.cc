@@ -310,5 +310,40 @@ opBegin(unit::Backtrack : MethodCall)
     }
 opEnd
 
+static const string _doc_confirm =
+   R"(
+   Confirms that the unit's input is indeed in the expected format. When in DFD "try mode", this
+   switches to normal parsing mode.
+   )";
+
+opBegin(unit::Confirm : MethodCall)
+    opOp1(std::make_shared<type::Unit>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("confirm")))
+
+    opDoc(_doc_backtrack)
+
+    opResult() {
+        return std::make_shared<type::Void>();
+    }
+opEnd
+
+static const string _doc_disable =
+   R"(
+   Signals that this unit's input is not in the expected parsing, aborting parsing with a
+   ~ParserDisabled exception. *msg* gives a reason.
+   )";
+
+opBegin(unit::Disable : MethodCall)
+    opOp1(std::make_shared<type::Unit>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("disable")))
+    opCallArg1("msg", std::make_shared<type::String>())
+
+    opDoc(_doc_backtrack)
+
+    opResult() {
+        return std::make_shared<type::Void>();
+    }
+opEnd
+
 
 

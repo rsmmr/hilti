@@ -1,0 +1,7 @@
+%sync Sub1  <>
+%confirmed Sub1  <x=AB, y=1>
+%done Sub1  <x=AB, y=1, z=2D>
+%sync Sub2  <>
+%confirmed Sub2  <x=B1, y=2>
+%done Sub2  <x=B1, y=2, z=DE>
+Main <data=<sink>>

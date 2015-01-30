@@ -807,6 +807,21 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCookie()
     return hilti::builder::id::create("__cookie");
 }
 
+void CodeGen::hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit)
+{
+    _parser_builder->hiltiConfirm(self, unit);
+}
+
+void CodeGen::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg)
+{
+    _parser_builder->hiltiDisable(self, unit, msg);
+}
+
+void CodeGen::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg)
+{
+    _parser_builder->hiltiDisable(self, unit, msg);
+}
+
 shared_ptr<hilti::Type> CodeGen::hiltiTypeCookie()
 {
     return hilti::builder::type::byName("BinPACHilti::UserCookie");
@@ -1087,6 +1102,11 @@ shared_ptr<hilti::Expression> CodeGen::hiltiInsertBitsIntoInteger(shared_ptr<hil
 shared_ptr<hilti::Expression> CodeGen::hiltiSynchronize(shared_ptr<Production> p, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur)
 {
     return _synchronizer->hiltiSynchronize(p, data, cur);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur)
+{
+    return _synchronizer->hiltiSynchronize(unit, data, cur);
 }
 
 static binpac::type::unit::item::field::Switch* _switch(shared_ptr<binpac::type::unit::Item> item)

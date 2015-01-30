@@ -1,6 +1,7 @@
 
 #include "sink.h"
 #include "filter.h"
+#include "exceptions.h"
 
 void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx);
 
@@ -107,6 +108,12 @@ static void __finish_parser(binpac_sink* sink, __parser_state* state, hlt_except
         // sink-unit-filter.pac2 tests for this but is currently disabled ...
         if ( sink_excpt && sink_excpt->type == &hlt_exception_yield ) {
             assert(false);
+        }
+
+        else if ( sink_excpt && sink_excpt->type == &binpac_exception_parserdisabled ) {
+            // Disabled, nothing to do.
+            DBG_LOG("binpac-sinks", "- final writing to sink %p disabled for parser %p", sink, state->pobj);
+            GC_DTOR(sink_excpt, hlt_exception, ctx);
         }
 
         else
@@ -356,6 +363,17 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_
             s->resume = sink_excpt;
             s = s->next;
             sink_excpt = 0;
+        }
+
+        else if ( sink_excpt && sink_excpt->type == &binpac_exception_parserdisabled ) {
+            // Disabled
+            DBG_LOG("binpac-sinks", "- writing to sink %p disabled for parser %p", sink, s->pobj);
+            GC_DTOR(sink_excpt, hlt_exception, ctx);
+            sink_excpt = 0;
+            __parser_state* next = s->next;
+            // This guy is finished, remove.
+            __unlink_state(sink, s, ctx);
+            s = next;
         }
 
         else {

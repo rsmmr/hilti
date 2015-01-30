@@ -1,0 +1,18 @@
+%sync Sub1  <>
+%confirmed Sub1  <x=AB, y=1>
+%done Sub1  <x=AB, y=1, z=DE>
+%disabled Sub2  <>
+%disabled Sub3  <>
+Main <a=.., b=AB, c=1DE, d=.., data=<sink>>
+%sync Sub2  <>
+%confirmed Sub2  <x=AB, y=2>
+%done Sub2  <x=AB, y=2, z=DE>
+%disabled Sub1  <>
+%disabled Sub3  <>
+Main <a=.., b=AB, c=2DE, d=.., data=<sink>>
+%sync Sub3  <>
+%confirmed Sub3  <x=AB, y=3>
+%done Sub3  <x=AB, y=3, z=DE>
+%disabled Sub1  <>
+%disabled Sub2  <>
+Main <a=.., b=AB, c=3DE, d=.., data=<sink>>

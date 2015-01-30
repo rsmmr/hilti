@@ -2004,6 +2004,11 @@ shared_ptr<binpac::Expression> Unit::inheritedProperty(const string& pname, shar
     return nullptr;
 }
 
+bool Unit::supportsSynchronize()
+{
+    return property("synchronize-after") || property("synchronize-at");
+}
+
 Sink::Sink(const Location& l) : PacType(l)
 {
 }

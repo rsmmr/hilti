@@ -1947,6 +1947,9 @@ public:
     // the property/attribute.
     shared_ptr<binpac::Expression> inheritedProperty(const string& property, shared_ptr<type::unit::Item> item = nullptr);
 
+    /// XXX Compare to production::supportsSynchronize.
+    bool supportsSynchronize();
+
     bool _equal(shared_ptr<binpac::Type> other) const override;
 
     ACCEPT_VISITOR(Type);
