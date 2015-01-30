@@ -269,6 +269,10 @@ static void ascii_dump_unit(const hlt_type_info* type, void* obj, int indent, hl
             // Don't print fields that aren't set.
             continue;
 
+        if ( item.hide )
+            // Not to be shown.
+            continue;
+
         if ( ! first ) {
             fputs(",", stdout);
             newline(indent);
