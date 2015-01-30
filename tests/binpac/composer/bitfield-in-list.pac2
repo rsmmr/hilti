@@ -1,0 +1,20 @@
+#
+# @TEST-EXEC:  printf '\377\377\377\377' | pac-driver-test -c %INPUT | hexdump -b >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import BinPAC;
+
+export type test = unit {
+    : list<Label()> &count=2;
+
+#    on %done { print self; }
+};
+
+type Label = unit() {
+    len: bitfield(8) {
+        offset: 0..5;
+        compressed: 6..7;
+        };
+    };

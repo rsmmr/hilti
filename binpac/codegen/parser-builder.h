@@ -38,13 +38,16 @@ public:
     /// u: The unit type to export via functions.
     void hiltiExportParser(shared_ptr<type::Unit> unit);
 
-    /// Generates the implementation of unit-embedded hooks.
-    ///
-    /// u: The unit type to generate the hooks for.
-    void hiltiUnitHooks(shared_ptr<type::Unit> unit);
-
     // Returns the HILTI struct type for a unit's parse object.
     shared_ptr<hilti::Type> hiltiTypeParseObject(shared_ptr<type::Unit> unit);
+
+    // Creates the host-facing parser function.
+    //
+    // unit: The unit to create the host function for.
+    //
+    // sink: If true, we generate a slightly different version for internal
+    // use with sinks.
+    shared_ptr<hilti::Expression> hiltiCreateHostFunction(shared_ptr<type::Unit> unit, bool sink);
 
     // Returns the new() function that instantiates a new parser object. In
     // addition to the type parameters, the returned function receives three:
@@ -53,30 +56,6 @@ public:
     // type associated with the input (empty if None). The function also runs
     // the %init hook.
     shared_ptr<hilti::Expression> hiltiFunctionNew(shared_ptr<type::Unit> unit);
-
-    /// Adds an external implementation of a unit hook.
-    ///
-    /// id: The hook's ID (full path).
-    ///
-    /// hook: The hook itself.
-    void hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
-
-    /// Generates code to execute the hooks associated with an unit item.
-    /// This must only be called while a unit is being parsed.
-    ///
-    /// item: The item.
-    ///
-    /// self: The expression to pass as the hook's \a self argument. Must
-    /// match the type of the unit that \a item is part of.
-    void hiltiRunFieldHooks(shared_ptr<type::unit::Item> item, shared_ptr<hilti::Expression> self);
-
-    /// Returns a HILTI expression referencing the current parser object
-    /// (assuming parsing is in process; if not aborts());
-    shared_ptr<hilti::Expression> hiltiSelf();
-
-    /// Returns a HILTI expression referencing the current user cookie.
-    /// (assuming parsing is in process; if not aborts());
-    shared_ptr<hilti::Expression> hiltiCookie();
 
     /// Writes a new chunk of data into a field's sinks.
     ///
@@ -237,18 +216,8 @@ private:
     // hook.
     void _newValueForField(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value);
 
-    // Creates the host-facing parser function. If sink is true, we generate
-    // a slightly different version for internal use with sinks.
-    shared_ptr<hilti::Expression> _hiltiCreateHostFunction(shared_ptr<type::Unit> unit, bool sink);
-
-    // Creates the init function that registers a parser with the binpac runtime.
-    void _hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> parse_host, shared_ptr<hilti::Expression> parse_sink);
-
     // Calls a parse function with the current parsing state.
     shared_ptr<hilti::Expression> _hiltiCallParseFunction(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func, bool catch_parse_error, shared_ptr<hilti::Type> presult_value_type);
-
-    // Returns the BinPAC::Parser instance for a unit.
-    shared_ptr<hilti::Expression> _hiltiParserDefinition(shared_ptr<type::Unit> unit);
 
     // Prints the given message to the binpac debug stream.
     void _hiltiDebug(const string& msg);
@@ -322,13 +291,6 @@ private:
 
     // Generates the HILTI code to report insufficient input during matching.
     shared_ptr<hilti::Expression> _hiltiInsufficientInputHandler(bool eod_ok = false, shared_ptr<hilti::Expression> iter = nullptr);
-
-    // Returns a HILTI expression of type Hilti::Packed specifying the unpack
-    // format for an integer of the given width/signedness/byteorder
-    // combiniation. The byteorder must be a BinPAC expression of type
-    // BinPAC::ByteOrder (as, e.g., returned by _fieldByteOrder(). If \a
-    // byteorder is null, network order is used as default.
-    shared_ptr<hilti::Expression> _hiltiIntUnpackFormat(int width, bool signed_, shared_ptr<binpac::Expression> byteorder);
 
     // Disables saving parsed values in a parse objects. This is primarily
     // for parsing container items that aren't directly stored there.

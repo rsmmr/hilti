@@ -131,6 +131,29 @@ iBegin(operator_, Unpack, "unpack")
     )")
 iEnd
 
+iBegin(operator_, Pack, "pack")
+    iTarget(optype::refBytes)
+    iOp1(optype::any, true)
+    iOp2(optype::enum_, true)
+    iOp3(optype::optional(optype::any), true)
+
+    iValidate {
+        // TODO
+    }
+
+    iDoc(R"(
+    Packs a value *op1* of a particular type into binary data enclosed by the iterator tuple *op1*.
+    *op2* defines the binary layout as an enum of type ``Hilti::Packed`` and
+    must be a constant. Depending on *op2*, *op3* is may be an additional,
+    format-specific parameter with further information about the binary
+    layout. The operator returns a ``ref<bytes>`` with the packed data.
+
+    Note: The ``unpack`` operator uses a generic implementation able to handle all data
+    types. Different from most other operators, it's implementation is not
+    overloaded on a per-type based. Instead, the type specific code is implemented in the codegen::Packer.
+    )")
+iEnd
+
 iBegin(operator_, Clear, "clear")
     iOp1(optype::any, false)
     iValidate {}

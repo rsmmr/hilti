@@ -25,10 +25,11 @@ void Function::setHiltiFunctionID(shared_ptr<ID> id)
 }
 
 Hook::Hook(shared_ptr<binpac::Statement> body,
-           int prio, bool debug, bool foreach, const Location& l)
+           Kind kind, int prio, bool debug, bool foreach, const Location& l)
     : Node(l)
 {
     _body = body;
+    _kind = kind;
     _prio = prio;
     _debug = debug;
     _foreach = foreach;
@@ -39,6 +40,16 @@ Hook::Hook(shared_ptr<binpac::Statement> body,
 shared_ptr<statement::Block> Hook::body() const
 {
     return ast::checkedCast<statement::Block>(_body);;
+}
+
+bool Hook::parseHook() const
+{
+    return _kind == PARSE || _kind == PARSE_COMPOSE;
+}
+
+bool Hook::composeHook() const
+{
+    return _kind == COMPOSE || _kind == PARSE_COMPOSE;
 }
 
 int Hook::priority() const

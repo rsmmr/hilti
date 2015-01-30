@@ -16,6 +16,8 @@ candidate operators:
     bytes.strip([ enum {  ],[ bytes ])
     bytes.to_int(enum { )
     bytes.to_int([ uint<64> ])
+    bytes.to_time(enum { )
+    bytes.to_time([ uint<64> ])
     bytes.to_uint(enum { )
     bytes.to_uint([ uint<64> ])
     bytes.upper()

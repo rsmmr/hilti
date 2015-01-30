@@ -126,6 +126,7 @@ add_library (binpacxx STATIC
     codegen/parser-builder.cc
     codegen/type-builder.cc
     codegen/synchronizer.cc
+    codegen/composer.cc
 
     codegen/operators/address.cc
     codegen/operators/bitset.cc

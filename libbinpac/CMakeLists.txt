@@ -89,6 +89,8 @@ set(SRCS
 
     3rdparty/libb64-1.2/src/cdecode.c
     3rdparty/libb64-1.2/src/cencode.c
+    3rdparty/sha2/sha2.c
+    3rdparty/rc4/rc4.c
 
     ${autogen}/binpac-hlt.h
 )

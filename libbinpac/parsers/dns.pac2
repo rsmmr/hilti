@@ -29,6 +29,7 @@ type Header = unit {
             tc: 5;
             rd: 6;
             ra: 7;
+            _pad: 8;
             z:  9..11;
             rcode: 12..15;
         };
@@ -80,7 +81,7 @@ type RDataSOA = unit(msg: Message) {
 };
 
 type Name = unit(msg: Message) {
-    : list<Label(msg, self)> &until($$.len.offset == 0 || $$.len.compressed != 0);
+    : list<Label(msg, self)> &until_including($$.len.offset == 0 || $$.len.compressed != 0);
 
     # Parsed labels are collected in this list.
     var labels: list<bytes> &hide;
@@ -94,6 +95,7 @@ type Name = unit(msg: Message) {
 type Pointer = unit(msg: Message, label: Label) {
     len: bitfield(16) {
         offset: 0..13;
+        addl_byte: 0..7;
         };
 
     name: Name(msg) &parse(msg.input() + self.len.offset);
@@ -115,6 +117,10 @@ type Label = unit(msg: Message, name: Name) {
                     self.adjust = 2; # Consume the additional byte in %done.
                     }
     };
+
+    ptr_addl_byte > uint8 if ( self.adjust > 0 ) !> {
+        self.ptr_addl_byte = cast<uint8>(self.ptr.len.addl_byte);
+      }
 
     on %done {
         if ( self.adjust > 0 )

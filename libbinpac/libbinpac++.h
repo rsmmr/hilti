@@ -13,6 +13,8 @@
 /// The main entry function to a BinPAC-generated parser.
 typedef void* binpac_parse_function(hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
 typedef void* binpac_resume_function(hlt_exception* yield, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void  binpac_compose_output_function(hlt_bytes* data, void** obj, hlt_type_info* type, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void  binpac_compose_function(void* pobj, binpac_compose_output_function* output, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Internal functions for parsing from sink.write.
 typedef void __binpac_parse_sink_function(void* pobj, hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -26,16 +28,17 @@ typedef void* __binpac_new_function(struct binpac_sink* sink, hlt_bytes* mimetyp
 ///
 /// TODO: hiltic should generate the prototype for this struct.
 typedef struct __binpac_parser {
-    __hlt_gchdr __gchdr;                 // HILTI-internal.
-    int32_t internal;                    // HILTI-internal.
-    hlt_string name;                     /// Short descriptive name.
-    hlt_string description;              /// Longer textual description.
-    hlt_list* ports;                     /// List of well-known ports associated with parser.
-    int32_t params;                      /// Number of additional (type) parameters that the parse functions receive.
-    hlt_list* mime_types;                /// list<string> of all MIME types handled by this parser.
-    binpac_parse_function* parse_func;   /// The C function performing the parsing.
-    binpac_resume_function* resume_func; /// The C function resuming parsing after a yield.
-    hlt_type_info* type_info;            /// Type information for the parsed struct.
+    __hlt_gchdr __gchdr;                   // HILTI-internal.
+    int32_t internal;                      // HILTI-internal.
+    hlt_string name;                       /// Short descriptive name.
+    hlt_string description;                /// Longer textual description.
+    hlt_list* ports;                       /// List of well-known ports associated with parser.
+    int32_t params;                        /// Number of additional (type) parameters that the parse functions receive.
+    hlt_list* mime_types;                  /// list<string> of all MIME types handled by this parser.
+    binpac_parse_function* parse_func;     /// The C function performing the parsing.
+    binpac_resume_function* resume_func;   /// The C function resuming parsing after a yield.
+    binpac_compose_function* compose_func; /// The C function composing data to binary.
+    hlt_type_info* type_info;              /// Type information for the parsed struct.
 
     __binpac_parse_sink_function* parse_func_sink;   // The C function performing the parsing for sink.write. For internal use only. 
     __binpac_resume_sink_function* resume_func_sink; // The C function resuming sink parsing after a yield. For internal use only.

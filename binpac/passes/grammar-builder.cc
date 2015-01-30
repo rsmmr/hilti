@@ -134,7 +134,7 @@ static shared_ptr<type::unit::Item> _makeSkip(type::Unit* u, const std::string& 
         return nullptr;
 
     auto ctor = ast::checkedCast<expression::Ctor>(expr)->ctor();
-    auto skip = std::make_shared<type::unit::item::field::Ctor>(std::make_shared<ID>(::util::fmt("__%s", pname)), ctor);
+    auto skip = std::make_shared<type::unit::item::field::Ctor>(std::make_shared<ID>(::util::fmt("__%s", pname)), ctor, type::unit::item::Field::PARSE);
     skip->setUnit(u);
     skip->attributes()->add(std::make_shared<Attribute>("transient"));
 

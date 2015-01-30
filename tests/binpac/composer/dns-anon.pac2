@@ -1,0 +1,39 @@
+#
+# @TEST-EXEC:  cat %DIR/../parsers/dns/single.dat | pac-driver-test -c %INPUT ${PARSERS}/dns.pac2 >rewritten
+# @TEST-EXEC:  cat rewritten | pac-driver-test print-dns.pac2 ${PARSERS}/dns.pac2 >output
+# @TEST-EXEC:  btest-diff output
+#
+# Anonymize labels and IP address on rewrite.
+
+module Test;
+
+import parsers/dns;
+
+on DNS::Label::label !> {
+       if ( |self.label| > 0 )
+           self.label = BinPAC::sha256(self.label, b"seed", |self.label|);
+    }
+
+on DNS::ResourceRecord::a !> {
+       self.a = BinPAC::anonymize(self.a, 42);
+    }
+
+@TEST-START-FILE print-dns.pac2
+
+module Test;
+
+import parsers/dns;
+
+on DNS::Message::%done {
+    print self.header;
+    print "";
+    print self.question;
+    print "";
+    print self.answer;
+    print "";
+    print self.authority;
+    print "";
+    print self.additional;
+    }
+
+@TEST-END-FILE

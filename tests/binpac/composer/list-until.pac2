@@ -1,0 +1,13 @@
+#
+# @TEST-EXEC:  printf "\001\002\003\004" | pac-driver-test -c %INPUT | hexdump -C >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+    ints: list< int<8> > &until($$ == 3);
+        #  Need a bit of manual help here.
+        > int<8>(3);
+    last: int<8>;
+};

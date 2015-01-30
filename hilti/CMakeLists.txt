@@ -247,6 +247,7 @@ add_library (hilti STATIC
     codegen/storer.cc
     codegen/type-builder.cc
     codegen/unpacker.cc
+    codegen/packer.cc
     codegen/util.cc
 
     jit/jit.cc
