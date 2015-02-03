@@ -1,1 +1,1 @@
-<a=aaa, b=<lines=[<line=01>, <line=23>, <line=45>, <line=67>, <line=89>]>, c=bbb>
+<a=b"aaa", b=<lines=[<line=b"01">, <line=b"23">, <line=b"45">, <line=b"67">, <line=b"89">]>, c=b"bbb">

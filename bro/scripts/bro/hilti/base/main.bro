@@ -58,4 +58,13 @@ export {
 	const hilti_workers = 2 &redef;
 }
 
+event pac2_analyzer_for_port(a: Analyzer::Tag, p: port)
+	{
+	Analyzer::register_for_port(a, p);
+	}
+
+event pac2_analyzer_for_mime_type(a: Files::Tag, mt: string)
+	{
+	Files::register_for_mime_type(a, mt);
+	}
 

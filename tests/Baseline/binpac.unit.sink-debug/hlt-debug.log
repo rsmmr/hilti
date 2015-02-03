@@ -1,23 +1,23 @@
-00000001 [binpac-sinks/main-thread]     connected parser Mini::Sub [0x94c46d0] to sink 0x9709320
+00000001 [binpac-sinks/main-thread]     connected parser Mini::Sub [0x51c2840] to sink 0x9e18f00
 00000002 [binpac/main-thread]           Main
-00000003 [binpac-sinks/main-thread]     reassembler/0x9709320: fastpath block seq=0 upper=5 |12345| (5 bytes)
-00000004 [binpac-sinks/main-thread]     starting to deliver to sink 0x9709320 at rseq 0
-00000005 [binpac-sinks/main-thread]     delivering to sink 0x9709320: |12345| (5 bytes)
-00000006 [binpac-sinks/main-thread]     - start delivering to sink 0x9709320 for parser 0x94c46d0
+00000003 [binpac-sinks/main-thread]     reassembler/0x9e18f00: fastpath block seq=0 upper=5 |12345| (5 bytes)
+00000004 [binpac-sinks/main-thread]     starting to deliver to sink 0x9e18f00 at rseq 0
+00000005 [binpac-sinks/main-thread]     delivering to sink 0x9e18f00: |12345| (5 bytes)
+00000006 [binpac-sinks/main-thread]     - start delivering to sink 0x9e18f00 for parser 0x51c2840
 00000007 [binpac/main-thread]             Sub
-00000008 [binpac-sinks/main-thread]     - delivering to sink 0x9709320 suspended for parser 0x94c46d0
-00000009 [binpac-sinks/main-thread]     trimming sink 0x9709320 to rseq 5
-00000010 [binpac-sinks/main-thread]     done delivering to sink 0x9709320
+00000008 [binpac-sinks/main-thread]     - delivering to sink 0x9e18f00 suspended for parser 0x51c2840
+00000009 [binpac-sinks/main-thread]     trimming sink 0x9e18f00 to rseq 5
+00000010 [binpac-sinks/main-thread]     done delivering to sink 0x9e18f00
 00000011 [binpac/main-thread]               a = 12345
-00000012 [binpac-sinks/main-thread]     reassembler/0x9709320: fastpath block seq=5 upper=60 |678901234567890123456789\x00123456789012345678901 ...| (55 bytes)
-00000013 [binpac-sinks/main-thread]     starting to deliver to sink 0x9709320 at rseq 5
-00000014 [binpac-sinks/main-thread]     delivering to sink 0x9709320: |678901234567890123456789\x00123456789012345678901 ...| (55 bytes)
-00000015 [binpac-sinks/main-thread]     - resuming delivering to sink 0x9709320 for parser 0x94c46d0
+00000012 [binpac-sinks/main-thread]     reassembler/0x9e18f00: fastpath block seq=5 upper=60 |678901234567890123456789\x00123456789012345678901 ...| (55 bytes)
+00000013 [binpac-sinks/main-thread]     starting to deliver to sink 0x9e18f00 at rseq 5
+00000014 [binpac-sinks/main-thread]     delivering to sink 0x9e18f00: |678901234567890123456789\x00123456789012345678901 ...| (55 bytes)
+00000015 [binpac-sinks/main-thread]     - resuming delivering to sink 0x9e18f00 for parser 0x51c2840
 00000016 [binpac/main-thread]               s1 = 12345678901234567890123456789\x001234567890123456789012345
-00000017 [binpac-sinks/main-thread]     - delivering to sink 0x9709320 finished for parser 0x94c46d0
-00000018 [binpac-sinks/main-thread]     trimming sink 0x9709320 to rseq 60
-00000019 [binpac-sinks/main-thread]     done delivering to sink 0x9709320
+00000017 [binpac-sinks/main-thread]     - delivering to sink 0x9e18f00 finished for parser 0x51c2840
+00000018 [binpac-sinks/main-thread]     trimming sink 0x9e18f00 to rseq 60
+00000019 [binpac-sinks/main-thread]     done delivering to sink 0x9e18f00
 00000020 [binpac/main-thread]             b = 678901234567890123456789\x00123456789012345678901234567890
-00000021 [binpac-sinks/main-thread]     closing sink 0x9709320
-00000022 [binpac-sinks/main-thread]     trimming sink 0x9709320 to eod
-00000023 [binpac-sinks/main-thread]     closed sink 0x9709320, disconnected all parsers
+00000021 [binpac-sinks/main-thread]     closing sink 0x9e18f00
+00000022 [binpac-sinks/main-thread]     trimming sink 0x9e18f00 to eod
+00000023 [binpac-sinks/main-thread]     closed sink 0x9e18f00, disconnected all parsers

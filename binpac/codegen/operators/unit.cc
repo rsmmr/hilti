@@ -17,6 +17,7 @@ void CodeBuilder::visit(ctor::Unit* m)
     std::list<shared_ptr<hilti::Expression>> hparams;
     hparams.push_back(hilti::builder::reference::createNull());
     hparams.push_back(hilti::builder::reference::createNull());
+    hparams.push_back(hilti::builder::boolean::create(false));
     hparams.push_back(cg()->hiltiCookie());
 
     cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, func, hilti::builder::tuple::create(hparams));
@@ -145,6 +146,7 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
 
     hparams.push_back(hilti::builder::reference::createNull());
     hparams.push_back(hilti::builder::reference::createNull());
+    hparams.push_back(hilti::builder::boolean::create(false));
     hparams.push_back(cg()->hiltiCookie());
 
     auto result = cg()->builder()->addTmp("pobj", cg()->hiltiType(unit));
@@ -240,7 +242,11 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::Confirm* i)
 {
     auto self = cg()->hiltiExpression(i->op1());
     auto unit = ast::checkedCast<binpac::type::Unit>(i->op1()->type());
-    cg()->hiltiConfirm(self, unit);
+
+    auto try_mode = cg()->hiltiItemGet(self, "__try_mode", hilti::builder::boolean::type());
+    cg()->hiltiConfirm(self, unit, try_mode, hilti::builder::id::create("__cookie"));
+    cg()->hiltiItemSet(self, "__try_mode", try_mode);
+
     setResult(std::make_shared<hilti::expression::Void>());
 }
 

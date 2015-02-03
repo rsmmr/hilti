@@ -283,7 +283,7 @@ bool Manager::InitPreScripts()
 	assert(! post_scripts_init_run);
 
 	::hilti::init();
-	::binpac::init();
+	::binpac::init_pac2();
 
 	add_input_file("init-bare-hilti.bro");
 
@@ -617,8 +617,13 @@ bool Manager::Compile()
 			}
 
 		for ( auto p : a->ports )
-			analyzer_mgr->RegisterAnalyzerForPort(a->tag, p.proto, p.port);
-
+			{
+			val_list* vals = new val_list;
+			vals->append(a->tag.AsEnumVal()->Ref());
+			vals->append(new ::PortVal(p.port, p.proto));
+			EventHandlerPtr handler = internal_handler("pac2_analyzer_for_port");
+			mgr.QueueEvent(handler, vals);
+			}
 		}
 
 	for ( auto a : pimpl->pac2_file_analyzers )
@@ -635,7 +640,13 @@ bool Manager::Compile()
 			}
 
 		for ( auto mt : a->mime_types )
-			file_mgr->RegisterAnalyzerForMIMEType(a->tag, mt);
+			{
+			val_list* vals = new val_list;
+			vals->append(a->tag.AsEnumVal()->Ref());
+			vals->append(new ::StringVal(mt));
+			EventHandlerPtr handler = internal_handler("pac2_analyzer_for_mime_type");
+			mgr.QueueEvent(handler, vals);
+			}
 		}
 
 	// See if we can short-cut this all by reusing our cache.
@@ -1038,10 +1049,10 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 
 	for ( auto a : pimpl->pac2_file_analyzers )
 		{
-        val_list* args = new val_list;
+		val_list* args = new val_list;
 		args->append(a->tag.AsEnumVal()->Ref());
-        register_func->Call(args);
-        }
+		register_func->Call(args);
+		}
 
 	return true;
 	}

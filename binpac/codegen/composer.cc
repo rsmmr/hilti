@@ -377,12 +377,12 @@ void Composer::_startingProduction(shared_ptr<Production> p, shared_ptr<type::un
 
 void Composer::_startingUnit()
 {
-    cg()->hiltiRunHook(state()->unit, state()->self, cg()->hookForUnit(state()->unit, "%init", true), nullptr, false, nullptr, true, state()->cookie);
+    cg()->hiltiRunHook(state()->unit, state()->self, cg()->hookForUnit(state()->unit, "%init", true), {}, nullptr, false, nullptr, true, state()->cookie);
 }
 
 void Composer::_finishedUnit()
 {
-    cg()->hiltiRunHook(state()->unit, state()->self, cg()->hookForUnit(state()->unit, "%done", true), nullptr, false, nullptr, true, state()->cookie);
+    cg()->hiltiRunHook(state()->unit, state()->self, cg()->hookForUnit(state()->unit, "%done", true), {}, nullptr, false, nullptr, true, state()->cookie);
 }
 
 void Composer::_finishedProduction(shared_ptr<Production> p)

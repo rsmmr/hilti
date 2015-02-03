@@ -737,7 +737,7 @@ void libbro_bro_enum_type_add_name(::EnumType* etype, hlt_string module, hlt_str
 	auto id = ::lookup_ID(n, m);
 
 	if ( ! id )
-		etype->AddName(m, n, val);
+		etype->AddName(m, n, val, false, false);
 
 	hlt_free(n);
 	hlt_free(m);

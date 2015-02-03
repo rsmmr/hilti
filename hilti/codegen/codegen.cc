@@ -1703,9 +1703,12 @@ llvm::Function* CodeGen::llvmFunction(const string& name)
 
 void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result, bool result_cctored)
 {
-    if ( block()->getTerminator() )
+    if ( block()->getTerminator() ) {
         // Already terminated (and hopefully corrently).
+        if ( result_cctored )
+            assert(false);
         return;
+    }
 
     auto state = _functions.back().get();
 
@@ -1726,7 +1729,7 @@ void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result, bool resul
         state->exits.push_back(std::make_pair(block(), result));
 
         if ( result_cctored )
-            llvmDtor(result, rtype, false, "llvm-return");
+            llvmDtor(result, rtype, false, "llvm-return2");
     }
 
     builder()->CreateBr(state->exit_block);
@@ -2699,6 +2702,10 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     llvmDebugPrint("hilti-flow", ::util::fmt("entering resume fiber for %s", func->id()->pathAsString()));
     result = llvmFiberStart(fiber, rtype);
     llvmDebugPrint("hilti-flow", ::util::fmt("left resume fiber for %s", func->id()->pathAsString()));
+
+    // Result is +1 here, as that's how the entry fiber calls it. Unref.
+    if ( ! rtype->equal(shared_ptr<Type>(new type::Void())) )
+        llvmDtor(result, rtype, false, "cwrapper/result-adjust");
 
     // Copy exception over.
     ctx_excpt = llvmCurrentException();

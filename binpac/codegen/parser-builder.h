@@ -33,11 +33,6 @@ public:
     /// Returns: The generated HILTI function with the parsing code.
     shared_ptr<hilti::Expression> hiltiCreateParseFunction(shared_ptr<type::Unit> u);
 
-    /// Generates the externally visible functions for parsing a unit type.
-    ///
-    /// u: The unit type to export via functions.
-    void hiltiExportParser(shared_ptr<type::Unit> unit);
-
     // Returns the HILTI struct type for a unit's parse object.
     shared_ptr<hilti::Type> hiltiTypeParseObject(shared_ptr<type::Unit> unit);
 
@@ -57,22 +52,6 @@ public:
     // the %init hook.
     shared_ptr<hilti::Expression> hiltiFunctionNew(shared_ptr<type::Unit> unit);
 
-    /// Adds an external implementation of a unit hook.
-    ///
-    /// id: The hook's ID (full path).
-    ///
-    /// hook: The hook itself.
-    void hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
-
-    /// Generates code to execute the hooks associated with an unit item.
-    /// This must only be called while a unit is being parsed.
-    ///
-    /// item: The item.
-    ///
-    /// self: The expression to pass as the hook's \a self argument. Must
-    /// match the type of the unit that \a item is part of.
-    void hiltiRunFieldHooks(shared_ptr<type::unit::Item> item, shared_ptr<hilti::Expression> self);
-
     /// Returns a HILTI expression referencing the current parser object
     /// (assuming parsing is in process; if not aborts());
     shared_ptr<hilti::Expression> hiltiSelf();
@@ -82,7 +61,7 @@ public:
     shared_ptr<hilti::Expression> hiltiCookie();
 
     /// Confirms a parser by turning of DFD "try mode" if it's active.
-    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit);
+    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> try_mode, shared_ptr<hilti::Expression> cookie);
 
     /// Disables the current parser by throwing a corresponding signal to the
     /// host application.
@@ -117,6 +96,11 @@ public:
     /// len: The length inside the sequence space; defaults to length of
     /// data.
     void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
+
+    // Returns a function that can be called from C to trigger a global unit hook.
+    //
+    // XXX
+    shared_ptr<hilti::Expression> hiltiFunctionGlobalHook(shared_ptr<type::Unit> unit, const std::string& hook, parameter_list params);
 
 protected:
     /// Parse a given entity. This a wrapper around processOne() that adds
@@ -264,15 +248,9 @@ private:
     // hook.
     void _newValueForField(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value);
 
-    // Returns a function that can be called from C to trigger a global unit hook.
-    shared_ptr<hilti::Expression> _hiltiFunctionGlobalHook(shared_ptr<type::Unit> unit, const std::string& hook, parameter_list params);
-
     // Creates the host-facing parser function. If sink is true, we generate
     // a slightly different version for internal use with sinks.
     shared_ptr<hilti::Expression> _hiltiCreateHostFunction(shared_ptr<type::Unit> unit, bool sink);
-
-    // Creates the init function that registers a parser with the binpac runtime.
-    void _hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> parse_host, shared_ptr<hilti::Expression> parse_sink);
 
     // Calls a parse function with the current parsing state.
     shared_ptr<hilti::Expression> _hiltiCallParseFunction(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func, bool catch_parse_error, shared_ptr<hilti::Type> presult_value_type);
@@ -288,38 +266,6 @@ private:
 
     // Prints the upcoming input bytes to binpac-verbose.
     void _hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur);
-
-    // Executes a hook. \a self is the self parameter to pass to the hook. \a
-    // id is the full path to the hooked element, including the module. \a
-    // args is a list of any additional parameters the hooks takes; an
-    // empty list if none. foreach must be true if this is a \c forach hook.
-    // \a dolllardollar is the value for the \a $$ identifier within the
-    // hook, if it takes one (or null). If \a foreach is true, returns a
-    // boolean expression that is true if the hook has called "hook.stop
-    // true". If \a foreach is false, returns null.
-    shared_ptr<hilti::Expression> _hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, hilti_expression_list args, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar = nullptr);
-
-    // Defines a hook's implementation. <id> is the full path to the hooked
-    // element, including the module. <forach> is true if this is a \c
-    // &foreach hook. The ID of \a hook is ignored. \a dollardollar, if
-    // given, is the type for the \a $$ identifier within the hook, if it
-    // takes one. If <debug> is true, the hook will only be compiled in at
-    // non-zero debugging levels, and it will only be executed at run-time if
-    // explicitly enabled via libbinpac.
-    //
-    // TODO: Cleanup the arguments here.
-    void _hiltiDefineHook(shared_ptr<Hook> hook, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar = nullptr, int priority = 0);
-
-    // Returns the full path ID for the hook referecing a unit item.
-    shared_ptr<ID> _hookForItem(shared_ptr<type::Unit>, shared_ptr<type::unit::Item> item, bool foreach, bool private_);
-
-    // Returns the full path ID for the hook referecing a unit-global hook.
-    shared_ptr<ID> _hookForUnit(shared_ptr<type::Unit>, const string& name);
-
-    // Computes the canonical hook name, given the full path. The returned
-    // boolean indicates whether the hook is a local one (i.e., within the
-    // same module; true) or cross-module (false).
-    std::pair<bool, string> _hookName(const string& path);
 
     // Scans for a look-ahead symbol out of an expected set and sets the
     // state()->lah* accordingly if found. Raises a parse error if not.

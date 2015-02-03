@@ -175,7 +175,7 @@ void TypeConverter::visit(::hilti::type::Enum* e)
 	auto type_id = etype->id()->name();
 	auto eresult = new EnumType(type_id);
 	auto undef = ::util::fmt("%s_Undef", type_id);
-	eresult->AddName(module, undef.c_str(), lib_bro_enum_undef_val, true);
+	eresult->AddName(module, undef.c_str(), lib_bro_enum_undef_val, true, false);
 
 	for ( auto l : etype->labels() )
 		{
@@ -183,7 +183,7 @@ void TypeConverter::visit(::hilti::type::Enum* e)
 			continue;
 
 		auto name = ::util::fmt("%s_%s", type_id, l.first->name());
-		eresult->AddName(module, name.c_str(), l.second, true);
+		eresult->AddName(module, name.c_str(), l.second, true, false);
 		}
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Adding Bro enum type %s::%s", module.c_str(), name.c_str());

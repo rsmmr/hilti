@@ -1,1 +1,1 @@
-<a=12345, B=ABCDE, C=FGHI, d=67890>
+<a=b"12345", B=b"ABCDE", C=b"FGHI", d=b"67890">

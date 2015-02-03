@@ -1,7 +1,7 @@
 #
-# @TEST-EXEC:  echo ..AB1DE.. | pac-driver-test %INPUT -- -p Mini::Main >output
-# @TEST-EXEC:  echo ..AB2DE.. | pac-driver-test %INPUT -- -p Mini::Main >>output
-# @TEST-EXEC:  echo ..AB3DE.. | pac-driver-test %INPUT -- -p Mini::Main >>output
+# @TEST-EXEC:  echo ..AB1DE.. | pac-driver-test %INPUT -- -p Mini::Main >output 2>&1
+# @TEST-EXEC:  echo ..AB2DE.. | pac-driver-test %INPUT -- -p Mini::Main >>output 2>&1
+# @TEST-EXEC:  echo ..AB3DE.. | pac-driver-test %INPUT -- -p Mini::Main >>output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 module Mini;

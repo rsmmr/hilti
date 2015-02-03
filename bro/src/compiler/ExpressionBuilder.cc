@@ -688,6 +688,15 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)
 		return result;
 		}
 
+	case TYPE_VECTOR:
+		{
+		// FIXME: This is not quite rigth, but differnt from Bro,
+		// HILTI doesn't not have a notion of not initialized vector
+		// elements. We could wrap the vector elements in unions I
+		// guess.
+		return ::hilti::builder::boolean::create(true);
+		}
+
 	case TYPE_STRING:
 		{
 		auto op1 = HiltiExpression(expr->Op2());

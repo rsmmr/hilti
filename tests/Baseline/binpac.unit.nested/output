@@ -1,4 +1,4 @@
-GET
-index.html
-HTTP/1.0
-Message
+b"GET"
+b"index.html"
+b"HTTP/1.0"
+b"Message"

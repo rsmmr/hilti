@@ -1,0 +1,3 @@
+
+event pac2_analyzer_for_port%(a: Analyzer::Tag, p: port%);
+event pac2_analyzer_for_mime_type%(a: Files::Tag, mt: string%);

@@ -28,7 +28,6 @@ export type Main = unit {
         self.data.write(b"67", 6);
         self.data.write(b"89", 8);
         self.data.close();
-
     }
 };
 

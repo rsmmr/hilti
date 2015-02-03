@@ -1,9 +1,9 @@
 <id=13928, qdcount=1, ancount=2, nscount=2, arcount=0>
 
-[<qname=<labels=[www, joelonsoftware, com, ]>, qtype=1, qclass=1>]
+[<qname=<labels=[b"www", b"joelonsoftware", b"com", b""], name=b"www.joelonsoftware.com.">, qtype=1, qclass=1>]
 
-[<name=<labels=[www, joelonsoftware, com, ]>, ty=CNAME, class=1, ttl=2187, rdlen=2, labels=<labels=[joelonsoftware, com, ]>>, <name=<labels=[joelonsoftware, com, ]>, ty=A, class=1, ttl=2188, rdlen=4, a=64.34.80.173>]
+[<name=<labels=[b"www", b"joelonsoftware", b"com", b""], name=b"www.joelonsoftware.com.">, ty=CNAME, class=1, ttl=2187, rdlen=2, labels=<labels=[b"joelonsoftware", b"com", b""], name=b"joelonsoftware.com.">>, <name=<labels=[b"joelonsoftware", b"com", b""], name=b"joelonsoftware.com.">, ty=A, class=1, ttl=2188, rdlen=4, a=64.34.80.173>]
 
-[<name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=16, labels=<labels=[dns3, fogcreek, com, ]>>, <name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=7, labels=<labels=[dns5, fogcreek, com, ]>>]
+[<name=<labels=[b"joelonsoftware", b"com", b""], name=b"joelonsoftware.com.">, ty=NS, class=1, ttl=2188, rdlen=16, labels=<labels=[b"dns3", b"fogcreek", b"com", b""], name=b"dns3.fogcreek.com.">>, <name=<labels=[b"joelonsoftware", b"com", b""], name=b"joelonsoftware.com.">, ty=NS, class=1, ttl=2188, rdlen=7, labels=<labels=[b"dns5", b"fogcreek", b"com", b""], name=b"dns5.fogcreek.com.">>]
 
 []

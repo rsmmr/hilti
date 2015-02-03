@@ -1,11 +1,11 @@
-<a=1, b=2, c=345>
-2
-345
-nope_d
-nope_e
-nope_f
-2
-345
-nope_d
-nope_e
-nope_f
+<a=b"1", b=b"2", c=b"345">
+b"2"
+b"345"
+b"nope_d"
+b"nope_e"
+b"nope_f"
+b"2"
+b"345"
+b"nope_d"
+b"nope_e"
+b"nope_f"

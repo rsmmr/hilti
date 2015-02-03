@@ -6,6 +6,11 @@ namespace binpac { extern void __registerAllOperators(); }
 
 void binpac::init()
 {
+    binpac::init_pac2();
+}
+
+void binpac::init_pac2()
+{
     binpac::__registerAllOperators();
 }
 

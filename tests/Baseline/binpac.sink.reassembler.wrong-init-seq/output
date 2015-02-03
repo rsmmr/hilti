@@ -1,1 +1,1 @@
-hilti: uncaught exception, ValueError with argument 'sink cannot change initial sequence number retrospectively' (from /home/robin/work/hilti/libbinpac/sink.c:703)
+hilti: uncaught exception, ValueError with argument 'sink cannot change initial sequence number retrospectively' (from /home/robin/work/hilti/libbinpac/sink.c:752)

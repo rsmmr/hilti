@@ -70,10 +70,11 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
         builder()->addInstruction(::hilti::instruction::flow::CallVoid, hilti::builder::id::create(name), hilti::builder::tuple::create({}));
         auto entry = _mbuilder->pushFunction(name);
 
+        auto old_state = _state;
         _state = INIT;
         _module = module;
         _code_builder->processOne(module);
-        _state = NONE;
+        _state = old_state;
 
         _mbuilder->popFunction();
 
@@ -264,9 +265,10 @@ shared_ptr<hilti::Expression> CodeGen::hiltiParseFunction(shared_ptr<type::Unit>
     if ( func )
         return func;
 
+    auto old_state = _state;
     _state = PARSING;
     func = _parser_builder->hiltiCreateParseFunction(u);
-    _state = NONE;
+    _state = old_state;
 
     _mbuilder->cacheNode("parse-func", grammar->name(), func);
     return func;
@@ -282,9 +284,10 @@ shared_ptr<hilti::Expression> CodeGen::hiltiComposeFunction(shared_ptr<type::Uni
     if ( func )
         return func;
 
+    auto old_state = _state;
     _state = COMPOSING;
     func = _composer->hiltiCreateComposeFunction(u);
-    _state = NONE;
+    _state = old_state;
 
     _mbuilder->cacheNode("compose-func", grammar->name(), func);
     return func;
@@ -297,9 +300,10 @@ shared_ptr<hilti::Type> CodeGen::hiltiTypeParseObject(shared_ptr<type::Unit> uni
     if ( t )
         return t;
 
+    auto old_state = _state;
     _state = PARSING;
     t = _parser_builder->hiltiTypeParseObject(unit);
-    _state = NONE;
+    _state = old_state;
 
     _mbuilder->cacheNode("parse-obj", unit->id()->name(), t);
     return t;
@@ -344,9 +348,10 @@ void CodeGen::hiltiAddType(shared_ptr<ID> id, shared_ptr<hilti::Type> htype, sha
 
 void CodeGen::hiltiExportParser(shared_ptr<type::Unit> unit)
 {
+    auto old_state = _state;
     _state = PARSING;
     _hiltiCreateParserInitFunction(unit);
-    _state = NONE;
+    _state = old_state;
 }
 
 void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
@@ -359,11 +364,11 @@ void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
             auto dd = h->foreach() ? ast::type::checkedTrait<type::trait::Container>(i->type())->elementType() : nullptr;
 
             if ( h->composeHook() )
-                _hiltiDefineHook(hookForItem(unit, i->sharedPtr<type::unit::Item>(), h->foreach(), true, true),
+                _hiltiDefineHook(h, hookForItem(unit, i->sharedPtr<type::unit::Item>(), h->foreach(), true, true),
                                  i, h->foreach(), h->debug(), unit, h->body(), dd, h->priority(), true);
 
             if ( h->parseHook() )
-                _hiltiDefineHook(hookForItem(unit, i->sharedPtr<type::unit::Item>(), h->foreach(), true, false),
+                _hiltiDefineHook(h, hookForItem(unit, i->sharedPtr<type::unit::Item>(), h->foreach(), true, false),
                                  i, h->foreach(), h->debug(), unit, h->body(), dd, h->priority(), false);
         }
     }
@@ -372,10 +377,10 @@ void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
         for ( auto h : g->hooks() ) {
             if ( util::startsWith(g->id()->local(), "%") ) {
                 if ( h->composeHook() )
-                    _hiltiDefineHook(hookForUnit(unit, g->id()->local(), true), nullptr, false, h->debug(), unit, h->body(), nullptr, h->priority(), true);
+                    _hiltiDefineHook(h, hookForUnit(unit, g->id()->local(), true), nullptr, false, h->debug(), unit, h->body(), nullptr, h->priority(), true);
 
                 if ( h->parseHook() )
-                    _hiltiDefineHook(hookForUnit(unit, g->id()->local(), false), nullptr, false, h->debug(), unit, h->body(), nullptr, h->priority(), false);
+                    _hiltiDefineHook(h, hookForUnit(unit, g->id()->local(), false), nullptr, false, h->debug(), unit, h->body(), nullptr, h->priority(), false);
             }
 
             else {
@@ -384,10 +389,10 @@ void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
                 auto dd = h->foreach() ? ast::type::checkedTrait<type::trait::Container>(i->type())->elementType() : nullptr;
 
                 if ( h->composeHook() )
-                    _hiltiDefineHook(hookForItem(unit, i, h->foreach(), false, true), i, h->foreach(), h->debug(), unit, h->body(), dd, h->priority(), true);
+                    _hiltiDefineHook(h, hookForItem(unit, i, h->foreach(), false, true), i, h->foreach(), h->debug(), unit, h->body(), dd, h->priority(), true);
 
                 if ( h->parseHook() )
-                    _hiltiDefineHook(hookForItem(unit, i, h->foreach(), false, false), i, h->foreach(), h->debug(), unit, h->body(), dd, h->priority(), false);
+                    _hiltiDefineHook(h, hookForItem(unit, i, h->foreach(), false, false), i, h->foreach(), h->debug(), unit, h->body(), dd, h->priority(), false);
             }
         }
     }
@@ -395,8 +400,8 @@ void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
 
 void CodeGen::hiltiRunFieldHooks(shared_ptr<binpac::type::Unit> unit, shared_ptr<type::unit::Item> item, shared_ptr<hilti::Expression> self, bool compose, shared_ptr<hilti::Expression> cookie)
 {
-    hiltiRunHook(unit, self, hookForItem(unit, item, false, true, compose), item, false, nullptr, false, cookie);
-    hiltiRunHook(unit, self, hookForItem(unit, item, false, false, compose), item, false, nullptr, false, cookie);
+    hiltiRunHook(unit, self, hookForItem(unit, item, false, true, compose), {}, item, false, nullptr, false, cookie);
+    hiltiRunHook(unit, self, hookForItem(unit, item, false, false, compose), {}, item, false, nullptr, false, cookie);
 }
 
 void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
@@ -406,10 +411,10 @@ void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
 
     if ( util::startsWith(id->local(), "%") ) {
         if ( hook->composeHook() )
-            _hiltiDefineHook(hookForUnit(unit, id->local(), true), nullptr, false, hook->debug(), unit, hook->body(), nullptr, hook->priority(), true);
+            _hiltiDefineHook(hook, hookForUnit(unit, id->local(), true), nullptr, false, hook->debug(), unit, hook->body(), nullptr, hook->priority(), true);
 
         if ( hook->parseHook() )
-            _hiltiDefineHook(hookForUnit(unit, id->local(), false), nullptr, false, hook->debug(), unit, hook->body(), nullptr, hook->priority(), false);
+            _hiltiDefineHook(hook, hookForUnit(unit, id->local(), false), nullptr, false, hook->debug(), unit, hook->body(), nullptr, hook->priority(), false);
     }
 
     else {
@@ -418,14 +423,14 @@ void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
         auto dd = hook->foreach() ? ast::type::checkedTrait<type::trait::Container>(i->type())->elementType() : nullptr;
 
         if ( hook->composeHook() )
-            _hiltiDefineHook(hookForItem(unit, i, hook->foreach(), false, true), i, hook->foreach(), hook->debug(), unit, hook->body(), dd, hook->priority(), true);
+            _hiltiDefineHook(hook, hookForItem(unit, i, hook->foreach(), false, true), i, hook->foreach(), hook->debug(), unit, hook->body(), dd, hook->priority(), true);
 
         if ( hook->parseHook() )
-            _hiltiDefineHook(hookForItem(unit, i, hook->foreach(), false, false), i, hook->foreach(), hook->debug(), unit, hook->body(), dd, hook->priority(), false);
+            _hiltiDefineHook(hook, hookForItem(unit, i, hook->foreach(), false, false), i, hook->foreach(), hook->debug(), unit, hook->body(), dd, hook->priority(), false);
     }
 }
 
-shared_ptr<hilti::Expression> CodeGen::hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar, bool compose, shared_ptr<hilti::Expression> cookie)
+shared_ptr<hilti::Expression> CodeGen::hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, hilti_expression_list args, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar, bool compose, shared_ptr<hilti::Expression> cookie)
 {
     if ( item && ! item->hooksEnabled() ) {
         if ( foreach )
@@ -456,6 +461,11 @@ shared_ptr<hilti::Expression> CodeGen::hiltiRunHook(shared_ptr<binpac::type::Uni
             hilti::builder::function::parameter("__cookie", hiltiTypeCookie(), false, nullptr)
         };
 
+        int i = 0;
+
+        for ( auto a : args )
+            p.push_back(hilti::builder::function::parameter(::util::fmt("__arg%d", i++), a->type(), false, nullptr));
+
         if ( dollardollar )
             p.push_back(hilti::builder::function::parameter("__dollardollar", dollardollar->type(), false, nullptr));
 
@@ -472,17 +482,20 @@ shared_ptr<hilti::Expression> CodeGen::hiltiRunHook(shared_ptr<binpac::type::Uni
     }
 
     // Run the hook.
-    hilti::builder::tuple::element_list args = { self, cookie };
+    hilti::builder::tuple::element_list hargs = { self, cookie };
+
+    for ( auto a : args )
+        hargs.push_back(a);
 
     if ( dollardollar )
-        args.push_back(dollardollar);
+        hargs.push_back(dollardollar);
 
     shared_ptr<hilti::Expression> result;
 
     if ( ! foreach ) {
         builder()->addInstruction(hilti::instruction::hook::Run,
                                         hilti::builder::id::create(name),
-                                        hilti::builder::tuple::create(args));
+                                        hilti::builder::tuple::create(hargs));
         result = nullptr;
     }
 
@@ -491,7 +504,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiRunHook(shared_ptr<binpac::type::Uni
         builder()->addInstruction(stop,
                                         hilti::instruction::hook::Run,
                                         hilti::builder::id::create(name),
-                                        hilti::builder::tuple::create(args));
+                                        hilti::builder::tuple::create(hargs));
         result = stop;
     }
 
@@ -514,7 +527,7 @@ shared_ptr<binpac::ID> CodeGen::hookForItem(shared_ptr<type::Unit> unit, shared_
 
 shared_ptr<binpac::ID> CodeGen::hookForUnit(shared_ptr<type::Unit> unit, const string& name, bool compose)
 {
-    string co = compose ? string("compose_") : string("_parse_");
+    string co = compose ? string("compose_") : string("");
 
     auto hook = util::fmt("%s_%s", unit->id()->name(), name);
     hook = util::strreplace(hook, "::", "_");
@@ -524,7 +537,7 @@ shared_ptr<binpac::ID> CodeGen::hookForUnit(shared_ptr<type::Unit> unit, const s
     return std::make_shared<binpac::ID>(hook);
 }
 
-void CodeGen::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> body, shared_ptr<Type> dollardollar, int priority, bool compose)
+void CodeGen::_hiltiDefineHook(shared_ptr<Hook> h, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> body, shared_ptr<Type> dollardollar, int priority, bool compose)
 {
     auto unit_module = unit->firstParent<Module>();
     auto current_module = module();
@@ -541,6 +554,9 @@ void CodeGen::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::Item> i
         hilti::builder::function::parameter("__self", hiltiTypeParseObjectRef(unit), false, nullptr),
         hilti::builder::function::parameter("__cookie", hiltiTypeCookie(), false, nullptr)
     };
+
+    for ( auto a : h->parameters() )
+        p.push_back(hilti::builder::function::parameter(hiltiID(a->id()), hiltiType(a->type()), false, nullptr));
 
     if ( dollardollar ) {
         auto parseable = ast::type::tryTrait<type::trait::Parseable>(dollardollar)->fieldType();
@@ -592,7 +608,10 @@ void CodeGen::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::Item> i
     if ( item )
         item->disableHooks();
 
+    auto old_state = _state;
+    _state = (compose ? COMPOSING : PARSING);
     hiltiStatement(body);
+    _state = old_state;
 
     if ( item )
         item->enableHooks();
@@ -793,23 +812,24 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCall(shared_ptr<expression::Function
 
 shared_ptr<hilti::Expression> CodeGen::hiltiSelf()
 {
-    if ( _state == INIT )
-        return nullptr;
+    if ( _state != PARSING && _state != COMPOSING ) {
+        assert(false && "dont' have self here");
+    }
 
     return hilti::builder::id::create("__self");
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiCookie()
 {
-    if ( _state == INIT )
-        return nullptr;
+    if ( _state != PARSING && _state != COMPOSING )
+        return hilti::builder::reference::createNull();
 
     return hilti::builder::id::create("__cookie");
 }
 
-void CodeGen::hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit)
+void CodeGen::hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> try_mode, shared_ptr<hilti::Expression> cookie)
 {
-    _parser_builder->hiltiConfirm(self, unit);
+    _parser_builder->hiltiConfirm(self, unit, try_mode, cookie);
 }
 
 void CodeGen::hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg)
@@ -839,9 +859,10 @@ void CodeGen::hiltiUnbindDollarDollar()
 
 shared_ptr<hilti::Expression> CodeGen::hiltiFunctionNew(shared_ptr<type::Unit> unit)
 {
+    auto old_state = _state;
     _state = PARSING;
     auto e = _parser_builder->hiltiFunctionNew(unit);
-    _state = NONE;
+    _state = old_state;
     return e;
 }
 
@@ -1809,6 +1830,48 @@ void CodeGen::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit)
                               hilti::builder::string::create("new_func"),
                               f);
 
+    parameter_list params;
+
+    params = {
+        std::make_shared<type::function::Parameter>(std::make_shared<ID>("seq"), std::make_shared<type::Integer>(64, false), false, false, nullptr),
+        std::make_shared<type::function::Parameter>(std::make_shared<ID>("len"), std::make_shared<type::Integer>(64, false), false, false, nullptr)
+    };
+
+    builder()->addInstruction(hilti::instruction::struct_::Set,
+                              parser,
+                              hilti::builder::string::create("hook_gap"),
+                              _hiltiFunctionGlobalHook(unit, "gap", params, false));
+
+    params = {
+        std::make_shared<type::function::Parameter>(std::make_shared<ID>("seq"), std::make_shared<type::Integer>(64, false), false, false, nullptr)
+    };
+
+    builder()->addInstruction(hilti::instruction::struct_::Set,
+                              parser,
+                              hilti::builder::string::create("hook_skip"),
+                              _hiltiFunctionGlobalHook(unit, "skip", params, false));
+
+    params = {
+        std::make_shared<type::function::Parameter>(std::make_shared<ID>("seq"), std::make_shared<type::Integer>(64, false), false, false, nullptr),
+        std::make_shared<type::function::Parameter>(std::make_shared<ID>("b1"), std::make_shared<type::Bytes>(), false, false, nullptr),
+        std::make_shared<type::function::Parameter>(std::make_shared<ID>("b2"), std::make_shared<type::Bytes>(), false, false, nullptr),
+    };
+
+    builder()->addInstruction(hilti::instruction::struct_::Set,
+                              parser,
+                              hilti::builder::string::create("hook_overlap"),
+                              _hiltiFunctionGlobalHook(unit, "overlap", params, false));
+
+    params = {
+        std::make_shared<type::function::Parameter>(std::make_shared<ID>("seq"), std::make_shared<type::Integer>(64, false), false, false, nullptr),
+        std::make_shared<type::function::Parameter>(std::make_shared<ID>("b"), std::make_shared<type::Bytes>(), false, false, nullptr),
+    };
+
+    builder()->addInstruction(hilti::instruction::struct_::Set,
+                              parser,
+                              hilti::builder::string::create("hook_undelivered"),
+                              _hiltiFunctionGlobalHook(unit, "undelivered", params, false));
+
     // "type_info" is initialized by "BinPACHilti::register_parser".
 
     auto ti = hilti::builder::type::create(hiltiTypeParseObject(unit));
@@ -1820,6 +1883,14 @@ void CodeGen::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit)
     builder()->addInstruction(hilti::instruction::flow::ReturnVoid);
 
     moduleBuilder()->popFunction();
+}
+
+shared_ptr<hilti::Expression> CodeGen::_hiltiFunctionGlobalHook(shared_ptr<type::Unit> unit, const std::string& hook, parameter_list params, bool compose)
+{
+    if ( compose )
+        assert(false); // not yet implemented.
+
+    return _parser_builder->hiltiFunctionGlobalHook(unit, hook, params);
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiItemComputePath(shared_ptr<hilti::Type> unit, shared_ptr<binpac::type::unit::Item> f)

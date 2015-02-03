@@ -1,9 +1,9 @@
 <id=13928, qdcount=1, ancount=2, nscount=2, arcount=0>
 
-[<qname=<labels=[dcd, babcf7dc87cd1c, 46d, ]>, qtype=1, qclass=1>]
+[<qname=<labels=[b"dcd", b"babcf7dc87cd1c", b"46d", b""], name=b"dcd.babcf7dc87cd1c.46d.">, qtype=1, qclass=1>]
 
-[<name=<labels=[dcd, babcf7dc87cd1c, 46d, ]>, ty=CNAME, class=1, ttl=2187, rdlen=2, labels=<labels=[babcf7dc87cd1c, 46d, ]>>, <name=<labels=[babcf7dc87cd1c, 46d, ]>, ty=A, class=1, ttl=2188, rdlen=4, a=75.78.164.143>]
+[<name=<labels=[b"dcd", b"babcf7dc87cd1c", b"46d", b""], name=b"dcd.babcf7dc87cd1c.46d.">, ty=CNAME, class=1, ttl=2187, rdlen=2, labels=<labels=[b"babcf7dc87cd1c", b"46d", b""], name=b"babcf7dc87cd1c.46d.">>, <name=<labels=[b"babcf7dc87cd1c", b"46d", b""], name=b"babcf7dc87cd1c.46d.">, ty=A, class=1, ttl=2188, rdlen=4, a=75.78.164.143>]
 
-[<name=<labels=[babcf7dc87cd1c, 46d, ]>, ty=NS, class=1, ttl=2188, rdlen=16, labels=<labels=[5d97, 6a4e3376, 46d, ]>>, <name=<labels=[babcf7dc87cd1c, 46d, ]>, ty=NS, class=1, ttl=2188, rdlen=7, labels=<labels=[ad92, 6a4e3376, 46d, ]>>]
+[<name=<labels=[b"babcf7dc87cd1c", b"46d", b""], name=b"babcf7dc87cd1c.46d.">, ty=NS, class=1, ttl=2188, rdlen=16, labels=<labels=[b"5d97", b"6a4e3376", b"46d", b""], name=b"5d97.6a4e3376.46d.">>, <name=<labels=[b"babcf7dc87cd1c", b"46d", b""], name=b"babcf7dc87cd1c.46d.">, ty=NS, class=1, ttl=2188, rdlen=7, labels=<labels=[b"ad92", b"6a4e3376", b"46d", b""], name=b"ad92.6a4e3376.46d.">>]
 
 []

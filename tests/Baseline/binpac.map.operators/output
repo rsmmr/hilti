@@ -1,14 +1,14 @@
-{3: CCC, 1: AAA, 2: BBB}
+{3: b"CCC", 1: b"AAA", 2: b"BBB"}
 {}
 True
 False
-BBB
+b"BBB"
 False
 True
-FFF
+b"FFF"
 False
-BBB
-XXX
+b"BBB"
+b"XXX"
 3
 0
 0

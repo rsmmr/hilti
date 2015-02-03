@@ -18,6 +18,10 @@ namespace binpac {
 /// any other method.
 extern void init();
 
+/// Alias for init(), to avoid name clashes with the same function now part
+/// of the classic binpac implementation.
+extern void init_pac2();
+
 /// Returns the current BinPAC++ version.
 extern string version();
 
@@ -25,5 +29,7 @@ extern string version();
 operator_list operators();
 
 }
+
+
 
 #endif

@@ -124,7 +124,7 @@ void Normalizer::visit(type::unit::item::Field* f)
                 auto c = ast::checkedCast<expression::Constant>(o->op2());
                 auto elems = ast::checkedCast<constant::Tuple>(c->constant())->value();
                 auto pstate = ast::tryCast<expression::ParserState>(elems.front());
-                if ( pstate->kind() == expression::ParserState::DOLLARDOLLAR ) {
+                if ( pstate && pstate->kind() == expression::ParserState::DOLLARDOLLAR ) {
                     // Yes, found it.
                     expression_list ops = { };
 

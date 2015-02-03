@@ -1,1 +1,1 @@
-<a=Foo, b=Bar, c=Foo123Bar, d=Bar>
+<a=b"Foo", b=b"Bar", c=b"Foo123Bar", d=b"Bar">

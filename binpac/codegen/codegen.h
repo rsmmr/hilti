@@ -37,6 +37,7 @@ class CodeGen : public ast::Logger
 {
 public:
     typedef std::list<shared_ptr<::hilti::ID>> id_list;
+    typedef std::list<shared_ptr<hilti::Expression>> hilti_expression_list;
 
     /// Constructor.
     CodeGen(CompilerContext* ctx);
@@ -252,7 +253,7 @@ public:
     /// compose: If true, run compose hook; run parse hook otherwise.
     ///
     /// cookie: The cookie parameter to pass to the hook.
-    shared_ptr<hilti::Expression> hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar, bool compose, shared_ptr<hilti::Expression> cookie);
+    shared_ptr<hilti::Expression> hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, hilti_expression_list args, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar, bool compose, shared_ptr<hilti::Expression> cookie);
 
     /// Returns the full path ID for the hook referecing a unit item.
     ///
@@ -337,7 +338,7 @@ public:
     shared_ptr<hilti::Type> hiltiTypeCookie();
 
     /// Confirms a parser by turning of DFD "try mode" if it's active.
-    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit);
+    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> try_mode, shared_ptr<hilti::Expression> cookie);
 
     /// Disables the current parser by throwing a corresponding signal to the
     /// host application.
@@ -619,7 +620,12 @@ private:
     // non-zero debugging levels, and it will only be executed at run-time if
     // explicitly enabled via libbinpac.  If \a compose is true, we define a
     // compose hook, and a parse hook otherwise.
-    void _hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar, int priority, bool compose);
+    void _hiltiDefineHook(shared_ptr<Hook> h, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar, int priority, bool compose);
+
+    // Returns a function that can be called from C to trigger a global unit hook.
+    //
+    // XXX
+    shared_ptr<hilti::Expression> _hiltiFunctionGlobalHook(shared_ptr<type::Unit> unit, const std::string& hook, parameter_list params, bool compose);
 
     // Computes the canonical hook name, given the full path. The returned
     // boolean indicates whether the hook is a local one (i.e., within the

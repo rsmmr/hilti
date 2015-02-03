@@ -1,6 +1,6 @@
-Sub1  <x=AB, y=1, z=DE>
-Main <a=.., b=AB, c=1DE, d=.., data=<sink>>
-Sub2  <x=AB, y=2, z=DE>
-Main <a=.., b=AB, c=2DE, d=.., data=<sink>>
-Sub3  <x=AB, y=3, z=DE>
-Main <a=.., b=AB, c=3DE, d=.., data=<sink>>
+Sub1  <x=b"AB", y=b"1", z=b"DE">
+Main <a=b"..", b=b"AB", c=b"1DE", d=b"..", data=<sink>>
+Sub2  <x=b"AB", y=b"2", z=b"DE">
+Main <a=b"..", b=b"AB", c=b"2DE", d=b"..", data=<sink>>
+Sub3  <x=b"AB", y=b"3", z=b"DE">
+Main <a=b"..", b=b"AB", c=b"3DE", d=b"..", data=<sink>>

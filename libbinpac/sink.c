@@ -174,6 +174,8 @@ static void __report_gap(binpac_sink* sink, uint64_t rseq, uint64_t len, void* u
 
 static void __report_skip(binpac_sink* sink, uint64_t rseq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    DBG_LOG("binpac-sinks", "reporting skip in sink %p to rseq %" PRIu64, sink, rseq);
+
     for ( __parser_state* s = sink->head; s; s = s->next ) {
         if ( s->parser->hook_skip )
             (*s->parser->hook_skip)(s->pobj, user, rseq + sink->initial_seq, excpt, ctx);

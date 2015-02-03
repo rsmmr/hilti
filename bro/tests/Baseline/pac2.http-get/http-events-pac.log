@@ -22,9 +22,9 @@ pac, 1362692527.009512, http_header, CXWv6p3arKYeMETxOg, F, CONNECTION, Keep-Ali
 pac, 1362692527.009512, http_header, CXWv6p3arKYeMETxOg, F, CONTENT-TYPE, text/plain; charset=UTF-8
 pac, 1362692527.009512, http_content_type, CXWv6p3arKYeMETxOg, F, TEXT, PLAIN
 pac, 1362692527.009512, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F
-pac, 1362692527.009512, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F
 pac, 1362692527.009512, file_new, FakNcS1Jfe01uljb3, 0
 pac, 1362692527.009512, file_over_new_connection, CXWv6p3arKYeMETxOg, FakNcS1Jfe01uljb3, 0, F
+pac, 1362692527.009512, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F
 pac, 1362692527.009721, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F
 pac, 1362692527.009765, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F
 pac, 1362692527.009775, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F

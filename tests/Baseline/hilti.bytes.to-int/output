@@ -3,4 +3,4 @@
 (ff,255)
 (,0)
 (99,99)
-hilti: uncaught exception, ValueError (from /home/robin/work/hilti/libhilti/bytes.c:1822)
+hilti: uncaught exception, ValueError (from /home/robin/work/hilti/libhilti/bytes.c:1827)

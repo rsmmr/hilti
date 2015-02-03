@@ -9,7 +9,7 @@ type Foo: record {
 };
 
 event enum_message(f: Foo) {
-    print f;
+	print f;
 }
 
 # @TEST-START-FILE tupleenum.evt

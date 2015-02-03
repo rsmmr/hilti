@@ -2,7 +2,7 @@
 #ifndef HILTI_TYPE_H
 #define HILTI_TYPE_H
 
-// TODO: Much more of this should move into ast/type.h
+// TODO: Much more of th should move into ast/type.h
 
 #include <vector>
 

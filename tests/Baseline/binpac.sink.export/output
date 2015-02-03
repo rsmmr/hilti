@@ -1,2 +1,2 @@
-Sub  <s1=34567890ab>
-Main <a=12, b=34567, c=890ab, d=cde, data=<sink>>
+Sub  <s1=b"34567890ab">
+Main <a=b"12", b=b"34567", c=b"890ab", d=b"cde", data=<sink>>

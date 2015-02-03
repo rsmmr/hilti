@@ -27,7 +27,7 @@ public:
     bool generate_parsers = true;
 
     /// True to generate composing functions. Unset by default.
-    bool generate_composers = true;
+    bool generate_composers = false;
 
     string_set cgDebugLabels() const override;
     string_set optimizationLabels() const override;
