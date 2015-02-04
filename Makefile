@@ -4,7 +4,7 @@
 
 DOCKER_IMAGE="rsmmr/hilti"
 
-all: release
+all: debug
 
 debug:
 	test -d build || mkdir build
