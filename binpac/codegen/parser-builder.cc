@@ -677,7 +677,7 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiFunctionNew(shared_ptr<type::U
     for ( auto p : state()->unit->parameters() )
         uparams.push_back(std::make_pair(hilti::builder::id::create(p->id()->name()), p->type()));
 
-    _prepareParseObject(uparams, nullptr, hilti::builder::id::create("__sink"), hilti::builder::id::create("__mimetype"));
+    _prepareParseObject(uparams, hilti::builder::id::create("__sink"), hilti::builder::id::create("__mimetype"));
 
     cg()->builder()->addInstruction(hilti::instruction::flow::ReturnResult, pobj);
 
@@ -744,8 +744,11 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiCreateHostFunction(shared_ptr
         for ( auto p : state()->unit->parameters() )
             params.push_back(std::make_pair(hilti::builder::id::create(p->id()->name()), p->type()));
 
-        _prepareParseObject(params, state()->cur);
+        _prepareParseObject(params);
     }
+
+    if ( unit->buffering() )
+        cg()->hiltiItemSet(state()->self, "__input", state()->cur);
 
     auto pfunc = cg()->hiltiParseFunction(unit);
 
@@ -1167,7 +1170,7 @@ shared_ptr<hilti::Expression> ParserBuilder::_allocateParseObject(shared_ptr<Typ
     return pobj;
 }
 
-void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> cur = nullptr, shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> mimetype)
+void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> mimetype)
 {
     // Initialize the parameter fields.
     auto arg = params.begin();
@@ -1204,9 +1207,6 @@ void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params
             cg()->hiltiItemSet(state()->self, v, sink);
         }
     }
-
-    if ( cur && u->buffering() )
-        cg()->hiltiItemSet(state()->self, "__input", cur);
 
     if ( u->exported() ) {
         cg()->hiltiItemSet(state()->self, "__parser", _hiltiParserDefinition(u));
@@ -2920,7 +2920,10 @@ void ParserBuilder::visit(production::ChildGrammar* c)
     pstate->self = subself;
     pushState(pstate);
 
-    _prepareParseObject(params, state()->cur);
+    _prepareParseObject(params);
+
+    if ( state()->unit->buffering() )
+        cg()->hiltiItemSet(state()->self, "__input", state()->cur);
 
     auto child_func = cg()->hiltiParseFunction(child);
 
