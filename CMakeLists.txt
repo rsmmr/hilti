@@ -29,6 +29,8 @@ include_directories(${FLEX_INCLUDE_DIR})
 
 include(DefaultCompilerSettings)
 
+set( CMAKE_VERBOSE_MAKEFILE on )
+
 include(HiltiConfig)
 
 add_subdirectory(hilti)
