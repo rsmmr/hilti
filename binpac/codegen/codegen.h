@@ -511,6 +511,9 @@ public:
     /// Returns: A HILTI tuple of int<64> representing the path to \a f.
     shared_ptr<hilti::Expression> hiltiItemComputePath(shared_ptr<hilti::Type> unit, shared_ptr<binpac::type::unit::Item> f);
 
+    /// Enable BinPAC++-specific HILTI optimizations
+    void enableBinPACOptimizations();
+    
 private:
     enum HiltiItemOp { GET, GET_DEFAULT, SET, PRESET_DEFAULT, UNSET, IS_SET };
     shared_ptr<hilti::Expression> _hiltiItemOp(HiltiItemOp i, shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, const std::string& fname, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> addl_op);
@@ -527,6 +530,8 @@ private:
     unique_ptr<codegen::TypeBuilder>     _type_builder;
     unique_ptr<codegen::Synchronizer>    _synchronizer;
     unique_ptr<Coercer>     _coercer;
+    
+    bool _bpOpts = false;
 };
 
 }

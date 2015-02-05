@@ -12,6 +12,7 @@ using namespace std;
 const char* Name = "binpac";
 
 bool dump_ast = false;
+bool binopt = false;
 bool cfg = false;
 bool output_binpac = false;
 bool output_llvm = false;
@@ -22,6 +23,7 @@ string output = "/dev/stdout";
 
 static struct option long_options[] = {
     { "ast",     no_argument, 0, 'A' },
+    { "bpopt",   no_argument, 0, 'b' },
     { "debug",   no_argument, 0, 'd' },
     { "cgdebug", no_argument, 0, 'D' },
     { "help",    no_argument, 0, 'h' },
@@ -47,6 +49,7 @@ void usage()
             "Options:\n"
             "\n"
             "  -A | --ast            Dump intermediary ASTs to stderr.\n"
+            "  -b | --bpopt          Enable BinPAC++-specific HILTI optimizations.\n"
             "  -c | --cfg            When outputting HILTI code, include control/data flow information.\n"
             "  -d | --debug          Debug level for the generated code. Each time increases level. [Default: 0]\n"
             "  -D | --cgdebug <type> Debug output during code generation; type can be " << dbgstr << ".\n"
@@ -82,7 +85,7 @@ int main(int argc, char** argv)
     shared_ptr<binpac::Options> options = std::make_shared<binpac::Options>();
 
     while ( true ) {
-        int c = getopt_long(argc, argv, "AcdD:o:nOPWlspI:vh", long_options, 0);
+        int c = getopt_long(argc, argv, "AbcdD:o:nOPWlspI:vh", long_options, 0);
 
         if ( c < 0 )
             break;
@@ -92,6 +95,10 @@ int main(int argc, char** argv)
             dump_ast = true;
             break;
 
+         case 'b':
+            binopt = true;
+            break;
+                
          case 'c':
             cfg = true;
             break;
@@ -174,6 +181,8 @@ int main(int argc, char** argv)
     binpac::init();
 
     auto ctx = std::make_shared<binpac::CompilerContext>(options);
+    if ( binopt )
+        ctx->enableBinPACOptimizations();
     auto module = ctx->load(input);
 
     if ( ! module ) {

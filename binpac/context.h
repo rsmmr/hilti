@@ -218,6 +218,9 @@ public:
     /// \todo This is actually not yet implemented and always returns an
     /// empty list currently.
     std::list<string> dependencies(shared_ptr<Module> module);
+    
+    /// Enable BinPAC++-specific HILTI optimizations.
+    void enableBinPACOptimizations();
 
 private:
     shared_ptr<Options> _options;
@@ -246,6 +249,9 @@ private:
     /// indexed by their path. This is for avoid duplicate imports, in
     /// particular when encountering cycles.
     std::map<string, shared_ptr<Module>> _modules;
+    
+    /// BinPAC++-specific HILTI optimization flag
+    bool _bpOpts = false;
 };
 
 }

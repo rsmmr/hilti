@@ -302,6 +302,8 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> node, bool verify)
 llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module, shared_ptr<hilti::Module>* hilti_module_out, bool hilti_only)
 {
     CodeGen codegen(this);
+    if ( _bpOpts )
+        codegen.enableBinPACOptimizations();
 
     _beginPass(module, "CodeGen");
 
@@ -397,3 +399,7 @@ std::list<string> binpac::CompilerContext::dependencies(shared_ptr<Module> modul
     return std::list<string>();
 }
 
+void binpac::CompilerContext::enableBinPACOptimizations()
+{
+    _bpOpts = true;
+}

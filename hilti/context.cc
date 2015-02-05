@@ -359,10 +359,11 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify, bo
 
     _endPass();
 
-    if ( buildForBinPAC ) {
+    string mName = module->id()->render();
+    if ( buildForBinPAC && mName != "BinPAC" && mName != "BinPACHilti" && mName != "Hilti" && mName != "hlt" ) {
     // BinPAC++-specific optimizations
         
-        std::cerr << "HULLO!" << std::endl;
+        std::cerr << "HULLO! " << module->id()->render() << std::endl;
     
 //    auto optbin = std::make_shared<passes::OptimizeBinpac>(this, cfg, liveness);
 //    
