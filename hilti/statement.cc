@@ -295,7 +295,7 @@ shared_ptr<Statement> statement::Block::_firstNonBlock(shared_ptr<statement::Blo
     return nullptr;
 }
 
-Statement::FlowInfo statement::Block::flowInfo()
+Statement::FlowInfo statement::Block::flowInfo(bool tweakInfo)
 {
     FlowInfo fi;
 
@@ -334,8 +334,13 @@ statement::instruction::Resolved::Resolved(shared_ptr<hilti::Instruction> instru
            _instruction = instruction;
        }
 
-Statement::FlowInfo statement::instruction::Resolved::flowInfo()
+Statement::FlowInfo statement::instruction::Resolved::flowInfo(bool tweakInfo)
 {
+  std::set<std::string> containerMod = {"list.append", "list.erase", "list.insert", "list.pop_back",
+                                        "list.pop_front", "list.push_back", "list.push_front", "map.clear",
+                                        "map.insert", "map.remove", "set.clear", "set.insert", "set.remove",
+                                        "vector.push_back", "vector.set", "struct.set"};
+
     auto ins = instruction();
     assert(ins);
 
@@ -366,12 +371,23 @@ Statement::FlowInfo statement::instruction::Resolved::flowInfo()
         for ( auto e : op->flatten() )
             _addExpressionToVariables(&vars, e);
 
-        if ( ins->typeOperand(i++).second )
+        // if (tweakInfo == true && containerMod.find(ins->id()->name()) != containerMod.end() && i == 1) {
+        //   fi.read = util::set_union(fi.read, vars);
+        //   fi.modified = util::set_union(fi.modified, vars);
+        // }
+        if ( ins->typeOperand(i).second ||
+             (tweakInfo == true && ins->id()->name() == "call") ||
+             (tweakInfo == true && ins->id()->name() == "file.write") ||
+             (tweakInfo == true && ins->id()->name() == "assign") ||
+             (tweakInfo == true && containerMod.find(ins->id()->name()) != containerMod.end()) 
+             )
             // Constant.
-            fi.read = util::set_union(fi.read, vars);
+          fi.read = util::set_union(fi.read, vars);
         else
-            // Non-constant.
-            fi.modified = util::set_union(fi.modified, vars);
+          // Non-constant.
+          fi.modified = util::set_union(fi.modified, vars);
+
+        i += 1;
     }
 
     auto block = firstParent<statement::Block>();
@@ -391,7 +407,7 @@ statement::instruction::Unresolved::Unresolved(const ::string& name, const hilti
 statement::instruction::Unresolved::Unresolved(shared_ptr<hilti::Instruction> instr, const hilti::instruction::Operands& ops, const Location& l)
     : Instruction(instr->id(), ops, l) { _instr = instr; }
 
-Statement::FlowInfo statement::instruction::Unresolved::flowInfo()
+Statement::FlowInfo statement::instruction::Unresolved::flowInfo(bool tweakInfo)
 {
     fprintf(stderr, "internal error: Unresolved::flowInfo() called, not all instructions were resolved (%s)\n", id()->name().c_str());
     abort();
@@ -437,7 +453,7 @@ statement::Try::Try(shared_ptr<Block> try_, const catch_list& catches, const Loc
         addChild(c);
 }
 
-Statement::FlowInfo statement::Try::flowInfo()
+Statement::FlowInfo statement::Try::flowInfo(bool tweakInfo)
 {
     auto fi = _try->flowInfo();
 
@@ -470,7 +486,7 @@ shared_ptr<ID> statement::ForEach::ForEach::id() const
     return _id;
 }
 
-Statement::FlowInfo statement::ForEach::flowInfo()
+Statement::FlowInfo statement::ForEach::flowInfo(bool tweakInfo)
 {
     auto id = _body->scope()->lookup(_id);
     assert(id.size() == 1);

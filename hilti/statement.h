@@ -42,7 +42,7 @@ public:
     /// Must be overridden by derived classed. This implementation should add
     /// all relevant declarations, the parent \a FlowInfo() call will
     /// filter them accordingly to what's requested.
-    virtual FlowInfo flowInfo() = 0;
+    virtual FlowInfo flowInfo(bool tweakInfo = false) = 0;
 
     /// Returns the first statement that's not a block, according to control
     /// flow. Returns null if there's none.
@@ -83,7 +83,7 @@ public:
     /// l: An associated location.
     Noop(const Location& l=Location::None) : Statement(l) {}
 
-    FlowInfo flowInfo() override { return FlowInfo(); }
+    FlowInfo flowInfo(bool tweakInfo = false) override { return FlowInfo(); }
 
     ACCEPT_VISITOR(Statement);
 
@@ -200,7 +200,7 @@ public:
     /// empty, or contains only nops).
     bool nop();
 
-    FlowInfo flowInfo() override;
+    FlowInfo flowInfo(bool tweakInfo = false) override;
 
     shared_ptr<Statement> firstNonBlock() override;
 
@@ -286,7 +286,7 @@ public:
     /// Returns the list of all catch clauses.
     const catch_list& catches() const { return _catches; }
 
-    FlowInfo flowInfo() override;
+    FlowInfo flowInfo(bool tweakInfo = false) override;
 
     ACCEPT_VISITOR(Statement);
 
@@ -331,7 +331,7 @@ public:
     /// Returns the body block.
     shared_ptr<Block> body() const { return _body; }
 
-    FlowInfo flowInfo() override;
+    FlowInfo flowInfo(bool tweakInfo = false) override;
 
     ACCEPT_VISITOR(Statement);
 
@@ -436,7 +436,7 @@ public:
     /// returned; otherwise null.
     shared_ptr<hilti::Instruction> instruction() const { return _instr; }
 
-    FlowInfo flowInfo() override;
+    FlowInfo flowInfo(bool tweakInfo = false) override;
 
     ACCEPT_VISITOR(Instruction);
 
@@ -465,7 +465,7 @@ public:
     /// Returns the instruction the statement uses.
     const shared_ptr<hilti::Instruction> instruction() const { return _instruction; }
 
-    FlowInfo flowInfo() override;
+    FlowInfo flowInfo(bool tweakInfo = false) override;
 
     ACCEPT_VISITOR(Instruction);
 
