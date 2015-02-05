@@ -803,6 +803,9 @@ public:
    /// afterwards.
    shared_ptr<BlockBuilder> cacheBlockBuilder(const std::string& tag, cache_builder_callback cb);
 
+   /// Activate BinPAC-specific optimizations in the HILTI compiler
+   void buildForBinPAC();
+    
 protected:
    friend class BlockBuilder;
 
@@ -862,6 +865,7 @@ private:
 
    std::list<std::string> _imported_paths;
 
+   bool _buildForBinPAC;
 };
 
 }

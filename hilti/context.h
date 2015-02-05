@@ -103,7 +103,7 @@ public:
     /// module: The module.
     ///
     /// Returns: True if no error occured.
-    bool finalize(shared_ptr<Module> module);
+    bool finalize(shared_ptr<Module> module, bool buildForBinPAC = false);
 
     /// Attempt to resolve as many unknown type bindings as possible.
     ///
@@ -331,7 +331,7 @@ private:
     bool _optimize(llvm::Module* module, bool is_linked);
 
     // Backend for finalize().
-    bool _finalize(shared_ptr<Module> module, bool verify);
+    bool _finalize(shared_ptr<Module> module, bool verify, bool buildForBinPAC);
 
     /// Finalizes an AST before it can be used for compilation. This checks
     /// for correctness, resolves any unknown bindings, and builds a set of
@@ -341,7 +341,7 @@ private:
     ///
     /// Returns: True if no errors were found.
     ///
-    bool _finalizeModule(shared_ptr<Module> module, bool verify);
+    bool _finalizeModule(shared_ptr<Module> module, bool verify, bool buildForBinPAC);
 
     /// If debugging stream cg-passes is set, log the beginning of a pass. If timing is requested,
     ///

@@ -521,7 +521,7 @@ shared_ptr<hilti::Module> ModuleBuilder::module() const
 
 shared_ptr<hilti::Module> ModuleBuilder::finalize()
 {
-    if ( ! _module->compilerContext()->finalize(_module) )
+    if ( ! _module->compilerContext()->finalize(_module, _buildForBinPAC) )
         return nullptr;
 
     return _module;
@@ -872,6 +872,11 @@ shared_ptr<BlockBuilder> ModuleBuilder::cacheBlockBuilder(const std::string& tag
 
     _currentFunction()->builders.insert(std::make_pair(tag, builder));
     return builder;
+}
+    
+void ModuleBuilder::buildForBinPAC()
+{
+    _buildForBinPAC = true;
 }
 
 }

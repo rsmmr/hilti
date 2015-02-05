@@ -210,7 +210,7 @@ void CompilerContext::_endPass()
     _passes.pop_back();
 }
 
-bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
+bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify, bool buildForBinPAC)
 {
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Finalizing module %s ...", module->id()->pathAsString()) << std::endl;
@@ -359,7 +359,21 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
 
     _endPass();
 
-
+    if ( buildForBinPAC ) {
+    // BinPAC++-specific optimizations
+        
+        std::cerr << "HULLO!" << std::endl;
+    
+//    auto optbin = std::make_shared<passes::OptimizeBinpac>(this, cfg, liveness);
+//    
+//    _beginPass(module, *optbin);
+//    
+//    if ( ! optbin->run(module) )
+//        return false;
+//    
+//    _endPass();
+    }
+    
     return true;
 }
 
@@ -382,9 +396,9 @@ void CompilerContext::addModule(shared_ptr<Module> module)
     _modules.insert(std::make_pair(path, module));
 }
 
-bool CompilerContext::finalize(shared_ptr<Module> module)
+bool CompilerContext::finalize(shared_ptr<Module> module, bool buildForBinPAC)
 {
-    return _finalize(module, options().verify);
+    return _finalize(module, options().verify, buildForBinPAC);
 }
 
 bool CompilerContext::resolveTypes(shared_ptr<Module> module)
@@ -401,7 +415,7 @@ bool CompilerContext::resolveTypes(shared_ptr<Module> module)
     return true;
 }
 
-bool CompilerContext::_finalize(shared_ptr<Module> module, bool verify)
+bool CompilerContext::_finalize(shared_ptr<Module> module, bool verify, bool buildForBinPAC)
 {
     if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Finalizing context...") << std::endl;
@@ -449,7 +463,7 @@ bool CompilerContext::_finalize(shared_ptr<Module> module, bool verify)
     for ( auto m : _modules ) {
         auto module = m.second;
 
-        if ( ! CompilerContext::_finalizeModule(module, verify) )
+        if ( ! CompilerContext::_finalizeModule(module, verify, buildForBinPAC) )
             goto error;
     }
 

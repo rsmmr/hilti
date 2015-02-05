@@ -57,6 +57,7 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
         auto id = hilti::builder::id::node(module->id()->name(), module->id()->location());
         auto ctx = module->context()->hiltiContext();
         _mbuilder = std::make_shared<hilti::builder::ModuleBuilder>(ctx, id, module->path(), module->location());
+        _mbuilder->buildForBinPAC();
         _mbuilder->importModule("Hilti");
         _mbuilder->importModule("BinPACHilti");
 
