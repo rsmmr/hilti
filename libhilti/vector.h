@@ -33,6 +33,9 @@ extern void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** exc
 // Sets the element at the given index to the value.
 extern void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Checks whether an index has been assigned a value.
+extern int8_t hlt_vector_exists(hlt_vector* m, hlt_vector_idx i, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Appends the element to the vector.
 extern void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx);
 

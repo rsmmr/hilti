@@ -1,0 +1,32 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local bool b
+    local ref<vector<int<32>>> v
+
+    v = new vector<int<32>>
+
+    vector.set v 0 10
+    vector.set v 2 11
+    vector.set v 4 12
+
+    b = vector.exists v 0
+    call Hilti::print(b)
+    b = vector.exists v 1
+    call Hilti::print(b)
+    b = vector.exists v 2
+    call Hilti::print(b)
+    b = vector.exists v 3
+    call Hilti::print(b)
+    b = vector.exists v 4
+    call Hilti::print(b)
+    b = vector.exists v 5
+    call Hilti::print(b)
+}
