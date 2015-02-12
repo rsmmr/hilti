@@ -1,0 +1,1 @@
+<start=h, apduLen=14, ctrl=(mode=0, i_send_seq=0, u_start_dt=0, u_stop_dt=0, u_test_fr=0, recv_seq=0), asdu=<info_obj_type=C_IC_NA_1, data_unit_identifier=(seq=0, num_ix=1), cause_of_transmission=(cot=Activation, negative=0, test=0), originator_address=0, common_address=55, c_ic_na_1=[<info_obj_addr=\x00\x00\x00, quality_of_identifier=20>]>>

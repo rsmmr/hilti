@@ -1,0 +1,12 @@
+#
+# @TEST-EXEC:  cat %DIR/sapci.dat | pac-driver-test %INPUT ${PARSERS}/t104.pac2 -- -p T104::Apci >>output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import parsers/T104;
+
+on T104::Apci::%done {
+	print self;
+}
