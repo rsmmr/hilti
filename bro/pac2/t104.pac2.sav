@@ -1,0 +1,339 @@
+module T104;
+
+#author: Robert Udd
+#Parser for IEC 60870-5-104
+
+import BinPAC;
+const ioa_length = 3;
+
+type Modes = enum {
+    I = 0,
+    S = 1,
+    Undefined = 2, #Not entirly true, it is still I
+    U = 3
+};
+
+### Info object code structure
+# Level Symbol  Description
+#   1   M_      Monitored information
+#       C_      Control information
+#       P_      Parameter
+#       F_      File transfer
+#   2   Various See actual usage
+#   3   _Nx     Not time tagged
+#       _Tx     Time tagged
+#       _xA     Type A: status and normalized, with quality
+#       _xB     Type B: scaled, with quality
+#       _xC     Type C: short floating point, with quality
+#       _xD     Type D: normalized without quality
+#
+
+type Info_obj_code= enum {
+    #process information in monitoring direction 1-29
+    M_SP_NA_1 = 1, #implemented
+    M_SP_TA_1 = 2,
+    M_DP_NA_1 = 3,
+    M_DP_TA_1 = 4,
+    M_ST_NA_1 = 5,
+    M_ST_TA_1 = 6,
+    M_BO_NA_1 = 7,
+    M_BO_TA_1 = 8,
+    M_ME_NA_1 = 9, #implemented
+    M_ME_TA_1 = 10,
+    M_ME_NB_1 = 11,
+    M_ME_TB_1 = 12,
+    M_ME_NC_1 = 13,
+    M_ME_TC_1 = 14,
+    M_IT_NA_1 = 15,
+    M_IT_TA_1 = 16,
+    M_EP_TA_1 = 17,
+    M_EP_TB_1 = 18,
+    M_EP_TC_1 = 19, 
+    M_PS_NA_1 = 20, 
+    M_ME_ND_1 = 21,
+    #22-29 reserved
+    #process information in monitoring direction cont’d 30-44
+    M_SP_TB_1 = 30, #implemented
+    M_DP_TB_1 = 31,
+    M_ST_TB_1 = 32,
+    M_BO_TB_1 = 33,
+    M_ME_TD_1 = 34,
+    M_ME_TE_1 = 35,
+    M_ME_TF_1 = 36,
+    M_IT_TB_1 = 37,
+    M_EP_TD_1 = 38,
+    M_EP_TE_1 = 39,
+    M_EP_TF_1 = 40,
+    #41-44 reserved
+    #process information in control direction 45-51
+    C_SC_NA_1 = 45, #implemented
+    C_DC_NA_1 = 46,
+    C_RC_NA_1 = 47,
+    C_SE_NA_1 = 48,
+    C_SE_NB_1 = 49,
+    C_SE_NC_1 = 50,
+    C_BO_NA_1 = 51,
+    #system information in monitor direction 70-99
+    M_EI_NA_1 = 70,
+    #71-99 reserved
+    #system information in control direction 100-109
+    C_IC_NA_1 = 100, #implemented
+    C_CI_NA_1 = 101,
+    C_RD_NA_1 = 102,
+    C_CS_NA_1 = 103,
+    C_TS_NA_1 = 104,
+    C_RP_NA_1 = 105,
+    C_CD_NA_1 = 106,
+    #107-109 reserved 
+    #parameter in control direction 110-119
+    P_ME_NA_1 = 110,
+    P_ME_NB_1 = 111,
+    P_ME_NC_1 = 112,
+    P_AC_NA_1 = 113,
+    #114-119 reserved
+    #file transfer 120-127
+    F_FR_NA_1 = 120,
+    F_SR_NA_1 = 121, 
+    F_SC_NA_1 = 122,
+    F_LS_NA_1 = 123,
+    F_AF_NA_1 = 124,
+    F_SG_NA_1 = 125,
+    F_DR_TA_1 = 126
+    #127 reserved
+};
+
+#Cause of transmission
+type Cot_code = enum {
+    #process information in monitoring direction 1-29
+    Not_used = 0,
+    Periodic_cyclic = 1,
+    Background_scan = 2,
+    Spontaneous = 3,
+    Initialized  = 4, 
+    Request_or_requested = 5,
+    Activation = 6,
+    Activation_confirmation = 7,
+    Deactivation = 8,
+    Deactivation_confirmation = 9,
+    Activation_termination = 10,
+    Return_information_caused_by_a_remote_command = 11,
+    Return_information_caused_by_a_local_command = 12,
+    File_transfer = 13,
+    #14–19 Reserved for future definitions
+    Interrogated_by_station_interrogation = 20,
+    Interrogated_by_group_1_interrogation = 21,
+    Interrogated_by_group_2_interrogation = 22,
+    Interrogated_by_group_3_interrogation = 23,
+    Interrogated_by_group_4_interrogation = 24,
+    Interrogated_by_group_5_interrogation = 25,
+    Interrogated_by_group_6_interrogation = 26,
+    Interrogated_by_group_7_interrogation = 27,
+    Interrogated_by_group_8_interrogation = 28,
+    Interrogated_by_group_9_interrogation = 29,
+    Interrogated_by_group_10_interrogation = 30,
+    Interrogated_by_group_11_interrogation = 31,
+    Interrogated_by_group_12_interrogation = 32,
+    Interrogated_by_group_13_interrogation = 33,
+    Interrogated_by_group_14_interrogation = 34,
+    Interrogated_by_group_15_interrogation = 35,
+    Interrogated_by_group_16_interrogation = 36,
+    Requested_by_general_counter_request = 37,
+    Requested_by_group_1_counter_request = 38,
+    Requested_by_group_2_counter_request = 39,
+    Requested_by_group_3_counter_request = 40,
+    Requested_by_group_4_counter_request = 41,
+    #42–43 Reserved for future definitions
+    Unknown_type_identification = 44,
+    Unknown_cause_of_transmission = 45,
+    Unknown_common_address_of_ASDU =46,
+    Unknown_information_object_address = 47
+};
+
+export type Apci = unit {
+%byteorder = BinPAC::ByteOrder::Little; #TODO does nothing? the bytes are read in the wrong order
+    start :  b"\x68";
+    apduLen : uint<8>;
+    #ctrl : uint<16>;
+    #ctrl : uint<8>;
+    ctrl : bitfield(32){
+        mode : 0..1;# &convert=Modes($$);    #I mode only uses the first bit while the others use the two first
+        i_send_seq : 1..15; #Only I uses this
+        u_start_dt : 2..3;
+        u_stop_dt : 4..5;
+        u_test_fr : 6..7;
+        recv_seq : 17..31; #Not used by U
+    };
+    #The first or the two first bits are used to interpret how the rest of the byte is parsed
+    #TODO make a better solution for reading one bit and then create a fitting bitfield.
+    
+    switch (self.ctrl.mode) {
+       0 -> asdu : Asdu;# Modes::I -> asdu : Asdu;
+       2 -> asdu : Asdu;# Modes::Undefined -> asdu : Asdu;
+        * -> : b"";
+    };
+ 
+    on %done {
+    print "APCI", self.ctrl.mode;
+    }
+};
+
+type Asdu = unit {
+%ByteOrder = BinPAC::ByteOrder::Little;
+    info_obj_type : uint<8> &convert=Info_obj_code($$);
+    data_unit_identifier : bitfield (8) {
+        seq : 7;
+        num_ix : 0..6;
+    };
+    cause_of_transmission : bitfield (8) {
+        cot : 0..5 &convert=Cot_code($$);
+        negative : 6;
+        test : 7;
+    };
+    originator_address : uint<8>;
+    common_address : uint <16> &byteorder = BinPAC::ByteOrder::Little;
+    info_obj_addr: bytes &length=ioa_length if (self.data_unit_identifier.seq); #if seq == 0 the IOA should be in each asdu TODO needs support for bitwidth 24 to change to uint
+    switch (self.info_obj_type){
+        Info_obj_code::M_SP_NA_1 -> m_sp_na_1 : list<Single_Point_Without_Time  (self.data_unit_identifier.seq)> &count=self.data_unit_identifier.num_ix;
+        Info_obj_code::M_SP_TA_1 -> m_sp_ta_1 : list<Single_Point_With_Time2    (self.data_unit_identifier.seq)> &count=self.data_unit_identifier.num_ix;
+        Info_obj_code::M_ME_NA_1 -> m_me_na_1 : list<Measured_Normalized_Value  (self.data_unit_identifier.seq)> &count=self.data_unit_identifier.num_ix;
+        Info_obj_code::M_SP_TB_1 -> m_sp_tb_1 : list<Single_Point_With_Time30   (self.data_unit_identifier.seq)> &count=self.data_unit_identifier.num_ix;
+        Info_obj_code::C_SC_NA_1 -> c_sc_na_1 : list<Single_Command             (self.data_unit_identifier.seq)> &count=self.data_unit_identifier.num_ix;
+        Info_obj_code::C_IC_NA_1 -> c_ic_na_1 : list<Interrogation_Command      (self.data_unit_identifier.seq)> &count=self.data_unit_identifier.num_ix;
+        #9 -> info_obj : Measured_Normalized_Value;
+        #100 -> info_obj2 : Interrogation_Command;
+        * -> : b"";
+    };
+    on %init {
+     print "INIT ASDU";
+     }
+}; 
+
+tuple <bool, bool> bro_cot (asdu : Asdu) {
+    return (asdu.cause_of_transmission.negative, asdu.cause_of_transmission.test);
+}
+
+type CP24TIME2A = unit {
+    milli : uint<16> &byteorder = BinPAC::ByteOrder::Little;
+    minute : uint<8>;
+
+    on %done {
+    #remove unwanted bits
+     self.minute = self.minute & 63;
+     }
+};
+
+type CP56TIME2A = unit {
+    milli : uint<16> &byteorder = BinPAC::ByteOrder::Little;
+    minute : uint<8>;
+    hour : uint<8>;
+    day : uint<8>;
+    #var day_of_week : uint<8> = self.day & 224;
+    mon : uint<8>;
+    year : uint<8>;
+
+    on %done {
+    #remove unwanted bits
+     self.minute = self.minute & 63;
+     self.hour   = self.hour & 31;
+     self.day    = self.day & 31;
+     self.mon    = self.mon & 15;
+     self.year   = self.year & 127;
+    }
+};
+
+type Single_Point_Without_Time = unit (seq : bool){ #1
+    info_obj_addr: bytes &length=ioa_length if (!seq); #not 100% sure that the length is always correct
+    single_point_information_with_quality_descriptor : SIQ;
+    on %init {
+    #print "INIT 1";
+    }
+};
+
+type Single_Point_With_Time2 = unit (seq : bool){ #2 only SEQ=0 allowed
+    info_obj_addr: bytes &length=ioa_length if (!seq); #not 100% sure that the length is always correct
+    single_point_information_with_quality_descriptor : SIQ;
+    cp24time2a : CP24TIME2A;
+    on %init {
+    #print "INIT 2";
+    }
+};
+
+type Measured_Normalized_Value = unit (seq : bool){ #9
+    info_obj_addr: bytes &length=ioa_length if (!seq); #not 100% sure that the length is always correct
+    normalized_value : bytes &length=2;
+    double_point_information_with_quality_descriptor : QDS;
+    on %init {
+    #print "INIT 9";
+    }
+};
+
+type Single_Point_With_Time30 = unit (seq : bool){ #30 only SEQ=0 allowed
+    info_obj_addr: bytes &length=ioa_length if (!seq); #not 100% sure that the length is always correct
+    single_point_information_with_quality_descriptor : SIQ;
+    cp56time2a : CP56TIME2A;#bytes &length=7;
+    on %init {
+    #print "INIT 30";
+    }
+};
+
+
+type Single_Command = unit (seq : bool){ #45 only SEQ=0 allowed
+    info_obj_addr: bytes &length=ioa_length if (!seq); #not 100% sure that the length is always correct
+    single_command : SCO;
+    on %init {
+    #print "INIT 45";
+    }
+};
+
+
+type Interrogation_Command = unit (seq : bool){ #100 only SEQ=0 allowed
+    info_obj_addr: bytes &length=ioa_length if (!seq); #not 100% sure that the length is always correct
+    quality_of_identifier: uint<8>;
+    on %init {
+    #print "INIT 100";
+    }
+   };
+
+type QDS = bitfield(8) {
+    ov : 0; #overflow
+    bl : 4; #blocked
+    sb : 5; #substituted
+    nt : 6; #not topical
+    iv : 7; #invalid
+};
+
+type SIQ = bitfield(8) {
+    st : 0; #status
+    bl : 4; #blocked
+    sb : 5; #substituted
+    nt : 6; #not topical
+    iv : 7; #invalid
+};
+
+type DIQ = bitfield(8) {
+    st : 0..1;#status
+    bl : 4; #blocked
+    sb : 5; #substituted
+    nt : 6; #not topical
+    iv : 7; #invalid
+};
+
+type SCO = bitfield(8) {
+    scs : 0;    
+    qu : 2..6; #not topical
+    se : 7; #invalid
+};
+
+type DCO = bitfield(8) {
+    dcs : 0..1;
+    qu : 2..6; #not topical
+    se : 7; #invalid
+};
+
+
+type RCO = bitfield(8) {
+    rcs : 0..1;
+    qu : 2..6; #not topical
+    se : 7; #invalid
+};
+
