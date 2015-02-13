@@ -11,6 +11,8 @@
 #include "options.h"
 #include "codegen/optimizer.h"
 
+#include "passes/field-pruning.h"
+
 using namespace hilti;
 using namespace hilti::passes;
 
@@ -362,17 +364,17 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify, bo
     string mName = module->id()->render();
     if ( buildForBinPAC && mName != "BinPAC" && mName != "BinPACHilti" && mName != "Hilti" && mName != "hlt" ) {
     // BinPAC++-specific optimizations
-        
-        std::cerr << "HULLO! " << module->id()->render() << std::endl;
-    
-//    auto optbin = std::make_shared<passes::OptimizeBinpac>(this, cfg, liveness);
-//    
-//    _beginPass(module, *optbin);
-//    
-//    if ( ! optbin->run(module) )
-//        return false;
-//    
-//    _endPass();
+
+	  auto fprune = std::make_shared<passes::FieldPruning>(this, cfg);
+
+	  _beginPass(module, *fprune);
+
+	  if ( ! fprune->run(module) )
+		return false;
+
+	  _endPass();
+	  
+	  std::cerr << "HULLO! " << module->id()->render() << std::endl;
     }
     
     return true;

@@ -194,6 +194,7 @@ add_library (hilti STATIC
     passes/id-replacer.cc
     passes/optimize-ctors.cc
     passes/optimize-peephole.cc
+	passes/field-pruning.cc
 
     codegen/abi.cc
     codegen/asm-annotater.cc
