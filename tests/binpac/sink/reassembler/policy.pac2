@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC: pac-driver-test %INPUT -p Mini::Main </dev/null >output
+# @TEST-EXEC: pac-driver-test -p Mini::Main %INPUT </dev/null >output
 # @TEST-EXEC: btest-diff output
 #
 # We actually have only one policy right now, which is also the

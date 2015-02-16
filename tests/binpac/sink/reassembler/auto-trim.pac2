@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC-FAIL:  pac-driver-test %INPUT -p Mini::Main </dev/null >output 2>&1
+# @TEST-EXEC-FAIL:  pac-driver-test -p Mini::Main %INPUT </dev/null >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
 # Disabling auto-trim is not yet supported.
