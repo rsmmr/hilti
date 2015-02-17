@@ -615,15 +615,6 @@ bool Manager::Compile()
 				return false;
 				}
 			}
-
-		for ( auto p : a->ports )
-			{
-			val_list* vals = new val_list;
-			vals->append(a->tag.AsEnumVal()->Ref());
-			vals->append(new ::PortVal(p.port, p.proto));
-			EventHandlerPtr handler = internal_handler("pac2_analyzer_for_port");
-			mgr.QueueEvent(handler, vals);
-			}
 		}
 
 	for ( auto a : pimpl->pac2_file_analyzers )
@@ -901,6 +892,34 @@ bool Manager::Compile()
 
 	auto result = RunJIT(llvm_module);
 	PLUGIN_DBG_LOG(HiltiPlugin, "Done with compilation");
+
+
+	PLUGIN_DBG_LOG(HiltiPlugin, "Registering analyzers through events");
+
+	for ( auto a : pimpl->pac2_analyzers )
+		{
+		for ( auto p : a->ports )
+			{
+			val_list* vals = new val_list;
+			vals->append(a->tag.AsEnumVal()->Ref());
+			vals->append(new ::PortVal(p.port, p.proto));
+			EventHandlerPtr handler = internal_handler("pac2_analyzer_for_port");
+			mgr.QueueEvent(handler, vals);
+			}
+		}
+
+	for ( auto a : pimpl->pac2_file_analyzers )
+		{
+		for ( auto mt : a->mime_types )
+			{
+			val_list* vals = new val_list;
+			vals->append(a->tag.AsEnumVal()->Ref());
+			vals->append(new ::StringVal(mt));
+			EventHandlerPtr handler = internal_handler("pac2_analyzer_for_mime_type");
+			mgr.QueueEvent(handler, vals);
+			}
+		}
+
 	return result;
 	}
 
@@ -2815,7 +2834,8 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 	// calls to speed it up, unless that method itself is already as fast
 	// as we would that get that way.
 
-	assert(pimpl->llvm_linked_module && pimpl->llvm_execution_engine);
+	assert(pimpl->llvm_linked_module);
+	assert(pimpl->llvm_execution_engine);
 
 	auto id = func->GetUniqueFuncID();
 

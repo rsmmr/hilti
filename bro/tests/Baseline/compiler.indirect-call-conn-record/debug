@@ -1,7 +1,7 @@
-00000931 [hilti-trace/main-thread]      <no location>:: __tmp_val = call LibBro::object_mapping_lookup_bro (c)
-00000932 [hilti-trace/main-thread]      end-of-call-result
-00000933 [hilti-trace/main-thread]      <no location>:: if.else __tmp_val @if_true @if_false
-00000934 [hilti-trace/main-thread]      <no location>:: jump @if_cont
-00000935 [hilti-trace/main-thread]      <no location>:: __tmp_rval = call LibBro::call_legacy_result (f, (__tmp_val))
-00000936 [hilti-flow/main-thread]       entering GLOBAL::foo_stub
-00000937 [hilti-trace/main-thread]      <no location>:: call LibBro::profile_start (8)
+[hilti-trace/main-thread]      <no location>:: __tmp_val = call LibBro::object_mapping_lookup_bro (c)
+[hilti-trace/main-thread]      end-of-call-result
+[hilti-trace/main-thread]      <no location>:: if.else __tmp_val @if_true @if_false
+[hilti-trace/main-thread]      <no location>:: jump @if_cont
+[hilti-trace/main-thread]      <no location>:: __tmp_rval = call LibBro::call_legacy_result (f, (__tmp_val))
+[hilti-flow/main-thread]       entering GLOBAL::foo_stub
+[hilti-trace/main-thread]      <no location>:: call LibBro::profile_start (8)
