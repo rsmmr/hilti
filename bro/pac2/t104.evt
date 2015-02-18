@@ -1,11 +1,16 @@
  
 grammar t104.pac2;
 
-protocol analyzer T104 over TCP:
- 	parse with T104::Apci,
- 	port 2404/tcp; 
+
+
+protocol analyzer pac2::T104 over TCP:
+ 	parse with T104::Apcis,
+ 	port 2404/tcp;
 
 on T104::Apci -> event t104::apci($conn, self.apduLen, self.ctrl.mode, self.ctrl.i_send_seq, self.ctrl.u_start_dt, self.ctrl.u_stop_dt, self.ctrl.u_test_fr, self.ctrl.recv_seq);
 
 on T104::Asdu -> event t104::asdu($conn, T104::bro_cot(self));
 
+#on T104::Apcis -> event t104::a($conn);
+
+#on TCP::tcp_packet -> event t104::a($conn);

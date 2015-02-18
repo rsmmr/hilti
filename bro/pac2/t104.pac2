@@ -149,31 +149,45 @@ type Cot_code = enum {
     Unknown_information_object_address = 47
 };
 
-export type Apci = unit {
+export type Apcis = unit {
+    :  list<Apci> &transient;
+};
+
+type Apci = unit {
 %byteorder = BinPAC::ByteOrder::Little; #TODO does nothing? the bytes are read in the wrong order
-    start :  b"\x68";
+    #start :  b"\x68";
+    start : uint<8>;
     apduLen : uint<8>;
     #ctrl : uint<16>;
     #ctrl : uint<8>;
     ctrl : bitfield(32){
         mode : 0..1;    #I mode only uses the first bit while the others use the two first
-        i_send_seq : 1..15; #Only I uses this
+        i_send_seq : 1..15; #Only the I mode uses this
         u_start_dt : 2..3;
         u_stop_dt : 4..5;
         u_test_fr : 6..7;
-        recv_seq : 17..31; #Not used by U
+        recv_seq : 17..31; #Not used by the U mode
     };
     #The first or the two first bits are used to interpret how the rest of the byte is parsed
     #TODO make a better solution for reading one bit and then create a fitting bitfield.
     
-    switch (self.ctrl.mode) {
-        0 -> asdu : Asdu;
-        2 -> asdu : Asdu;
-        * -> : b"";
-    };
- 
+     switch (self.ctrl.mode) {
+         0 -> asdu : Asdu;
+         1 -> strange : b"";
+         2 -> asdu : Asdu;
+         3 -> strange : b"";
+     };
+    
+    on %init {
+       # print "INIT APCI";
+    }
+
+    on ctrl {
+       # print "after ctrl APCI", self.ctrl;
+    }
+
     on %done {
-    #print self;
+        print "DONE APCI", self;
     }
 };
 
@@ -205,12 +219,16 @@ type Asdu = unit {
         * -> : b"";
     };
     on %init {
-     #print "INIT ASDU";
-     }
+        print "INIT ASDU";
+    }
+    on %done {
+        print "DONE ASDU", self;
+    }
 }; 
 
-tuple <bool, bool> bro_cot (asdu : Asdu) {
-    return (asdu.cause_of_transmission.negative, asdu.cause_of_transmission.test);
+tuple <bool, bool, uint64> 
+bro_cot (asdu : Asdu) {
+    return (asdu.cause_of_transmission.negative, asdu.cause_of_transmission.test, asdu.common_address); #cast <uint64>(asdu.cause_of_transmission.cot));
 }
 
 type CP24TIME2A = unit {
