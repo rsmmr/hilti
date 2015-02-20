@@ -1,4 +1,4 @@
 INIT-unit <>
 INIT-module <>
-DONE-unit <a=1234, b=567890>
-DONE-module <a=1234, b=567890>
+DONE-unit <a=b"1234", b=b"567890">
+DONE-module <a=b"1234", b=b"567890">

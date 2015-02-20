@@ -688,6 +688,14 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::InExpr* expr)
 		return result;
 		}
 
+	case TYPE_VECTOR:
+		{
+		auto op1 = HiltiExpression(expr->Op2());
+		auto op2 = HiltiIndex(expr->Op1());
+		Builder()->addInstruction(result, ::hilti::instruction::vector::Exists, op1, op2);
+		return result;
+		}
+
 	case TYPE_STRING:
 		{
 		auto op1 = HiltiExpression(expr->Op2());

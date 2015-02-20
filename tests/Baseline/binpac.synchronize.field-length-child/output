@@ -1,2 +1,2 @@
-%sync <a=1234, b=(Null)>
-%done <a=1234, b=(Null), c=90>
+%sync <a=b"1234", b=(Null)>
+%done <a=b"1234", b=(Null), c=b"90">

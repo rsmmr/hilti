@@ -1,0 +1,5 @@
+From https://github.com/ogay/rc4.
+
+Changed to use stdint.h.
+
+

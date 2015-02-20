@@ -23,6 +23,12 @@ public:
     /// HILTI library directories (in that order).
     string_list libdirs_pac2;
 
+    /// True to generate parsing functions. Set by default.
+    bool generate_parsers = true;
+
+    /// True to generate composing functions. Unset by default.
+    bool generate_composers = false;
+
     string_set cgDebugLabels() const override;
     string_set optimizationLabels() const override;
     void toCacheKey(::util::cache::FileCache::Key* key) const override;

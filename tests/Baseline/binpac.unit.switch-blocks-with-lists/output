@@ -1,3 +1,3 @@
-<a=A, len=2, dnets=[3, 4], b=\x05>
-x <a=B, len=2, x=3>
-<a=B, len=2, dnets=[4], x=3, b=\x05>
+<a=b"A", len=2, dnets=[3, 4], b=b"\x05">
+x <a=b"B", len=2, x=3>
+<a=b"B", len=2, dnets=[4], x=3, b=b"\x05">

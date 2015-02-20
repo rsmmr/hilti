@@ -283,7 +283,7 @@ bool Manager::InitPreScripts()
 	assert(! post_scripts_init_run);
 
 	::hilti::init();
-	::binpac::init();
+	::binpac::init_pac2();
 
 	add_input_file("init-bare-hilti.bro");
 
@@ -615,10 +615,6 @@ bool Manager::Compile()
 				return false;
 				}
 			}
-
-		for ( auto p : a->ports )
-			analyzer_mgr->RegisterAnalyzerForPort(a->tag, p.proto, p.port);
-
 		}
 
 	for ( auto a : pimpl->pac2_file_analyzers )
@@ -635,7 +631,13 @@ bool Manager::Compile()
 			}
 
 		for ( auto mt : a->mime_types )
-			file_mgr->RegisterAnalyzerForMIMEType(a->tag, mt);
+			{
+			val_list* vals = new val_list;
+			vals->append(a->tag.AsEnumVal()->Ref());
+			vals->append(new ::StringVal(mt));
+			EventHandlerPtr handler = internal_handler("pac2_analyzer_for_mime_type");
+			mgr.QueueEvent(handler, vals);
+			}
 		}
 
 	// See if we can short-cut this all by reusing our cache.
@@ -890,6 +892,34 @@ bool Manager::Compile()
 
 	auto result = RunJIT(llvm_module);
 	PLUGIN_DBG_LOG(HiltiPlugin, "Done with compilation");
+
+
+	PLUGIN_DBG_LOG(HiltiPlugin, "Registering analyzers through events");
+
+	for ( auto a : pimpl->pac2_analyzers )
+		{
+		for ( auto p : a->ports )
+			{
+			val_list* vals = new val_list;
+			vals->append(a->tag.AsEnumVal()->Ref());
+			vals->append(new ::PortVal(p.port, p.proto));
+			EventHandlerPtr handler = internal_handler("pac2_analyzer_for_port");
+			mgr.QueueEvent(handler, vals);
+			}
+		}
+
+	for ( auto a : pimpl->pac2_file_analyzers )
+		{
+		for ( auto mt : a->mime_types )
+			{
+			val_list* vals = new val_list;
+			vals->append(a->tag.AsEnumVal()->Ref());
+			vals->append(new ::StringVal(mt));
+			EventHandlerPtr handler = internal_handler("pac2_analyzer_for_mime_type");
+			mgr.QueueEvent(handler, vals);
+			}
+		}
+
 	return result;
 	}
 
@@ -1038,10 +1068,10 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
 
 	for ( auto a : pimpl->pac2_file_analyzers )
 		{
-        val_list* args = new val_list;
+		val_list* args = new val_list;
 		args->append(a->tag.AsEnumVal()->Ref());
-        register_func->Call(args);
-        }
+		register_func->Call(args);
+		}
 
 	return true;
 	}
@@ -2219,7 +2249,7 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
 
 	body->addStatement(stmt);
 
-	auto hook = std::make_shared<::binpac::Hook>(body, ev->priority);
+    auto hook = std::make_shared<::binpac::Hook>(body, ::binpac::Hook::PARSE, ev->priority);
 	auto hdecl = std::make_shared<::binpac::declaration::Hook>(std::make_shared<::binpac::ID>(ev->hook), hook);
 
 	auto raise_result = std::make_shared<::binpac::type::function::Result>(std::make_shared<::binpac::type::Void>(), true);
@@ -2804,7 +2834,8 @@ bool Manager::RuntimeRaiseEvent(Event* event)
 	// calls to speed it up, unless that method itself is already as fast
 	// as we would that get that way.
 
-	assert(pimpl->llvm_linked_module && pimpl->llvm_execution_engine);
+	assert(pimpl->llvm_linked_module);
+	assert(pimpl->llvm_execution_engine);
 
 	auto id = func->GetUniqueFuncID();
 

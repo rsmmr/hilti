@@ -74,7 +74,7 @@ static hlt_bytes* __main_type(hlt_bytes* mtype, hlt_exception** excpt, hlt_execu
     return result;
 }
 
-static void __connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_full, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_full, int8_t try_mode, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! __binpac_globals_get()->mime_types )
         return;
@@ -98,7 +98,7 @@ static void __connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_
         GC_CCTOR(mtype, hlt_bytes, ctx);
         GC_CCTOR(mtype_full, hlt_bytes, ctx);
 
-        void* pobj = mp->parser->new_func(sink, mtype, cookie, excpt, ctx);
+        void* pobj = mp->parser->new_func(sink, mtype, try_mode, cookie, excpt, ctx);
         assert(pobj);
 
         GC_DTOR(sink, binpac_sink, ctx);
@@ -147,22 +147,22 @@ void binpachilti_mime_register_parser(binpac_parser* parser, hlt_exception** exc
     }
 }
 
-void binpachilti_sink_connect_mimetype_string(binpac_sink* sink, hlt_string mtype, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_connect_mimetype_string(binpac_sink* sink, hlt_string mtype, int8_t try_mode, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_string_encode(mtype, Hilti_Charset_ASCII, excpt, ctx);
-    binpachilti_sink_connect_mimetype_bytes(sink, b, cookie, excpt, ctx);
+    binpachilti_sink_connect_mimetype_bytes(sink, b, 0, cookie, excpt, ctx);
 }
 
-void binpachilti_sink_connect_mimetype_bytes(binpac_sink* sink, hlt_bytes* mtype, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_connect_mimetype_bytes(binpac_sink* sink, hlt_bytes* mtype, int8_t try_mode, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __connect_one(sink, mtype, mtype, cookie, excpt, ctx);
+    __connect_one(sink, mtype, mtype, try_mode, cookie, excpt, ctx);
 
     // Do a second check just for the main type.
     hlt_bytes* mtype2 = __main_type(mtype, excpt, ctx);
     if ( mtype2 )
-        __connect_one(sink, mtype2, mtype, cookie, excpt, ctx);
+        __connect_one(sink, mtype2, mtype, try_mode, cookie, excpt, ctx);
 
     // Check for catch-alls with the empty string.
     hlt_bytes* mtype3 = hlt_bytes_new(excpt, ctx);
-    __connect_one(sink, mtype3, mtype, cookie, excpt, ctx);
+    __connect_one(sink, mtype3, mtype, try_mode, cookie, excpt, ctx);
 }

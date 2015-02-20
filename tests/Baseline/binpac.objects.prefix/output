@@ -1,1 +1,1 @@
-<a=object(test), b=1234, c=5678>
+<a=object(test), b=b"1234", c=b"5678">

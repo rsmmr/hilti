@@ -9,6 +9,7 @@
 #include "../type.h"
 
 #include <binpac/autogen/operators/unit.h>
+#include <binpac/autogen/operators/enum.h>
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -108,6 +109,40 @@ void Normalizer::visit(type::unit::item::Field* f)
 
         if ( border )
             btype->setBitOrder(border->value());
+    }
+
+    // If the field has a &parse, we ignore it for composing.
+    if ( f->attributes()->has("parse") )
+        f->setKind(type::unit::item::Field::PARSE);
+
+    // If the field has a &convert attribute with an expression of the form
+    // enum($$), add a &convert_back automatically for composing.
+    if ( auto convert = attributes->lookup("convert") ) {
+        if ( ! attributes->has("convert_back") ) {
+            if ( auto call = ast::tryCast<expression::operator_::enum_::Call>(convert->value()) ) {
+                auto o = ast::checkedCast<expression::ResolvedOperator>(convert->value());
+                auto c = ast::checkedCast<expression::Constant>(o->op2());
+                auto elems = ast::checkedCast<constant::Tuple>(c->constant())->value();
+                auto pstate = ast::tryCast<expression::ParserState>(elems.front());
+                if ( pstate && pstate->kind() == expression::ParserState::DOLLARDOLLAR ) {
+                    // Yes, found it.
+                    expression_list ops = { };
+
+                    auto npstate = std::make_shared<expression::ParserState>(expression::ParserState::SELF, nullptr, pstate->unit(), pstate->unit());
+                    auto mattr = std::make_shared<expression::MemberAttribute>(f->id());
+
+                    ops = { npstate, mattr };
+                    auto nattr = std::make_shared<binpac::expression::UnresolvedOperator>(operator_::Attribute, ops);
+
+                    auto ctype = std::make_shared<expression::Type>(f->type());
+                    ops = { nattr, ctype };
+                    auto ne = std::make_shared<binpac::expression::UnresolvedOperator>(operator_::Cast, ops);
+                    auto convert_back = std::make_shared<Attribute>("convert_back", ne);
+
+                    attributes->add(convert_back);
+                }
+            }
+        }
     }
 }
 

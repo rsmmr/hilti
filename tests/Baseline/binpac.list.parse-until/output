@@ -1,1 +1,1 @@
-[<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>, <line=EEE\x0a>]
+[<line=b"AAA\x0a">, <line=b"BBB\x0a">, <line=b"CCC\x0a">, <line=b"DDD\x0a">, <line=b"EEE\x0a">]

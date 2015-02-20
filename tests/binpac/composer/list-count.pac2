@@ -1,0 +1,9 @@
+# @TEST-EXEC:  echo 12345 | pac-driver-test -c %INPUT >output
+# @TEST-EXEC:  btest-diff output
+
+module HTTP;
+
+export type Test = unit {
+    lines: list<uint<8> > &count=5;
+    };
+

@@ -174,6 +174,11 @@ declare %hlt.string* @hlt_string_from_data(i8*, i64, %hlt.exception**, %hlt.exec
 declare %hlt.bytes*  @hlt_bytes_new_from_data_copy(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 declare void         @hlt_bytes_new_from_data_copy_hoisted(%hlt.bytes*, i8*, i64, %hlt.exception**, %hlt.execution_context*)
 declare i8*          @hlt_bytes_to_raw(i8*, i64, %hlt.bytes*, %hlt.exception**, %hlt.execution_context*)
+declare i8*          @hlt_bytes_append_raw_copy(%hlt.bytes*, i8*, i64, %hlt.exception**, %hlt.execution_context*)
+
+; Internal name to avoid naming conflict.
+declare i8*          @__hlt_bytes_append(%hlt.bytes*, %hlt.bytes*, %hlt.exception**, %hlt.execution_context*)
+
 
 declare i8 @__hlt_bytes_extract_one(%hlt.iterator.bytes*, %hlt.iterator.bytes, %hlt.exception**, %hlt.execution_context*)
 

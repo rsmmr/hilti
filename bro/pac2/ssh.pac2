@@ -6,6 +6,4 @@ export type Banner = unit {
     version : /[^-]*/;
     dash    : /-/;
     software: /[^\r\n]*/;
-
-    on %done { print self; }
 };

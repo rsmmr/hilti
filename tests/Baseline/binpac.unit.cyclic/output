@@ -1,1 +1,1 @@
-<data=\x02\x80\x81\x00\xff12345, name=<labels=[<len=3, l=\x10\x11\x12>, <len=-2, n1=<labels=[<len=2, l=\x80\x81>]>>]>, data2=ABCDE>
+<data=b"\x02\x80\x81\x00\xff12345", name=<labels=[<len=3, l=b"\x10\x11\x12">, <len=254, n1=<labels=[<len=2, l=b"\x80\x81">]>>]>, data2=b"ABCDE">

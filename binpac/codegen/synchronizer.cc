@@ -7,6 +7,7 @@
 #include "../attribute.h"
 #include "../expression.h"
 #include "../options.h"
+#include "../grammar.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -136,7 +137,7 @@ void Synchronizer::_hiltiSynchronizeOnRegexp(const hilti::builder::regexp::re_pa
     auto re = ast::checkedCast<hilti::ctor::RegExp>(op->ctor());
     re->attributes().add(attribute::NOSUB);
     re->attributes().add(attribute::FIRSTMATCH);
-    auto glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node("__sync"), op->type(), op);
+    auto glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node("__sync"), op->type(), op, hilti::AttributeSet(), true);
     auto pattern = ast::checkedCast<hilti::Expression>(glob);
 
     cg()->builder()->addInstruction(mstate, hilti::instruction::regexp::MatchTokenInit, pattern);
@@ -242,6 +243,19 @@ shared_ptr<hilti::Expression> Synchronizer::hiltiSynchronize(shared_ptr<Producti
     return _state.cur;
 }
 
+shared_ptr<hilti::Expression> Synchronizer::hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur)
+{
+    assert(unit->supportsSynchronize());
+
+    _state.type = SynchronizeUnspecified;
+    _state.data = data;
+    _state.cur = cur;
+
+    _hiltiSynchronizeOne(unit);
+
+    return _state.cur;
+}
+
 void Synchronizer::_hiltiSynchronizeOne(shared_ptr<Node> node)
 {
     processOne(node);
@@ -272,6 +286,26 @@ void Synchronizer::visit(ctor::Bytes* b)
 void Synchronizer::visit(ctor::RegExp* b)
 {
     _hiltiSynchronizeOnRegexp(b->patterns());
+}
+
+void Synchronizer::visit(type::Unit* u)
+{
+    for ( auto p : u->properties() ) {
+        auto attr = p->property();
+
+        if ( attr->key() == "synchronize-after" ) {
+            _state.type = SynchronizeAfter;
+            _hiltiSynchronizeOne(attr->value());
+        }
+
+        if ( attr->key() == "synchronize-at" ) {
+            _state.type = SynchronizeAt;
+            _hiltiSynchronizeOne(attr->value());
+        }
+    }
+
+    if ( u->grammar()->root()->supportsSynchronize() )
+        _hiltiSynchronizeOne(u->grammar()->root());
 }
 
 void Synchronizer::visit(type::EmbeddedObject* o)
@@ -404,23 +438,7 @@ void Synchronizer::visit(production::Sequence* l)
 void Synchronizer::visit(production::ChildGrammar* l)
 {
     auto utype = ast::checkedCast<type::Unit>(l->type());
-
-    for ( auto p : utype->properties() ) {
-        auto attr = p->property();
-
-        if ( attr->key() == "synchronize-after" ) {
-            _state.type = SynchronizeAfter;
-            _hiltiSynchronizeOne(attr->value());
-        }
-
-        if ( attr->key() == "synchronize-at" ) {
-            _state.type = SynchronizeAt;
-            _hiltiSynchronizeOne(attr->value());
-        }
-    }
-
-    if ( l->child()->supportsSynchronize() )
-        _hiltiSynchronizeOne(l->child());
+    _hiltiSynchronizeOne(utype);
 }
 
 void Synchronizer::visit(production::LookAhead* l)

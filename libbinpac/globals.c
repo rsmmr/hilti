@@ -24,10 +24,10 @@ void __binpac_globals_init()
     _globals = &_our_globals;
 
     _globals->parsers = hlt_list_new(&hlt_type_info_hlt_BinPACHilti_Parser, 0, &excpt, ctx);
-    GC_CCTOR(_globals->parsers, hlt_BinPACHilti_Parser, ctx);
+    GC_CCTOR(_globals->parsers, hlt_list, ctx);
 
     _globals->mime_types = hlt_map_new(&hlt_type_info_hlt_bytes, &hlt_type_info___mime_parser, 0, &excpt, ctx);
-    GC_CCTOR(_globals->mime_types, __mime_parser, ctx);
+    GC_CCTOR(_globals->mime_types, hlt_map, ctx);
 
     _globals->debugging = 0;
 }

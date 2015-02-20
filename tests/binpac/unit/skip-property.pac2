@@ -1,10 +1,10 @@
 #
-# @TEST-EXEC:  printf "   1 23   456"  | pac-driver-test %INPUT -p Test::test_pre >>output
-# @TEST-EXEC:  printf "123456"         | pac-driver-test %INPUT -p Test::test_pre >>output
-# @TEST-EXEC:  printf "1    23 456"    | pac-driver-test %INPUT -p Test::test_post >>output
-# @TEST-EXEC:  printf "123456"         | pac-driver-test %INPUT -p Test::test_post >>output
-# @TEST-EXEC:  printf "AAA1BBBA23B456" | pac-driver-test %INPUT -p Test::test_both >>output
-# @TEST-EXEC:  printf "123456"         | pac-driver-test %INPUT -p Test::test_both >>output
+# @TEST-EXEC:  printf "   1 23   456"  | pac-driver-test -p Test::test_pre  %INPUT >>output
+# @TEST-EXEC:  printf "123456"         | pac-driver-test -p Test::test_pre  %INPUT >>output
+# @TEST-EXEC:  printf "1    23 456"    | pac-driver-test -p Test::test_post %INPUT >>output
+# @TEST-EXEC:  printf "123456"         | pac-driver-test -p Test::test_post %INPUT >>output
+# @TEST-EXEC:  printf "AAA1BBBA23B456" | pac-driver-test -p Test::test_both %INPUT >>output
+# @TEST-EXEC:  printf "123456"         | pac-driver-test -p Test::test_both %INPUT >>output
 # @TEST-EXEC:  btest-diff output
 #
 

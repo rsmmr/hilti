@@ -1,0 +1,7 @@
+<lines=[<line=b"AAA\x0a">, <line=b"BBB\x0a">, <line=b"CCC\x0a">, <line=b"DDD\x0a">, <line=b"EEE\x0a">], last=b"XXX\x0a">
+AAA
+BBB
+CCC
+DDD
+EEE
+XXX

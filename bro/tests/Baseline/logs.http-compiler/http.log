@@ -3,7 +3,7 @@
 #empty_field	(empty)
 #unset_field	-
 #path	http
-#open	2014-11-24-16-10-28
+#open	2015-02-08-20-53-54
 #fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	trans_depth	method	host	uri	referrer	user_agent	request_body_len	response_body_len	status_code	status_msg	info_code	info_msg	filename	tags	username	password	proxied	orig_fuids	orig_mime_types	resp_fuids	resp_mime_types
 #types	time	string	addr	port	addr	port	count	string	string	string	string	string	count	count	count	string	count	string	string	set[enum]	string	string	set[string]	vector[string]	vector[string]	vector[string]	vector[string]
 1300475168.784020	CRJuHdVW0XPVINV8a	141.142.220.118	48649	208.80.152.118	80	1	GET	bits.wikimedia.org	/skins-1.5/monobook/main.css	http://www.wikipedia.org/	Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110303 Ubuntu/10.04 (lucid) Firefox/3.6.15	0	0	304	Not Modified	-	-	-	(empty)	-	-	-	-	-	-	-
@@ -20,4 +20,4 @@
 1300475169.014619	CyAhVIzHqb7t7kv28	141.142.220.118	50000	208.80.152.3	80	2	GET	upload.wikimedia.org	/wikipedia/commons/thumb/4/4a/Commons-logo.svg/35px-Commons-logo.svg.png	http://www.wikipedia.org/	Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110303 Ubuntu/10.04 (lucid) Firefox/3.6.15	0	0	304	Not Modified	-	-	-	(empty)	-	-	-	-	-	-	-
 1300475169.014593	CzA03V1VcgagLjnO92	141.142.220.118	49999	208.80.152.3	80	2	GET	upload.wikimedia.org	/wikipedia/commons/thumb/9/91/Wikiversity-logo.svg/35px-Wikiversity-logo.svg.png	http://www.wikipedia.org/	Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110303 Ubuntu/10.04 (lucid) Firefox/3.6.15	0	0	304	Not Modified	-	-	-	(empty)	-	-	-	-	-	-	-
 1300475169.014927	CkDsfG2YIeWJmXWNWj	141.142.220.118	50001	208.80.152.3	80	2	GET	upload.wikimedia.org	/wikipedia/commons/thumb/7/75/Wikimedia_Community_Logo.svg/35px-Wikimedia_Community_Logo.svg.png	http://www.wikipedia.org/	Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110303 Ubuntu/10.04 (lucid) Firefox/3.6.15	0	0	304	Not Modified	-	-	-	(empty)	-	-	-	-	-	-	-
-#close	2014-11-24-16-10-28
+#close	2015-02-08-20-53-54

@@ -233,7 +233,8 @@ void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_execut
 void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx)
 {
     __exception_print("hilti: uncaught exception, ", exception, ctx);
-    hlt_abort();
+    //hlt_abort();
+    exit(1); // We exit instead of abort, to avoid mismatching output on different OSs in that case.
 }
 
 hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)

@@ -1,4 +1,4 @@
-%synced <l=[<x=12>]>
-%done: <l=[<x=12>, <x=78>]>
-%synced <l=[<x=12>]>
-%done: <l=[<x=12>, <x=78>]>
+%synced <l=[<x=b"12">]>
+%done: <l=[<x=b"12">, <x=b"78">]>
+%synced <l=[<x=b"12">]>
+%done: <l=[<x=b"12">, <x=b"78">]>

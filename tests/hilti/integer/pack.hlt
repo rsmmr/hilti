@@ -1,0 +1,36 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+
+    b = pack 0x01020304 Hilti::Packed::Int32Big
+    call Hilti::print(b)
+
+    b = pack 0x01020304 Hilti::Packed::Int32Little
+    call Hilti::print(b)
+
+    b = pack 0x01020304 Hilti::Packed::Int8Big
+    call Hilti::print(b)
+
+    b = pack 0x01020304 Hilti::Packed::Int16Big
+    call Hilti::print(b)
+
+    b = pack 0x01020304 Hilti::Packed::Int32Big
+    call Hilti::print(b)
+
+    b = pack -1 Hilti::Packed::Int32Big
+    call Hilti::print(b)
+
+    b = pack 255 Hilti::Packed::UInt32Big
+    call Hilti::print(b)
+
+    b = pack 255 Hilti::Packed::Int32Big (12, 19)
+    call Hilti::print(b)
+}

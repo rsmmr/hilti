@@ -1,0 +1,12 @@
+Overlap at 2 : b"23" vs b"AB"
+b"0123456789"
+
+Overlap at 1 : b"123" vs b"ABC"
+b"0123456789"
+
+Overlap at 1 : b"123" vs b"ABC"
+Overlap at 4 : b"D" vs b"4"
+b"0123D56789"
+
+Overlap at 2 : b"23" vs b"2A"
+b"0123B56"

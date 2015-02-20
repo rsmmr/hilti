@@ -1,1 +1,1 @@
-hilti: uncaught exception, BinPACHilti::ParseError with argument 'integer constant expected (32)' (from /home/robin/work/hilti/tests/.tmp/binpac.integer.parse-const-fail/parse-const-fail.hb14914.tmp.hlt:1259-1260)
+hilti: uncaught exception, BinPACHilti::ParseError with argument 'integer constant expected (32)' (from /home/robin/work/hilti/tests/.tmp/binpac.integer.parse-const-fail/parse-const-fail.hb30153.tmp.hlt:1387-1388)

@@ -1,4 +1,319 @@
 
+0.4 | 2015-02-16 21:57:58 -0800
+
+  * New HILTI vector instruction vector.exists that checks if an index
+    has been assigned a value.
+
+  * Fixes to make the Bro plugin work again with current Bro master.
+
+  * A failing test case: currently when there is a list without a
+    specified length in a unit which gets it data from a sink, there
+    is no way to signal end-of-data and thus end the list without an
+    exception.
+
+  * When reassembling, one can now detach the sequence space from the
+    length of the data, e.g., for reassembling by packet numbers. For
+    that, sink.write() gets an additional optional parameter to pass
+    in the length that the new chunk occupies inside the sequence
+    space.
+  * Adding a new operator for sinks to instantiate them dynamically.
+
+  * Adding reassemly support to sinks.
+
+  * Sinks now allow for out-of-order input by passing sequence numbers
+    to write():
+
+        export type Main = unit {
+
+            var data : sink;
+
+            on %init {
+                self.data.connect(new Sub);
+                self.data.write(b"567", 5);
+                self.data.write(b"89", 8);
+                self.data.write(b"012", 0);
+                self.data.write(b"34", 3);
+                self.data.close();
+                }
+
+        export type Sub = unit {
+            s: bytes &eod;
+
+            on %done {
+                print self.s;
+            }
+        }
+
+        # pac-driver test.pac2
+        0123456789
+
+    These sequence numbers are optional; by default write() adds to the
+    end of the stream, like before.
+
+    Along with this come a few new sink methods:
+
+        sink.set_initial_sequence_number(seq)
+            Sets an initial sequence number. All other seq are relative
+            to this. Defaults to zero.
+
+        sink.set_data.set_policy(policy)
+            Sets a policy how to handle ambigious input. Only one policy
+            exists currently: take the oldest data.
+
+        sink.set_data.set_policy(policy)
+            Sets a policy how to handle ambigious input. Only one policy
+            exists currently: take the oldest data.
+
+        sink.sequence()
+            Returns the sink's current sequence number.
+
+        sink.gap(seq, len)
+            Reports a gap of length len in the input stream at seq.
+
+        sink.skip(seq)
+            Skips ahead in the input stream. New data below seq will be
+            ignored. Can move beyond gaps to continue processing.
+
+        sink.trim(seq)
+            Delete any still buffered data upt ot seq.
+
+        sink.set_auto_trim(enabled)
+            If enabled (whichis the default) all delivered data is
+            automatically trimmed.
+
+            TODO: In fact, one cannot disable auto-trim currently.
+
+    There are also a few more sink hooks in this context:
+
+        on %gap(seq: uint<64>, len: uint<64>) { ... }
+            Triggered when the input stream reaches a gap.
+
+        on %skip(seq: uint<64>) { ... }
+            Triggered when a skip() methods skips ahead.
+
+        on %undelivered(seq: uint<64>, data: bytes) { ... }
+            Triggered for data that couldn't be put in sequence.
+
+        on %overlap(seq: uint<64>, b1: bytes, b2: bytes) { ... }
+            Triggered for ambigious input.
+
+  * Changing output to enclose bytes instanced in b"..." when printing.
+
+  * "Dynamic Format Detection" or BinPAC::
+
+    There's a new sink method try_connect_mime_type() that works
+    mostly like connect_mime_type() but attaches all matching subunits
+    in a new preliminary trial mode, assuming that it's not clear yet
+    if the sink's input is indeed in their format. If in this mode a
+    parse error occurs, that's internally treated as a soft error that
+    just leads to the parser being disabled for the sink.
+
+    There are a few additional pieces to that scheme:
+
+        - unit.confirm() confirms that a unit is seeing the right stuff,
+          disabling trial mode. This can only be called on a top-level
+          unit; that's not that great, but unclear if it could be
+          supported down in the parse tree (worst case is one will alsways
+          need to pass it down).
+
+        - unit.disable(msg) explicitly disables parsing, just as a parse
+          error in trial mode would. If this happens inside a unit that is
+          directly instantiated by a host application (i.e, not connected
+          via sink), it will propagate as a ParserDisabled exception
+          upstream.
+
+        - the hook %confirmed() runs when unit.confirm() is called. This
+          hook can only be defined in a top-level unit.
+
+        - the hook %disabled() runs when a parser gets disabled, either
+          via parse error in trial mode or explicitly via disable(). This
+          hook can only be defined in a top-level unit.
+
+        - If a unit connected with try_connect_mime_type() defines
+          synchronization support, that's actviated first before the
+          actual parsing proceeds. That can (1) be more effificient
+          (e.g.., if it can quickly scan for a regexp, and (2) allows
+          for parsing to start midstream once the synchronization has
+          identified a suitable spot (this will allow, e.g., to
+          reasonably parse partial connections). Once synchronization
+          completes, the actual parsing will stay in trial mode, per
+          the previous commit (i.e., we follow the 2-stage process of
+          Bro's DPD here).
+
+  * Adding two new BinPAC++ library functions.
+
+        bytes sha256(b: bytes, seed: bytes, out_len: int64);
+        addr anonymize(a: addr, seed: int64);
+
+  * Support for generating ("composing") binary data from a parsed
+    instance.
+
+    To test, pac-driver got a new option -c that will let it turn a
+    just parsed representation back into binary.
+
+        export type test = unit {
+           a: bytes &length=4;
+           b: bytes &length=6;
+        };
+
+        # echo 1234567890 | pac-driver -c bytes.pac2
+        1234567890
+
+    This further includes:
+
+        - Composing bytes, integers, addresses, child units, lists
+          with &count &until_including, &until [1]
+
+                [1] &until needs manual support: as the terminating
+                element doesn't exist anymore at compose time, it needs to
+                be added back manully (we could instead save it
+                internally, but then the user wouldn't be able to change
+                it).
+
+        - Adding syntax to mark fields as only for parsing or only for
+          composing:
+
+            export type test = unit {
+                a  :  bytes &length=2;
+                b1 <  int<16> &byteorder=BinPAC::ByteOrder::Little;
+                b1 >  int<16> &byteorder=BinPAC::ByteOrder::Big;
+                c  :  bytes &length=2;
+            }
+
+          Legend:
+            ':' means "use this for parsing and composing"
+            '<' means "use this for parsing only"
+            '>' means "use this for composing only"
+
+        - Fields with a &parse attribute are turned into "<" automatically.
+
+        - Standard hook don't execute during composing. One can however or
+          have compose-only hooks in addition:
+
+            type Foo = unit {
+                on %init !> { # Triggered just before composing this unit begins; }
+                on %done !> { # Triggered just after composing this unit finished; }
+
+                a: int32 !> { # Triggered just *before* composing this field begins; }
+
+            Note that compose field hooks trigger before composing the
+            fields, not after.
+
+        - Fields with &convert attribute are problematic for composing as
+          in general one can't automatically reverse that expression. We
+          do this:
+
+          - &convert gets evaluated only during parsing.
+
+          - A new &convert_back evaluates during composing, providing an
+            expression to go the opposite way.
+
+          - Wespecial-cases one &convert case: for
+            &convert=<enum-type>($$), the normalizer automatically
+            adds a corresponding &convert_back.
+
+  * Adding packer to hilti.
+
+    It's reverse of the unpacker, packing values into binary data:
+
+        target = pack <value> <format>
+
+  * Adding a &hide attribute that will be passed as meta information to
+    host applications. pac-dump respects the &hide attribute.
+
+  * Disabling some debug code output in non-debug builds.
+
+  * Add new tool pac-dump.
+
+    A variant pac-driver of pac-driver that simply prints all parsed
+    fields in either ASCII oder JSON (and leaves out all the other ballast
+    of pac-driver).
+
+  * New operators/methods for BinPAC++.
+
+        bytes.to_time(base)
+            Interprets the ``bytes`` as representing a number of seconds
+            since the epoch in the form of an ASCII-encoded number and
+            converts it into a time value, using a base of *base*. If
+            *base* is not given, the default is 10.
+
+        bytes.to_time(byte_order)
+           Interprets the ``bytes`` as representing as number of seconds
+           since the epoch in the form of an binary number encoded with
+           the given byte order, and converts it into a time value.
+
+        enum -> bool
+           Enums coerce to boolean, returning true if the value
+           corresponds to a known label.
+
+  * BinPAC++ now renders types itself when printing, plus corresponding
+    introspection infrastructure.
+
+    Before, BinPAC++ just used standard HILTI rendering for printing out
+    values, which led to some not so nice effects, as BinPAC++'s types
+    don't always correspond to a HILTI type directly.
+
+    Along with this come a few more pieces/changes:
+
+        - When printing BinPAC++ objects, the output has changed somewhat.
+          Apart from making it a bit prettier and simpler, the most
+          obvious change is that units now omit printing out any optional
+          fields that aren't set.
+
+        - BinPAC++ bitfields now have their own type, rather than just
+          being treated as integers. When printing them, all the subfields
+          are listed (not just the overall integer value anymore).
+
+        - HILI tuples can now optionally name their elements (which
+          internally the bitfields use).
+
+        - A HILTI host application can associate custom run-time type
+          information with any HILTI type. We use that for BinPAC++ to
+          carry through its type information to the runtime.
+
+        - Further HILTI-level functions for inspecting libhilti RTTI
+          (e.g., for tuples and container types).
+
+  * A new libbinpac API for introspecting types, so that, e.g., a C
+    host application can iterate generically over all fields of a unit
+    without prior knowledge of what fields to expect. The BinPAC++
+    rendering code relies fully on this API as well, and not on any
+    further knowledge about internals.
+
+  * Splitting out attributes that shouldn't be associated with types into
+    better suited classes.
+
+  * Adding %skip-{pre/post} properties.
+
+    This skips a given constant expression before/after any field inside a
+    unit.
+
+        # cat skip.pac2
+        export type test_pre = unit {
+            %skip-pre = / */;
+
+              a: bytes &length=1;
+              b: bytes &length=2;
+              c: bytes &length=3;
+        };
+
+        # printf "   1 23   456"  | pac-driver skip.pac2
+        <a=1,b=23,c=456>
+
+    %skip-pre/post can also be listed globally at the module level, and
+    will then be inherited by every unit in there. To disable inside a
+    unit, use "%skip-{pre,post} = None".
+
+    Note that the expression given with skip is assumed to represent an
+    optional token, which means that effectively it will often only make
+    sense to specify a regular expression that also matches an empty
+    string. The reason is that it may be hard to predict for the grammar
+    writer where exactly the skip gets inserted, as internally it's added
+    on a per-field basis, but per production of the generated grammar.
+
+  * Lots of bug fixes and other smaller stuff.
+
+
 0.3-72 | 2014-10-24 18:11:12 -0700
 
   * Support for manual backtracking in a BinPAC++ grammar. If a field

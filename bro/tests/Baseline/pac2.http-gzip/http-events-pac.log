@@ -18,9 +18,9 @@ pac, 1363624631.441318, http_header, CXWv6p3arKYeMETxOg, F, CONTENT-ENCODING, gz
 pac, 1363624631.441318, http_header, CXWv6p3arKYeMETxOg, F, CONNECTION, close
 pac, 1363624631.441318, http_content_type, CXWv6p3arKYeMETxOg, F, APPLICATION, JSON
 pac, 1363624631.441318, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F
-pac, 1363624631.441318, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F
 pac, 1363624631.441318, file_new, FOTFUh3hVFh2jbEhWi, 0
 pac, 1363624631.441318, file_over_new_connection, CXWv6p3arKYeMETxOg, FOTFUh3hVFh2jbEhWi, 0, F
+pac, 1363624631.441318, get_file_handle, CXWv6p3arKYeMETxOg, Analyzer::ANALYZER_HTTP, F
 pac, 1363624631.441318, file_state_remove, FOTFUh3hVFh2jbEhWi, 197
 pac, 1363624631.441318, http_ALL_entities, CXWv6p3arKYeMETxOg, F, |{^J  "origin": "10.224.189.238",^J  "headers": {^J    "Host": "httpbin.org",^J    "Connection": "close",^J    "Accept": "*/*",^J    "User-Agent": "curl/7.29.0"^J  },^J  "gzipped": true,^J  "method": "GET"^J}|
 pac, 1363624631.441318, http_end_entities, CXWv6p3arKYeMETxOg, F

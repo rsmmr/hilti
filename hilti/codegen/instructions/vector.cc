@@ -45,6 +45,18 @@ void StatementBuilder::visit(statement::instruction::vector::Get* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::vector::Exists* i)
+{
+    auto op2 = i->op2()->coerceTo(builder::integer::type(64));
+
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(op2);
+    auto result = cg()->llvmCall("hlt::vector_exists", args);
+
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::vector::PushBack* i)
 {
     auto etype = ast::as<type::Vector>(referencedType(i->op1()))->argType();

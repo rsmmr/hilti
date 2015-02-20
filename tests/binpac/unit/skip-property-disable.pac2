@@ -1,6 +1,6 @@
 #
-# @TEST-EXEC:  printf "xxx1x23xxx456" | pac-driver-test %INPUT -p Test::test_yes >>output
-# @TEST-EXEC:  printf "xxx1x23xxx456" | pac-driver-test %INPUT -p Test::test_no    >>output
+# @TEST-EXEC:  printf "xxx1x23xxx456" | pac-driver-test -p Test::test_yes %INPUT >>output
+# @TEST-EXEC:  printf "xxx1x23xxx456" | pac-driver-test -p Test::test_no %INPUT >>output
 # @TEST-EXEC:  btest-diff output
 #
 

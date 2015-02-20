@@ -1,11 +1,11 @@
-|1212|
-|abc|
-|abc|
-|abc|
-||
-||
+b"|1212|"
+b"|abc|"
+b"|abc|"
+b"|abc|"
+b"||"
+b"||"
 
-|ABC|
-|ABC  |
-|  ABC|
-|ABC|
+b"|ABC|"
+b"|ABC  |"
+b"|  ABC|"
+b"|ABC|"

@@ -1,2 +1,2 @@
-bytes
-int
+b"bytes"
+b"int"

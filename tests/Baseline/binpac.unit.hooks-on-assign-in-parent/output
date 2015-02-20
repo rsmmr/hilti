@@ -1,5 +1,5 @@
-Hook A <a=1234>
+Hook A <a=b"1234">
 <i=1>
-Hook A <a=new-value, foo=(Null)>
-Hook S <a=new-value, foo=(Null), s=new-value>
-<a=new-value, foo=<i=1>, b=567890, s=new-value>
+Hook A <a=b"new-value", foo=(Null)>
+Hook S <a=b"new-value", foo=(Null), s=b"new-value">
+<a=b"new-value", foo=<i=1>, b=b"567890", s=b"new-value">

@@ -1,0 +1,13 @@
+#
+# @TEST-EXEC:  cat %DIR/archive.zip.dat | pac-driver-test -I ${PARSERS} ${PARSERS}/mstime.pac2 ${PARSERS}/zip.pac2 %INPUT -- -p ZIP::Archive >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import parsers/zip;
+
+on ZIP::File::%done {
+    print self;
+    }
+

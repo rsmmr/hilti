@@ -157,6 +157,8 @@ __clear               return token::CLEAR;
 \|\|                  return token::OR;
 \.\.                  return token::DOTDOT;
 ->                    return token::ARROW;
+!<                    return token::HOOK_PARSE;
+!>                    return token::HOOK_COMPOSE;
 
 &hilti_id             return token::ATTR_HILTI_ID;
 

@@ -17,6 +17,7 @@ void CodeBuilder::visit(ctor::Unit* m)
     std::list<shared_ptr<hilti::Expression>> hparams;
     hparams.push_back(hilti::builder::reference::createNull());
     hparams.push_back(hilti::builder::reference::createNull());
+    hparams.push_back(hilti::builder::boolean::create(false));
     hparams.push_back(cg()->hiltiCookie());
 
     cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, func, hilti::builder::tuple::create(hparams));
@@ -76,7 +77,7 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
     auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->fieldType()), nullptr, false);
     cg()->hiltiItemSet(uval, item, expr);
 
-    cg()->hiltiRunFieldHooks(item, uval);
+    cg()->hiltiRunFieldHooks(unit, item, uval, false, cg()->hiltiCookie());
 
     setResult(expr);
 }
@@ -145,6 +146,7 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
 
     hparams.push_back(hilti::builder::reference::createNull());
     hparams.push_back(hilti::builder::reference::createNull());
+    hparams.push_back(hilti::builder::boolean::create(false));
     hparams.push_back(cg()->hiltiCookie());
 
     auto result = cg()->builder()->addTmp("pobj", cg()->hiltiType(unit));
@@ -233,6 +235,27 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::MimeType* i)
 void CodeBuilder::visit(binpac::expression::operator_::unit::Backtrack* i)
 {
     cg()->builder()->addThrow("BinPACHilti::Backtrack", ::hilti::builder::string::create("backtracking triggered"));
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::unit::Confirm* i)
+{
+    auto self = cg()->hiltiExpression(i->op1());
+    auto unit = ast::checkedCast<binpac::type::Unit>(i->op1()->type());
+
+    auto try_mode = cg()->hiltiItemGet(self, "__try_mode", hilti::builder::boolean::type());
+    cg()->hiltiConfirm(self, unit, try_mode, hilti::builder::id::create("__cookie"));
+    cg()->hiltiItemSet(self, "__try_mode", try_mode);
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::unit::Disable* i)
+{
+    auto self = cg()->hiltiExpression(i->op1());
+    auto unit = ast::checkedCast<binpac::type::Unit>(i->op1()->type());
+    auto msg = cg()->hiltiExpression(callParameter(i->op3(), 0));
+    cg()->hiltiDisable(self, unit, msg);
     setResult(std::make_shared<hilti::expression::Void>());
 }
 

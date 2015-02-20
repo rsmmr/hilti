@@ -277,6 +277,37 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> node, bool verify)
 
     _endPass();
 
+    // Normalizer might have added some new (unresolved) stuff.
+
+    _beginPass(node, id_resolver);
+    if ( ! id_resolver.run(node, true) )
+        return false;
+
+    _endPass();
+
+    _beginPass(node, overload_resolver);
+
+    if ( ! overload_resolver.run(node) )
+        return false;
+
+    _endPass();
+
+    _beginPass(node, op_resolver);
+
+    if ( ! op_resolver.run(node) )
+        return false;
+
+    _endPass();
+
+    if ( verify ) {
+        _beginPass(node, validator);
+
+        if ( ! validator.run(node) )
+            return false;
+
+        _endPass();
+    }
+
     if ( options().cgDebugging("grammars") )
         grammar_builder.enableDebug();
 

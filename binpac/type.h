@@ -1250,6 +1250,14 @@ namespace item {
 class Field : public Item
 {
 public:
+    /// The kind of a field defines whether it's to trigger during parsing or
+    /// composing, or both.
+    enum Kind {
+        PARSE,         ///< A field to be parsed.
+        COMPOSE,       ///< A field to be composed.
+        PARSE_COMPOSE, ///< A field to be parsed and composed (default).
+    };
+
     /// Returns the item's associated value, or null if none.
     shared_ptr<Expression> value() const;
 
@@ -1262,6 +1270,18 @@ public:
     /// Returns the parameters passed to sub-type's parsing.
     expression_list parameters() const;
 
+    /// Returns the kind of field.
+    Kind kind() const;
+
+    /// Sets the fields kind.
+    void setKind(Kind kind);
+
+    /// Returns true if the kind indicates that this fields is to be parsed.
+    bool forParsing() const;
+
+    /// Returns true if the kind indicates that this fields is to be composed.
+    bool forComposing() const;
+
     /// Returns true if this is a transient field. A transient field is used
     /// for parsing but doesn't actually store the parsed value in the parse
     /// object.
@@ -1271,8 +1291,9 @@ public:
 
     /// Create a field for parsing a type. This internally knows which field
     /// class to use for each type, and will create a corresponding instance.
-    static shared_ptr<Field> createByType(shared_ptr<Type>,
+    static shared_ptr<Field> createByType(shared_ptr<Type> type,
                                           shared_ptr<ID> id,
+                                          Kind kind,
                                           shared_ptr<Expression> cond = nullptr,
                                           const hook_list& hooks = hook_list(),
                                           const attribute_list& attrs = attribute_list(),
@@ -1298,6 +1319,8 @@ protected:
     ///
     /// type: The type of the item.
     ///
+    /// kind: The kind of field.
+    ///
     /// hooks: Hooks associated with this item.
     ///
     /// attrs: Attributes associated with the item.
@@ -1309,6 +1332,7 @@ protected:
     /// l: Location associated with the item.
     Field(shared_ptr<ID> id,
           shared_ptr<binpac::Type> type,
+          Kind kind,
           shared_ptr<Expression> cond = nullptr,
           const hook_list& hooks = hook_list(),
           const attribute_list& attrs = attribute_list(),
@@ -1321,6 +1345,7 @@ private:
     std::list<node_ptr<Expression>> _sinks;
     std::list<node_ptr<Expression>> _params;
     Field* _parent = nullptr;
+    Kind _kind = PARSE_COMPOSE;
 };
 
 namespace field {
@@ -1332,6 +1357,8 @@ public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
     /// scope_id: The ID to lookup to resolve the field.
+    ///
+    /// kind: The kind of field.
     ///
     /// hooks: Hooks associated with this item.
     ///
@@ -1345,6 +1372,7 @@ public:
     /// l: Location associated with the item.
     Unknown(shared_ptr<ID> id,
          shared_ptr<binpac::ID> scope_id,
+         Kind kind,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
@@ -1367,6 +1395,8 @@ class AtomicType : public Field
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
+    /// kind: The kind of field.
+    ///
     /// hooks: Hooks associated with this item.
     ///
     /// attrs: Attributes associated with the item.
@@ -1379,6 +1409,7 @@ public:
     /// l: Location associated with the item.
     AtomicType(shared_ptr<ID> id,
                shared_ptr<binpac::Type> type,
+               Kind kind,
                shared_ptr<Expression> cond = nullptr,
                const hook_list& hooks = hook_list(),
                const attribute_list& attrs = attribute_list(),
@@ -1394,6 +1425,8 @@ class Unit : public Field
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
+    /// kind: The kind of field.
+    ///
     /// hooks: Hooks associated with this item.
     ///
     /// attrs: Attributes associated with the item.
@@ -1406,6 +1439,7 @@ public:
     /// l: Location associated with the item.
     Unit(shared_ptr<ID> id,
          shared_ptr<binpac::Type> type,
+         Kind kind,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
@@ -1426,11 +1460,14 @@ public:
     ///
     /// const_: The constant's value.
     ///
+    /// kind: The kind of field.
+    ///
     /// hooks: Hooks associated with this item.
     ///
     /// l: Location associated with the item.
-    Constant(shared_ptr<ID> id = nullptr,
-             shared_ptr<binpac::Constant> const_ = nullptr,
+    Constant(shared_ptr<ID> id,
+             shared_ptr<binpac::Constant> const_,
+             Kind kind,
              shared_ptr<Expression> cond = nullptr,
              const hook_list& hooks = hook_list(),
              const attribute_list& attrs = attribute_list(),
@@ -1456,6 +1493,8 @@ public:
     //
     /// ctor: The ctor expression for parsing the field.
     ///
+    /// kind: The kind of field.
+    ///
     /// hooks: Hooks associated with this item.
     ///
     /// attrs: Attributes associated with the item.
@@ -1465,6 +1504,7 @@ public:
     /// l: Location associated with the item.
     Ctor(shared_ptr<ID> id,
          shared_ptr<binpac::Ctor> ctor,
+         Kind kind,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
@@ -1490,6 +1530,8 @@ public:
     //
     /// field: The field to parse recursively.
     ///
+    /// kind: The kind of field.
+    ///
     /// hooks: Hooks associated with this item.
     ///
     /// attrs: Attributes associated with the item.
@@ -1499,6 +1541,7 @@ public:
     /// l: Location associated with the item.
     Container(shared_ptr<ID> id,
          shared_ptr<Field> field,
+         Kind kind,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
@@ -1526,6 +1569,8 @@ public:
     //
     /// field: The field to parse recursively.
     ///
+    /// kind: The kind of field.
+    ///
     /// hooks: Hooks associated with this item.
     ///
     /// attrs: Attributes associated with the item.
@@ -1535,6 +1580,7 @@ public:
     /// l: Location associated with the item.
     List(shared_ptr<ID> id,
          shared_ptr<Field> field,
+         Kind kind,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
@@ -1558,6 +1604,8 @@ public:
     ///
     /// length: An expression indicating how often field is to be repeated.
     ///
+    /// kind: The kind of field.
+    ///
     /// hooks: Hooks associated with this item.
     ///
     /// attrs: Attributes associated with the item.
@@ -1568,6 +1616,7 @@ public:
     Vector(shared_ptr<ID> id,
          shared_ptr<Field> field,
          shared_ptr<Expression> length,
+         Kind kind,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
@@ -1658,11 +1707,14 @@ public:
     ///
     /// cases: The list of switch cases.
     ///
+    /// kind: The kind of field.
+    ///
     /// hooks: Hooks associated with this item.
     ///
     /// l: Location associated with the item.
     Switch(shared_ptr<Expression> expr,
            const case_list& cases,
+           Kind kind,
            shared_ptr<Expression> cond = nullptr,
            const hook_list& hooks = hook_list(),
            const Location& l=Location::None);
@@ -1713,6 +1765,7 @@ public:
              shared_ptr<binpac::Type> type,
              shared_ptr<Expression> default_,
              const hook_list& hooks = hook_list(),
+             const attribute_list& attrs = attribute_list(),
              const Location& l=Location::None);
 
     /// Returns the variable's default, or null if none. This is just a
@@ -1893,6 +1946,9 @@ public:
     // then the unit, then the module. Returns null if none of them defines
     // the property/attribute.
     shared_ptr<binpac::Expression> inheritedProperty(const string& property, shared_ptr<type::unit::Item> item = nullptr);
+
+    /// XXX Compare to production::supportsSynchronize.
+    bool supportsSynchronize();
 
     bool _equal(shared_ptr<binpac::Type> other) const override;
 

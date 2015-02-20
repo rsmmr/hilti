@@ -1,0 +1,2 @@
+b"0123"
+hilti: uncaught exception, ValueError with argument 'invalid sequence number' (from /home/robin/work/hilti/libbinpac/sink.c:160)

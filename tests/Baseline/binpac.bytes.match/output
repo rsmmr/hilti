@@ -1,8 +1,8 @@
-12345ABBBBC67890
-ABBBBC
-BBBB
-
-
-
-Content-Type: multipart/mixed; boundary="frontier"
-"frontier"
+b"12345ABBBBC67890"
+b"ABBBBC"
+b"BBBB"
+b""
+b""
+b""
+b"Content-Type: multipart/mixed; boundary="frontier""
+b""frontier""

@@ -218,6 +218,7 @@ int main(int argc, char** argv)
     const char* parser = 0;
 
     auto options = std::make_shared<binpac::Options>();
+    options->generate_composers = false;
 
     char ch;
     while ((ch = getopt(argc, argv, "Ojp:I:")) != -1) {

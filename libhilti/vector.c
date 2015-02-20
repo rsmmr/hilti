@@ -24,6 +24,7 @@ static const hlt_vector_idx InitialCapacity = 1;
 struct __hlt_vector {
     __hlt_gchdr __gchdr;        // Header for memory management.
     void* elems;                // Pointer to the element array.
+    int8_t* occupied;           // Array recording if fields have been set. TODO: Should convert to using bits instead of bytes.
     hlt_timer** timers;         // Array of timers, with entries 0 if not set. Not memory-managed to avoid cycles.
     hlt_vector_idx last;        // Largest valid index.
     hlt_vector_idx capacity;    // Number of element we have physically allocated in elems.
@@ -45,6 +46,7 @@ void hlt_vector_dtor(hlt_type_info* ti, hlt_vector* v, hlt_execution_context* ct
     GC_DTOR(v->tmgr, hlt_timer_mgr, ctx);
 
     hlt_free(v->elems);
+    hlt_free(v->occupied);
     hlt_free(v->timers);
     hlt_free(v->def);
 }
@@ -88,6 +90,8 @@ static inline void _set_entry(hlt_vector* v, hlt_vector_idx i, void *val, int dt
     memcpy(dst, val, v->type->size);
     GC_CCTOR_GENERIC(dst, v->type, ctx);
 
+    v->occupied[i] = 1;
+
     // Start timer if needed.
     if ( v->tmgr && v->timeout ) {
         GC_CCTOR(v, hlt_vector, ctx);
@@ -102,6 +106,7 @@ static inline void _set_entry(hlt_vector* v, hlt_vector_idx i, void *val, int dt
 static inline void _hlt_vector_init(hlt_vector* v, const hlt_type_info* elemtype, const void* def, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     v->elems = hlt_malloc(elemtype->size * InitialCapacity);
+    v->occupied = hlt_malloc(InitialCapacity);
 
     if ( tmgr ) {
         GC_INIT(v->tmgr, tmgr, hlt_timer_mgr, ctx);
@@ -194,6 +199,9 @@ void hlt_vector_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hl
         }
     }
 
+    dst->occupied = hlt_malloc(src->capacity);
+    memcpy(dst->occupied, src->occupied, src->capacity);
+
     dst->last = src->last;
     dst->capacity = src->capacity;
     dst->type = src->type;
@@ -259,6 +267,14 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
     _set_entry(v, i, val, 1, excpt, ctx);
 }
 
+int8_t hlt_vector_exists(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( i > v->last )
+        return 0;
+
+    return v->occupied[i];
+}
+
 void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(v);
@@ -295,6 +311,8 @@ void hlt_vector_expire(__hlt_vector_timer_cookie cookie, hlt_exception** excpt, 
     if ( v->tmgr )
         v->timers[i] = 0;
 
+    v->occupied[i] = 0;
+
     void* dst = v->elems + i * v->type->size;
     GC_DTOR_GENERIC(dst, v->type, ctx);
 
@@ -307,6 +325,7 @@ void hlt_vector_reserve(hlt_vector* v, hlt_vector_idx n, hlt_exception** excpt, 
         return;
 
     v->elems = hlt_realloc(v->elems, v->type->size * n, v->type->size * v->capacity);
+    v->occupied = hlt_realloc(v->occupied, n, v->capacity);
 
     if ( v->timers ) {
         v->timers = hlt_realloc(v->timers, sizeof(hlt_timer*) * n, sizeof(hlt_timer*) * v->capacity);

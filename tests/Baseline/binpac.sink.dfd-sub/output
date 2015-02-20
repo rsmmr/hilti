@@ -1,0 +1,13 @@
+%disabled Sub2  <x=b"AB", y=(Null)>
+SubSub1  <x=b"CD", y=b"1", z=b"EF">
+%confirmed Sub1  <x=b"AB", y=<x=b"CD", y=b"1", z=b"EF">>
+%done Sub1  <x=b"AB", y=<x=b"CD", y=b"1", z=b"EF">, z=b"GH">
+Main <a=b"..", b=b"AB", c=b"CD", d=b"1", e=b"EF", f=b"GH", g=b"..", data=<sink>>
+%disabled Sub1  <x=b"AB", y=(Null)>
+SubSub2  <x=b"CD", y=b"2", z=b"EF">
+%confirmed Sub2  <x=b"AB", y=<x=b"CD", y=b"2", z=b"EF">>
+%done Sub2  <x=b"AB", y=<x=b"CD", y=b"2", z=b"EF">, z=b"GH">
+Main <a=b"..", b=b"AB", c=b"CD", d=b"2", e=b"EF", f=b"GH", g=b"..", data=<sink>>
+%disabled Sub1  <x=b"AB", y=(Null)>
+%disabled Sub2  <x=b"AB", y=(Null)>
+Main <a=b"..", b=b"AB", c=b"CD", d=b"3", e=b"EF", f=b"GH", g=b"..", data=<sink>>

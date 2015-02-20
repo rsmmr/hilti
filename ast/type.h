@@ -171,8 +171,15 @@ public:
        return util::fmt("%s%s%s", (_constant ? "const " : ""), _type->render().c_str(), id);
     }
 
-    bool operator==(const Parameter& other) { return repr() == other.repr(); }
-    bool operator!=(const Parameter& other) { return repr() != other.repr(); }
+    bool operator==(const Parameter& other) {
+        auto p1 = util::fmt("%s%s", (_constant ? "const " : ""), _type->render().c_str());
+        auto p2 = util::fmt("%s%s", (other._constant ? "const " : ""), other._type->render().c_str());
+        return p1 == p2;
+    }
+
+    bool operator!=(const Parameter& other) {
+        return ! (*this == other);
+    }
 
 private:
     void Init(shared_ptr<ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value = nullptr);

@@ -74,6 +74,7 @@ string Production::render()
 
     string can_sync = "";
     string sync_at = "";
+    string kind = "";
 
     bool have_sync = pgMeta()->field && pgMeta()->field->attributes()->lookup("synchronize");
 
@@ -83,8 +84,25 @@ string Production::render()
                              supportsSynchronize() ? '+' : '-',
                              have_sync ? '+' : '-');
 
-    return util::fmt("%10s: %-3s -> %s%s%s", ++name, _symbol.c_str(), renderProduction().c_str(),
-                     location.c_str(), can_sync);
+    if ( pgMeta()->field ) {
+        if ( pgMeta()->field->forParsing() )
+            kind += "parse";
+        else
+            kind += "-";
+
+        kind += "/";
+
+        if ( pgMeta()->field->forComposing() )
+            kind += "compose";
+        else
+            kind += "-";
+    }
+
+    else
+        kind = "-";
+
+    return util::fmt("%10s: %-3s -> %s%s%s (%s)", ++name, _symbol.c_str(), renderProduction().c_str(),
+                     location.c_str(), can_sync, kind);
 }
 
 const Location& Production::location() const
@@ -377,7 +395,7 @@ bool ChildGrammar::supportsSynchronize()
 
     auto utype = ast::checkedCast<type::Unit>(type());
 
-    if ( utype->property("synchronize-after") || utype->property("synchronize-at") )
+    if ( utype->supportsSynchronize() )
         return true;
 
     return false;

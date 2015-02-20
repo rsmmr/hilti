@@ -1,4 +1,4 @@
-foo
-foo
-bar
-servus
+b"foo"
+b"foo"
+b"bar"
+b"servus"

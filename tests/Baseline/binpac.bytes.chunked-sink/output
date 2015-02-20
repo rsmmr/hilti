@@ -1,5 +1,5 @@
-s 1234
-s 5678
-s 90ab
-s cde
-Done Main <b=cde, data=<sink>>
+s b"1234"
+s b"5678"
+s b"90ab"
+s b"cde"
+Done Main <b=b"cde", data=<sink>>

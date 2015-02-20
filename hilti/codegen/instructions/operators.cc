@@ -83,6 +83,18 @@ void StatementBuilder::visit(statement::instruction::operator_::Unpack* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::operator_::Pack* i)
+{
+    auto value = cg()->llvmValue(i->op1());
+    auto type = i->op1()->type();
+    auto fmt = cg()->llvmValue(i->op2());
+    llvm::Value* arg = i->op3() ? cg()->llvmValue(i->op3()) : nullptr;
+    shared_ptr<Type> arg_type = i->op3() ? i->op3()->type() : nullptr;
+
+    auto result = cg()->llvmPack(value, type, fmt, arg, arg_type, i->location());
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::operator_::Clear* i)
 {
     cg()->llvmStore(i->op1(), cg()->typeInfo(i->op1()->type())->init_val);

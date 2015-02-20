@@ -15,3 +15,4 @@ event gzip::member(f: fa_file, method: count, flags: Flags, mtime: time, xflags:
 {
     print f$id, method, flags, fmt("%.6f", mtime), xflags, os;
 }
+

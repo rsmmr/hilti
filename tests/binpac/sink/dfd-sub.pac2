@@ -1,0 +1,77 @@
+#
+# @TEST-EXEC:  echo ..ABCD1EFGH.. | pac-driver-test %INPUT -- -p Mini::Main >output 2>&1
+# @TEST-EXEC:  echo ..ABCD2EFGH.. | pac-driver-test %INPUT -- -p Mini::Main >>output 2>&1
+# @TEST-EXEC:  echo ..ABCD3EFGH.. | pac-driver-test %INPUT -- -p Mini::Main >>output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type Main = unit {
+    a: bytes &length=2;
+    b: bytes &length=2 -> self.data;
+    c: bytes &length=2 -> self.data;
+    d: bytes &length=1 -> self.data;
+    e: bytes &length=2 -> self.data;
+    f: bytes &length=2 -> self.data;
+    g: bytes &length=2;
+
+    var data: sink;
+
+    on %init {
+        self.data.try_connect_mime_type(b"application/worth-trying");
+    }
+
+    on %done {
+        print "Main", self;
+    }
+};
+
+export type Sub1 = unit {
+    %mimetype = "application/worth-trying";
+
+    x: bytes &length=2;
+    y: SubSub1;
+    z: bytes &length=2;
+
+    on y { self.confirm(); }
+    on %done { print "%done Sub1 ", self; }
+    on %sync { print "%sync Sub1 ", self; }
+    on %confirmed { print "%confirmed Sub1 ", self; }
+    on %disabled { print "%disabled Sub1 ", self; }
+};
+
+export type Sub2 = unit {
+    %mimetype = "application/worth-trying";
+
+    x: bytes &length=2;
+    y: SubSub2;
+    z: bytes &length=2;
+
+    on y { self.confirm(); }
+    on %done { print "%done Sub2 ", self; }
+    on %sync { print "%sync Sub2 ", self; }
+    on %confirmed { print "%confirmed Sub2 ", self; }
+    on %disabled { print "%disabled Sub2 ", self; }
+};
+
+export type SubSub1 = unit {
+    x: bytes &length=2;
+    y: b"1";
+    z: bytes &length=2;
+
+    on %done {
+        print "SubSub1 ", self;
+    }
+
+};
+
+export type SubSub2 = unit {
+    x: bytes &length=2;
+    y: b"2";
+    z: bytes &length=2;
+
+    on %done {
+        print "SubSub2 ", self;
+    }
+
+};

@@ -664,7 +664,7 @@ void __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_e
 }
 
 // Appends one Bytes object to another.
-void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -696,6 +696,11 @@ void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt
     __add_chunk(__tail(b, true), dst, ctx);
 
     hlt_thread_mgr_unblock(&b->blockable, ctx);
+}
+
+void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return __hlt_bytes_append(b, other, excpt, ctx);
 }
 
 void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)

@@ -1,0 +1,23 @@
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+
+    b = pack b"Foo" Hilti::Packed::BytesDelim b"X"
+    call Hilti::print(b)
+
+    b = pack b"Foo" Hilti::Packed::BytesDelim b"XY"
+    call Hilti::print(b)
+
+    b = pack b"Foo" Hilti::Packed::BytesRunLength Hilti::Packed::UInt16Big
+    call Hilti::print(b)
+
+    b = pack b"Foo" Hilti::Packed::BytesRunLength Hilti::Packed::UInt16Little
+    call Hilti::print(b)
+}

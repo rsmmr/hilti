@@ -129,6 +129,20 @@ iBegin(vector, Get, "vector.get")
 
 iEnd
 
+iBegin(vector, Exists, "vector.exists")
+    iTarget(optype::boolean)
+    iOp1(optype::refVector, true)
+    iOp2(optype::int64, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Checks whether the index *op2* has been assinged a value in *op1*.
+    )")
+
+iEnd
+
 iBegin(vector, PushBack, "vector.push_back")
     iOp1(optype::refVector, false)
     iOp2(optype::any, false)

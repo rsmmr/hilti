@@ -10,7 +10,13 @@ sed 's#(/[^)]\{1,\}:\([0-9]\{1,\}\)\(-\([0-9]\{1,\}\)\))#(XXX:XXX)#g' | \
 sed 's#0x[0-9a-z][0-9a-z][0-9a-z][0-9a-z][0-9a-z][0-9a-z]*#0xXXX#g' | \
 sed 's#\.hlt:\([0-9]\{1,\}\)\(-\([0-9]\{1,\}\)\)#.hlt:XXX#g' | \
 sed 's#hb[0-9]\{1,\}\.tmp#hbXXX.tmp#g' | \
-grep -v '^.*: line [0-9]\{1,\}:  *[0-9]\{1,\} Aborted'
+grep -v '^.*: line [0-9]\{1,\}:  *[0-9]\{1,\} Aborted' | \
+grep -v '^WARNING: Linking two modules of different' | \
+grep -v '^warning: overriding the module target triple' | \
+grep -v '^[0-9]\{1,\} warning generated.$'
+
+# The warnings being filtered above is for LLVM on Darwin where even minor new LLVM versions
+# end up changing the host triple. What a pain.
 
 #sed 's#from filtered-#from #g' | \
 #sed 's#addr:0x[0-9a-z]*#addr:XXX#g'

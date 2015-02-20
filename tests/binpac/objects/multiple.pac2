@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  echo 1234567890 | HILTI_DEBUG=binpac pac-driver-test %INPUT -e 4:test1 -e 8:test2 -e 8:test3 >output
+# @TEST-EXEC:  echo 1234567890 | HILTI_DEBUG=binpac pac-driver-test -e 4:test1 -e 8:test2 -e 8:test3 %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
 

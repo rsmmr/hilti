@@ -8,12 +8,16 @@ import Hilti
 
 type ParseSuccess = exception<string>
 type ParseError = exception<string>
+type ComposeError = exception<string>
+type ParserDisabled = exception<string> &libhilti="binpac_exception_parserdisabled"
 type UnitAlreadyConnected = exception
 type FilterError = exception<string>
 type FilterUnsupported = exception<string>
 type AttributeNotSet = exception<string>
 type UndefinedValue = exception<string>
 type Backtrack = exception<string>
+type ValueError = exception<string>
+type NotImplemented = exception<string>
 
 type Parser = struct {
     string name,                  # Short descriptive name.
@@ -23,10 +27,15 @@ type Parser = struct {
     ref<list<string>> mime_types, # MIME types handled by this parser.
     caddr parse_func,             # The C function performing the parsing.
     caddr resume_func,            # The C function resuming parsing after a yield.
+    caddr compose_func,           # The C function composing the object.
     caddr type_info,              # Type info for the parser. Filled in at the C level.
     caddr parse_func_sink,        # The C function performing the parsing for a sink.
     caddr resume_func_sink,       # The C function resuming sink parsing after a yield.
-    caddr new_func                # The C function to create a new instance (may be null).
+    caddr new_func,               # The C function to create a new instance (may be null).
+    caddr hook_gap,               # The C function to run a %gap hook.
+    caddr hook_skip,              # The C function to run a %skip hook.
+    caddr hook_overlap,           # The C function to run a %overlap hook.
+    caddr hook_undelivered        # The C function to run a %undelivered hook.
 }
 
 export Parser
@@ -44,20 +53,29 @@ declare "C-HILTI" void register_parser(ref<Parser> parser, type pobj)
 type Sink = struct {
     # We leave this empty here as we access this struct only from C.
     # See sink.c for it's definition.
-} &hostapp_type=(32)
+} &hostapp_type=(32) &libhilti_dtor="binpac_sink_dtor"
 
 # Type place-holder for the user-defined parser argument.
 type UserCookie = caddr
 
 declare "C-HILTI" ref<Sink> sink_new()
+declare "C-HILTI" void sink_set_initial_sequence_number(ref<Sink> sink, int<64> seq, UserCookie user)
+declare "C-HILTI" void sink_set_policy(ref<Sink> sink, int<64> policy, UserCookie user)
+declare "C-HILTI" void sink_set_auto_trim(ref<Sink> sink, bool enable, UserCookie user)
 declare "C-HILTI" void sink_connect(ref<Sink> sink, any pobj, ref<Parser> parser) &safepoint
 declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj) &safepoint
-declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, UserCookie user) &mayyield &safepoint
-declare "C-HILTI" void sink_close(ref<Sink> sink) &safepoint
+declare "C-HILTI" void sink_append(ref<Sink> sink, ref<bytes> data, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, int<64> seq, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_write_custom_length(ref<Sink> sink, ref<bytes> data, int<64> seq, int<64> len, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_gap(ref<Sink> sink, int<64> seq, int<64> len, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_skip(ref<Sink> sink, int<64> seq, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_trim(ref<Sink> sink, int<64> seq, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_close(ref<Sink> sink, UserCookie user) &safepoint
 declare "C-HILTI" void sink_add_filter(ref<Sink> sink, Filter ftype) &safepoint
-declare "C-HILTI" void sink_connect_mimetype_bytes(ref<Sink> sink, ref<bytes> mtype, UserCookie user )&safepoint
-declare "C-HILTI" void sink_connect_mimetype_string(ref<Sink> sink, string mtype, UserCookie user) &safepoint
+declare "C-HILTI" void sink_connect_mimetype_bytes(ref<Sink> sink, ref<bytes> mtype, bool try_mode, UserCookie user )&safepoint
+declare "C-HILTI" void sink_connect_mimetype_string(ref<Sink> sink, string mtype, bool try_mode, UserCookie user) &safepoint
 declare "C-HILTI" int<64> sink_size(ref<Sink> sink)
+declare "C-HILTI" int<64> sink_sequence(ref<Sink> sink)
 
 # Support functions for filters.
 type ParseFilter = struct {

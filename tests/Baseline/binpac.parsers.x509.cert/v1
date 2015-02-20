@@ -1,14 +1,14 @@
-Name oid:  2.5.4.6  value:  US
-Name oid:  2.5.4.10  value:  GTE Corporation
-Name oid:  2.5.4.11  value:  GTE CyberTrust Solutions, Inc.
-Name oid:  2.5.4.3  value:  GTE CyberTrust Global Root
-Name oid:  2.5.4.6  value:  US
-Name oid:  2.5.4.10  value:  GTE Corporation
-Name oid:  2.5.4.11  value:  GTE CyberTrust Solutions, Inc.
-Name oid:  2.5.4.3  value:  GTE CyberTrust Global Root
+Name oid:  b"2.5.4.6"  value:  US
+Name oid:  b"2.5.4.10"  value:  GTE Corporation
+Name oid:  b"2.5.4.11"  value:  GTE CyberTrust Solutions, Inc.
+Name oid:  b"2.5.4.3"  value:  GTE CyberTrust Global Root
+Name oid:  b"2.5.4.6"  value:  US
+Name oid:  b"2.5.4.10"  value:  GTE Corporation
+Name oid:  b"2.5.4.11"  value:  GTE CyberTrust Solutions, Inc.
+Name oid:  b"2.5.4.3"  value:  GTE CyberTrust Global Root
 Version:  1
 Serial number:  421
 Valid from:  980813002900Z
 Valid till:  180813235900Z
-Signature algorithm:  1.2.840.113549.1.1.4
-Public key algorithm:  1.2.840.113549.1.1.1
+Signature algorithm:  b"1.2.840.113549.1.1.4"
+Public key algorithm:  b"1.2.840.113549.1.1.1"

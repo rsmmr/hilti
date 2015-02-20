@@ -1,2 +1,2 @@
-[<f=Foo>, <f=Foo>, <f=Foo>]
-Foo
+[<f=b"Foo">, <f=b"Foo">, <f=b"Foo">]
+b"Foo"

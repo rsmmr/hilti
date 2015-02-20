@@ -1,5 +1,5 @@
-a1: 1234
-a1: HURZ
-a2: 1234
-a2: HURZ
+a1: b"1234"
+a1: b"HURZ"
+a2: b"1234"
+a2: b"HURZ"
 b

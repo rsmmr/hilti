@@ -1,9 +1,9 @@
 === Grammar my-grammar
-        Epsilon: <eps> -> ()
- (*)   Sequence: All -> List2 colon
-      LookAhead: List2 -> {b"[ \\t]*" (id 1)}: ws | {b":" (id 2)}: <eps>
-           Ctor: colon -> b":" (bytes/id 2)
-           Ctor: ws  -> b"[ \\t]*" (bytes/id 1)
+        Epsilon: <eps> -> () (-)
+ (*)   Sequence: All -> List2 colon (-)
+      LookAhead: List2 -> {b"[ \\t]*" (id 1)}: ws | {b":" (id 2)}: <eps> (-)
+           Ctor: colon -> b":" (bytes/id 2) (-)
+           Ctor: ws  -> b"[ \\t]*" (bytes/id 1) (-)
 
   -- Epsilon:
      All = 0

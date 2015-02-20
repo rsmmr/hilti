@@ -1,6 +1,6 @@
 --
 FOO A.inline
-FOO A 1234
+FOO A b"1234"
 FOO foo.inline
-FOO foo foo
-FOO B 567890
+FOO foo b"foo"
+FOO B b"567890"

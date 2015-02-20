@@ -217,6 +217,7 @@ declare "C-HILTI" void vector_dtor(ref<vector<*>> v)
 declare "C-HILTI" ref<vector<*>> vector_new(any def, ref<timer_mgr> mgr) &noexception
 declare "C-HILTI" void vector_timeout(ref<vector<*>> m, Hilti::ExpireStrategy s, interval timeout)
 declare "C-HILTI" any vector_get(ref<vector<*>> v, int<64> idx)
+declare "C-HILTI" bool vector_exists(ref<vector<*>> v, int<64> idx)
 declare "C-HILTI" void vector_set(ref<vector<*>> v, int<64> idx, any value)
 declare "C-HILTI" void vector_push_back(ref<vector<*>> v, any value)
 declare "C-HILTI" int<64> vector_size(ref<vector<*>> v)
