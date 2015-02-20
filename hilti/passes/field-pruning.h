@@ -28,8 +28,7 @@ public:
 private:
 
   void findSessionStruct(shared_ptr<Module> _module);
-  void visit(type::Struct* t) override;
-  void visit(variable::Local* v) override;
+  void visit(declaration::Variable* d);
   
   CompilerContext* _context;
   shared_ptr<Module> _module = nullptr;
