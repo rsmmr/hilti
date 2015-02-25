@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 if ( BRO_DIST )
 
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${BRO_DIST}/cmake)
-    set(BRO_PLUGIN_BASE "${CMAKE_CURRENT_BINARY_DIR}")
+    set(BRO_PLUGIN_BASE "${CMAKE_CURRENT_SOURCE_DIR}")
 
     include(BroPlugin)
 
@@ -132,11 +132,8 @@ if ( BRO_DIST )
         message(FATAL_ERROR "Building the Bro plugin outside of the HILTI tree is not yet supported.")
     endif ()
 
-    # Turn the build directory into a plugin.
     add_custom_command(TARGET ${_plugin_lib} POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/scripts ${CMAKE_CURRENT_BINARY_DIR}/scripts
-                       COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/pac2 ${CMAKE_CURRENT_BINARY_DIR}/pac2
-                       )
+                       COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/pac2 ${CMAKE_CURRENT_BINARY_DIR}/pac2)
 
                        # If we copy, changes to {scripts,pac2} won't reflected until the plugin gets relinked.
 					   # COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/scripts && mkdir ${CMAKE_CURRENT_BINARY_DIR}/scripts
