@@ -163,13 +163,13 @@ int plugin::Bro_Hilti::Plugin::HookLoadFile(const std::string& file, const std::
 	return -1;
 	}
 
-Val* plugin::Bro_Hilti::Plugin::HookCallFunction(const Func* func, val_list* args)
+std::pair<bool, Val*> plugin::Bro_Hilti::Plugin::HookCallFunction(const Func* func, Frame* parent, val_list* args)
 	{
 	if ( func->GetKind() == BuiltinFunc::BUILTIN_FUNC )
-		return nullptr;
+		return std::pair<bool, Val*>(false, nullptr);
 
 	if ( BifConst::Hilti::compile_scripts )
-		return _manager->RuntimeCallFunction(func, args);
+		return _manager->RuntimeCallFunction(func, parent, args);
 
 	if ( func->FType()->Flavor() == FUNC_FLAVOR_EVENT &&
 	     _manager->HaveCustomHandler(func) )
@@ -178,11 +178,11 @@ Val* plugin::Bro_Hilti::Plugin::HookCallFunction(const Func* func, val_list* arg
 		loop_over_list(*args, i)
 			Ref((*args)[i]);
 
-		auto v = _manager->RuntimeCallFunction(func, args);
-		Unref(v);
+		auto v = _manager->RuntimeCallFunction(func, parent, args);
+		Unref(v.second);
 		}
 
-	return nullptr;
+	return std::pair<bool, Val*>(false, nullptr);
 	}
 
 bool plugin::Bro_Hilti::Plugin::HookQueueEvent(Event* event)

@@ -227,7 +227,7 @@ public:
 	/**
 	 * XXX
 	 */
-	::Val* RuntimeCallFunction(const Func* func, val_list* args);
+	std::pair<bool, Val*> RuntimeCallFunction(const Func* func, Frame* parent, val_list* args);
 
 	/**
 	 * XXX
