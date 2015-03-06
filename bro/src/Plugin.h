@@ -47,7 +47,7 @@ protected:
 
 	// We activate these hooks only when compiling scripts or injecting
 	// custom HILTI code.
-	Val* HookCallFunction(const Func* func, val_list* args) override;
+    std::pair<bool, Val*> HookCallFunction(const Func* func, Frame* parent, val_list* args) override;
 	bool HookQueueEvent(Event* event) override;
 	void HookUpdateNetworkTime(double network_time) override;
 	void HookDrainEvents() override;

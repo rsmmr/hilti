@@ -2785,18 +2785,38 @@ analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
 	return replaces ? replaces : tag;
 	}
 
-::Val* Manager::RuntimeCallFunction(const Func* func, val_list* args)
+std::pair<bool, Val*> Manager::RuntimeCallFunction(const Func* func, Frame* parent, val_list* args)
 	{
+	Val* result = 0;
+
 	if ( ! (func->HasBodies() || HaveCustomHandler(func)) )
 		// For events raised directly, rather than being queued, we
 		// arrive here. Ignore if we don't have a handler.
 		//
 		// TODO: Should these direct events have a separate entry
 		// point in the plugin API?
-		return new Val(0, TYPE_VOID);
+		result = new Val(0, TYPE_VOID);
+	else
+		result = RuntimeCallFunctionInternal(func, args);
 
-	return RuntimeCallFunctionInternal(func, args);
+	if ( result )
+		{
+		// We use a VOID value internally to be able to pass around a
+		// non-null pointer. However, Bro's plugin API has changed,
+		// it now wants null for a void function.
+		if ( result->Type()->Tag() == TYPE_VOID )
+			{
+			Unref(result);
+			result = 0;
+			}
+
+		return std::pair<bool, Val*>(true, result);
+		}
+
+	else
+		return std::pair<bool, Val*>(false, 0);
 	}
+
 
 bool Manager::HaveCustomHandler(const ::Func* ev)
 	{
