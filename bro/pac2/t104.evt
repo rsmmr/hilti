@@ -9,7 +9,25 @@ protocol analyzer pac2::T104 over TCP:
 
 on T104::Apci -> event t104::apci($conn, self.apduLen, self.ctrl.mode, self.ctrl.i_send_seq, self.ctrl.u_start_dt, self.ctrl.u_stop_dt, self.ctrl.u_test_fr, self.ctrl.recv_seq);
 
-on T104::Asdu -> event t104::asdu($conn, T104::bro_cot(self));
+on T104::Apci if (!self.ctrl.not_i_mode)
+	-> event t104::i($conn, self.ctrl.i_send_seq, self.ctrl.recv_seq);
+
+on T104::Apci if (self.ctrl.mode == 1)
+	-> event t104::s($conn, self.ctrl.recv_seq);
+
+on T104::Apci if (self.ctrl.mode == 3)
+	-> event t104::u($conn, self.ctrl.u_start_dt, self.ctrl.u_stop_dt, self.ctrl.u_test_fr);
+
+#on T104::Asdu -> event t104::asdu($conn, T104::bro_cot(self), self.info_obj_type);
+
+on T104::Asdu if (self.data_unit_identifier.seq)
+	-> event t104::asdu_seq1 ($conn, T104::bro_cot(self), self.info_obj_type,self.info_obj_addr);
+
+on T104::Asdu if (!self.data_unit_identifier.seq)
+	-> event t104::asdu_seq0 ($conn, T104::bro_cot(self), self.info_obj_type);
+
+#on T104::Asdu if (self.ctrl.info_obj_type == info_obj_type::C_IC_NA_1)
+	#-> event t104::c_ic_na_1() 
 
 #on T104::Apcis -> event t104::a($conn);
 
