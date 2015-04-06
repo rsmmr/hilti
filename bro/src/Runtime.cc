@@ -825,6 +825,12 @@ void* libbro_object_mapping_lookup_hilti(::BroObj* obj, hlt_exception** excpt, h
 
 // User-visible Bro::* functions.
 
+static string _file_id(bro::hilti::pac2_cookie::Protocol* c)
+		{
+		auto id = ::util::fmt("%p-%d", c->analyzer, (int)c->is_orig);
+		return file_mgr->HashHandle(id);
+		}
+
 int8_t bro_is_orig(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto c = get_protocol_cookie(cookie, "$conn");
@@ -839,7 +845,7 @@ void bro_file_begin(void* cookie, hlt_exception** excpt, hlt_execution_context* 
 void bro_file_set_size(uint64_t size, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto c = get_protocol_cookie(cookie, "file_set_size()");
-	file_mgr->SetSize(size, c->tag, c->analyzer->Conn(), c->is_orig);
+	file_mgr->SetSize(size, c->tag, c->analyzer->Conn(), c->is_orig, _file_id(c));
 	}
 
 void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -860,7 +866,8 @@ void bro_file_data_in(hlt_bytes* data, void* cookie, hlt_exception** excpt, hlt_
 				 block.end - block.start,
 				 c->tag,
 				 c->analyzer->Conn(),
-				 c->is_orig);
+				 c->is_orig,
+				 _file_id(c));
 
 		if ( ! bcookie )
 			break;
@@ -886,7 +893,8 @@ void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie, 
 				 offset,
 				 c->tag,
 				 c->analyzer->Conn(),
-				 c->is_orig);
+				 c->is_orig,
+				 _file_id(c));
 
 		if ( ! bcookie )
 			break;
@@ -898,13 +906,13 @@ void bro_file_data_in_at_offset(hlt_bytes* data, uint64_t offset, void* cookie, 
 void bro_file_gap(uint64_t offset, uint64_t len, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto c = get_protocol_cookie(cookie, "file_gap()");
-	file_mgr->Gap(offset, len, c->tag, c->analyzer->Conn(), c->is_orig);
+	file_mgr->Gap(offset, len, c->tag, c->analyzer->Conn(), c->is_orig, _file_id(c));
 	}
 
 void bro_file_end(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 	{
 	auto c = get_protocol_cookie(cookie, "file_end()");
-	file_mgr->EndOfFile(c->tag, c->analyzer->Conn(), c->is_orig);
+	file_mgr->EndOfFile(_file_id(c));
 	}
 
 void bro_dpd_confirm(void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
