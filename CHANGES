@@ -1,4 +1,11 @@
 
+0.4-5 | 2015-04-20 08:50:28 -0700
+
+  * Fixing Dockerfile to use clang when compiling Bro.
+
+  * Precomputing the file ID when BinPAC++ protocol analyzers pass on
+    data to file analysis.
+
 0.4-2 | 2015-03-04 13:08:24 -0800
 
   * Updates for recent Bro git plugin API change.
