@@ -1,4 +1,8 @@
 
+0.4-6 | 2015-04-20 08:55:47 -0700
+
+  * Building libhilti and libbinpac with -fPIC.
+
 0.4-5 | 2015-04-20 08:50:28 -0700
 
   * Fixing Dockerfile to use clang when compiling Bro.

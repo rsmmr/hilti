@@ -116,6 +116,8 @@ Bro, LLVM/clang)::
     print "Hello, world!";
     root@b18c7c5bc7e2:~# pac-driver hello-world.pac2
     Hello, world!
+    root@b18c7c5bc7e2:~# bro -NN Bro::Hilti
+    XXX
     root@b18c7c5bc7e2:~# bro hello-world.pac2
     Hello, world!
 

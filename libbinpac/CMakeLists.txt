@@ -7,7 +7,7 @@ project(libbinpac C)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libhilti ${CMAKE_CURRENT_BINARY_DIR}/../libhilti)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=unused-function -Werror -fno-color-diagnostics")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=unused-function -Werror -fno-color-diagnostics -fPIC")
 
 IF( APPLE )
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDARWIN")
