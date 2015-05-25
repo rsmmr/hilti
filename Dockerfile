@@ -14,9 +14,9 @@ ENV PATH $PATH:/usr/local/bro/bin:/opt/bro/aux/btest
 ENV PATH $PATH:/opt/hilti/tools:/opt/hilti/build/tools::/opt/hilti/build/tools/pac-driver
 ENV BRO_PLUGIN_PATH /opt/hilti/build/bro
 
-# Put a small example in place.
+# Put a couple small examples in place.
 WORKDIR /root
-RUN ( echo 'module Test;'; echo; echo 'print "Hello, world!";' ) >hello-world.pac2
+ADD docker/ .
 
 # Default to run upon container startup.
 CMD hilti-config --version; bash

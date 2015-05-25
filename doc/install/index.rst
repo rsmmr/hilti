@@ -117,9 +117,13 @@ Bro, LLVM/clang)::
     root@b18c7c5bc7e2:~# pac-driver hello-world.pac2
     Hello, world!
     root@b18c7c5bc7e2:~# bro -NN Bro::Hilti
-    XXX
+    Bro::Hilti - Dynamically compiled HILTI/BinPAC++ functionality (*.pac2, *.evt, *.hlt) (dynamic, version 0.1)
+    [...]
     root@b18c7c5bc7e2:~# bro hello-world.pac2
     Hello, world!
+    root@b18c7c5bc7e2:~# bro -r ssh-single-conn.trace ./ssh-banner.bro ssh.evt
+    SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp], F, 1.99, OpenSSH_3.9p1
+    SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp], T, 2.0, OpenSSH_3.8.1p1
 
 To build the Docker image yourself from the supplied Dockerfile, you
 can use the make target::
