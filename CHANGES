@@ -1,4 +1,23 @@
 
+0.4-12 | 2015-06-01 10:28:12 -0700
+
+  * Baseline updates for Bro changes.
+
+  * BinPAC++ can now parse doubles and floats.
+
+     	f1: double; # Double precision in host byte order is the default.
+
+        f2: double &precision=BinPAC::Precision::Double;
+    	f3: double &precision=BinPAC::Precision::Single;
+    	f4: double &byteorder=BinPAC::ByteOrder::Little;
+    	f5: double &byteorder=BinPAC::ByteOrder::Big;
+
+  * Adding HILTI packing and unpacking for doubles.
+
+  * Adding make target to push Docker image.
+
+  * Updates for Docker image.
+
 0.4-6 | 2015-04-20 08:55:47 -0700
 
   * Building libhilti and libbinpac with -fPIC.
