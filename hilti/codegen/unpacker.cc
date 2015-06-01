@@ -682,7 +682,7 @@ void Unpacker::visit(type::Double* t)
     cases.push_back(CodeGen::SwitchCase(
         "double-double-network",
         cg()->llvmEnum("Hilti::Packed::DoubleNetwork"),
-        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, true, "Hilti::Packed::UInt64Network"); return nullptr; }
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, true, "Hilti::Packed::UInt64Big"); return nullptr; }
     ));
 
     cases.push_back(CodeGen::SwitchCase(
@@ -706,7 +706,7 @@ void Unpacker::visit(type::Double* t)
     cases.push_back(CodeGen::SwitchCase(
         "double-float-network",
         cg()->llvmEnum("Hilti::Packed::FloatNetwork"),
-        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, false, "Hilti::Packed::UInt32Network"); return nullptr; }
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, false, "Hilti::Packed::UInt32Big"); return nullptr; }
     ));
 
     cases.push_back(CodeGen::SwitchCase(

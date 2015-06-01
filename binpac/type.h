@@ -586,6 +586,8 @@ public:
     /// l: Associated location.
     Double(const Location& l=Location::None);
 
+    std::list<ParseAttribute> parseAttributes() const override;
+
     ACCEPT_VISITOR(Type);
 };
 

@@ -545,6 +545,15 @@ Double::Double(const Location& l) : PacType(l)
 {
 }
 
+std::list<trait::Parseable::ParseAttribute> Double::parseAttributes() const
+{
+    return {
+        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false },
+        { "precision", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::Precision")),
+                       std::make_shared<expression::ID>(std::make_shared<ID>("BinPAC::Precision::Double")), true },
+    };
+}
+
 Bool::Bool(const Location& l) : PacType(l)
 {
 }

@@ -3336,6 +3336,96 @@ void ParserBuilder::visit(type::Bytes* b)
 
 void ParserBuilder::visit(type::Double* d)
 {
+    auto field = arg1();
+
+    auto byteorder = field->inheritedProperty("byteorder");
+    auto precision = field->attributes()->lookup("precision");
+    assert(precision);
+
+    auto hltprecision = cg()->hiltiExpression(precision->value());
+    auto hltbo = byteorder ? cg()->hiltiExpression(byteorder) : hilti::builder::id::create("BinPAC::ByteOrder::Big");
+
+    auto t1 = hilti::builder::tuple::create({
+        hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::ByteOrder::Big"),
+            hilti::builder::id::create("BinPAC::Precision::Double")
+        }),
+
+        hilti::builder::id::create(string("Hilti::Packed::DoubleBig"))
+    });
+
+    auto t2 = hilti::builder::tuple::create({
+        hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::ByteOrder::Little"),
+            hilti::builder::id::create("BinPAC::Precision::Double")
+        }),
+
+        hilti::builder::id::create(string("Hilti::Packed::DoubleLittle"))
+    });
+
+    auto t3 = hilti::builder::tuple::create({
+        hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::ByteOrder::Host"),
+            hilti::builder::id::create("BinPAC::Precision::Double")
+        }),
+
+        hilti::builder::id::create(string("Hilti::Packed::Double"))
+    });
+
+    auto t4 = hilti::builder::tuple::create({
+        hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::ByteOrder::Network"),
+            hilti::builder::id::create("BinPAC::Precision::Double")
+        }),
+
+        hilti::builder::id::create(string("Hilti::Packed::DoubleNetwork"))
+    });
+
+    auto t5 = hilti::builder::tuple::create({
+        hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::ByteOrder::Big"),
+            hilti::builder::id::create("BinPAC::Precision::Single")
+        }),
+
+        hilti::builder::id::create(string("Hilti::Packed::FloatBig"))
+    });
+
+    auto t6 = hilti::builder::tuple::create({
+        hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::ByteOrder::Little"),
+            hilti::builder::id::create("BinPAC::Precision::Single")
+        }),
+
+        hilti::builder::id::create(string("Hilti::Packed::FloatLittle"))
+    });
+
+    auto t7 = hilti::builder::tuple::create({
+        hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::ByteOrder::Host"),
+            hilti::builder::id::create("BinPAC::Precision::Single")
+        }),
+
+        hilti::builder::id::create(string("Hilti::Packed::Float"))
+    });
+
+    auto t8 = hilti::builder::tuple::create({
+        hilti::builder::tuple::create({
+            hilti::builder::id::create("BinPAC::ByteOrder::Network"),
+            hilti::builder::id::create("BinPAC::Precision::Single")
+        }),
+
+        hilti::builder::id::create(string("Hilti::Packed::FloatNetwork"))
+    });
+
+    auto tuple = hilti::builder::tuple::create({ t1, t2, t3, t4, t5, t6, t7, t8 });
+    auto op = hilti::builder::tuple::create({ hltbo, hltprecision });
+
+    auto fmt = cg()->moduleBuilder()->addTmp("fmt", hilti::builder::type::byName("Hilti::Packed"));
+    cg()->builder()->addInstruction(fmt, hilti::instruction::Misc::SelectValue, op, tuple);
+
+    auto iters = hilti::builder::tuple::create({ state()->cur, _hiltiEod() });
+    auto result = hiltiUnpack(d->sharedPtr<type::Double>(), iters, fmt);
+    setResult(result);
 }
 
 void ParserBuilder::visit(type::Enum* e)

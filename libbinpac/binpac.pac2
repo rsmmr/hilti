@@ -51,6 +51,11 @@ type ReassemblyPolicy = enum {
     First = 1
 };
 
+# %begin-Precision
+# Byte-order.
+type Precision = enum { Double = 1, Single = 2 };
+# %end-Precision
+
 # %end-ReassemblyPolicy
 
 # %begin-base64_encode

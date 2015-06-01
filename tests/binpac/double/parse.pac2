@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  printf '\030\055\104\124\373\041\011\100' | pac-driver-test %INPUT >output
+# @TEST-EXEC:  printf '\x40\x28\xB0\xFC\xD3\x2F\x6F\x3B\x40\x28\xB0\xFC\xD3\x2F\x6F\x3B\100\110\365\303' | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
 
@@ -8,8 +8,9 @@ module Mini;
 import BinPAC;
 
 export type test = unit {
-	f1: double;
-	f2: double;
+ 	f1: double; # Double precision in host byte order is the default.
+    f2: double &precision=BinPAC::Precision::Double;
+	f3: double &precision=BinPAC::Precision::Single;
 
 	on %done {
 		print self;
