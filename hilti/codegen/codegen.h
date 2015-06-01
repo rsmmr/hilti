@@ -764,6 +764,9 @@ public:
    /// Returns an LLVM double type.
    llvm::Type* llvmTypeDouble();
 
+   /// Returns an LLVM float type.
+   llvm::Type* llvmTypeFloat();
+
    typedef std::vector<llvm::Type*> type_list;
 
    /// Returns an LLVM struct type built from given field types.

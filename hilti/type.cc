@@ -912,6 +912,32 @@ const std::vector<type::trait::Unpackable::Format>& type::Bool::unpackFormats() 
     return unpack_formats_bool;
 }
 
+type::trait::Unpackable::Format _unpack_formats_double[] = {
+    { "Double", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+      R"(An 8-byte IEEE 754 double value stored in host byte order.)" },
+    { "DoubleNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+      R"(An 8-byte IEEE 754 double value stored in network byte order.)" },
+    { "DoubleBig", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+      R"(An 8-byte IEEE 754 double value stored in big endian byte order.)" },
+    { "DoubleLittle", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+      R"(An 8-byte IEEE 754 double value stored in little endian byte order.)" },
+    { "Float", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+      R"(An 4-byte IEEE 754 double value stored in host byte order.)" },
+    { "FloatNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+      R"(An 4-byte IEEE 754 double value stored in network byte order.)" },
+    { "FloatBig", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+      R"(An 4-byte IEEE 754 double value stored in big endian byte order.)" },
+    { "FloatLittle", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+      R"(An 8-byte IEEE 754 double value stored in little endian byte order.)" },
+};
+
+std::vector<type::trait::Unpackable::Format> unpack_formats_double(makeVector(_unpack_formats_double));
+
+const std::vector<type::trait::Unpackable::Format>& type::Double::unpackFormats() const
+{
+    return unpack_formats_double;
+}
+
 type::Classifier::Classifier(shared_ptr<Type> rtype, shared_ptr<Type> vtype, const Location& l)
     : HeapType(l)
 {

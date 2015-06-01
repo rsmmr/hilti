@@ -1,0 +1,33 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+
+    b = pack 3.14 Hilti::Packed::FloatBig
+    call Hilti::print(b)
+    call Hilti::print(b"\x40\x48\xf5\xc3")
+    call Hilti::print(b"")
+
+    b = pack -4.15 Hilti::Packed::FloatLittle
+    call Hilti::print(b)
+    call Hilti::print(b"\xcd\xcc\x84\xc0")
+    call Hilti::print(b"")
+
+    b = pack 12.345678901234 Hilti::Packed::DoubleBig
+    call Hilti::print(b)
+    call Hilti::print(b"\x40\x28\xB0\xFC\xD3\x2F\x6F\x3B")
+    call Hilti::print(b"")
+
+    b = pack 12.345678901234 Hilti::Packed::DoubleLittle
+    call Hilti::print(b)
+    call Hilti::print(b"\x3B\x6F\x2F\xD3\xFC\xB0\x28\x40")
+    call Hilti::print(b"")
+}
+

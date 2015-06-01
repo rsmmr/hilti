@@ -647,3 +647,81 @@ void Unpacker::visit(type::Bool* t)
     cg()->llvmCreateStore(unpacked, result.value_ptr);
 }
 
+static void _doubleUnpack(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool high_precision, const string& fmt)
+{
+    auto lfmt = cg->llvmEnum(fmt);
+    auto val = cg->llvmUnpack(builder::integer::type(high_precision ? 64 : 32), args.begin, args.end, lfmt, nullptr, nullptr, args.location);
+
+    auto dtype = high_precision ? cg->llvmTypeDouble() : cg->llvmTypeFloat();
+    auto d = cg->builder()->CreateBitCast(val.first, dtype);
+
+    auto d2 = d;
+
+    if ( ! high_precision )
+        d2 = cg->builder()->CreateFPExt(d, cg->llvmTypeDouble());
+
+    cg->llvmCreateStore(d2, result.value_ptr);
+    cg->llvmCreateStore(val.second, result.iter_ptr);
+}
+
+void Unpacker::visit(type::Double* t)
+{
+    auto args = arg1();
+    auto result = arg2();
+
+    std::list<llvm::ConstantInt*> a;
+
+    CodeGen::case_list cases;
+
+    cases.push_back(CodeGen::SwitchCase(
+        "double-double-host",
+        cg()->llvmEnum("Hilti::Packed::Double"),
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, true, "Hilti::Packed::UInt64"); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "double-double-network",
+        cg()->llvmEnum("Hilti::Packed::DoubleNetwork"),
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, true, "Hilti::Packed::UInt64Network"); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "double-double-little",
+        cg()->llvmEnum("Hilti::Packed::DoubleLittle"),
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, true, "Hilti::Packed::UInt64Little"); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "double-double-big",
+        cg()->llvmEnum("Hilti::Packed::DoubleBig"),
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, true, "Hilti::Packed::UInt64Big"); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "double-float-host",
+        cg()->llvmEnum("Hilti::Packed::Float"),
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, false, "Hilti::Packed::UInt32"); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "double-float-network",
+        cg()->llvmEnum("Hilti::Packed::FloatNetwork"),
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, false, "Hilti::Packed::UInt32Network"); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "double-float-little",
+        cg()->llvmEnum("Hilti::Packed::FloatLittle"),
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, false, "Hilti::Packed::UInt32Little"); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "double-float-big",
+        cg()->llvmEnum("Hilti::Packed::FloatBig"),
+        [&] (CodeGen* cg) -> llvm::Value* { _doubleUnpack(cg, args, result, false, "Hilti::Packed::UInt32Big"); return nullptr; }
+    ));
+
+    cg()->llvmSwitchEnumConst(args.fmt, cases);
+}
+
+

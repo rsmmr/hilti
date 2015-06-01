@@ -92,6 +92,18 @@ type Packed = enum {
     UInt64Little,   # 64-bit unsigned integer in little-endian byte order.
     # %doc-packed-int-end
 
+    # Double
+    # %doc-packed-double-start
+    Double,         # 8-byte IEEE 754 double stored in host byte order.
+    DoubleNetwork,  # 8-byte IEEE 754 double stored in network byte order.
+    DoubleLittle,   # 8-byte IEEE 754 double stored in little endian byte order.
+    DoubleBig,      # 8-byte IEEE 754 double stored in big endian byte order.
+    Float,          # 4-byte IEEE 754 float stored in host byte order.
+    FloatNetwork,   # 4-byte IEEE 754 float stored in network byte order.
+    FloatLittle,    # 4-byte IEEE 754 float stored in little endian byte order.
+    FloatBig,       # 4-byte IEEE 754 float stored in big endian byte order.
+    # %doc-packed-double-end
+
     # Addr
     # %doc-packed-addr-start
     IPv4,           # 32-bit IPv4 address stored in host byte order.

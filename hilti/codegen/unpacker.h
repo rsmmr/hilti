@@ -79,6 +79,7 @@ protected:
    virtual void visit(type::Address* t) override;
    virtual void visit(type::Port* t) override;
    virtual void visit(type::Bool* t) override;
+   virtual void visit(type::Double* t) override;
 };
 
 }

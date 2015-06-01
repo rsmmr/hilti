@@ -686,13 +686,15 @@ public:
 };
 
 /// Type for doubles.
-class Double : public ValueType, public trait::Atomic {
+class Double : public ValueType, public trait::Atomic, public trait::Unpackable {
 public:
    /// Constructor.
    ///
    /// l: Associated location.
    Double(const Location& l=Location::None) : ValueType(l) {}
    virtual ~Double();
+
+   const std::vector<Format>& unpackFormats() const override;
 
    ACCEPT_VISITOR(Type);
 };

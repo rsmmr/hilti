@@ -1,0 +1,76 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> first
+    local iterator<bytes> last
+    local iterator<bytes> nfirst
+    local int<64> diff
+    local string out
+
+    local tuple<double, iterator<bytes>> t
+    local double a
+
+    # 3.14 float big endian
+    b = b"\x40\x48\xf5\xc3"
+    first = begin b
+    last = end b
+
+    t = unpack (first,last) Hilti::Packed::FloatBig
+
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("double=%f diff=%d", (a, diff))
+    call Hilti::print(out)
+
+    # -4.5 float little endian
+    b = b"\xcd\xcc\x84\xc0"
+    first = begin b
+    last = end b
+
+    t = unpack (first,last) Hilti::Packed::FloatLittle
+
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("double=%f diff=%d", (a, diff))
+    call Hilti::print(out)
+
+    # 12.345678901234 double big endian
+    b = b"\x40\x28\xB0\xFC\xD3\x2F\x6F\x3B"
+    first = begin b
+    last = end b
+
+    t = unpack (first,last) Hilti::Packed::DoubleBig
+
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("double=%f diff=%d", (a, diff))
+    call Hilti::print(out)
+
+    # 12.345678901234 double little endian
+    b = b"\x3B\x6F\x2F\xD3\xFC\xB0\x28\x40"
+    first = begin b
+    last = end b
+
+    t = unpack (first,last) Hilti::Packed::DoubleLittle
+
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("double=%f diff=%d", (a, diff))
+    call Hilti::print(out)
+    }

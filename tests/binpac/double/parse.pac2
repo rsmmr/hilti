@@ -2,8 +2,6 @@
 # @TEST-EXEC:  printf '\030\055\104\124\373\041\011\100' | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
-# @TEST-KNOWN-FAILURE: parsing doubles is not yet implemented.
-#
 
 module Mini;
 
@@ -11,6 +9,7 @@ import BinPAC;
 
 export type test = unit {
 	f1: double;
+	f2: double;
 
 	on %done {
 		print self;

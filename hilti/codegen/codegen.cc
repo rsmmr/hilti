@@ -940,6 +940,10 @@ llvm::Type* CodeGen::llvmTypeInt(int width) {
     return llvm::Type::getIntNTy(llvmContext(), width);
 }
 
+llvm::Type* CodeGen::llvmTypeFloat() {
+    return llvm::Type::getFloatTy(llvmContext());
+}
+
 llvm::Type* CodeGen::llvmTypeDouble() {
     return llvm::Type::getDoubleTy(llvmContext());
 }
