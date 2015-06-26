@@ -14,6 +14,10 @@
 // put it back in we need to, but it makes the code quite a bit more complex
 // and not sure we still need it.
 
+#include <pcap.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
@@ -109,6 +113,7 @@ static void usage(const char* prog)
     fprintf(stderr, "    -e <off:str>  Embed string <str> at offset <off>; can be given multiple times\n");
     fprintf(stderr, "    -l            Show available parsers\n");
     fprintf(stderr, "    -m <off>      Set mark at offset <off>; can be given multiple times\n");
+    fprintf(stderr, "    -n            Read from network device. Does not support -i, -e\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
     fprintf(stderr, "    -c            After parsing, compose data back to binary\n");
@@ -552,6 +557,52 @@ bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> opt
 
 #endif
 
+/**
+ * Callback function that is passed to pcap_loop() and called each time
+ * a packet is recieved.
+ */
+void processPacket(u_char *parser, const struct pcap_pkthdr* pkthdr, const u_char* packet)
+{
+    // Get the BinPAC++ parser which was passed as user argument to pcap_loop
+    binpac_parser* p = (binpac_parser*) parser;
+
+    // Initialize environment. Taken from the original parseSingleInput().
+    hlt_execution_context* ctx = hlt_global_execution_context();
+    hlt_exception* excpt = 0;
+    hlt_bytes* input = hlt_bytes_new(&excpt, ctx);
+    check_exception(excpt);
+
+    // Copy the packet's bytes to input. Taken from the original readAllInput().
+    hlt_bytes_append_raw(input, (int8_t*)packet, pkthdr->caplen, &excpt, ctx);
+    check_exception(excpt);
+
+    GC_CCTOR(input, hlt_bytes, ctx);
+
+    // copied from parseSingleInput
+    hlt_iterator_bytes cur = hlt_bytes_begin(input, &excpt, ctx);
+
+    check_exception(excpt);
+
+    // Feed all input at once.
+    hlt_bytes_freeze(input, 1, &excpt, ctx);
+
+    if ( driver_debug )
+        fprintf(stderr, "--- pac-driver: starting parsing single input chunk.\n");
+
+    void *pobj = (*p->parse_func)(input, 0, &excpt, ctx);
+
+    if ( driver_debug )
+        fprintf(stderr, "--- pac-driver: done parsing single input chunk.\n");
+
+    processParseObject(p, pobj);
+
+    // Commented out because otherwise, the program fails at the second
+    // packet. Is this a memory leak?
+    //GC_DTOR(input, hlt_bytes, ctx);
+    check_exception(excpt);
+    dump_memstats();
+}
+
 int main(int argc, char** argv)
 {
     int chunk_size = 0;
@@ -560,6 +611,7 @@ int main(int argc, char** argv)
     char* reply_parser = 0;
     Embed embeds[256];
     int embeds_count = 0;
+    int read_from_network_interface = 0;
 
     const char* progname = argv[0];
 
@@ -574,7 +626,7 @@ int main(int argc, char** argv)
 #endif
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:c")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:cn")) != -1) {
 
         switch (ch) {
 
@@ -604,6 +656,10 @@ int main(int argc, char** argv)
 
           case 'l':
             list_parsers = true;
+            break;
+
+          case 'n':
+            read_from_network_interface = true;
             break;
 
          case 'e': {
@@ -783,7 +839,43 @@ int main(int argc, char** argv)
         hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt, hlt_global_execution_context());
     }
 
-    parseSingleInput(request, chunk_size, embeds);
+    if ( read_from_network_interface ) {
+        char *dev;
+        char errbuf[PCAP_ERRBUF_SIZE];
+        pcap_t* descr;
+
+        // get a network device
+        // TODO: make this configurable, as parameter for the -n switch
+        dev = pcap_lookupdev(errbuf);
+        if (dev == NULL) {
+            fprintf(stderr, "%s\n",errbuf);
+            exit(1);
+        }
+        if ( driver_debug ) {
+            fprintf(stderr, "--- pac-driver: found network device to listen.\n");
+        }
+
+        // open device for reading
+        // set snaplen to 65535 as suggested by man pcap
+        descr = pcap_open_live(dev, 65535, 0, -1, errbuf);
+        if (descr == NULL) {
+            fprintf(stderr, "pcap_open_live(): %s\n", errbuf);
+            exit(1);
+        }
+        if ( driver_debug ) {
+            fprintf(stderr, "--- pac-driver: opened network device.\n");
+        }
+
+        // start the infinite packet capture loop
+        pcap_loop(descr, -1, processPacket, (u_char*) request);
+
+        if ( driver_debug ) {
+            fprintf(stderr, "--- pac-driver: Done processing packets from network device.\n");
+        }
+    }
+    else {
+        parseSingleInput(request, chunk_size, embeds);
+    }
 
     if ( options->profile ) {
         hlt_exception* excpt = 0;
