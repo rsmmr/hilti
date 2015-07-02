@@ -135,6 +135,12 @@ iBeginH(bytes, ToIntFromAscii, "bytes.to_int")
     iOp2(optype::int64, true);
 iEndH
 
+iBeginH(bytes, ToUIntFromBinary, "bytes.to_uint")
+    iTarget(optype::int64);
+    iOp1(optype::refBytes, true);
+    iOp2(optype::enum_, true);
+iEndH
+
 iBeginH(bytes, ToIntFromBinary, "bytes.to_int")
     iTarget(optype::int64);
     iOp1(optype::refBytes, true);

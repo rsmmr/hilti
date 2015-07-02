@@ -207,7 +207,7 @@ void CodeBuilder::visit(expression::operator_::bytes::ToUIntBinary* i)
     auto order = cg()->hiltiByteOrder(callParameter(i->op3(), 0));
 
     auto result = cg()->builder()->addTmp("i", cg()->hiltiType(i->type()));
-    cg()->builder()->addInstruction(result, hilti::instruction::bytes::ToIntFromBinary, op1, order);
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::ToUIntFromBinary, op1, order);
 
     setResult(result);
 }

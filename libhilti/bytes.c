@@ -1837,6 +1837,37 @@ int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_
     return negate ? -value : value;
 }
 
+int64_t hlt_bytes_to_uint_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
+        return 0;
+    }
+
+    hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
+
+    if ( len > 8 ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
+        return 0;
+    }
+
+    hlt_iterator_bytes cur;
+    __hlt_bytes_begin(&cur, b, excpt, ctx);
+
+    int64_t i = 0;
+
+    while ( ! __is_end(cur) ) {
+        uint8_t ch = __hlt_iterator_bytes_deref(cur, excpt, ctx);
+        i = (i << 8) | ch;
+        __hlt_iterator_bytes_incr(&cur, excpt, ctx, 0);
+        }
+
+    if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
+        i = hlt_int_flip(i, len, excpt, ctx);
+
+    return i;
+}
+
 int64_t hlt_bytes_to_int_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! b ) {

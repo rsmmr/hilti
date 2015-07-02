@@ -227,11 +227,20 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
+    iValidateCC(ToUIntFromBinary) {
+    }
+
+    iDocCC(ToUIntFromBinary, R"(
+        Converts a bytes object *op1* into an unsigned integer, assuming it's encoded in a binary represention with byte order *op2*.
+    )")
+iEndCC
+
+iBeginCC(bytes)
     iValidateCC(ToIntFromBinary) {
     }
 
     iDocCC(ToIntFromBinary, R"(
-        Converts a bytes object *op1* into an integer, assuming it's encoded in a binary represention with byte order *op2*.
+        Converts a bytes object *op1* into a signed integer, assuming it's encoded in a binary represention with byte order *op2*.
     )")
 iEndCC
 

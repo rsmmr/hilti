@@ -503,6 +503,9 @@ int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_
 int64_t hlt_bytes_to_int_binary(hlt_bytes* data, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
+int64_t hlt_bytes_to_uint_binary(hlt_bytes* data, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// XXX
 extern hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX

@@ -227,6 +227,15 @@ void StatementBuilder::visit(statement::instruction::bytes::ToIntFromAscii* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::ToUIntFromBinary* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_to_uint_binary", args);
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::bytes::ToIntFromBinary* i)
 {
     CodeGen::expr_list args;
