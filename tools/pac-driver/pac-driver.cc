@@ -17,6 +17,7 @@
 #include <pcap.h>
 #include <string.h>
 #include <stdlib.h>
+#include <endian.h>
 
 #include <stdio.h>
 #include <getopt.h>
@@ -572,7 +573,22 @@ void processPacket(u_char *parser, const struct pcap_pkthdr* pkthdr, const u_cha
     hlt_bytes* input = hlt_bytes_new(&excpt, ctx);
     check_exception(excpt);
 
-    // Copy the packet's bytes to input. Taken from the original readAllInput().
+    // Copy caplen to input, to provide it to the grammar. It's a uint32. Convert to big endian.
+    uint32_t caplen = htobe32(pkthdr->caplen);
+
+    hlt_bytes_append_raw(input, (int8_t*) &caplen, 4, &excpt, ctx);
+    check_exception(excpt);
+
+    if ( driver_debug ) {
+        // just print the bytes we append as caplen
+        fprintf(stderr, "--- pac-driver: packet caplen %u, encoded for the grammar as [ ", pkthdr->caplen);
+        for (size_t i = 0; i < 4; i++) {
+            fprintf(stderr, "%02x ", ((int8_t*) &caplen)[i] & 0xff);
+        }
+        fprintf(stderr, "]\n");
+    }
+
+    // Copy the packet's bytes to input.
     hlt_bytes_append_raw(input, (int8_t*)packet, pkthdr->caplen, &excpt, ctx);
     check_exception(excpt);
 
@@ -585,6 +601,15 @@ void processPacket(u_char *parser, const struct pcap_pkthdr* pkthdr, const u_cha
 
     // Feed all input at once.
     hlt_bytes_freeze(input, 1, &excpt, ctx);
+
+    if ( driver_debug ) {
+        // just print the bytes we captured
+        fprintf(stderr, "--- pac-driver: packet data [ ");
+        for (size_t i = 0; i < pkthdr->caplen; i++) {
+            fprintf(stderr, "%02x ", packet[i] & 0xff);
+        }
+        fprintf(stderr, "]\n");
+    }
 
     if ( driver_debug )
         fprintf(stderr, "--- pac-driver: starting parsing single input chunk.\n");
