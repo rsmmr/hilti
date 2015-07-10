@@ -22,4 +22,19 @@ void run() {
     i = bytes.to_int b Hilti::ByteOrder::Little
     s = call Hilti::fmt("%s -> %x", (b, i))
     call Hilti::print (s)
+
+    b = b"\x81"
+    i = bytes.to_uint b Hilti::ByteOrder::Big
+    s = call Hilti::fmt("%s -> %x", (b, i))
+    call Hilti::print (s)
+
+    b = b"\x81"
+    i = bytes.to_int b Hilti::ByteOrder::Big
+    s = call Hilti::fmt("%s -> %x", (b, i))
+    call Hilti::print (s)
+
+    b = b"\xff\xff\xff\xd6"
+    i = bytes.to_int b Hilti::ByteOrder::Big
+    s = call Hilti::fmt("%s -> %x", (b, i))
+    call Hilti::print (s)
 }
