@@ -114,7 +114,7 @@ static void usage(const char* prog)
     fprintf(stderr, "    -e <off:str>  Embed string <str> at offset <off>; can be given multiple times\n");
     fprintf(stderr, "    -l            Show available parsers\n");
     fprintf(stderr, "    -m <off>      Set mark at offset <off>; can be given multiple times\n");
-    fprintf(stderr, "    -n            Read from network device. Does not support -i, -e\n");
+    fprintf(stderr, "    -n <intf>     Read from network device; does not support -i, -e\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
     fprintf(stderr, "    -c            After parsing, compose data back to binary\n");
@@ -637,6 +637,7 @@ int main(int argc, char** argv)
     Embed embeds[256];
     int embeds_count = 0;
     int read_from_network_interface = 0;
+    char* network_device;
 
     const char* progname = argv[0];
 
@@ -651,7 +652,7 @@ int main(int argc, char** argv)
 #endif
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:cn")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:cn:")) != -1) {
 
         switch (ch) {
 
@@ -685,6 +686,7 @@ int main(int argc, char** argv)
 
           case 'n':
             read_from_network_interface = true;
+            network_device = optarg;
             break;
 
          case 'e': {
@@ -865,30 +867,18 @@ int main(int argc, char** argv)
     }
 
     if ( read_from_network_interface ) {
-        char *dev;
         char errbuf[PCAP_ERRBUF_SIZE];
         pcap_t* descr;
 
-        // get a network device
-        // TODO: make this configurable, as parameter for the -n switch
-        dev = pcap_lookupdev(errbuf);
-        if (dev == NULL) {
-            fprintf(stderr, "%s\n",errbuf);
-            exit(1);
-        }
-        if ( driver_debug ) {
-            fprintf(stderr, "--- pac-driver: found network device to listen.\n");
-        }
-
-        // open device for reading
-        // set snaplen to 65535 as suggested by man pcap
-        descr = pcap_open_live(dev, 65535, 0, -1, errbuf);
+        // Open device for reading
+        // Set snaplen to 65535 as suggested by the man page of pcap
+        descr = pcap_open_live(network_device, 65535, 0, -1, errbuf);
         if (descr == NULL) {
-            fprintf(stderr, "pcap_open_live(): %s\n", errbuf);
+            fprintf(stderr, "--- pac-driver: pcap_open_live(): %s\n", errbuf);
             exit(1);
         }
         if ( driver_debug ) {
-            fprintf(stderr, "--- pac-driver: opened network device.\n");
+            fprintf(stderr, "--- pac-driver: opened network device '%s'.\n", network_device);
         }
 
         // start the infinite packet capture loop
