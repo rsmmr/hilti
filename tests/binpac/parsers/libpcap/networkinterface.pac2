@@ -12,20 +12,20 @@
 # to the network interface did not work for some reason.
 # HILTI_DEBUG is deactivated to disable the check for memory leaks.
 # ---
-# @TEST-EXEC: HILTI_DEBUG= pac-driver -n lo %INPUT ${PARSERS}/networkinterface.pac2 2>&1 >output & (PAC_DRIVER_PID=$!; sleep 25; tcpreplay --intf1=lo ${DIST}/bro/tests/Traces/dns.trace; sleep 3; kill $PAC_DRIVER_PID)
+# @TEST-EXEC: HILTI_DEBUG= pac-driver -n lo %INPUT ${PARSERS}/libpcap.pac2 2>&1 >output & (PAC_DRIVER_PID=$!; sleep 25; tcpreplay --intf1=lo ${DIST}/bro/tests/Traces/dns.trace; sleep 3; kill $PAC_DRIVER_PID)
 # @TEST-EXEC: btest-diff output
 #
 # The following two lines should replace the first line used above. However, this is
 # not possible because of issue #3, see https://github.com/rsmmr/hilti/issues/3
 # If this issue is fixed, no ugly sleep statements are necessary.
 # ---
-# @T##EST-EXEC: hilti-build %INPUT ${PARSERS}/networkinterface.pac2 ${PAC_DRIVER} -d -o a.out
+# @T##EST-EXEC: hilti-build %INPUT ${PARSERS}/libpcap.pac2 ${PAC_DRIVER} -d -o a.out
 # @T##EST-EXEC: HILTI_DEBUG= ./a.out -n lo >output 2>&1 & tcpreplay --intf1=lo ${dist}/bro/tests/Traces/dns.trace
 
 module Test;
 
 import BinPAC;
-import parsers/networkinterface;
+import parsers/libpcap;
 import parsers/pcap;
 
 on pcap::EthernetPacket::%done {

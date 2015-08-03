@@ -1,0 +1,17 @@
+#
+# This test checks if reading a pcap file works by simply
+# printing the EtherType of some packets.
+#
+# @TEST-EXEC: HILTI_DEBUG= pac-driver -f ${DIST}/bro/tests/Traces/dns.trace %INPUT ${PARSERS}/libpcap.pac2 2>&1 >output
+# @TEST-EXEC: btest-diff output
+#
+
+module Test;
+
+import BinPAC;
+import parsers/libpcap;
+import parsers/pcap;
+
+on pcap::EthernetPacket::%done {
+    print self.ethertype;
+}

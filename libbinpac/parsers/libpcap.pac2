@@ -1,4 +1,4 @@
-module networkinterface;
+module libpcap;
 
 import BinPAC;
 import parsers/pcap;
