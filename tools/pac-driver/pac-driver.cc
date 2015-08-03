@@ -603,10 +603,14 @@ void processPacket(u_char *parser, const struct pcap_pkthdr* pkthdr, const u_cha
     hlt_bytes_freeze(input, 1, &excpt, ctx);
 
     if ( driver_debug ) {
-        // just print the bytes we captured
+        // print some of the bytes we captured
         fprintf(stderr, "--- pac-driver: packet data [ ");
-        for (size_t i = 0; i < pkthdr->caplen; i++) {
+        // print the first 14
+        for (size_t i = 0; i < 15 && i < pkthdr->caplen; i++) {
             fprintf(stderr, "%02x ", packet[i] & 0xff);
+        }
+        if (pkthdr->caplen > 14) {
+            fprintf(stderr, "... ");
         }
         fprintf(stderr, "]\n");
     }
