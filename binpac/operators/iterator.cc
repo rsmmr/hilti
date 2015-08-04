@@ -23,7 +23,12 @@ opBegin(iterator::Deref)
     }
 
     opResult() {
-        return ast::checkedCast<type::Iterator>(op1()->type())->argType();
+        if (ast::isA<type::Bytes>(ast::checkedCast<type::Iterator>(op1()->type())->argType())){
+            return std::make_shared<type::Integer>(8,false);   
+        }
+        else {
+            return ast::checkedCast<type::Iterator>(op1()->type())->argType();
+        }
     }
 opEnd
 

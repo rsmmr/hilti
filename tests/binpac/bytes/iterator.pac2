@@ -11,6 +11,7 @@ global b = b"\x01\x02\x03\x04\x05";
 
 global cur: iter<bytes>;
 global last: iter<bytes>;
+global i : uint<8>;
 
 cur = b.begin();
 # last = b.end();
@@ -39,7 +40,7 @@ print *cur;
 cur += 2;
 print *cur;
 
-
-
+i = *cur;
+print i;
 
 
