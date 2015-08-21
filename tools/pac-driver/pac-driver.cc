@@ -15,6 +15,7 @@
 // and not sure we still need it.
 
 #include <pcap.h>
+#include <sys/time.h>
 #include <string.h>
 #include <stdlib.h>
 #include <endian.h>
@@ -574,17 +575,51 @@ void processPacket(u_char *parser, const struct pcap_pkthdr* pkthdr, const u_cha
     hlt_bytes* input = hlt_bytes_new(&excpt, ctx);
     check_exception(excpt);
 
-    // Copy caplen to input, to provide it to the grammar. It's a uint32. Convert to big endian.
+    // Copy meta information provided by libpcap to input, to provide it to the grammar.
+    // They all need to be converted to big endian.
+    //
+    // Capture time in seconds and microseconds.
+    // TODO: fix this for platforms on which time_t and susecond_t are 32 bit
+    //       (maybe by giving 64 bit to the grammar anyway, thus just 32 zeros more!?
+    //       Can Hilti handle 64 bit values on 32 bit platforms?)
+    uint64_t sec = htobe64(pkthdr->ts.tv_sec);
+    hlt_bytes_append_raw(input, (int8_t*) &sec, sizeof(time_t), &excpt, ctx);
+    check_exception(excpt);
+    uint64_t usec = htobe64(pkthdr->ts.tv_usec);
+    hlt_bytes_append_raw(input, (int8_t*) &usec, sizeof(suseconds_t), &excpt, ctx);
+    check_exception(excpt);
+    // Number of captured bytes
     uint32_t caplen = htobe32(pkthdr->caplen);
-
     hlt_bytes_append_raw(input, (int8_t*) &caplen, 4, &excpt, ctx);
+    check_exception(excpt);
+    // Length of the packet
+    uint32_t len = htobe32(pkthdr->len);
+    hlt_bytes_append_raw(input, (int8_t*) &len, 4, &excpt, ctx);
     check_exception(excpt);
 
     if ( driver_debug ) {
+        // just print the bytes we append as sec
+        fprintf(stderr, "--- pac-driver: capture time in sec, encoded for the grammar as [ ");
+        for (size_t i = 0; i < sizeof(time_t); i++) {
+            fprintf(stderr, "%02x ", ((int8_t*) &sec)[i] & 0xff);
+        }
+        fprintf(stderr, "]\n");
+        // just print the bytes we append as usec
+        fprintf(stderr, "--- pac-driver: capture time in usec, encoded for the grammar as [ ");
+        for (size_t i = 0; i < sizeof(suseconds_t); i++) {
+            fprintf(stderr, "%02x ", ((int8_t*) &usec)[i] & 0xff);
+        }
+        fprintf(stderr, "]\n");
         // just print the bytes we append as caplen
         fprintf(stderr, "--- pac-driver: packet caplen %u, encoded for the grammar as [ ", pkthdr->caplen);
         for (size_t i = 0; i < 4; i++) {
             fprintf(stderr, "%02x ", ((int8_t*) &caplen)[i] & 0xff);
+        }
+        fprintf(stderr, "]\n");
+        // just print the bytes we append as len
+        fprintf(stderr, "--- pac-driver: packet len %u, encoded for the grammar as [ ", pkthdr->len);
+        for (size_t i = 0; i < 4; i++) {
+            fprintf(stderr, "%02x ", ((int8_t*) &len)[i] & 0xff);
         }
         fprintf(stderr, "]\n");
     }
