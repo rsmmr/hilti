@@ -631,7 +631,7 @@ void processPacket(u_char *parser, const struct pcap_pkthdr* pkthdr, const u_cha
     GC_CCTOR(input, hlt_bytes, ctx);
 
     // copied from parseSingleInput
-    hlt_iterator_bytes cur = hlt_bytes_begin(input, &excpt, ctx);
+    hlt_bytes_begin(input, &excpt, ctx);
 
     check_exception(excpt);
 
