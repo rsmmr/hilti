@@ -28,9 +28,6 @@ void CodeBuilder::visit(expression::operator_::iterator::Deref* i)
 void CodeBuilder::visit(expression::operator_::iterator::IncrPostfix* i)
 {
     auto itype = cg()->hiltiType(i->op1()->type());
-    if (ast::isA<type::Bytes>(i->op1()->type())){
-        itype = cg()->hiltiType(std::make_shared<type::Integer>(8,false));
-    }
     auto result = builder()->addTmp("iter", itype);
     auto op1 = cg()->hiltiExpression(i->op1());
     cg()->builder()->addInstruction(result, hilti::instruction::operator_::Assign, op1);
