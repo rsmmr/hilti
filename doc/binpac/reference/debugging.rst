@@ -6,7 +6,7 @@ Debugging Support
 
 It can be tough to track down the specifics of what a parser is doing
 (or not doing) because often there's no directly observable effect.
-However, BinPAC++ comes with support that helps with debugging.
+However, Spicy comes with support that helps with debugging.
 
 The simplest way to learn more about what's going on is to add a hooks
 with ``print`` statements to the grammar. That's rather disruptive
@@ -65,7 +65,7 @@ The following debugging streams are currently available:
     lexer tokens; and look-ahead symbols which might be pending; and
     more.
 
-    This stream is primarily intended for debugging the BinPAC++
+    This stream is primarily intended for debugging the Spicy
     compiler itself.
 
 ``hilti-trace``
@@ -73,14 +73,14 @@ The following debugging streams are currently available:
     instruction being executed, along with arguments and return
     values.
 
-    This stream is primarily intended for debugging the BinPAC++
+    This stream is primarily intended for debugging the Spicy
     compiler itself.
 
 ``hilti-flow``
     This is a HILTI-defined debugging level recording all function
     calls and returns.
 
-    This stream is primarily intended for debugging the BinPAC++
+    This stream is primarily intended for debugging the Spicy
     compiler itself, though it may also be helpful to understand the
     internal control flow when writing a grammar.
     

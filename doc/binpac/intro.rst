@@ -7,12 +7,12 @@ Introduction
 ============
 
 This introduction gives a short overview of how to write and use
-BinPAC++ parsers. For a complete list of features available see
+Spicy parsers. For a complete list of features available see
 :ref:`pac2_reference`.
 
 .. _simple:
 
-Here's a simple "Hello, World!" in BinPAC++::
+Here's a simple "Hello, World!" in Spicy::
 
     module Test;
 
@@ -32,7 +32,7 @@ stand-alone binary for subsequent execution::
     > ./a.out
     Hello, World!
 
-Note the inclusion of ``pac-driver.cc`` here: BinPAC++ generated code
+Note the inclusion of ``pac-driver.cc`` here: Spicy generated code
 cannot run on its own but needs a *driver program* that provides a
 ``main`` function as well as normally (though not in this trivial
 example) also the input data for the generated parsers.
@@ -57,7 +57,7 @@ time. We'll see below how to write actual parsers.
 A Simple Parser
 ---------------
 
-A BinPAC++ parser specification describes the layout of a protocol
+A Spicy parser specification describes the layout of a protocol
 data unit (PDU), along with semantic actions to perform when
 individual pieces are parsed. Here's a simple example for parsing an
 HTTP-style request line, such as ``GET /index.html HTTP/1.0``:
@@ -132,17 +132,17 @@ malformed, the parser will complain::
 Current State
 -------------
 
-Please note that BinPAC++ (and HILTI) is not yet production-ready, and
+Please note that Spicy (and HILTI) is not yet production-ready, and
 there are number of known problems. In particular:
 
     - Only 64-bit Linux and Mac OS are supported right now.
 
-    - The BinPAC++ compiler is not good a detecting malformed input.
+    - The Spicy compiler is not good a detecting malformed input.
       If there's an error in a ``*.pac2`` will, chances are high that
       it will either give a pretty much incomprehensible error message
       or even just crash.
 
-    - Many of BinPAC++'s features have not yet been exercised much
+    - Many of Spicy's features have not yet been exercised much
       other than via the unit tests in the test suite. Anything beyond
       that may or may not work ...
 
@@ -161,7 +161,7 @@ test with the `github tracker
 Exploring More
 --------------
 
-* The BinPAC++ :ref:`pac2_reference` is slowly growing. Eventually, it
+* The Spicy :ref:`pac2_reference` is slowly growing. Eventually, it
   will document all available features.  Note that the
   :ref:`data_types` section is auto-generated from the source code and
   hence comprehensively lists all currently available operators.
@@ -170,8 +170,8 @@ Exploring More
 * There are some preliminary protocol parsers ``libbinpac/parsers/``,
   and also in ``bro/pac2/``.
   
-* Look at BinPAC++ source files (``*.pac2``) across the
-  ``tests/binpac/*`` subdirectories to see how BinPAC++ grammars look
+* Look at Spicy source files (``*.pac2``) across the
+  ``tests/binpac/*`` subdirectories to see how Spicy grammars look
   like. In particular, the ``test/unit/*.pac2`` show various features
   available for defining units.
 

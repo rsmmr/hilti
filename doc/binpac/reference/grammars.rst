@@ -83,7 +83,7 @@ Unit Hooks
             ...
         }
 
-    Currently, BinPAC++ defines these unit hooks:
+    Currently, Spicy defines these unit hooks:
 
     ``%init``
         Executed when the parsing of a unit is about to start. All of
