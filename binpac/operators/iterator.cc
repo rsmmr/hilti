@@ -23,7 +23,8 @@ opBegin(iterator::Deref)
     }
 
     opResult() {
-        return ast::checkedCast<type::Iterator>(op1()->type())->argType();
+        auto atype = ast::checkedCast<type::Iterator>(op1()->type())->argType();
+        return ast::type::checkedTrait<type::trait::Iterable>(atype)->elementType();
     }
 opEnd
 
@@ -84,30 +85,30 @@ opEnd
 // opBegin(iterator::Plus)
 //     opOp1(std::make_shared<type::Iterator>())
 //     opOp2(std::make_shared<type::Integer>())
-// 
+//
 //     opDoc("Returns the iterator advanced by a given number of elements.")
-// 
+//
 //     opValidate() {
 //         if ( ast::checkedCast<type::Integer>(op2()->type())->signed_() )
 //             error(op2(), "integer must be unsigned");
 //     }
-// 
+//
 //     opResult() {
 //         return op1()->type();
 //     }
 // opEnd
-// 
+//
 // opBegin(iterator::PlusAssign)
 //     opOp1(std::make_shared<type::Iterator>())
 //     opOp2(std::make_shared<type::Integer>())
-// 
+//
 //     opDoc("Advances the iterator by a given number of elements.")
-// 
+//
 //     opValidate() {
 //         if ( ast::checkedCast<type::Integer>(op2()->type())->signed_() )
 //             error(op2(), "integer must be unsigned");
 //     }
-// 
+//
 //     opResult() {
 //         return op1()->type();
 //     }
