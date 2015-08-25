@@ -1,2 +1,5 @@
 \x01\x02\x03\x04 -> 1020304
 \x01\x02\x03\x04 -> 4030201
+\x81 -> 81
+\x81 -> ffffffffffffff81
+\xff\xff\xff\xd6 -> ffffffffffffffd6

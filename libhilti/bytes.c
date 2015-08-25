@@ -1896,8 +1896,12 @@ int64_t hlt_bytes_to_int_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception
     if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
         i = hlt_int_flip(i, len, excpt, ctx);
 
-    if ( i & (1 << (len * 8 - 1)) )
-        return -(i ^ (1 << (len * 8)) - 1) - 1;
+    if ( i & (1ll << (len * 8 - 1)) ){
+        if( len == 8 )
+            return -(~i + 1);
+
+        return -(i ^ (1ll << (len * 8)) - 1) - 1;
+    }
 
     return i;
 }
