@@ -1,4 +1,22 @@
 
+0.4-28 | 2015-08-24 21:11:24 -0700
+
+  * Renaming BinPAC++ to Spicy across the documentation.
+
+  * Fix the type returned by iterator::deref. (Frozen Caribou)
+
+  * Add Vim and Emacs syntax plugins to documentation. (Benjamin Lipp)
+
+  * Fix for BTest config's IgnoreFiles. (Benjamin Lipp)
+
+  * Splitting BinPAC's bytes' to_int() into two separate to_int() and
+    to_uint(), with corresponding HILTI instructions. (Marco
+    Caselli/Robin Sommer).
+
+  * Adapt test canonifier to BTest change.
+
+  * Updating baselines.
+
 0.4-12 | 2015-06-01 10:28:12 -0700
 
   * Baseline updates for Bro changes.

@@ -15,6 +15,8 @@ grep -v '^WARNING: Linking two modules of different' | \
 grep -v '^warning: overriding the module target triple' | \
 grep -v '^[0-9]\{1,\} warning generated.$'
 
+true
+
 # The warnings being filtered above is for LLVM on Darwin where even minor new LLVM versions
 # end up changing the host triple. What a pain.
 
