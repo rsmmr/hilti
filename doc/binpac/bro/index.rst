@@ -7,7 +7,7 @@ Bro Interface
 
 .. contents::
 
-BinPAC++ comes with a Bro plugin that adds support for ``*.pac2``
+Spicy comes with a Bro plugin that adds support for ``*.pac2``
 grammars to Bro. The following overview walks through installation and
 usage. Keep in mind that everything is in development and not
 necessarily stable right now.
@@ -27,12 +27,12 @@ adds support for dynamically loaded plugins. To get it, use git::
     > git clone --recursive git://git.bro.org/bro
 
 Now you need to build Bro with the same C++ compiler (and C++ standard
-library) that you also use for compiling HILTI/BinPAC++. If
+library) that you also use for compiling HILTI/Spicy. If
 that's, say, ``/opt/llvm/bin/clang++``, do:: 
 
     > CXX="/opt/llvm/bin/clang++ --stdlib=libc++" ./configure && make
 
-Then compile HILTI/BinPAC++, pointing it to your Bro clone::
+Then compile HILTI/Spicy, pointing it to your Bro clone::
 
    > make BRO_DIST=/path/to/where/you/cloned/bro/into
 
@@ -54,23 +54,23 @@ Cool.
 Usage
 =====
 
-Writing a BinPAC++ analyzer for Bro consists of two steps: writing the
+Writing a Spicy analyzer for Bro consists of two steps: writing the
 analyzer as standard ``*.pac2`` code; and defining the analyzer's
 interface to Bro, including the events it will generate, in a separate
 ``*.evt`` file. We look at the two separately in the following, using
 a simple analyzer for parsing SSH banners as our running example. We
-then show to run Bro so that it loads the BinPAC++ plugin along with
+then show to run Bro so that it loads the Spicy plugin along with
 any analyzers.
 
-BinPAC++ Grammar
-----------------
+Spicy Grammar
+-------------
 
 Here's a simple grammar ``ssh.pac2`` to parse an SSH banner (e.g.,
 ``SSH-2.0-OpenSSH_6.1``):
 
 .. literalinclude:: /../bro/pac2/ssh.pac2
 
-This is indeed just a standard BinPAC++ grammar, just as it can be
+This is indeed just a standard Spicy grammar, just as it can be
 used with :ref:`pac2_pac-driver`. It could include further hooks and
 also global code; the latter will execute once at Bro initialization
 time. If you add ``print`` statements, they will generate the
@@ -112,7 +112,7 @@ via the command line; see below). One can also specify multiple
 
 The ``analyzer`` block starts with giving the new analyzer a name
 (``pac2::SSH``). The namespace isn't mandatory, but we use it to
-differentiate BinPAC++ analyzers from Bro's standard analyzers. The
+differentiate Spicy analyzers from Bro's standard analyzers. The
 name corresponds to how we'll refer to the new analyzer in Bro. For
 example, just like there's an ``analyzer::ANALYZER_SSH`` enum for the
 standard SSH analyzer, there'll now be an
@@ -124,7 +124,7 @@ normalization going on, use ``bro -NN`` to see the final name.).
 Next comes set of of properties for the analyzer, separated by commas
 (order is not important):
 
-    - ``parse with <unit>`` links the new analyzer with the BinPAC++
+    - ``parse with <unit>`` links the new analyzer with the Spicy
       grammar: ``<unit>`` is the fully-qualified name of the unit we
       want to use as the top-level entry point for parsing. When
       specified the way we do here, the unit will be used for both
@@ -153,7 +153,7 @@ Events are defined by lines of the form ``<hook> -> event
 <name>(<parameters>)``. Let's break it down:
 
     - ``<hook>`` defines when an event should be triggered, and it
-      works just like externally defined BinPAC++ :ref:`hooks
+      works just like externally defined Spicy :ref:`hooks
       <pac2_hooks>`, i.e., you give the fully-qualified path to the
       grammar element that is to trigger the event during parsing. In
       the example above, ``on SSH::Banner`` will trigger an event
@@ -168,11 +168,11 @@ Events are defined by lines of the form ``<hook> -> event
 
     - The ``<parameters>`` define the event's parameters, specifying
       both their values and (implicitly) their types at the same time.
-      Each parameter is a complete BinPAC++ expression (except for
+      Each parameter is a complete Spicy expression (except for
       some "magic" ones starting with ``$``, see below). The type of
-      each BinPAC++ expression determines the Bro type of the
+      each Spicy expression determines the Bro type of the
       corresponding event parameter, with an internal mapping defining
-      how each BinPAC++ type translates into a Bro type (e.g., a
+      how each Spicy type translates into a Bro type (e.g., a
       ``bytes`` objects translates into a Bro ``string``; see
       :ref:`pac2_bro-type-mapping` for the details). At runtime, when
       an event is raised, the expression is evaluated to determine the
@@ -193,7 +193,7 @@ Events are defined by lines of the form ``<hook> -> event
           parameter for the corresponding Bro event.
 
         - ``$is_orig`` turns into a boolean value indicating whether
-          BinPAC++ is parsing the originator or responder side of the
+          Spicy is parsing the originator or responder side of the
           connection.
 
         - ``$file`` references the current file in case of defining a
@@ -202,8 +202,8 @@ Events are defined by lines of the form ``<hook> -> event
       Note that the magic parameters aren't expressions; you can't
       further manipulate them.
 
-Using a BinPAC++ Analyzer
--------------------------
+Using a Spicy Analyzer
+----------------------
 
 With both the grammar and the analyzer/event definition in place, we
 can now write an event handler:
@@ -214,7 +214,7 @@ can now write an event handler:
 Note how the ``ssh::banner`` definition from ``ssh.evt`` maps into the
 event's parameter signature.
 
-Before we can use it, we need to tell Bro where to find the BinPAC++
+Before we can use it, we need to tell Bro where to find the Spicy
 plugin. For that, we set the environment variable ``BRO_PLUGIN_PATH`` to
 the plugin's build directory::
 
@@ -248,7 +248,7 @@ Let's first just check that Bro indeeds loads the analyzer correctly.
     The ``-NN`` output currently does not include all the information
     shown above. Need to fix.
 
-We see that Bro has found the BinPac++ plugin. The plugin indeed
+We see that Bro has found the Spicy plugin. The plugin indeed
 provides our analyzer ``pac2_SSH``, which generates one event
 ``ssh_banner``.
 
@@ -262,9 +262,9 @@ making sure to give Bro our event handler ``ssh-banner.bro`` as well::
 File Analyzers
 --------------
 
-Writing a BinPAC++ file analyzer works pretty similar to a protocol
+Writing a Spicy file analyzer works pretty similar to a protocol
 analyzer. The main difference is indeed just that we need to tell Bro
-to use our BinPAC++ unit for parsing files rather than protocols. We
+to use our Spicy unit for parsing files rather than protocols. We
 do that via the ``*.evt`` file by defining a ``file analyzer`` section
 instead of a ``protocol analyzer``. Here's an example for a GZIP
 decoder:
@@ -272,10 +272,10 @@ decoder:
 .. literalinclude:: /../bro/pac2/gzip.evt
 
 The ``parse with`` works the same as with a protocol: it specifies the
-top-level BinPAC++ unit to use. Instead of giving a well-known port to
+top-level Spicy unit to use. Instead of giving a well-known port to
 activate the analyzer automatically (as we do with protocols), we can
 associate a file analyzer with a MIME type. Now whenever some part of
-Bro finds data of that type, it will deploy our BinPAC++ analyzer to
+Bro finds data of that type, it will deploy our Spicy analyzer to
 take it apart.
 
 Here's the main part of the corresponding grammar file ``gzip.pac2``
@@ -295,20 +295,20 @@ GZIP file transferred via HTTP::
     # bro -r gzip-single-request.trace gzip.evt gzip-header.bro
     7aNwGytV9k4, 8, 0, 1380302739.000000, 0, gzip::UNIX
 
-HILTI/BinPAC++ Options
-----------------------
+HILTI/Spicy Options
+-------------------
 
-Bro's BinPAC++ plugin comes with a number of options defined in
+Bro's Spicy plugin comes with a number of options defined in
 ``hilti2/bro/scripts/bro/hilti/base/main.bro``. These include:
 
 ``debug: bool`` (default: false)
-    If true, compiles all BinPAC++/HILTI code in debug mode, meaning
+    If true, compiles all Spicy/HILTI code in debug mode, meaning
     that :ref:`pac2_debugging` will be available (including the
     ``HILTI_DEBUG`` environment variable).
 
 ``dump_debug: bool`` (default: false)
     Dumps debug information about the compiled analyzers to the
-    console. Can be helpful if Bro isn't integrating a BinPAC++
+    console. Can be helpful if Bro isn't integrating a Spicy
     analyzer as expected.
 
 ``optimize: bool`` (default: true)
@@ -321,16 +321,16 @@ Bro's BinPAC++ plugin comes with a number of options defined in
 
         This is currently broken and disabled.
 
-    Enables caching of compiled BinPAC++/HILTI code. If on, you will
+    Enables caching of compiled Spicy/HILTI code. If on, you will
     notice that the first time you start Bro with a new (or modified)
     analyzer, it takes longer than on subsequent invocations. That's
     because the first one needs to do all the leg-work of going from
-    BinPAC++ to native code. It then however caches the resulting code
+    Spicy to native code. It then however caches the resulting code
     on disk and reuses it next time directly.
 
     Normally you want this on, however currently the cache does not
     always pick up on changes made to ``*.pac2`` or ``*.evt`` files
-    (or Bro itself, or the BinPAC++ plugin). If you notice that a
+    (or Bro itself, or the Spicy plugin). If you notice that a
     change doesn't seem to take effect, try removing the cache
     directory (``.cache``) or simply disable it altogether.
 
@@ -341,11 +341,11 @@ See the script itself for the complete list of all options.
 Type Mapping
 ------------
 
-The following table summarizes how BinPAC++ types get mapped into Bro
+The following table summarizes how Spicy types get mapped into Bro
 types. Types not listed are not yet implemented.
 
 =============  ==============
-BinPAC++       Bro
+Spicy          Bro
 =============  ==============
 ``addr``       ``addr``
 ``bool``       ``bool``

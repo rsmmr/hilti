@@ -2,7 +2,7 @@
 Runtime Library
 ---------------
 
-This document summarizes the types and function defined in BinPAC++'s
+This document summarizes the types and function defined in Spicy's
 standard runtime library. These can be accesses by importating the
 ``binpac`` module.
 

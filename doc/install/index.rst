@@ -104,7 +104,7 @@ Docker Image
 
 As it can still be a bit tricky to set this is all up, there's also a
 `Docker image <https://registry.hub.docker.com/u/rsmmr/hilti/>`_
-available that comes with all pieces preinstalled (HILTI/BinPAC++,
+available that comes with all pieces preinstalled (HILTI/Spicy,
 Bro, LLVM/clang)::
 
     # docker run -i -t "rsmmr/hilti"
