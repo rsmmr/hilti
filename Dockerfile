@@ -22,7 +22,7 @@ ADD docker/ .
 CMD hilti-config --version; bash
 
 # Setup Bro
-RUN cd /opt && git clone --recursive git://git.bro.org/bro
+RUN cd /opt && git clone -b release/2.4 --recursive git://git.bro.org/bro
 RUN cd /opt/bro && CXX="/opt/llvm/bin/clang++ --stdlib=libc++" ./configure && make -j 5 && make install
 
 # Setup HILTI.

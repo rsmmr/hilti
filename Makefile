@@ -2,7 +2,10 @@
 # This is just a wrapper around the CMake setup.
 #
 
-DOCKER_IMAGE="rsmmr/hilti"
+GIT=git://git.icir.org/hilti
+
+DOCKER_IMAGE=rsmmr/hilti
+DOCKER_TMP=/xa/robin/hilti-docker-build
 
 all: release
 
@@ -26,9 +29,17 @@ tags:
 	update-tags
 
 docker-build:
+	rm -rf $(DOCKER_TMP)
+	mkdir -p $(DOCKER_TMP)
+	(cd $(DOCKER_TMP) && git clone ${GIT})
+	cp Makefile $(DOCKER_TMP)/hilti
+	cp Dockerfile $(DOCKER_TMP)/hilti
+	(cd $(DOCKER_TMP)/hilti && make docker-build-internal)
+
+docker-build-internal:
 	docker build -t ${DOCKER_IMAGE} .
-	docker tag `docker inspect --format='{{.Id}}' ${DOCKER_IMAGE}` ${DOCKER_IMAGE}:`cat VERSION`
-	docker tag `docker inspect --format='{{.Id}}' ${DOCKER_IMAGE}` ${DOCKER_IMAGE}:latest
+	docker tag -f `docker inspect --format='{{.Id}}' ${DOCKER_IMAGE}` ${DOCKER_IMAGE}:`cat VERSION`
+	docker tag -f `docker inspect --format='{{.Id}}' ${DOCKER_IMAGE}` ${DOCKER_IMAGE}:latest
 
 docker-run:
 	docker run -i -t ${DOCKER_IMAGE}

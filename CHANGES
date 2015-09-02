@@ -1,4 +1,8 @@
 
+0.4-29 | 2015-09-02 09:44:29 -0700
+
+  * Docker tweaks. (Robin Sommer)
+
 0.4-28 | 2015-08-24 21:11:24 -0700
 
   * Renaming BinPAC++ to Spicy across the documentation.
