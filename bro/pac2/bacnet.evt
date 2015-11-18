@@ -2,7 +2,16 @@ grammar bacnet.pac2;
 
 protocol analyzer pac2::BACnet over UDP:
     parse with BACnet::Message,
-    port 47808/udp;
+    port 47808/udp,
+    port 47809/udp,
+    port 47810/udp,
+    port 47811/udp,
+    port 47812/udp,
+    port 47813/udp,
+    port 47814/udp,
+    port 47815/udp,
+    port 47816/udp,
+    port 47817/udp;
 
 on BACnet::Message -> event bacnet_message($conn, $is_orig, self.func, self.len);
 
@@ -34,7 +43,14 @@ on BACnet::Message if ( self.func == BACnet::BVLC_function::Delete-FDT-Entry )
 on BACnet::Message if ( self.func == BACnet::BVLC_function::Forwarded-NPDU )
   -> event bacnet_bvlc_forwarded_npdu_information ($conn, self.originator, self.originator_port);
 
-## BACnet NPDU NL-Messages
+#################################################################
+#								#
+#		         BACNET NPDU				#
+#								#
+#################################################################
+
+on BACnet::NPDU
+  -> event bacnet_npdu_parameters($conn, self.source, self.destination);
 
 # this is a meta-message for every BACnet NPDU NL-message, that just contains destination networks
 # as a list. Get the specific message type by looking at NPDU_info.message_type
@@ -77,19 +93,23 @@ on BACnet::NPDU if ( ( self.control.nlmessage == 1 ) && (
 on BACnet::NPDU if ( (  self.control.nlmessage == 1 ) && ( self.message_type == BACnet::NPDU_type::Establish-Connection-To-Network ) )
   -> event bacnet_npdu_establish_connection_to_network ($conn, BACnet::bro_npdu_info(self), [ cast<uint64>(i) for i in self.npdu_message.dnets ], cast<uint64>(self.npdu_message.termination_time) );
 
-## BACnet APDU Messages
+#################################################################
+#								#
+#		      BACNET APDU TYPES				#
+#								#
+#################################################################
 
 # This should cover all possible classes of APDU messages. Due to the fact that we do not yet support sending optional values to Bro,
 # only the information that has to be present in the protocol is sent into the events. For the moment, this basically is the invokeID and
 # the chosen service.
 
-on BACnet::PDU_confirmedRequest
+on BACnet::BACnet_Confirmed_Request_PDU
   -> event bacnet_apdu_confirmed_request ($conn, cast<uint64>(self.invokeID), self.confirmed_service_choice);
 
-on BACnet::PDU_unconfirmedRequest
+on BACnet::BACnet_Unconfirmed_Request_PDU
   -> event bacnet_apdu_unconfirmed_request ($conn, self.service_choice);
 
-on BACnet::PDU_simpleACK
+on BACnet::BACnet_SimpleACK_PDU
   -> event bacnet_apdu_simple_ack ($conn, cast<uint64>(self.invokeID), self.service_choice);
 
 on BACnet::BACnet_ComplexACK_PDU
@@ -98,58 +118,169 @@ on BACnet::BACnet_ComplexACK_PDU
 on BACnet::BACnet_SegmentACK_PDU
   -> event bacnet_apdu_segment_ack ($conn, cast<uint64>(self.invokeID), cast<uint64>(self.sequence_number), cast<uint64>(self.actual_window_size));
 
-on BACnet::PDU_error
+on BACnet::BACnet_Error_PDU
   -> event bacnet_apdu_error ($conn, cast<uint64>(self.invokeID), self.service, self.error-class, self.error-code);
 
-on BACnet::PDU_reject
+on BACnet::BACnet_Reject_PDU
   -> event bacnet_apdu_reject ($conn, cast<uint64>(self.invokeID), self.reject_reason);
 
-on BACnet::PDU_abort
+on BACnet::BACnet_Abort_PDU
   -> event bacnet_apdu_abort ($conn, cast<uint64>(self.invokeID), self.abort_reason);
 
-# A few unconfirmed requests -- at the moment only device discovery
+#################################################################
+#								#
+#			BACNET SERVICES				#
+#								#
+#################################################################
 
-on BACnet::I_Am_Request
-  -> event bacnet_i_am_request ($conn, self.iAmDeviceIdentifier.oid.tpe, cast<uint64>(self.iAmDeviceIdentifier.oid.data.instanceNumber),
-    cast<uint64>(self.maxAPDULengthAccepted.unsigned), cast<uint64>(self.segmentationSupported.unsigned), self.vendorID);
-
-# FIXME: neither value has to be present :(
-on BACnet::Who_Is_Request
-  -> event bacnet_who_is_request ($conn, cast<uint64>(self.deviceInstanceRangeLowLimit), cast<uint64>(self.deviceInstanceRangeHighLimit));
-
-# Fixme: once again, not a single value in the request has to be present. At the moment this only works if the values we expect arrive.
-# we need optionals to support the other cases.
-# one of these two cases will fail.
-on BACnet::Who_Has_Request if ( self.objectIdentifier.tag.tag == 2)
-  -> event bacnet_who_has_request_device ($conn, self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber) );
-
-on BACnet::Who_Has_Request if ( self.objectName.tag.tag == 3)
-  -> event bacnet_who_has_request_name ($conn, self.objectName.characters.value);
-
-on BACnet::I_Have_Request
-  -> event bacnet_i_have_request ($conn, self.deviceIdentifier.oid.tpe, cast<uint64>(self.deviceIdentifier.oid.data.instanceNumber),
-    self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber), self.objectName.characters.value);
-
-# File requests
-# Stream based
-on BACnet::AtomicReadFile_Request if ( self.open_tag.tag == 0 )
-  -> event bacnet_atomicreadfile_request ($conn, cast<uint64>(invokeID), True, self.fileIdentifier.oid.tpe, cast<uint64>(self.fileIdentifier.oid.data.instanceNumber), cast<int64>(self.fileStartPosition.signed), cast<uint64>(self.requestedOctetCount.unsigned));
-
-# Record based
-on BACnet::AtomicReadFile_Request if ( self.open_tag.tag == 1 )
-  -> event bacnet_atomicreadfile_request ($conn, cast<uint64>(invokeID), False, self.fileIdentifier.oid.tpe, cast<uint64>(self.fileIdentifier.oid.data.instanceNumber), cast<int64>(self.fileStartRecord.signed), cast<uint64>(self.requestedRecordCount.unsigned));
-
-# Stream based
-on BACnet::AtomicReadFile_ACK if ( self.open_tag.tag == 0 )
-  -> event bacnet_atomicreadfile_ack ($conn, cast<uint64>(invokeID), self.endOfFile.boolean, cast<int64>(self.fileStartPosition.signed), self.fileData.octets);
-
-# FIXME: Record based not implemented. Need traffic to get this completely right :)
-
-# Property Requests
-
-# Fixme: does not deal with propertyArrayIndex yet.
 on BACnet::ReadProperty_Request
-  -> event bacnet_readproperty_request ($conn, cast<uint64>(invokeID), self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber), self.propertyIdentifier);
+  -> event bacnet_read_property_request($conn, cast<uint64>(invokeID));
 
 on BACnet::ReadProperty_ACK
-  -> event bacnet_readproperty_ack ($conn, cast<uint64>(invokeID), self.objectIdentifier.oid.tpe, cast<uint64>(self.objectIdentifier.oid.data.instanceNumber), self.propertyIdentifier);
+  -> event bacnet_read_property_ack($conn, cast<uint64>(invokeID));
+
+on BACnet::ReadPropertyMultiple_Request
+  -> event bacnet_read_property_multiple_request($conn, cast<uint64>(invokeID));
+
+on BACnet::ReadPropertyMultiple_ACK
+  -> event bacnet_read_property_multiple_ack($conn, cast<uint64>(invokeID));
+
+on BACnet::ReadRange_Request
+  -> event bacnet_read_range_request($conn, cast<uint64>(invokeID));
+
+on BACnet::ReadRange_ACK
+  -> event bacnet_read_range_ack($conn, cast<uint64>(invokeID));
+
+on BACnet::AtomicReadFile_Request
+  -> event bacnet_atomic_read_file_request($conn, cast<uint64>(invokeID));
+
+on BACnet::AtomicReadFile_ACK
+  -> event bacnet_atomic_read_file_ack($conn, cast<uint64>(invokeID));
+
+on BACnet::SubscribeCOV_Request
+  -> event bacnet_subscribe_cov_request($conn, cast<uint64>(invokeID));
+
+on BACnet::SubscribeCOVProperty_Request
+  -> event bacnet_subscribe_cov_property_request($conn, cast<uint64>(invokeID));
+
+on BACnet::ConfirmedCOVNotification_Request
+  -> event bacnet_confirmed_cov_notification_request($conn, cast<uint64>(invokeID));
+
+on BACnet::ConfirmedEventNotification_Request
+  -> event bacnet_confirmed_event_notification_request($conn, cast<uint64>(invokeID));
+
+on BACnet::ConfirmedPrivateTransfer_Request
+  -> event bacnet_confirmed_private_transfer_request($conn, cast<uint64>(invokeID));
+
+on BACnet::ConfirmedPrivateTransfer_ACK
+  -> event bacnet_confirmed_private_transfer_ack($conn, cast<uint64>(invokeID));
+
+on BACnet::WriteProperty_Request
+  -> event bacnet_write_property_request($conn, cast<uint64>(invokeID));
+
+on BACnet::WritePropertyMultiple_Request
+  -> event bacnet_write_property_multiple_request($conn, cast<uint64>(invokeID));
+
+on BACnet::AtomicWriteFile_Request
+  -> event bacnet_atomic_write_file_request($conn, cast<uint64>(invokeID));
+
+on BACnet::AtomicWriteFile_ACK
+  -> event bacnet_atomic_write_file_ack($conn, cast<uint64>(invokeID));
+
+on BACnet::GetEventInformation_Request
+  -> event bacnet_get_event_information_request($conn, cast<uint64>(invokeID));
+
+on BACnet::GetEventInformation_ACK
+  -> event bacnet_get_event_information_ack($conn, cast<uint64>(invokeID));
+
+on BACnet::UnconfirmedCOVNotification_Request
+  -> event bacnet_unconfirmed_cov_notification_request($conn);
+
+on BACnet::UnconfirmedPrivateTransfer_Request
+  -> event bacnet_unconfirmed_private_transfer_request($conn);
+
+on BACnet::TimeSynchronization_Request
+  -> event bacnet_time_synchronization_request($conn);
+
+on BACnet::UnconfirmedEventNotification_Request
+  -> event bacnet_unconfirmed_event_notification_request($conn);
+
+on BACnet::AcknowledgeAlarm_Request
+  -> event bacnet_acknowledge_alarm_request($conn, cast<uint64>(invokeID));
+
+on BACnet::ReinitializeDevice_Request
+  -> event bacnet_reinitialize_device_request($conn, cast<uint64>(invokeID));
+
+on BACnet::CreateObject_Request
+  -> event bacnet_create_object_request($conn, cast<uint64>(invokeID));
+
+on BACnet::CreateObject_ACK
+  -> event bacnet_create_object_ack($conn, cast<uint64>(invokeID));
+
+on BACnet::Who_Is_Request
+  -> event bacnet_who_is_request($conn);
+
+on BACnet::I_Am_Request
+  -> event bacnet_i_am_request($conn);
+
+on BACnet::Who_Has_Request
+  -> event bacnet_who_has_request($conn);
+
+on BACnet::I_Have_Request
+  -> event bacnet_i_have_request ($conn);
+
+#################################################################
+#								#
+#		    BACNET PRIMITIVE EVENTS			#
+#								#
+#################################################################
+
+on BACnet::ParseNull
+  -> event bacnet_null (self.tagPath, self.tagLabel);
+
+on BACnet::ParseBooleanApp
+  -> event bacnet_boolean (self.tagPath, self.tagLabel, self.value);
+
+on BACnet::ParseBooleanCon
+  -> event bacnet_boolean (self.tagPath, self.tagLabel, self.value);
+
+on BACnet::ParseUnsigned
+  -> event bacnet_unsigned (self.tagPath, self.tagLabel, self.value);
+
+on BACnet::ParseInteger
+  -> event bacnet_integer (self.tagPath, self.tagLabel, self.value);
+
+on BACnet::ParseReal
+  -> event bacnet_real(self.tagPath, self.tagLabel, self.value);
+
+on BACnet::ParseDouble
+  -> event bacnet_double(self.tagPath, self.tagLabel, self.value);
+
+on BACnet::ParseOctets
+  -> event bacnet_octets(self.tagPath, self.tagLabel, self.value);
+
+on BACnet::ParseBACnetCharacterString
+  -> event bacnet_character_string (self.tagPath, self.tagLabel, self.value);
+
+on BACnet::ParseBACnetBitString
+  -> event bacnet_bit_string (self.tagPath, self.tagLabel, self.unused_bits, self.values);
+
+on BACnet::ParseEnumerated
+  -> event bacnet_enumerated (self.tagPath, self.tagLabel, self.value);
+
+on BACnet::ParseDate
+  -> event bacnet_date (self.tagPath, self.tagLabel, self.year, self.month, self.day, self.weekday);
+
+on BACnet::ParseTime
+  -> event bacnet_time (self.tagPath, self.tagLabel, self.hour, self.minute, self.second, self.centisecond);
+
+on BACnet::ParseBACnetObjectIdentifier
+  -> event bacnet_object (self.tagPath, self.tagLabel, self.tpe, cast<uint64>(self.data.instanceNumber));
+
+on BACnet::ParseBACnetPropertyIdentifier
+  -> event bacnet_property (self.tagPath, self.tagLabel, self.tpe);
+
+on BACnet::ParseUnknown
+  -> event bacnet_unknown (self.tagPath, self.tagLabel, self.value);
+
+
