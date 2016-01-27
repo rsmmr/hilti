@@ -14,6 +14,12 @@
 // put it back in we need to, but it makes the code quite a bit more complex
 // and not sure we still need it.
 
+#include <pcap.h>
+#include <sys/time.h>
+#include <string.h>
+#include <stdlib.h>
+#include <endian.h>
+
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
@@ -109,6 +115,8 @@ static void usage(const char* prog)
     fprintf(stderr, "    -e <off:str>  Embed string <str> at offset <off>; can be given multiple times\n");
     fprintf(stderr, "    -l            Show available parsers\n");
     fprintf(stderr, "    -m <off>      Set mark at offset <off>; can be given multiple times\n");
+    fprintf(stderr, "    -n <intf>     Read from network device; does not support -i, -e\n");
+    fprintf(stderr, "    -f <file>     Read from pcap file; does not support -i, -e\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
     fprintf(stderr, "    -c            After parsing, compose data back to binary\n");
@@ -552,6 +560,114 @@ bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> opt
 
 #endif
 
+/**
+ * Callback function that is passed to pcap_loop() and called each time
+ * a packet is recieved.
+ */
+void processPacket(u_char *parser, const struct pcap_pkthdr* pkthdr, const u_char* packet)
+{
+    // Get the BinPAC++ parser which was passed as user argument to pcap_loop
+    binpac_parser* p = (binpac_parser*) parser;
+
+    // Initialize environment. Taken from the original parseSingleInput().
+    hlt_execution_context* ctx = hlt_global_execution_context();
+    hlt_exception* excpt = 0;
+    hlt_bytes* input = hlt_bytes_new(&excpt, ctx);
+    check_exception(excpt);
+
+    // Copy meta information provided by libpcap to input, to provide it to the grammar.
+    // They all need to be converted to big endian.
+    //
+    // Capture time in seconds and microseconds.
+    // TODO: fix this for platforms on which time_t and susecond_t are 32 bit
+    //       (maybe by giving 64 bit to the grammar anyway, thus just 32 zeros more!?
+    //       Can Hilti handle 64 bit values on 32 bit platforms?)
+    uint64_t sec = htobe64(pkthdr->ts.tv_sec);
+    hlt_bytes_append_raw(input, (int8_t*) &sec, sizeof(time_t), &excpt, ctx);
+    check_exception(excpt);
+    uint64_t usec = htobe64(pkthdr->ts.tv_usec);
+    hlt_bytes_append_raw(input, (int8_t*) &usec, sizeof(suseconds_t), &excpt, ctx);
+    check_exception(excpt);
+    // Number of captured bytes
+    uint32_t caplen = htobe32(pkthdr->caplen);
+    hlt_bytes_append_raw(input, (int8_t*) &caplen, 4, &excpt, ctx);
+    check_exception(excpt);
+    // Length of the packet
+    uint32_t len = htobe32(pkthdr->len);
+    hlt_bytes_append_raw(input, (int8_t*) &len, 4, &excpt, ctx);
+    check_exception(excpt);
+
+    if ( driver_debug ) {
+        // just print the bytes we append as sec
+        fprintf(stderr, "--- pac-driver: capture time in sec, encoded for the grammar as [ ");
+        for (size_t i = 0; i < sizeof(time_t); i++) {
+            fprintf(stderr, "%02x ", ((int8_t*) &sec)[i] & 0xff);
+        }
+        fprintf(stderr, "]\n");
+        // just print the bytes we append as usec
+        fprintf(stderr, "--- pac-driver: capture time in usec, encoded for the grammar as [ ");
+        for (size_t i = 0; i < sizeof(suseconds_t); i++) {
+            fprintf(stderr, "%02x ", ((int8_t*) &usec)[i] & 0xff);
+        }
+        fprintf(stderr, "]\n");
+        // just print the bytes we append as caplen
+        fprintf(stderr, "--- pac-driver: packet caplen %u, encoded for the grammar as [ ", pkthdr->caplen);
+        for (size_t i = 0; i < 4; i++) {
+            fprintf(stderr, "%02x ", ((int8_t*) &caplen)[i] & 0xff);
+        }
+        fprintf(stderr, "]\n");
+        // just print the bytes we append as len
+        fprintf(stderr, "--- pac-driver: packet len %u, encoded for the grammar as [ ", pkthdr->len);
+        for (size_t i = 0; i < 4; i++) {
+            fprintf(stderr, "%02x ", ((int8_t*) &len)[i] & 0xff);
+        }
+        fprintf(stderr, "]\n");
+    }
+
+    // Copy the packet's bytes to input.
+    hlt_bytes_append_raw(input, (int8_t*)packet, pkthdr->caplen, &excpt, ctx);
+    check_exception(excpt);
+
+    GC_CCTOR(input, hlt_bytes, ctx);
+
+    // copied from parseSingleInput
+    hlt_bytes_begin(input, &excpt, ctx);
+
+    check_exception(excpt);
+
+    // Feed all input at once.
+    hlt_bytes_freeze(input, 1, &excpt, ctx);
+
+    if ( driver_debug ) {
+        // print some of the bytes we captured
+        fprintf(stderr, "--- pac-driver: packet data [ ");
+        // print the first 14
+        for (size_t i = 0; i < 15 && i < pkthdr->caplen; i++) {
+            fprintf(stderr, "%02x ", packet[i] & 0xff);
+        }
+        if (pkthdr->caplen > 14) {
+            fprintf(stderr, "... ");
+        }
+        fprintf(stderr, "]\n");
+    }
+
+    if ( driver_debug )
+        fprintf(stderr, "--- pac-driver: starting parsing single input chunk.\n");
+
+    void *pobj = (*p->parse_func)(input, 0, &excpt, ctx);
+
+    if ( driver_debug )
+        fprintf(stderr, "--- pac-driver: done parsing single input chunk.\n");
+
+    processParseObject(p, pobj);
+
+    // Commented out because otherwise, the program fails at the second
+    // packet. Is this a memory leak?
+    //GC_DTOR(input, hlt_bytes, ctx);
+    check_exception(excpt);
+    dump_memstats();
+}
+
 int main(int argc, char** argv)
 {
     int chunk_size = 0;
@@ -560,6 +676,10 @@ int main(int argc, char** argv)
     char* reply_parser = 0;
     Embed embeds[256];
     int embeds_count = 0;
+    bool read_from_network_interface = 0;
+    char* network_device;
+    bool read_from_pcap_file = 0;
+    char* pcap_file;
 
     const char* progname = argv[0];
 
@@ -574,7 +694,7 @@ int main(int argc, char** argv)
 #endif
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:c")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:cn:f:")) != -1) {
 
         switch (ch) {
 
@@ -604,6 +724,16 @@ int main(int argc, char** argv)
 
           case 'l':
             list_parsers = true;
+            break;
+
+          case 'n':
+            read_from_network_interface = true;
+            network_device = optarg;
+            break;
+
+          case 'f':
+            read_from_pcap_file = true;
+            pcap_file = optarg;
             break;
 
          case 'e': {
@@ -783,7 +913,47 @@ int main(int argc, char** argv)
         hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt, hlt_global_execution_context());
     }
 
-    parseSingleInput(request, chunk_size, embeds);
+    // Decide from where to get the input, as the process is different for
+    // network devices and pcap files compared to stdin.
+    if ( read_from_network_interface || read_from_pcap_file ) {
+        char errbuf[PCAP_ERRBUF_SIZE];
+        pcap_t* descr;
+
+        // Open device for reading
+        if ( read_from_network_interface ) {
+            // Set snaplen to 65535 as suggested by the man page of pcap
+            descr = pcap_open_live(network_device, 65535, 0, -1, errbuf);
+            if ( descr == NULL ) {
+                fprintf(stderr, "--- pac-driver: pcap_open_live(): %s\n", errbuf);
+                exit(1);
+            }
+            if ( driver_debug ) {
+                fprintf(stderr, "--- pac-driver: opened network device '%s'.\n", network_device);
+            }
+        }
+        // Open file for reading
+        else {
+            descr = pcap_open_offline(pcap_file, errbuf);
+            if ( descr == NULL ) {
+                fprintf(stderr, "--- pac-driver: pcap_open_offline(): %s\n", errbuf);
+                exit(1);
+            }
+            if ( driver_debug ) {
+                fprintf(stderr, "--- pac-driver: opened pcap file '%s'.\n", pcap_file);
+            }
+        }
+
+        // Start the infinite packet capture loop
+        pcap_loop(descr, -1, processPacket, (u_char*) request);
+
+        if ( driver_debug ) {
+            fprintf(stderr, "--- pac-driver: Done processing packets.\n");
+        }
+    }
+    // Read from stdin
+    else {
+        parseSingleInput(request, chunk_size, embeds);
+    }
 
     if ( options->profile ) {
         hlt_exception* excpt = 0;

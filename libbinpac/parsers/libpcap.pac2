@@ -1,0 +1,12 @@
+module libpcap;
+
+import BinPAC;
+import parsers/pcap;
+
+export type Packet = unit {
+  # This is added by pac-driver and is the caplen provided by libpcap
+  capture_length: uint32;
+
+  # The further analysis is the same than in pcap.pac2 starting with EthernetPacket
+  ethernet_packet: pcap::EthernetPacket(self.capture_length);
+};
