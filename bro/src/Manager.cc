@@ -378,6 +378,9 @@ bool Manager::InitPostScripts()
 			}
 		}
 
+	pimpl->pac2_context->setOptions(pimpl->pac2_options);
+	pimpl->hilti_context = pimpl->pac2_context->hiltiContext();
+
 	post_scripts_init_run = true;
 
 	PLUGIN_DBG_LOG(HiltiPlugin, "Done with post-script initialization");
@@ -643,253 +646,253 @@ bool Manager::Compile()
 	// See if we can short-cut this all by reusing our cache.
 	auto llvm_module = CheckCacheForLinkedModule();
 
-	if ( llvm_module )
-		return RunJIT(llvm_module);
+	if ( !llvm_module )
+	{
 
-	// Create the pac2 hooks and accessor functions.
-	for ( auto ev : pimpl->pac2_events )
-		{
-		if ( ! CreatePac2Hook(ev.get()) )
-			return false;
-		}
+		// Create the pac2 hooks and accessor functions.
+		for ( auto ev : pimpl->pac2_events )
+			{
+			if ( ! CreatePac2Hook(ev.get()) )
+				return false;
+			}
 
-	if ( pimpl->hilti_context->fileCache() )
-		{
-		// See which modules we can find in the cache.
+		if ( pimpl->hilti_context->fileCache() )
+			{
+			// See which modules we can find in the cache.
+			for ( auto m : pimpl->pac2_modules )
+				{
+				pimpl->pac2_context->toCacheKey(m->module, &m->key);
+
+				for ( auto d : m->dependencies )
+					m->key.files.insert(d);
+
+				auto lms = pimpl->hilti_context->checkCache(m->key);
+
+				if ( ! lms.size() )
+					continue;
+
+				for ( auto l : lms )
+					pimpl->llvm_modules.push_back(l);
+
+				m->cached = true;
+				}
+			}
+
+		// Compile all the *.pac2 modules.
 		for ( auto m : pimpl->pac2_modules )
 			{
-			pimpl->pac2_context->toCacheKey(m->module, &m->key);
-
-			for ( auto d : m->dependencies )
-				m->key.files.insert(d);
-
-			auto lms = pimpl->hilti_context->checkCache(m->key);
-
-			if ( ! lms.size() )
+			if ( m->cached )
 				continue;
 
-			for ( auto l : lms )
-				pimpl->llvm_modules.push_back(l);
+			// Compile the *.pac2 module itself.
+			shared_ptr<::hilti::Module> hilti_module_out;
+			auto llvm_module = m->context->compile(m->module, &hilti_module_out);
 
-			m->cached = true;
+			if ( ! llvm_module )
+				return false;
+
+			if ( pimpl->save_hilti && hilti_module_out )
+				{
+				ofstream out(::util::fmt("bro.pac2.%s.hlt", hilti_module_out->id()->name()));
+				pimpl->hilti_context->print(hilti_module_out, out);
+				out.close();
+				}
+
+			pimpl->llvm_modules.push_back(llvm_module);
+			m->llvm_modules.push_back(llvm_module);
+
+			// Compile the generated hooks *.pac2 module.
+			if ( pimpl->dump_code_pre_finalize )
+				{
+				std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
+				pimpl->pac2_context->dump(m->pac2_module, std::cerr);
+				std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
+				pimpl->pac2_context->print(m->pac2_module, std::cerr);
+				}
+
+			if ( ! pimpl->pac2_context->finalize(m->pac2_module) )
+				return false;
+
+			if ( pimpl->dump_code_pre_finalize )
+				{
+				std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile AST: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
+				pimpl->pac2_context->dump(m->pac2_module, std::cerr);
+				std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile code: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
+				pimpl->pac2_context->print(m->pac2_module, std::cerr);
+				}
+
+			llvm_module = pimpl->pac2_context->compile(m->pac2_module, &m->pac2_hilti_module);
+
+			if ( ! llvm_module )
+				return false;
+
+			pimpl->llvm_modules.push_back(llvm_module);
+			m->llvm_modules.push_back(llvm_module);
+
+			if ( m->pac2_hilti_module )
+				pimpl->hilti_modules.push_back(m->pac2_hilti_module);
+
+			if ( pimpl->save_pac2 )
+				{
+				ofstream out(::util::fmt("bro.%s.pac2", m->pac2_module->id()->name()));
+				pimpl->pac2_context->print(m->pac2_module, out);
+				out.close();
+				}
+
+			AddHiltiTypesForModule(m);
 			}
-		}
 
-	// Compile all the *.pac2 modules.
-	for ( auto m : pimpl->pac2_modules )
-		{
-		if ( m->cached )
-			continue;
+		for ( auto ev : pimpl->pac2_events )
+			AddHiltiTypesForEvent(ev);
 
-		// Compile the *.pac2 module itself.
-        shared_ptr<::hilti::Module> hilti_module_out;
-		auto llvm_module = m->context->compile(m->module, &hilti_module_out);
+	    for ( auto minfo : pimpl->pac2_modules )
+			minfo->hilti_context->resolveTypes(minfo->hilti_mbuilder->module());
+
+		// Create the HILTi raise functions().
+		for ( auto ev : pimpl->pac2_events )
+			{
+			if ( ev->minfo->cached )
+				continue;
+
+			BuildBroEventSignature(ev);
+			RegisterBroEvent(ev);
+
+			if ( ! CreateHiltiEventFunction(ev.get()) )
+				return false;
+			}
+
+		// Add the standard LibBro module.
+
+		if ( ! pimpl->libbro_path.size() )
+			{
+			reporter::error("LibBro library module not found");
+			return false;
+			}
+
+		PLUGIN_DBG_LOG(HiltiPlugin, "Loading %s", pimpl->libbro_path.c_str());
+
+		auto libbro = pimpl->hilti_context->loadModule(pimpl->libbro_path);
+
+		if ( ! libbro )
+			{
+			reporter::error("loading LibBro library module failed");
+			return false;
+			}
+
+		pimpl->hilti_modules.push_back(libbro);
+
+		llvm::Module* llvm_libbro = nullptr;
+
+		util::cache::FileCache::Key libbro_key;
+		libbro_key.scope = "bc";
+		libbro_key.name = "LibBro";
+		pimpl->pac2_context->options().toCacheKey(&libbro_key);
+		pimpl->hilti_context->toCacheKey(libbro, &libbro_key);
+
+		auto lms = pimpl->hilti_context->checkCache(libbro_key);
+
+		if ( lms.size() )
+			llvm_libbro = lms.front();
+
+		else
+			{
+			llvm_libbro = pimpl->hilti_context->compile(libbro);
+
+			if ( ! llvm_libbro )
+				{
+				reporter::error("compiling LibBro library module failed");
+				return false;
+				}
+
+			pimpl->hilti_context->updateCache(libbro_key, llvm_libbro);
+			}
+
+		pimpl->llvm_modules.push_back(llvm_libbro);
+
+		// Compile all the *.hlt modules.
+		for ( auto m : pimpl->pac2_modules )
+			{
+			if ( m->cached )
+				continue;
+
+			AddHiltiTypesForModule(m);
+
+			if ( pimpl->dump_code_pre_finalize )
+				{
+				auto hilti_module = m->hilti_mbuilder->module();
+				std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.hlt\n", hilti_module->id()->name()) << std::endl;
+				m->hilti_context->dump(hilti_module, std::cerr);
+				std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.hlt\n", hilti_module->id()->name()) << std::endl;
+				m->hilti_context->print(hilti_module, std::cerr);
+				}
+
+			auto hilti_module = m->hilti_mbuilder->Finalize();
+
+			if ( ! hilti_module )
+				return false;
+
+			pimpl->hilti_modules.push_back(hilti_module);
+
+			// TODO: Not sure why we need this import here.
+			pimpl->hilti_context->importModule(std::make_shared<::hilti::ID>("LibBro"));
+			pimpl->hilti_context->finalize(hilti_module);
+
+			auto llvm_hilti_module = m->hilti_context->compile(hilti_module);
+
+			if ( ! llvm_hilti_module )
+				{
+				reporter::error("compiling LibBro library module failed");
+				return false;
+				}
+
+			pimpl->llvm_modules.push_back(llvm_hilti_module);
+			m->llvm_modules.push_back(llvm_hilti_module);
+
+			pimpl->hilti_context->updateCache(m->key, m->llvm_modules);
+			}
+
+		if ( pimpl->save_hilti )
+			{
+			for ( auto m : pimpl->hilti_modules )
+				{
+				ofstream out(::util::fmt("bro.%s.hlt", m->id()->name()));
+				pimpl->hilti_context->print(m, out);
+				out.close();
+				}
+			}
+
+
+		auto glue = pimpl->compiler->FinalizeGlueBuilder();
+
+		if ( ! CompileHiltiModule(glue) )
+			return false;
+
+		// Compile and link all the HILTI modules into LLVM. We use the
+		// BinPAC++ context here to make sure we gets its additional
+		// libraries linked.
+		//
+		PLUGIN_DBG_LOG(HiltiPlugin, "Compiling & linking all HILTI code into a single LLVM module");
+
+		llvm_module = pimpl->pac2_context->linkModules("__bro_linked__", pimpl->llvm_modules);
 
 		if ( ! llvm_module )
-			return false;
-
-		if ( pimpl->save_hilti && hilti_module_out )
 			{
-			ofstream out(::util::fmt("bro.pac2.%s.hlt", hilti_module_out->id()->name()));
-			pimpl->hilti_context->print(hilti_module_out, out);
+			reporter::error("linking failed");
+			return false;
+			}
+
+		if ( pimpl->save_llvm )
+			{
+			ofstream out("bro.ll");
+			pimpl->hilti_context->printBitcode(llvm_module, out);
 			out.close();
 			}
 
-		pimpl->llvm_modules.push_back(llvm_module);
-		m->llvm_modules.push_back(llvm_module);
+		llvm_module->setModuleIdentifier("__bro_linked__");
 
-		// Compile the generated hooks *.pac2 module.
-		if ( pimpl->dump_code_pre_finalize )
-			{
-			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
-			pimpl->pac2_context->dump(m->pac2_module, std::cerr);
-			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
-			pimpl->pac2_context->print(m->pac2_module, std::cerr);
-			}
-
-		if ( ! pimpl->pac2_context->finalize(m->pac2_module) )
-			return false;
-
-		if ( pimpl->dump_code_pre_finalize )
-			{
-			std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile AST: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
-			pimpl->pac2_context->dump(m->pac2_module, std::cerr);
-			std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile code: %s.pac2\n", m->pac2_module->id()->name()) << std::endl;
-			pimpl->pac2_context->print(m->pac2_module, std::cerr);
-			}
-
-		llvm_module = pimpl->pac2_context->compile(m->pac2_module, &m->pac2_hilti_module);
-
-		if ( ! llvm_module )
-			return false;
-
-		pimpl->llvm_modules.push_back(llvm_module);
-		m->llvm_modules.push_back(llvm_module);
-
-		if ( m->pac2_hilti_module )
-			pimpl->hilti_modules.push_back(m->pac2_hilti_module);
-
-		if ( pimpl->save_pac2 )
-			{
-			ofstream out(::util::fmt("bro.%s.pac2", m->pac2_module->id()->name()));
-			pimpl->pac2_context->print(m->pac2_module, out);
-			out.close();
-			}
-
-		AddHiltiTypesForModule(m);
-		}
-
-	for ( auto ev : pimpl->pac2_events )
-		AddHiltiTypesForEvent(ev);
-
-    for ( auto minfo : pimpl->pac2_modules )
-		minfo->hilti_context->resolveTypes(minfo->hilti_mbuilder->module());
-
-	// Create the HILTi raise functions().
-	for ( auto ev : pimpl->pac2_events )
-		{
-		if ( ev->minfo->cached )
-			continue;
-
-		BuildBroEventSignature(ev);
-		RegisterBroEvent(ev);
-
-		if ( ! CreateHiltiEventFunction(ev.get()) )
-			return false;
-		}
-
-	// Add the standard LibBro module.
-
-	if ( ! pimpl->libbro_path.size() )
-		{
-		reporter::error("LibBro library module not found");
-		return false;
-		}
-
-	PLUGIN_DBG_LOG(HiltiPlugin, "Loading %s", pimpl->libbro_path.c_str());
-
-	auto libbro = pimpl->hilti_context->loadModule(pimpl->libbro_path);
-
-	if ( ! libbro )
-		{
-		reporter::error("loading LibBro library module failed");
-		return false;
-		}
-
-	pimpl->hilti_modules.push_back(libbro);
-
-	llvm::Module* llvm_libbro = nullptr;
-
-	util::cache::FileCache::Key libbro_key;
-	libbro_key.scope = "bc";
-	libbro_key.name = "LibBro";
-	pimpl->pac2_context->options().toCacheKey(&libbro_key);
-	pimpl->hilti_context->toCacheKey(libbro, &libbro_key);
-
-	auto lms = pimpl->hilti_context->checkCache(libbro_key);
-
-	if ( lms.size() )
-		llvm_libbro = lms.front();
-
-	else
-		{
-		llvm_libbro = pimpl->hilti_context->compile(libbro);
-
-		if ( ! llvm_libbro )
-			{
-			reporter::error("compiling LibBro library module failed");
-			return false;
-			}
-
-		pimpl->hilti_context->updateCache(libbro_key, llvm_libbro);
-		}
-
-	pimpl->llvm_modules.push_back(llvm_libbro);
-
-	// Compile all the *.hlt modules.
-	for ( auto m : pimpl->pac2_modules )
-		{
-		if ( m->cached )
-			continue;
-
-		AddHiltiTypesForModule(m);
-
-		if ( pimpl->dump_code_pre_finalize )
-			{
-			auto hilti_module = m->hilti_mbuilder->module();
-			std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.hlt\n", hilti_module->id()->name()) << std::endl;
-			m->hilti_context->dump(hilti_module, std::cerr);
-			std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.hlt\n", hilti_module->id()->name()) << std::endl;
-			m->hilti_context->print(hilti_module, std::cerr);
-			}
-
-		auto hilti_module = m->hilti_mbuilder->Finalize();
-
-		if ( ! hilti_module )
-			return false;
-
-		pimpl->hilti_modules.push_back(hilti_module);
-
-		// TODO: Not sure why we need this import here.
-		pimpl->hilti_context->importModule(std::make_shared<::hilti::ID>("LibBro"));
-		pimpl->hilti_context->finalize(hilti_module);
-
-		auto llvm_hilti_module = m->hilti_context->compile(hilti_module);
-
-		if ( ! llvm_hilti_module )
-			{
-			reporter::error("compiling LibBro library module failed");
-			return false;
-			}
-
-		pimpl->llvm_modules.push_back(llvm_hilti_module);
-		m->llvm_modules.push_back(llvm_hilti_module);
-
-		pimpl->hilti_context->updateCache(m->key, m->llvm_modules);
-		}
-
-	if ( pimpl->save_hilti )
-		{
-		for ( auto m : pimpl->hilti_modules )
-			{
-			ofstream out(::util::fmt("bro.%s.hlt", m->id()->name()));
-			pimpl->hilti_context->print(m, out);
-			out.close();
-			}
-		}
-
-
-	auto glue = pimpl->compiler->FinalizeGlueBuilder();
-
-	if ( ! CompileHiltiModule(glue) )
-		return false;
-
-	// Compile and link all the HILTI modules into LLVM. We use the
-	// BinPAC++ context here to make sure we gets its additional
-	// libraries linked.
-	//
-	PLUGIN_DBG_LOG(HiltiPlugin, "Compiling & linking all HILTI code into a single LLVM module");
-
-	llvm_module = pimpl->pac2_context->linkModules("__bro_linked__", pimpl->llvm_modules);
-
-	if ( ! llvm_module )
-		{
-		reporter::error("linking failed");
-		return false;
-		}
-
-	if ( pimpl->save_llvm )
-		{
-		ofstream out("bro.ll");
-		pimpl->hilti_context->printBitcode(llvm_module, out);
-		out.close();
-		}
-
-	llvm_module->setModuleIdentifier("__bro_linked__");
-
-	pimpl->llvm_linked_module = llvm_module;
-	pimpl->hilti_context->updateCache(CacheKeyForLinkedModule(), llvm_module);
-
+		pimpl->llvm_linked_module = llvm_module;
+		pimpl->hilti_context->updateCache(CacheKeyForLinkedModule(), llvm_module);
+	}
 	auto result = RunJIT(llvm_module);
 	PLUGIN_DBG_LOG(HiltiPlugin, "Done with compilation");
 
