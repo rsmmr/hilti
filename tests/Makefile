@@ -22,3 +22,9 @@ tests-all:
 
 hello-worlds:
 	-@$(BTEST) -f diag.log hilti/misc/hello-world.hlt binpac/misc/hello-world.pac2
+
+uapci:
+	-@$(BTEST) -f diag.log binpac/parsers/t104/uapci.pac2
+t104:
+	-@$(BTEST) -v -f diag.log binpac/parsers/t104/
+
