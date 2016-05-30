@@ -139,49 +139,36 @@ static void _bytesUnpackDelim(CodeGen* cg, const UnpackArgs& args, const UnpackR
     auto begin = builder::codegen::create(iter_type, args.begin);
     auto end = builder::codegen::create(iter_type, cg->llvmIterBytesEnd());
 
-    auto block_body = cg->newBuilder("unpack-loop-body");
-    auto block_cmp = cg->newBuilder("unpack-loop-cmp");
-    auto block_exit = cg->newBuilder("unpack-loop-exit");
-    auto block_next = cg->newBuilder("unpack-loop-next");
-    auto block_insufficient = cg->newBuilder("unpack-loop-insufficient");
+    auto block_exit = cg->newBuilder("unpack-exit");
+    auto block_insufficient = cg->newBuilder("unpack-insufficient");
 
     // Copy the start iterator.
     cg->llvmCreateStore(args.begin, result.iter_ptr);
 
-    // Enter loop.
-    cg->llvmCreateBr(block_body);
-
-    // Check whether end reached.
-    cg->pushBuilder(block_body);
     auto cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
-    CodeGen::expr_list params = { cur, end };
-    auto done = cg->llvmCall("hlt::iterator_bytes_eq", params);
-    cg->llvmCreateCondBr(done, block_insufficient, block_cmp);
-    cg->popBuilder();
 
-    // Check whether we found the delimiter.
-    cg->pushBuilder(block_cmp);
-    cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
-    params = { cur, delim };
-    auto found = cg->llvmCall("hlt::bytes_match_at", params);
-    cg->llvmCreateCondBr(found, block_exit, block_next);
-    cg->popBuilder();
-
-    // Move iterator forward.
-    cg->pushBuilder(block_next);
-    cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
-    params = { cur };
-    auto next = cg->llvmCall("hlt::iterator_bytes_incr", params);
+    // Search for the delim pattern
+    CodeGen::expr_list params = { cur, delim };
+    auto find_result  = cg->llvmCall("hlt::bytes_find_bytes_at_iter", params);
+    // bytes_find_bytes_at_iter returns a hlt_bytes_find_at_iter_result struct with :
+    // - a hlt_iterator_bytes giving the position of the parttern
+    // - an int_8 set to 1 if the delimiter was found
+    auto next = cg->llvmTupleElement(iter_type, find_result, 1, false);
     cg->llvmCreateStore(next, result.iter_ptr);
-    cg->llvmCreateBr(block_body);
-    cg->popBuilder();
+
+    // TODO: To improve. This call should be removed and use instead the 'success' member of the hlt_bytes_find_at_iter_result
+    // Check if the delim was found.
+    cur = builder::codegen::create(iter_type, cg->builder()->CreateLoad(result.iter_ptr));
+    params = {cur, end};
+    auto done = cg->llvmCall("hlt::iterator_bytes_eq", params);
+    cg->llvmCreateCondBr(done, block_insufficient, block_exit);
 
     // Not found.
     cg->pushBuilder(block_insufficient);
     cg->llvmRaiseException("Hilti::WouldBlock", args.location);
     cg->popBuilder();
 
-    // Loop exit.
+    // Block exit.
     cg->pushBuilder(block_exit);
 
     if ( ! skip ) {
