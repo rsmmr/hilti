@@ -47,14 +47,18 @@ else ()
       PATHS /opt/local/bin /opt/llvm/bin
   )
 
+  exec_program(${LLVM_CONFIG_EXEC} ARGS --bindir     OUTPUT_VARIABLE LLVM_BIN_DIR)
+
   find_program(LLVM_CLANG_EXEC
       NAMES clang
-      PATHS /opt/local/bin  /opt/llvm/bin
+      PATHS ${LLVM_BIN_DIR}
+      NO_DEFAULT_PATH
   )
 
   find_program(LLVM_CLANGXX_EXEC
       NAMES clang++
-      PATHS /opt/local/bin  /opt/llvm/bin
+      PATHS ${LLVM_BIN_DIR}
+      NO_DEFAULT_PATH
   )
 
   set(LLVM_FOUND TRUE)
