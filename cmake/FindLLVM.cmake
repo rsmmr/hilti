@@ -41,6 +41,9 @@ if (LLVM_INCLUDE_DIR)
   set(LLVM_FOUND TRUE)
 
 else ()
+  if(LLVM_CONFIG_EXEC STREQUAL "")
+    unset(LLVM_CONFIG_EXEC CACHE)
+  endif()
 
   find_program(LLVM_CONFIG_EXEC
       NAMES llvm-config
