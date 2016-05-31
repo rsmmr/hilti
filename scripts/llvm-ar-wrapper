@@ -5,6 +5,12 @@ output=$1
 shift
 inputs=$@
 
-llvm-link -o $output $inputs
+LLVM_LINK=llvm-link
+
+if [ "$LLVM_CONFIG_EXEC" ]; then
+    LLVM_BIN_PATH=`$LLVM_CONFIG_EXEC --bindir`
+    LLVM_LINK=$LLVM_BIN_PATH/llvm-link
+fi
+$LLVM_LINK -o $output $inputs
 
 

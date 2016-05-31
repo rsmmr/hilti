@@ -13,7 +13,17 @@ Version = 0.2
 
 Target = "<unknown>"
 
-Cc           = "clang -gfull"                    # Note, we really need clang.
+llvm_config = os.environ.get("LLVM_CONFIG_EXEC")
+if llvm_config:
+    try:
+        bindir = subprocess.Popen([llvm_config, "--bindir"], stdout=subprocess.PIPE).communicate()[0].strip()
+        Cc   = "%s/clang -gfull" % bindir
+    except:
+	print >>sys.strerr, "Error when executing llvm_config with LLVM_CONFIG_EXEC (%s)" % llvm_config
+	exit(-1)
+else:
+    Cc       = "clang -gfull"                    # Note, we really need clang.
+
 CcOptSpec    = "-O2"                             # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
 OptOptSpec   = "-std-compile-opts -std-link-opts -disable-internalize"
 

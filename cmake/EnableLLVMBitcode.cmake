@@ -18,6 +18,7 @@ set(CMAKE_STATIC_LIBRARY_SUFFIX ".bc")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -emit-llvm")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -emit-llvm")
+set(ENV{LLVM_CONFIG_EXEC} ${LLVM_CONFIG_EXEC})
 set(CMAKE_AR "${scripts}/llvm-ar-wrapper")
 set(CMAKE_RANLIB "${scripts}/llvm-ranlib-wrapper")
 # set(CMAKE_LD "llvm-ld")

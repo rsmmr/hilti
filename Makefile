@@ -11,11 +11,11 @@ all: release
 
 debug:
 	test -d build || mkdir build
-	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
+	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug -D BRO_DIST=$${BRO_DIST} -D LLVM_CONFIG_EXEC=$${LLVM_CONFIG_EXEC} ..; $(MAKE) )
 
 release:
 	test -d build || mkdir build
-	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
+	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BRO_DIST=$${BRO_DIST} -D LLVM_CONFIG_EXEC=$${LLVM_CONFIG_EXEC} ..; $(MAKE) )
 
 clean:
 	rm -rf build
