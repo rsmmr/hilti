@@ -1,9 +1,9 @@
 // $Id$
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #include <regex.h>
 
@@ -71,7 +71,7 @@ char* readInput()
             exit(1);
         }
 
-        char* p = buffer + (chunk * (i-1));
+        char* p = buffer + (chunk * (i - 1));
         size_t n = fread(p, 1, chunk, stdin);
         *(p + chunk) = '\0';
 
@@ -88,7 +88,7 @@ char* readInput()
 }
 
 
-int main(int argc, char**argv)
+int main(int argc, char** argv)
 {
     int opt = 1;
     int debug = 0;

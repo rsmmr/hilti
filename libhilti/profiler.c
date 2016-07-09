@@ -12,56 +12,58 @@
 // TODO: We don't have 64-bit ntohl() yet, so we store the profiles just in
 // host format.
 
-#include <fcntl.h>
+#include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-#include "profiler.h"
-#include "globals.h"
+#include "autogen/hilti-hlt.h"
 #include "debug.h"
+#include "globals.h"
 #include "hutil.h"
-#include "utf8proc.h"
+#include "profiler.h"
 #include "string_.h"
 #include "timer.h"
-#include "autogen/hilti-hlt.h"
+#include "utf8proc.h"
 
 typedef hlt_hash khint_t;
 #include "3rdparty/khash/khash.h"
 
 #ifdef HAVE_PAPI
-# include <papi.h>
+#include <papi.h>
 
 #define PAPI_NUM_EVENTS 2
 
 #endif
 
 typedef struct {
-    hlt_string tag;           // The hash tag.
-    hlt_timer_mgr* tmgr;      // Timer manager attached.
-    hlt_timer* timer;         // Snapshot timer if installed, or NULL. Not memory-managed to avoid cycles.
-    hlt_enum style;           // The profile style.
-    uint64_t param;           // Parameter for the profile style.
-    uint64_t level;           // Depth of nested calls currently.
+    hlt_string tag;      // The hash tag.
+    hlt_timer_mgr* tmgr; // Timer manager attached.
+    hlt_timer* timer; // Snapshot timer if installed, or NULL. Not memory-managed to avoid cycles.
+    hlt_enum style;   // The profile style.
+    uint64_t param;   // Parameter for the profile style.
+    uint64_t level;   // Depth of nested calls currently.
 
-    uint64_t time;            // Timer mgr time at beginning.
-    uint64_t wall;            // Wall time at beginning.
-    uint64_t updates;         // Number of update calls so far.
-    uint64_t cycles;          // Cycle counter at beginning.
-    uint64_t cache;           // Cache state at beginning.
-    uint64_t heap;            // Heap size at beginning.
-    uint64_t user;            // Value of user counter currently.
+    uint64_t time;    // Timer mgr time at beginning.
+    uint64_t wall;    // Wall time at beginning.
+    uint64_t updates; // Number of update calls so far.
+    uint64_t cycles;  // Cycle counter at beginning.
+    uint64_t cache;   // Cache state at beginning.
+    uint64_t heap;    // Heap size at beginning.
+    uint64_t user;    // Value of user counter currently.
 } __hlt_profiler;
 
 typedef struct __kh_table_t {
     // These are used by khash and copied from there (see README.HILTI).
     khint_t n_buckets, size, n_occupied, upper_bound;
-    uint32_t *flags;
-    hlt_string *keys;
-    __hlt_profiler **vals;
+    uint32_t* flags;
+    hlt_string* keys;
+    __hlt_profiler** vals;
 } kh_table_t;
 
 struct __hlt_profiler_state {
-    kh_table_t *profilers;     // Active profilers.
-    int fd;                    // Output file.
+    kh_table_t* profilers; // Active profilers.
+    int fd;                // Output file.
 };
 
 typedef struct kh_hlt_profiler_table_t kh_hlt_profiler_table_t;
@@ -71,9 +73,11 @@ static inline hlt_hash __kh_string_hash_func(hlt_string tag, const hlt_type_info
     return hlt_string_hash(&hlt_type_info_hlt_string, &tag, 0, 0);
 }
 
-static inline int8_t __kh_string_equal_func(hlt_string tag1, hlt_string tag2, const hlt_type_info* type)
+static inline int8_t __kh_string_equal_func(hlt_string tag1, hlt_string tag2,
+                                            const hlt_type_info* type)
 {
-    return hlt_string_equal(&hlt_type_info_hlt_string, &tag1, &hlt_type_info_hlt_string, &tag2, 0, 0);
+    return hlt_string_equal(&hlt_type_info_hlt_string, &tag1, &hlt_type_info_hlt_string, &tag2, 0,
+                            0);
 }
 
 KHASH_INIT(table, hlt_string, __hlt_profiler*, 1, __kh_string_hash_func, __kh_string_equal_func)
@@ -84,13 +88,14 @@ void init_papi()
 {
     DBG_LOG("hilti-profiler", "PAPI: initializing library");
 
-	if ( PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) {
-        DBG_LOG("hilti-profiler", "PAPI: cannot initialize library (unsupported platform? lacking perms?)");
+    if ( PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT ) {
+        DBG_LOG("hilti-profiler",
+                "PAPI: cannot initialize library (unsupported platform? lacking perms?)");
         goto error;
     }
 
     // TODO: Can we pass in here a function that return the vid?
-	int ret = 0; // FIXME PAPI_thread_init(pthread_self);
+    int ret = 0; // FIXME PAPI_thread_init(pthread_self);
     if ( ret != PAPI_OK ) {
         DBG_LOG("hilti-profiler", "PAPI: cannot init thread support, %s", PAPI_strerror(ret));
         goto error;
@@ -106,40 +111,42 @@ void init_papi()
 
     // Note: Increase PAPI_NUM_EVENTS if adding more events.
     ret = PAPI_add_event(__hlt_globals()->papi_set, PAPI_TOT_CYC);
-	if ( ret != PAPI_OK ) {
-        DBG_LOG("hilti-profiler", "PAPI: cannot add PAPI_TOT_CYC to event set, %s", PAPI_strerror(ret));
+    if ( ret != PAPI_OK ) {
+        DBG_LOG("hilti-profiler", "PAPI: cannot add PAPI_TOT_CYC to event set, %s",
+                PAPI_strerror(ret));
         goto error;
     }
 
     ret = PAPI_add_event(__hlt_globals()->papi_set, PAPI_L1_DCM);
-	if ( ret != PAPI_OK ) {
-        DBG_LOG("hilti-profiler", "PAPI: cannot add PAPI_L1_DCM to event set, %s", PAPI_strerror(ret));
+    if ( ret != PAPI_OK ) {
+        DBG_LOG("hilti-profiler", "PAPI: cannot add PAPI_L1_DCM to event set, %s",
+                PAPI_strerror(ret));
         goto error;
     }
 
-	PAPI_option_t options;
-	memset(&options, 0, sizeof(options));
-	options.domain.eventset = __hlt_globals()->papi_set;
-	options.domain.domain = PAPI_DOM_ALL;
+    PAPI_option_t options;
+    memset(&options, 0, sizeof(options));
+    options.domain.eventset = __hlt_globals()->papi_set;
+    options.domain.domain = PAPI_DOM_ALL;
 
     ret = PAPI_set_opt(PAPI_DOMAIN, &options);
 
-	if ( ret != PAPI_OK ) {
+    if ( ret != PAPI_OK ) {
         DBG_LOG("hilti-profiler", "PAPI: cannot set options, %s", PAPI_strerror(ret));
         goto error;
-		}
+    }
 
-    if ( (ret = PAPI_start(__hlt_globals()->papi_set)) != PAPI_OK) {
+    if ( (ret = PAPI_start(__hlt_globals()->papi_set)) != PAPI_OK ) {
         DBG_LOG("hilti-profiler", "PAPI: cannot start counters, %s", PAPI_strerror(ret));
         goto error;
-		}
+    }
 
     __hlt_globals()->papi_available = 1;
     return;
 
 error:
     __hlt_globals()->papi_available = 0;
-    }
+}
 
 void read_papi(long_long* cnts)
 {
@@ -148,7 +155,7 @@ void read_papi(long_long* cnts)
 
     int ret = PAPI_read(__hlt_globals()->papi_set, cnts);
 
-    if ( ret == PAPI_OK)
+    if ( ret == PAPI_OK )
         return;
 
     DBG_LOG("hilti-profiler", "PAPI: cannot read counters, %s", PAPI_strerror(ret));
@@ -160,7 +167,8 @@ error:
 
 #endif
 
-inline static void _safe_write(const void* data, int len, hlt_exception** excpt, hlt_execution_context* ctx)
+inline static void _safe_write(int8_t* data, int len, hlt_exception** excpt,
+                               hlt_execution_context* ctx)
 {
     assert(ctx->pstate->fd >= 0);
 
@@ -183,7 +191,7 @@ inline static void _safe_write(const void* data, int len, hlt_exception** excpt,
     }
 }
 
-inline static int _safe_read(int fd, void* data, int len)
+inline static int _safe_read(int fd, int8_t* data, int len)
 {
     while ( len ) {
         int nread = read(fd, data, len);
@@ -192,7 +200,6 @@ inline static int _safe_read(int fd, void* data, int len)
             return 0; // Eof.
 
         if ( nread < 0 ) {
-
             if ( errno == EAGAIN || errno == EINTR )
                 continue;
 
@@ -211,7 +218,7 @@ inline static void write_tag(hlt_string str, hlt_exception** excpt, hlt_executio
     int8_t len = str->len;
     _safe_write(&len, sizeof(len), excpt, ctx);
     // We write this out in UTF8, and decode when reading.
-    _safe_write(&str->bytes, len, excpt, ctx);
+    _safe_write(str->bytes, len, excpt, ctx);
 }
 
 inline static int read_tag(int fd, char* tag)
@@ -222,17 +229,17 @@ inline static int read_tag(int fd, char* tag)
     if ( ret <= 0 )
         return ret;
 
-    char buffer[len];
+    int8_t buffer[len];
 
-    if ( _safe_read(fd, &buffer, len) <= 0 )
+    if ( _safe_read(fd, buffer, len) <= 0 )
         return -1; // Eof is an error here.
 
-    char* p = buffer;
-    char* e = buffer + len;
+    int8_t* p = buffer;
+    int8_t* e = buffer + len;
 
     while ( p < e ) {
         int32_t uc;
-        ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &uc);
+        ssize_t n = utf8proc_iterate((const uint8_t*)p, e - p, &uc);
 
         if ( n < 0 ) {
             fprintf(stderr, "HILTI profiling: cannot decode UTF8 character\n");
@@ -252,19 +259,19 @@ static const char* MAGIC = "HLTPROF";
 
 static void write_header(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    _safe_write(MAGIC, sizeof(MAGIC) - 1, excpt, ctx);
+    _safe_write((int8_t*)MAGIC, sizeof(MAGIC) - 1, excpt, ctx);
 
     uint64_t version = hlt_hton64(HLT_PROFILER_VERSION);
-    _safe_write(&version, sizeof(version), excpt, ctx );
+    _safe_write((int8_t*)(&version), sizeof(version), excpt, ctx);
 
     time_t t = time(0);
     uint64_t secs = hlt_hton64(t);
-    _safe_write(&secs, sizeof(secs), excpt, ctx);
+    _safe_write((int8_t*)&secs, sizeof(secs), excpt, ctx);
 }
 
 static int read_header(int fd, time_t* t)
 {
-    char buffer[sizeof(MAGIC) - 1];
+    int8_t buffer[sizeof(MAGIC) - 1];
     if ( _safe_read(fd, buffer, sizeof(MAGIC) - 1) <= 0 )
         return -1; // Eof is an error here.
 
@@ -274,7 +281,7 @@ static int read_header(int fd, time_t* t)
     }
 
     uint64_t version = 0;
-    if ( _safe_read(fd, &version, sizeof(version)) <= 0 )
+    if ( _safe_read(fd, (int8_t*)&version, sizeof(version)) <= 0 )
         return -1; // Eof is an error here.
 
     version = hlt_ntoh64(version);
@@ -285,7 +292,7 @@ static int read_header(int fd, time_t* t)
 
     uint64_t secs = 0;
 
-    if ( _safe_read(fd, &secs, sizeof(version)) <= 0 )
+    if ( _safe_read(fd, (int8_t*)&secs, sizeof(version)) <= 0 )
         return -1; // Eof is an error here.
 
     if ( t )
@@ -294,7 +301,8 @@ static int read_header(int fd, time_t* t)
     return 1;
 }
 
-static void write_record(int8_t rtype, __hlt_profiler* p, hlt_exception** excpt, hlt_execution_context* ctx)
+static void write_record(int8_t rtype, __hlt_profiler* p, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     hlt_profiler_record rec;
 
@@ -324,7 +332,7 @@ static void write_record(int8_t rtype, __hlt_profiler* p, hlt_exception** excpt,
     rec.type = rtype;
 
     write_tag(p->tag, excpt, ctx);
-    _safe_write(&rec, sizeof(rec), excpt, ctx);
+    _safe_write((int8_t*)&rec, sizeof(rec), excpt, ctx);
 }
 
 static int read_record(int fd, char* tag, hlt_profiler_record* rec)
@@ -334,14 +342,15 @@ static int read_record(int fd, char* tag, hlt_profiler_record* rec)
     if ( ret <= 0 )
         return ret;
 
-    if ( _safe_read(fd, rec, sizeof(hlt_profiler_record)) <= 0 )
+    if ( _safe_read(fd, (int8_t*)rec, sizeof(hlt_profiler_record)) <= 0 )
         return -1; // Eof is an error here.
 
     rec->ctime = hlt_ntoh64(rec->ctime);
     rec->cwall = hlt_ntoh64(rec->cwall);
     rec->time = hlt_ntoh64(rec->time);
     rec->wall = hlt_ntoh64(rec->wall);
-    rec->updates = hlt_ntoh64(rec->updates);;
+    rec->updates = hlt_ntoh64(rec->updates);
+    ;
     rec->cycles = hlt_ntoh64(rec->cycles);
     rec->misses = hlt_ntoh64(rec->misses);
     rec->alloced = hlt_ntoh64(rec->alloced);
@@ -351,7 +360,8 @@ static int read_record(int fd, char* tag, hlt_profiler_record* rec)
     return 1;
 }
 
-static void output_record(__hlt_profiler* p, int8_t record_type, hlt_exception** excpt, hlt_execution_context* ctx)
+static void output_record(__hlt_profiler* p, int8_t record_type, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     if ( ctx->pstate->fd < 0 ) {
         // Output file not yet opened.
@@ -376,7 +386,7 @@ static void output_record(__hlt_profiler* p, int8_t record_type, hlt_exception**
 
         if ( excpt && hlt_check_exception(excpt) )
             return;
-        }
+    }
 
     write_record(record_type, p, excpt, ctx);
 }
@@ -387,7 +397,7 @@ static void install_timer(__hlt_profiler* p, hlt_exception** excpt, hlt_executio
     assert(p->tmgr);
 
     p->timer = __hlt_timer_new_profiler(p->tag, excpt, ctx);
-    hlt_time t = (hlt_timer_mgr_current(p->tmgr, excpt, ctx) / p->param ) * p->param + p->param;
+    hlt_time t = (hlt_timer_mgr_current(p->tmgr, excpt, ctx) / p->param) * p->param + p->param;
 
     hlt_timer_mgr_schedule(p->tmgr, t, p->timer, excpt, ctx);
     GC_DTOR(p->timer, hlt_timer, ctx); // Not memory-managed on our end.
@@ -439,7 +449,8 @@ void __hlt_profiler_done()
     __hlt_globals()->profiling_enabled = 0;
 }
 
-void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_timer_mgr* tmgr,
+                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! __hlt_globals()->profiling_enabled )
         return;
@@ -458,7 +469,6 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
         p = kh_value(ctx->pstate->profilers, i);
 
     if ( ! p ) {
-
         if ( tag->len > HLT_PROFILER_MAX_TAG_LENGTH - 1 ) {
             // We keep the tags short enough to store their length in a
             // single byte. Note that we really want the *raw* length here.
@@ -517,8 +527,7 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
             return;
         }
 
-        if ( ! hlt_enum_equal(style, p->style, excpt, ctx) ||
-             param != p->param ||
+        if ( ! hlt_enum_equal(style, p->style, excpt, ctx) || param != p->param ||
              (tmgr && tmgr != p->tmgr) ) {
             hlt_set_exception(excpt, &hlt_exception_profiler_mismatch, 0, ctx);
             return;
@@ -528,7 +537,8 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
     }
 }
 
-void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     if ( ! __hlt_globals()->profiling_enabled )
         return;
@@ -578,7 +588,6 @@ void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** ex
 
     if ( do_record )
         output_record(p, HLT_PROFILER_UPDATE, excpt, ctx);
-
 }
 
 void hlt_profiler_stop(hlt_string tag, hlt_exception** excpt, hlt_execution_context* ctx)

@@ -1,18 +1,20 @@
 
-#include <stdio.h>
 #include <assert.h>
-#include <inttypes.h>
-#include <string.h>
 #include <errno.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 
-#include "memory_.h"
-#include "globals.h"
-#include "rtti.h"
-#include "debug.h"
 #include "context.h"
+#include "debug.h"
+#include "globals.h"
+#include "hutil.h"
+#include "memory_.h"
+#include "rtti.h"
+#include "system.h"
 
-#ifndef HLT_DEEP_COPY_VALUES_ACROSS_THREADS
+#ifdef HLT_NO_DEEP_COPY_VALUES_ACROSS_THREADS
 #define HLT_ATOMIC_REF_COUNTING
 #endif
 
@@ -44,7 +46,8 @@ const char* __hlt_make_location(const char* file, int line)
     return buffer;
 }
 
-static void _dbg_mem_raw(const char* op, void* obj, uint64_t size, const char* type, const char* location, const char* aux, hlt_execution_context* ctx)
+static void _dbg_mem_raw(const char* op, void* obj, uint64_t size, const char* type,
+                         const char* location, const char* aux, hlt_execution_context* ctx)
 {
     static char buf[128];
 
@@ -56,12 +59,16 @@ static void _dbg_mem_raw(const char* op, void* obj, uint64_t size, const char* t
     else
         buf[0] = '\0';
 
-    const char* nb = (ctx && obj && __hlt_memory_nullbuffer_contains(ctx->nullbuffer, obj)) ? " (in nullbuffer)" : "";
+    const char* nb = (ctx && obj && __hlt_memory_nullbuffer_contains(ctx->nullbuffer, obj)) ?
+                         " (in nullbuffer)" :
+                         "";
 
-    DBG_LOG("hilti-mem", "%10s %p %" PRIu64 " %" PRIu64 " %s %s%s%s", op, obj, size, 0, type, location, nb, buf);
+    DBG_LOG("hilti-mem", "%10s %p %" PRIu64 " %" PRIu64 " %s %s%s%s", op, obj, size, 0, type,
+            location, nb, buf);
 }
 
-static void _dbg_mem_gc(const char* op, const hlt_type_info* ti, void* gcobj, const char* location, const char* aux, hlt_execution_context* ctx)
+static void _dbg_mem_gc(const char* op, const hlt_type_info* ti, void* gcobj, const char* location,
+                        const char* aux, hlt_execution_context* ctx)
 {
     static char buf[128];
 
@@ -76,16 +83,21 @@ static void _dbg_mem_gc(const char* op, const hlt_type_info* ti, void* gcobj, co
     else
         buf[0] = '\0';
 
-    const char* nb = (ctx && gcobj && __hlt_memory_nullbuffer_contains(ctx->nullbuffer, gcobj)) ? " (in nullbuffer)" : "";
+    const char* nb = (ctx && gcobj && __hlt_memory_nullbuffer_contains(ctx->nullbuffer, gcobj)) ?
+                         " (in nullbuffer)" :
+                         "";
 
     __hlt_gchdr* hdr = (__hlt_gchdr*)gcobj;
-    DBG_LOG("hilti-mem", "%10s %p %" PRIu64 " %" PRIu64 " %s %s%s%s", op, gcobj, 0, hdr->ref_cnt, ti->tag, location, nb, buf);
+    DBG_LOG("hilti-mem", "%10s %p %" PRIu64 " %" PRIu64 " %s %s%s%s", op, gcobj, 0, hdr->ref_cnt,
+            ti->tag, location, nb, buf);
 }
 
-static void _internal_memory_error(void* gcobj, const char* func, const char* msg, const hlt_type_info* ti)
+static void _internal_memory_error(void* gcobj, const char* func, const char* msg,
+                                   const hlt_type_info* ti)
 {
     const char* type = ti ? ti->tag : "<unknown>";
-    fprintf(stderr, "internal memory error in %s for object %p of type %s: %s\n", func, gcobj, type, msg);
+    fprintf(stderr, "internal memory error in %s for object %p of type %s: %s\n", func, gcobj, type,
+            msg);
     abort();
 }
 
@@ -93,7 +105,7 @@ static void _internal_memory_error(void* gcobj, const char* func, const char* ms
 
 void* __hlt_malloc(uint64_t size, const char* type, const char* location)
 {
-    void *p = calloc(1, size);
+    void* p = calloc(1, size);
 
     if ( ! p ) {
         fputs("out of memory in hlt_malloc, aborting", stderr);
@@ -110,7 +122,7 @@ void* __hlt_malloc(uint64_t size, const char* type, const char* location)
 
 void* __hlt_malloc_no_init(uint64_t size, const char* type, const char* location)
 {
-    void *p = malloc(size);
+    void* p = malloc(size);
 
     if ( ! p ) {
         fputs("out of memory in hlt_malloc_no_init, aborting", stderr);
@@ -125,7 +137,8 @@ void* __hlt_malloc_no_init(uint64_t size, const char* type, const char* location
     return p;
 }
 
-void* __hlt_realloc(void* p, uint64_t size, uint64_t old_size, const char* type, const char* location)
+void* __hlt_realloc(void* p, uint64_t size, uint64_t old_size, const char* type,
+                    const char* location)
 {
 #ifdef DEBUG
     if ( p ) {
@@ -136,7 +149,7 @@ void* __hlt_realloc(void* p, uint64_t size, uint64_t old_size, const char* type,
 
     if ( size > old_size ) {
         p = realloc(p, size);
-        memset(p + old_size, 0, size - old_size);
+        memset((char*)p + old_size, 0, size - old_size);
 
         if ( ! p ) {
             fputs("out of memory in hlt_malloc, aborting", stderr);
@@ -178,7 +191,7 @@ void* __hlt_realloc_no_init(void* p, uint64_t size, const char* type, const char
 
 void* __hlt_calloc(uint64_t count, uint64_t size, const char* type, const char* location)
 {
-    void *p = calloc(count, size);
+    void* p = calloc(count, size);
 
     if ( ! p ) {
         fputs("out of memory in hlt_calloc, aborting", stderr);
@@ -193,7 +206,7 @@ void* __hlt_calloc(uint64_t count, uint64_t size, const char* type, const char* 
     return p;
 }
 
-void __hlt_free(void *memory, const char* type, const char* location)
+void __hlt_free(void* memory, const char* type, const char* location)
 {
     if ( ! memory )
         return;
@@ -207,7 +220,8 @@ void __hlt_free(void *memory, const char* type, const char* location)
 }
 
 
-void* __hlt_object_new_ref(const hlt_type_info* ti, uint64_t size, const char* location, hlt_execution_context* ctx)
+void* __hlt_object_new_ref(const hlt_type_info* ti, uint64_t size, const char* location,
+                           hlt_execution_context* ctx)
 {
     assert(size);
 
@@ -221,7 +235,8 @@ void* __hlt_object_new_ref(const hlt_type_info* ti, uint64_t size, const char* l
     return hdr;
 }
 
-void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* location, hlt_execution_context* ctx)
+void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* location,
+                       hlt_execution_context* ctx)
 {
     assert(size);
     assert(ctx->nullbuffer->flush_pos < 0);
@@ -237,7 +252,8 @@ void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* locat
     return hdr;
 }
 
-void* __hlt_object_new_no_init_ref(const hlt_type_info* ti, uint64_t size, const char* location, hlt_execution_context* ctx)
+void* __hlt_object_new_no_init_ref(const hlt_type_info* ti, uint64_t size, const char* location,
+                                   hlt_execution_context* ctx)
 {
     assert(size);
 
@@ -251,7 +267,8 @@ void* __hlt_object_new_no_init_ref(const hlt_type_info* ti, uint64_t size, const
     return hdr;
 }
 
-void* __hlt_object_new_no_init(const hlt_type_info* ti, uint64_t size, const char* location, hlt_execution_context* ctx)
+void* __hlt_object_new_no_init(const hlt_type_info* ti, uint64_t size, const char* location,
+                               hlt_execution_context* ctx)
 {
     assert(size);
     assert(ctx->nullbuffer->flush_pos < 0);
@@ -269,7 +286,8 @@ void* __hlt_object_new_no_init(const hlt_type_info* ti, uint64_t size, const cha
 
 void __hlt_object_ref(const hlt_type_info* ti, void* obj, hlt_execution_context* ctx)
 {
-    __hlt_gchdr* hdr = (__hlt_gchdr*)obj;;
+    __hlt_gchdr* hdr = (__hlt_gchdr*)obj;
+    ;
 
 #ifdef DEBUG
     if ( ! ti->gc ) {
@@ -296,7 +314,6 @@ void __hlt_object_ref(const hlt_type_info* ti, void* obj, hlt_execution_context*
     ++__hlt_globals()->num_refs;
     _dbg_mem_gc("ref", ti, obj, 0, 0, ctx);
 #endif
-
 }
 
 void __hlt_object_unref(const hlt_type_info* ti, void* obj, hlt_execution_context* ctx)
@@ -343,7 +360,8 @@ void __hlt_object_unref(const hlt_type_info* ti, void* obj, hlt_execution_contex
         __hlt_memory_nullbuffer_add(ctx->nullbuffer, ti, hdr, ctx);
 }
 
-void __hlt_object_destroy(const hlt_type_info* ti, void* obj, const char* location, hlt_execution_context* ctx)
+void __hlt_object_destroy(const hlt_type_info* ti, void* obj, const char* location,
+                          hlt_execution_context* ctx)
 {
     assert(ti->gc);
 
@@ -357,10 +375,9 @@ void __hlt_object_destroy(const hlt_type_info* ti, void* obj, const char* locati
     (*(ti->obj_dtor))(ti, obj, ctx);
 }
 
-void __hlt_object_dtor(const hlt_type_info* ti, void* obj, const char* location, hlt_execution_context* ctx)
+void __hlt_object_dtor(const hlt_type_info* ti, void* obj, const char* location,
+                       hlt_execution_context* ctx)
 {
-    typedef void (*fptr)(void *obj);
-
     if ( ! obj )
         return;
 
@@ -388,10 +405,9 @@ void __hlt_object_dtor(const hlt_type_info* ti, void* obj, const char* location,
     }
 }
 
-void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location, hlt_execution_context* ctx)
+void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location,
+                        hlt_execution_context* ctx)
 {
-    typedef void (*fptr)(void *obj);
-
     if ( ! obj )
         return;
 
@@ -419,6 +435,7 @@ void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location
     }
 }
 
+#if 0
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
@@ -439,14 +456,15 @@ static void _adjust_stack_pre_safepoint(hlt_execution_context* ctx)
     while ( unw_step(&cursor) > 0 ) {
         unw_get_reg(&cursor, UNW_REG_IP, &ip);
         unw_get_reg(&cursor, UNW_REG_SP, &sp);
-        printf ("level = %d ip = %lx, sp = %lx\n", level, (long) ip, (long) sp);
+        printf("level = %d ip = %lx, sp = %lx\n", level, (long)ip, (long)sp);
         level++;
     }
 
 #ifdef DEBUG
-    // DBG_LOG("hilti-mem", "%10s stack-adjust-ctor %p %d %s::%s = %s", obj, level, func, id, render);
+// DBG_LOG("hilti-mem", "%10s stack-adjust-ctor %p %d %s::%s = %s", obj, level, func, id, render);
 #endif
 }
+#endif
 
 void __hlt_memory_safepoint(hlt_execution_context* ctx, const char* location)
 {
@@ -464,7 +482,9 @@ void* hlt_stack_alloc(size_t size)
 #ifdef DARWIN
     void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
 #else
-    void* stack = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
+    void* stack =
+        mmap(0, size, PROT_READ | PROT_WRITE,
+             MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
 #endif
 
     if ( stack == MAP_FAILED ) {
@@ -515,7 +535,7 @@ size_t hlt_free_list_block_size(hlt_free_list* list)
     return list->size - sizeof(__hlt_free_list_block);
 }
 
-#define __data_offset ((int) &((__hlt_free_list_block*)0)->data)
+#define __data_offset ((int)&((__hlt_free_list_block*)0)->data)
 
 void* hlt_free_list_alloc(hlt_free_list* list)
 {
@@ -527,14 +547,14 @@ void* hlt_free_list_alloc(hlt_free_list* list)
         bzero(b, list->size); // Make contents consistent.
     }
     else
-        b = (__hlt_free_list_block*) hlt_malloc(list->size);
+        b = (__hlt_free_list_block*)hlt_malloc(list->size);
 
-    return ((char *)b) + __data_offset;
+    return ((char*)b) + __data_offset;
 }
 
 void hlt_free_list_free(hlt_free_list* list, void* p)
 {
-    __hlt_free_list_block* b = (__hlt_free_list_block*) (((char *)p) - __data_offset);
+    __hlt_free_list_block* b = (__hlt_free_list_block*)(((char*)p) - __data_offset);
 
     b->next = list->pool;
     list->pool = b;
@@ -584,7 +604,8 @@ void* hlt_memory_pool_calloc(hlt_memory_pool* p, size_t count, size_t n)
 
 #ifdef DEBUG
     if ( p->last->cur == &p->first.data[0] && n > avail )
-        fprintf(stderr, "libhilti debug warning: memory pool block size cannot even fit first alloc");
+        fprintf(stderr,
+                "libhilti debug warning: memory pool block size cannot even fit first alloc");
 #endif
 
     if ( n > avail ) {
@@ -607,18 +628,20 @@ void* hlt_memory_pool_calloc(hlt_memory_pool* p, size_t count, size_t n)
     return ptr;
 }
 
-void  hlt_memory_pool_free(hlt_memory_pool* p, void* b)
+void hlt_memory_pool_free(hlt_memory_pool* p, void* b)
 {
     // Do nothing.
 }
 
 __hlt_memory_nullbuffer* __hlt_memory_nullbuffer_new()
 {
-    __hlt_memory_nullbuffer* nbuf = (__hlt_memory_nullbuffer*) hlt_malloc(sizeof(__hlt_memory_nullbuffer));
+    __hlt_memory_nullbuffer* nbuf =
+        (__hlt_memory_nullbuffer*)hlt_malloc(sizeof(__hlt_memory_nullbuffer));
     nbuf->used = 0;
     nbuf->allocated = __INITIAL_NULLBUFFER_SIZE;
     nbuf->flush_pos = -1;
-    nbuf->objs = (struct __obj_with_rtti*) hlt_malloc(sizeof(struct __obj_with_rtti) * nbuf->allocated);
+    nbuf->objs =
+        (struct __obj_with_rtti*)hlt_malloc(sizeof(struct __obj_with_rtti) * nbuf->allocated);
     return nbuf;
 }
 
@@ -629,7 +652,7 @@ void __hlt_memory_nullbuffer_delete(__hlt_memory_nullbuffer* nbuf, hlt_execution
     hlt_free(nbuf);
 }
 
-static inline int64_t _nullbuffer_index(__hlt_memory_nullbuffer* nbuf, void *obj)
+static inline int64_t _nullbuffer_index(__hlt_memory_nullbuffer* nbuf, void* obj)
 {
     // TODO: Unclear if it's worth keeping the buffer sorted to speed this up?
     for ( int64_t i = 0; i < nbuf->used; i++ ) {
@@ -640,7 +663,8 @@ static inline int64_t _nullbuffer_index(__hlt_memory_nullbuffer* nbuf, void *obj
     return -1;
 }
 
-void __hlt_memory_nullbuffer_add(__hlt_memory_nullbuffer* nbuf, const hlt_type_info* ti, void *obj, hlt_execution_context* ctx)
+void __hlt_memory_nullbuffer_add(__hlt_memory_nullbuffer* nbuf, const hlt_type_info* ti, void* obj,
+                                 hlt_execution_context* ctx)
 {
     int64_t nbpos = _nullbuffer_index(nbuf, obj);
 
@@ -655,12 +679,13 @@ void __hlt_memory_nullbuffer_add(__hlt_memory_nullbuffer* nbuf, const hlt_type_i
             // In the buffer, and still getting there.
             return;
 
-        // Either not yet in the buffer, or we passed it already. Delete
-        // directly, we must not further modify the nullbuffer while flushing.
+// Either not yet in the buffer, or we passed it already. Delete
+// directly, we must not further modify the nullbuffer while flushing.
 
 #ifdef DEBUG
         __hlt_gchdr* hdr = (__hlt_gchdr*)obj;
         assert(hdr->ref_cnt <= 0);
+        _UNUSED(hdr);
 #endif
 
         if ( ti->obj_dtor )
@@ -685,9 +710,9 @@ void __hlt_memory_nullbuffer_add(__hlt_memory_nullbuffer* nbuf, const hlt_type_i
 
     if ( nbuf->used >= nbuf->allocated ) {
         size_t nsize = (nbuf->allocated * 2);
-        nbuf->objs = (struct __obj_with_rtti*) hlt_realloc(nbuf->objs,
-                                                           sizeof(struct __obj_with_rtti) * nsize,
-                                                           sizeof(struct __obj_with_rtti) * nbuf->allocated);
+        nbuf->objs =
+            (struct __obj_with_rtti*)hlt_realloc(nbuf->objs, sizeof(struct __obj_with_rtti) * nsize,
+                                                 sizeof(struct __obj_with_rtti) * nbuf->allocated);
         nbuf->allocated = nsize;
     }
 
@@ -705,12 +730,12 @@ void __hlt_memory_nullbuffer_add(__hlt_memory_nullbuffer* nbuf, const hlt_type_i
 #endif
 }
 
-int8_t __hlt_memory_nullbuffer_contains(__hlt_memory_nullbuffer* nbuf, void *obj)
+int8_t __hlt_memory_nullbuffer_contains(__hlt_memory_nullbuffer* nbuf, void* obj)
 {
     return _nullbuffer_index(nbuf, obj) >= 0;
 }
 
-void __hlt_memory_nullbuffer_remove(__hlt_memory_nullbuffer* nbuf, void *obj)
+void __hlt_memory_nullbuffer_remove(__hlt_memory_nullbuffer* nbuf, void* obj)
 {
     // TODO: Unclear if it's worth keeping the buffer sorted to speed this up?
     for ( size_t i = 0; i < nbuf->used; i++ ) {
@@ -763,14 +788,15 @@ void __hlt_memory_nullbuffer_flush(__hlt_memory_nullbuffer* nbuf, hlt_execution_
     if ( nbuf->allocated > __INITIAL_NULLBUFFER_SIZE ) {
         hlt_free(nbuf->objs);
         nbuf->allocated = __INITIAL_NULLBUFFER_SIZE;
-        nbuf->objs = (struct __obj_with_rtti*) hlt_malloc(sizeof(struct __obj_with_rtti) * nbuf->allocated);
+        nbuf->objs =
+            (struct __obj_with_rtti*)hlt_malloc(sizeof(struct __obj_with_rtti) * nbuf->allocated);
     }
 
 #ifdef DEBUG
     _dbg_mem_raw("nullbuffer_flush", nbuf, nbuf->used, 0, "end", 0, ctx);
 #endif
 
-   nbuf->flush_pos = -1;
+    nbuf->flush_pos = -1;
 }
 
 hlt_memory_stats hlt_memory_statistics()
@@ -790,4 +816,3 @@ hlt_memory_stats hlt_memory_statistics()
 
     return stats;
 }
-

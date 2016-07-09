@@ -14,5 +14,4 @@ bool debuggingAllVisitors()
 {
     return _debug_all_visitors;
 }
-
 }

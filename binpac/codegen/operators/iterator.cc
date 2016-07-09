@@ -17,7 +17,8 @@ void CodeBuilder::visit(expression::operator_::iterator::Equal* i)
 void CodeBuilder::visit(expression::operator_::iterator::Deref* i)
 {
     auto itype = ast::checkedCast<type::Iterator>(i->op1()->type());
-    auto etype = cg()->hiltiType(ast::type::checkedTrait<type::trait::Iterable>(itype->argType())->elementType());
+    auto etype = cg()->hiltiType(
+        ast::type::checkedTrait<type::trait::Iterable>(itype->argType())->elementType());
 
     auto result = builder()->addTmp("elem", etype);
     auto op1 = cg()->hiltiExpression(i->op1());

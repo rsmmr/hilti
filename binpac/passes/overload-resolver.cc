@@ -1,18 +1,19 @@
 
 #include "overload-resolver.h"
-#include "../id.h"
-#include "../type.h"
-#include "../function.h"
 #include "../expression.h"
+#include "../function.h"
+#include "../id.h"
 #include "../operator.h"
-#include "../statement.h"
 #include "../scope.h"
+#include "../statement.h"
+#include "../type.h"
 #include <binpac/autogen/operators/function.h>
 
 using namespace binpac;
 using namespace binpac::passes;
 
-OverloadResolver::OverloadResolver(shared_ptr<Module> module) : Pass<AstInfo>("binpac::OverloadResolver", true)
+OverloadResolver::OverloadResolver(shared_ptr<Module> module)
+    : Pass<AstInfo>("binpac::OverloadResolver", true)
 {
     _module = module;
 }
@@ -127,11 +128,11 @@ void OverloadResolver::visit(expression::UnresolvedOperator* o)
         // Found a match.
         candidates.push_back(func);
 
-no_match:
+    no_match:
         continue;
     }
 
-    if ( candidates.size() == 0 ){
+    if ( candidates.size() == 0 ) {
         error(o, "No match for overloaded function call");
         return;
     }
@@ -145,9 +146,10 @@ no_match:
     auto func = candidates.front();
 
     auto call = std::make_shared<operator_::function::Call>();
-    expression_list noperands = { func, *i };
+    expression_list noperands = {func, *i};
 
-    auto nop = std::make_shared<expression::operator_::function::Call>(call, noperands, _module, o->location());
+    auto nop = std::make_shared<expression::operator_::function::Call>(call, noperands, _module,
+                                                                       o->location());
 
     o->replace(nop);
 }

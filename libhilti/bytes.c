@@ -2,18 +2,18 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
+#include "autogen/hilti-hlt.h"
 #include "bytes.h"
-#include "memory_.h"
 #include "exceptions.h"
-#include "string_.h"
 #include "globals.h"
 #include "hutil.h"
-#include "threading.h"
 #include "int.h"
-#include "autogen/hilti-hlt.h"
+#include "memory_.h"
+#include "string_.h"
+#include "threading.h"
 
 static const size_t __HLT_BYTES_MIN_RESERVE = 32;
 
@@ -27,24 +27,26 @@ static const int _BYTES_FLAG_OBJECT = 2;
 
 // Layout here must match libhilti.ll!
 struct __hlt_bytes {
-    __hlt_gchdr __gchdr;       // Header for memory management.
+    __hlt_gchdr __gchdr;                  // Header for memory management.
     __hlt_thread_mgr_blockable blockable; // For blocking until changed.
-    int8_t flags;              // Flags as combiniation of _BYTES_FLAG_* values.
-    struct __hlt_bytes* next;  // Next part. Ref counted.
-    hlt_bytes_size offset;     // The offset of this chunks first byte relative to the beginning of the bytes object it's part of.
-    int8_t* start;             // Pointer to first data byte.
-    int8_t* end;               // Pointer to one after last data byte used so far.
-    int8_t* reserved;          // Pointer to one after the last data byte available.
-    int8_t* to_free;           // Need to free data pointed to when dtoring.
-    hlt_bytes_size* marks;     // If non-null, array of offsets of marks within this chunk. Terminated by -1. Must be freed.
-    int8_t data[0];            // Inline data starts here if free is zero.
+    int8_t flags;                         // Flags as combiniation of _BYTES_FLAG_* values.
+    struct __hlt_bytes* next;             // Next part. Ref counted.
+    hlt_bytes_size offset; // The offset of this chunks first byte relative to the beginning of the
+                           // bytes object it's part of.
+    int8_t* start;         // Pointer to first data byte.
+    int8_t* end;           // Pointer to one after last data byte used so far.
+    int8_t* reserved;      // Pointer to one after the last data byte available.
+    int8_t* to_free;       // Need to free data pointed to when dtoring.
+    hlt_bytes_size* marks; // If non-null, array of offsets of marks within this chunk. Terminated
+                           // by -1. Must be freed.
+    int8_t data[];         // Inline data starts here if free is zero.
 };
 
 // Specialized bytes object storing a separator object.
 struct __hlt_bytes_object {
-    struct __hlt_bytes b;       // Common header.
-    const hlt_type_info* type;  // Type of the object;
-    char object[0];             // Object's storage starts here, with size determined by type.
+    struct __hlt_bytes b;      // Common header.
+    const hlt_type_info* type; // Type of the object;
+    char object[];             // Object's storage starts here, with size determined by type.
 };
 
 // Hoisted version when storing on the stack. Layout here must match
@@ -56,9 +58,10 @@ struct __hlt_bytes_hoisted {
 
 typedef struct __hlt_bytes_object __hlt_bytes_object;
 
-static hlt_iterator_bytes GenericEndPos = { 0, 0 };
+static hlt_iterator_bytes GenericEndPos = {0, 0};
 
-static hlt_bytes* _hlt_bytes_new(const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve, hlt_execution_context* ctx);
+static hlt_bytes* _hlt_bytes_new(const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve,
+                                 hlt_execution_context* ctx);
 static void __add_chunk(hlt_bytes* tail, hlt_bytes* c, hlt_execution_context* ctx);
 
 static inline hlt_bytes_size min(hlt_bytes_size a, hlt_bytes_size b)
@@ -68,7 +71,7 @@ static inline hlt_bytes_size min(hlt_bytes_size a, hlt_bytes_size b)
 
 static inline __hlt_bytes_object* __get_object(const hlt_bytes* b)
 {
-    return (b && (b->flags & _BYTES_FLAG_OBJECT)) ? (__hlt_bytes_object*) b : 0;
+    return (b && (b->flags & _BYTES_FLAG_OBJECT)) ? (__hlt_bytes_object*)b : 0;
 }
 
 static inline hlt_bytes* __tail(hlt_bytes* b, int8_t consider_object)
@@ -108,7 +111,8 @@ static inline int8_t __at_mark(const hlt_iterator_bytes i)
 
 static inline int8_t __is_end(const hlt_iterator_bytes p)
 {
-    return p.bytes == 0 || (p.bytes == __tail(p.bytes, false) && p.cur >= p.bytes->end) || __at_object(p);
+    return p.bytes == 0 || (p.bytes == __tail(p.bytes, false) && p.cur >= p.bytes->end) ||
+           __at_object(p);
 }
 
 static inline int8_t __is_frozen(const hlt_bytes* b)
@@ -116,6 +120,7 @@ static inline int8_t __is_frozen(const hlt_bytes* b)
     return b ? (b->flags & _BYTES_FLAG_FROZEN) : false;
 }
 
+#if 0
 // For debugging.
 static void __print_bytes(const char* prefix, const hlt_bytes* b)
 {
@@ -133,7 +138,7 @@ static void __print_bytes(const char* prefix, const hlt_bytes* b)
             continue;
         }
 
-        for ( int i = 0; i < min(b->end - b->start, 20); i++) {
+        for ( int i = 0; i < min(b->end - b->start, 20); i++ ) {
             if ( isprint(b->start[i]) )
                 fprintf(stderr, "%c", b->start[i]);
             else
@@ -149,7 +154,7 @@ static void __print_bytes(const char* prefix, const hlt_bytes* b)
             fprintf(stderr, "[ ");
 
             for ( hlt_bytes_size* m = b->marks; m && *m >= 0; m++ )
-                fprintf(stderr, "m@%" PRId64" ", *m);
+                fprintf(stderr, "m@%" PRId64 " ", *m);
 
             fprintf(stderr, "] ");
         }
@@ -157,16 +162,17 @@ static void __print_bytes(const char* prefix, const hlt_bytes* b)
 
     fprintf(stderr, ")\n");
 }
+#endif
 
+#if 0
 static void __print_iterator(const char* prefix, hlt_iterator_bytes i)
 {
     fprintf(stderr, "%s: i(#%p@%lu) is_end=%d at_object=%d at_mark=%d\n", prefix, i.bytes,
-            i.bytes ? i.cur - i.bytes->start : 0, __is_end(i),
-            __at_object(i),
-            __at_mark(i));
+            i.bytes ? i.cur - i.bytes->start : 0, __is_end(i), __at_object(i), __at_mark(i));
 
     __print_bytes("  -> ", i.bytes);
 }
+#endif
 
 static inline int8_t __is_empty(const hlt_bytes* b, int8_t consider_objects)
 {
@@ -193,12 +199,15 @@ static inline hlt_bytes* __pred(hlt_bytes* b, hlt_bytes* p)
 // Does not ref the iterator.
 static inline hlt_iterator_bytes __create_iterator(hlt_bytes* bytes, int8_t* cur)
 {
-    hlt_iterator_bytes i = { bytes, cur };
+    hlt_iterator_bytes i = {bytes, cur};
     return i;
 }
 
-void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx, int8_t adj_ref, int8_t move_beyond_end);
-hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size p, hlt_exception** excpt, hlt_execution_context* ctx);
+void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exception** excpt,
+                                  hlt_execution_context* ctx, int8_t adj_ref,
+                                  int8_t move_beyond_end);
+hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size p, hlt_exception** excpt,
+                                    hlt_execution_context* ctx);
 
 // This version does not adjust the reference count and must be called only
 // when the potentiall changed iterator will not be visible to the HILTI
@@ -251,7 +260,7 @@ hlt_bytes_size __hlt_bytes_len(hlt_bytes* b)
 {
     hlt_bytes_size len = 0;
 
-    for ( ; b && ! __get_object(b) ; b = b->next )
+    for ( ; b && ! __get_object(b); b = b->next )
         len += (b->end - b->start);
 
     return len;
@@ -271,9 +280,10 @@ hlt_bytes_size* __hlt_bytes_reserve_space_for_more_marks(hlt_bytes_size** dst, i
 
     else {
         int len_dst = 0;
-        for ( hlt_bytes_size* i = *dst; *i >= 0; i++, len_dst++ );
+        for ( hlt_bytes_size *i = *dst; *i >= 0; i++, len_dst++ )
+            ;
         *dst = hlt_realloc(*dst, (len_dst + addl_reserve + 1) * sizeof(hlt_bytes_size),
-                                 (len_dst + 1) * sizeof(hlt_bytes_size));
+                           (len_dst + 1) * sizeof(hlt_bytes_size));
         return *dst + len_dst;
     }
 }
@@ -294,22 +304,22 @@ void __hlt_bytes_append_mark(hlt_bytes* b, hlt_bytes_size mark, hlt_execution_co
     *dst++ = -1;
 }
 
-void __hlt_bytes_copy_marks(hlt_bytes_size** marks, hlt_bytes* b, int8_t* first, int8_t* last, int8_t adjoffset)
+void __hlt_bytes_copy_marks(hlt_bytes_size** marks, hlt_bytes* b, int8_t* first, int8_t* last,
+                            int8_t adjoffset)
 {
     if ( ! (marks && b->marks) )
         return;
 
     int n = 0;
-    for ( hlt_bytes_size* i = b->marks; *i != -1; i++, n++ )
+    for ( hlt_bytes_size *i = b->marks; *i != -1; i++, n++ )
         ;
 
     hlt_bytes_size* dst = __hlt_bytes_reserve_space_for_more_marks(marks, n);
 
     int64_t offset_first = first ? (first - b->start) : -1;
-    int64_t offset_last  = last ? (last - b->start) : -1;
+    int64_t offset_last = last ? (last - b->start) : -1;
 
     for ( hlt_bytes_size* p = b->marks; *p != -1; p++ ) {
-
         if ( *p < 0 )
             continue;
 
@@ -349,7 +359,8 @@ static void __add_chunk(hlt_bytes* tail, hlt_bytes* c, hlt_execution_context* ct
     }
 }
 
-static inline void _hlt_bytes_init(hlt_bytes* b, const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve, hlt_execution_context* ctx)
+static inline void _hlt_bytes_init(hlt_bytes* b, const int8_t* data, hlt_bytes_size len,
+                                   hlt_bytes_size reserve, hlt_execution_context* ctx)
 {
     assert(reserve >= len);
 
@@ -368,7 +379,8 @@ static inline void _hlt_bytes_init(hlt_bytes* b, const int8_t* data, hlt_bytes_s
         memcpy(b->data, data, len);
 }
 
-static inline void _hlt_bytes_init_reuse(hlt_bytes* b, int8_t* data, hlt_bytes_size len, hlt_execution_context* ctx)
+static inline void _hlt_bytes_init_reuse(hlt_bytes* b, int8_t* data, hlt_bytes_size len,
+                                         hlt_execution_context* ctx)
 {
     b->flags = 0;
     b->next = 0;
@@ -382,7 +394,8 @@ static inline void _hlt_bytes_init_reuse(hlt_bytes* b, int8_t* data, hlt_bytes_s
     hlt_thread_mgr_blockable_init(&b->blockable);
 }
 
-static void _hlt_bytes_init_object(__hlt_bytes_object* b, const hlt_type_info* type, void* obj, hlt_execution_context* ctx)
+static void _hlt_bytes_init_object(__hlt_bytes_object* b, const hlt_type_info* type, void* obj,
+                                   hlt_execution_context* ctx)
 {
     b->b.next = 0;
     b->b.flags = _BYTES_FLAG_OBJECT;
@@ -398,7 +411,8 @@ static void _hlt_bytes_init_object(__hlt_bytes_object* b, const hlt_type_info* t
     }
 }
 
-static inline void _hlt_bytes_init_hoisted(__hlt_bytes_hoisted* dst, const int8_t* data, hlt_bytes_size len, hlt_execution_context* ctx)
+static inline void _hlt_bytes_init_hoisted(__hlt_bytes_hoisted* dst, const int8_t* data,
+                                           hlt_bytes_size len, hlt_execution_context* ctx)
 {
     hlt_bytes* b = &dst->b;
 
@@ -437,7 +451,8 @@ static inline void _hlt_bytes_init_hoisted(__hlt_bytes_hoisted* dst, const int8_
         memcpy(b->data, data, len);
 }
 
-static hlt_bytes* _hlt_bytes_new(const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve, hlt_execution_context* ctx)
+static hlt_bytes* _hlt_bytes_new(const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve,
+                                 hlt_execution_context* ctx)
 {
     if ( ! reserve )
         reserve = (len ? len : __HLT_BYTES_MIN_RESERVE);
@@ -447,7 +462,8 @@ static hlt_bytes* _hlt_bytes_new(const int8_t* data, hlt_bytes_size len, hlt_byt
     return b;
 }
 
-static hlt_bytes* _hlt_bytes_new_ref(const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve, hlt_execution_context* ctx)
+static hlt_bytes* _hlt_bytes_new_ref(const int8_t* data, hlt_bytes_size len, hlt_bytes_size reserve,
+                                     hlt_execution_context* ctx)
 {
     if ( ! reserve )
         reserve = (len ? len : __HLT_BYTES_MIN_RESERVE);
@@ -464,23 +480,30 @@ static hlt_bytes* _hlt_bytes_new_reuse(int8_t* data, hlt_bytes_size len, hlt_exe
     return b;
 }
 
-static hlt_bytes* _hlt_bytes_new_reuse_ref(int8_t* data, hlt_bytes_size len, hlt_execution_context* ctx)
+#if 0
+static hlt_bytes* _hlt_bytes_new_reuse_ref(int8_t* data, hlt_bytes_size len,
+                                           hlt_execution_context* ctx)
 {
     hlt_bytes* b = GC_NEW_NO_INIT_REF(hlt_bytes, ctx);
     _hlt_bytes_init_reuse(b, data, len, ctx);
     return b;
 }
+#endif
 
-static hlt_bytes* _hlt_bytes_new_object(const hlt_type_info* type, void* obj, hlt_execution_context* ctx)
+static hlt_bytes* _hlt_bytes_new_object(const hlt_type_info* type, void* obj,
+                                        hlt_execution_context* ctx)
 {
-    __hlt_bytes_object* b = GC_NEW_CUSTOM_SIZE_NO_INIT(hlt_bytes, sizeof(__hlt_bytes_object) + type->size, ctx);
+    __hlt_bytes_object* b =
+        GC_NEW_CUSTOM_SIZE_NO_INIT(hlt_bytes, sizeof(__hlt_bytes_object) + type->size, ctx);
     _hlt_bytes_init_object(b, type, obj, ctx);
     return &b->b;
 }
 
-static hlt_bytes* _hlt_bytes_new_object_ref(const hlt_type_info* type, void* obj, hlt_execution_context* ctx)
+static hlt_bytes* _hlt_bytes_new_object_ref(const hlt_type_info* type, void* obj,
+                                            hlt_execution_context* ctx)
 {
-    __hlt_bytes_object* b = GC_NEW_CUSTOM_SIZE_NO_INIT_REF(hlt_bytes, sizeof(__hlt_bytes_object) + type->size, ctx);
+    __hlt_bytes_object* b =
+        GC_NEW_CUSTOM_SIZE_NO_INIT_REF(hlt_bytes, sizeof(__hlt_bytes_object) + type->size, ctx);
     _hlt_bytes_init_object(b, type, obj, ctx);
     return &b->b;
 }
@@ -502,7 +525,7 @@ void hlt_bytes_dtor(hlt_type_info* ti, hlt_bytes* b, hlt_execution_context* ctx)
 
         if ( b->marks )
             hlt_free(b->marks);
-}
+    }
 }
 
 void hlt_iterator_bytes_dtor(hlt_type_info* ti, hlt_iterator_bytes* p, hlt_execution_context* ctx)
@@ -515,7 +538,8 @@ void hlt_iterator_bytes_cctor(hlt_type_info* ti, hlt_iterator_bytes* p, hlt_exec
     GC_CCTOR(p->bytes, hlt_bytes, ctx);
 }
 
-void hlt_bytes_new_hoisted(__hlt_bytes_hoisted* dst, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_new_hoisted(__hlt_bytes_hoisted* dst, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     _hlt_bytes_init_hoisted(dst, 0, 0, ctx);
 }
@@ -525,26 +549,31 @@ hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
     return _hlt_bytes_new(0, 0, 0, ctx);
 }
 
-hlt_bytes* hlt_bytes_new_from_data(int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_new_from_data(int8_t* data, hlt_bytes_size len, hlt_exception** excpt,
+                                   hlt_execution_context* ctx)
 {
     return _hlt_bytes_new_reuse(data, len, ctx);
 }
 
-void hlt_bytes_new_from_data_copy_hoisted(__hlt_bytes_hoisted* dst, const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_new_from_data_copy_hoisted(__hlt_bytes_hoisted* dst, const int8_t* data,
+                                          hlt_bytes_size len, hlt_exception** excpt,
+                                          hlt_execution_context* ctx)
 {
     _hlt_bytes_init_hoisted(dst, data, len, ctx);
 }
 
-hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_size len,
+                                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return _hlt_bytes_new(data, len, 0, ctx);
 }
 
-void* hlt_bytes_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_bytes_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate,
+                            hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* src = *(hlt_bytes**)srcp;
 
-    __hlt_bytes_object *so = __get_object(src);
+    __hlt_bytes_object* so = __get_object(src);
 
     if ( so )
         return _hlt_bytes_new_object_ref(so->type, 0, ctx);
@@ -552,7 +581,9 @@ void* hlt_bytes_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_sta
         return _hlt_bytes_new_ref(0, src->end - src->start, 0, ctx);
 }
 
-void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp,
+                          __hlt_clone_state* cstate, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     hlt_bytes* src = *(hlt_bytes**)srcp;
     hlt_bytes* dst = *(hlt_bytes**)dstp;
@@ -566,15 +597,14 @@ void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt
     int first = 1;
 
     for ( ; src; src = src->next ) {
-
         hlt_bytes* b = 0;
 
-        __hlt_bytes_object *so = __get_object(src);
+        __hlt_bytes_object* so = __get_object(src);
 
         if ( so ) {
             if ( first ) {
                 // Already allocated.
-                __hlt_bytes_object* no = (__hlt_bytes_object*) dst;
+                __hlt_bytes_object* no = (__hlt_bytes_object*)dst;
                 memcpy(&no->object, &so->object, no->type->size);
                 GC_CCTOR_GENERIC(&no->object, no->type, ctx);
                 b = &no->b;
@@ -582,13 +612,14 @@ void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt
 
             else {
                 void* p = &so->object;
-                __hlt_bytes_object* no = (__hlt_bytes_object*)_hlt_bytes_new_object(so->type, p, ctx);
+                __hlt_bytes_object* no =
+                    (__hlt_bytes_object*)_hlt_bytes_new_object(so->type, p, ctx);
                 b = &no->b;
             }
         }
 
         else {
-            if  ( first ) {
+            if ( first ) {
                 // Already allocated.
                 hlt_bytes_size n = (src->end - src->start);
                 memcpy(dst->start, src->start, n);
@@ -610,7 +641,6 @@ void hlt_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt
 
         else
             first = 0;
-
     }
 }
 
@@ -636,7 +666,8 @@ int8_t hlt_bytes_empty(hlt_bytes* b, hlt_exception** excpt, hlt_execution_contex
     return __is_empty(b, false);
 }
 
-void __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx, int8_t reuse)
+void __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt,
+                            hlt_execution_context* ctx, int8_t reuse)
 {
     if ( ! len ) {
         hlt_free(raw);
@@ -664,7 +695,8 @@ void __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_e
 }
 
 // Appends one Bytes object to another.
-void __hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt,
+                        hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -698,12 +730,14 @@ void __hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, h
     hlt_thread_mgr_unblock(&b->blockable, ctx);
 }
 
-void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt,
+                      hlt_execution_context* ctx)
 {
-    return __hlt_bytes_append(b, other, excpt, ctx);
+    __hlt_bytes_append(b, other, excpt, ctx);
 }
 
-void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -713,7 +747,8 @@ void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exc
     __hlt_bytes_append_raw(b, raw, len, excpt, ctx, 1);
 }
 
-void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt,
+                               hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -723,13 +758,16 @@ void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hl
     __hlt_bytes_append_raw(b, raw, len, excpt, ctx, 0);
 }
 
-static void _hlt_bytes_concat_into(hlt_bytes* dst, hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _hlt_bytes_concat_into(hlt_bytes* dst, hlt_bytes* b1, hlt_bytes* b2,
+                                   hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    // Assumes that dst has enough space available.
+// Assumes that dst has enough space available.
 #ifdef DEBUG
     hlt_bytes_size len1 = hlt_bytes_len(b1, excpt, ctx);
     hlt_bytes_size len2 = hlt_bytes_len(b2, excpt, ctx);
     assert(len1 + len2 <= (dst->reserved - dst->start));
+    _UNUSED(len1);
+    _UNUSED(len2);
 #endif
 
     int8_t* p = dst->start;
@@ -749,7 +787,8 @@ static void _hlt_bytes_concat_into(hlt_bytes* dst, hlt_bytes* b1, hlt_bytes* b2,
     }
 }
 
-void hlt_bytes_concat_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_concat_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b1, hlt_bytes* b2,
+                              hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(dst);
 
@@ -763,7 +802,8 @@ void hlt_bytes_concat_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b1, hlt_bytes
     _hlt_bytes_concat_into(&dst->b, b1, b2, excpt, ctx);
 }
 
-hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt,
+                            hlt_execution_context* ctx)
 {
     if ( ! (b1 && b2) ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -780,7 +820,8 @@ hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt,
     return dst;
 }
 
-void __hlt_bytes_find_byte(hlt_iterator_bytes* p, hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_bytes_find_byte(hlt_iterator_bytes* p, hlt_bytes* b, int8_t chr, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     for ( ; b && ! __get_object(b); b = b->next ) {
         int8_t* c = memchr(b->start, chr, b->end - b->start);
@@ -794,7 +835,8 @@ void __hlt_bytes_find_byte(hlt_iterator_bytes* p, hlt_bytes* b, int8_t chr, hlt_
     *p = GenericEndPos;
 }
 
-hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt,
+                                       hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -806,7 +848,8 @@ hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception**
     return p;
 }
 
-void __hlt_bytes_end(hlt_iterator_bytes* p, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_bytes_end(hlt_iterator_bytes* p, hlt_bytes* b, hlt_exception** excpt,
+                     hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -818,7 +861,8 @@ void __hlt_bytes_end(hlt_iterator_bytes* p, hlt_bytes* b, hlt_exception** excpt,
     p->cur = p->bytes->end;
 }
 
-void __hlt_bytes_begin(hlt_iterator_bytes* p, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_bytes_begin(hlt_iterator_bytes* p, hlt_bytes* b, hlt_exception** excpt,
+                       hlt_execution_context* ctx)
 {
     if ( __is_empty(b, false) ) {
         __hlt_bytes_end(p, b, excpt, ctx);
@@ -830,7 +874,8 @@ void __hlt_bytes_begin(hlt_iterator_bytes* p, hlt_bytes* b, hlt_exception** excp
     __normalize_iter(p);
 }
 
-void __hlt_iterator_bytes_incr(hlt_iterator_bytes* p, hlt_exception** excpt, hlt_execution_context* ctx, int8_t adj_ref)
+void __hlt_iterator_bytes_incr(hlt_iterator_bytes* p, hlt_exception** excpt,
+                               hlt_execution_context* ctx, int8_t adj_ref)
 {
     if ( __is_end(*p) )
         // Fail silently.
@@ -859,7 +904,9 @@ void __hlt_iterator_bytes_incr(hlt_iterator_bytes* p, hlt_exception** excpt, hlt
     p->cur = p->bytes->start;
 }
 
-void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx, int8_t adj_ref, int8_t move_beyond_end)
+void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exception** excpt,
+                                  hlt_execution_context* ctx, int8_t adj_ref,
+                                  int8_t move_beyond_end)
 {
     if ( __is_end(*p) )
         // Fail silently.
@@ -869,7 +916,6 @@ void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exceptio
         return;
 
     while ( 1 ) {
-
         // Can we stay inside the same chunk?
         if ( p->cur + n < p->bytes->end ) {
             p->cur += n;
@@ -903,7 +949,8 @@ void __hlt_iterator_bytes_incr_by(hlt_iterator_bytes* p, int64_t n, hlt_exceptio
     assert(false);
 }
 
-int8_t __hlt_iterator_bytes_deref(hlt_iterator_bytes p, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t __hlt_iterator_bytes_deref(hlt_iterator_bytes p, hlt_exception** excpt,
+                                  hlt_execution_context* ctx)
 {
     if ( __is_end(p) ) {
         // Position is out range.
@@ -914,7 +961,8 @@ int8_t __hlt_iterator_bytes_deref(hlt_iterator_bytes p, hlt_exception** excpt, h
     return *p.cur;
 }
 
-int8_t __hlt_iterator_bytes_eq(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t __hlt_iterator_bytes_eq(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt,
+                               hlt_execution_context* ctx)
 {
     if ( __is_end(p1) && __is_end(p2) )
         return 1;
@@ -923,7 +971,8 @@ int8_t __hlt_iterator_bytes_eq(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt
 }
 
 // Returns the number of bytes from p1 to p2 (not counting p2).
-hlt_bytes_size __hlt_iterator_bytes_diff(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes_size __hlt_iterator_bytes_diff(hlt_iterator_bytes p1, hlt_iterator_bytes p2,
+                                         hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( __is_end(p1) ) {
         if ( ! __is_end(p2) && ! (__at_object(p1) || __at_object(p2)) ) {
@@ -935,13 +984,16 @@ hlt_bytes_size __hlt_iterator_bytes_diff(hlt_iterator_bytes p1, hlt_iterator_byt
     }
 
     if ( __is_end(p2) )
-        return hlt_bytes_len(p1.bytes, excpt, ctx) - (((p1.cur <= p1.bytes->end) ? p1.cur : p1.bytes->end) - p1.bytes->start);
+        return hlt_bytes_len(p1.bytes, excpt, ctx) -
+               (((p1.cur <= p1.bytes->end) ? p1.cur : p1.bytes->end) - p1.bytes->start);
 
-    hlt_bytes_size n = (hlt_iterator_bytes_index(p2, excpt, ctx) - hlt_iterator_bytes_index(p1, excpt, ctx));
+    hlt_bytes_size n =
+        (hlt_iterator_bytes_index(p2, excpt, ctx) - hlt_iterator_bytes_index(p1, excpt, ctx));
     return (n > 0 ? n : 0);
 }
 
-void __hlt_bytes_find_byte_from(hlt_iterator_bytes* p, hlt_iterator_bytes i, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_bytes_find_byte_from(hlt_iterator_bytes* p, hlt_iterator_bytes i, int8_t chr,
+                                hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // First chunk.
     hlt_bytes* b = i.bytes;
@@ -963,7 +1015,8 @@ void __hlt_bytes_find_byte_from(hlt_iterator_bytes* p, hlt_iterator_bytes i, int
         __hlt_bytes_end(p, i.bytes, excpt, ctx);
 }
 
-int8_t __hlt_bytes_find_bytes(hlt_iterator_bytes* p, hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t __hlt_bytes_find_bytes(hlt_iterator_bytes* p, hlt_bytes* b, hlt_bytes* other,
+                              hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( __is_empty(other, false) ) {
         // Empty pattern returns start position.
@@ -1005,7 +1058,8 @@ int8_t __hlt_bytes_find_bytes(hlt_iterator_bytes* p, hlt_bytes* b, hlt_bytes* ot
     return 0;
 }
 
-int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt,
+                                hlt_execution_context* ctx)
 {
     if ( ! (b && other) ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1016,7 +1070,8 @@ int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** 
     return __hlt_bytes_find_bytes(&p, b, other, excpt, ctx);
 }
 
-hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt,
+                                        hlt_execution_context* ctx)
 {
     if ( ! (b && other) ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1028,7 +1083,8 @@ hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exce
     return p;
 }
 
-static int8_t __hlt_bytes_match_at(hlt_iterator_bytes p, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+static int8_t __hlt_bytes_match_at(hlt_iterator_bytes p, hlt_bytes* b, hlt_exception** excpt,
+                                   hlt_execution_context* ctx)
 {
     if ( __is_end(p) )
         return __is_empty(b, false);
@@ -1067,7 +1123,9 @@ static int8_t __hlt_bytes_match_at(hlt_iterator_bytes p, hlt_bytes* b, hlt_excep
     assert(0);
 }
 
-hlt_bytes_find_at_iter_result hlt_bytes_find_bytes_at_iter(hlt_iterator_bytes i, hlt_bytes* needle, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes_find_at_iter_result hlt_bytes_find_bytes_at_iter(hlt_iterator_bytes i, hlt_bytes* needle,
+                                                           hlt_exception** excpt,
+                                                           hlt_execution_context* ctx)
 {
     hlt_bytes_find_at_iter_result r;
     r.iter = i;
@@ -1128,7 +1186,8 @@ hlt_bytes_find_at_iter_result hlt_bytes_find_bytes_at_iter(hlt_iterator_bytes i,
     return r;
 }
 
-static void _hlt_bytes_copy_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _hlt_bytes_copy_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** excpt,
+                                 hlt_execution_context* ctx)
 {
     int8_t* p = dst->start;
 
@@ -1140,7 +1199,8 @@ static void _hlt_bytes_copy_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** e
     }
 }
 
-void hlt_bytes_copy_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_copy_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt,
+                            hlt_execution_context* ctx)
 {
     assert(dst);
 
@@ -1175,7 +1235,10 @@ hlt_bytes* hlt_bytes_clone(hlt_bytes* b, hlt_exception** excpt, hlt_execution_co
     return dst;
 }
 
-static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** marks, hlt_bytes_size buffer_size, hlt_bytes_size len, hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
+static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** marks,
+                                            hlt_bytes_size buffer_size, hlt_bytes_size len,
+                                            hlt_iterator_bytes p1, hlt_iterator_bytes p2,
+                                            hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // Some here is a bit awkward and only to retain the old semantics of
     // to_raw_buffer() that if the buffer gets exceeded, we fill it to the
@@ -1214,7 +1277,8 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** mar
     hlt_bytes_size n = min((p1.bytes->end - p1.cur), buffer_size - (p - buffer));
 
     if ( n ) {
-        __hlt_bytes_copy_marks(marks, p1.bytes, p1.cur, 0, (p - buffer) + (p1.bytes->start - p1.cur));
+        __hlt_bytes_copy_marks(marks, p1.bytes, p1.cur, 0,
+                               (p - buffer) + (p1.bytes->start - p1.cur));
         memcpy(p, p1.cur, n);
         p += n;
     }
@@ -1237,7 +1301,8 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** mar
     if ( c && ! __get_object(c) ) {
         hlt_bytes_size n = min((p2.cur - p2.bytes->start), buffer_size - (p - buffer));
 
-        __hlt_bytes_copy_marks(marks, p2.bytes, 0, p1.cur, (p - buffer) + (p2.bytes->start - p2.cur));
+        __hlt_bytes_copy_marks(marks, p2.bytes, 0, p1.cur,
+                               (p - buffer) + (p2.bytes->start - p2.cur));
 
         if ( n ) {
             memcpy(p, p2.bytes->start, n);
@@ -1254,7 +1319,8 @@ static int8_t* __hlt_bytes_sub_raw_internal(int8_t* buffer, hlt_bytes_size** mar
     return buffer_size <= len ? p : 0;
 }
 
-void hlt_bytes_sub_hoisted(__hlt_bytes_hoisted* dst, hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_sub_hoisted(__hlt_bytes_hoisted* dst, hlt_iterator_bytes p1, hlt_iterator_bytes p2,
+                           hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __normalize_iter(&p1);
     __normalize_iter(&p2);
@@ -1268,7 +1334,8 @@ void hlt_bytes_sub_hoisted(__hlt_bytes_hoisted* dst, hlt_iterator_bytes p1, hlt_
     __hlt_bytes_sub_raw_internal(dst->b.start, &dst->b.marks, len, len, p1, p2, excpt, ctx);
 }
 
-hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     __normalize_iter(&p1);
     __normalize_iter(&p2);
@@ -1285,7 +1352,8 @@ hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_excep
     return 0;
 }
 
-int8_t* hlt_bytes_sub_raw(int8_t* dst, size_t dst_len, hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t* hlt_bytes_sub_raw(int8_t* dst, size_t dst_len, hlt_iterator_bytes p1, hlt_iterator_bytes p2,
+                          hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __normalize_iter(&p1);
     __normalize_iter(&p2);
@@ -1299,7 +1367,8 @@ int8_t* hlt_bytes_sub_raw(int8_t* dst, size_t dst_len, hlt_iterator_bytes p1, hl
     return 0;
 }
 
-int8_t hlt_bytes_match_at(hlt_iterator_bytes p, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_bytes_match_at(hlt_iterator_bytes p, hlt_bytes* b, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1311,7 +1380,8 @@ int8_t hlt_bytes_match_at(hlt_iterator_bytes p, hlt_bytes* b, hlt_exception** ex
     return __hlt_bytes_match_at(p, b, excpt, ctx) > 0;
 }
 
-int8_t* hlt_bytes_to_raw(int8_t* dst, size_t dst_len, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t* hlt_bytes_to_raw(int8_t* dst, size_t dst_len, hlt_bytes* b, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1327,7 +1397,8 @@ int8_t* hlt_bytes_to_raw(int8_t* dst, size_t dst_len, hlt_bytes* b, hlt_exceptio
     return hlt_bytes_sub_raw(dst, dst_len, begin, end, excpt, ctx);
 }
 
-int8_t __hlt_bytes_extract_one_slowpath(hlt_iterator_bytes* p, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t __hlt_bytes_extract_one_slowpath(hlt_iterator_bytes* p, hlt_iterator_bytes end,
+                                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(p);
     assert(p->bytes);
@@ -1347,18 +1418,20 @@ int8_t __hlt_bytes_extract_one_slowpath(hlt_iterator_bytes* p, hlt_iterator_byte
 }
 
 // We optimize this for the common case and keep it small for inlining.
-int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* p, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* p, hlt_iterator_bytes end, hlt_exception** excpt,
+                               hlt_execution_context* ctx)
 {
     if ( p->bytes && ! __get_object(p->bytes) ) {
         if ( (p->bytes == end.bytes && (p->cur < end.cur - 1)) ||
              (p->bytes != end.bytes && (p->cur < p->bytes->end - 1)) )
-                return *(p->cur++);
+            return *(p->cur++);
     }
 
     return __hlt_bytes_extract_one_slowpath(p, end, excpt, ctx);
 }
 
-hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size p, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size p, hlt_exception** excpt,
+                                    hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1396,7 +1469,7 @@ hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size p, hlt_exceptio
 
 void __hlt_bytes_normalize_iter(hlt_iterator_bytes* pos)
 {
-    return __normalize_iter(pos);
+    __normalize_iter(pos);
 }
 
 hlt_iterator_bytes hlt_bytes_begin(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -1428,7 +1501,8 @@ hlt_iterator_bytes hlt_bytes_generic_end(hlt_exception** excpt, hlt_execution_co
     return GenericEndPos;
 }
 
-void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt,
+                      hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1445,11 +1519,12 @@ void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_ex
     hlt_thread_mgr_unblock(&b->blockable, ctx);
 }
 
-void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes p, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes p, hlt_exception** excpt,
+                    hlt_execution_context* ctx)
 {
     __normalize_iter(&p);
 
-    __hlt_bytes_object *o = p.bytes ? __get_object(p.bytes) : 0;
+    __hlt_bytes_object* o = p.bytes ? __get_object(p.bytes) : 0;
 
     if ( __is_end(p) && ! o )
         return;
@@ -1503,7 +1578,9 @@ int8_t hlt_bytes_is_frozen(hlt_bytes* b, hlt_exception** excpt, hlt_execution_co
     return __is_frozen(b);
 }
 
-void hlt_iterator_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_iterator_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* srcp,
+                                   __hlt_clone_state* cstate, hlt_exception** excpt,
+                                   hlt_execution_context* ctx)
 {
     hlt_iterator_bytes* src = (hlt_iterator_bytes*)srcp;
     hlt_iterator_bytes* dst = (hlt_iterator_bytes*)srcp;
@@ -1514,11 +1591,14 @@ void hlt_iterator_bytes_clone_init(void* dstp, const hlt_type_info* ti, void* sr
         return;
     }
 
-    hlt_string msg = hlt_string_from_asciiz("iterator<bytes> supports cloning only for end position", excpt, ctx);
+    hlt_string msg =
+        hlt_string_from_asciiz("iterator<bytes> supports cloning only for end position", excpt,
+                               ctx);
     hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg, ctx);
 }
 
-hlt_iterator_bytes hlt_iterator_bytes_copy(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_iterator_bytes_copy(hlt_iterator_bytes pos, hlt_exception** excpt,
+                                           hlt_execution_context* ctx)
 {
     __normalize_iter(&pos);
 
@@ -1531,7 +1611,8 @@ hlt_iterator_bytes hlt_iterator_bytes_copy(hlt_iterator_bytes pos, hlt_exception
     return copy;
 }
 
-int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excpt,
+                                    hlt_execution_context* ctx)
 {
     __normalize_iter(&pos);
 
@@ -1541,13 +1622,15 @@ int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excp
     return __is_frozen(pos.bytes);
 }
 
-int8_t hlt_iterator_bytes_deref(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_iterator_bytes_deref(hlt_iterator_bytes pos, hlt_exception** excpt,
+                                hlt_execution_context* ctx)
 {
     __normalize_iter(&pos);
     return __hlt_iterator_bytes_deref(pos, excpt, ctx);
 }
 
-hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes old, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes old, hlt_exception** excpt,
+                                           hlt_execution_context* ctx)
 {
     __normalize_iter(&old);
 
@@ -1556,7 +1639,8 @@ hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes old, hlt_exception
     return ni;
 }
 
-hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes old, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes old, int64_t n,
+                                              hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __normalize_iter(&old);
 
@@ -1576,7 +1660,8 @@ void hlt_iterator_bytes_decr(hlt_iterator_bytes* pos, hlt_exception** excpt, hlt
 }
 #endif
 
-int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2,
+                             hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __normalize_iter(&pos1);
     __normalize_iter(&pos2);
@@ -1585,7 +1670,8 @@ int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, h
 }
 
 // Returns the number of bytes from pos1 to pos2 (not counting pos2).
-hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2,
+                                       hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __normalize_iter(&pos1);
     __normalize_iter(&pos2);
@@ -1593,7 +1679,9 @@ hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_byt
     return __hlt_iterator_bytes_diff(pos1, pos2, excpt, ctx);
 }
 
-hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                               __hlt_pointer_stack* seen, hlt_exception** excpt,
+                               hlt_execution_context* ctx)
 {
     hlt_string dst = 0;
 
@@ -1602,12 +1690,11 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
     if ( ! b )
         return hlt_string_from_asciiz("(Null)", excpt, ctx);
 
-    char hex[5] = { '\\', 'x', 'X', 'X', '\0' };
+    char hex[5] = {'\\', 'x', 'X', 'X', '\0'};
     char buffer[256];
     uint64_t i = 0;
 
     for ( const hlt_bytes* c = b; c; c = c->next ) {
-
         __hlt_bytes_object* o = __get_object(c);
 
         if ( o ) {
@@ -1628,7 +1715,7 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
                 i = 0;
             }
 
-            unsigned char c = *(unsigned char *)p;
+            unsigned char c = *(unsigned char*)p;
 
             if ( isprint((char)c) && c < 128 )
                 buffer[i++] = c;
@@ -1645,20 +1732,19 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
             dst = hlt_string_concat(dst, tmp, excpt, ctx);
             i = 0;
         }
-
     }
 
     return dst;
 }
 
-hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt,
+                        hlt_execution_context* ctx)
 {
     hlt_bytes* b = *((hlt_bytes**)obj);
 
     hlt_hash hash = 0;
 
     for ( ; b; b = b->next ) {
-
         __hlt_bytes_object* o = __get_object(b);
 
         if ( o ) {
@@ -1675,30 +1761,33 @@ hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exceptio
     return hash;
 }
 
-int8_t hlt_bytes_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_bytes_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2,
+                       const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b1 = *((hlt_bytes**)obj1);
     hlt_bytes* b2 = *((hlt_bytes**)obj2);
 
-    hlt_execution_context* c= hlt_global_execution_context();
+    hlt_execution_context* c = hlt_global_execution_context();
     hlt_exception* e = 0;
 
     return hlt_bytes_cmp(b1, b2, &e, c) == 0;
 }
 
-void* hlt_bytes_blockable(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_bytes_blockable(const hlt_type_info* type, const void* obj, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     hlt_bytes* b = *((hlt_bytes**)obj);
     return &b->blockable;
 }
 
-void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_bytes p1, hlt_iterator_bytes p2, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_bytes p1,
+                            hlt_iterator_bytes p2, hlt_exception** excpt,
+                            hlt_execution_context* ctx)
 {
     __normalize_iter(&p1);
     __normalize_iter(&p2);
 
     if ( ! cookie ) {
-
         if ( __hlt_iterator_bytes_eq(p1, p2, excpt, ctx) ) {
             block->start = block->end = p1.cur;
             block->next = 0;
@@ -1710,7 +1799,7 @@ void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_b
             return 0;
         }
 
-        if ( p1.bytes != p2.bytes  ) {
+        if ( p1.bytes != p2.bytes ) {
             block->start = p1.cur;
             block->end = p1.bytes->end;
             block->next = p1.bytes->next;
@@ -1720,7 +1809,7 @@ void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_b
             block->start = p1.cur;
             block->end = p2.cur;
             block->next = 0;
-            }
+        }
     }
 
     else {
@@ -1745,7 +1834,8 @@ void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_b
     return block->next && ! __get_object(block->next) ? block : 0;
 }
 
-int8_t hlt_bytes_cmp(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_bytes_cmp(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt,
+                     hlt_execution_context* ctx)
 {
     if ( ! (b1 && b2) ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1767,10 +1857,7 @@ int8_t hlt_bytes_cmp(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_ex
     __hlt_bytes_begin(&p1, b1, excpt, ctx);
     __hlt_bytes_begin(&p2, b2, excpt, ctx);
 
-    int8_t result = 0;
-
     while ( 1 ) {
-
         if ( __is_end(p1) )
             return (__is_end(p2) ? 0 : 1);
 
@@ -1791,7 +1878,8 @@ int8_t hlt_bytes_cmp(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_ex
     assert(0);
 }
 
-int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_execution_context* ctx)
+int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1837,7 +1925,8 @@ int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_
     return negate ? -value : value;
 }
 
-int64_t hlt_bytes_to_uint_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx)
+int64_t hlt_bytes_to_uint_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception** excpt,
+                                 hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1860,7 +1949,7 @@ int64_t hlt_bytes_to_uint_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exceptio
         uint8_t ch = __hlt_iterator_bytes_deref(cur, excpt, ctx);
         i = (i << 8) | ch;
         __hlt_iterator_bytes_incr(&cur, excpt, ctx, 0);
-        }
+    }
 
     if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
         i = hlt_int_flip(i, len, excpt, ctx);
@@ -1868,7 +1957,8 @@ int64_t hlt_bytes_to_uint_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exceptio
     return i;
 }
 
-int64_t hlt_bytes_to_int_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx)
+int64_t hlt_bytes_to_int_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception** excpt,
+                                hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1891,13 +1981,13 @@ int64_t hlt_bytes_to_int_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception
         uint8_t ch = __hlt_iterator_bytes_deref(cur, excpt, ctx);
         i = (i << 8) | ch;
         __hlt_iterator_bytes_incr(&cur, excpt, ctx, 0);
-        }
+    }
 
     if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
         i = hlt_int_flip(i, len, excpt, ctx);
 
-    if ( i & (1ll << (len * 8 - 1)) ){
-        if( len == 8 )
+    if ( i & (1ll << (len * 8 - 1)) ) {
+        if ( len == 8 )
             return -(~i + 1);
 
         return -(i ^ (1ll << (len * 8)) - 1) - 1;
@@ -1906,7 +1996,8 @@ int64_t hlt_bytes_to_int_binary(hlt_bytes* b, hlt_enum byte_order, hlt_exception
     return i;
 }
 
-static void _hlt_bytes_upper_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _hlt_bytes_upper_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** excpt,
+                                  hlt_execution_context* ctx)
 {
     int8_t* p = dst->start;
 
@@ -1921,7 +2012,8 @@ static void _hlt_bytes_upper_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** 
     }
 }
 
-void hlt_bytes_upper_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_upper_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     if ( ! b )
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1946,7 +2038,8 @@ hlt_bytes* hlt_bytes_upper(hlt_bytes* b, hlt_exception** excpt, hlt_execution_co
     return dst;
 }
 
-static void _hlt_bytes_lower_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _hlt_bytes_lower_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** excpt,
+                                  hlt_execution_context* ctx)
 {
     int8_t* p = dst->start;
 
@@ -1961,7 +2054,8 @@ static void _hlt_bytes_lower_into(hlt_bytes* dst, hlt_bytes* b, hlt_exception** 
     }
 }
 
-void hlt_bytes_lower_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_lower_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     if ( ! b )
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -1986,7 +2080,8 @@ hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execution_co
     return dst;
 }
 
-int8_t hlt_bytes_starts_with(hlt_bytes* b, hlt_bytes* s, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_bytes_starts_with(hlt_bytes* b, hlt_bytes* s, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     if ( ! (b && s) ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -2021,7 +2116,8 @@ int8_t hlt_bytes_starts_with(hlt_bytes* b, hlt_bytes* s, hlt_exception** excpt, 
     return 1;
 }
 
-static int8_t split1(hlt_bytes_pair* result, hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx)
+static int8_t split1(hlt_bytes_pair* result, hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt,
+                     hlt_execution_context* ctx)
 {
     hlt_bytes_size sep_len = hlt_bytes_len(sep, excpt, ctx);
 
@@ -2067,7 +2163,7 @@ static int8_t split1(hlt_bytes_pair* result, hlt_bytes* b, hlt_bytes* sep, hlt_e
             }
         }
 
-done:
+    done:
         if ( looking_for_ws )
             goto not_found;
     }
@@ -2090,14 +2186,16 @@ not_found:
     return 0;
 }
 
-hlt_bytes_pair hlt_bytes_split1(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes_pair hlt_bytes_split1(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt,
+                                hlt_execution_context* ctx)
 {
     hlt_bytes_pair result;
     split1(&result, b, sep, excpt, ctx);
     return result;
 }
 
-hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt,
+                            hlt_execution_context* ctx)
 {
     hlt_bytes* def = hlt_bytes_new(excpt, ctx);
     hlt_vector* v = hlt_vector_new(&hlt_type_info_hlt_bytes, &def, 0, excpt, ctx);
@@ -2131,14 +2229,15 @@ static inline int strip_it(int8_t ch, hlt_bytes* pat)
     return 0;
 }
 
-static void _hlt_bytes_strip_calc_iters(hlt_iterator_bytes* start, hlt_iterator_bytes* end, hlt_bytes* b, hlt_enum side, hlt_bytes* pat, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _hlt_bytes_strip_calc_iters(hlt_iterator_bytes* start, hlt_iterator_bytes* end,
+                                        hlt_bytes* b, hlt_enum side, hlt_bytes* pat,
+                                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* c = 0;
     int8_t* p = 0;
 
     if ( hlt_enum_equal(side, Hilti_Side_Left, excpt, ctx) ||
          hlt_enum_equal(side, Hilti_Side_Both, excpt, ctx) ) {
-
         for ( c = b; c && ! __get_object(c); c = c->next ) {
             for ( p = c->start; p < c->end; p++ ) {
                 if ( ! strip_it(*p, pat) )
@@ -2146,7 +2245,7 @@ static void _hlt_bytes_strip_calc_iters(hlt_iterator_bytes* start, hlt_iterator_
             }
         }
 
-end_loop1:
+    end_loop1:
         *start = __create_iterator(c, p);
     }
 
@@ -2155,7 +2254,6 @@ end_loop1:
 
     if ( hlt_enum_equal(side, Hilti_Side_Right, excpt, ctx) ||
          hlt_enum_equal(side, Hilti_Side_Both, excpt, ctx) ) {
-
         for ( c = __tail(b, false); c && ! __get_object(c); c = __pred(b, c) ) {
             for ( p = c->end - 1; p >= c->start; --p ) {
                 if ( ! strip_it(*p, pat) ) {
@@ -2165,7 +2263,7 @@ end_loop1:
             }
         }
 
-end_loop2:
+    end_loop2:
         *end = __create_iterator(c, p);
     }
 
@@ -2173,17 +2271,19 @@ end_loop2:
         *end = GenericEndPos;
 }
 
-void hlt_bytes_strip_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_enum side, hlt_bytes* pat, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_strip_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_enum side, hlt_bytes* pat,
+                             hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iterator_bytes start;
     hlt_iterator_bytes end;
 
     _hlt_bytes_strip_calc_iters(&start, &end, b, side, pat, excpt, ctx);
 
-    return hlt_bytes_sub_hoisted(dst, start, end, excpt, ctx);
+    hlt_bytes_sub_hoisted(dst, start, end, excpt, ctx);
 }
 
-hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* pat, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* pat, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     hlt_iterator_bytes start;
     hlt_iterator_bytes end;
@@ -2193,7 +2293,8 @@ hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* pat, hlt_exce
     return hlt_bytes_sub(start, end, excpt, ctx);
 }
 
-static void _hlt_bytes_join_into(hlt_bytes* dst, hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _hlt_bytes_join_into(hlt_bytes* dst, hlt_bytes* sep, hlt_list* l, hlt_exception** excpt,
+                                 hlt_execution_context* ctx)
 {
     const hlt_type_info* ti = hlt_list_element_type_from_list(l, excpt, ctx);
     hlt_iterator_list i = hlt_list_begin(l, excpt, ctx);
@@ -2202,7 +2303,6 @@ static void _hlt_bytes_join_into(hlt_bytes* dst, hlt_bytes* sep, hlt_list* l, hl
     int first = 1;
 
     while ( ! hlt_iterator_list_eq(i, end, excpt, ctx) ) {
-
         if ( ! first )
             hlt_bytes_append(dst, sep, excpt, ctx);
 
@@ -2222,21 +2322,24 @@ static void _hlt_bytes_join_into(hlt_bytes* dst, hlt_bytes* sep, hlt_list* l, hl
     }
 }
 
-void hlt_bytes_join_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_join_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* sep, hlt_list* l,
+                            hlt_exception** excpt, hlt_execution_context* ctx)
 {
     _hlt_bytes_init_hoisted(dst, 0, 0, ctx);
     _hlt_bytes_join_into(&dst->b, sep, l, excpt, ctx);
 }
 
 
-hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_bytes_new(excpt, ctx);
     _hlt_bytes_join_into(b, sep, l, excpt, ctx);
     return b;
 }
 
-void hlt_bytes_append_object(hlt_bytes* b, const hlt_type_info* type, void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_append_object(hlt_bytes* b, const hlt_type_info* type, void* obj,
+                             hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type);
 
@@ -2256,7 +2359,8 @@ void hlt_bytes_append_object(hlt_bytes* b, const hlt_type_info* type, void* obj,
     hlt_thread_mgr_unblock(&b->blockable, ctx);
 }
 
-void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info* type,
+                                hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __normalize_iter(&i);
 
@@ -2276,13 +2380,15 @@ void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info* type,
     return &o->object;
 }
 
-int8_t hlt_bytes_at_object(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_bytes_at_object(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     __normalize_iter(&i);
     return __at_object(i);
 }
 
-int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_info* type,
+                                   hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __normalize_iter(&i);
 
@@ -2294,7 +2400,8 @@ int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_info* ty
     return __hlt_type_equal(type, o->type);
 }
 
-hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes old, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes old, hlt_exception** excpt,
+                                         hlt_execution_context* ctx)
 {
     __normalize_iter(&old);
 
@@ -2312,7 +2419,8 @@ hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes old, hlt_exception**
     return ni;
 }
 
-hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes old, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes old, hlt_exception** excpt,
+                                         hlt_execution_context* ctx)
 {
     __normalize_iter(&old);
 
@@ -2334,7 +2442,8 @@ hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes old, hlt_exception**
     return ni;
 }
 
-hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** excpt,
+                                        hlt_execution_context* ctx)
 {
     __normalize_iter(&i);
 
@@ -2352,7 +2461,8 @@ void hlt_bytes_append_mark(hlt_bytes* b, hlt_exception** excpt, hlt_execution_co
     __hlt_bytes_append_mark(b, -1, ctx);
 }
 
-hlt_iterator_bytes hlt_bytes_next_mark(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_next_mark(hlt_iterator_bytes i, hlt_exception** excpt,
+                                       hlt_execution_context* ctx)
 {
     __normalize_iter(&i);
 

@@ -16,9 +16,10 @@ class CodeGen;
 
 namespace util {
 
+#if 0
 /// Custom LLVM Inserter that can insert comments into the code in the form
 /// of metadata that our AssemblyAnnotationWriter understands.
-class IRInserter : public llvm::IRBuilderDefaultInserter<> {
+class IRInserter : public llvm::IRBuilderDefaultInserter {
 public:
    /// Creates a new Inserter.
    ///
@@ -31,9 +32,10 @@ protected:
 private:
    CodeGen* _cg;
 };
+#endif
 
 /// The IRBuilder used by the code generator.
-typedef llvm::IRBuilder<true, llvm::ConstantFolder, IRInserter> IRBuilder;
+typedef llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter> IRBuilder;
 
 /// Mangles an ID into an internal LLVM-level.
 ///
@@ -47,7 +49,8 @@ typedef llvm::IRBuilder<true, llvm::ConstantFolder, IRInserter> IRBuilder;
 ///
 /// internal: True if the resultin mangled name is not visible across LLVM
 /// module boundaries.
-extern string mangle(shared_ptr<ID> id, bool global, shared_ptr<ID> parent = nullptr, string prefix = "", bool internal = true);
+extern string mangle(shared_ptr<ID> id, bool global, shared_ptr<ID> parent = nullptr,
+                     string prefix = "", bool internal = true);
 
 /// Mangles an ID name into an internal LLVM-level.
 ///
@@ -61,39 +64,77 @@ extern string mangle(shared_ptr<ID> id, bool global, shared_ptr<ID> parent = nul
 ///
 /// internal: True if the resultin mangled name is not visible across LLVM
 /// module boundaries.
-extern string mangle(const string& name, bool global, shared_ptr<ID> parent = nullptr, string prefix = "", bool internal = true);
+extern string mangle(const string& name, bool global, shared_ptr<ID> parent = nullptr,
+                     string prefix = "", bool internal = true);
 
 /// Checked version of llvm::IRBuilder::CreateCall. Arguments and result are
 /// the same, but the function checks that their types match what the function
 /// declares.
-extern llvm::CallInst* checkedCreateCall(IRBuilder* builder, const string& where, llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name="");
+extern llvm::CallInst* checkedCreateCall(IRBuilder* builder, const string& where,
+                                         llvm::Value* callee, llvm::ArrayRef<llvm::Value*> args,
+                                         const llvm::Twine& name = "");
 
 /// Returns true if LLVM's module verification indicates a well-formed module.
 ///
 /// module: The module to check.
-inline bool llvmVerifyModule(llvm::Module* module) {
-#ifdef HAVE_LLVM_35
+inline bool llvmVerifyModule(llvm::Module* module)
+{
     llvm::raw_os_ostream out(std::cerr);
     return ! llvm::verifyModule(*module, &out);
-#else
-    return ! llvm::verifyModule(*module, llvm::PrintMessageAction);
-#endif
 }
 
-/// Returns true if LLVM's module verification indicates a well-formed
-/// module.
+/// Adds an instance of named global metadata to a module. If metadata with
+/// that named already exists, it's overwritten unless specified otherwise.
 ///
-/// module: The module to check.
-inline bool llvmVerifyModule(shared_ptr<llvm::Module> module) {
-    return llvmVerifyModule(module.get());
-}
+/// module: The module to add the meta data to.
+///
+/// name: The name of the global meta data.
+///
+/// mds: A list of Metadata instances that will be associated with that name
+/// in form of a tuple.
+///
+/// append: If metadata already exists, append to it.
+///
+void llvmAddGlobalMetadata(llvm::Module* module, string name, llvm::ArrayRef<llvm::Metadata*> mds,
+                           bool append = false);
 
-/// Returns a LLVM MDNode for a given value.
+/// Returns an instance of global metadata. The returned operand can be
+/// treated as a tuple with the elements passed into llvmAddGlobalMetadata()
+/// acessible under the corresponding indices. If no such metadata exists,
+/// will return null.
+///
+/// module: The module to retrieve the metadata from.
+///
+/// name: The name of the global metadata.
+extern llvm::NamedMDNode* llvmGetGlobalMetadata(llvm::Module* module, string name);
+
+/// Returns an LLVM Metadata instance for a given LLVM value.
 ///
 /// ctx: The LLVM context to use.
 ///
-/// v: The value to insert into the meta data node.
-extern llvm::MDNode* llvmMdFromValue(llvm::LLVMContext& ctx, llvm::Value* v);
+/// v: The value to wrap into Metadata.
+extern llvm::Metadata* llvmMetadata(llvm::LLVMContext& ctx, llvm::Value* v);
+
+/// Returns an LLVM Metadata instance for a given string.
+///
+/// s: The string to wrap into Metadata.
+extern llvm::Metadata* llvmMetadata(llvm::LLVMContext& ctx, string s);
+
+/// Returns an LLVM MDNode containing a tuple of Metadata instances.
+///
+/// ctx: The LLVM context to use.
+///
+/// mds: The Metadata instances to wrap into the node.
+extern llvm::MDNode* llvmMetadata(llvm::LLVMContext& ctx, llvm::ArrayRef<llvm::Metadata*> mds);
+
+/// Interprets a Metadata instance as a LLVM value.
+extern llvm::Value* llvmMetadataAsValue(const llvm::Metadata* md);
+
+/// Interprets a Metadata instance as a string.
+extern string llvmMetadataAsString(const llvm::Metadata* md);
+
+/// Interprets a Metadata instance as a Metadata tuple.
+extern const llvm::MDTuple* llvmMetadataAsTuple(const llvm::Metadata* md);
 
 /// Creates a new LLVM builder with a given block as its insertion point.
 /// It does however not push it onto stack of builders associated with the
@@ -107,7 +148,8 @@ extern llvm::MDNode* llvmMdFromValue(llvm::LLVMContext& ctx, llvm::Value* v);
 /// beginning of the block; otherwise to the end.
 ///
 /// Returns: The LLVM IRBuilder.
-extern IRBuilder* newBuilder(llvm::LLVMContext& ctx, llvm::BasicBlock* block, bool insert_at_beginning = false);
+extern IRBuilder* newBuilder(llvm::LLVMContext& ctx, llvm::BasicBlock* block,
+                             bool insert_at_beginning = false);
 
 /// Creates a new LLVM builder with a given block as its insertion point.
 /// It does however not push it onto stack of builders associated with the
@@ -121,7 +163,8 @@ extern IRBuilder* newBuilder(llvm::LLVMContext& ctx, llvm::BasicBlock* block, bo
 /// beginning of the block; otherwise to the end.
 ///
 /// Returns: The LLVM IRBuilder.
-extern IRBuilder* newBuilder(CodeGen* cg, llvm::BasicBlock* block, bool insert_at_beginning = false);
+extern IRBuilder* newBuilder(CodeGen* cg, llvm::BasicBlock* block,
+                             bool insert_at_beginning = false);
 
 // Print a string directly to stderr, without any further reliance on
 // a HILTI context.
@@ -159,8 +202,6 @@ extern uint32_t ntoh32(uint32_t v);
 ///
 /// v: The value to convert.
 extern uint16_t ntoh16(uint16_t v);
-
-
 }
 }
 }

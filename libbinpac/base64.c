@@ -4,7 +4,8 @@
 #include "3rdparty/libb64/include/b64/cdecode.h"
 #include "3rdparty/libb64/include/b64/cencode.h"
 
-hlt_bytes* binpac_base64_encode(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx) // &noref
+hlt_bytes* binpac_base64_encode(hlt_bytes* b, hlt_exception** excpt,
+                                hlt_execution_context* ctx) // &noref
 {
     hlt_bytes_block block;
     hlt_iterator_bytes start = hlt_bytes_begin(b, excpt, ctx);
@@ -23,11 +24,11 @@ hlt_bytes* binpac_base64_encode(hlt_bytes* b, hlt_exception** excpt, hlt_executi
         int len_in = block.end - block.start;
         int8_t out[len_in * 2];
 
-        int len_out = base64_encode_block((const char*)block.start, len_in, (char *)out, &state);
+        int len_out = base64_encode_block((const char*)block.start, len_in, (char*)out, &state);
         hlt_bytes_append_raw_copy(result, out, len_out, excpt, ctx);
 
         if ( ! cookie ) {
-            len_out = base64_encode_blockend((char *)out, &state);
+            len_out = base64_encode_blockend((char*)out, &state);
             // blockend always adds a trailing newline that we don't want.
             hlt_bytes_append_raw_copy(result, out, len_out - 1, excpt, ctx);
             break;
@@ -37,7 +38,8 @@ hlt_bytes* binpac_base64_encode(hlt_bytes* b, hlt_exception** excpt, hlt_executi
     return result;
 }
 
-hlt_bytes* binpac_base64_decode(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx) // &noref
+hlt_bytes* binpac_base64_decode(hlt_bytes* b, hlt_exception** excpt,
+                                hlt_execution_context* ctx) // &noref
 {
     hlt_bytes_block block;
     hlt_iterator_bytes start = hlt_bytes_begin(b, excpt, ctx);
@@ -56,7 +58,7 @@ hlt_bytes* binpac_base64_decode(hlt_bytes* b, hlt_exception** excpt, hlt_executi
         int len_in = block.end - block.start;
         int8_t out[len_in * 2];
 
-        int len_out = base64_decode_block((const char*)block.start, len_in, (char *)out, &state);
+        int len_out = base64_decode_block((const char*)block.start, len_in, (char*)out, &state);
         hlt_bytes_append_raw_copy(result, out, len_out, excpt, ctx);
 
         if ( ! cookie )
@@ -65,4 +67,3 @@ hlt_bytes* binpac_base64_decode(hlt_bytes* b, hlt_exception** excpt, hlt_executi
 
     return result;
 }
-

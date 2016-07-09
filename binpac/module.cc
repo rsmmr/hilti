@@ -1,8 +1,8 @@
 
 #include "module.h"
+#include "attribute.h"
 #include "statement.h"
 #include "type.h"
-#include "attribute.h"
 
 using namespace binpac;
 
@@ -44,7 +44,7 @@ shared_ptr<Attribute> Module::property(const string& prop) const
 
     shared_ptr<Attribute> result = nullptr;
 
-    for( auto p : _properties ) {
+    for ( auto p : _properties ) {
         if ( pp == *p )
             result = p;
     }

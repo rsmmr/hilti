@@ -1,6 +1,4 @@
 
-#include "id.h"
-#include "attribute.h"
 #include "hilti-intern.h"
 
 namespace hilti {
@@ -13,7 +11,6 @@ enum AttributeValueType {
     STRING,
     TYPE,
 };
-
 }
 }
 
@@ -28,26 +25,29 @@ typedef struct {
 } AttributeDef;
 
 static const AttributeDef Attributes[] = {
-    { attribute::CANREMOVE,     attribute::STRUCT_FIELD, attribute::NONE,       "canremove",     "<insert doc>" },
-    { attribute::DEFAULT,       attribute::STRUCT_FIELD, attribute::EXPRESSION, "default",       "<insert doc>" },
-    { attribute::DEFAULT,       attribute::MAP ,         attribute::EXPRESSION, "default",       "<insert doc>" },
-    { attribute::FIRSTMATCH,    attribute::REGEXP,       attribute::NONE,       "first_match",   "<insert doc>" },
-    { attribute::GROUP,         attribute::FUNCTION,     attribute::INTEGER,    "group",         "<insert doc>" },
-    { attribute::HOIST,         attribute::VARIABLE,     attribute::NONE,       "hoist",         "<insert doc>" },
-    { attribute::HOSTAPP_TYPE,  attribute::TYPE_,        attribute::EXPRESSION, "hostapp_type",  "<insert doc>" },
-    { attribute::LIBHILTI,      attribute::TYPE_,        attribute::STRING,     "libhilti",      "<insert doc>" },
-    { attribute::LIBHILTI_DTOR, attribute::TYPE_,        attribute::STRING,     "libhilti_dtor", "<insert doc>" },
-    { attribute::MAYYIELD,      attribute::FUNCTION,     attribute::NONE,       "mayyield",      "<insert doc>" },
-    { attribute::NOEXCEPTION,   attribute::FUNCTION,     attribute::NONE,       "noexception",   "<insert doc>" },
-    { attribute::NOSAFEPOINT,   attribute::FUNCTION,     attribute::NONE,       "nosafepoint",   "<insert doc>" },
-    { attribute::NOSUB,         attribute::REGEXP,       attribute::NONE,       "nosub",         "<insert doc>" },
-    { attribute::NOYIELD,       attribute::FUNCTION,     attribute::NONE,       "noyield",       "<insert doc>" },
-    { attribute::PRIORITY,      attribute::FUNCTION,     attribute::INTEGER,    "priority",      "<insert doc>" },
-    { attribute::REF,           attribute::FUNCTION,     attribute::NONE,       "ref",           "<insert doc>" },
-    { attribute::SAFEPOINT,     attribute::FUNCTION,     attribute::NONE,       "safepoint",     "<insert doc>" },
-    { attribute::SCOPE,         attribute::FUNCTION,     attribute::TYPE,       "scope",         "<insert doc>" },
+    {attribute::CANREMOVE, attribute::STRUCT_FIELD, attribute::NONE, "canremove", "<insert doc>"},
+    {attribute::DEFAULT, attribute::STRUCT_FIELD, attribute::EXPRESSION, "default", "<insert doc>"},
+    {attribute::DEFAULT, attribute::MAP, attribute::EXPRESSION, "default", "<insert doc>"},
+    {attribute::FIRSTMATCH, attribute::REGEXP, attribute::NONE, "first_match", "<insert doc>"},
+    {attribute::GROUP, attribute::FUNCTION, attribute::INTEGER, "group", "<insert doc>"},
+    {attribute::HOIST, attribute::VARIABLE, attribute::NONE, "hoist", "<insert doc>"},
+    {attribute::HOSTAPP_TYPE, attribute::TYPE_, attribute::EXPRESSION, "hostapp_type",
+     "<insert doc>"},
+    {attribute::LIBHILTI, attribute::TYPE_, attribute::STRING, "libhilti", "<insert doc>"},
+    {attribute::LIBHILTI_DTOR, attribute::TYPE_, attribute::STRING, "libhilti_dtor",
+     "<insert doc>"},
+    {attribute::MAYYIELD, attribute::FUNCTION, attribute::NONE, "mayyield", "<insert doc>"},
+    {attribute::NOEXCEPTION, attribute::FUNCTION, attribute::NONE, "noexception", "<insert doc>"},
+    {attribute::NOSAFEPOINT, attribute::FUNCTION, attribute::NONE, "nosafepoint", "<insert doc>"},
+    {attribute::NOSUB, attribute::REGEXP, attribute::NONE, "nosub", "<insert doc>"},
+    {attribute::NOYIELD, attribute::FUNCTION, attribute::NONE, "noyield", "<insert doc>"},
+    {attribute::PRIORITY, attribute::FUNCTION, attribute::INTEGER, "priority", "<insert doc>"},
+    {attribute::REF, attribute::FUNCTION, attribute::NONE, "ref", "<insert doc>"},
+    {attribute::SAFEPOINT, attribute::FUNCTION, attribute::NONE, "safepoint", "<insert doc>"},
+    {attribute::SCOPE, attribute::FUNCTION, attribute::TYPE, "scope", "<insert doc>"},
     ///
-    { attribute::ERROR,         attribute::ANY,          attribute::NONE,       "<error>",       "<internal error marker; should not be visible>" },
+    {attribute::ERROR, attribute::ANY, attribute::NONE, "<error>",
+     "<internal error marker; should not be visible>"},
 };
 
 Attribute::Attribute(attribute::Tag tag)
@@ -135,6 +135,10 @@ AttributeSet::AttributeSet()
     _attributes.resize(attribute::ERROR);
 }
 
+AttributeSet::~AttributeSet()
+{
+}
+
 bool AttributeSet::has(attribute::Tag tag) const
 {
     return _attributes[tag].tag() != attribute::ERROR;
@@ -152,8 +156,8 @@ int64_t AttributeSet::getAsInt(attribute::Tag tag, int64_t default_) const
     if ( ! a._value )
         return default_;
 
-    auto c = ast::checkedCast<expression::Constant>(a._value);
-    return ast::checkedCast<constant::Integer>(c->constant())->value();
+    auto c = ast::rtti::checkedCast<expression::Constant>(a._value);
+    return ast::rtti::checkedCast<constant::Integer>(c->constant())->value();
 }
 
 std::string AttributeSet::getAsString(attribute::Tag tag, const std::string& default_) const
@@ -163,8 +167,8 @@ std::string AttributeSet::getAsString(attribute::Tag tag, const std::string& def
     if ( ! a._value )
         return default_;
 
-    auto c = ast::checkedCast<expression::Constant>(a._value);
-    return ast::checkedCast<constant::String>(c->constant())->value();
+    auto c = ast::rtti::checkedCast<expression::Constant>(a._value);
+    return ast::rtti::checkedCast<constant::String>(c->constant())->value();
 }
 
 shared_ptr<Type> AttributeSet::getAsType(attribute::Tag tag, shared_ptr<Type> type) const
@@ -174,19 +178,20 @@ shared_ptr<Type> AttributeSet::getAsType(attribute::Tag tag, shared_ptr<Type> ty
     if ( ! a._value )
         return nullptr;
 
-    auto t = ast::checkedCast<expression::Type>(a._value);
-    auto tt = ast::checkedCast<type::TypeType>(t->type());
+    auto t = ast::rtti::checkedCast<expression::Type>(a._value);
+    auto tt = ast::rtti::checkedCast<type::TypeType>(t->type());
     return tt->typeType();
 }
 
-shared_ptr<Expression> AttributeSet::getAsExpression(attribute::Tag tag, shared_ptr<Expression> default_) const
+shared_ptr<Expression> AttributeSet::getAsExpression(attribute::Tag tag,
+                                                     shared_ptr<Expression> default_) const
 {
     auto a = _attributes[tag];
 
     if ( ! a._value )
         return default_;
 
-    return ast::checkedCast<Expression>(a._value);
+    return ast::rtti::checkedCast<Expression>(a._value);
 }
 
 void AttributeSet::add(Attribute attr)

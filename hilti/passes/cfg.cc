@@ -1,36 +1,49 @@
 
-#include "hilti/hilti-intern.h"
-#include "../instructions/flow.h"
 #include "../instructions/exception.h"
+#include "../instructions/flow.h"
+#include "hilti/hilti-intern.h"
 
 using namespace hilti::passes;
 
 // A helper pass that traverses nodes in depth-first order and records all
 // statements it encounters.
-class hilti::passes::DepthOrderTraversal : public Pass<>
-{
+class hilti::passes::DepthOrderTraversal : public Pass<> {
 public:
-    DepthOrderTraversal(CFG* cfg) : Pass<>("hilti::cfg::DepthOrderTraversal") {
+    DepthOrderTraversal(CFG* cfg) : Pass<>("hilti::cfg::DepthOrderTraversal")
+    {
         _cfg = cfg;
     }
 
-    virtual ~DepthOrderTraversal() {}
+    virtual ~DepthOrderTraversal()
+    {
+    }
 
-    bool run(shared_ptr<Node> stmt) override { processOne(stmt); _done.clear(); return true; }
-    const std::list<shared_ptr<Statement>>& depthFirstOrder() const { return _statements; }
+    bool run(shared_ptr<Node> stmt) override
+    {
+        processOne(stmt);
+        _done.clear();
+        return true;
+    }
+    const std::list<shared_ptr<Statement>>& depthFirstOrder() const
+    {
+        return _statements;
+    }
 
 protected:
-    void visit(Module* m) override {
+    void visit(Module* m) override
+    {
         if ( m->body() )
             processOne(m->body());
     }
 
-    void visit(declaration::Function* f) override {
+    void visit(declaration::Function* f) override
+    {
         if ( f->function()->body() )
             processOne(f->function()->body());
     }
 
-    void visit(Statement* s) override {
+    void visit(Statement* s) override
+    {
         auto stmt = s->sharedPtr<Statement>();
 
         if ( _done.find(stmt) != _done.end() )
@@ -38,7 +51,7 @@ protected:
 
         _done.insert(stmt);
 
-        auto b = ast::tryCast<statement::Block>(stmt);
+        auto b = ast::rtti::tryCast<statement::Block>(stmt);
 
         if ( b ) {
             auto stmts = b->statements();
@@ -87,7 +100,7 @@ CFG::~CFG()
 
 bool CFG::run(shared_ptr<Node> node)
 {
-    _module = ast::checkedCast<Module>(node);
+    _module = ast::rtti::checkedCast<Module>(node);
 
     if ( ! processAllPreOrder(node) )
         return false;
@@ -236,13 +249,14 @@ void CFG::visit(statement::instruction::exception::__BeginHandler* i)
     auto parent = current<statement::Block>();
     assert(parent);
 
-    auto const_ = ast::checkedCast<expression::Constant>(i->op1());
-    auto label = ast::checkedCast<constant::Label>(const_->constant());
+    auto const_ = ast::rtti::checkedCast<expression::Constant>(i->op1());
+    auto label = ast::rtti::checkedCast<constant::Label>(const_->constant());
     auto eblock = parent->scope()->lookupUnique(std::make_shared<ID>(label->value()));
     assert(eblock);
 
-    auto block = ast::checkedCast<expression::Block>(eblock);
-    auto type = i->op2() ? ast::checkedCast<expression::Type>(i->op2())->typeValue() : nullptr;
+    auto block = ast::rtti::checkedCast<expression::Block>(eblock);
+    auto type =
+        i->op2() ? ast::rtti::checkedCast<expression::Type>(i->op2())->typeValue() : nullptr;
     _excpt_handlers.push_back(std::make_pair(block, type));
 }
 
@@ -250,4 +264,3 @@ void CFG::visit(statement::instruction::exception::__EndHandler* i)
 {
     _excpt_handlers.pop_back();
 }
-

@@ -19,19 +19,19 @@
 #ifndef LIBHILTI_IOSRC_H
 #define LIBHILTI_IOSRC_H
 
-#include "types.h"
+#include "bytes.h"
 #include "enum.h"
 #include "time_.h"
-#include "bytes.h"
+#include "types.h"
 
 /// The type of an IOSource as one of the Hilti::IOSrc constants.
 typedef hlt_enum hlt_iosrc_type;
 
 struct __hlt_iosrc {
-    __hlt_gchdr __gchdr;    // Header for memory management.
-    hlt_iosrc_type type;  // Hilti_PktSrc_PcapLive or Hilti_PktSrc_PcapOffline.
-    hlt_string iface;     // The name of the interface.
-    void* handle;         // A kind-specific handle.
+    __hlt_gchdr __gchdr; // Header for memory management.
+    hlt_iosrc_type type; // Hilti_PktSrc_PcapLive or Hilti_PktSrc_PcapOffline.
+    hlt_string iface;    // The name of the interface.
+    void* handle;        // A kind-specific handle.
 };
 
 /// tuple<time, ref<bytes>>
@@ -51,14 +51,16 @@ typedef struct __hlt_iosrc hlt_iosrc;
 /// promiscious mode.
 ///
 /// Raises: IOError if there is a problem opening the the interface for monitoring.
-extern hlt_iosrc* hlt_iosrc_new_live(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iosrc* hlt_iosrc_new_live(hlt_string interface, hlt_exception** excpt,
+                                     hlt_execution_context* ctx);
 
 /// Creates a new PCAP packet source for offline input.
 ///
 /// interface: The name of the trace file.
 ///
 /// Raises: IOError if there is a problem opening the the interface for monitoring.
-extern hlt_iosrc* hlt_iosrc_new_offline(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iosrc* hlt_iosrc_new_offline(hlt_string interface, hlt_exception** excpt,
+                                        hlt_execution_context* ctx);
 
 /// Attempts to reads a packet from a PCAP source. If no packet is currently
 /// available, raises a WouldBlock exception if there might be one at a later
@@ -76,7 +78,8 @@ extern hlt_iosrc* hlt_iosrc_new_offline(hlt_string interface, hlt_exception** ex
 /// Raises: IOError if there are any errors other than those described
 /// above, including encountering an unsupported link-layer header if
 /// *keep_link_layer* is disabled.
-extern hlt_packet hlt_iosrc_read_try(hlt_iosrc* src, int8_t keep_link_layer, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_packet hlt_iosrc_read_try(hlt_iosrc* src, int8_t keep_link_layer, hlt_exception** excpt,
+                                     hlt_execution_context* ctx);
 
 /// Closes a live PCAP packet source. Any attempt to read further packets
 /// will result in an IOSrcError exception.

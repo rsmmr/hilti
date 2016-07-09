@@ -9,17 +9,14 @@ namespace passes {
 
 /// Bundles a set of small peep-hole optimizations that act locally on
 /// individual instructions without needing further global context.
-class OptimizePeepHole : public Pass<>
-{
+class OptimizePeepHole : public Pass<> {
 public:
-   OptimizePeepHole();
+    OptimizePeepHole();
 
-   bool run(shared_ptr<hilti::Node> module);
+    bool run(shared_ptr<hilti::Node> module);
 
 protected:
-
 };
-
 }
 }
 

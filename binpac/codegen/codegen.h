@@ -1,23 +1,23 @@
-                                        
+
 #ifndef BINPAC_CODEGEN_CODEGEN_H
 #define BINPAC_CODEGEN_CODEGEN_H
 
 #include "../common.h"
 
 namespace hilti {
-    class Expression;
-    class Module;
-    class Type;
-    class ID;
+class Expression;
+class Module;
+class Type;
+class ID;
 
-    namespace builder {
-        class ModuleBuilder;
-        class BlockBuilder;
-    }
+namespace builder {
+class ModuleBuilder;
+class BlockBuilder;
+}
 
-    namespace declaration {
-        class Function;
-    }
+namespace declaration {
+class Function;
+}
 }
 
 namespace binpac {
@@ -26,15 +26,14 @@ class CompilerContext;
 class Options;
 
 namespace codegen {
-    class CodeBuilder;
-    class TypeBuilder;
-    class ParserBuilder;
-    class Synchronizer;
-    class Composer;
+class CodeBuilder;
+class TypeBuilder;
+class ParserBuilder;
+class Synchronizer;
+class Composer;
 }
 
-class CodeGen : public ast::Logger
-{
+class CodeGen : public ast::Logger {
 public:
     typedef std::list<shared_ptr<::hilti::ID>> id_list;
     typedef std::list<shared_ptr<hilti::Expression>> hilti_expression_list;
@@ -56,7 +55,8 @@ public:
     ///
     /// debug: Debug level for the generated code.
     ///
-    /// verify: True if the generated HILTI code should be run HILTI's verifier (usually a good idea...)
+    /// verify: True if the generated HILTI code should be run HILTI's verifier (usually a good
+    /// idea...)
     ///
     /// Returns: The HILTI module, or null if an error occured.
     shared_ptr<hilti::Module> compile(shared_ptr<Module> module);
@@ -83,7 +83,8 @@ public:
     /// it's evaluated. It's assumed that the coercion is legal and supported.
     ///
     /// Returns: The computed HILTI expression.
-    shared_ptr<hilti::Expression> hiltiExpression(shared_ptr<Expression> expr, shared_ptr<Type> coerce_to = nullptr);
+    shared_ptr<hilti::Expression> hiltiExpression(shared_ptr<Expression> expr,
+                                                  shared_ptr<Type> coerce_to = nullptr);
 
     /// Compiles a BinPAC statement into HILTI. The method adds the code to
     /// current HILTI block.
@@ -152,7 +153,8 @@ public:
     /// dst: The BinPAC type that \a expr is to be coerced into.
     ///
     /// Returns: The coerced expression.
-    shared_ptr<hilti::Expression> hiltiCoerce(shared_ptr<hilti::Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst);
+    shared_ptr<hilti::Expression> hiltiCoerce(shared_ptr<hilti::Expression> expr,
+                                              shared_ptr<Type> src, shared_ptr<Type> dst);
 
     /// Generates the code to synchronized streaming at a production. The
     /// production must indicate support for synchronization via
@@ -164,10 +166,14 @@ public:
     /// cur: The current input position in \a data
     ///
     /// Returns: The new input position.
-    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<Production> p, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur);
+    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<Production> p,
+                                                   shared_ptr<hilti::Expression> data,
+                                                   shared_ptr<hilti::Expression> cur);
 
     /// XXXX
-    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur);
+    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<type::Unit> unit,
+                                                   shared_ptr<hilti::Expression> data,
+                                                   shared_ptr<hilti::Expression> cur);
 
     /// Returns the default value for instances of a BinPAC type that aren't
     /// further intiailized.
@@ -182,7 +188,8 @@ public:
     /// value returned (unless \a null_on_default is set).
     ///
     /// Returns: The HILTI value, or null for HILTI's default.
-    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default, bool can_be_unset);
+    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default,
+                                               bool can_be_unset);
 
     /// Turns a BinPAC ID into a HILTI ID.
     ///
@@ -233,7 +240,9 @@ public:
     /// compose: If true, run compose hoosk; run parse hooks otherwise.
     ///
     /// cookie: The cookie parameter to pass to the hook.
-    void hiltiRunFieldHooks(shared_ptr<binpac::type::Unit> unit, shared_ptr<type::unit::Item> item, shared_ptr<hilti::Expression> self, bool compose, shared_ptr<hilti::Expression> cookie);
+    void hiltiRunFieldHooks(shared_ptr<binpac::type::Unit> unit, shared_ptr<type::unit::Item> item,
+                            shared_ptr<hilti::Expression> self, bool compose,
+                            shared_ptr<hilti::Expression> cookie);
 
     /// Generates code to execute a hook.
 
@@ -253,12 +262,18 @@ public:
     /// compose: If true, run compose hook; run parse hook otherwise.
     ///
     /// cookie: The cookie parameter to pass to the hook.
-    shared_ptr<hilti::Expression> hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self, shared_ptr<ID> id, hilti_expression_list args, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar, bool compose, shared_ptr<hilti::Expression> cookie);
+    shared_ptr<hilti::Expression> hiltiRunHook(shared_ptr<binpac::type::Unit> unit,
+                                               shared_ptr<hilti::Expression> self,
+                                               shared_ptr<ID> id, hilti_expression_list args,
+                                               shared_ptr<type::unit::Item> item, bool foreach,
+                                               shared_ptr<hilti::Expression> dollardollar,
+                                               bool compose, shared_ptr<hilti::Expression> cookie);
 
     /// Returns the full path ID for the hook referecing a unit item.
     ///
     /// XXX
-    shared_ptr<ID> hookForItem(shared_ptr<type::Unit> unit, shared_ptr<type::unit::Item> item, bool foreach, bool private_, bool compose);
+    shared_ptr<ID> hookForItem(shared_ptr<type::Unit> unit, shared_ptr<type::unit::Item> item,
+                               bool foreach, bool private_, bool compose);
 
     /// Returns the full path ID for the hook referecing a unit-global hook.
     ///
@@ -308,12 +323,15 @@ public:
     /// Adds a function to the current module.
     ///
     /// function: The function.
-    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<Function> func, bool declare_only = false, const string& scope = "");
+    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<Function> func,
+                                                                 bool declare_only = false,
+                                                                 const string& scope = "");
 
     /// Adds a function to the current module.
     ///
     /// function: An expression referencing the function.
-    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<expression::Function> func, bool declare_only = false);
+    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(
+        shared_ptr<expression::Function> func, bool declare_only = false);
 
     /// Calls a function.
     ///
@@ -324,7 +342,9 @@ public:
     /// cookie: If we are currently parsing, the user's cookie; otherwise null.
     ///
     /// Returns: The function's result, or null for void functions.
-    shared_ptr<hilti::Expression> hiltiCall(shared_ptr<expression::Function> func, const expression_list& args, shared_ptr<hilti::Expression> cookie);
+    shared_ptr<hilti::Expression> hiltiCall(shared_ptr<expression::Function> func,
+                                            const expression_list& args,
+                                            shared_ptr<hilti::Expression> cookie);
 
     /// Returns a HILTI expression referencing the current parser object
     /// (assuming parsing or composing is in process; if not aborts());
@@ -338,18 +358,22 @@ public:
     shared_ptr<hilti::Type> hiltiTypeCookie();
 
     /// Confirms a parser by turning of DFD "try mode" if it's active.
-    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> try_mode, shared_ptr<hilti::Expression> cookie);
+    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit,
+                      shared_ptr<hilti::Expression> try_mode, shared_ptr<hilti::Expression> cookie);
 
     /// Disables the current parser by throwing a corresponding signal to the
     /// host application.
-    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg);
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit,
+                      const string& msg);
 
     /// Disables the current parser by throwing a corresponding signal to the
     /// host application.
-    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg);
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit,
+                      shared_ptr<hilti::Expression> msg);
 
     /// Returns the HILTI-level name for a function.
-    shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<binpac::Function> func, const string& scope = "");
+    shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<binpac::Function> func,
+                                            const string& scope = "");
 
     /// Returns the HILTI-level name for a function.
     shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<expression::Function> func);
@@ -373,7 +397,8 @@ public:
 
     /// Converts an enum value from one type into an enum value of another by
     /// casting the integer value over.
-    shared_ptr<hilti::Expression> hiltiCastEnum(shared_ptr<hilti::Expression> val, shared_ptr<hilti::Type> dst);
+    shared_ptr<hilti::Expression> hiltiCastEnum(shared_ptr<hilti::Expression> val,
+                                                shared_ptr<hilti::Type> dst);
 
     /// Writes a new chunk of data into a field's sinks.
     ///
@@ -386,7 +411,10 @@ public:
     ///
     /// len: The length inside the sequence space; defaults to length of
     /// data.
-    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq = nullptr, shared_ptr<hilti::Expression> len = nullptr);
+    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field,
+                           shared_ptr<hilti::Expression> data,
+                           shared_ptr<hilti::Expression> seq = nullptr,
+                           shared_ptr<hilti::Expression> len = nullptr);
 
     /// Writes a new chunk of data into a sink.
     ///
@@ -399,7 +427,9 @@ public:
     ///
     /// len: The length inside the sequence space; defaults to length of
     /// data.
-    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq = nullptr, shared_ptr<hilti::Expression> len = nullptr);
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data,
+                          shared_ptr<hilti::Expression> seq = nullptr,
+                          shared_ptr<hilti::Expression> len = nullptr);
 
     /// Writes a new chunk of data into a sink.
     ///
@@ -414,7 +444,9 @@ public:
     ///
     /// len: The length inside the sequence space; defaults to length of
     /// data.
-    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin,
+                          shared_ptr<hilti::Expression> end, shared_ptr<hilti::Expression> seq,
+                          shared_ptr<hilti::Expression> len);
 
     /// Applies transformation attributes (such as \a convert) to a value, if
     /// present.
@@ -426,12 +458,15 @@ public:
     ///
     /// Returns: The transformed value, which may be just \c val if no
     /// transformation applied.
-    shared_ptr<hilti::Expression> hiltiApplyAttributesToValue(shared_ptr<hilti::Expression> val, shared_ptr<AttributeSet> attrs, bool composing=false);
+    shared_ptr<hilti::Expression> hiltiApplyAttributesToValue(shared_ptr<hilti::Expression> val,
+                                                              shared_ptr<AttributeSet> attrs,
+                                                              bool composing = false);
 
     /// XXX
     void hiltiImportType(shared_ptr<ID> id, shared_ptr<Type> t);
 
-    /// Converts an expression of type BinPAC::ByteOrder into a HILTI value of type Hilti::ByteOrder.
+    /// Converts an expression of type BinPAC::ByteOrder into a HILTI value of type
+    /// Hilti::ByteOrder.
     ///
     /// expr: The expression to convert.
     ///
@@ -446,10 +481,18 @@ public:
     shared_ptr<hilti::Expression> hiltiCharset(shared_ptr<Expression> expr);
 
     /// XXX
-    shared_ptr<hilti::Expression> hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<Expression> border, shared_ptr<hilti::Expression> lower, shared_ptr<hilti::Expression> upper);
+    shared_ptr<hilti::Expression> hiltiExtractsBitsFromInteger(shared_ptr<hilti::Expression> value,
+                                                               shared_ptr<Type> type,
+                                                               shared_ptr<Expression> border,
+                                                               shared_ptr<hilti::Expression> lower,
+                                                               shared_ptr<hilti::Expression> upper);
 
     /// XXX
-    shared_ptr<hilti::Expression> hiltiInsertBitsIntoInteger(shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<Expression> border, shared_ptr<hilti::Expression> lower, shared_ptr<hilti::Expression> upper);
+    shared_ptr<hilti::Expression> hiltiInsertBitsIntoInteger(shared_ptr<hilti::Expression> value,
+                                                             shared_ptr<Type> type,
+                                                             shared_ptr<Expression> border,
+                                                             shared_ptr<hilti::Expression> lower,
+                                                             shared_ptr<hilti::Expression> upper);
 
     /// Extracts the value for a unit field. If a field is not set, but a
     /// default has been preset, that default will be returned.
@@ -464,7 +507,9 @@ public:
     /// struct.get_default instruction.
     ///
     /// Returns: The field's current value.
-    shared_ptr<hilti::Expression> hiltiItemGet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> default_ = nullptr);
+    shared_ptr<hilti::Expression> hiltiItemGet(shared_ptr<hilti::Expression> unit,
+                                               shared_ptr<type::unit::Item> field,
+                                               shared_ptr<hilti::Expression> default_ = nullptr);
 
     /// Extracts the value for a unit field.
     ///
@@ -476,7 +521,10 @@ public:
     /// given, an unset field will throw an exception.
     ///
     /// Returns: The field's current value.
-    shared_ptr<hilti::Expression> hiltiItemGet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> default_ = nullptr);
+    shared_ptr<hilti::Expression> hiltiItemGet(shared_ptr<hilti::Expression> unit,
+                                               shared_ptr<ID> field,
+                                               shared_ptr<::hilti::Type> ftype,
+                                               shared_ptr<hilti::Expression> default_ = nullptr);
 
     /// Extracts the value for a unit field.
     ///
@@ -488,7 +536,9 @@ public:
     /// given, an unset field will throw an exception.
     ///
     /// Returns: The field's current value.
-    shared_ptr<hilti::Expression> hiltiItemGet(shared_ptr<hilti::Expression> unit, const string& field, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> default_ = nullptr);
+    shared_ptr<hilti::Expression> hiltiItemGet(shared_ptr<hilti::Expression> unit,
+                                               const string& field, shared_ptr<::hilti::Type> ftype,
+                                               shared_ptr<hilti::Expression> default_ = nullptr);
 
     /// Sets the value for a unit field.
     ///
@@ -497,7 +547,8 @@ public:
     /// field: The field to set.
     ///
     /// value: The value to set the field to.
-    void hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> value);
+    void hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field,
+                      shared_ptr<hilti::Expression> value);
 
     /// Sets the value for a unit field.
     ///
@@ -506,7 +557,8 @@ public:
     /// field: The name of the field to set.
     ///
     /// value: The value to set the field to.
-    void hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field, shared_ptr<hilti::Expression> value);
+    void hiltiItemSet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field,
+                      shared_ptr<hilti::Expression> value);
 
     /// Sets the value for a unit field.
     ///
@@ -515,7 +567,8 @@ public:
     /// field: The name of the field to set.
     ///
     /// value: The value to set the field to.
-    void hiltiItemSet(shared_ptr<hilti::Expression> unit, const string& field, shared_ptr<hilti::Expression> value);
+    void hiltiItemSet(shared_ptr<hilti::Expression> unit, const string& field,
+                      shared_ptr<hilti::Expression> value);
 
     /// Sets the default value for a unit field. The is what hiltiItemGet()
     /// will return if not value has been explicitly set.
@@ -525,7 +578,9 @@ public:
     /// field: The field to set.
     ///
     /// def: The default to set the field to.
-    void hiltiItemPresetDefault(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, shared_ptr<hilti::Expression> def);
+    void hiltiItemPresetDefault(shared_ptr<hilti::Expression> unit,
+                                shared_ptr<type::unit::Item> field,
+                                shared_ptr<hilti::Expression> def);
 
     /// Unsets the value for a unit field.
     ///
@@ -555,7 +610,8 @@ public:
     /// field: The field to check.
     ///
     /// Returns: A boolean HILTI expression being true if the field has a value currently.
-    shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field);
+    shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit,
+                                                 shared_ptr<type::unit::Item> field);
 
     /// Checks if a unit field has a value set for it.
     ///
@@ -564,7 +620,8 @@ public:
     /// field: The name of the field to check.
     ///
     /// Returns: A boolean HILTI expression being true if the field has a value currently.
-    shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit, shared_ptr<ID> field);
+    shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit,
+                                                 shared_ptr<ID> field);
 
     /// Checks if a unit field has a value set for it.
     ///
@@ -573,7 +630,8 @@ public:
     /// field: The name of the field to check.
     ///
     /// Returns: A boolean HILTI expression being true if the field has a value currently.
-    shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit, const string& field);
+    shared_ptr<hilti::Expression> hiltiItemIsSet(shared_ptr<hilti::Expression> unit,
+                                                 const string& field);
 
     // Returns a HILTI expression of type Hilti::Packed specifying the
     // (un-)pack format for an integer of the given
@@ -585,7 +643,8 @@ public:
     //
     // byteorder: a BinPAC expression of type BinPAC::ByteOrder. If \a null,
     // network order is used as default.
-    shared_ptr<hilti::Expression> hiltiIntPackFormat(int width, bool signed_, shared_ptr<binpac::Expression> byteorder);
+    shared_ptr<hilti::Expression> hiltiIntPackFormat(int width, bool signed_,
+                                                     shared_ptr<binpac::Expression> byteorder);
 
     // Returns the BinPAC::Parser instance for a unit.
     //
@@ -606,11 +665,16 @@ public:
     /// f: The field.
     ///
     /// Returns: A HILTI tuple of int<64> representing the path to \a f.
-    shared_ptr<hilti::Expression> hiltiItemComputePath(shared_ptr<hilti::Type> unit, shared_ptr<binpac::type::unit::Item> f);
+    shared_ptr<hilti::Expression> hiltiItemComputePath(shared_ptr<hilti::Type> unit,
+                                                       shared_ptr<binpac::type::unit::Item> f);
 
 private:
     enum HiltiItemOp { GET, GET_DEFAULT, SET, PRESET_DEFAULT, UNSET, IS_SET };
-    shared_ptr<hilti::Expression> _hiltiItemOp(HiltiItemOp i, shared_ptr<hilti::Expression> unit, shared_ptr<type::unit::Item> field, const std::string& fname, shared_ptr<::hilti::Type> ftype, shared_ptr<hilti::Expression> addl_op);
+    shared_ptr<hilti::Expression> _hiltiItemOp(HiltiItemOp i, shared_ptr<hilti::Expression> unit,
+                                               shared_ptr<type::unit::Item> field,
+                                               const std::string& fname,
+                                               shared_ptr<::hilti::Type> ftype,
+                                               shared_ptr<hilti::Expression> addl_op);
 
     // Defines a hook's implementation. <id> is the full path to the hooked
     // element, including the module. <forach> is true if this is a \c
@@ -620,12 +684,17 @@ private:
     // non-zero debugging levels, and it will only be executed at run-time if
     // explicitly enabled via libbinpac.  If \a compose is true, we define a
     // compose hook, and a parse hook otherwise.
-    void _hiltiDefineHook(shared_ptr<Hook> h, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar, int priority, bool compose);
+    void _hiltiDefineHook(shared_ptr<Hook> h, shared_ptr<ID> id, shared_ptr<type::unit::Item> item,
+                          bool foreach, bool debug, shared_ptr<type::Unit> unit,
+                          shared_ptr<Statement> block, shared_ptr<Type> dollardollar, int priority,
+                          bool compose);
 
     // Returns a function that can be called from C to trigger a global unit hook.
     //
     // XXX
-    shared_ptr<hilti::Expression> _hiltiFunctionGlobalHook(shared_ptr<type::Unit> unit, const std::string& hook, parameter_list params, bool compose);
+    shared_ptr<hilti::Expression> _hiltiFunctionGlobalHook(shared_ptr<type::Unit> unit,
+                                                           const std::string& hook,
+                                                           parameter_list params, bool compose);
 
     // Computes the canonical hook name, given the full path. The returned
     // boolean indicates whether the hook is a local one (i.e., within the
@@ -645,14 +714,13 @@ private:
 
     shared_ptr<hilti::builder::ModuleBuilder> _mbuilder;
 
-    unique_ptr<codegen::CodeBuilder>     _code_builder;
-    unique_ptr<codegen::ParserBuilder>   _parser_builder;
-    unique_ptr<codegen::TypeBuilder>     _type_builder;
-    unique_ptr<codegen::Synchronizer>    _synchronizer;
-    unique_ptr<codegen::Composer>        _composer;
-    unique_ptr<Coercer>     _coercer;
+    unique_ptr<codegen::CodeBuilder> _code_builder;
+    unique_ptr<codegen::ParserBuilder> _parser_builder;
+    unique_ptr<codegen::TypeBuilder> _type_builder;
+    unique_ptr<codegen::Synchronizer> _synchronizer;
+    unique_ptr<codegen::Composer> _composer;
+    unique_ptr<Coercer> _coercer;
 };
-
 }
 
 #endif

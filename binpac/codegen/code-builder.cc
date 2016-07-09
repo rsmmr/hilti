@@ -1,15 +1,15 @@
 
 #include <hilti/hilti.h>
 
-#include "code-builder.h"
+#include "../attribute.h"
+#include "../constant.h"
 #include "../declaration.h"
 #include "../expression.h"
-#include "../type.h"
-#include "../statement.h"
 #include "../function.h"
 #include "../grammar.h"
-#include "../constant.h"
-#include "../attribute.h"
+#include "../statement.h"
+#include "../type.h"
+#include "code-builder.h"
 
 extern "C" {
 #include "../../libbinpac/rtti.h"
@@ -36,7 +36,8 @@ void CodeBuilder::hiltiStatement(shared_ptr<Statement> stmt)
     assert(success || errors());
 }
 
-shared_ptr<hilti::Expression> CodeBuilder::hiltiExpression(shared_ptr<Expression> expr, shared_ptr<Type> coerce_to)
+shared_ptr<hilti::Expression> CodeBuilder::hiltiExpression(shared_ptr<Expression> expr,
+                                                           shared_ptr<Type> coerce_to)
 {
     if ( coerce_to )
         expr = expr->coerceTo(coerce_to);
@@ -123,18 +124,22 @@ void CodeBuilder::visit(declaration::Variable* v)
     auto global = ast::as<variable::Global>(var);
 
     if ( local ) {
-        auto local = cg()->moduleBuilder()->addLocal(id, type, nullptr, ::hilti::AttributeSet(), false, v->location());
-        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true, false);
+        auto local = cg()->moduleBuilder()->addLocal(id, type, nullptr, ::hilti::AttributeSet(),
+                                                     false, v->location());
+        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) :
+                                     cg()->hiltiDefault(var->type(), true, false);
 
         if ( hltinit )
             cg()->builder()->addInstruction(local, hilti::instruction::operator_::Assign, hltinit);
     }
 
     else if ( global ) {
-        auto global = cg()->moduleBuilder()->addGlobal(id, type, nullptr, ::hilti::AttributeSet(), false, v->location());
+        auto global = cg()->moduleBuilder()->addGlobal(id, type, nullptr, ::hilti::AttributeSet(),
+                                                       false, v->location());
         cg()->moduleBuilder()->pushModuleInit();
 
-        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true, false);
+        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) :
+                                     cg()->hiltiDefault(var->type(), true, false);
 
         if ( hltinit )
             cg()->builder()->addInstruction(global, hilti::instruction::operator_::Assign, hltinit);
@@ -173,7 +178,8 @@ void CodeBuilder::visit(expression::Conditional* c)
     auto true_ = cg()->moduleBuilder()->newBuilder("cond-true");
     auto false_ = cg()->moduleBuilder()->newBuilder("cond-false");
 
-    cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, true_->block(), false_->block());
+    cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, true_->block(),
+                                    false_->block());
 
     shared_ptr<hilti::Expression> expr;
 
@@ -247,17 +253,19 @@ void CodeBuilder::visit(expression::ListComprehension* c)
     auto ltype = hilti::builder::list::type(cg()->hiltiType(c->output()->type()));
     auto output = cg()->builder()->addTmp("lcout", hilti::builder::reference::type(ltype));
 
-    cg()->builder()->addInstruction(output, hilti::instruction::list::New, hilti::builder::type::create(ltype));
+    cg()->builder()->addInstruction(output, hilti::instruction::list::New,
+                                    hilti::builder::type::create(ltype));
 
-	std::shared_ptr<::hilti::ID> n(nullptr);
-	mbuilder->pushBody(true);
-	mbuilder->pushBuilder(n);
+    std::shared_ptr<::hilti::ID> n(nullptr);
+    mbuilder->pushBody(true);
+    mbuilder->pushBuilder(n);
 
     auto add = mbuilder->newBuilder("add_elem");
 
     if ( c->predicate() ) {
         auto pred = cg()->hiltiExpression(c->predicate());
-        cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, pred, add->block(), ::hilti::builder::loop::next());
+        cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, pred, add->block(),
+                                        ::hilti::builder::loop::next());
     }
 
     else
@@ -270,13 +278,13 @@ void CodeBuilder::visit(expression::ListComprehension* c)
 
     mbuilder->popBuilder();
 
-	auto body = mbuilder->popBody();
-	auto body_stmt = ::ast::checkedCast<hilti::statement::Block>(body->block());
+    auto body = mbuilder->popBody();
+    auto body_stmt = ::ast::checkedCast<hilti::statement::Block>(body->block());
 
     auto id = cg()->hiltiID(c->variable());
     auto input = cg()->hiltiExpression(c->input());
-	auto s = ::hilti::builder::loop::foreach(id, input, body_stmt);
-	cg()->builder()->addInstruction(s);
+    auto s = ::hilti::builder::loop::foreach ( id, input, body_stmt );
+    cg()->builder()->addInstruction(s);
 
     setResult(output);
 }
@@ -300,25 +308,25 @@ void CodeBuilder::visit(expression::ParserState* p)
     shared_ptr<hilti::Expression> expr = nullptr;
 
     switch ( p->kind() ) {
-     case expression::ParserState::SELF:
+    case expression::ParserState::SELF:
         expr = hilti::builder::id::create("__self");
         break;
 
-     case expression::ParserState::DOLLARDOLLAR:
+    case expression::ParserState::DOLLARDOLLAR:
         if ( ! _dollardollar )
             internalError("$$ not bound in CodeBuilder::visit(expression::ParserState* p)");
 
         expr = _dollardollar;
         break;
 
-     case expression::ParserState::PARAMETER: {
-         auto fname = util::fmt("__p_%s", p->id()->name());
-         auto ftype = cg()->hiltiType(p->type());
-         expr = cg()->hiltiItemGet(cg()->hiltiSelf(), fname, ftype);
-         break;
-     }
+    case expression::ParserState::PARAMETER: {
+        auto fname = util::fmt("__p_%s", p->id()->name());
+        auto ftype = cg()->hiltiType(p->type());
+        expr = cg()->hiltiItemGet(cg()->hiltiSelf(), fname, ftype);
+        break;
+    }
 
-     default:
+    default:
         internalError("unknown ParserState kind");
     }
 
@@ -361,8 +369,8 @@ void CodeBuilder::visit(statement::IfElse* i)
     auto cond = cg()->hiltiExpression(i->condition(), std::make_shared<type::Bool>());
     auto cont = cg()->moduleBuilder()->newBuilder("if-cont");
     auto true_ = cg()->moduleBuilder()->newBuilder("if-true");
-    auto false_ = i->statementFalse() ? cg()->moduleBuilder()->newBuilder("if-false")
-                                      : shared_ptr<hilti::builder::BlockBuilder>();
+    auto false_ = i->statementFalse() ? cg()->moduleBuilder()->newBuilder("if-false") :
+                                        shared_ptr<hilti::builder::BlockBuilder>();
 
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, true_->block(),
                                     false_ ? false_->block() : cont->block());
@@ -403,7 +411,7 @@ void CodeBuilder::visit(statement::Print* p)
 
     if ( ! exprs.size() ) {
         // Just print an empty line.
-        auto t = hilti::builder::tuple::create({ hilti::builder::string::create("", loc) }, loc);
+        auto t = hilti::builder::tuple::create({hilti::builder::string::create("", loc)}, loc);
         builder()->addInstruction(hilti::instruction::flow::CallVoid, print, t);
         return;
     }
@@ -413,19 +421,23 @@ void CodeBuilder::visit(statement::Print* p)
     while ( e != exprs.end() ) {
         if ( e != exprs.begin() ) {
             auto op = hilti::builder::string::create(" ");
-            auto t = hilti::builder::tuple::create({ op, hilti::builder::boolean::create(false, loc) }, loc);
+            auto t =
+                hilti::builder::tuple::create({op, hilti::builder::boolean::create(false, loc)},
+                                              loc);
             builder()->addInstruction(hilti::instruction::flow::CallVoid, print, t);
         }
 
         auto op = hiltiExpression(*e++);
 
         if ( e != exprs.end() ) {
-            auto t = hilti::builder::tuple::create({ op, hilti::builder::boolean::create(false, loc) }, loc);
+            auto t =
+                hilti::builder::tuple::create({op, hilti::builder::boolean::create(false, loc)},
+                                              loc);
             builder()->addInstruction(hilti::instruction::flow::CallVoid, print, t);
         }
 
         else {
-            auto t = hilti::builder::tuple::create({ op }, loc);
+            auto t = hilti::builder::tuple::create({op}, loc);
             builder()->addInstruction(hilti::instruction::flow::CallVoid, print, t);
         }
     }
@@ -447,7 +459,8 @@ void CodeBuilder::visit(statement::Return* r)
 
 void CodeBuilder::visit(statement::Stop* r)
 {
-    builder()->addInstruction(hilti::instruction::hook::Stop, hilti::builder::boolean::create(true));
+    builder()->addInstruction(hilti::instruction::hook::Stop,
+                              hilti::builder::boolean::create(true));
 }
 
 void CodeBuilder::visit(statement::Try* t)
@@ -475,4 +488,3 @@ void CodeBuilder::visit(variable::Global* v)
 
     setResult(result);
 }
-

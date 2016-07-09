@@ -1,7 +1,7 @@
 
-#include "../statement.h"
-#include "../module.h"
 #include "../hilti-intern.h"
+#include "../module.h"
+#include "../statement.h"
 #include "hilti/autogen/instructions.h"
 
 #include "block-flattener.h"
@@ -11,24 +11,28 @@ using namespace hilti;
 using namespace passes;
 
 // A helper pass that renames an ID within a subtree.
-class VarRenamer : public Pass<>
-{
+class VarRenamer : public Pass<> {
 public:
-    VarRenamer(shared_ptr<ID> old, shared_ptr<ID> new_) : Pass<>("hilti::block-flattener::VarRenamer", true) {
+    VarRenamer(shared_ptr<ID> old, shared_ptr<ID> new_)
+        : Pass<>("hilti::block-flattener::VarRenamer", true)
+    {
         _old = old;
         _new = new_;
         new_->setOriginal(_old);
     }
 
-    virtual ~VarRenamer() {}
+    virtual ~VarRenamer()
+    {
+    }
 
-    bool run(shared_ptr<Node> stmt) override {
+    bool run(shared_ptr<Node> stmt) override
+    {
         return processAllPreOrder(stmt);
     }
 
 protected:
-    void visit(ID* i) override {
-
+    void visit(ID* i) override
+    {
         if ( current<declaration::Type>() )
             return;
 
@@ -36,7 +40,8 @@ protected:
             i->replace(_new);
     }
 
-    void visit(expression::ID* i) override {
+    void visit(expression::ID* i) override
+    {
         if ( i->id()->pathAsString() == _old->pathAsString() )
             i->replace(std::make_shared<expression::ID>(_new, i->location()));
     }
@@ -58,7 +63,8 @@ bool BlockFlattener::run(shared_ptr<hilti::Node> module)
     return processAllPostOrder(module);
 }
 
-shared_ptr<statement::Block> BlockFlattener::flatten(shared_ptr<statement::Block> src, shared_ptr<statement::Block> toplevel)
+shared_ptr<statement::Block> BlockFlattener::flatten(shared_ptr<statement::Block> src,
+                                                     shared_ptr<statement::Block> toplevel)
 {
     shared_ptr<statement::Block> first_new_block = nullptr;
     shared_ptr<statement::Block> cur = nullptr;
@@ -66,13 +72,14 @@ shared_ptr<statement::Block> BlockFlattener::flatten(shared_ptr<statement::Block
     auto stmts = src->statements();
 
     if ( ! stmts.size() ) {
-        hilti::instruction::Operands ops = { };
-        auto nop = std::make_shared<statement::instruction::Unresolved>(instruction::Misc::Nop, ops);
-        stmts = { nop };
+        hilti::instruction::Operands ops = {};
+        auto nop =
+            std::make_shared<statement::instruction::Unresolved>(instruction::Misc::Nop, ops);
+        stmts = {nop};
     }
 
     for ( auto s : stmts ) {
-        auto b = ast::tryCast<statement::Block>(s);
+        auto b = ast::rtti::tryCast<statement::Block>(s);
 
         if ( b ) {
             auto fb = flatten(b, toplevel);
@@ -112,15 +119,15 @@ shared_ptr<statement::Block> BlockFlattener::flatten(shared_ptr<statement::Block
         int cnt = 1;
         bool rename = false;
 
-        auto var = ast::tryCast<declaration::Variable>(d);
+        auto var = ast::rtti::tryCast<declaration::Variable>(d);
 
-        if ( var && ast::isA<variable::Local>(var->variable()) ) {
+        if ( var && ast::rtti::isA<variable::Local>(var->variable()) ) {
             // Rename local if we already have defined another one under the
             // same name.
             while ( toplevel->scope()->has(d->id()) ) {
-
                 auto d2 = toplevel->scope()->lookupUnique(d->id());
-                if ( ast::checkedCast<expression::Variable>(d2)->variable() == var->variable() )
+                if ( ast::rtti::checkedCast<expression::Variable>(d2)->variable() ==
+                     var->variable() )
                     break;
 
                 auto name = ::util::fmt("%s_%d", orig_id->name(), ++cnt);
@@ -139,7 +146,8 @@ shared_ptr<statement::Block> BlockFlattener::flatten(shared_ptr<statement::Block
 
         if ( var ) {
             toplevel->scope()->remove(d->id());
-            toplevel->scope()->insert(d->id(), std::make_shared<expression::Variable>(var->variable()));
+            toplevel->scope()->insert(d->id(),
+                                      std::make_shared<expression::Variable>(var->variable()));
         }
     }
 
@@ -162,7 +170,7 @@ void BlockFlattener::visit(declaration::Function* d)
     if ( ! func->body() )
         return;
 
-    auto obody = ast::checkedCast<statement::Block>(func->body());
+    auto obody = ast::rtti::checkedCast<statement::Block>(func->body());
     auto nbody = std::make_shared<statement::Block>(nullptr);
     nbody->setScope(obody->scope());
     flatten(obody, nbody);
@@ -171,7 +179,7 @@ void BlockFlattener::visit(declaration::Function* d)
 
 void BlockFlattener::visit(Module* m)
 {
-    auto obody = ast::checkedCast<statement::Block>(m->body());
+    auto obody = ast::rtti::checkedCast<statement::Block>(m->body());
     auto nbody = std::make_shared<statement::Block>(nullptr);
     nbody->setScope(obody->scope());
     flatten(obody, nbody);

@@ -1,8 +1,8 @@
 
-#include "id.h"
 #include "ctor.h"
-#include "hilti-intern.h"
 #include "expression.h"
+#include "hilti-intern.h"
+#include "id.h"
 
 using namespace hilti;
 
@@ -84,7 +84,7 @@ ctor::Set::Set(bool cctor, shared_ptr<Type> stype, const element_list& elems, co
     assert(stype);
 
     _elems = elems;
-    _type = ast::checkedCast<type::Set>(stype);
+    _type = ast::rtti::checkedCast<type::Set>(stype);
     _type = std::make_shared<type::Reference>(_type);
 
     for ( auto e : _elems )
@@ -103,7 +103,9 @@ std::list<shared_ptr<hilti::Expression>> ctor::Set::flatten()
     return l;
 }
 
-ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l) : Ctor(l)
+ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems,
+               const Location& l)
+    : Ctor(l)
 {
     assert(ktype);
     assert(vtype);
@@ -125,7 +127,7 @@ ctor::Map::Map(shared_ptr<Type> mtype, const element_list& elems, const Location
     assert(mtype);
 
     _elems = elems;
-    _type = ast::checkedCast<type::Map>(mtype);
+    _type = ast::rtti::checkedCast<type::Map>(mtype);
     _type = std::make_shared<type::Reference>(_type);
 
     for ( auto e : _elems ) {
@@ -146,7 +148,6 @@ std::list<shared_ptr<hilti::Expression>> ctor::Map::flatten()
     }
 
     return l;
-
 }
 
 shared_ptr<Expression> ctor::Map::default_() const
@@ -154,8 +155,7 @@ shared_ptr<Expression> ctor::Map::default_() const
     return attributes().getAsExpression(attribute::DEFAULT);
 }
 
-ctor::RegExp::RegExp(const pattern_list& patterns,
-                     const Location& l)
+ctor::RegExp::RegExp(const pattern_list& patterns, const Location& l)
 {
     _patterns = patterns;
 
@@ -164,7 +164,10 @@ ctor::RegExp::RegExp(const pattern_list& patterns,
     addChild(_type);
 }
 
-ctor::Callable::Callable(shared_ptr<hilti::type::function::Result> result, const type::function::parameter_list& params, shared_ptr<Expression> function, const argument_list& args, const Location& l)
+ctor::Callable::Callable(shared_ptr<hilti::type::function::Result> result,
+                         const type::function::parameter_list& params,
+                         shared_ptr<Expression> function, const argument_list& args,
+                         const Location& l)
 {
     _type = std::make_shared<type::Callable>(result, params);
     _type = std::make_shared<type::Reference>(_type);

@@ -67,10 +67,8 @@ void Logger::internalError(const string& message, NodeBase* node) const
 
 void Logger::fatalError(const string& message, const string& location) const
 {
-    if ( _forward ) {
+    if ( _forward )
         _forward->fatalError(message, location);
-        return;
-    }
 
     ++_errors;
     doError(message, nullptr, location, Fatal);
@@ -79,15 +77,13 @@ void Logger::fatalError(const string& message, const string& location) const
 
 void Logger::fatalError(const string& message, shared_ptr<NodeBase> node) const
 {
-    return fatalError(message, node.get());
+    fatalError(message, node.get());
 }
 
 void Logger::fatalError(const string& message, NodeBase* node) const
 {
-    if ( _forward ) {
+    if ( _forward )
         _forward->fatalError(message, node);
-        return;
-    }
 
     ++_errors;
     doError(message, node, (node ? node->location() : Location::None), Fatal);
@@ -121,28 +117,29 @@ void Logger::warning(const string& message, NodeBase* node) const
     doError(message, node, (node ? node->location() : Location::None), Warning);
 }
 
-void Logger::doError(const string& message, NodeBase* node, const string& location, ErrorType type) const
+void Logger::doError(const string& message, NodeBase* node, const string& location,
+                     ErrorType type) const
 {
     string tag;
 
     switch ( type ) {
-     case Warning:
+    case Warning:
         tag = "warning";
         break;
 
-     case Error:
+    case Error:
         tag = "error";
         break;
 
-     case Internal:
+    case Internal:
         tag = "internal error";
         break;
 
-     case Fatal:
+    case Fatal:
         tag = "fatal error";
         break;
 
-     default:
+    default:
         assert(false);
     }
 
@@ -207,18 +204,20 @@ void Logger::debugPopIndent()
     --_debug_indent;
 }
 
-void Logger::debug(int level, string msg) {
+void Logger::debug(int level, string msg)
+{
     if ( _debug_level < level )
-           return;
+        return;
 
     if ( _name.size() )
         std::cerr << "debug: [" << _name << "] ";
     else
-        std::cerr << "debug: [" << typeid(*this).name() << "] ";
+        std::cerr << "debug: ["
+                  << "<No logger name>"
+                  << "] ";
 
     for ( int i = 0; i < _debug_indent; ++i )
         std::cerr << "    ";
 
     std::cerr << msg << std::endl;
 }
-

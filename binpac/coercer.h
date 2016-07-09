@@ -10,8 +10,7 @@ namespace binpac {
 /// Visitor implementating the check whether an expression of one type can be
 /// coerced into that of another. This class should not be used directly. The
 /// frontend is Expression::canCoerceTo.
-class Coercer
-{
+class Coercer {
 public:
     /// Checks whether arbitrary expressions of one type can be coerced into
     /// that of another. The method calls the appropiate visit method for the
@@ -34,9 +33,9 @@ public:
 
 private:
     // Main internal work horse function.
-    bool _coerceTo(shared_ptr<Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst, shared_ptr<Expression>* result, string* error);
+    bool _coerceTo(shared_ptr<Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst,
+                   shared_ptr<Expression>* result, string* error);
 };
-
 }
 
 #endif

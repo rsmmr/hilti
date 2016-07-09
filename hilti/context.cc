@@ -4,12 +4,12 @@
 
 #include <llvm/Support/DynamicLibrary.h>
 
+#include "codegen/optimizer.h"
 #include "hilti-intern.h"
-#include "parser/driver.h"
 #include "hilti/autogen/hilti-config.h"
 #include "jit/jit.h"
 #include "options.h"
-#include "codegen/optimizer.h"
+#include "parser/driver.h"
 
 using namespace hilti;
 using namespace hilti::passes;
@@ -21,7 +21,6 @@ CompilerContext::CompilerContext(std::shared_ptr<Options> options)
 
 CompilerContext::~CompilerContext()
 {
-    delete _jit;
 }
 
 const Options& CompilerContext::options() const
@@ -73,13 +72,13 @@ string CompilerContext::searchModule(shared_ptr<ID> id)
         goto error;
     }
 
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << util::fmt("Found module %s as %s ...", id->pathAsString(), buf) << std::endl;
 
     return string(buf);
 
 error:
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << util::fmt("Did not find module %s ...", id->pathAsString()) << std::endl;
 
     return "";
@@ -87,13 +86,13 @@ error:
 
 bool CompilerContext::importModule(shared_ptr<ID> id, string* path_out)
 {
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << util::fmt("Importing module %s ...", id->pathAsString()) << std::endl;
 
     auto path = searchModule(id);
 
     if ( ! path.size() )
-        return nullptr;
+        return false;
 
     if ( path_out )
         *path_out = path;
@@ -103,7 +102,7 @@ bool CompilerContext::importModule(shared_ptr<ID> id, string* path_out)
 
 shared_ptr<Module> CompilerContext::loadModule(const string& p, bool finalize)
 {
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << util::fmt("Loading module %s ...", p) << std::endl;
 
     char buf[PATH_MAX];
@@ -145,20 +144,22 @@ static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const str
 {
     if ( ctx->options().cgDebugging("dump-ast") ) {
         std::cerr << std::endl
-            << "===" << std::endl
-            << "=== AST for " << module->id()->pathAsString() << " before hilti::" << before << std::endl
-            << "===" << std::endl
-            << std::endl;
+                  << "===" << std::endl
+                  << "=== AST for " << module->id()->pathAsString() << " before hilti::" << before
+                  << std::endl
+                  << "===" << std::endl
+                  << std::endl;
 
         ctx->dump(module, std::cerr);
     }
 
     if ( ctx->options().cgDebugging("print-ast") ) {
         std::cerr << std::endl
-            << "===" << std::endl
-            << "=== AST for " << module->id()->pathAsString() << " before hilti::" << before << std::endl
-            << "===" << std::endl
-            << std::endl;
+                  << "===" << std::endl
+                  << "=== AST for " << module->id()->pathAsString() << " before hilti::" << before
+                  << std::endl
+                  << "===" << std::endl
+                  << std::endl;
 
         ctx->print(module, std::cerr);
     }
@@ -203,8 +204,9 @@ void CompilerContext::_endPass()
         auto indent = string(_passes.size(), ' ');
 
         if ( cg_passes || delta >= 0.1 )
-            std::cerr << util::fmt("(%2.2fs) %shilti::%s [module \"%s\"]",
-                                   delta, indent, pass.name, pass.module) << std::endl;
+            std::cerr << util::fmt("(%2.2fs) %shilti::%s [module \"%s\"]", delta, indent, pass.name,
+                                   pass.module)
+                      << std::endl;
     }
 
     _passes.pop_back();
@@ -212,24 +214,25 @@ void CompilerContext::_endPass()
 
 bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
 {
-    if ( options().cgDebugging("context" ) )
-        std::cerr << util::fmt("Finalizing module %s ...", module->id()->pathAsString()) << std::endl;
+    if ( options().cgDebugging("context") )
+        std::cerr << util::fmt("Finalizing module %s ...", module->id()->pathAsString())
+                  << std::endl;
 
     // Just a double-check ...
     if ( ! InstructionRegistry::globalRegistry()->getAll().size() ) {
         internalError("hilti: no operators defined, did you call hilti::init()?");
     }
 
-    passes::IdResolver            id_resolver;
-    passes::InstructionResolver   instruction_resolver;
+    passes::IdResolver id_resolver;
+    passes::InstructionResolver instruction_resolver;
     passes::InstructionNormalizer instruction_normalizer;
-    passes::BlockNormalizer       block_normalizer_before_instr(false);
-    passes::BlockNormalizer       block_normalizer_after_instr(true);
-    passes::BlockFlattener        block_flattener;
-    passes::Validator             validator;
-    passes::ScopeBuilder          scope_builder(this);
-    passes::OptimizeCtors         optimize_ctors;
-    passes::OptimizePeepHole      optimize_peephole;
+    passes::BlockNormalizer block_normalizer_before_instr(false);
+    passes::BlockNormalizer block_normalizer_after_instr(true);
+    passes::BlockFlattener block_flattener;
+    passes::Validator validator;
+    passes::ScopeBuilder scope_builder(this);
+    passes::OptimizeCtors optimize_ctors;
+    passes::OptimizePeepHole optimize_peephole;
 
     _beginPass(module, instruction_normalizer);
 
@@ -256,7 +259,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
     _beginPass(module, scope_builder);
 
     if ( ! scope_builder.run(module) )
-            return false;
+        return false;
 
     _endPass();
 
@@ -285,7 +288,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
     _beginPass(module, scope_builder);
 
     if ( ! scope_builder.run(module) )
-            return false;
+        return false;
 
     _endPass();
 
@@ -365,7 +368,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
 
 void CompilerContext::addModule(shared_ptr<Module> module)
 {
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << util::fmt("Adding module %s ...", module->id()->pathAsString()) << std::endl;
 
     string path = module->path();
@@ -403,7 +406,7 @@ bool CompilerContext::resolveTypes(shared_ptr<Module> module)
 
 bool CompilerContext::_finalize(shared_ptr<Module> module, bool verify)
 {
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << util::fmt("Finalizing context...") << std::endl;
 
     if ( module )
@@ -430,7 +433,6 @@ bool CompilerContext::_finalize(shared_ptr<Module> module, bool verify)
             scope_printer.run(module);
             _endPass();
         }
-
     }
 
     for ( auto m : _modules ) {
@@ -463,8 +465,9 @@ error:
 
 shared_ptr<Scope> CompilerContext::scopeAlias(shared_ptr<ID> id)
 {
-    if ( options().cgDebugging("context" ) )
-        std::cerr << util::fmt("Creating scope alias for module %s ...", id->pathAsString()) << std::endl;
+    if ( options().cgDebugging("context") )
+        std::cerr << util::fmt("Creating scope alias for module %s ...", id->pathAsString())
+                  << std::endl;
 
     auto path = searchModule(id);
 
@@ -473,7 +476,8 @@ shared_ptr<Scope> CompilerContext::scopeAlias(shared_ptr<ID> id)
 
     auto m = _modules.find(path);
     if ( m == _modules.end() )
-        internalError(util::fmt("cannot find module %s in CompilerContext::scopeAlias", id->pathAsString()));
+        internalError(
+            util::fmt("cannot find module %s in CompilerContext::scopeAlias", id->pathAsString()));
 
     auto module = m->second;
 
@@ -482,7 +486,7 @@ shared_ptr<Scope> CompilerContext::scopeAlias(shared_ptr<ID> id)
 
 shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& sname)
 {
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << util::fmt("Parsing %s ...", sname) << std::endl;
 
     hilti_parser::Driver driver;
@@ -496,10 +500,13 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
     return module;
 }
 
-std::list<llvm::Module*> CompilerContext::checkCache(const ::util::cache::FileCache::Key& key)
+std::list<std::unique_ptr<llvm::Module>> CompilerContext::checkCache(
+    const ::util::cache::FileCache::Key& key)
 {
-    std::list<llvm::Module*> outputs;
+    std::list<std::unique_ptr<llvm::Module>> outputs;
+    return outputs;
 
+#if 0
     if ( ! _cache )
         return outputs;
 
@@ -510,32 +517,28 @@ std::list<llvm::Module*> CompilerContext::checkCache(const ::util::cache::FileCa
     for ( auto d : data ) {
         _beginPass(key.name, "LoadFromCache");
 
-        llvm::MemoryBuffer* mb = llvm::MemoryBuffer::getMemBuffer(d);
+        auto mb = llvm::MemoryBuffer::getMemBuffer(d);
         assert(mb);
 
         string err;
-#ifdef HAVE_LLVM_35
-        if ( auto mod = llvm::parseBitcodeFile(mb, llvm::getGlobalContext()) ) {
+        llvm::LLVMContext llvm_context;
+
+        if ( auto mod = llvm::parseBitcodeFile(mb->getMemBufferRef(), llvm_context) ) {
             if ( options().cgDebugging("cache") )
-                std::cerr << util::fmt("Reusing cached module for %s.%s (%d/%d)", key.name, key.scope, ++idx, data.size()) << std::endl;
+                std::cerr << util::fmt("Reusing cached module for %s.%s (%d/%d)", key.name,
+                                       key.scope, ++idx, data.size())
+                          << std::endl;
 
             _endPass();
-            outputs.push_back(mod.get());
+            outputs.push_back(mod->get());
         }
-#else
-        if ( auto mod = llvm::ParseBitcodeFile(mb, llvm::getGlobalContext(), &err) ) {
-            if ( options().cgDebugging("cache") )
-                std::cerr << util::fmt("Reusing cached module for %s.%s (%d/%d)", key.name, key.scope, ++idx, data.size()) << std::endl;
-
-            _endPass();
-            outputs.push_back(mod);
-        }
-#endif
         else {
             _endPass();
 
             if ( options().cgDebugging("cache") )
-                std::cerr << util::fmt("Cached module for %s.%s (%d/%d) did not compile", key.name, key.scope, ++idx, data.size()) << std::endl;
+                std::cerr << util::fmt("Cached module for %s.%s (%d/%d) did not compile", key.name,
+                                       key.scope, ++idx, data.size())
+                          << std::endl;
         }
     }
 
@@ -543,24 +546,32 @@ std::list<llvm::Module*> CompilerContext::checkCache(const ::util::cache::FileCa
         std::cerr << util::fmt("No cached module for %s.%s", key.name, key.scope) << std::endl;
 
     return outputs;
+#endif
 }
 
-void CompilerContext::updateCache(const ::util::cache::FileCache::Key& key, llvm::Module* module)
+void CompilerContext::updateCache(const ::util::cache::FileCache::Key& key,
+                                  std::unique_ptr<llvm::Module> module)
 {
-    std::list<llvm::Module*> modules = { module };
-    return updateCache(key, modules);
+#if 0
+    return updateCache(key, {module});
+#endif
 }
 
-void CompilerContext::updateCache(const ::util::cache::FileCache::Key& key, std::list<llvm::Module*> modules)
+void CompilerContext::updateCache(const ::util::cache::FileCache::Key& key,
+                                  std::list<std::unique_ptr<llvm::Module>> modules)
 {
     if ( ! _cache )
         return;
 
+    return;
+
+#if 0
     std::list<string> outputs;
 
     for ( auto m : modules ) {
         if ( options().cgDebugging("cache") )
-            std::cerr << "Updating cache for compiled LLVM module " << m->getModuleIdentifier() << std::endl;
+            std::cerr << "Updating cache for compiled LLVM module " << m->getModuleIdentifier()
+                      << std::endl;
 
         string out;
         llvm::raw_string_ostream llvm_out(out);
@@ -569,6 +580,7 @@ void CompilerContext::updateCache(const ::util::cache::FileCache::Key& key, std:
     }
 
     _cache->store(key, outputs);
+#endif
 }
 
 void CompilerContext::toCacheKey(shared_ptr<Module> module, ::util::cache::FileCache::Key* key)
@@ -611,12 +623,13 @@ std::string CompilerContext::llvmGetModuleIdentifier(llvm::Module* module)
     return codegen::CodeGen::llvmGetModuleIdentifier(module);
 }
 
-llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
+std::unique_ptr<llvm::Module> CompilerContext::compile(shared_ptr<Module> module)
 {
     // module->dump(std::cerr);
 
-    if ( options().cgDebugging("context" ) )
-        std::cerr << util::fmt("Compiling module %s ...", module->id()->pathAsString()) << std::endl;
+    if ( options().cgDebugging("context") )
+        std::cerr << util::fmt("Compiling module %s ...", module->id()->pathAsString())
+                  << std::endl;
 
     _beginPass(module, "CodeGen");
 
@@ -675,13 +688,15 @@ bool CompilerContext::writeBitcode(llvm::Module* module, std::ostream& out)
     return true;
 }
 
-llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module*> modules, std::list<string> libs, path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)
+std::unique_ptr<llvm::Module> CompilerContext::linkModules(
+    string output, std::list<std::unique_ptr<llvm::Module>>& modules, std::list<string> libs,
+    path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)
 {
-    if ( options().cgDebugging("context" ) ) {
+    if ( options().cgDebugging("context") ) {
         std::list<string> names;
 
-        for ( auto m : modules )
-            names.push_back(llvmGetModuleIdentifier(m));
+        for ( auto& m : modules )
+            names.push_back(llvmGetModuleIdentifier(m.get()));
 
         std::cerr << util::fmt("Linking modules %s ...", util::strjoin(names, ", ")) << std::endl;
     }
@@ -689,14 +704,14 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
     codegen::Linker linker(this, libs);
 
     for ( auto l : libs ) {
-        if ( options().cgDebugging("context" ) )
+        if ( options().cgDebugging("context") )
             std::cerr << "Linker: adding native library " << l << std::endl;
 
         linker.addNativeLibrary(l);
     }
 
     for ( auto b : bcas ) {
-        if ( options().cgDebugging("context" ) )
+        if ( options().cgDebugging("context") )
             std::cerr << "Linker: adding bitcode library " << b << std::endl;
 
         linker.addBitcodeFile(b);
@@ -717,14 +732,15 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         modules.push_back(type_info_llvm);
 #endif
 
-        auto rlbca = options().debug ? configuration().runtime_library_bca_dbg : configuration().runtime_library_bca;
+        auto rlbca = options().debug ? configuration().runtime_library_bca_dbg :
+                                       configuration().runtime_library_bca;
 
-        if ( options().cgDebugging("context" ) )
+        if ( options().cgDebugging("context") )
             std::cerr << "Linker: adding bitcode runtime library " << rlbca << std::endl;
 
         linker.addBitcodeFile(rlbca);
 
-        // Linker doesn't support native libraries currently, but it doesn't look like we need it actualy.
+// Linker doesn't support native libraries currently, but it doesn't look like we need it actualy.
 #if 0
         if ( options().cgDebugging("context" ) )
             std::cerr << "Linker: adding native runtime library " << configuration().runtime_library_a << std::endl;
@@ -747,7 +763,7 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         if ( ! util::endsWith(d, configuration().shared_library_suffix) )
             d = d + configuration().shared_library_suffix;
 
-        if ( options().cgDebugging("context" ) )
+        if ( options().cgDebugging("context") )
             std::cerr << "Linker: adding dynamic library " << d << std::endl;
 
         // Sic. This returns true on error ...
@@ -757,13 +773,14 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         }
     }
 
-    if ( options().cgDebugging("context" ) ) {
+    if ( options().cgDebugging("context") ) {
         std::list<string> names;
 
-        for ( auto m : modules )
-            names.push_back(llvmGetModuleIdentifier(m));
+        for ( auto& m : modules )
+            names.push_back(llvmGetModuleIdentifier(m.get()));
 
-        std::cerr << util::fmt("  Final set modules to link: %s ...", util::strjoin(names, ", ")) << std::endl;
+        std::cerr << util::fmt("  Final set modules to link: %s ...", util::strjoin(names, ", "))
+                  << std::endl;
     }
 
     _beginPass(output, linker);
@@ -775,78 +792,61 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
 
     _endPass();
 
-    if ( ! _optimize(linked, true) )
-        return nullptr;
-
-    return linked;
+    return _optimize(std::move(linked), true);
 }
 
-bool CompilerContext::_optimize(llvm::Module* module, bool is_linked)
+std::unique_ptr<llvm::Module> CompilerContext::_optimize(std::unique_ptr<llvm::Module> module,
+                                                         bool is_linked)
 {
     if ( ! options().optimize )
-        return true;
+        return module;
 
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << "Optimizing final linked module ... " << std::endl;
 
     codegen::Optimizer optimizer(this);
 
     _beginPass(module->getModuleIdentifier(), optimizer);
 
-    if ( ! optimizer.optimize(module, is_linked) )
-        return false;
+    auto nmodule = optimizer.optimize(std::move(module), is_linked);
 
     _endPass();
 
-    return true;
+    return nmodule;
 }
 
-llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module)
+std::unique_ptr<JIT> CompilerContext::jit(std::unique_ptr<llvm::Module> module)
 {
     if ( ! options().jit ) {
         error("jitModule() called but options.jit not set\n");
         return nullptr;
     }
 
-    if ( ! _jit )
-        _jit = new jit::JIT(this);
-
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << util::fmt("JITing module %s ...", module->getModuleIdentifier()) << std::endl;
 
     _beginPass("<JIT>", "JIT-setup");
 
-    auto ee = _jit->jitModule(module);
+    auto jit = std::make_unique<JIT>(this);
+
+    if ( ! jit->jit(std::move(module)) ) {
+        error("JITing module failed");
+        return nullptr;
+    }
 
     _endPass();
 
-    return ee;
+    return jit;
 }
 
-void* CompilerContext::nativeFunction(llvm::Module* module, llvm::ExecutionEngine* ee, const string& function)
-{
-    if ( options().cgDebugging("context" ) )
-        std::cerr << util::fmt("Getting native function %s from module %s ...", function, module->getModuleIdentifier()) << std::endl;
-
-    if ( ! _jit )
-        _jit = new jit::JIT(this);
-
-    _beginPass("<JIT>", "JIT-nativeFunction");
-
-    auto func = _jit->nativeFunction(ee, module, function);
-
-    _endPass();
-
-    return func;
-}
-
+#if 0
 void CompilerContext::installJITFunctionTable(const FunctionMapping* ftable)
 {
-    if ( options().cgDebugging("context" ) )
+    if ( options().cgDebugging("context") )
         std::cerr << util::fmt("Installing custom function table ...") << std::endl;
 
     if ( ! _jit )
-        _jit = new jit::JIT(this);
+        _jit = new JIT(this);
 
     _jit->installFunctionTable(ftable);
 }
@@ -858,6 +858,8 @@ void* CompilerContext::lookupJITFunctionInTable(const std::string& name)
 
     return _jit->lookupFunctionInTable(name);
 }
+
+#endif
 
 shared_ptr<util::cache::FileCache> CompilerContext::fileCache() const
 {

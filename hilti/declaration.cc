@@ -1,10 +1,11 @@
 
-#include "hilti-intern.h"
 #include "declaration.h"
+#include "hilti-intern.h"
 
 using namespace hilti;
 
-Declaration::Declaration(shared_ptr<hilti::ID> id, const Location& l) : ast::Declaration<AstInfo>(id, LOCAL, l)
+Declaration::Declaration(shared_ptr<hilti::ID> id, const Location& l)
+    : ast::Declaration<AstInfo>(id, LOCAL, l)
 {
 }
 
@@ -20,12 +21,11 @@ declaration::Function::Function(shared_ptr<hilti::Function> func, const Location
 {
 }
 
-declaration::Hook::Hook(shared_ptr<hilti::Hook> hook, const Location& l)
-    : Function(hook, l)
+declaration::Hook::Hook(shared_ptr<hilti::Hook> hook, const Location& l) : Function(hook, l)
 {
 }
 
 shared_ptr<hilti::Hook> declaration::Hook::hook() const
 {
-    return ast::as<hilti::Hook>(function());
+    return ast::rtti::tryCast<hilti::Hook>(function());
 }

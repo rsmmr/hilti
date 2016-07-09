@@ -3,15 +3,16 @@
 // http://www.1024cores.net/home/lock-free-algorithms/tricks/fibers.
 //
 
-#include <stdio.h>
 #include <setjmp.h>
+#include <stdio.h>
 
-#include "fiber.h"
 #include "config.h"
-#include "memory_.h"
 #include "context.h"
-#include "threading.h"
+#include "fiber.h"
 #include "globals.h"
+#include "hutil.h"
+#include "memory_.h"
+#include "threading.h"
 
 #include "3rdparty/libtask/taskimpl.h"
 
@@ -34,9 +35,6 @@ struct __hlt_fiber_pool {
     hlt_fiber* head;
     size_t size;
 };
-
-static void __hlt_fiber_yield(hlt_fiber* fiber, enum __hlt_fiber_state state);
-static void __hlt_fiber_return(hlt_fiber* fiber, enum __hlt_fiber_state state);
 
 static void _fiber_trampoline(unsigned int y, unsigned int x)
 {
@@ -105,7 +103,7 @@ static inline void release_lock(int i)
 // this function does not intialize the "run" and "cookie" fields.
 static hlt_fiber* __hlt_fiber_create(hlt_execution_context* ctx)
 {
-    hlt_fiber* fiber = (hlt_fiber*) hlt_malloc(sizeof(hlt_fiber));
+    hlt_fiber* fiber = (hlt_fiber*)hlt_malloc(sizeof(hlt_fiber));
 
     if ( getcontext(&fiber->uctx) < 0 ) {
         fprintf(stderr, "getcontext failed in __hlt_fiber_create\n");
@@ -162,7 +160,8 @@ void __hlt_fiber_pool_delete(__hlt_fiber_pool* pool)
     hlt_free(pool);
 }
 
-hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* fctx, void* p, hlt_execution_context* ctx)
+hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* fctx, void* p,
+                            hlt_execution_context* ctx)
 {
     assert(ctx);
 
@@ -197,7 +196,8 @@ hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* fctx, vo
                 ++fiber_pool->size;
             }
 
-            // fprintf(stderr, "vid %lu took %lu from global, that now at %lu\n", ctx->vid, hlt_config_get()->fiber_max_pool_size / 10, global_pool->size);
+            // fprintf(stderr, "vid %lu took %lu from global, that now at %lu\n", ctx->vid,
+            // hlt_config_get()->fiber_max_pool_size / 10, global_pool->size);
 
             release_lock(s);
         }
@@ -247,8 +247,8 @@ void hlt_fiber_delete(hlt_fiber* fiber, hlt_execution_context* ctx)
 
                 // Check again.
                 if ( global_pool->size <= 10 * hlt_config_get()->fiber_max_pool_size ) {
-
-                    // fprintf(stderr, "vid %lu gives %lu to global, that then at %lu\n", ctx->vid, fiber_pool->size, global_pool->size + fiber_pool->size);
+                    // fprintf(stderr, "vid %lu gives %lu to global, that then at %lu\n", ctx->vid,
+                    // fiber_pool->size, global_pool->size + fiber_pool->size);
 
                     hlt_fiber* tail;
 
@@ -306,17 +306,17 @@ int8_t hlt_fiber_start(hlt_fiber* fiber, hlt_execution_context* ctx)
     }
 
     switch ( fiber->state ) {
-     case YIELDED:
+    case YIELDED:
         __hlt_memory_safepoint(fiber->context, "fiber_start/yield");
         return 0;
 
-     case IDLE:
+    case IDLE:
         __hlt_memory_safepoint(fiber->context, "fiber_start/done");
         __hlt_context_set_fiber(fiber->context, 0);
         hlt_fiber_delete(fiber, ctx);
         return 1;
 
-     default:
+    default:
         abort();
     }
 }
@@ -376,6 +376,7 @@ void __hlt_fiber_done()
 
     __hlt_fiber_pool_delete(__hlt_globals()->synced_fiber_pool);
 
-    if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&__hlt_globals()->synced_fiber_pool_lock) != 0 )
+    if ( hlt_is_multi_threaded() &&
+         pthread_mutex_destroy(&__hlt_globals()->synced_fiber_pool_lock) != 0 )
         fatal_error("cannot destroy mutex");
 }

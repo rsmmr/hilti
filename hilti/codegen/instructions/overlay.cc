@@ -10,7 +10,7 @@ using namespace codegen;
 void StatementBuilder::visit(statement::instruction::overlay::Attach* i)
 {
     auto itype = builder::iterator::type(builder::bytes::type());
-    auto otype = ast::as<type::Overlay>(i->op1()->type());
+    auto otype = ast::rtti::tryCast<type::Overlay>(i->op1()->type());
     auto ov = cg()->llvmValue(i->op1());
     auto iter = cg()->llvmValue(i->op2());
 
@@ -33,7 +33,11 @@ void StatementBuilder::visit(statement::instruction::overlay::Attach* i)
 // Generates the unpacking code for one field, assuming all dependencies are
 // already resolved. Returns tuple (new overlay, unpacked val) where val is
 // not ref'ed.
-static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<type::Overlay> otype, llvm::Value* ov, shared_ptr<type::overlay::Field> field, llvm::Value* offset0, llvm::Value* b, const Location& l)
+static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<type::Overlay> otype,
+                                                      llvm::Value* ov,
+                                                      shared_ptr<type::overlay::Field> field,
+                                                      llvm::Value* offset0, llvm::Value* b,
+                                                      const Location& l)
 {
     auto itype = builder::iterator::type(builder::bytes::type());
     auto btype = builder::reference::type(builder::bytes::type());
@@ -44,7 +48,7 @@ static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<ty
         // Starts right at beginning.
         if ( b ) {
             auto arg1 = builder::codegen::create(btype, b);
-            CodeGen::expr_list args = { arg1 };
+            CodeGen::expr_list args = {arg1};
             begin = cg->llvmCall("hlt::bytes_begin", args);
         }
 
@@ -59,14 +63,14 @@ static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<ty
         if ( b ) {
             auto arg1 = builder::codegen::create(btype, b);
             auto arg2 = builder::integer::create(field->startOffset());
-            CodeGen::expr_list args = { arg1, arg2 };
+            CodeGen::expr_list args = {arg1, arg2};
             begin = cg->llvmCall("hlt::bytes_offset", args);
         }
 
         else {
             auto arg1 = builder::codegen::create(itype, offset0);
             auto arg2 = builder::integer::create(field->startOffset());
-            CodeGen::expr_list args = { arg1, arg2 };
+            CodeGen::expr_list args = {arg1, arg2};
             begin = cg->llvmCall("hlt::iterator_bytes_incr_by", args);
         }
     }
@@ -92,7 +96,8 @@ static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<ty
         arg_type = field->formatArg()->type();
     }
 
-    auto unpacked = cg->llvmUnpack(field->type(), begin, cg->llvmIterBytesEnd(), fmt, arg, arg_type, l);
+    auto unpacked =
+        cg->llvmUnpack(field->type(), begin, cg->llvmIterBytesEnd(), fmt, arg, arg_type, l);
     auto val = unpacked.first;
     auto end = unpacked.second;
 
@@ -103,7 +108,9 @@ static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<ty
 }
 
 // Generate code for all depedencies. Returns new overlay.
-static llvm::Value* _makeDep(CodeGen* cg, shared_ptr<type::Overlay> otype, llvm::Value* ov, shared_ptr<type::overlay::Field> field, llvm::Value* offset0, const Location& l)
+static llvm::Value* _makeDep(CodeGen* cg, shared_ptr<type::Overlay> otype, llvm::Value* ov,
+                             shared_ptr<type::overlay::Field> field, llvm::Value* offset0,
+                             const Location& l)
 {
     if ( ! field->dependents().size() )
         return ov;
@@ -116,7 +123,8 @@ static llvm::Value* _makeDep(CodeGen* cg, shared_ptr<type::Overlay> otype, llvm:
     auto block_notcached = cg->newBuilder(::util::fmt("notcached-%s", dep->name()->name().c_str()));
 
     auto iter = cg->llvmExtractValue(ov, dep->depIndex());
-    CodeGen::expr_list args = { builder::codegen::create(itype, iter), builder::codegen::create(itype, cg->llvmIterBytesEnd()) };
+    CodeGen::expr_list args = {builder::codegen::create(itype, iter),
+                               builder::codegen::create(itype, cg->llvmIterBytesEnd())};
     auto is_end = cg->llvmCall("hlt::iterator_bytes_eq", args);
     cg->llvmCreateCondBr(is_end, block_notcached, block_cached);
 
@@ -145,15 +153,15 @@ static llvm::Value* _makeDep(CodeGen* cg, shared_ptr<type::Overlay> otype, llvm:
 
 void StatementBuilder::visit(statement::instruction::overlay::Get* i)
 {
-    auto otype = ast::as<type::Overlay>(i->op1()->type());
+    auto otype = ast::rtti::tryCast<type::Overlay>(i->op1()->type());
     auto itype = builder::iterator::type(builder::bytes::type());
 
     auto ov = cg()->llvmValue(i->op1());
 
-    auto cexpr = ast::as<expression::Constant>(i->op2());
-    assert(cexpr);
-    auto cval = ast::as<constant::String>(cexpr->constant());
-    assert(cval);
+    auto cexpr = ast::rtti::checkedCast<expression::Constant>(i->op2());
+    ;
+    auto cval = ast::rtti::checkedCast<constant::String>(cexpr->constant());
+    ;
 
     auto field = otype->field(cval->value());
 
@@ -173,7 +181,8 @@ void StatementBuilder::visit(statement::instruction::overlay::Get* i)
 
         auto offset0 = cg()->llvmExtractValue(ov, 0);
 
-        CodeGen::expr_list args = { builder::codegen::create(itype, offset0), builder::codegen::create(itype, cg()->llvmIterBytesEnd()) };
+        CodeGen::expr_list args = {builder::codegen::create(itype, offset0),
+                                   builder::codegen::create(itype, cg()->llvmIterBytesEnd())};
         auto is_end = cg()->llvmCall("hlt::iterator_bytes_eq", args);
         cg()->llvmCreateCondBr(is_end, block_notattached, block_attached);
 
@@ -196,9 +205,9 @@ void StatementBuilder::visit(statement::instruction::overlay::Get* i)
 
 void StatementBuilder::visit(statement::instruction::overlay::GetStatic* i)
 {
-    auto otype = ast::checkedCast<type::Overlay>(typedType(i->op1()));
-    auto cexpr = ast::checkedCast<expression::Constant>(i->op2());
-    auto cval = ast::checkedCast<constant::String>(cexpr->constant());
+    auto otype = ast::rtti::checkedCast<type::Overlay>(typedType(i->op1()));
+    auto cexpr = ast::rtti::checkedCast<expression::Constant>(i->op2());
+    auto cval = ast::rtti::checkedCast<constant::String>(cexpr->constant());
     auto bytes = cg()->llvmValue(i->op3());
 
     auto field = otype->field(cval->value());

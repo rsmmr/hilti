@@ -10,22 +10,24 @@
 
 #include "define-instruction.h"
 
-#include "struct.h"
 #include "../module.h"
+#include "struct.h"
 
-static shared_ptr<type::struct_::Field> _structField(const Instruction* i, shared_ptr<Expression> op, shared_ptr<Expression> field)
+static shared_ptr<type::struct_::Field> _structField(const Instruction* i,
+                                                     shared_ptr<Expression> op,
+                                                     shared_ptr<Expression> field)
 {
-    auto stype = ast::as<type::Struct>(i->referencedType(op));
+    auto stype = ast::rtti::tryCast<type::Struct>(i->referencedType(op));
     assert(stype);
 
-    auto cexpr = ast::as<expression::Constant>(field);
+    auto cexpr = ast::rtti::tryCast<expression::Constant>(field);
 
     if ( ! cexpr ) {
         i->error(field, "struct field must be a constant");
         return nullptr;
     }
 
-    auto cval = ast::as<constant::String>(cexpr->constant());
+    auto cval = ast::rtti::tryCast<constant::String>(cexpr->constant());
 
     if ( ! cval ) {
         i->error(field, "struct field must be a constant string");
@@ -44,17 +46,19 @@ static shared_ptr<type::struct_::Field> _structField(const Instruction* i, share
 }
 
 iBeginCC(struct_)
-    iValidateCC(New) {
+    iValidateCC(New)
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
-    iDocCC(New ,R"(
+    iDocCC(New, R"(
         Instantiates a new object of the given ``struct`` type.
     )")
 iEndCC
 
 iBeginCC(struct_)
-    iValidateCC(Get) {
+    iValidateCC(Get)
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -66,7 +70,7 @@ iBeginCC(struct_)
         canCoerceTo(f->type(), target);
     }
 
-    iDocCC(Get ,R"(
+    iDocCC(Get, R"(
         Returns the field named *op2* in the struct referenced by *op1*. The
         field name must be a constant, and the type of the target must match
         the field's type. If a field is requested that has not been set, its
@@ -76,7 +80,8 @@ iBeginCC(struct_)
 iEndCC
 
 iBeginCC(struct_)
-    iValidateCC(GetDefault) {
+    iValidateCC(GetDefault)
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -88,7 +93,7 @@ iBeginCC(struct_)
         canCoerceTo(op3, target);
     }
 
-    iDocCC(GetDefault ,R"(
+    iDocCC(GetDefault, R"(
         Returns the field named *op2* in the struct referenced by *op1*, or a
         default value *op3* if not set (if the field has a default itself,
         that however has priority). The field name must be a constant, and the
@@ -98,14 +103,15 @@ iBeginCC(struct_)
 iEndCC
 
 iBeginCC(struct_)
-    iValidateCC(IsSet) {
+    iValidateCC(IsSet)
+    {
         if ( ! isConstant(op2) )
             return;
 
         _structField(this, op1, op2);
     }
 
-    iDocCC(IsSet ,R"(
+    iDocCC(IsSet, R"(
         Returns *True* if the field named *op2* has been set to a value, and
         *False otherwise. If the instruction returns *True*, a subsequent call
         to ~~Get will not raise an exception.
@@ -114,7 +120,8 @@ iEndCC
 
 
 iBeginCC(struct_)
-    iValidateCC(Set) {
+    iValidateCC(Set)
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -123,27 +130,27 @@ iBeginCC(struct_)
             return;
 
         canCoerceTo(op3, f->type());
-   }
+    }
 
-    iDocCC(Set ,R"(
+    iDocCC(Set, R"(
         Sets the field named *op2* in the struct referenced by *op1* to the
         value *op3*. The type of the *op3* must match the type of the field.
     )")
 iEndCC
 
 iBeginCC(struct_)
-    iValidateCC(Unset) {
+    iValidateCC(Unset)
+    {
         if ( ! isConstant(op2) )
             return;
 
         _structField(this, op1, op2);
     }
 
-    iDocCC(Unset ,R"(
+    iDocCC(Unset, R"(
         Unsets the field named *op2* in the struct referenced by *op1*. An
         unset field appears just as if it had never been assigned an value; in
         particular, it will be reset to its default value if has been one
         assigned.
     )")
 iEndCC
-

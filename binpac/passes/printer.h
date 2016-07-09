@@ -4,16 +4,15 @@
 
 #include <ast/passes/printer.h>
 
-#include "../common.h"
 #include "../ast-info.h"
+#include "../common.h"
 #include "../operator.h"
 
 namespace binpac {
 namespace passes {
 
 /// Renders a BinPAC AST back into BinPAC source code.
-class Printer : public ast::passes::Printer<AstInfo>
-{
+class Printer : public ast::passes::Printer<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -128,25 +127,22 @@ protected:
     void visit(type::Void* v) override;
     void visit(type::function::Parameter* p) override;
     void visit(type::function::Result* r) override;
-    void visit(type::unit::item::GlobalHook* ) override;
-    void visit(type::unit::item::Property* ) override;
-    void visit(type::unit::item::Variable* ) override;
-    void visit(type::unit::item::field::Constant* ) override;
-    void visit(type::unit::item::field::Ctor* ) override;
-    void visit(type::unit::item::field::Switch* ) override;
-    void visit(type::unit::item::field::AtomicType* ) override;
-    void visit(type::unit::item::field::Unit* ) override;
-    void visit(type::unit::item::field::switch_::Case* ) override;
+    void visit(type::unit::item::GlobalHook*) override;
+    void visit(type::unit::item::Property*) override;
+    void visit(type::unit::item::Variable*) override;
+    void visit(type::unit::item::field::Constant*) override;
+    void visit(type::unit::item::field::Ctor*) override;
+    void visit(type::unit::item::field::Switch*) override;
+    void visit(type::unit::item::field::AtomicType*) override;
+    void visit(type::unit::item::field::Unit*) override;
+    void visit(type::unit::item::field::switch_::Case*) override;
     void visit(variable::Global* g) override;
     void visit(variable::Local* l) override;
 
 private:
     Module* _module;
-
 };
-
 }
-
 }
 
 #endif

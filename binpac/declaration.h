@@ -10,8 +10,7 @@
 namespace binpac {
 
 /// Base class for AST declaration nodes.
-class Declaration : public ast::Declaration<AstInfo>
-{
+class Declaration : public ast::Declaration<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -20,10 +19,10 @@ public:
     /// linkage: The declaration's linkage.
     ///
     /// l: An associated location.
-    Declaration(shared_ptr<binpac::ID> id, Linkage linkage, const Location& l=Location::None);
+    Declaration(shared_ptr<binpac::ID> id, Linkage linkage, const Location& l = Location::None);
 
-   /// Returns a readable one-line representation of the declaration.
-   string render() override;
+    /// Returns a readable one-line representation of the declaration.
+    string render() override;
 
     ACCEPT_VISITOR_ROOT();
 };
@@ -31,62 +30,61 @@ public:
 namespace declaration {
 
 /// AST node for declaring a variable.
-class Variable : public binpac::Declaration, public ast::declaration::mixin::Variable<AstInfo>
-{
+class Variable : public binpac::Declaration, public ast::declaration::mixin::Variable<AstInfo> {
 public:
     /// Constructor.
     ///
     /// id: The name of declared variable.
-    /// 
+    ///
     /// linkage: The declaration's linkage.
     ///
     /// var: The declared variable.
     ///
     /// l: An associated location.
-    Variable(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Variable> var, const Location& l=Location::None);
+    Variable(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Variable> var,
+             const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Declaration);
 };
 
 /// AST node for declaring a constant value.
-class Constant : public binpac::Declaration, public ast::declaration::mixin::Constant<AstInfo>
-{
+class Constant : public binpac::Declaration, public ast::declaration::mixin::Constant<AstInfo> {
 public:
     /// Constructor.
     ///
     /// id: The name of declared constant.
-    /// 
+    ///
     /// linkage: The declaration's linkage.
     ///
     /// expr: The declared value.
     ///
     /// l: An associated location.
-    Constant(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Expression> value, const Location& l=Location::None);
+    Constant(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Expression> value,
+             const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Declaration);
 };
 
 /// AST node for declaring a type.
-class Type : public binpac::Declaration, public ast::declaration::mixin::Type<AstInfo>
-{
+class Type : public binpac::Declaration, public ast::declaration::mixin::Type<AstInfo> {
 public:
     /// Constructor.
     ///
     /// id: The name of declared type.
-    /// 
+    ///
     /// linkage: The declaration's linkage.
     ///
     /// type: The declared type.
     ///
     /// l: An associated location.
-    Type(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Type> type, const Location& l=Location::None);
+    Type(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Type> type,
+         const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Declaration);
 };
 
 /// AST node for declaring a function.
-class Function : public binpac::Declaration, public ast::declaration::mixin::Function<AstInfo>
-{
+class Function : public binpac::Declaration, public ast::declaration::mixin::Function<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -95,14 +93,14 @@ public:
     /// linkage: The declaration's linkage.
     ///
     /// l: An associated location.
-    Function(shared_ptr<binpac::Function> func, Linkage linkage, const Location& l=Location::None);
+    Function(shared_ptr<binpac::Function> func, Linkage linkage,
+             const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Declaration);
 };
 
 /// AST node for declaring a hook.
-class Hook : public Declaration
-{
+class Hook : public Declaration {
 public:
     /// Constructor.
     ///
@@ -111,7 +109,8 @@ public:
     /// linkage: The declaration's linkage.
     ///
     /// l: An associated location.
-    Hook(shared_ptr<binpac::ID> id, shared_ptr<binpac::Hook> hook, const Location& l=Location::None);
+    Hook(shared_ptr<binpac::ID> id, shared_ptr<binpac::Hook> hook,
+         const Location& l = Location::None);
 
     /// Returns the declared hook.
     shared_ptr<binpac::Hook> hook() const;
@@ -121,9 +120,7 @@ public:
 private:
     node_ptr<binpac::Hook> _hook;
 };
-
 }
-
 }
 
 #endif

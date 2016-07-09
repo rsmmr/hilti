@@ -1,9 +1,9 @@
 
 #include "optimizer.h"
-#include "util.h"
-#include "codegen.h"
-#include "../options.h"
 #include "../context.h"
+#include "../options.h"
+#include "codegen.h"
+#include "util.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -24,102 +24,158 @@ const Options& Optimizer::options() const
     return _ctx->options();
 }
 
-bool Optimizer::optimize(llvm::Module* module, bool is_linked)
+std::unique_ptr<llvm::Module> Optimizer::optimize(std::unique_ptr<llvm::Module> module,
+                                                  bool is_linked)
 {
-#if 0
-    string lerr;
-    llvm::raw_fd_ostream out("optmodule.bc", lerr);
-    llvm::WriteBitcodeToFile(module, out);
+#if 1
+    std::error_code lerr;
+    llvm::raw_fd_ostream out(std::string("optmodule.bc"), lerr, llvm::sys::fs::F_None);
+    llvm::WriteBitcodeToFile(module.get(), out);
     out.close();
 #endif
+#if 1
+    llvm::LLVMContext nctx;
 
-    // Logic borrowed loosely from LLVM's opt.
-
-    llvm::PassManager passes;
-    llvm::FunctionPassManager fpasses(module);
-
-#ifdef HAVE_LLVM_35
-    passes.add(new llvm::DataLayoutPass(module));
-    fpasses.add(new llvm::DataLayoutPass(module));
-#else
-    passes.add(new llvm::DataLayout(module));
-    fpasses.add(new llvm::DataLayout(module));
+    auto b = llvm::MemoryBuffer::getFile("optmodule.bc");
+    auto m = llvm::parseBitcodeFile((*b)->getMemBufferRef(), module->getContext());
 #endif
 
-    auto triple = module->getTargetTriple();
-    assert(triple.size());
+    // TODO: There's some problem with LLVM mixing up debug symbols between
+    // the originating modules if we just go ahead here and optmize the
+    // module that was passed in:
+    //
+    // Global is referenced in a different module!
+    // void (metadata, metadata, metadata)* @llvm.dbg.declare
+    // ; ModuleID = '<JIT code>'
+    // call void @llvm.dbg.declare(metadata i8** %2, metadata <0x5506300>, metadata !6081), !dbg
+    // <0x5501ee8>
+    // void (i8*)* @__hlt_globals_dtor
+    //
+    // [plus a couple more of these]
+    //
+    // To work around that until understood/fixed, we clone the module
+    // through serialization, which then doesn't show the problem anymore.
+    llvm::SmallVector<char, 128> buffer;
+    llvm::raw_svector_ostream os(buffer);
+    llvm::WriteBitcodeToFile(module.get(), os);
+    auto mb = std::make_unique<llvm::ObjectMemoryBuffer>(std::move(buffer));
+    auto nmodule = llvm::parseBitcodeFile((*mb).getMemBufferRef(), module->getContext());
+
+#if 1
+    // Logic borrowed heavily from opt.
+
+    llvm::PassRegistry& registry = *llvm::PassRegistry::getPassRegistry();
+    llvm::initializeCore(registry);
+    llvm::initializeScalarOpts(registry);
+    llvm::initializeObjCARCOpts(registry);
+    llvm::initializeVectorization(registry);
+    llvm::initializeIPO(registry);
+    llvm::initializeAnalysis(registry);
+    llvm::initializeTransformUtils(registry);
+    llvm::initializeInstCombine(registry);
+    llvm::initializeInstrumentation(registry);
+    llvm::initializeTarget(registry);
+    llvm::initializeCodeGen(registry); // all codegen passes
 
     std::string err;
-    auto target = llvm::TargetRegistry::lookupTarget(triple, err);
 
-    if ( ! target ) {
-        error(::util::fmt("optimizer: cannot determine target, %s", err));
-        return nullptr;
+    int opt_level;
+    llvm::CodeGenOpt::Level cg_opt_level;
+
+    switch ( options().opt_level ) {
+    case 1: // -O1
+        opt_level = 1;
+        cg_opt_level = llvm::CodeGenOpt::Less;
+        break;
+
+    case 2: // -O2
+        opt_level = 2;
+        cg_opt_level = llvm::CodeGenOpt::Default;
+        break;
+
+    case 3: // -O2
+        opt_level = 3;
+        cg_opt_level = llvm::CodeGenOpt::Aggressive;
+        break;
+
+    default:
+        fatalError(
+            ::util::fmt("optimizer: unsupported optimization level %d", options().opt_level));
     }
 
-    llvm::TargetOptions to; // Note, this has tons of options. We use the defaults mostly.
-#ifdef HAVE_LLVM_33
-    to.JITExceptionHandling = false;
-#endif
-    to.JITEmitDebugInfo = false;
-    to.JITEmitDebugInfoToDisk = false;
+    // Auto-detect CPU features.
+    llvm::SubtargetFeatures cpu_features;
+    llvm::StringMap<bool> host_features;
+    if ( llvm::sys::getHostCPUFeatures(host_features) ) {
+        for ( auto& f : host_features )
+            cpu_features.AddFeature(f.first(), f.second);
+    }
 
-    auto tm = target->createTargetMachine(triple, llvm::sys::getHostCPUName(), "" /* CPU features */, to, llvm::Reloc::Default, llvm::CodeModel::Default, llvm::CodeGenOpt::Default);
+    llvm::Triple triple((*nmodule)->getTargetTriple());
+    llvm::TargetOptions topts; // Believe they are all fine with their defaults.
+    auto target = llvm::TargetRegistry::lookupTarget(triple.getTriple(), err);
 
-    tm->addAnalysisPasses(passes);
+    if ( ! target )
+        fatalError(::util::fmt("optimizer: cannot determine target, %s", err));
+
+    auto tm_p = target->createTargetMachine(triple.getTriple(), llvm::sys::getHostCPUName(),
+                                            cpu_features.getString(), topts, llvm::Reloc::PIC_,
+                                            llvm::CodeModel::Default, cg_opt_level);
+
+    if ( ! target )
+        fatalError(::util::fmt("optimizer: cannot create taget machine"));
+
+    std::unique_ptr<llvm::TargetMachine> tm(tm_p);
 
     llvm::PassManagerBuilder builder;
-    builder.Inliner = llvm::createFunctionInliningPass();
-    // builder.Inliner = llvm::createAlwaysInlinerPass();
-    builder.LibraryInfo = new llvm::TargetLibraryInfo(llvm::Triple(module->getTargetTriple()));
-    builder.OptLevel = 2;
+    builder.VerifyInput = true;
+    builder.VerifyOutput = false;
+    builder.OptLevel = opt_level;
     builder.SizeLevel = 0;
-    builder.DisableUnitAtATime = false;
-    builder.DisableUnrollLoops = false;
-#ifdef HAVE_LLVM_33
-    builder.DisableSimplifyLibCalls = false;
-#else
-    builder.LoopVectorize = (builder.OptLevel > 1 && builder.SizeLevel < 2);
-    builder.SLPVectorize = true;
-#endif
+    builder.Inliner =
+        (opt_level > 1 ? llvm::createFunctionInliningPass(opt_level, 0 /* SizeLevel */) :
+                         llvm::createAlwaysInlinerPass());
+    builder.LoopVectorize = (opt_level > 1);
+    builder.SLPVectorize = (opt_level > 1);
 
-    // *If* we optimized after compiling modules, we could maybe skip the
-    // following two lines for the linked module. However, we do not (see
-    // comment in CompilerContext::Compile). Doing so would however probably
-    // speed up the link time quite a bit.
-    // if ( ! is_linked ) {
-    builder.populateFunctionPassManager(fpasses);
-    builder.populateModulePassManager(passes);
-    // }
+    builder.addExtension(llvm::PassManagerBuilder::EP_EarlyAsPossible,
+                         [&](const llvm::PassManagerBuilder&, llvm::legacy::PassManagerBase& pm) {
+                             tm->addEarlyAsPossiblePasses(pm);
+                         });
 
-    if ( is_linked ) {
-        // Internalize doesn't work unfortunately because we interface with
-        // the host application.
-        //
-        // Also, if activated in JIT mode, the LLVM IPSCCP pass crashes in
-        // lib/Transforms/Scalar/SCCP.cpp, line 1970 (StoreInst *SI =
-        // cast<StoreInst>(GV->use_back());) when workin on
-        // @_functions = internal unnamed_addr global %struct.__hlt_linker_functions* null, align 8:
-        //
-        // bro: /opt/llvm-git/src/llvm/include/llvm/Support/Casting.h:239:
-        // typename cast_retty<X, Y *>::ret_type llvm::cast(Y *) [X =
-        // llvm::StoreInst, Y = llvm::User]: Assertion `isa<X>(Val) &&
-        // "cast<Ty>() argument of incompatible type!"' failed.
-        bool internalize = false;
-        builder.populateLTOPassManager(passes, internalize, true);
-    }
+    std::unique_ptr<llvm::legacy::FunctionPassManager> fpasses;
+    fpasses.reset(new llvm::legacy::FunctionPassManager(&**nmodule));
+    fpasses->add(llvm::createTargetTransformInfoWrapperPass(tm->getTargetIRAnalysis()));
 
-    // Check that the module is well formed on completion of optimization.
+    llvm::legacy::PassManager passes;
+    passes.add(llvm::createTargetTransformInfoWrapperPass(tm->getTargetIRAnalysis()));
     passes.add(llvm::createVerifierPass());
 
+    builder.populateFunctionPassManager(*fpasses);
+    builder.populateLTOPassManager(passes);
+    builder.populateModulePassManager(passes);
+
     // Run function passes.
-    fpasses.doInitialization();
+    fpasses->doInitialization();
 
-    for ( auto f = module->begin(); f != module->end(); f++ )
-        fpasses.run(*f);
+    for ( llvm::Function& f : *nmodule.get() )
+        fpasses->run(f);
 
-    fpasses.doFinalization();
+    fpasses->doFinalization();
+
+#if 0
+    llvm::AssemblyAnnotationWriter annotator;
+    llvm::raw_os_ostream llvm_out(std::cerr);
+    nmodule->print(llvm_out, &annotator);
+#endif
+
+    // Check that the module is well-formed on completion of optimization.
+    passes.add(llvm::createVerifierPass());
 
     // Run module passes.
-    return passes.run(*module);
+    if ( passes.run(**nmodule) )
+        return std::move(nmodule.get());
+    else
+        return nullptr;
+#endif
 }

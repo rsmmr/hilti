@@ -4,12 +4,14 @@
 #include "exception.h"
 
 iBeginCC(exception)
-    iValidateCC(New) {
-        auto type = ast::as<expression::Type>(op1)->typeValue();
-        auto etype = ast::as<type::Exception>(type);
+    iValidateCC(New)
+    {
+        auto type = ast::rtti::tryCast<expression::Type>(op1)->typeValue();
+        auto etype = ast::rtti::tryCast<type::Exception>(type);
 
         if ( etype->argType() )
-            error(type, ::util::fmt("exception takes an argument of type %s", etype->argType()->render().c_str()));
+            error(type, ::util::fmt("exception takes an argument of type %s",
+                                    etype->argType()->render().c_str()));
     }
 
     iDocCC(New, R"(
@@ -18,9 +20,10 @@ iBeginCC(exception)
 iEndCC
 
 iBeginCC(exception)
-    iValidateCC(NewWithArg) {
-        auto type = ast::as<expression::Type>(op1)->typeValue();
-        auto etype = ast::as<type::Exception>(type);
+    iValidateCC(NewWithArg)
+    {
+        auto type = ast::rtti::tryCast<expression::Type>(op1)->typeValue();
+        auto etype = ast::rtti::tryCast<type::Exception>(type);
 
         if ( ! etype->argType() )
             error(type, "exception does not take an argument");
@@ -34,7 +37,8 @@ iBeginCC(exception)
 iEndCC
 
 iBeginCC(exception)
-    iValidateCC(Throw) {
+    iValidateCC(Throw)
+    {
     }
 
     iDocCC(Throw, R"(    
@@ -44,7 +48,8 @@ iBeginCC(exception)
 iEndCC
 
 iBeginCC(exception)
-    iValidateCC(__BeginHandler) {
+    iValidateCC(__BeginHandler)
+    {
     }
 
     iDocCC(__BeginHandler, R"(
@@ -53,7 +58,8 @@ iBeginCC(exception)
 iEndCC
 
 iBeginCC(exception)
-    iValidateCC(__EndHandler) {
+    iValidateCC(__EndHandler)
+    {
     }
 
     iDocCC(__EndHandler, R"(
@@ -62,7 +68,8 @@ iBeginCC(exception)
 iEndCC
 
 iBeginCC(exception)
-    iValidateCC(__GetAndClear) {
+    iValidateCC(__GetAndClear)
+    {
     }
 
     iDocCC(__GetAndClear, R"(
@@ -71,7 +78,8 @@ iBeginCC(exception)
 iEndCC
 
 iBeginCC(exception)
-    iValidateCC(__Clear) {
+    iValidateCC(__Clear)
+    {
     }
 
     iDocCC(__Clear, R"(
@@ -79,41 +87,43 @@ iBeginCC(exception)
     )")
 iEndCC
 
-// iBeginCC(exception)
+// iBeginCC(exception);
 //     iValidateCC(__Match) {
 //     }
-// 
+//
 //     iSuccessorsCC(__Match) {
 //         return { op2, op3 };
 //     }
-// 
+//
 //     iDocCC(__Match, R"(
-//        Internal instruction matching the currently raised exception againt a type. If it matches, the instruction
-//        branches to *op1*, otherwise to *op2*. If the type is *any*, it matches any currently raised exception.
+//        Internal instruction matching the currently raised exception againt a type. If it matches,
+//        the instruction
+//        branches to *op1*, otherwise to *op2*. If the type is *any*, it matches any currently
+//        raised exception.
 //     )")
 // iEndCC
-// 
-// iBeginCC(exception)
+//
+// iBeginCC(exception);
 //     iValidateCC(__Current) {
 //     }
-// 
+//
 //     iDocCC(__Current, R"(
 //        Internal instruction returning the currently raised exception)
 //     )")
 // iEndCC
-// 
-// 
-// iBeginCC(exception)
+//
+//
+// iBeginCC(exception);
 //     iValidateCC(__Reraise) {
 //     }
-// 
+//
 //     iSuccessorsCC(__Reraise) {
 //         return std::set<shared_ptr<Expression>>();
 //     }
-// 
+//
 //     iDocCC(__Reraise, R"(
 //        Internal instruction that reraises the current exception up the stack to the next caller.
 //     )")
 // iEndCC
 // #endif
-// 
+//

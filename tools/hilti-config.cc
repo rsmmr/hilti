@@ -13,7 +13,7 @@
 #include <util/util.h>
 
 #include <autogen/hilti-config.h>
-#include <autogen/binpac-config.h>
+// #include <autogen/binpac-config.h>
 
 using namespace std;
 
@@ -155,6 +155,8 @@ int main(int argc, char** argv)
     }
 
     auto hilti_config = hilti::configuration();
+
+#if 0
     auto binpac_config = binpac::configuration();
 
     ////// BinPAC++
@@ -192,11 +194,9 @@ int main(int argc, char** argv)
 
             appendList(&libs, binpac_config.runtime_shared_libraries, "-l");
             appendList(&libs_shared, binpac_config.runtime_shared_libraries, "-l");
-
-
-
        }
     }
+#endif
 
     ////// HILTI
 
@@ -224,10 +224,8 @@ int main(int argc, char** argv)
             appendList(&cxxflags, util::strsplit(hilti_config.compiler_llvm_cxxflags));
             appendList(&ldflags, util::strsplit(hilti_config.compiler_llvm_ldflags));
 
-            for ( auto l : util::strsplit(hilti_config.compiler_llvm_libraries) ) {
+            for ( auto l : util::strsplit(hilti_config.compiler_llvm_libraries) )
                 appendList(&libs, l);
-                appendListFile(&libfiles_static, l.substr(2), hilti_config.compiler_library_dirs, "lib", ".a");
-            }
         }
 
         if ( want_runtime ) {
@@ -275,7 +273,7 @@ int main(int argc, char** argv)
 
         if ( opt == "--version" ) {
             out << "HILTI "    << hilti_config.version << std::endl;
-            out << "BinPAC++ " << binpac_config.version << std::endl;
+//            out << "BinPAC++ " << binpac_config.version << std::endl;
             continue;
         }
 
@@ -349,20 +347,26 @@ int main(int argc, char** argv)
         }
 
         if ( opt == "--binpac++-binary" ) {
+#if 0
             out << binpac_config.path_binpacxx << std::endl;
+#endif
             continue;
         }
 
         if ( opt == "--binpac++-libdirs" ) {
+#if 0
             printList(lout, binpac_config.binpac_library_dirs);
+#endif
             continue;
         }
 
         if ( opt == "--binpac++-runtime-libs" ) {
+#if 0
             if ( want_debug )
                 out << binpac_config.runtime_library_bca_dbg << std::endl;
             else
                 out << binpac_config.runtime_library_bca << std::endl;
+#endif
             continue;
         }
 

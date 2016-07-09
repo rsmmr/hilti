@@ -5,14 +5,13 @@
 #include <ast/function.h>
 #include <ast/visitor.h>
 
-#include "common.h"
 #include "ast-info.h"
+#include "common.h"
 
 namespace binpac {
 
 /// AST node for a function.
-class Function : public ast::Function<AstInfo>
-{
+class Function : public ast::Function<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -21,10 +20,12 @@ public:
     /// module: The module the function is part of. Note that it will not
     /// automatically be added to that module.
     ///
-    /// body: A statement with the function's body. Typically, the statement type will be that of a block of statements.
+    /// body: A statement with the function's body. Typically, the statement type will be that of a
+    /// block of statements.
     ///
     /// l: Location associated with the node.
-    Function(shared_ptr<ID> id, shared_ptr<binpac::type::Function> ftype, shared_ptr<Module> module, shared_ptr<binpac::Statement> body = nullptr, const Location& l=Location::None);
+    Function(shared_ptr<ID> id, shared_ptr<binpac::type::Function> ftype, shared_ptr<Module> module,
+             shared_ptr<binpac::Statement> body = nullptr, const Location& l = Location::None);
 
     /// Associates a HILTI-level name with this function. That name will be
     /// used instead of the default one during code generation.
@@ -41,8 +42,7 @@ private:
 
 /// AST node for a hook. Note that we don't derive this from a function as in
 /// BinPAC++ hooks are actually quite differnt.
-class Hook : public Node
-{
+class Hook : public Node {
 public:
     /// The kind of a hook defines whether it's to trigger during parsing or
     /// composing, or both.
@@ -61,7 +61,7 @@ public:
     ///
     /// prio: The priority of the hook. If multiple hook are defined for the
     /// same field, they are executed in order of decreasing priority.
-    /// 
+    ///
     /// debug: If True, this hook will be only compiled in if the code
     /// generator is including debug code, and it will only be executed if at
     /// run-time, debug mode is enabled (via the C function
@@ -70,11 +70,9 @@ public:
     /// args: Arguments, if the hook takes any, or an empty list otherwise.
     ///
     /// l: Location associated with the node.
-    Hook(shared_ptr<binpac::Statement> body,
-         Kind kind, int prio = 0, bool debug = false,
-         bool foreach = false,
-         parameter_list args = parameter_list(),
-         const Location& l=Location::None);
+    Hook(shared_ptr<binpac::Statement> body, Kind kind, int prio = 0, bool debug = false,
+         bool foreach = false, parameter_list args = parameter_list(),
+         const Location& l = Location::None);
 
     /// Returns the hook's body.
     shared_ptr<statement::Block> body() const;
@@ -90,7 +88,7 @@ public:
     bool debug() const;
 
     /// Returns true if this hooks is marked with \c foreach.
-    bool foreach() const;
+    bool foreach () const;
 
     /// Returns true if this is a hook to run during parsing (as opposed to
     /// composing, but note that a hook can be both).
@@ -123,7 +121,6 @@ private:
     bool _foreach;
     std::list<node_ptr<type::function::Parameter>> _args;
 };
-
 }
 
 #endif

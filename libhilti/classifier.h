@@ -27,10 +27,12 @@ typedef struct __hlt_classifier hlt_classifier;
 ///
 /// rtype: The rule type.
 ///
-/// vtype: The result type associated with rules. 
+/// vtype: The result type associated with rules.
 ///
 /// excpt: &
-extern hlt_classifier* hlt_classifier_new(int64_t num_fields, const hlt_type_info* rtype, const hlt_type_info* vtype, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_classifier* hlt_classifier_new(int64_t num_fields, const hlt_type_info* rtype,
+                                          const hlt_type_info* vtype, hlt_exception** excpt,
+                                          hlt_execution_context* ctx);
 
 /// Adds a rule to the classifier.
 ///
@@ -44,13 +46,15 @@ extern hlt_classifier* hlt_classifier_new(int64_t num_fields, const hlt_type_inf
 /// ownership of the array and its elements.
 ///
 /// priority: The priority associated with the rule. The highest-priority
-/// matching rule be returned for lookups. 
+/// matching rule be returned for lookups.
 ///
 /// vtype: The result type associated with the rule, which must match what
 /// was passed to ~~hlt_classifier_new.
 ///
 /// excpt: &
-extern void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_t priority, const hlt_type_info* vtype, void* value, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_t priority,
+                               const hlt_type_info* vtype, void* value, hlt_exception** excpt,
+                               hlt_execution_context* ctx);
 
 /// Adds a rule to the classifier. Similar to ~~hlt_classifier_add except that
 /// it sets the priority automatically to the highest priority seen so plus one.
@@ -65,14 +69,17 @@ extern void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields,
 /// was passed to ~~hlt_classifier_new.
 ///
 /// excpt: &
-extern void hlt_classifier_add_no_prio(hlt_classifier* c, hlt_classifier_field** fields,  const hlt_type_info* vtype, void* value, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_classifier_add_no_prio(hlt_classifier* c, hlt_classifier_field** fields,
+                                       const hlt_type_info* vtype, void* value,
+                                       hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Fixes the rules compiled so far and enable subsequent lookups.
 ///
 /// c: The classifier.
 ///
 /// excpt: &
-extern void hlt_classifier_compile(hlt_classifier* c, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_classifier_compile(hlt_classifier* c, hlt_exception** excpt,
+                                   hlt_execution_context* ctx);
 
 /// Returns true if their as rule matching the given key. For each key field,
 /// this performs a longest-matching-prefix match.
@@ -88,7 +95,8 @@ extern void hlt_classifier_compile(hlt_classifier* c, hlt_exception** excpt, hlt
 /// excpt: &
 ///
 /// Returns: True if there's a matching rule, false if not.
-extern int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** vals, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** vals,
+                                     hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Gets the value associated with the first rule matching the given key. For
 /// each key field, this performs a longest-matching-prefix match. Of all
@@ -109,6 +117,7 @@ extern int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** v
 /// Returns: The value.
 ///
 /// Raises: IndexError - If no matching rule exists.
-extern void* hlt_classifier_get(hlt_classifier* c, hlt_classifier_field** vals, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void* hlt_classifier_get(hlt_classifier* c, hlt_classifier_field** vals,
+                                hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

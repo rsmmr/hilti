@@ -20,7 +20,7 @@ int64_t hlt_enum_value(hlt_enum e, hlt_exception** excpt, hlt_execution_context*
 
 hlt_enum hlt_enum_unset(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_enum unset = { HLT_ENUM_UNDEF, 0 };
+    hlt_enum unset = {HLT_ENUM_UNDEF, 0};
     return unset;
 }
 
@@ -32,11 +32,13 @@ int8_t hlt_enum_equal(hlt_enum e1, hlt_enum e2, hlt_exception** excpt, hlt_execu
     return e1.value == e2.value;
 }
 
-hlt_string hlt_enum_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_enum_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                              __hlt_pointer_stack* seen, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_ENUM);
 
-    hlt_enum i = *((hlt_enum *) obj);
+    hlt_enum i = *((hlt_enum*)obj);
 
     if ( hlt_enum_undefined(i) ) {
         if ( hlt_enum_has_val(i) ) {
@@ -49,7 +51,7 @@ hlt_string hlt_enum_to_string(const hlt_type_info* type, const void* obj, int32_
             return hlt_string_from_asciiz("Undef", excpt, ctx);
     }
 
-    Label *labels = (Label*) type->aux;
+    Label* labels = (Label*)type->aux;
 
     while ( labels->name ) {
         if ( labels->value == i.value )
@@ -63,12 +65,11 @@ hlt_string hlt_enum_to_string(const hlt_type_info* type, const void* obj, int32_
     return 0;
 }
 
-int64_t hlt_enum_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
+int64_t hlt_enum_to_int64(const hlt_type_info* type, const void* obj, int32_t options,
+                          hlt_exception** expt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_ENUM);
-    hlt_enum i = *((hlt_enum *) obj);
+    hlt_enum i = *((hlt_enum*)obj);
 
     return hlt_enum_undefined(i) ? -1 : i.value;
 }
-
-

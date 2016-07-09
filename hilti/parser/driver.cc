@@ -1,15 +1,16 @@
 
 #include <iostream>
 
+#include "../builder/module.h"
 #include "driver.h"
 #include "scanner.h"
-#include "../builder/module.h"
 
 #include "hilti/autogen/parser.h"
 
 using namespace hilti_parser;
 
-shared_ptr<hilti::Module> Driver::parse(shared_ptr<CompilerContext> ctx, std::istream& in, const std::string& sname)
+shared_ptr<hilti::Module> Driver::parse(shared_ptr<CompilerContext> ctx, std::istream& in,
+                                        const std::string& sname)
 {
     _sname = sname;
     _compiler_context = ctx;

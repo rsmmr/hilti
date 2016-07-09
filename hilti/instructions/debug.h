@@ -1,10 +1,11 @@
 
 iBegin(debug, Assert, "debug.assert")
-    iOp1(optype::boolean, true)
-    iOp2(optype::optional(optype::string), true)
-    iHideInDebugTrace()
+    iOp1(optype::boolean, true);
+    iOp2(optype::optional(optype::string), true);
+    iHideInDebugTrace();
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -17,9 +18,10 @@ iBegin(debug, Assert, "debug.assert")
 iEnd
 
 iBegin(debug, InternalError, "debug.internal_error")
-    iOp1(optype::string, true)
+    iOp1(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -31,12 +33,13 @@ iBegin(debug, InternalError, "debug.internal_error")
 iEnd
 
 iBegin(debug, Msg, "debug.msg")
-    iOp1(optype::string, true)
-    iOp2(optype::string, true)
-    iOp3(optype::tuple, true)
-    iHideInDebugTrace()
+    iOp1(optype::string, true);
+    iOp2(optype::string, true);
+    iOp3(optype::tuple, true);
+    iHideInDebugTrace();
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -49,10 +52,10 @@ iBegin(debug, Msg, "debug.msg")
 iEnd
 
 iBegin(debug, PopIndent, "debug.pop_indent")
-    iHideInDebugTrace()
+    iHideInDebugTrace();
 
-    iValidate {
-
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -64,9 +67,10 @@ iBegin(debug, PopIndent, "debug.pop_indent")
 iEnd
 
 iBegin(debug, PushIndent, "debug.push_indent")
-    iHideInDebugTrace()
+    iHideInDebugTrace();
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -76,4 +80,3 @@ iBegin(debug, PushIndent, "debug.push_indent")
     )")
 
 iEnd
-

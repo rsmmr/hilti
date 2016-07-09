@@ -12,8 +12,7 @@ namespace passes {
 class CFG;
 
 /// Computes available expression (instruction) information for functions.
-class Available : public Pass<>
-{
+class Available : public Pass<> {
 public:
     // Representation of one expression that might be available.
     struct AExpression {
@@ -24,16 +23,16 @@ public:
 
         shared_ptr<statement::Instruction> instr;
 
-        FlowVariable where;          // Variable where the value of the expression is available.
-        FlowVariable dependencies;   // All variables that this instruction depends on.
+        FlowVariable where;        // Variable where the value of the expression is available.
+        FlowVariable dependencies; // All variables that this instruction depends on.
     };
 
     typedef std::vector<AExpression> available_set;
     typedef std::unordered_map<shared_ptr<Statement>, AvailableSets> available_map;
 
-    struct AExpressionSets  {
-        shared_ptr<variable_set> in;       // All variables live right before the statement.
-        shared_ptr<variable_set> out;      // All variables live right after the statement.
+    struct AExpressionSets {
+        shared_ptr<variable_set> in;  // All variables live right before the statement.
+        shared_ptr<variable_set> out; // All variables live right after the statement.
     };
 
     /// Constructor.
@@ -84,9 +83,7 @@ private:
     shared_ptr<CFG> _cfg;
     Available_map _Availablees;
 };
-
 }
-
 }
 
 #endif

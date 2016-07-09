@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "../pass.h"
+#include "../statement.h"
 
 namespace hilti {
 
@@ -16,8 +17,7 @@ class CFG;
 class LocalLiveness;
 
 /// Computes liveness information for local variables.
-class Liveness : public Pass<>
-{
+class Liveness : public Pass<> {
 public:
     /// Constructor.
     Liveness(CompilerContext* context, shared_ptr<CFG> cfg);
@@ -30,10 +30,11 @@ public:
 
     typedef Statement::variable_set variable_set;
 
-    struct LivenessSets  {
-        shared_ptr<variable_set> in;       // All variables live right before the statement.
-        shared_ptr<variable_set> out;      // All variables live right after the statement.
-        shared_ptr<variable_set> dead;     // All variables live before this instructio, but dead afterwards.
+    struct LivenessSets {
+        shared_ptr<variable_set> in;  // All variables live right before the statement.
+        shared_ptr<variable_set> out; // All variables live right after the statement.
+        shared_ptr<variable_set>
+            dead; // All variables live before this instructio, but dead afterwards.
     };
 
     typedef std::unordered_map<shared_ptr<Statement>, LivenessSets> liveness_map;
@@ -77,9 +78,7 @@ private:
     shared_ptr<CFG> _cfg;
     liveness_map _livenesses;
 };
-
 }
-
 }
 
 #endif

@@ -1,5 +1,5 @@
 //
-// @TEST-EXEC: ${CXX} -g -O0 -o a.out %INPUT `${HILTI_CONFIG} --compiler --cxxflags --ldflags --libs`
+// @TEST-EXEC: ${CXX} -g -O0 -o a.out %INPUT `${HILTI_CONFIG} --compiler --cxxflags --ldflags --libs` >&2
 // @TEST-EXEC: ./a.out >output
 // @TEST-EXEC: btest-diff output
 //

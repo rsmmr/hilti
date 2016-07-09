@@ -4,8 +4,7 @@ DECLARE_SET(foo, int, int, SET_STD_EQUAL)
 static void print_set(set_foo* f)
 {
     printf("size %d |", set_foo_size(f));
-    set_for_each(foo, f, i)
-        printf("%d ", i);
+    set_for_each(foo, f, i) printf("%d ", i);
     printf("\n");
 }
 

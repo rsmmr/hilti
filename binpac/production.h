@@ -15,8 +15,7 @@ namespace binpac {
 class Grammar;
 
 /// Base class for all grammar productions.
-class Production : public Node
-{
+class Production : public Node {
 public:
     typedef std::list<shared_ptr<Production>> production_list;
 
@@ -130,8 +129,7 @@ private:
 namespace production {
 
 /// An empty production.
-class Epsilon : public Production
-{
+class Epsilon : public Production {
 public:
     /// Constructor.
     ///
@@ -147,8 +145,7 @@ protected:
 };
 
 /// Base class for terminals.
-class Terminal : public Production
-{
+class Terminal : public Production {
 public:
     typedef void (*filter_func)(); // TODO
 
@@ -171,7 +168,8 @@ public:
     /// parsed value subsequently.
     ///
     /// l: Associated location.
-    Terminal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l = Location::None);
+    Terminal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr,
+             filter_func filter, const Location& l = Location::None);
 
     /// Returns the filter associated with the terminal.
     filter_func filter() const;
@@ -212,8 +210,7 @@ private:
 
 /// Base class for a literal. A literal is anythig which can be directly
 /// scanned for as a sequence of bytes.
-class Literal : public Terminal
-{
+class Literal : public Terminal {
 public:
     typedef ctor::RegExp::pattern_list pattern_list;
 
@@ -235,7 +232,8 @@ public:
     /// the parsed value subsequently.
     ///
     /// l: Associated location.
-    Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+    Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr = nullptr,
+            filter_func filter = nullptr, const Location& l = Location::None);
 
     /// Returns an expression representing the literal.
     virtual shared_ptr<Expression> literal() const = 0;
@@ -250,15 +248,16 @@ public:
 };
 
 /// A literal represented by a constant.
-class Constant : public Literal
-{
+class Constant : public Literal {
 public:
     /// Constructor.
     ///
     /// constant: The constant.
     ///
     /// l: Associated location.
-    Constant(const string& symbol, shared_ptr<binpac::Constant> constant, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+    Constant(const string& symbol, shared_ptr<binpac::Constant> constant,
+             shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr,
+             const Location& l = Location::None);
 
     /// Returns the literal.
     shared_ptr<binpac::Constant> constant() const;
@@ -276,15 +275,15 @@ private:
 };
 
 /// A literal represented by a ctor.
-class Ctor : public Literal
-{
+class Ctor : public Literal {
 public:
     /// Constructor.
     ///
     /// ctor: The ctor.
     ///
     /// l: Associated location.
-    Ctor(const string& symbol, shared_ptr<binpac::Ctor> ctor, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+    Ctor(const string& symbol, shared_ptr<binpac::Ctor> ctor, shared_ptr<Expression> expr = nullptr,
+         filter_func filter = nullptr, const Location& l = Location::None);
 
     /// Returns the literal.
     shared_ptr<binpac::Ctor> ctor() const;
@@ -305,15 +304,16 @@ private:
 /// literals; they can only if the parsing can for tell that a instance of
 /// the type is coming up, i.e., supports look-ahead (as, e.g., in the case
 /// of embedded objects).
-class TypeLiteral : public Literal
-{
+class TypeLiteral : public Literal {
 public:
     /// Constructor.
     ///
     /// type: The type.
     ///
     /// l: Associated location.
-    TypeLiteral(const string& symbol, shared_ptr<binpac::Type> type, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+    TypeLiteral(const string& symbol, shared_ptr<binpac::Type> type,
+                shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr,
+                const Location& l = Location::None);
 
     /// Returns the type.
     shared_ptr<binpac::Type> type() const;
@@ -334,8 +334,7 @@ private:
 /// stream according to its type, yet is not recognizable as such in advance
 /// by just looking at the available bytes. If we start parsing, we assume it
 /// will match (and if not, generate a parse error).
-class Variable : public Terminal
-{
+class Variable : public Terminal {
 public:
     /// Constructor.
     ///
@@ -356,7 +355,8 @@ public:
     /// parsed value subsequently.
     ///
     /// l: Associated location.
-    Variable(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+    Variable(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr = nullptr,
+             filter_func filter = nullptr, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Terminal);
 
@@ -367,8 +367,7 @@ protected:
 };
 
 /// Base class for non-terminals.
-class NonTerminal : public Production
-{
+class NonTerminal : public Production {
 public:
     typedef std::list<production_list> alternative_list;
 
@@ -394,8 +393,7 @@ protected:
 };
 
 /// A type described by another grammar from an independent type::Unit type.
-class ChildGrammar : public NonTerminal
-{
+class ChildGrammar : public NonTerminal {
 public:
     /// Constructor.
     ///
@@ -404,7 +402,8 @@ public:
     /// type: The unit type.
     ///
     /// l: Associated location.
-    ChildGrammar(const string& symbol, shared_ptr<Production> child, shared_ptr<type::Unit> type, const Location& l = Location::None);
+    ChildGrammar(const string& symbol, shared_ptr<Production> child, shared_ptr<type::Unit> type,
+                 const Location& l = Location::None);
 
     /// Returns the child production.
     shared_ptr<Production> child() const;
@@ -440,8 +439,7 @@ private:
 /// A wrapper that forwards directly to another grammar (within the same unit
 /// type). This can be used to hook into starting/finishing parsing that
 /// other grammar.
-class Enclosure : public NonTerminal
-{
+class Enclosure : public NonTerminal {
 public:
     /// Constructor.
     ///
@@ -450,7 +448,8 @@ public:
     /// type: The unit type.
     ///
     /// l: Associated location.
-    Enclosure(const string& symbol, shared_ptr<Production> child, const Location& l = Location::None);
+    Enclosure(const string& symbol, shared_ptr<Production> child,
+              const Location& l = Location::None);
 
     /// Returns the enclosed child production.
     shared_ptr<Production> child() const;
@@ -467,8 +466,7 @@ private:
 };
 
 /// A sequence of other productions.
-class Sequence : public NonTerminal
-{
+class Sequence : public NonTerminal {
 public:
     /// Constructor.
     ///
@@ -482,7 +480,8 @@ public:
     /// l: Associated location.
     ///
     /// .. todo: Does this class need the \a type parameter?
-    Sequence(const string& symbol, const production_list& seq, shared_ptr<Type> type = nullptr, const Location& l = Location::None);
+    Sequence(const string& symbol, const production_list& seq, shared_ptr<Type> type = nullptr,
+             const Location& l = Location::None);
 
     /// Returns the production sequence.
     production_list sequence() const;
@@ -505,8 +504,7 @@ private:
 
 /// A pair of alternatives between which we can decide with one token of
 /// look-ahead.
-class LookAhead : public NonTerminal
-{
+class LookAhead : public NonTerminal {
 public:
     /// Constructor.
     ///
@@ -518,7 +516,8 @@ public:
     /// unique within the grammar the production is (or will be) part of.
     ///
     /// l: Associated location.
-    LookAhead(const string& symbol, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l = Location::None);
+    LookAhead(const string& symbol, shared_ptr<Production> alt1, shared_ptr<Production> alt2,
+              const Location& l = Location::None);
 
     typedef std::set<shared_ptr<Terminal>> look_aheads;
 
@@ -577,8 +576,7 @@ private:
 
 /// A pair of alternatives between which we decide based on a boolean
 /// expression.
-class Boolean : public NonTerminal
-{
+class Boolean : public NonTerminal {
 public:
     /// Constructor.
     ///
@@ -592,7 +590,8 @@ public:
     /// unique within the grammar the production is (or will be) part of.
     ///
     /// l: Associated location.
-    Boolean(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l = Location::None);
+    Boolean(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> alt1,
+            shared_ptr<Production> alt2, const Location& l = Location::None);
 
     /// Returns the expression associated with the boolean production.
     shared_ptr<Expression> expression() const;
@@ -616,8 +615,7 @@ private:
 };
 
 /// A production executing a given number of times.
-class Counter : public NonTerminal
-{
+class Counter : public NonTerminal {
 public:
     /// Constructor.
     ///
@@ -630,7 +628,8 @@ public:
     /// unique within the grammar the production is (or will be) part of.
     ///
     /// l: Associated location.
-    Counter(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l = Location::None);
+    Counter(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body,
+            const Location& l = Location::None);
 
     /// Destructor.
     virtual ~Counter();
@@ -653,8 +652,7 @@ private:
 };
 
 /// A production that parses a byte block of a given length with another production.
-class ByteBlock : public NonTerminal
-{
+class ByteBlock : public NonTerminal {
 public:
     /// Constructor.
     ///
@@ -667,7 +665,8 @@ public:
     /// unique within the grammar the production is (or will be) part of.
     ///
     /// l: Associated location.
-    ByteBlock(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l = Location::None);
+    ByteBlock(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body,
+              const Location& l = Location::None);
 
     /// Returns the length expression.
     shared_ptr<binpac::Expression> expression() const;
@@ -687,8 +686,7 @@ private:
 };
 
 /// A production executing as long as condition is true.
-class While : public NonTerminal
-{
+class While : public NonTerminal {
 public:
     /// Constructor.
     ///
@@ -700,7 +698,8 @@ public:
     /// unique within the grammar the production is (or will be) part of.
     ///
     /// l: Associated location.
-    While(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l = Location::None);
+    While(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body,
+          const Location& l = Location::None);
 
     /// Returns the condition expression.
     shared_ptr<Expression> expression() const;
@@ -721,8 +720,7 @@ private:
 };
 
 /// A production executing until interrupted by a foreach hook.
-class Loop : public NonTerminal
-{
+class Loop : public NonTerminal {
 public:
     /// Constructor.
     ///
@@ -735,7 +733,8 @@ public:
     /// next iteration is ok.
     ///
     /// l: Associated location.
-    Loop(const string& symbol, shared_ptr<Production> body, bool eod_ok, const Location& l = Location::None);
+    Loop(const string& symbol, shared_ptr<Production> body, bool eod_ok,
+         const Location& l = Location::None);
 
     /// Returns the loop body production.
     shared_ptr<Production> body() const;
@@ -756,10 +755,10 @@ private:
 
 /// Alternatives between which we decide based on which value out of a set of
 /// options is matched; plus a default if none.
-class Switch : public NonTerminal
-{
+class Switch : public NonTerminal {
 public:
-    typedef std::list<std::pair<std::list<shared_ptr<Expression>>, shared_ptr<Production>>> case_list;
+    typedef std::list<std::pair<std::list<shared_ptr<Expression>>, shared_ptr<Production>>>
+        case_list;
 
     /// Constructor.
     ///
@@ -777,7 +776,8 @@ public:
     /// unique within the grammar the production is (or will be) part of.
     ///
     /// l: Associated location.
-    Switch(const string& symbol, shared_ptr<Expression> expr, const case_list& cases, shared_ptr<Production> default_, const Location& l = Location::None);
+    Switch(const string& symbol, shared_ptr<Expression> expr, const case_list& cases,
+           shared_ptr<Production> default_, const Location& l = Location::None);
 
     /// Returns the switch expression.
     shared_ptr<Expression> expression() const;
@@ -804,8 +804,7 @@ private:
 
 /// An internal class representing a production to be resolved later. This is
 /// for supporting recursive grammars.
-class Unknown : public Production
-{
+class Unknown : public Production {
 public:
     /// Constructor.
     ///
@@ -825,10 +824,7 @@ protected:
 private:
     shared_ptr<Node> _node;
 };
-
-
 }
-
 }
 
 #endif

@@ -41,17 +41,16 @@ enum Tag {
  * Context where an attribute can be used.
  */
 enum Context {
-    FUNCTION,       /// Associated with functions.
-    MAP,            /// Associated with a map.
-    REGEXP,         /// Associated with regexps.
-    STRUCT_FIELD,   /// Associated with struct fields.
-    VARIABLE,       /// Associated with variables.
-    CTOR,           /// Associated with a constructor expression.
-    CONST,          /// Associated with a constant expression.
-    TYPE_,          /// Associated with a type.
-    ANY,            /// Wildcard
+    FUNCTION,     /// Associated with functions.
+    MAP,          /// Associated with a map.
+    REGEXP,       /// Associated with regexps.
+    STRUCT_FIELD, /// Associated with struct fields.
+    VARIABLE,     /// Associated with variables.
+    CTOR,         /// Associated with a constructor expression.
+    CONST,        /// Associated with a constant expression.
+    TYPE_,        /// Associated with a type.
+    ANY,          /// Wildcard
 };
-
 }
 
 class AttributeSet;
@@ -168,11 +167,17 @@ private:
  * Groups a set of attributes into a set.
  */
 class AttributeSet : public Node {
+    AST_RTTI
 public:
     /**
      * Constructor.
      */
     AttributeSet();
+
+    /**
+     * Destructor.
+     */
+    virtual ~AttributeSet();
 
     /**
      * Returns true if there's a attribute of the given tag in the set.
@@ -248,7 +253,8 @@ public:
      *
      * Returns: The attributes value, or the default_.
      */
-    shared_ptr<Expression> getAsExpression(attribute::Tag tag, shared_ptr<Expression> default_ = nullptr) const;
+    shared_ptr<Expression> getAsExpression(attribute::Tag tag,
+                                           shared_ptr<Expression> default_ = nullptr) const;
 
     /**
      * Adds an attribute to the set. Any existing of the same tag will be
@@ -353,29 +359,30 @@ private:
  */
 class NodeWithAttributes {
 public:
-   /// Constructor.
-   ///
-   /// n: The node the attributes are associated with.
-   NodeWithAttributes(Node* n);
+    /// Constructor.
+    ///
+    /// n: The node the attributes are associated with.
+    NodeWithAttributes(Node* n);
 
-   /// Returns the attributes associated with the declaration.
-   const AttributeSet& attributes() const;
+    /// Returns the attributes associated with the declaration.
+    const AttributeSet& attributes() const;
 
-   /// Returns the attributes associated with the declaration. This may be
-   /// modified to change the attributes.
-   AttributeSet& attributes();
+    /// Returns the attributes associated with the declaration. This may be
+    /// modified to change the attributes.
+    AttributeSet& attributes();
 
-   /// Replaces the current set of attributes with the ones given.
-   void setAttributes(const AttributeSet& attrs);
+    /// Replaces the current set of attributes with the ones given.
+    void setAttributes(const AttributeSet& attrs);
 
-   /// Adds attributes to the current set.
-   void addAttributes(const AttributeSet& attrs);
+    /// Adds attributes to the current set.
+    void addAttributes(const AttributeSet& attrs);
 
 private:
-   Node* _node;
-   node_ptr<AttributeSet> _attributes = nullptr;
-};
+    NodeWithAttributes() = delete;
 
+    Node* _node;
+    node_ptr<AttributeSet> _attributes = nullptr;
+};
 }
 
 #endif

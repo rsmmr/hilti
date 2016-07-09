@@ -4,33 +4,33 @@
  *
  */
 
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <stdio.h>
+#include <string.h>
 
+#include "autogen/hilti-hlt.h"
 #include "int.h"
 #include "rtti.h"
 #include "string_.h"
-#include "autogen/hilti-hlt.h"
 
 // Converts the integer into a int64_t correctly considering its width and
 // assuming a signed value.
-static int64_t _makeInt64Signed(const hlt_type_info* type, const void *obj)
+static int64_t _makeInt64Signed(const hlt_type_info* type, const void* obj)
 {
     // The first (and only) type parameter is an int64_t with the wdith.
-    int64_t *width = (int64_t*) &(type->type_params);
+    int64_t* width = (int64_t*)&(type->type_params);
     int64_t val;
 
     if ( *width <= 8 )
-        val = *((int8_t *)obj);
+        val = *((int8_t*)obj);
     else if ( *width <= 16 )
-        val = *((int16_t *)obj);
+        val = *((int16_t*)obj);
     else if ( *width <= 32 )
-        val = *((int32_t *)obj);
+        val = *((int32_t*)obj);
     else {
         assert(*width <= 64);
-        val = *((int64_t *)obj);
+        val = *((int64_t*)obj);
     }
 
     return val;
@@ -38,21 +38,21 @@ static int64_t _makeInt64Signed(const hlt_type_info* type, const void *obj)
 
 // Converts the integer into a int64_t correctly considering its width and
 // assuming an usigned value.
-static uint64_t _makeInt64Unsigned(const hlt_type_info* type, const void *obj)
+static uint64_t _makeInt64Unsigned(const hlt_type_info* type, const void* obj)
 {
     // The first (and only) type parameter is an int64_t with the wdith.
-    int64_t *width = (int64_t*) &(type->type_params);
+    int64_t* width = (int64_t*)&(type->type_params);
     uint64_t val;
 
     if ( *width <= 8 )
-        val = *((uint8_t *)obj);
+        val = *((uint8_t*)obj);
     else if ( *width <= 16 )
-        val = *((uint16_t *)obj);
+        val = *((uint16_t*)obj);
     else if ( *width <= 32 )
-        val = *((uint32_t *)obj);
+        val = *((uint32_t*)obj);
     else {
         assert(*width <= 64);
-        val = *((uint64_t *)obj);
+        val = *((uint64_t*)obj);
     }
 
     return val;
@@ -73,14 +73,16 @@ uint64_t hlt_int_pow(uint64_t base, uint64_t exp, hlt_exception** excpt, hlt_exe
     return result;
 }
 
-hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** exception, hlt_execution_context* ctx)
+hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                             __hlt_pointer_stack* seen, hlt_exception** exception,
+                             hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_INTEGER);
 
-    static const char *fmt_signed = "%" PRId64;
-    static const char *fmt_unsigned = "%" PRId64;
+    static const char* fmt_signed = "%" PRId64;
+    static const char* fmt_unsigned = "%" PRId64;
 
-    const char *fmt;
+    const char* fmt;
     int64_t val;
 
     if ( options & HLT_CONVERT_UNSIGNED ) {
@@ -100,7 +102,8 @@ hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t
     return hlt_string_from_data((int8_t*)buffer, len, exception, ctx);
 }
 
-int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
+int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t options,
+                         hlt_exception** expt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_INTEGER);
 
@@ -110,17 +113,18 @@ int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t opt
         return (int64_t)_makeInt64Signed(type, obj);
 }
 
-int64_t hlt_int_to_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
+int64_t hlt_int_to_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt,
+                        hlt_execution_context* ctx)
 {
     if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Host, excpt, ctx) )
         return v;
 
     if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Big, excpt, ctx) )
-        return (hlt_ntoh64(v) >> (64 - n*8));
+        return (hlt_ntoh64(v) >> (64 - n * 8));
 
     if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
 #if __BIG_ENDIAN__
-        return (hlt_flip64(v) >> (64 - n*8));
+        return (hlt_flip64(v) >> (64 - n * 8));
 #else
         return v;
 #endif
@@ -129,17 +133,18 @@ int64_t hlt_int_to_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception
     return 0;
 }
 
-int64_t hlt_int_from_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
+int64_t hlt_int_from_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Host, excpt, ctx) )
         return v;
 
     if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Big, excpt, ctx) )
-        return (hlt_ntoh64(v) >> (64 - n*8));
+        return (hlt_ntoh64(v) >> (64 - n * 8));
 
     if ( hlt_enum_equal(byte_order, Hilti_ByteOrder_Little, excpt, ctx) )
 #if __BIG_ENDIAN__
-        return (hlt_flip64(v) >> (64 - n*8));
+        return (hlt_flip64(v) >> (64 - n * 8));
 #else
         return v;
 #endif
@@ -150,7 +155,7 @@ int64_t hlt_int_from_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_excepti
 
 int64_t hlt_int_flip(int64_t v, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return (hlt_flip64(v) >> (64 - n*8));
+    return (hlt_flip64(v) >> (64 - n * 8));
 }
 
 int64_t hlt_int_width(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -160,6 +165,6 @@ int64_t hlt_int_width(const hlt_type_info* type, hlt_exception** excpt, hlt_exec
         return 0;
     }
 
-    int64_t *width = (int64_t*) &(type->type_params);
+    int64_t* width = (int64_t*)&(type->type_params);
     return *width;
 }

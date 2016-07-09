@@ -14,15 +14,14 @@ using std::string;
 namespace hilti {
 
 /// A set of options controlling the compilation and link process.
-class Options
-{
+class Options {
 public:
     typedef std::list<string> string_list;
     typedef std::set<string> string_set;
 
     Options();
     Options(const Options& other) = default;
-    virtual ~Options() {};
+    virtual ~Options(){};
 
     /// If true, produce code with debugging support. Enabling this has a
     /// significant performance impact on the generated code.
@@ -32,6 +31,9 @@ public:
     /// both HILTI and LLVM level optimization. However, the HILTI-level
     /// passes can be disabled individually my modifying optimization_passes.
     bool optimize = false;
+
+    /// Optimization level when optimize is true.
+    int opt_level = 2;
 
     /// If >0, include instrumentation for runtime profiling into generated
     /// code. For larger values, more fine-granular profiling may be
@@ -83,9 +85,7 @@ public:
 
     /// Initialized the cache key with option-specific values.
     virtual void toCacheKey(::util::cache::FileCache::Key* key) const;
-
 };
-
 }
 
 #endif

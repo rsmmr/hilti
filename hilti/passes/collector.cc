@@ -1,8 +1,8 @@
 
 #include "../declaration.h"
-#include "../variable.h"
-#include "../statement.h"
 #include "../module.h"
+#include "../statement.h"
+#include "../variable.h"
 
 #include "collector.h"
 
@@ -13,7 +13,7 @@ void Collector::visit(declaration::Variable* v)
 {
     auto var = v->variable();
 
-    if ( ast::isA<variable::Global>(var) && v->linkage() != Declaration::IMPORTED ) {
+    if ( ast::rtti::isA<variable::Global>(var) && v->linkage() != Declaration::IMPORTED ) {
         // A global.
         _globals.push_back(var);
         debug(1, string("global: ") + var->id()->name());

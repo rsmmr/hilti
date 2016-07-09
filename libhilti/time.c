@@ -4,11 +4,11 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
 
-#include "time_.h"
 #include "string_.h"
+#include "time_.h"
 
 hlt_time hlt_time_value(uint64_t secs, uint64_t nsecs)
 {
@@ -17,10 +17,12 @@ hlt_time hlt_time_value(uint64_t secs, uint64_t nsecs)
 
 extern const hlt_type_info hlt_type_info_double;
 
-hlt_string hlt_time_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_time_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                              __hlt_pointer_stack* seen, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIME);
-    hlt_time val = *((hlt_time *)obj);
+    hlt_time val = *((hlt_time*)obj);
 
     if ( val == HLT_TIME_UNSET )
         return hlt_string_from_asciiz("<not set>", excpt, ctx);
@@ -40,10 +42,11 @@ hlt_string hlt_time_to_string(const hlt_type_info* type, const void* obj, int32_
     return hlt_string_from_asciiz(buffer2, excpt, ctx);
 }
 
-double hlt_time_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
+double hlt_time_to_double(const hlt_type_info* type, const void* obj, int32_t options,
+                          hlt_exception** expt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIME);
-    hlt_time val = *((hlt_time *)obj);
+    hlt_time val = *((hlt_time*)obj);
 
     if ( val == HLT_TIME_UNSET )
         return -1;
@@ -51,10 +54,11 @@ double hlt_time_to_double(const hlt_type_info* type, const void* obj, int32_t op
     return val / 1e9;
 }
 
-int64_t hlt_time_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
+int64_t hlt_time_to_int64(const hlt_type_info* type, const void* obj, int32_t options,
+                          hlt_exception** expt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIME);
-    hlt_time val = *((hlt_time *)obj);
+    hlt_time val = *((hlt_time*)obj);
     return (int64_t)(val / 1e9);
 }
 

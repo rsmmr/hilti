@@ -6,30 +6,29 @@
 
 #include <ast/expression.h>
 
-#include "common.h"
-#include "operator.h"
 #include "coercer.h"
+#include "common.h"
+#include "constant-coercer.h"
+#include "constant.h"
 #include "ctor.h"
 #include "function.h"
-#include "constant.h"
-#include "constant-coercer.h"
-#include "variable.h"
 #include "module.h"
+#include "operator.h"
+#include "variable.h"
 
 namespace hilti {
-    class Expression;
+class Expression;
 }
 
 namespace binpac {
 
 /// Base class for expression nodes.
-class Expression : public ast::Expression<AstInfo>
-{
+class Expression : public ast::Expression<AstInfo> {
 public:
     /// Constructor.
     ///
     /// l: An associated location.
-    Expression(const Location& l=Location::None);
+    Expression(const Location& l = Location::None);
 
     /// Returns true if the expressions value is suitable to initialize a
     /// variable/constant of corresponding type. The default implementation
@@ -66,13 +65,12 @@ namespace expression {
 ///
 /// This redefines the expression's virtual methods (which otherwise the
 /// mix-ins provide).
-class CustomExpression : public Expression
-{
+class CustomExpression : public Expression {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    CustomExpression(const Location& l=Location::None);
+    CustomExpression(const Location& l = Location::None);
 
     /// Must be overridden by childs.
     shared_ptr<Type> type() const override;
@@ -84,22 +82,20 @@ public:
 };
 
 /// AST node for a list expressions.
-class List : public binpac::Expression, public ast::expression::mixin::List<AstInfo>
-{
+class List : public binpac::Expression, public ast::expression::mixin::List<AstInfo> {
 public:
     /// Constructor.
     ///
     /// exprs: A list of individual expressions.
     ///
     /// l: An associated location.
-    List(const expression_list& exprs, const Location& l=Location::None);
+    List(const expression_list& exprs, const Location& l = Location::None);
 
     ACCEPT_VISITOR(::binpac::Expression);
 };
 
 /// AST node for a constructor expression.
-class Ctor : public binpac::Expression, public ast::expression::mixin::Ctor<AstInfo>
-{
+class Ctor : public binpac::Expression, public ast::expression::mixin::Ctor<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -108,128 +104,122 @@ public:
     /// type: The type of the constructed value.
     ///
     /// l: An associated location.
-    Ctor(shared_ptr<binpac::Ctor> ctor, const Location& l=Location::None);
+    Ctor(shared_ptr<binpac::Ctor> ctor, const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression referencing a constant
-class Constant : public binpac::Expression, public ast::expression::mixin::Constant<AstInfo>
-{
+class Constant : public binpac::Expression, public ast::expression::mixin::Constant<AstInfo> {
 public:
     /// Constructor.
     ///
     /// constant: The constant.
     ///
     /// l: An associated location.
-    Constant(shared_ptr<binpac::Constant> constant, const Location& l=Location::None);
+    Constant(shared_ptr<binpac::Constant> constant, const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression referencing a variable.
-class Variable : public binpac::Expression, public ast::expression::mixin::Variable<AstInfo>
-{
+class Variable : public binpac::Expression, public ast::expression::mixin::Variable<AstInfo> {
 public:
     /// Constructor.
     ///
     /// var: The variable.
     ///
     /// l: An associated location.
-    Variable(shared_ptr<binpac::Variable> var, const Location& l=Location::None);
+    Variable(shared_ptr<binpac::Variable> var, const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression referencing a type.
-class Type : public binpac::Expression, public ast::expression::mixin::Type<AstInfo>
-{
+class Type : public binpac::Expression, public ast::expression::mixin::Type<AstInfo> {
 public:
     /// Constructor.
     ///
     /// type: The type.
     ///
     /// l: An associated location.
-    Type(shared_ptr<binpac::Type> type, const Location& l=Location::None);
+    Type(shared_ptr<binpac::Type> type, const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression constructing a type's default value.
-class Default : public binpac::Expression, public ast::expression::mixin::Default<AstInfo>
-{
+class Default : public binpac::Expression, public ast::expression::mixin::Default<AstInfo> {
 public:
-   /// Constructor.
-   ///
-   /// type: The type.
-   ///
-   /// l: An associated location.
-   Default(shared_ptr<binpac::Type> type, const Location& l=Location::None)
-       : binpac::Expression(l), ast::expression::mixin::Default<AstInfo>(this, type) {}
+    /// Constructor.
+    ///
+    /// type: The type.
+    ///
+    /// l: An associated location.
+    Default(shared_ptr<binpac::Type> type, const Location& l = Location::None)
+        : binpac::Expression(l), ast::expression::mixin::Default<AstInfo>(this, type)
+    {
+    }
 
-   ACCEPT_VISITOR(binpac::Expression);
+    ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression referencing a module.
-class Module : public binpac::Expression, public ast::expression::mixin::Module<AstInfo>
-{
+class Module : public binpac::Expression, public ast::expression::mixin::Module<AstInfo> {
 public:
     /// Constructor.
     ///
     /// module: The module.
     ///
     /// l: An associated location.
-    Module(shared_ptr<binpac::Module> module, const Location& l=Location::None);
+    Module(shared_ptr<binpac::Module> module, const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression referencing a function.
-class Function : public binpac::Expression, public ast::expression::mixin::Function<AstInfo>
-{
+class Function : public binpac::Expression, public ast::expression::mixin::Function<AstInfo> {
 public:
     /// Constructor.
     ///
     /// func: The function.
     ///
     /// l: An associated location.
-    Function(shared_ptr<binpac::Function> func, const Location& l=Location::None);
+    Function(shared_ptr<binpac::Function> func, const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression referencing a function parameter.
-class Parameter : public binpac::Expression, public ast::expression::mixin::Parameter<AstInfo>
-{
+class Parameter : public binpac::Expression, public ast::expression::mixin::Parameter<AstInfo> {
 public:
     /// Constructor.
     ///
     /// param: The parameter.
     ///
     /// l: An associated location.
-    Parameter(shared_ptr<binpac::type::function::Parameter> param, const Location& l=Location::None);
+    Parameter(shared_ptr<binpac::type::function::Parameter> param,
+              const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression referencing an ID.
-class ID : public binpac::Expression, public ast::expression::mixin::ID<AstInfo>
-{
+class ID : public binpac::Expression, public ast::expression::mixin::ID<AstInfo> {
 public:
     /// Constructor.
     ///
     /// id: The ID.
     ///
     /// l: An associated location.
-    ID(shared_ptr<binpac::ID> id, const Location& l=Location::None);
+    ID(shared_ptr<binpac::ID> id, const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression that represents another expression coerced to
 /// a different type.
-class Coerced : public binpac::Expression, public ast::expression::mixin::Coerced<AstInfo>
-{
+class Coerced : public binpac::Expression, public ast::expression::mixin::Coerced<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -239,15 +229,15 @@ public:
     /// that the type coercion is legal.
     ///
     /// l: An associated location.
-    Coerced(shared_ptr<binpac::Expression> expr, shared_ptr<binpac::Type> dst, const Location& l=Location::None);
+    Coerced(shared_ptr<binpac::Expression> expr, shared_ptr<binpac::Type> dst,
+            const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Expression);
 };
 
 /// AST node for an expression encapsulating an already computed HILTI value
 /// during code generation.
-class CodeGen : public CustomExpression
-{
+class CodeGen : public CustomExpression {
 public:
     /// Constructor.
     ///
@@ -256,7 +246,8 @@ public:
     /// value: The HILTI value
     ///
     /// l: An associated location.
-    CodeGen(shared_ptr<binpac::Type> type, shared_ptr<hilti::Expression> value, const Location& l=Location::None);
+    CodeGen(shared_ptr<binpac::Type> type, shared_ptr<hilti::Expression> value,
+            const Location& l = Location::None);
 
     /// Returns the HILTI value.
     shared_ptr<hilti::Expression> value() const;
@@ -272,15 +263,14 @@ private:
 
 /// AST node for an expression referencing a member attribute of a another
 /// type.
-class MemberAttribute : public CustomExpression
-{
+class MemberAttribute : public CustomExpression {
 public:
     /// Constructor.
     ///
     /// attr: The attribute ID.
     ///
     /// l: An associated location.
-    MemberAttribute(shared_ptr<binpac::ID> attr, const Location& l=Location::None);
+    MemberAttribute(shared_ptr<binpac::ID> attr, const Location& l = Location::None);
 
     /// Returns the expression member attribute ID.
     shared_ptr<binpac::ID> id() const;
@@ -296,13 +286,12 @@ private:
 
 /// AST node for an expression that references internal parser state. This is
 /// used for reserved IDs like \a $$ and \a self.
-class ParserState : public CustomExpression
-{
+class ParserState : public CustomExpression {
 public:
     enum Kind {
         SELF,         /// A \a self expression.
         DOLLARDOLLAR, /// A \a $$ expression.
-        PARAMETER     /// A type parameter, with \a id giving its name. 
+        PARAMETER     /// A type parameter, with \a id giving its name.
     };
 
     /// Constructor.
@@ -322,7 +311,8 @@ public:
     /// \note: The resolving of \a PARAMETER types happens actually right
     /// inside the type() method here: once the unit type is resolved, it
     /// starts returning the right type.
-    ParserState(Kind kind, shared_ptr<binpac::ID> id, shared_ptr<Type> unit, shared_ptr<Type> type = nullptr, const Location& l=Location::None);
+    ParserState(Kind kind, shared_ptr<binpac::ID> id, shared_ptr<Type> unit,
+                shared_ptr<Type> type = nullptr, const Location& l = Location::None);
 
     /// Return the kind of expression.
     Kind kind() const;
@@ -349,8 +339,7 @@ private:
 };
 
 /// AST node for an assigment,
-class Assign : public CustomExpression
-{
+class Assign : public CustomExpression {
 public:
     /// Constructor.
     ///
@@ -359,7 +348,8 @@ public:
     /// src: The source node.
     ///
     /// l: An associated location.
-    Assign(shared_ptr<Expression> dst, shared_ptr<Expression> src, const Location& l=Location::None);
+    Assign(shared_ptr<Expression> dst, shared_ptr<Expression> src,
+           const Location& l = Location::None);
 
     /// Returns the assignment's source expression.
     shared_ptr<Expression> source() const;
@@ -377,8 +367,7 @@ private:
 };
 
 /// AST node for a conditional (ternary) expression.
-class Conditional : public CustomExpression
-{
+class Conditional : public CustomExpression {
 public:
     /// Constructor.
     ///
@@ -389,7 +378,8 @@ public:
     /// false_: The node for the false branch.
     ///
     /// l: An associated location.
-    Conditional(shared_ptr<Expression> cond, shared_ptr<Expression> true_, shared_ptr<Expression> false_, const Location& l=Location::None);
+    Conditional(shared_ptr<Expression> cond, shared_ptr<Expression> true_,
+                shared_ptr<Expression> false_, const Location& l = Location::None);
 
     /// Returns the condition's expression.
     shared_ptr<Expression> condition() const;
@@ -414,8 +404,7 @@ private:
 /// operators are instantiated as Unresolved and later turned into instances
 /// derived from Resolved by passes::OperandResolver.
 ///
-class UnresolvedOperator : public CustomExpression
-{
+class UnresolvedOperator : public CustomExpression {
 public:
     /// Constructor.
     ///
@@ -424,7 +413,8 @@ public:
     /// ops: The list of operands.
     ///
     /// l: An associated location.
-    UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops, const Location& l=Location::None);
+    UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops,
+                       const Location& l = Location::None);
     virtual ~UnresolvedOperator();
 
     /// Returns the operator type.
@@ -442,8 +432,7 @@ private:
 };
 
 /// Base class for uniquenly resolved operators.
-class ResolvedOperator : public CustomExpression
-{
+class ResolvedOperator : public CustomExpression {
 public:
     /// Constructor.
     ///
@@ -454,7 +443,8 @@ public:
     /// module: The module this operator is part of.
     ///
     /// l: An associated location.
-    ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<binpac::Module> module, const Location& l=Location::None);
+    ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops,
+                     shared_ptr<binpac::Module> module, const Location& l = Location::None);
     ~ResolvedOperator();
 
     /// Returns the operator.
@@ -483,7 +473,6 @@ public:
     ACCEPT_VISITOR(binpac::Expression);
 
 protected:
-
 private:
     shared_ptr<Operator> _op;
     shared_ptr<binpac::Module> _module; // no node_ptr
@@ -493,15 +482,14 @@ private:
 
 /// AST node for an expression that's just a temporary place-holder for a not
 /// known value.
-class PlaceHolder : public CustomExpression
-{
+class PlaceHolder : public CustomExpression {
 public:
     /// Constructor.
     ///
     /// type: The type of the expression.
     ///
     /// l: An associated location.
-    PlaceHolder(shared_ptr<binpac::Type> type, const Location& l=Location::None);
+    PlaceHolder(shared_ptr<binpac::Type> type, const Location& l = Location::None);
 
     shared_ptr<Type> type() const override;
 
@@ -513,8 +501,7 @@ private:
 
 
 /// AST node for a list comprehension expression.
-class ListComprehension : public CustomExpression
-{
+class ListComprehension : public CustomExpression {
 public:
     /// Constructor.
     ///
@@ -528,7 +515,9 @@ public:
     /// returning whether to include into the output.
     ///
     /// l: An associated location.
-    ListComprehension(shared_ptr<Expression> output, shared_ptr<binpac::ID> variable, shared_ptr<Expression> input, shared_ptr<Expression> predicate = nullptr, const Location& l=Location::None);
+    ListComprehension(shared_ptr<Expression> output, shared_ptr<binpac::ID> variable,
+                      shared_ptr<Expression> input, shared_ptr<Expression> predicate = nullptr,
+                      const Location& l = Location::None);
 
     /// Returns the output expression.
     shared_ptr<Expression> output() const;
@@ -552,9 +541,7 @@ private:
     node_ptr<Expression> _predicate;
     node_ptr<binpac::ID> _variable;
 };
-
 }
-
 }
 
 #endif

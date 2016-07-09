@@ -1,15 +1,15 @@
 
 #include <util/util.h>
 
-#include "normalizer.h"
 #include "../attribute.h"
 #include "../declaration.h"
 #include "../expression.h"
 #include "../statement.h"
 #include "../type.h"
+#include "normalizer.h"
 
-#include <binpac/autogen/operators/unit.h>
 #include <binpac/autogen/operators/enum.h>
+#include <binpac/autogen/operators/unit.h>
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -98,7 +98,8 @@ void Normalizer::visit(type::unit::item::Field* f)
 
         if ( seen.find(pattr.key) == seen.end() )
             // Insert attribute with default value.
-            attributes->add(std::make_shared<Attribute>(pattr.key, pattr.default_, true, f->location()));
+            attributes->add(
+                std::make_shared<Attribute>(pattr.key, pattr.default_, true, f->location()));
     }
 
     // Set type's bit order for bitmask fields.
@@ -126,17 +127,23 @@ void Normalizer::visit(type::unit::item::Field* f)
                 auto pstate = ast::tryCast<expression::ParserState>(elems.front());
                 if ( pstate && pstate->kind() == expression::ParserState::DOLLARDOLLAR ) {
                     // Yes, found it.
-                    expression_list ops = { };
+                    expression_list ops = {};
 
-                    auto npstate = std::make_shared<expression::ParserState>(expression::ParserState::SELF, nullptr, pstate->unit(), pstate->unit());
+                    auto npstate =
+                        std::make_shared<expression::ParserState>(expression::ParserState::SELF,
+                                                                  nullptr, pstate->unit(),
+                                                                  pstate->unit());
                     auto mattr = std::make_shared<expression::MemberAttribute>(f->id());
 
-                    ops = { npstate, mattr };
-                    auto nattr = std::make_shared<binpac::expression::UnresolvedOperator>(operator_::Attribute, ops);
+                    ops = {npstate, mattr};
+                    auto nattr = std::make_shared<
+                        binpac::expression::UnresolvedOperator>(operator_::Attribute, ops);
 
                     auto ctype = std::make_shared<expression::Type>(f->type());
-                    ops = { nattr, ctype };
-                    auto ne = std::make_shared<binpac::expression::UnresolvedOperator>(operator_::Cast, ops);
+                    ops = {nattr, ctype};
+                    auto ne =
+                        std::make_shared<binpac::expression::UnresolvedOperator>(operator_::Cast,
+                                                                                 ops);
                     auto convert_back = std::make_shared<Attribute>("convert_back", ne);
 
                     attributes->add(convert_back);
@@ -197,4 +204,3 @@ void Normalizer::visit(binpac::Expression* i)
         }
     }
 }
-

@@ -32,7 +32,8 @@ iBegin(iterMap, Begin, "begin")
     iTarget(optype::iterMap);
     iOp1(optype::refMap, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -45,7 +46,8 @@ iBegin(iterMap, End, "end")
     iTarget(optype::iterMap);
     iOp1(optype::refMap, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -58,7 +60,8 @@ iBegin(iterMap, Incr, "incr")
     iTarget(optype::iterMap);
     iOp1(optype::iterMap, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(target, op1);
     }
 
@@ -68,11 +71,12 @@ iBegin(iterMap, Incr, "incr")
 iEnd
 
 iBegin(iterMap, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::iterMap, true);
     iOp2(optype::iterMap, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(op1, op2);
     }
 
@@ -83,14 +87,15 @@ iBegin(iterMap, Equal, "equal")
 iEnd
 
 iBegin(iterMap, Deref, "deref")
-    iTarget(optype::any)
+    iTarget(optype::any);
     iOp1(optype::iterMap, true);
 
-    iValidate {
+    iValidate
+    {
         auto kt = mapKeyType(iteratedType(op1));
         auto vt = mapValueType(iteratedType(op1));
 
-        builder::type_list tt = { kt, vt };
+        builder::type_list tt = {kt, vt};
         canCoerceTo(builder::tuple::type(tt), target);
     }
 
@@ -102,11 +107,12 @@ iEnd
 
 
 iBegin(map, New, "new")
-    iTarget(optype::refMap)
-    iOp1(optype::typeMap, true)
-    iOp2(optype::optional(optype::refTimerMgr), false)
+    iTarget(optype::refMap);
+    iOp1(optype::typeMap, true);
+    iOp2(optype::optional(optype::refTimerMgr), false);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -118,9 +124,10 @@ iEnd
 
 
 iBegin(map, Clear, "map.clear")
-    iOp1(optype::refMap, false)
+    iOp1(optype::refMap, false);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -130,12 +137,14 @@ iBegin(map, Clear, "map.clear")
 iEnd
 
 iBegin(map, Default, "map.default")
-    iOp1(optype::refMap, false)
-    iOp2(optype::any, true)
+    iOp1(optype::refMap, false);
+    iOp2(optype::any, true);
 
-    iValidate {
-        auto ctype = ast::isA<type::Reference>(op2->type()) ? ast::tryCast<type::Callable>(referencedType(op2))
-                                                            : nullptr;
+    iValidate
+    {
+        auto ctype = ast::rtti::isA<type::Reference>(op2->type()) ?
+                         ast::rtti::tryCast<type::Callable>(referencedType(op2)) :
+                         nullptr;
         if ( ctype ) {
             auto params = ctype->Function::parameters();
 
@@ -158,11 +167,12 @@ iBegin(map, Default, "map.default")
 iEnd
 
 iBegin(map, Exists, "map.exists")
-    iTarget(optype::boolean)
-    iOp1(optype::refMap, true)
-    iOp2(optype::any, true)
+    iTarget(optype::boolean);
+    iOp1(optype::refMap, true);
+    iOp2(optype::any, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, mapKeyType(referencedType(op1)));
     }
 
@@ -174,11 +184,12 @@ iBegin(map, Exists, "map.exists")
 iEnd
 
 iBegin(map, Get, "map.get")
-    iTarget(optype::any)
-    iOp1(optype::refMap, true)
-    iOp2(optype::any, true)
+    iTarget(optype::any);
+    iOp1(optype::refMap, true);
+    iOp2(optype::any, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, mapKeyType(referencedType(op1)));
         canCoerceTo(mapValueType(referencedType(op1)), target);
     }
@@ -194,12 +205,13 @@ iEnd
 // and then clone it when it's returned.
 
 iBegin(map, GetDefault, "map.get_default")
-    iTarget(optype::any)
-    iOp1(optype::refMap, true)
-    iOp2(optype::any, true)
-    iOp3(optype::any, true)
+    iTarget(optype::any);
+    iOp1(optype::refMap, true);
+    iOp2(optype::any, true);
+    iOp3(optype::any, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, mapKeyType(referencedType(op1)));
         canCoerceTo(op3, mapValueType(referencedType(op1)));
         canCoerceTo(mapValueType(referencedType(op1)), target);
@@ -213,11 +225,12 @@ iBegin(map, GetDefault, "map.get_default")
 iEnd
 
 iBegin(map, Insert, "map.insert")
-    iOp1(optype::refMap, false)
-    iOp2(optype::any, false)
-    iOp3(optype::any, false)
+    iOp1(optype::refMap, false);
+    iOp2(optype::any, false);
+    iOp3(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, mapKeyType(referencedType(op1)));
         canCoerceTo(op3, mapValueType(referencedType(op1)));
     }
@@ -230,10 +243,11 @@ iBegin(map, Insert, "map.insert")
 iEnd
 
 iBegin(map, Remove, "map.remove")
-    iOp1(optype::refMap, false)
-    iOp2(optype::any, true)
+    iOp1(optype::refMap, false);
+    iOp2(optype::any, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, mapKeyType(referencedType(op1)));
     }
 
@@ -245,10 +259,11 @@ iBegin(map, Remove, "map.remove")
 iEnd
 
 iBegin(map, Size, "map.size")
-    iTarget(optype::int64)
-    iOp1(optype::refMap, true)
+    iTarget(optype::int64);
+    iOp1(optype::refMap, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -258,15 +273,15 @@ iBegin(map, Size, "map.size")
 iEnd
 
 iBegin(map, Timeout, "map.timeout")
-    iOp1(optype::refMap, true)
-    iOp2(optype::enum_, true)
-    iOp3(optype::interval, true)
+    iOp1(optype::refMap, true);
+    iOp2(optype::enum_, true);
+    iOp3(optype::interval, true);
 
-    iValidate {
-        auto ty_op2 = as<type::Enum>(op2->type());
+    iValidate
+    {
+        auto ty_op2 = ast::rtti::checkedCast<type::Enum>(op2->type());
 
         // TODO: Check enum.
-
     }
 
     iDoc(R"(
@@ -279,4 +294,3 @@ iBegin(map, Timeout, "map.timeout")
     )")
 
 iEnd
-

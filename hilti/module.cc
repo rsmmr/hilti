@@ -5,7 +5,8 @@
 
 using namespace hilti;
 
-Module::Module(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, const string& path, const Location& l)
+Module::Module(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, const string& path,
+               const Location& l)
     : ast::Module<AstInfo>(id, path, l)
 {
     assert(id);
@@ -41,10 +42,8 @@ shared_ptr<type::Context> Module::executionContext() const
     if ( ! expr )
         return nullptr;
 
-    auto texpr = ast::as<expression::Type>(expr);
-    assert(texpr);
-    auto ctx = ast::as<type::Context>(texpr->typeValue());
-    assert(ctx);
+    auto texpr = ast::rtti::checkedCast<expression::Type>(expr);
+    auto ctx = ast::rtti::checkedCast<type::Context>(texpr->typeValue());
 
     return ctx;
 }

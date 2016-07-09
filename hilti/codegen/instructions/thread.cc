@@ -36,11 +36,11 @@ void StatementBuilder::visit(statement::instruction::thread::ThreadID* i)
 // validator has already ensured that this operation is to ok to do. Note
 // that we must never modify an existing context. We can directly reuse it
 // however if that does not require any modification.
-llvm::Value* _promoteContext(CodeGen* cg, llvm::Value* tctx,
-                             shared_ptr<type::Scope> src_scope, shared_ptr<type::Context> src_context,
-                             shared_ptr<type::Scope> dst_scope, shared_ptr<type::Context> dst_context)
+llvm::Value* _promoteContext(CodeGen* cg, llvm::Value* tctx, shared_ptr<type::Scope> src_scope,
+                             shared_ptr<type::Context> src_context,
+                             shared_ptr<type::Scope> dst_scope,
+                             shared_ptr<type::Context> dst_context)
 {
-
     // If both scope and context match, we don't need to do anything.
 
     if ( src_scope->equal(dst_scope) && src_context->Type::equal(dst_context) )
@@ -69,9 +69,9 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
     prepareCall(i->op1(), i->op2(), &params, false);
 
     auto func = cg()->llvmValue(i->op1());
-    auto ftype = ast::as<type::Function>(i->op1()->type());
+    auto ftype = ast::rtti::tryCast<type::Function>(i->op1()->type());
 
-#ifdef HLT_DEEP_COPY_VALUES_ACROSS_THREADS
+#ifndef HLT_NO_DEEP_COPY_VALUES_ACROSS_THREADS
     bool deep_copy = true;
 #else
     bool deep_copy = false;
@@ -87,7 +87,7 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
         // Destination thread given.
         auto vid = cg()->llvmValue(i->op3(), builder::integer::type(64));
 
-        CodeGen::value_list vals = { mgr, vid, job };
+        CodeGen::value_list vals = {mgr, vid, job};
         cg()->llvmCallC("__hlt_thread_mgr_schedule", vals, true, true);
     }
 
@@ -118,8 +118,8 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
         auto func = decl->function();
         assert(func);
 
-        auto op1 = ast::as<expression::Function>(i->op1());
-        assert(op1);
+        auto op1 = ast::rtti::checkedCast<expression::Function>(i->op1());
+        ;
 
         auto callee = op1->function();
         assert(callee);
@@ -134,7 +134,7 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
         tctx = cg()->builder()->CreateBitCast(tctx, cg()->llvmTypePtr());
 
         auto ti = cg()->llvmRtti(dst_context);
-        CodeGen::value_list vals = { mgr, ti, tctx, job };
+        CodeGen::value_list vals = {mgr, ti, tctx, job};
         cg()->llvmCallC("__hlt_thread_mgr_schedule_tcontext", vals, true, true);
     }
 }

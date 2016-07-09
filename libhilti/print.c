@@ -5,17 +5,17 @@
 #define _POSIX_SOURCE
 #define _POSIX_C_SOURCE 199309
 
-#include <unistd.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
 #include <pthread.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-#include "types.h"
-#include "rtti.h"
-#include "memory_.h"
-#include "string_.h"
 #include "hutil.h"
+#include "memory_.h"
+#include "rtti.h"
+#include "string_.h"
+#include "types.h"
 
 /*
  * Hilti::print(obj, newline = True)
@@ -26,7 +26,8 @@
  * newline: bool - If true, a newline is added automatically.
  *
  */
-void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx)
+void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_exception** excpt,
+                 hlt_execution_context* ctx)
 {
     // To prevent race conditions with multiple threads, we have to lock
     // stdout here and then unlock it at each possible exit to this function.
@@ -63,4 +64,3 @@ unlock:
     funlockfile(stdout);
     pthread_setcancelstate(old_state, NULL);
 }
-

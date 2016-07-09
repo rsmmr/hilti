@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "libbinpac++.h"
 #include "globals.h"
+#include "libbinpac++.h"
 
 struct _tmp_parser_def {
     binpac_parser* parser;
@@ -20,10 +20,12 @@ static int _tmp_parsers_size = 0;
 
 extern __binpac_globals* _globals;
 
-static void _register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     parser->type_info = pobj;
-    hlt_list_push_back(__binpac_globals_get()->parsers, &hlt_type_info_hlt_BinPACHilti_Parser, &parser, excpt, ctx);
+    hlt_list_push_back(__binpac_globals_get()->parsers, &hlt_type_info_hlt_BinPACHilti_Parser,
+                       &parser, excpt, ctx);
     binpachilti_mime_register_parser(parser, excpt, ctx);
     GC_DTOR(parser, hlt_BinPACHilti_Parser, ctx);
 }
@@ -107,7 +109,8 @@ void binpac_fatal_error(const char* msg)
 }
 
 // Note that this function can be called before binpac_init().
-void binpachilti_register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exception** excpt,
+                                 hlt_execution_context* ctx)
 {
     GC_CCTOR(parser, hlt_BinPACHilti_Parser, ctx);
 
@@ -134,8 +137,8 @@ void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* c
         hlt_exception_print_uncaught(excpt, ctx);
 }
 
-void binpac_debug_print_ptr(hlt_string tag, const hlt_type_info* type, void** ptr, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_debug_print_ptr(hlt_string tag, const hlt_type_info* type, void** ptr,
+                            hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(false);
 }
-

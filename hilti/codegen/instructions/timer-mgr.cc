@@ -65,4 +65,3 @@ void StatementBuilder::visit(statement::instruction::timer_mgr::Schedule* i)
     args.push_back(i->op2());
     cg()->llvmCall("hlt::timer_mgr_schedule", args);
 }
-

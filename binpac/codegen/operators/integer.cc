@@ -25,7 +25,7 @@ static shared_ptr<binpac::type::Integer> _intResultType(binpac::expression::Reso
     }
 
     else
-       assert(t1->signed_() == t2->signed_());
+        assert(t1->signed_() == t2->signed_());
 
     return std::make_shared<binpac::type::Integer>(width, sign);
 }
@@ -302,4 +302,3 @@ void CodeBuilder::visit(expression::operator_::integer::ShiftRight* i)
     cg()->builder()->addInstruction(result, hilti::instruction::integer::Shr, op1, op2);
     setResult(result);
 }
-

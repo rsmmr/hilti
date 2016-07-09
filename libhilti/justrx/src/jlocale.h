@@ -10,8 +10,8 @@
 
 #include <ctype.h>
 
-#include "jrx-intern.h"
 #include "ccl.h"
+#include "jrx-intern.h"
 
 extern jrx_ccl* local_ccl_lower(jrx_ccl_group* set);
 extern jrx_ccl* local_ccl_upper(jrx_ccl_group* set);
@@ -19,7 +19,8 @@ extern jrx_ccl* local_ccl_word(jrx_ccl_group* set);
 extern jrx_ccl* local_ccl_digit(jrx_ccl_group* set);
 extern jrx_ccl* local_ccl_blank(jrx_ccl_group* set);
 
-static inline int _isword(jrx_char cp) {
+static inline int _isword(jrx_char cp)
+{
     return isalnum(cp) || cp == '_';
 }
 

@@ -1,5 +1,5 @@
 //
-// @TEST-EXEC: ${CXX} -g -O0 -o a.out %INPUT `${HILTI_CONFIG} --compiler --runtime --cxxflags --ldflags --libs` -lhilti-jit
+// @TEST-EXEC: eval ${CXX} -g -O0 -o a.out %INPUT $(${HILTI_CONFIG} --compiler --runtime --cxxflags --ldflags --libs)
 // @TEST-EXEC: ./a.out >output
 // @TEST-EXEC: btest-diff output
 //
@@ -7,7 +7,7 @@
 #include <memory>
 
 #include <hilti/hilti.h>
-#include <hilti/jit/libhilti-jit.h>
+#include <hilti/jit/jit.h>
 
 extern "C" {
 #include <libhilti/libhilti.h>
@@ -40,7 +40,10 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto linked_module = ctx->linkModules("a.out", { llvm_module });
+    std::list<std::unique_ptr<llvm::Module>> modules;
+    modules.push_back(std::move(llvm_module));
+
+    auto linked_module = ctx->linkModules("a.out", modules);
 
     if ( ! linked_module ) {
         fprintf(stderr, "link failed\n");
@@ -49,18 +52,16 @@ int main(int argc, char** argv)
 
     // JIT to native code.
 
-    auto ee = ctx->jitModule(linked_module);
+    auto jit = ctx->jit(std::move(linked_module));
 
-    if ( ! ee ) {
+    if ( ! jit ) {
         fprintf(stderr, "jit failed\n");
         return 1;
     }
 
     // Execute.
 
-    hlt_init_jit(ctx, linked_module, ee);
-
-    auto main_run = (void (*)(hlt_exception**, hlt_execution_context*)) ctx->nativeFunction(linked_module, ee, "main_run");
+    auto main_run = (void (*)(hlt_exception**, hlt_execution_context*)) jit->nativeFunction("main_run");
 
     if ( ! main_run ) {
         fprintf(stderr, "nativeFunction failed\n");

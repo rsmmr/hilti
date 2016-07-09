@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  hiltic -P %INPUT >prototypes.hlt.h
+# @TEST-EXEC:  hiltip -P %INPUT >prototypes.hlt.h
 # @TEST-EXEC:  btest-diff prototypes.hlt.h
 
 module Main

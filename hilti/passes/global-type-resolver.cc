@@ -9,7 +9,7 @@ GlobalTypeResolver::~GlobalTypeResolver()
 
 bool GlobalTypeResolver::run(shared_ptr<Node> module)
 {
-    _module = ast::checkedCast<Module>(module);
+    _module = ast::rtti::checkedCast<Module>(module);
     _pass = 1;
     processAllPreOrder(module);
     _pass = 2;
@@ -18,7 +18,7 @@ bool GlobalTypeResolver::run(shared_ptr<Node> module)
     return true;
 }
 
-void GlobalTypeResolver::visit(declaration::Type *t)
+void GlobalTypeResolver::visit(declaration::Type* t)
 {
     if ( _pass == 2 )
         return;
@@ -54,4 +54,3 @@ void GlobalTypeResolver::visit(type::Unknown* t)
     else
         tv->setID(id);
 }
-

@@ -6,9 +6,17 @@
 #include "module.h"
 #include "util/file-cache.h"
 
-namespace hilti { class Module; class Type; class ID; }
-namespace hilti { class CompilerContext; }
-namespace llvm  { class Module; }
+namespace hilti {
+class Module;
+class Type;
+class ID;
+}
+namespace hilti {
+class CompilerContext;
+}
+namespace llvm {
+class Module;
+}
 
 #include "libhilti/types.h"
 
@@ -19,8 +27,7 @@ class Options;
 /// A module context that groups a set of modules compiled jointly. This
 /// class provides the main top-level interface for parsing and compiling
 /// BinPAC++ modules.
-class CompilerContext : public Logger, public std::enable_shared_from_this<CompilerContext>
-{
+class CompilerContext : public Logger, public std::enable_shared_from_this<CompilerContext> {
 public:
     typedef std::list<shared_ptr<::hilti::ID>> id_list;
 
@@ -102,7 +109,9 @@ public:
     ///
     /// Returns: The LLVM module, or null if errors are encountered. Passes
     /// ownership to the caller. Also returns null if *hilti_only* is true.
-    llvm::Module* compile(shared_ptr<Module> module, shared_ptr<hilti::Module>* hilti_module = nullptr, bool hilti_only = false);
+    llvm::Module* compile(shared_ptr<Module> module,
+                          shared_ptr<hilti::Module>* hilti_module = nullptr,
+                          bool hilti_only = false);
 
     /// Compiles a BinPAC++ source file into an LLVM module. Internally, this
     /// is a combination of load() and compile(), with additional caching if
@@ -149,9 +158,9 @@ public:
     /// Returns: The composite LLVM module, or null if errors are
     /// encountered. Passes ownership to caller.
     llvm::Module* linkModules(string output, std::list<llvm::Module*> modules,
-                              std::list<string> libs,
-                              path_list bcas = path_list(), path_list dylds = path_list(),
-                              bool add_stdlibs = true, bool add_sharedlibs = false);
+                              std::list<string> libs, path_list bcas = path_list(),
+                              path_list dylds = path_list(), bool add_stdlibs = true,
+                              bool add_sharedlibs = false);
 
     /// Links a set of compiled BinPAC++ modules into a single LLVM module.
     /// All modules produced by compileModule() must be linked (and all
@@ -226,7 +235,7 @@ private:
     // Backend for both finalize() and partialFinalize().
     bool finalize(shared_ptr<Module> module, bool verify);
 
-    /// If debugging stream cg-passes is set, log the beginning of a pass. If timing is requested, 
+    /// If debugging stream cg-passes is set, log the beginning of a pass. If timing is requested,
     ///
     /// module: The current module.
     ///
@@ -247,7 +256,6 @@ private:
     /// particular when encountering cycles.
     std::map<string, shared_ptr<Module>> _modules;
 };
-
 }
 
 #endif

@@ -156,7 +156,7 @@ void StatementBuilder::Compile(const ::AddStmt* stmt)
 	switch ( expr->Tag() ) {
 	case EXPR_INDEX:
 		{
-		auto iexpr = dynamic_cast<const IndexExpr *>(expr);
+		auto iexpr = dynamicCast(expr, const IndexExpr *);
 
 		auto val = iexpr->Op1();
 		auto idx = iexpr->Op2();
@@ -193,7 +193,7 @@ void StatementBuilder::Compile(const ::DelStmt* stmt)
 	switch ( expr->Tag() ) {
 	case EXPR_INDEX:
 		{
-		auto iexpr = dynamic_cast<const IndexExpr *>(expr);
+		auto iexpr = dynamicCast(expr, const IndexExpr *);
 
 		auto val = iexpr->Op1();
 		auto idx = iexpr->Op2();
@@ -214,7 +214,7 @@ void StatementBuilder::Compile(const ::DelStmt* stmt)
 
 	case EXPR_FIELD:
 		{
-		auto fexpr = dynamic_cast<const FieldExpr *>(expr);
+		auto fexpr = dynamicCast(expr, const FieldExpr *);
 		auto op1 = HiltiExpression(fexpr->Op());
 		auto op2 = HiltiStructField(fexpr->FieldName());
 		Builder()->addInstruction(::hilti::instruction::struct_::Unset, op1, op2);
@@ -230,7 +230,7 @@ void StatementBuilder::Compile(const ::DelStmt* stmt)
 
 void StatementBuilder::Compile(const ::EventStmt* stmt)
 	{
-	auto ev = dynamic_cast<const ::EventExpr *>(stmt->StmtExpr());
+	auto ev = dynamicCast(stmt->StmtExpr(), const ::EventExpr *);
 	HiltiCallFunction(ev, ev->Handler()->FType(), ev->Args(), nullptr);
 	}
 

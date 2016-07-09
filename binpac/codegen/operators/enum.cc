@@ -18,10 +18,10 @@ void CodeBuilder::visit(constant::Enum* e)
 {
     assert(e->type()->id());
 
-    auto expr =  e->firstParent<Expression>();
+    auto expr = e->firstParent<Expression>();
     assert(expr);
 
-    ID::component_list path = { expr->scope(), e->value()->name() };
+    ID::component_list path = {expr->scope(), e->value()->name()};
 
     if ( expr->scope().find("::") == std::string::npos ) {
         // TODO: This is a bit hackish to get the right result depending on
@@ -63,8 +63,8 @@ void CodeBuilder::visit(expression::operator_::enum_::CoerceBool* i)
 {
     auto result = builder()->addTmp("known", hilti::builder::boolean::type());
     auto op1 = cg()->hiltiExpression(i->op1());
-    auto undef = hilti::builder::enum_::create(hilti::builder::id::node("Undef"), cg()->hiltiType(i->op1()->type()));
+    auto undef = hilti::builder::enum_::create(hilti::builder::id::node("Undef"),
+                                               cg()->hiltiType(i->op1()->type()));
     cg()->builder()->addInstruction(result, hilti::instruction::operator_::Unequal, op1, undef);
     setResult(result);
 }
-

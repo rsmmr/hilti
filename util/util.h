@@ -3,13 +3,31 @@
 #ifndef HILTI_UTIL_H
 #define HILTI_UTIL_H
 
+#include <algorithm>
 #include <list>
-#include <set>
 #include <map>
-#include <string>
+#include <memory>
+#include <set>
 #include <stdexcept>
+#include <string>
 
 #include "3rdparty/tinyformat/tinyformat.h"
+
+// Helper macro to mark variables that are intentionally unsed. This silences
+// the compiler warning.
+// From
+// http://stackoverflow.com/questions/777261/avoiding-unused-variables-warnings-when-using-assert-in-a-release-build
+#define _UNUSED(x) ((void)x);
+
+namespace std {
+
+// Create our own version of this handy C++14 function.
+template <typename T, typename... Ts>
+std::unique_ptr<T> make_unique(Ts&&... params)
+{
+    return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
+}
+}
 
 namespace util {
 
@@ -17,16 +35,16 @@ typedef std::list<std::string> path_list;
 
 using std::string;
 
-template<typename... Args>
+template <typename... Args>
 string fmt(const char* fmt, const Args&... args)
 {
     return tfm::format(fmt, args...);
 }
 
-extern std::list<string> strsplit(string s, string delim=" ");
+extern std::list<string> strsplit(string s, string delim = " ");
 
-template<typename T>
-string strjoin(const std::list<T>& l, string delim="")
+template <typename T>
+string strjoin(const std::list<T>& l, string delim = "")
 {
     string result;
     bool first = true;
@@ -41,8 +59,8 @@ string strjoin(const std::list<T>& l, string delim="")
     return result;
 }
 
-template<typename T>
-string strjoin(const std::set<T>& l, string delim="")
+template <typename T>
+string strjoin(const std::set<T>& l, string delim = "")
 {
     string result;
     bool first = true;
@@ -57,8 +75,8 @@ string strjoin(const std::set<T>& l, string delim="")
     return result;
 }
 
-template<typename iterator>
-string strjoin(const iterator& begin, const iterator& end, string delim="")
+template <typename iterator>
+string strjoin(const iterator& begin, const iterator& end, string delim = "")
 {
     string result;
     bool first = true;
@@ -78,7 +96,10 @@ extern string strtolower(const string& s);
 extern string strtoupper(const string& s);
 extern string strtrim(const string& s);
 
-inline bool startsWith(const string& s, const string& prefix) { return s.find(prefix) == 0; }
+inline bool startsWith(const string& s, const string& prefix)
+{
+    return s.find(prefix) == 0;
+}
 extern bool endsWith(const string& s, const string& suffix);
 
 /// Returns a simple (non-crypto) hash value of a string.
@@ -158,58 +179,61 @@ extern bool makeDir(const string& path);
 
 extern void abort_with_backtrace();
 
-template<class T>
-std::string::const_iterator atoi_n(std::string::const_iterator s, std::string::const_iterator e, int base, T* result)
+template <class T>
+std::string::const_iterator atoi_n(std::string::const_iterator s, std::string::const_iterator e,
+                                   int base, T* result)
 {
     T n = 0;
-	int neg = 0;
+    int neg = 0;
 
-	if ( s != e && *s == '-' )
-		{
-		neg = 1;
-		++s;
-		}
+    if ( s != e && *s == '-' ) {
+        neg = 1;
+        ++s;
+    }
 
     bool first = true;
 
     for ( ; s != e; s++ ) {
         auto c = *s;
-		unsigned int d;
+        unsigned int d;
 
-		if ( isdigit(c) )
-			d = c - '0';
+        if ( isdigit(c) )
+            d = c - '0';
 
-		else if ( c >= 'a' && c < 'a' - 10 + base )
-			d = c - 'a' + 10;
+        else if ( c >= 'a' && c < 'a' - 10 + base )
+            d = c - 'a' + 10;
 
-		else if ( c >= 'A' && c < 'A' - 10 + base )
-			d = c - 'A' + 10;
+        else if ( c >= 'A' && c < 'A' - 10 + base )
+            d = c - 'A' + 10;
 
         else if ( ! first )
             break;
 
-		else
+        else
             throw std::runtime_error("cannot decode number");
 
-		n = n * base + d;
+        n = n * base + d;
         first = false;
-		}
+    }
 
-	if ( neg )
-		*result = -n;
-	else
-		*result = n;
+    if ( neg )
+        *result = -n;
+    else
+        *result = n;
 
-	return s;
+    return s;
 }
 
 // From http://stackoverflow.com/questions/10420380/c-zip-variadic-templates.
 template <typename A, typename B>
-std::list<std::pair<A, B> > zip2(const std::list<A> & lhs, const std::list<B> & rhs)
+std::list<std::pair<A, B>> zip2(const std::list<A>& lhs, const std::list<B>& rhs)
 {
-    std::list<std::pair<A, B> >  result;
-    for (std::pair<typename std::list<A>::const_iterator, typename std::list<B>::const_iterator> iter = std::pair<typename std::list<A>::const_iterator, typename std::list<B>::const_iterator>(lhs.cbegin(), rhs.cbegin()); iter.first != lhs.end() and iter.second != rhs.end(); ++iter.first, ++iter.second)
-        result.push_back( std::pair<A, B>(*iter.first, *iter.second) );
+    std::list<std::pair<A, B>> result;
+    for ( std::pair<typename std::list<A>::const_iterator, typename std::list<B>::const_iterator>
+              iter = std::pair<typename std::list<A>::const_iterator,
+                               typename std::list<B>::const_iterator>(lhs.cbegin(), rhs.cbegin());
+          iter.first != lhs.end() and iter.second != rhs.end(); ++iter.first, ++iter.second )
+        result.push_back(std::pair<A, B>(*iter.first, *iter.second));
     return result;
 }
 
@@ -239,36 +263,35 @@ std::set<A> map_values(const std::map<A, B> m)
 
 // Returns the difference of two sets. This is a convience wrapper around
 // std::set_difference.
-template<typename A, typename Compare = std::less<A>>
+template <typename A, typename Compare = std::less<A>>
 std::set<A, Compare> set_difference(std::set<A, Compare> a, std::set<A, Compare> b)
 {
     std::set<A, Compare> r;
-    std::set_difference(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()), Compare());
+    std::set_difference(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()),
+                        Compare());
     return r;
 }
 
 // Returns the intersection of two sets. This is a convience wrapper around
 // std::set_intersection.
-template<typename A, typename Compare = std::less<A>>
+template <typename A, typename Compare = std::less<A>>
 std::set<A, Compare> set_intersection(std::set<A, Compare> a, std::set<A, Compare> b)
 {
     std::set<A, Compare> r;
-    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()), Compare());
+    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()),
+                          Compare());
     return r;
 }
 
 // Returns the union of two sets. This is a convience wrapper around
 // std::set_union.
-template<typename A, typename Compare = std::less<A>>
+template <typename A, typename Compare = std::less<A>>
 std::set<A, Compare> set_union(std::set<A, Compare> a, std::set<A, Compare> b)
 {
     std::set<A, Compare> r;
     std::set_union(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()), Compare());
     return r;
 }
-
-
-
 }
 
 #endif

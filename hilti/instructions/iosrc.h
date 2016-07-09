@@ -34,27 +34,27 @@ iBeginH(iterIOSource, Incr, "incr")
 iEndH
 
 iBeginH(iterIOSource, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::iterIOSource, true);
     iOp2(optype::iterIOSource, true);
 iEndH
 
 iBeginH(iterIOSource, Deref, "deref")
-    iTarget(optype::tuple)
+    iTarget(optype::tuple);
     iOp1(optype::iterIOSource, true);
 iEndH
 
 iBeginH(ioSource, New, "new")
-    iTarget(optype::refIOSource)
-    iOp1(optype::typeIOSource, true)
-    iOp2(optype::string, true)
+    iTarget(optype::refIOSource);
+    iOp1(optype::typeIOSource, true);
+    iOp2(optype::string, true);
 iEndH
 
 iBeginH(ioSource, Close, "iosrc.close")
-    iOp1(optype::refIOSource, false)
+    iOp1(optype::refIOSource, false);
 iEndH
 
 iBeginH(ioSource, Read, "iosrc.read")
-    iTarget(optype::tuple)
-    iOp1(optype::refIOSource, false)
+    iTarget(optype::tuple);
+    iOp1(optype::refIOSource, false);
 iEndH

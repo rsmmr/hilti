@@ -7,8 +7,8 @@
 
 using namespace binpac;
 
-Function::Function(shared_ptr<ID> id, shared_ptr<binpac::type::Function> ftype, shared_ptr<Module> module,
-                   shared_ptr<binpac::Statement> body, const Location& l)
+Function::Function(shared_ptr<ID> id, shared_ptr<binpac::type::Function> ftype,
+                   shared_ptr<Module> module, shared_ptr<binpac::Statement> body, const Location& l)
     : ast::Function<AstInfo>(id, ftype, module, body, l)
 
 {
@@ -24,9 +24,8 @@ void Function::setHiltiFunctionID(shared_ptr<ID> id)
     _hilti_id = id;
 }
 
-Hook::Hook(shared_ptr<binpac::Statement> body,
-           Kind kind, int prio, bool debug, bool foreach, parameter_list args,
-           const Location& l)
+Hook::Hook(shared_ptr<binpac::Statement> body, Kind kind, int prio, bool debug, bool foreach,
+           parameter_list args, const Location& l)
     : Node(l)
 {
     _body = body;
@@ -46,7 +45,8 @@ Hook::Hook(shared_ptr<binpac::Statement> body,
 
 shared_ptr<statement::Block> Hook::body() const
 {
-    return ast::checkedCast<statement::Block>(_body);;
+    return ast::checkedCast<statement::Block>(_body);
+    ;
 }
 
 bool Hook::parseHook() const
@@ -69,7 +69,7 @@ bool Hook::debug() const
     return _debug;
 }
 
-bool Hook::foreach() const
+bool Hook::foreach () const
 {
     return _foreach;
 }

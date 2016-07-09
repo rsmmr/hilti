@@ -35,145 +35,166 @@ static shared_ptr<Type> _resultType(shared_ptr<Expression> op1, shared_ptr<Expre
 }
 
 opBegin(integer::CastTime : Cast)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Time>()))
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Time>()));
 
-    opDoc("Casts an unsigned integer into a time, interpreting the value as seconds since the epoch.")
+    opDoc(
+        "Casts an unsigned integer into a time, interpreting the value as seconds since the "
+        "epoch.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Time>();
     }
 opEnd
 
 opBegin(integer::CastInterval : Cast)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Interval>()))
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Interval>()));
 
-    opDoc("Casts an unsigned integer into an interval, interpreting the value as seconds.")
+    opDoc("Casts an unsigned integer into an interval, interpreting the value as seconds.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Interval>();
     }
 opEnd
 
 opBegin(integer::Equal)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Compares two integer for equality.")
+    opDoc("Compares two integer for equality.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 
 opBegin(integer::Lower)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Returns whether the first integer is smaller than the second.")
+    opDoc("Returns whether the first integer is smaller than the second.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(integer::Greater)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Returns whether the first integer is larger than the second.")
+    opDoc("Returns whether the first integer is larger than the second.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(integer::Plus)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Adds two integers.")
+    opDoc("Adds two integers.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
     }
 
-    opResult() {
+    opResult()
+    {
         return _resultType(op1(), op2());
     }
 opEnd
 
 opBegin(integer::PlusAssign)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Increases an integer by a given amount.")
+    opDoc("Increases an integer by a given amount.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return op1()->type();
     }
 opEnd
 
 opBegin(integer::Minus)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Subtracts two integers.")
+    opDoc("Subtracts two integers.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
     }
 
-    opResult() {
+    opResult()
+    {
         return _resultType(op1(), op2());
     }
 
 opEnd
 
 opBegin(integer::MinusAssign)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Decreases an integer by a given amount.")
+    opDoc("Decreases an integer by a given amount.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return op1()->type();
     }
 opEnd
 
 opBegin(integer::Div)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Divides two integers.")
+    opDoc("Divides two integers.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
 
         auto c = ast::tryCast<expression::Constant>(op2());
@@ -184,33 +205,37 @@ opBegin(integer::Div)
         }
     }
 
-    opResult() {
+    opResult()
+    {
         return _resultType(op1(), op2());
     }
 opEnd
 
 opBegin(integer::Mult)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Multiplies two integers.")
+    opDoc("Multiplies two integers.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
     }
 
-    opResult() {
+    opResult()
+    {
         return _resultType(op1(), op2());
     }
 opEnd
 
 opBegin(integer::Mod)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Returns the remainder of a integers' division.")
+    opDoc("Returns the remainder of a integers' division.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
 
         auto c = ast::tryCast<expression::Constant>(op2());
@@ -221,125 +246,142 @@ opBegin(integer::Mod)
         }
     }
 
-    opResult() {
+    opResult()
+    {
         return _resultType(op1(), op2());
     }
 opEnd
 
 opBegin(integer::Power)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Raises an integer to a given power.")
+    opDoc("Raises an integer to a given power.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return op1()->type();
     }
 opEnd
 
 opBegin(integer::BitAnd)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Computes the bitwise \a and of two integers.")
+    opDoc("Computes the bitwise \a and of two integers.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
     }
 
-    opResult() {
+    opResult()
+    {
         return _resultType(op1(), op2());
     }
 opEnd
 
 opBegin(integer::BitOr)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Computes the bitwise \a or of two integers.")
+    opDoc("Computes the bitwise \a or of two integers.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
     }
 
-    opResult() {
+    opResult()
+    {
         return _resultType(op1(), op2());
     }
 opEnd
 
 opBegin(integer::BitXor)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Computes the bitwise \a xor of two integers.")
+    opDoc("Computes the bitwise \a xor of two integers.");
 
-    opValidate() {
+    opValidate()
+    {
         _checkOperands(this, op1(), op2());
     }
 
-    opResult() {
+    opResult()
+    {
         return _resultType(op1(), op2());
     }
 opEnd
 
 opBegin(integer::ShiftLeft)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Shifts an integer left by a given number of bits.")
+    opDoc("Shifts an integer left by a given number of bits.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return op1()->type();
     }
 opEnd
 
 opBegin(integer::ShiftRight)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Shifts an integer right by a given number of bits.")
+    opDoc("Shifts an integer right by a given number of bits.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return op1()->type();
     }
 opEnd
 
 opBegin(integer::CoerceBool : Coerce)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Bool>()))
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Bool>()));
 
-    opDoc("Integers coerce to boolean, returning true if the value is non-zero.")
+    opDoc("Integers coerce to boolean, returning true if the value is non-zero.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(integer::CoerceInteger : Coerce)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Integer>()))
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Integer>()));
 
-    opDoc("Integers coerce to other integer types if their signedness match and their width is larger or equal.")
+    opDoc(
+        "Integers coerce to other integer types if their signedness match and their width is "
+        "larger or equal.");
 
-    opMatch() {
+    opMatch()
+    {
         auto t1 = ast::checkedCast<type::Integer>(op1()->type());
         auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
         auto t2 = ast::checkedCast<type::Integer>(ttype);
 
-        if ( (t1->signed_() && ! t2->signed_()) ||
-             (! t1->signed_() && t2->signed_()) )
+        if ( (t1->signed_() && ! t2->signed_()) || (! t1->signed_() && t2->signed_()) )
             return false;
 
         if ( t1->width() > t2->width() )
@@ -348,61 +390,69 @@ opBegin(integer::CoerceInteger : Coerce)
         return true;
     }
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
         return ast::checkedCast<type::Integer>(ttype);
     }
 opEnd
 
 opBegin(integer::CoerceInterval : Coerce)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Interval>()))
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Interval>()));
 
-    opDoc("Unsigned integers coerce to intervals.")
+    opDoc("Unsigned integers coerce to intervals.");
 
-    opMatch() {
+    opMatch()
+    {
         auto t1 = ast::checkedCast<type::Integer>(op1()->type());
         return ! t1->signed_();
     }
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Interval>();
     }
 opEnd
 
 opBegin(integer::CoerceDouble : Coerce)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Double>()))
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Double>()));
 
-    opDoc("Unsigned integers coerce to doubles.")
+    opDoc("Unsigned integers coerce to doubles.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Double>();
     }
 opEnd
 
 
 opBegin(integer::CastInteger : Cast)
-    opOp1(std::make_shared<type::Integer>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Integer>()))
+    opOp1(std::make_shared<type::Integer>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Integer>()));
 
-    opDoc("Casts an integer into a different integer type, extending/truncating as needed.")
+    opDoc("Casts an integer into a different integer type, extending/truncating as needed.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
         return ast::checkedCast<type::Integer>(ttype);
     }
 opEnd
-

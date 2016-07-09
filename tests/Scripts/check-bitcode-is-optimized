@@ -12,7 +12,7 @@ if egrep -q '%0 = bitcast i8\* %__ctx to %hlt.execution_context.0' $tmp; then
 fi
 
 # Have these.
-if ! egrep -q 'attributes #0 = \{ nounwind readnone \}' $tmp; then
+if ! egrep -q 'attributes #0 = \{ norecurse nounwind readnone \}' $tmp; then
     echo "Expected pattern not found"
     rm -f $tmp
     exit 1

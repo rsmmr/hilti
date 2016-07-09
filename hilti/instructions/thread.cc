@@ -1,11 +1,12 @@
 
 #include "define-instruction.h"
 
-#include "thread.h"
 #include "../module.h"
+#include "thread.h"
 
 iBeginCC(thread)
-    iValidateCC(GetContext) {
+    iValidateCC(GetContext)
+    {
         // Checked in passes::Validator.
     }
 
@@ -19,7 +20,8 @@ iBeginCC(thread)
 iEndCC
 
 iBeginCC(thread)
-    iValidateCC(SetContext) {
+    iValidateCC(SetContext)
+    {
         // Checked in passes::Validator.
     }
 
@@ -31,7 +33,8 @@ iBeginCC(thread)
 iEndCC
 
 iBeginCC(thread)
-    iValidateCC(ThreadID) {
+    iValidateCC(ThreadID)
+    {
     }
 
     iDocCC(ThreadID, R"(    
@@ -42,13 +45,14 @@ iBeginCC(thread)
 iEndCC
 
 iBeginCC(thread)
-    iValidateCC(Schedule) {
-        auto ftype = as<type::Function>(op1->type());
+    iValidateCC(Schedule)
+    {
+        auto ftype = ast::rtti::checkedCast<type::Function>(op1->type());
         auto rtype = ftype->result()->type();
         shared_ptr<Type> none = nullptr;
         checkCallParameters(ftype, op2);
 
-        if ( ! ast::isA<type::Void>(rtype) ) {
+        if ( ! ast::rtti::isA<type::Void>(rtype) ) {
             error(op1, "function must not return a value");
         }
 
@@ -64,4 +68,3 @@ iBeginCC(thread)
     )")
 
 iEndCC
-

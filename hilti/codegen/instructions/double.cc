@@ -200,4 +200,3 @@ void StatementBuilder::visit(statement::instruction::double_::Sub* i)
 
     cg()->llvmStore(i, result);
 }
-

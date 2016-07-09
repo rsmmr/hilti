@@ -1,20 +1,26 @@
 
+// Note: This file is compiled with -fno-rtti so that we can derive from LLVM classes.
+#ifndef HILTI_NO_RTTI
+#error File must be compiled with HILTI_NO_RTTI
+#endif
+
 #include <arpa/inet.h>
 
 #include <util/util.h>
 
 #include "../id.h"
 
-#include "util.h"
 #include "codegen.h"
+#include "util.h"
 
 using namespace hilti;
 using namespace codegen;
 
+#if 0
 void codegen::util::IRInserter::InsertHelper(llvm::Instruction *I, const llvm::Twine &Name, llvm::BasicBlock *BB, llvm::BasicBlock::iterator InsertPt) const
 {
     // Do the default stuff first.
-    llvm::IRBuilderDefaultInserter<>::InsertHelper(I, Name, BB, InsertPt);
+    llvm::IRBuilderDefaultInserter::InsertHelper(I, Name, BB, InsertPt);
 
     if ( ! _cg )
         return;
@@ -23,13 +29,15 @@ void codegen::util::IRInserter::InsertHelper(llvm::Instruction *I, const llvm::T
     const string& comment = _cg->nextComment();
     if ( _cg && comment.size() ) {
         auto cmt = llvm::MDString::get(_cg->llvmContext(), comment);
-        auto md = codegen::util::llvmMdFromValue(_cg->llvmContext(), cmt);
-        I->setMetadata(symbols::MetaComment, md);
+        auto node = llvm::MDNode::get(_cg->llvmContext(), cmt);
+        I->setMetadata(symbols::MetaComment, node);
         _cg->clearNextComment();
     }
 }
+#endif
 
-string codegen::util::mangle(const string& name, bool global, shared_ptr<ID> parent, string prefix, bool internal)
+string codegen::util::mangle(const string& name, bool global, shared_ptr<ID> parent, string prefix,
+                             bool internal)
 {
     // TODO: Leverate util::toIdentifier().
 
@@ -80,12 +88,14 @@ string codegen::util::mangle(const string& name, bool global, shared_ptr<ID> par
     return s;
 }
 
-string codegen::util::mangle(shared_ptr<ID> id, bool global, shared_ptr<ID> parent, string prefix, bool internal)
+string codegen::util::mangle(shared_ptr<ID> id, bool global, shared_ptr<ID> parent, string prefix,
+                             bool internal)
 {
     return mangle(id->pathAsString(), global, parent, prefix, internal);
 }
 
-static void _dumpCall(llvm::Value* callee, llvm::ArrayRef<llvm::Value *> args, const string& where, const string& msg)
+static void _dumpCall(llvm::Value* callee, llvm::ArrayRef<llvm::Value*> args, const string& where,
+                      const string& msg)
 {
     auto ptype = llvm::cast<llvm::PointerType>(callee->getType());
     auto ftype = llvm::cast<llvm::FunctionType>(ptype->getPointerElementType());
@@ -100,7 +110,7 @@ static void _dumpCall(llvm::Value* callee, llvm::ArrayRef<llvm::Value *> args, c
     os << "\n";
 
     for ( int i = 0; i < ftype->getNumParams(); ++i ) {
-        os << "   [" << i+1 << "] ";
+        os << "   [" << i + 1 << "] ";
         ftype->getParamType(i)->print(os);
         os << "\n";
     }
@@ -114,7 +124,7 @@ static void _dumpCall(llvm::Value* callee, llvm::ArrayRef<llvm::Value *> args, c
         os << "   None given.\n";
 
     for ( int i = 0; i < args.size(); ++i ) {
-        os << "   [" << i+1 << "] ";
+        os << "   [" << i + 1 << "] ";
 
         if ( args[i] )
             args[i]->getType()->print(os);
@@ -130,7 +140,10 @@ static void _dumpCall(llvm::Value* callee, llvm::ArrayRef<llvm::Value *> args, c
     ::util::abort_with_backtrace();
 }
 
-llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const string& where, llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name)
+llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const string& where,
+                                                 llvm::Value* callee,
+                                                 llvm::ArrayRef<llvm::Value*> args,
+                                                 const llvm::Twine& name)
 {
     assert(callee);
 
@@ -138,19 +151,21 @@ llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const strin
     auto ftype = llvm::cast<llvm::FunctionType>(ptype->getPointerElementType());
 
     if ( ftype->getNumParams() != args.size() && ! ftype->isVarArg() )
-        _dumpCall(callee, args, where, ::util::fmt("argument mismatch, LLVM function expects %d but got %d",
-                                                 ftype->getNumParams(), args.size()));
+        _dumpCall(callee, args, where,
+                  ::util::fmt("argument mismatch, LLVM function expects %d but got %d",
+                              ftype->getNumParams(), args.size()));
 
     for ( int i = 0; i < ftype->getNumParams(); ++i ) {
         auto t1 = ftype->getParamType(i);
 
         if ( ! args[i] )
-            _dumpCall(callee, args, where, ::util::fmt("parameter %d is null", i+1));
+            _dumpCall(callee, args, where, ::util::fmt("parameter %d is null", i + 1));
 
         auto t2 = args[i]->getType();
 
         if ( t1 != t2 )
-            _dumpCall(callee, args, where, ::util::fmt("type of parameter %d does not match prototype", i+1));
+            _dumpCall(callee, args, where,
+                      ::util::fmt("type of parameter %d does not match prototype", i + 1));
     }
 
     auto ci = builder->CreateCall(callee, args, name);
@@ -161,35 +176,81 @@ llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const strin
     return ci;
 }
 
-llvm::MDNode* codegen::util::llvmMdFromValue(llvm::LLVMContext& ctx, llvm::Value* v)
+void codegen::util::llvmAddGlobalMetadata(llvm::Module* module, string name,
+                                          llvm::ArrayRef<llvm::Metadata*> mds, bool append)
 {
-    return llvm::MDNode::get(ctx, llvm::ArrayRef<llvm::Value*>(&v, 1));
+    auto nmd = module->getOrInsertNamedMetadata(name);
+    auto mdtuple = llvm::MDTuple::get(module->getContext(), mds);
+
+    if ( append || nmd->getNumOperands() == 0 )
+        nmd->addOperand(mdtuple);
+    else {
+        assert(nmd->getNumOperands() <= 1);
+        nmd->setOperand(0, mdtuple);
+    }
+}
+
+llvm::NamedMDNode* codegen::util::llvmGetGlobalMetadata(llvm::Module* module, string name)
+{
+    return module->getNamedMetadata(name);
+}
+
+llvm::Metadata* codegen::util::llvmMetadata(llvm::LLVMContext& ctx, llvm::Value* v)
+{
+    return llvm::ValueAsMetadata::get(v);
+}
+
+llvm::Metadata* codegen::util::llvmMetadata(llvm::LLVMContext& ctx, string s)
+{
+    return llvm::MDString::get(ctx, s);
+}
+
+llvm::MDNode* codegen::util::llvmMetadata(llvm::LLVMContext& ctx,
+                                          llvm::ArrayRef<llvm::Metadata*> mds)
+{
+    return llvm::MDTuple::get(ctx, mds);
+}
+
+llvm::Value* codegen::util::llvmMetadataAsValue(const llvm::Metadata* md)
+{
+    return llvm::cast<llvm::ValueAsMetadata>(md)->getValue();
+}
+
+string codegen::util::llvmMetadataAsString(const llvm::Metadata* md)
+{
+    return llvm::cast<llvm::MDString>(md)->getString();
+}
+
+const llvm::MDTuple* codegen::util::llvmMetadataAsTuple(const llvm::Metadata* md)
+{
+    return llvm::cast<llvm::MDTuple>(md);
 }
 
 IRBuilder* codegen::util::newBuilder(CodeGen* cg, llvm::BasicBlock* block, bool insert_at_beginning)
 {
     llvm::ConstantFolder folder;
 
-    auto builder = new IRBuilder(cg->llvmContext(), folder, util::IRInserter(cg));
+    auto builder = new IRBuilder(cg->llvmContext(), folder, llvm::IRBuilderDefaultInserter());
 
     if ( insert_at_beginning && block->begin() != block->end() )
-        builder->SetInsertPoint(block->begin());
+        builder->SetInsertPoint(&(*block->begin()));
     else
         builder->SetInsertPoint(block);
 
     return builder;
 }
 
-IRBuilder* codegen::util::newBuilder(llvm::LLVMContext& ctx, llvm::BasicBlock* block, bool insert_at_beginning)
+IRBuilder* codegen::util::newBuilder(llvm::LLVMContext& ctx, llvm::BasicBlock* block,
+                                     bool insert_at_beginning)
 {
     llvm::ConstantFolder folder;
 
-    auto builder = new IRBuilder(ctx, folder, util::IRInserter(0));
+    auto builder = new IRBuilder(ctx, folder, llvm::IRBuilderDefaultInserter());
 
     if ( ! insert_at_beginning )
         builder->SetInsertPoint(block);
     else
-        builder->SetInsertPoint(block->getFirstInsertionPt());
+        builder->SetInsertPoint(&(*block->getFirstInsertionPt()));
 
     return builder;
 }
@@ -198,11 +259,11 @@ void codegen::util::llvmDebugPrintStderr(IRBuilder* builder, const std::string& 
 {
     auto module = builder->GetInsertBlock()->getParent()->getParent();
 
-    llvm::ArrayRef<llvm::Type *> params = { builder->getInt8PtrTy() };
+    llvm::ArrayRef<llvm::Type*> params = {builder->getInt8PtrTy()};
     auto ftype = llvm::FunctionType::get(builder->getVoidTy(), params, false);
     auto func = module->getOrInsertFunction("__hlt_debug_print_stderr", ftype);
     auto s = builder->CreateGlobalStringPtr(str);
-    llvm::ArrayRef<llvm::Value *> args = { s };
+    llvm::ArrayRef<llvm::Value*> args = {s};
     builder->CreateCall(func, args);
 }
 
@@ -213,15 +274,11 @@ void codegen::util::llvmDebugTrap(IRBuilder* builder)
     builder->CreateCall(dt);
 }
 
-#define _flip(x) \
-    ((((x) & 0xff00000000000000LL) >> 56) | \
-    (((x) & 0x00ff000000000000LL) >> 40) | \
-    (((x) & 0x0000ff0000000000LL) >> 24) | \
-    (((x) & 0x000000ff00000000LL) >> 8) | \
-    (((x) & 0x00000000ff000000LL) << 8) | \
-    (((x) & 0x0000000000ff0000LL) << 24) | \
-    (((x) & 0x000000000000ff00LL) << 40) | \
-    (((x) & 0x00000000000000ffLL) << 56))
+#define _flip(x)                                                                                   \
+    ((((x)&0xff00000000000000LL) >> 56) | (((x)&0x00ff000000000000LL) >> 40) |                     \
+     (((x)&0x0000ff0000000000LL) >> 24) | (((x)&0x000000ff00000000LL) >> 8) |                      \
+     (((x)&0x00000000ff000000LL) << 8) | (((x)&0x0000000000ff0000LL) << 24) |                      \
+     (((x)&0x000000000000ff00LL) << 40) | (((x)&0x00000000000000ffLL) << 56))
 
 uint64_t codegen::util::hton64(uint64_t v)
 {

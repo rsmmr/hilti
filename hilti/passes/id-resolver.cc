@@ -35,9 +35,9 @@ void IdResolver::visit(expression::ID* i)
     if ( vals.size() > 1 ) {
         // This is ok if all hooks or one of them is scoped.
         for ( auto e : vals ) {
-            auto func = ast::tryCast<expression::Function>(e);
+            auto func = ast::rtti::tryCast<expression::Function>(e);
 
-            if ( func && ast::isA<Hook>(func->function()) )
+            if ( func && ast::rtti::isA<Hook>(func->function()) )
                 continue;
 
             if ( id->id()->isScoped() )
@@ -95,7 +95,7 @@ void IdResolver::visit(type::Unknown* t)
 
     auto val = vals.front();
 
-    auto nt = ast::as<expression::Type>(val);
+    auto nt = ast::rtti::tryCast<expression::Type>(val);
 
     if ( ! nt ) {
         if ( _report_unresolved )
@@ -108,7 +108,8 @@ void IdResolver::visit(type::Unknown* t)
 
     // auto m = current<Module>();
     // assert(m);
-    // fprintf(stderr, "@ [%s] %s -> %s\n", m->id()->name().c_str(), id->pathAsString().c_str(), tv->render().c_str());
+    // fprintf(stderr, "@ [%s] %s -> %s\n", m->id()->name().c_str(), id->pathAsString().c_str(),
+    // tv->render().c_str());
 
     t->replace(tv);
 
@@ -128,7 +129,7 @@ void IdResolver::visit(declaration::Variable* d)
 {
     // Assign unique intername names to all local variables.
 
-    auto v = ast::tryCast<variable::Local>(d->variable());
+    auto v = ast::rtti::tryCast<variable::Local>(d->variable());
     if ( ! v )
         return;
 
@@ -158,15 +159,15 @@ void IdResolver::visit(statement::ForEach* s)
     // Make sure the sequence type is reseolved.
     preOrder(s->sequence());
 
-    shared_ptr<type::Reference> r = ast::as<type::Reference>(s->sequence()->type());
+    shared_ptr<type::Reference> r = ast::rtti::tryCast<type::Reference>(s->sequence()->type());
     shared_ptr<Type> t = r ? r->argType() : s->sequence()->type();
 
-    auto iterable = ast::as<type::trait::Iterable>(t);
+    auto iterable = ast::type::tryTrait<type::trait::Iterable>(t);
 
     if ( iterable && ! s->body()->scope()->has(s->id(), false) ) {
         auto var = std::make_shared<variable::Local>(s->id(), iterable->elementType(), nullptr, s->location());
         auto expr = std::make_shared<expression::Variable>(var, s->location());
         s->body()->scope()->insert(s->id(), expr);
     }
-#endif    
+#endif
 }

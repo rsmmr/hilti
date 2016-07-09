@@ -6,15 +6,14 @@
 
 #include <ast/pass.h>
 
-#include "../common.h"
 #include "../ast-info.h"
+#include "../common.h"
 
 namespace binpac {
 namespace passes {
 
 /// Normalizes properties AST nodes.
-class Normalizer : public ast::Pass<AstInfo>
-{
+class Normalizer : public ast::Pass<AstInfo> {
 public:
     /// Constructor.
     Normalizer();
@@ -38,7 +37,6 @@ protected:
 
     void visit(statement::Return* r) override;
 };
-
 }
 }
 

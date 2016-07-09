@@ -4,8 +4,8 @@
 #include <string.h>
 
 #include "classifier.h"
-#include "memory_.h"
 #include "debug.h"
+#include "memory_.h"
 
 typedef struct {
     int64_t priority;
@@ -14,7 +14,7 @@ typedef struct {
 } hlt_classifier_rule;
 
 struct __hlt_classifier {
-    __hlt_gchdr __gchdr;   // Header for memory management.
+    __hlt_gchdr __gchdr; // Header for memory management.
     int64_t num_fields;
     const hlt_type_info* rule_type;
     const hlt_type_info* value_type;
@@ -46,7 +46,9 @@ void hlt_classifier_dtor(hlt_type_info* ti, hlt_classifier* c, hlt_execution_con
     hlt_free(c->rules);
 }
 
-static inline void _hlt_classifier_init(hlt_classifier* c, int64_t num_fields, const hlt_type_info* rtype, const hlt_type_info* vtype, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_classifier_init(hlt_classifier* c, int64_t num_fields,
+                                        const hlt_type_info* rtype, const hlt_type_info* vtype,
+                                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     c->num_fields = num_fields;
     c->rule_type = rtype;
@@ -59,7 +61,9 @@ static inline void _hlt_classifier_init(hlt_classifier* c, int64_t num_fields, c
     c->rules = 0;
 }
 
-hlt_classifier* hlt_classifier_new(int64_t num_fields, const hlt_type_info* rtype, const hlt_type_info* vtype, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_classifier* hlt_classifier_new(int64_t num_fields, const hlt_type_info* rtype,
+                                   const hlt_type_info* vtype, hlt_exception** excpt,
+                                   hlt_execution_context* ctx)
 {
     hlt_classifier* c = GC_NEW(hlt_classifier, ctx);
     _hlt_classifier_init(c, num_fields, rtype, vtype, excpt, ctx);
@@ -75,9 +79,10 @@ static void dbg_print_fields(hlt_classifier* c, const char* func, hlt_classifier
 
         char buffer[f->len * 4 + 1];
         for ( int j = 0; j < f->len; ++j )
-            snprintf(buffer + j*3, 4, "%02x ", (int)f->data[j]);
+            snprintf(buffer + j * 3, 4, "%02x ", (int)f->data[j]);
 
-        DBG_LOG("hilti-classifier", "%s:   [%d] len=%2lu/%3lu | %s", func, i, f->len, f->bits, buffer);
+        DBG_LOG("hilti-classifier", "%s:   [%d] len=%2lu/%3lu | %s", func, i, f->len, f->bits,
+                buffer);
     }
 }
 
@@ -91,7 +96,9 @@ static inline void* _to_voidp(const hlt_type_info* type, void* data)
     return z;
 }
 
-void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_t priority, const hlt_type_info* vtype, void* value, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_t priority,
+                        const hlt_type_info* vtype, void* value, hlt_exception** excpt,
+                        hlt_execution_context* ctx)
 {
     if ( c->compiled ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
@@ -108,7 +115,9 @@ void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_
         // Grow rule array.
         int64_t old_max_rules = c->max_rules;
         c->max_rules = (old_max_rules ? (int)(old_max_rules * 1.5) : 5);
-        c->rules = (hlt_classifier_rule**) hlt_realloc(c->rules, c->max_rules * sizeof(hlt_classifier_rule), old_max_rules * sizeof(hlt_classifier_rule));
+        c->rules =
+            (hlt_classifier_rule**)hlt_realloc(c->rules, c->max_rules * sizeof(hlt_classifier_rule),
+                                               old_max_rules * sizeof(hlt_classifier_rule));
     }
 
     c->rules[c->num_rules++] = r;
@@ -117,12 +126,15 @@ void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_
         c->max_prio = priority;
 
 #ifdef DEBUG
-    DBG_LOG("hilti-classifier", "%s: new rule %p with priority %d for classifier %p", "classifier_add", r, priority, c);
+    DBG_LOG("hilti-classifier", "%s: new rule %p with priority %d for classifier %p",
+            "classifier_add", r, priority, c);
     dbg_print_fields(c, "classifier_add", fields);
 #endif
 }
 
-void hlt_classifier_add_no_prio(hlt_classifier* c, hlt_classifier_field** fields, const hlt_type_info* vtype, void* value, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_classifier_add_no_prio(hlt_classifier* c, hlt_classifier_field** fields,
+                                const hlt_type_info* vtype, void* value, hlt_exception** excpt,
+                                hlt_execution_context* ctx)
 {
     hlt_classifier_add(c, fields, c->max_prio + 1, vtype, value, excpt, ctx);
 }
@@ -130,8 +142,8 @@ void hlt_classifier_add_no_prio(hlt_classifier* c, hlt_classifier_field** fields
 // Compare rules by priority for sorting.
 static int cmp_rules(const void* p1, const void* p2)
 {
-    hlt_classifier_rule** r1 = (hlt_classifier_rule**) p1;
-    hlt_classifier_rule** r2 = (hlt_classifier_rule**) p2;
+    hlt_classifier_rule** r1 = (hlt_classifier_rule**)p1;
+    hlt_classifier_rule** r2 = (hlt_classifier_rule**)p2;
 
     // Reverse sort.
     return ((*r2)->priority - (*r1)->priority);
@@ -145,7 +157,8 @@ void hlt_classifier_compile(hlt_classifier* c, hlt_exception** excpt, hlt_execut
     qsort(c->rules, c->num_rules, sizeof(hlt_classifier_rule*), cmp_rules);
 }
 
-static int8_t match_single_rule(hlt_classifier* c, hlt_classifier_rule* r, hlt_classifier_field** vals)
+static int8_t match_single_rule(hlt_classifier* c, hlt_classifier_rule* r,
+                                hlt_classifier_field** vals)
 {
     for ( int i = 0; i < c->num_fields; i++ ) {
         hlt_classifier_field* field = r->fields[i];
@@ -170,7 +183,7 @@ static int8_t match_single_rule(hlt_classifier* c, hlt_classifier_rule* r, hlt_c
         uint8_t mask = 0xff << (8 - bits);
 
         if ( (val->data[bytes - 1] & mask) != (field->data[bytes - 1] & mask) )
-             // No match.
+            // No match.
             return 0;
     }
 
@@ -178,7 +191,8 @@ static int8_t match_single_rule(hlt_classifier* c, hlt_classifier_rule* r, hlt_c
     return 1;
 }
 
-int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** vals, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** vals, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     if ( ! c->compiled ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
@@ -192,7 +206,8 @@ int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** vals, hl
 
     for ( int i = 0; i < c->num_rules; i++ ) {
         if ( match_single_rule(c, c->rules[i], vals) ) {
-            DBG_LOG("hilti-classifier", "%s: match found with rule %p", "classifier_matches", c->rules[i]);
+            DBG_LOG("hilti-classifier", "%s: match found with rule %p", "classifier_matches",
+                    c->rules[i]);
             return 1;
         }
     }
@@ -201,7 +216,8 @@ int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** vals, hl
     return 0;
 }
 
-void* hlt_classifier_get(hlt_classifier* c, hlt_classifier_field** vals, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_classifier_get(hlt_classifier* c, hlt_classifier_field** vals, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     if ( ! c->compiled ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
@@ -215,7 +231,8 @@ void* hlt_classifier_get(hlt_classifier* c, hlt_classifier_field** vals, hlt_exc
 
     for ( int i = 0; i < c->num_rules; i++ ) {
         if ( match_single_rule(c, c->rules[i], vals) ) {
-            DBG_LOG("hilti-classifier", "%s: match found with rule %p", "classifier_get", c->rules[i]);
+            DBG_LOG("hilti-classifier", "%s: match found with rule %p", "classifier_get",
+                    c->rules[i]);
             return c->rules[i]->value;
         }
     }
@@ -225,4 +242,3 @@ void* hlt_classifier_get(hlt_classifier* c, hlt_classifier_field** vals, hlt_exc
     hlt_set_exception(excpt, &hlt_exception_index_error, 0, ctx);
     return 0;
 }
-

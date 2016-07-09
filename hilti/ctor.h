@@ -14,291 +14,325 @@
 namespace hilti {
 
 /// Base class for ctor nodes. A ctor instantiates a HeapType.
-class Ctor : public ast::Ctor<AstInfo>, public NodeWithAttributes
-{
+class Ctor : public ast::Ctor<AstInfo>, public NodeWithAttributes {
+    AST_RTTI
 public:
-   /// Constructor.
-   ///
-   /// l: An associated location.
-   Ctor(const Location& l=Location::None)
-       : ast::Ctor<AstInfo>(l), NodeWithAttributes(this) {}
+    /// Constructor.
+    ///
+    /// l: An associated location.
+    Ctor(const Location& l = Location::None) : ast::Ctor<AstInfo>(l), NodeWithAttributes(this)
+    {
+    }
 
-   /// Returns a fully flattened list of all atomic sub-expressions.
-   ///
-   /// Can be overridden by derived classes. The default returns just an
-   /// empty list.
+    /// Returns a fully flattened list of all atomic sub-expressions.
+    ///
+    /// Can be overridden by derived classes. The default returns just an
+    /// empty list.
     virtual std::list<shared_ptr<hilti::Expression>> flatten();
 
-   ACCEPT_VISITOR_ROOT();
+    ACCEPT_VISITOR_ROOT();
 };
 
 namespace ctor {
 
 /// AST node for a bytes constructor.
-class Bytes : public Ctor
-{
+class Bytes : public Ctor {
+    AST_RTTI
 public:
-   /// Constructor.
-   ///
-   /// b: The value to initialize the bytes object with.
-   ///
-   /// l: An associated location.
-   Bytes(const string& b, const Location& l=Location::None) : Ctor(l) {
-       _value = b;
-   }
+    /// Constructor.
+    ///
+    /// b: The value to initialize the bytes object with.
+    ///
+    /// l: An associated location.
+    Bytes(const string& b, const Location& l = Location::None) : Ctor(l)
+    {
+        _value = b;
+    }
 
-   /// Returns the initialization value.
-   const string& value() const { return _value; }
+    /// Returns the initialization value.
+    const string& value() const
+    {
+        return _value;
+    }
 
-   /// Returns the type of the constructed object.
-   shared_ptr<Type> type() const override;
+    /// Returns the type of the constructed object.
+    shared_ptr<Type> type() const override;
 
-   ACCEPT_VISITOR(Ctor);
+    ACCEPT_VISITOR(Ctor);
 
 private:
-   string _value;
+    string _value;
 };
 
 /// AST node for a list constructor.
-class List : public Ctor
-{
+class List : public Ctor {
+    AST_RTTI
 public:
-   typedef std::list<node_ptr<Expression>> element_list;
+    typedef std::list<node_ptr<Expression>> element_list;
 
-   /// Constructor.
-   ///
-   /// etype: The type of the the list's elements.
-   ///
-   /// elems: The elements for the instance being constructed.
-   ///
-   /// l: An associated location.
-   List(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None);
+    /// Constructor.
+    ///
+    /// etype: The type of the the list's elements.
+    ///
+    /// elems: The elements for the instance being constructed.
+    ///
+    /// l: An associated location.
+    List(shared_ptr<Type> etype, const element_list& elems, const Location& l = Location::None);
 
-   /// Returns the initialization value.
-   const element_list& elements() const { return _elems; }
+    /// Returns the initialization value.
+    const element_list& elements() const
+    {
+        return _elems;
+    }
 
-   /// Returns the type of the constructed object. If the container has
-   /// elements, the type will infered from those. If not, it will be a
-   /// wildcard type.
-   shared_ptr<Type> type() const override { return _type; }
+    /// Returns the type of the constructed object. If the container has
+    /// elements, the type will infered from those. If not, it will be a
+    /// wildcard type.
+    shared_ptr<Type> type() const override
+    {
+        return _type;
+    }
 
-   std::list<shared_ptr<hilti::Expression>> flatten() override;
+    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
-   ACCEPT_VISITOR(Ctor);
+    ACCEPT_VISITOR(Ctor);
 
 private:
-   node_ptr<Type> _type;
-   element_list _elems;
+    node_ptr<Type> _type;
+    element_list _elems;
 };
 
 /// AST node for a vector constructor.
-class Vector : public Ctor
-{
+class Vector : public Ctor {
+    AST_RTTI
 public:
-   typedef std::list<node_ptr<Expression>> element_list;
+    typedef std::list<node_ptr<Expression>> element_list;
 
-   /// Constructor.
-   ///
-   /// etype: The type of the the vector's elements.
-   ///
-   /// elems: The elements for the instance being constructed.
-   ///
-   /// l: An associated location.
-   Vector(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None);
+    /// Constructor.
+    ///
+    /// etype: The type of the the vector's elements.
+    ///
+    /// elems: The elements for the instance being constructed.
+    ///
+    /// l: An associated location.
+    Vector(shared_ptr<Type> etype, const element_list& elems, const Location& l = Location::None);
 
-   /// Returns the initialization value.
-   const element_list& elements() const { return _elems; }
+    /// Returns the initialization value.
+    const element_list& elements() const
+    {
+        return _elems;
+    }
 
-   /// Returns the type of the constructed object. If the container has
-   /// elements, the type will infered from those. If not, it will be a
-   /// wildcard type.
-   shared_ptr<Type> type() const override { return _type; }
+    /// Returns the type of the constructed object. If the container has
+    /// elements, the type will infered from those. If not, it will be a
+    /// wildcard type.
+    shared_ptr<Type> type() const override
+    {
+        return _type;
+    }
 
-   std::list<shared_ptr<hilti::Expression>> flatten() override;
+    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
-   ACCEPT_VISITOR(Ctor);
+    ACCEPT_VISITOR(Ctor);
 
 private:
-   node_ptr<Type> _type;
-   element_list _elems;
+    node_ptr<Type> _type;
+    element_list _elems;
 };
 
 /// AST node for a set constructor.
-class Set : public Ctor
-{
+class Set : public Ctor {
+    AST_RTTI
 public:
-   typedef std::list<node_ptr<Expression>> element_list;
+    typedef std::list<node_ptr<Expression>> element_list;
 
-   /// Constructor.
-   ///
-   /// etype: The type of the the set's elements.
-   ///
-   /// elems: The elements for the instance being constructed.
-   ///
-   /// l: An associated location.
-   Set(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None);
+    /// Constructor.
+    ///
+    /// etype: The type of the the set's elements.
+    ///
+    /// elems: The elements for the instance being constructed.
+    ///
+    /// l: An associated location.
+    Set(shared_ptr<Type> etype, const element_list& elems, const Location& l = Location::None);
 
-   /// Constructor.
-   ///
-   /// dummy: Dummy flag that differentiates this ctor from the one giving
-   /// the element type. The value is ignored.
-   ///
-   /// stype: The type of the set, which must be \a type::Set.
-   ///
-   /// elems: The elements for the instance being constructed.
-   ///
-   /// l: An associated location.
-   Set(bool dummy, shared_ptr<Type> stype, const element_list& elems, const Location& l=Location::None);
+    /// Constructor.
+    ///
+    /// dummy: Dummy flag that differentiates this ctor from the one giving
+    /// the element type. The value is ignored.
+    ///
+    /// stype: The type of the set, which must be \a type::Set.
+    ///
+    /// elems: The elements for the instance being constructed.
+    ///
+    /// l: An associated location.
+    Set(bool dummy, shared_ptr<Type> stype, const element_list& elems,
+        const Location& l = Location::None);
 
-   /// Returns the initialization value.
-   const element_list& elements() const { return _elems; }
+    /// Returns the initialization value.
+    const element_list& elements() const
+    {
+        return _elems;
+    }
 
-   /// Returns the type of the constructed object. If the container has
-   /// elements, the type will infered from those. If not, it will be a
-   /// wildcard type.
-   shared_ptr<Type> type() const override { return _type; }
+    /// Returns the type of the constructed object. If the container has
+    /// elements, the type will infered from those. If not, it will be a
+    /// wildcard type.
+    shared_ptr<Type> type() const override
+    {
+        return _type;
+    }
 
-   std::list<shared_ptr<hilti::Expression>> flatten() override;
+    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
-   ACCEPT_VISITOR(Ctor);
+    ACCEPT_VISITOR(Ctor);
 
 private:
-   node_ptr<Type> _type;
-   element_list _elems;
+    node_ptr<Type> _type;
+    element_list _elems;
 };
 
 /// AST node for a list constructor.
-class Map : public Ctor
-{
+class Map : public Ctor {
+    AST_RTTI
 public:
-   typedef std::pair<node_ptr<Expression>,node_ptr<Expression>> element;
-   typedef std::list<element> element_list;
+    typedef std::pair<node_ptr<Expression>, node_ptr<Expression>> element;
+    typedef std::list<element> element_list;
 
-   /// Constructor.
-   ///
-   /// ktype: The type of the map's index values.
-   ///
-   /// vtype: The type of the map's values.
-   ///
-   /// elems: The elements for the instance being constructed.
-   ///
-   /// l: An associated location.
-   Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems,
-       const Location& l=Location::None);
+    /// Constructor.
+    ///
+    /// ktype: The type of the map's index values.
+    ///
+    /// vtype: The type of the map's values.
+    ///
+    /// elems: The elements for the instance being constructed.
+    ///
+    /// l: An associated location.
+    Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems,
+        const Location& l = Location::None);
 
-   /// Constructor.
-   ///
-   /// mtype: The type of the map, which must be \a type::Map.
-   ///
-   /// elems: The elements for the instance being constructed.
-   ///
-   /// l: An associated location.
-   Map(shared_ptr<Type> mtype, const element_list& elems, const Location& l=Location::None);
+    /// Constructor.
+    ///
+    /// mtype: The type of the map, which must be \a type::Map.
+    ///
+    /// elems: The elements for the instance being constructed.
+    ///
+    /// l: An associated location.
+    Map(shared_ptr<Type> mtype, const element_list& elems, const Location& l = Location::None);
 
-   /// Returns the initialization value.
-   const element_list& elements() const { return _elems; }
+    /// Returns the initialization value.
+    const element_list& elements() const
+    {
+        return _elems;
+    }
 
-   /// Returns the type of the constructed object. If the container has
-   /// elements, the type will infered from those. If not, it will be a
-   /// wildcard type.
-   shared_ptr<Type> type() const override { return _type; }
+    /// Returns the type of the constructed object. If the container has
+    /// elements, the type will infered from those. If not, it will be a
+    /// wildcard type.
+    shared_ptr<Type> type() const override
+    {
+        return _type;
+    }
 
-   /// Returns the map's default value, or null if none. This is a shortcut
-   /// to querying the corresponding type attribute.
-   shared_ptr<Expression> default_() const;
+    /// Returns the map's default value, or null if none. This is a shortcut
+    /// to querying the corresponding type attribute.
+    shared_ptr<Expression> default_() const;
 
-   std::list<shared_ptr<hilti::Expression>> flatten() override;
+    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
-   ACCEPT_VISITOR(Ctor);
+    ACCEPT_VISITOR(Ctor);
 
 private:
-   node_ptr<Type> _type;
-   element_list _elems;
+    node_ptr<Type> _type;
+    element_list _elems;
 };
 
 /// AST node for a regexp constructor.
-class RegExp : public Ctor
-{
+class RegExp : public Ctor {
+    AST_RTTI
 public:
-   /// A pattern is a tuple of two strings. The first element is the regexp
-   /// itself, and the second a string with optional patterns flags.
-   /// Currently, no flags are supported though.
-   typedef std::string pattern;
+    /// A pattern is a tuple of two strings. The first element is the regexp
+    /// itself, and the second a string with optional patterns flags.
+    /// Currently, no flags are supported though.
+    typedef std::string pattern;
 
-   /// A list of patterns.
-   typedef std::list<pattern> pattern_list;
+    /// A list of patterns.
+    typedef std::list<pattern> pattern_list;
 
-   /// Constructor.
-   ///
-   /// patterns: List of patterns.
-   ///
-   /// attrs: Optional pattern attributes. They apply to all givenm regexps.
-   ///
-   /// l: An associated location.
-   RegExp(const pattern_list& patterns,
-          const Location& l=Location::None);
+    /// Constructor.
+    ///
+    /// patterns: List of patterns.
+    ///
+    /// attrs: Optional pattern attributes. They apply to all givenm regexps.
+    ///
+    /// l: An associated location.
+    RegExp(const pattern_list& patterns, const Location& l = Location::None);
 
-   /// Returns the patterns.
-   const pattern_list& patterns() const { return _patterns; }
+    /// Returns the patterns.
+    const pattern_list& patterns() const
+    {
+        return _patterns;
+    }
 
-   /// Returns the type of the constructed object. Pattern constants are
-   /// always of type \c regexp<>. To add further type attributes, they need
-   /// to be coerced to a regexp type that has them.
-   shared_ptr<Type> type() const override { return _type; }
+    /// Returns the type of the constructed object. Pattern constants are
+    /// always of type \c regexp<>. To add further type attributes, they need
+    /// to be coerced to a regexp type that has them.
+    shared_ptr<Type> type() const override
+    {
+        return _type;
+    }
 
-   ACCEPT_VISITOR(Ctor);
+    ACCEPT_VISITOR(Ctor);
 
 private:
-   node_ptr<Type> _type;
-   pattern_list _patterns;
+    node_ptr<Type> _type;
+    pattern_list _patterns;
 };
 
 /// AST node for a callable constructor.
-class Callable : public Ctor
-{
+class Callable : public Ctor {
+    AST_RTTI
 public:
-   // FIXME: This should be shared_ptr, but the parser currently moves exprs
-   // into a list of node_ptr. typedef std::list<shared_ptr<Expression>>
-   // argument_list;
-   typedef std::list<node_ptr<Expression>> argument_list;
+    // FIXME: This should be shared_ptr, but the parser currently moves exprs
+    // into a list of node_ptr. typedef std::list<shared_ptr<Expression>>
+    // argument_list;
+    typedef std::list<node_ptr<Expression>> argument_list;
 
-   /// Constructor.
-   ///
-   /// rtype: The callable's function result type.
-   ///
-   /// params: The callable's parameter types.
-   ///
-   /// function: Function being bound.
-   ///
-   /// args: The arguments of \a function to bind statically into the
-   /// callable. These must match the function's signature starting from the
-   /// left, but can leave some unbound.
-   ///
-   /// l: An associated location.
-   Callable(shared_ptr<hilti::type::function::Result> result, const type::function::parameter_list& params,
-            shared_ptr<Expression> function, const argument_list& args, const Location& l=Location::None);
+    /// Constructor.
+    ///
+    /// rtype: The callable's function result type.
+    ///
+    /// params: The callable's parameter types.
+    ///
+    /// function: Function being bound.
+    ///
+    /// args: The arguments of \a function to bind statically into the
+    /// callable. These must match the function's signature starting from the
+    /// left, but can leave some unbound.
+    ///
+    /// l: An associated location.
+    Callable(shared_ptr<hilti::type::function::Result> result,
+             const type::function::parameter_list& params, shared_ptr<Expression> function,
+             const argument_list& args, const Location& l = Location::None);
 
-   // Returns the function the callable binds to.
-   const shared_ptr<Expression> function() const;
+    // Returns the function the callable binds to.
+    const shared_ptr<Expression> function() const;
 
-   /// Returns the callables statically bound arguments.
-   std::list<shared_ptr<Expression>> arguments() const;
+    /// Returns the callables statically bound arguments.
+    std::list<shared_ptr<Expression>> arguments() const;
 
-   /// Returns the type of the constructed callable.
-   shared_ptr<Type> type() const override;
+    /// Returns the type of the constructed callable.
+    shared_ptr<Type> type() const override;
 
-   std::list<shared_ptr<hilti::Expression>> flatten() override;
+    std::list<shared_ptr<hilti::Expression>> flatten() override;
 
-   ACCEPT_VISITOR(Ctor);
+    ACCEPT_VISITOR(Ctor);
 
 private:
-   node_ptr<Type> _type;
-   node_ptr<Expression> _function;
-   std::list<node_ptr<Expression>> _args;
+    node_ptr<Type> _type;
+    node_ptr<Expression> _function;
+    std::list<node_ptr<Expression>> _args;
 };
-
 }
-
 }
 
 #endif

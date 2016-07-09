@@ -10,12 +10,11 @@ namespace binpac {
 /// inherits all the HILTi options and adds further BinPAC++-specific ones.
 ///
 /// For the label lists, BinPAC++ options are prefixed with "binpac".
-class Options : public hilti::Options
-{
+class Options : public hilti::Options {
 public:
     Options();
     Options(const Options& other) = default;
-    virtual ~Options() {};
+    virtual ~Options(){};
 
     /// List of directories to search for imports and other \c *.pac2 library
     /// files. The current directory will always be tried first. By default,
@@ -33,7 +32,6 @@ public:
     string_set optimizationLabels() const override;
     void toCacheKey(::util::cache::FileCache::Key* key) const override;
 };
-
 }
 
 #endif

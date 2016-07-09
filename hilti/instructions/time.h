@@ -3,17 +3,17 @@
 /// The ``time`` data type represents specific points in time, with
 /// nanosecond resolution. The earliest time that can be represented is the
 /// standard UNIX epoch, i.e., Jan 1 1970 UTC.
-/// 
+///
 /// Time constants are specified in seconds since the epoch, either as
 /// integers (``1295411800``) or as floating poing values
 /// (``1295411800.123456789``). In the latter case, there may be at most 9
 /// digits for the fractional part.
-/// 
+///
 /// A special constant ``Epoch`` is provided as well.
-/// 
+///
 /// Note that when operating on time values, behaviour in case of under- and
 /// overflow is undefined.
-/// 
+///
 /// Internally, ``time`` uses a fixed-point represenation with 32 bit for full
 /// seconds, and 32 bit for the fraction of a second.
 ///
@@ -26,11 +26,12 @@
 #include "define-instruction.h"
 
 iBegin(time, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::time, true);
     iOp2(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -40,11 +41,12 @@ iBegin(time, Equal, "equal")
 iEnd
 
 iBegin(time, Add, "time.add")
-    iTarget(optype::time)
-    iOp1(optype::time, true)
-    iOp2(optype::interval, true)
+    iTarget(optype::time);
+    iOp1(optype::time, true);
+    iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -54,10 +56,11 @@ iBegin(time, Add, "time.add")
 iEnd
 
 iBegin(time, AsDouble, "time.as_double")
-    iTarget(optype::double_)
-    iOp1(optype::time, true)
+    iTarget(optype::double_);
+    iOp1(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -68,10 +71,11 @@ iBegin(time, AsDouble, "time.as_double")
 iEnd
 
 iBegin(time, FromDouble, "time.from_double")
-    iTarget(optype::time)
-    iOp1(optype::double_, true)
+    iTarget(optype::time);
+    iOp1(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -80,10 +84,11 @@ iBegin(time, FromDouble, "time.from_double")
 iEnd
 
 iBegin(time, AsInt, "time.as_int")
-    iTarget(optype::int64)
-    iOp1(optype::time, true)
+    iTarget(optype::int64);
+    iOp1(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -94,11 +99,12 @@ iBegin(time, AsInt, "time.as_int")
 iEnd
 
 iBegin(time, Eq, "time.eq")
-    iTarget(optype::boolean)
-    iOp1(optype::time, true)
-    iOp2(optype::time, true)
+    iTarget(optype::boolean);
+    iOp1(optype::time, true);
+    iOp2(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -108,11 +114,12 @@ iBegin(time, Eq, "time.eq")
 iEnd
 
 iBegin(time, Gt, "time.gt")
-    iTarget(optype::boolean)
-    iOp1(optype::time, true)
-    iOp2(optype::time, true)
+    iTarget(optype::boolean);
+    iOp1(optype::time, true);
+    iOp2(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -123,11 +130,12 @@ iBegin(time, Gt, "time.gt")
 iEnd
 
 iBegin(time, Lt, "time.lt")
-    iTarget(optype::boolean)
-    iOp1(optype::time, true)
-    iOp2(optype::time, true)
+    iTarget(optype::boolean);
+    iOp1(optype::time, true);
+    iOp2(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -138,11 +146,12 @@ iBegin(time, Lt, "time.lt")
 iEnd
 
 iBegin(time, Leq, "time.leq")
-    iTarget(optype::boolean)
-    iOp1(optype::time, true)
-    iOp2(optype::time, true)
+    iTarget(optype::boolean);
+    iOp1(optype::time, true);
+    iOp2(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -153,11 +162,12 @@ iBegin(time, Leq, "time.leq")
 iEnd
 
 iBegin(time, Geq, "time.geq")
-    iTarget(optype::boolean)
-    iOp1(optype::time, true)
-    iOp2(optype::time, true)
+    iTarget(optype::boolean);
+    iOp1(optype::time, true);
+    iOp2(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -168,10 +178,11 @@ iBegin(time, Geq, "time.geq")
 iEnd
 
 iBegin(time, Nsecs, "time.nsecs")
-    iTarget(optype::int64)
-    iOp1(optype::time, true)
+    iTarget(optype::int64);
+    iOp1(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -181,11 +192,12 @@ iBegin(time, Nsecs, "time.nsecs")
 iEnd
 
 iBegin(time, SubTime, "time.sub")
-    iTarget(optype::interval)
-    iOp1(optype::time, true)
-    iOp2(optype::time, true)
+    iTarget(optype::interval);
+    iOp1(optype::time, true);
+    iOp2(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -194,11 +206,12 @@ iBegin(time, SubTime, "time.sub")
 iEnd
 
 iBegin(time, SubInterval, "time.sub")
-    iTarget(optype::time)
-    iOp1(optype::time, true)
-    iOp2(optype::interval, true)
+    iTarget(optype::time);
+    iOp1(optype::time, true);
+    iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -207,9 +220,10 @@ iBegin(time, SubInterval, "time.sub")
 iEnd
 
 iBegin(time, Wall, "time.wall")
-    iTarget(optype::time)
+    iTarget(optype::time);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -218,4 +232,3 @@ iBegin(time, Wall, "time.wall")
     )")
 
 iEnd
-

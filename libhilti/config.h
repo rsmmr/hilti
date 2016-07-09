@@ -10,8 +10,7 @@
 #include "types.h"
 
 /// Configuration parameters for the HILTI runtime system..
-struct __hlt_config
-{
+struct __hlt_config {
     /// Number of worker threads to spawn.
     unsigned num_workers;
 
@@ -53,7 +52,6 @@ struct __hlt_config
     /// is the magic string "DEFAULT" which let's HILTI determine a pinning
     /// itself.
     const char* core_affinity;
-
 };
 
 /// Returns the current configuration. The returned value cannot be directly
@@ -73,11 +71,15 @@ extern const hlt_config* hlt_config_get();
 /// internally so the instance can be deleted afterwards.
 extern void hlt_config_set(const hlt_config* new_config);
 
+/// Dumps out a debug representation of the current configuration state.
+///
+/// f: The file handle to write to.
+extern void hlt_global_state_dump(FILE* f);
+
+/// Dumps a debug reprenstation of the configuration state to the given file.
+void hlt_config_dump(FILE* f);
+
 /// XXX
 extern hlt_config* __hlt_default_config();
 
 #endif
-
-
-
-

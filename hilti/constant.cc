@@ -1,12 +1,12 @@
 
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
-#include "id.h"
-#include "expression.h"
-#include "statement.h"
-#include "module.h"
 #include "constant.h"
+#include "expression.h"
+#include "id.h"
+#include "module.h"
+#include "statement.h"
 
 using namespace hilti;
 
@@ -86,12 +86,12 @@ constant::AddressVal::AddressVal(Constant* c, const string& addr)
 {
     int result = 0;
 
-	if ( addr.find(':') == std::string::npos ) {
+    if ( addr.find(':') == std::string::npos ) {
         family = AddressVal::IPv4;
         result = inet_pton(AF_INET, addr.c_str(), &in.in6);
     }
 
-	else {
+    else {
         family = AddressVal::IPv6;
         result = inet_pton(AF_INET6, addr.c_str(), &in.in4);
     }
@@ -100,8 +100,7 @@ constant::AddressVal::AddressVal(Constant* c, const string& addr)
         throw ConstantParseError(c, util::fmt("cannot parse address '%s'", addr.c_str()));
 }
 
-constant::Address::Address(const string& addr, const Location& l)
-    : Constant(l), _addr(this, addr)
+constant::Address::Address(const string& addr, const Location& l) : Constant(l), _addr(this, addr)
 {
 }
 
@@ -172,8 +171,8 @@ error:
 constant::Bitset::Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Location& l)
 {
     _bits = bits;
-    _bstype = ast::as<type::Bitset>(bstype);
-    assert(_bstype);
+    _bstype = ast::rtti::checkedCast<type::Bitset>(bstype);
+    ;
 
     // Check that we know all the labels.
     for ( auto b : bits ) {
@@ -187,15 +186,16 @@ constant::Bitset::Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Lo
         }
 
         if ( ! found )
-            throw ConstantParseError(this, util::fmt("unknown bitset label '%s'", b->pathAsString().c_str()));
+            throw ConstantParseError(this, util::fmt("unknown bitset label '%s'",
+                                                     b->pathAsString().c_str()));
     }
 }
 
 constant::Enum::Enum(shared_ptr<ID> value, shared_ptr<Type> etype, const Location& l) : Constant(l)
 {
     _value = value;
-    _etype = ast::as<type::Enum>(etype);
-    assert(_etype);
+    _etype = ast::rtti::checkedCast<type::Enum>(etype);
+    ;
 
     // Check that we know the label.
     for ( auto l : _etype->labels() ) {
@@ -203,10 +203,12 @@ constant::Enum::Enum(shared_ptr<ID> value, shared_ptr<Type> etype, const Locatio
             return;
     }
 
-    throw ConstantParseError(this, util::fmt("unknown enum label '%s'", value->pathAsString().c_str()));
+    throw ConstantParseError(this,
+                             util::fmt("unknown enum label '%s'", value->pathAsString().c_str()));
 }
 
-constant::Union::Union(shared_ptr<Type> utype, shared_ptr<ID> field, shared_ptr<Expression> value, const Location& l)
+constant::Union::Union(shared_ptr<Type> utype, shared_ptr<ID> field, shared_ptr<Expression> value,
+                       const Location& l)
     : Constant(l)
 {
     _utype = utype;
@@ -229,12 +231,13 @@ shared_ptr<Type> constant::Union::type() const
         t = std::make_shared<type::Union>();
 
     else if ( _id ) {
-        type::Union::field_list fields = { std::make_shared<type::union_::Field>(_id, _expr->type()) };
+        type::Union::field_list fields = {
+            std::make_shared<type::union_::Field>(_id, _expr->type())};
         t = std::make_shared<type::Union>(fields, location());
     }
 
     else {
-        type::trait::TypeList::type_list fields = { _expr->type() };
+        type::trait::TypeList::type_list fields = {_expr->type()};
         t = std::make_shared<type::Union>(fields, location());
     }
 
@@ -244,7 +247,7 @@ shared_ptr<Type> constant::Union::type() const
 
 std::list<shared_ptr<hilti::Expression>> constant::Union::flatten()
 {
-    return { _expr };
+    return {_expr};
 }
 
 shared_ptr<Expression> constant::Union::expression() const

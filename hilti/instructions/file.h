@@ -1,16 +1,17 @@
 ///
 /// \type File
-/// 
+///
 /// \cproto hlt_file*
 ///
 
 #include "define-instruction.h"
 
 iBegin(file, New, "new")
-    iTarget(optype::refFile)
-    iOp1(optype::typeFile, true)
+    iTarget(optype::refFile);
+    iOp1(optype::typeFile, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -22,9 +23,10 @@ iEnd
 
 
 iBegin(file, Close, "file.close")
-    iOp1(optype::refFile, false)
+    iOp1(optype::refFile, false);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -36,14 +38,15 @@ iBegin(file, Close, "file.close")
 iEnd
 
 iBegin(file, Open, "file.open")
-    iOp1(optype::refFile, false)
-    iOp2(optype::string, true)
-    iOp3(optype::optional(optype::tuple), true)
+    iOp1(optype::refFile, false);
+    iOp2(optype::string, true);
+    iOp3(optype::optional(optype::tuple), true);
 
-    iValidate {
-        // auto ty_op1 = as<type::refFile>(op1->type());
-        // auto ty_op2 = as<type::string>(op2->type());
-        // auto ty_op3 = as<type::[(enum,enum,string)]>(op3->type());
+    iValidate
+    {
+        // auto ty_op1 = ast::rtti::checkedCast<type::refFile>(op1->type());
+        // auto ty_op2 = ast::rtti::checkedCast<type::string>(op2->type());
+        // auto ty_op3 = ast::rtti::checkedCast<type::[(enum,enum,string)]>(op3->type());
 
         // TODO: Check tuple argument.
     }
@@ -64,10 +67,11 @@ iBegin(file, Open, "file.open")
 iEnd
 
 iBegin(file, WriteString, "file.write")
-    iOp1(optype::refFile, false)
-    iOp2(optype::string, true)
+    iOp1(optype::refFile, false);
+    iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -85,10 +89,11 @@ iBegin(file, WriteString, "file.write")
 iEnd
 
 iBegin(file, WriteBytes, "file.write")
-    iOp1(optype::refFile, false)
-    iOp2(optype::refBytes, true)
+    iOp1(optype::refFile, false);
+    iOp2(optype::refBytes, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -103,4 +108,3 @@ iBegin(file, WriteBytes, "file.write")
     )")
 
 iEnd
-

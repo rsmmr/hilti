@@ -1,13 +1,25 @@
-#include <stdlib.h>
 #include <cxxabi.h>
+#include <stdlib.h>
 
 #include <util/util.h>
 
 #include "node.h"
 
-namespace hilti { namespace statement { namespace instruction { class Unresolved; } } };
+namespace hilti {
+namespace statement {
+namespace instruction {
+class Unresolved;
+}
+}
+};
 
 using namespace ast;
+
+AST_RTTI_BEGIN(NodeBase, ast_NodeBase)
+AST_RTTI_END(ast_NodeBase)
+
+AST_RTTI_CAST_BEGIN(NodeBase)
+AST_RTTI_CAST_END(NodeBase)
 
 NodeBase::~NodeBase()
 {
@@ -147,7 +159,6 @@ void NodeBase::replace(shared_ptr<NodeBase> n, shared_ptr<NodeBase> parent)
         changed = false;
 
         for ( auto p : _parents ) {
-
             if ( parent && parent.get() != p )
                 continue;
 
@@ -162,7 +173,8 @@ void NodeBase::replace(shared_ptr<NodeBase> n, shared_ptr<NodeBase> parent)
                 }
             }
         }
-next: {}
+    next : {
+    }
     } while ( changed );
 
     if ( ! parent ) {
@@ -178,13 +190,12 @@ bool NodeBase::hasChildInternal(NodeBase* node, bool recursive, node_set* done) 
 {
     assert(done || ! recursive);
 
-    for ( auto c: _childs ) {
-
+    for ( auto c : _childs ) {
         if ( done ) {
-            if ( done->find(c) != done->end() )
+            if ( done->find(c.get()) != done->end() )
                 continue;
 
-            done->insert(c);
+            done->insert(c.get());
         }
 
         if ( c.get() == node )
@@ -218,7 +229,7 @@ const NodeBase::node_list NodeBase::childs(bool recursive) const
 
     node_list result;
     for ( auto c : childs )
-        result.push_back(c);
+        result.push_back(c->shared_from_this());
 
     return result;
 }
@@ -226,10 +237,10 @@ const NodeBase::node_list NodeBase::childs(bool recursive) const
 void NodeBase::childsInternal(const NodeBase* node, bool recursive, node_set* childs) const
 {
     for ( auto c : node->_childs ) {
-        if ( childs->find(c) != childs->end() )
+        if ( childs->find(c.get()) != childs->end() )
             continue;
 
-        childs->insert(c);
+        childs->insert(c.get());
         childsInternal(c.get(), recursive, childs);
     }
 }
@@ -246,24 +257,24 @@ NodeBase* NodeBase::siblingOfChild(NodeBase* child) const
     return nullptr;
 }
 
-NodeBase::operator string() {
-
+NodeBase::operator string()
+{
     string s = render();
     string location = "-";
 
     if ( _location )
         location = string(_location);
 
-    int status;
-    char *name = abi::__cxa_demangle(typeid(*this).name(), 0, 0, &status);
+    const char* name =
+        "CURRENTLY DISABLED, TODO"; // abi::__cxa_demangle(typeName(*this), 0, 0, &status);
 
     string parents = "";
 
     for ( auto p : _parents )
         parents += util::fmt(" p:%p", p);
 
-    return util::fmt("%s [%d/%s %p%s] %s", name,
-                     _childs.size(), location.c_str(), this, parents.c_str(), s.c_str());
+    return util::fmt("%s [%d/%s %p%s] %s", name, _childs.size(), location.c_str(), this,
+                     parents.c_str(), s.c_str());
 }
 
 void NodeBase::dump(std::ostream& out)
@@ -277,8 +288,8 @@ void NodeBase::dump(std::ostream& out, int level, node_set* seen)
     for ( int i = 0; i < level; ++i )
         out << "  ";
 
-    if ( seen->find(this->sharedPtr<NodeBase>()) == seen->end() ) {
-        seen->insert(this->sharedPtr<NodeBase>());
+    if ( seen->find(this) == seen->end() ) {
+        seen->insert(this);
 
         out << string(*this) << std::endl;
 

@@ -3,15 +3,15 @@
 //
 // FIXME: Most of this is copied from addr.c. We should merge the two.
 
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
+#include "hutil.h"
 #include "net.h"
 #include "string_.h"
-#include "hutil.h"
 
 static inline int is_v4(const hlt_net net)
 {
@@ -27,12 +27,12 @@ struct in_addr hlt_net_to_in4(hlt_net net, hlt_exception** excpt, hlt_execution_
 {
     if ( ! is_v4(net) ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
-        struct in_addr sa;
+        struct in_addr sa = {0};
         return sa;
     }
 
     unsigned long a = (unsigned long)net.a2;
-    struct in_addr sa = { hlt_hton32(a) };
+    struct in_addr sa = {hlt_hton32(a)};
     return sa;
 }
 
@@ -54,14 +54,16 @@ uint8_t hlt_net_length(hlt_net net, hlt_exception** excpt, hlt_execution_context
     return net.len;
 }
 
-hlt_net hlt_net_from_in4(struct in_addr in, uint8_t length, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_net hlt_net_from_in4(struct in_addr in, uint8_t length, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
-    hlt_net net = { 0, 0, length };
+    hlt_net net = {0, 0, length};
     net.a2 = hlt_ntoh32(in.s_addr);
     return net;
 }
 
-hlt_net hlt_net_from_in6(struct in6_addr in, uint8_t length, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_net hlt_net_from_in6(struct in6_addr in, uint8_t length, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     uint64_t a1;
     memcpy(&a1, &in, 8);
@@ -69,22 +71,24 @@ hlt_net hlt_net_from_in6(struct in6_addr in, uint8_t length, hlt_exception** exc
     uint64_t a2;
     memcpy(&a2, ((char*)&in) + 8, 8);
 
-    hlt_net net = { hlt_ntoh64(a1), hlt_ntoh64(a1), length };
+    hlt_net net = {hlt_ntoh64(a1), hlt_ntoh64(a1), length};
     return net;
 }
 
-hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                             __hlt_pointer_stack* seen, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_NET);
 
-    hlt_net net = *((hlt_net *)obj);
+    hlt_net net = *((hlt_net*)obj);
 
     int len;
     char buffer[128];
 
     if ( is_v4(net) ) {
         unsigned long a = (unsigned long)net.a2;
-        struct in_addr sa = { hlt_hton32(a) };
+        struct in_addr sa = {hlt_hton32(a)};
 
         if ( ! inet_ntop(AF_INET, &sa, buffer, 128) ) {
             hlt_set_exception(excpt, &hlt_exception_os_error, 0, ctx);
@@ -119,4 +123,3 @@ hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t
 
     return hlt_string_from_asciiz(buffer, excpt, ctx);
 }
-

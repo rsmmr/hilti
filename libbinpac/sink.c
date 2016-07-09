@@ -1,12 +1,13 @@
 
 #include <autogen/binpac-hlt.h>
 
-#include "sink.h"
-#include "filter.h"
 #include "exceptions.h"
+#include "filter.h"
+#include "sink.h"
 
 // XXX Needed?
-// void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx);
+// void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter,
+// hlt_exception** excpt, hlt_execution_context* ctx);
 
 typedef struct __parser_state {
     binpac_parser* parser;
@@ -18,11 +19,11 @@ typedef struct __parser_state {
 } __parser_state;
 
 typedef struct __chunk {
-    struct __chunk* next;  // Next block. Has ownership.
-    struct __chunk* prev;  // Previous block.
-    uint64_t rseq;          // Sequence number of first byte.
-    uint64_t rupper;        // Sequence number of last byte + 1.
-    hlt_bytes* data;       // Data at +1.
+    struct __chunk* next; // Next block. Has ownership.
+    struct __chunk* prev; // Previous block.
+    uint64_t rseq;        // Sequence number of first byte.
+    uint64_t rupper;      // Sequence number of last byte + 1.
+    hlt_bytes* data;      // Data at +1.
 } __chunk;
 
 struct binpac_sink {
@@ -32,22 +33,24 @@ struct binpac_sink {
     uint64_t size;         // Number of bytes written so far. TODO: Still needed? XXX
 
     // Reassembly state.
-    int64_t policy;        // Reassembly policy of type BinPACHilti::ReassemblyPolicy.
-    int8_t auto_trim;      // True if automatic trimming is enabled.
-    uint64_t initial_seq;  // Initial sequence number.
-    uint64_t cur_rseq;     // Sequence of last delivered byte + 1 (i.e., seq of next)
+    int64_t policy;             // Reassembly policy of type BinPACHilti::ReassemblyPolicy.
+    int8_t auto_trim;           // True if automatic trimming is enabled.
+    uint64_t initial_seq;       // Initial sequence number.
+    uint64_t cur_rseq;          // Sequence of last delivered byte + 1 (i.e., seq of next)
     uint64_t last_reassem_rseq; // Sequence of last byte reassembled and delivered + 1.
-    uint64_t trim_rseq;    // Sequence of last byte trimmed so far + 1.
-    __chunk* first_chunk;  // First not yet reassembled chunk. Has ownership.
-    __chunk* last_chunk;   // Last not yet reassembled chunk.
-
+    uint64_t trim_rseq;         // Sequence of last byte trimmed so far + 1.
+    __chunk* first_chunk;       // First not yet reassembled chunk. Has ownership.
+    __chunk* last_chunk;        // Last not yet reassembled chunk.
 };
 
 __HLT_RTTI_GC_TYPE(binpac_sink, HLT_TYPE_BINPAC_SINK);
 
-void binpac_dbg_deliver(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx);
-void binpac_dbg_reassembler(binpac_sink* sink, const char* msg, hlt_bytes* data, uint64_t seq, int64_t len, hlt_exception** excpt, hlt_execution_context* ctx);
-void binpac_dbg_reassembler_buffer(binpac_sink* sink, const char* msg, hlt_exception** excpt, hlt_execution_context* ctx);
+void binpac_dbg_deliver(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter,
+                        hlt_exception** excpt, hlt_execution_context* ctx);
+void binpac_dbg_reassembler(binpac_sink* sink, const char* msg, hlt_bytes* data, uint64_t seq,
+                            int64_t len, hlt_exception** excpt, hlt_execution_context* ctx);
+void binpac_dbg_reassembler_buffer(binpac_sink* sink, const char* msg, hlt_exception** excpt,
+                                   hlt_execution_context* ctx);
 
 static void __cctor_state(__parser_state* state, hlt_execution_context* ctx)
 {
@@ -98,7 +101,8 @@ static void __unlink_state(binpac_sink* sink, __parser_state* state, hlt_executi
     hlt_free(state);
 }
 
-static void __finish_parser(binpac_sink* sink, __parser_state* state, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __finish_parser(binpac_sink* sink, __parser_state* state, hlt_exception** excpt,
+                            hlt_execution_context* ctx)
 {
     if ( state->data && state->resume ) {
         hlt_bytes_freeze(state->data, 1, excpt, ctx);
@@ -138,7 +142,8 @@ static void __finish_parser(binpac_sink* sink, __parser_state* state, hlt_except
 
         else if ( sink_excpt && sink_excpt->type == &binpac_exception_parserdisabled ) {
             // Disabled, nothing to do.
-            DBG_LOG("binpac-sinks", "- final writing to sink %p disabled for parser %p", sink, state->pobj);
+            DBG_LOG("binpac-sinks", "- final writing to sink %p disabled for parser %p", sink,
+                    state->pobj);
             GC_DTOR(sink_excpt, hlt_exception, ctx);
         }
 
@@ -149,7 +154,8 @@ static void __finish_parser(binpac_sink* sink, __parser_state* state, hlt_except
     __unlink_state(sink, state, ctx);
 }
 
-static int8_t __check_seq(binpac_sink* sink, uint64_t seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static int8_t __check_seq(binpac_sink* sink, uint64_t seq, void* user, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     if ( seq >= sink->initial_seq )
         return 1;
@@ -162,7 +168,8 @@ static int8_t __check_seq(binpac_sink* sink, uint64_t seq, void* user, hlt_excep
     return 0;
 }
 
-static void __report_gap(binpac_sink* sink, uint64_t rseq, uint64_t len, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __report_gap(binpac_sink* sink, uint64_t rseq, uint64_t len, void* user,
+                         hlt_exception** excpt, hlt_execution_context* ctx)
 {
     DBG_LOG("binpac-sinks", "reporting gap in sink %p at rseq %" PRIu64, sink, rseq);
 
@@ -172,7 +179,8 @@ static void __report_gap(binpac_sink* sink, uint64_t rseq, uint64_t len, void* u
     }
 }
 
-static void __report_skip(binpac_sink* sink, uint64_t rseq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __report_skip(binpac_sink* sink, uint64_t rseq, void* user, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     DBG_LOG("binpac-sinks", "reporting skip in sink %p to rseq %" PRIu64, sink, rseq);
 
@@ -182,23 +190,29 @@ static void __report_skip(binpac_sink* sink, uint64_t rseq, void* user, hlt_exce
     }
 }
 
-static void __report_overlap(binpac_sink* sink, hlt_bytes* old_data, hlt_bytes* new_data, uint64_t rseq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __report_overlap(binpac_sink* sink, hlt_bytes* old_data, hlt_bytes* new_data,
+                             uint64_t rseq, void* user, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     DBG_LOG("binpac-sinks", "reporting overlap in sink %p at rseq %" PRIu64, sink, rseq);
 
     if ( ! old_data )
-        old_data = hlt_bytes_new_from_data((int8_t*)"<unavailable>", sizeof("<unavailable>"), excpt, ctx);
+        old_data =
+            hlt_bytes_new_from_data((int8_t*)"<unavailable>", sizeof("<unavailable>"), excpt, ctx);
 
     if ( ! new_data )
-        new_data = hlt_bytes_new_from_data((int8_t*)"<unavailable>", sizeof("<unavailable>"), excpt, ctx);
+        new_data =
+            hlt_bytes_new_from_data((int8_t*)"<unavailable>", sizeof("<unavailable>"), excpt, ctx);
 
     for ( __parser_state* s = sink->head; s; s = s->next ) {
         if ( s->parser->hook_overlap )
-            (*s->parser->hook_overlap)(s->pobj, user, rseq + sink->initial_seq, old_data, new_data, excpt, ctx);
+            (*s->parser->hook_overlap)(s->pobj, user, rseq + sink->initial_seq, old_data, new_data,
+                                       excpt, ctx);
     }
 }
 
-static void __report_undelivered(binpac_sink* sink, uint64_t rseq, hlt_bytes* b, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __report_undelivered(binpac_sink* sink, uint64_t rseq, hlt_bytes* b, void* user,
+                                 hlt_exception** excpt, hlt_execution_context* ctx)
 {
     DBG_LOG("binpac-sinks", "reporting undelivered in sink %p at rseq %" PRIu64, sink, rseq);
 
@@ -208,7 +222,8 @@ static void __report_undelivered(binpac_sink* sink, uint64_t rseq, hlt_bytes* b,
     }
 }
 
-static void __report_undelivered_up_to(binpac_sink* sink, uint64_t rupper, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __report_undelivered_up_to(binpac_sink* sink, uint64_t rupper, void* user,
+                                       hlt_exception** excpt, hlt_execution_context* ctx)
 {
     for ( __chunk* c = sink->first_chunk; c && c->rseq < rupper; c = c->next ) {
         if ( ! c->data )
@@ -229,7 +244,8 @@ static void __report_undelivered_up_to(binpac_sink* sink, uint64_t rupper, void*
     }
 }
 
-static __chunk* __new_chunk(hlt_bytes* data, uint64_t rseq, uint64_t len, hlt_exception** excpt, hlt_execution_context* ctx)
+static __chunk* __new_chunk(hlt_bytes* data, uint64_t rseq, uint64_t len, hlt_exception** excpt,
+                            hlt_execution_context* ctx)
 {
     __chunk* c = hlt_malloc(sizeof(__chunk));
     c->next = 0;
@@ -240,7 +256,8 @@ static __chunk* __new_chunk(hlt_bytes* data, uint64_t rseq, uint64_t len, hlt_ex
     return c;
 }
 
-static void __link_chunk(binpac_sink* sink, __chunk* prev, __chunk* c, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __link_chunk(binpac_sink* sink, __chunk* prev, __chunk* c, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     if ( prev ) {
         if ( prev->next )
@@ -266,7 +283,8 @@ static void __link_chunk(binpac_sink* sink, __chunk* prev, __chunk* c, hlt_excep
     }
 }
 
-static void __unlink_chunk(binpac_sink* sink, __chunk* c, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __unlink_chunk(binpac_sink* sink, __chunk* c, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     if ( c->next )
         c->next->prev = c->prev;
@@ -288,7 +306,8 @@ static void __delete_chunk(__chunk* c, hlt_exception** excpt, hlt_execution_cont
     hlt_free(c);
 }
 
-static void __trim(binpac_sink* sink, uint64_t rseq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __trim(binpac_sink* sink, uint64_t rseq, void* user, hlt_exception** excpt,
+                   hlt_execution_context* ctx)
 {
 #ifdef DEBUG
     if ( rseq != UINT64_MAX ) {
@@ -318,9 +337,11 @@ static void __trim(binpac_sink* sink, uint64_t rseq, void* user, hlt_exception**
     sink->trim_rseq = rseq;
 }
 
-static void __try_deliver(binpac_sink* sink, __chunk* c, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+static void __try_deliver(binpac_sink* sink, __chunk* c, void* user, hlt_exception** excpt,
+                          hlt_execution_context* ctx);
 
-static void __skip(binpac_sink* sink, uint64_t rseq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __skip(binpac_sink* sink, uint64_t rseq, void* user, hlt_exception** excpt,
+                   hlt_execution_context* ctx)
 {
     DBG_LOG("binpac-sinks", "skipping sink %p to rseq %" PRIu64, sink, rseq);
 
@@ -336,7 +357,8 @@ static void __skip(binpac_sink* sink, uint64_t rseq, void* user, hlt_exception**
     __try_deliver(sink, sink->first_chunk, user, excpt, ctx);
 }
 
-static int8_t __deliver_chunk(binpac_sink* sink, hlt_bytes* data, uint64_t rseq, uint64_t rupper, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static int8_t __deliver_chunk(binpac_sink* sink, hlt_bytes* data, uint64_t rseq, uint64_t rupper,
+                              void* user, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! data ) {
         // A gap.
@@ -395,7 +417,6 @@ static int8_t __deliver_chunk(binpac_sink* sink, hlt_bytes* data, uint64_t rseq,
 
     // Now pass it onto parsers.
     while ( s ) {
-
         if ( s->disconnected )
             continue;
 
@@ -431,7 +452,8 @@ static int8_t __deliver_chunk(binpac_sink* sink, hlt_bytes* data, uint64_t rseq,
                 continue;
             }
 
-            DBG_LOG("binpac-sinks", "- resuming delivering to sink %p for parser %p", sink, s->pobj);
+            DBG_LOG("binpac-sinks", "- resuming delivering to sink %p for parser %p", sink,
+                    s->pobj);
 
             // Subsequent chunk, resume.
             hlt_bytes_append(s->data, data, excpt, ctx);
@@ -458,7 +480,8 @@ static int8_t __deliver_chunk(binpac_sink* sink, hlt_bytes* data, uint64_t rseq,
 
         if ( sink_excpt && sink_excpt->type == &hlt_exception_yield ) {
             // Suspended.
-            DBG_LOG("binpac-sinks", "- delivering to sink %p suspended for parser %p", sink, s->pobj);
+            DBG_LOG("binpac-sinks", "- delivering to sink %p suspended for parser %p", sink,
+                    s->pobj);
             GC_CCTOR(sink_excpt, hlt_exception, ctx);
             s->resume = sink_excpt;
             s = s->next;
@@ -477,7 +500,8 @@ static int8_t __deliver_chunk(binpac_sink* sink, hlt_bytes* data, uint64_t rseq,
         }
 
         else {
-            DBG_LOG("binpac-sinks", "- delivering to sink %p finished for parser %p", sink, s->pobj);
+            DBG_LOG("binpac-sinks", "- delivering to sink %p finished for parser %p", sink,
+                    s->pobj);
             __parser_state* next = s->next;
             // This guy is finished, remove.
             __unlink_state(sink, s, ctx);
@@ -527,66 +551,68 @@ exit:
     return 1;
 }
 
-static void __try_deliver(binpac_sink* sink, __chunk* c, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __try_deliver(binpac_sink* sink, __chunk* c, void* user, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     // Note that a new block may include both some old stuff and some new
     // stuff. __add_and_checkk() will have split the new stuff off into its
     // own block(s), but in the following loop we have to take care not to
     // deliver already-delivered data.
 
-	while ( c && c->rseq <= sink->last_reassem_rseq ) {
+    while ( c && c->rseq <= sink->last_reassem_rseq ) {
         __chunk* next = c->next;
 
-		if ( c->rseq == sink->last_reassem_rseq ) {
+        if ( c->rseq == sink->last_reassem_rseq ) {
             // New stuff.
-			sink->last_reassem_rseq += (c->rupper - c->rseq);
+            sink->last_reassem_rseq += (c->rupper - c->rseq);
             if ( ! __deliver_chunk(sink, c->data, c->rseq, c->rupper, user, excpt, ctx) )
                 // Hit gap.
                 break;
-
         }
 
         c = next;
     }
 }
 
-static __chunk* __add_and_check(binpac_sink* sink, __chunk* b, uint64_t rseq, uint64_t rupper, hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static __chunk* __add_and_check(binpac_sink* sink, __chunk* b, uint64_t rseq, uint64_t rupper,
+                                hlt_bytes* data, void* user, hlt_exception** excpt,
+                                hlt_execution_context* ctx)
 {
     assert(sink->first_chunk);
     assert(sink->last_chunk);
 
-	// Special check for the common case of appending to the end.
-	if ( rseq == sink->last_chunk->rupper ) {
+    // Special check for the common case of appending to the end.
+    if ( rseq == sink->last_chunk->rupper ) {
         __chunk* c = __new_chunk(data, rseq, rupper - rseq, excpt, ctx);
         __link_chunk(sink, sink->last_chunk, c, excpt, ctx);
-		return c;
+        return c;
     }
 
-	// Find the first block that doesn't come completely before the new data.
-	while ( b->next && b->rupper <= rseq )
-		b = b->next;
+    // Find the first block that doesn't come completely before the new data.
+    while ( b->next && b->rupper <= rseq )
+        b = b->next;
 
-	if ( b->rupper <= rseq ) {
-		// b is the last block, and it comes completely before the new block.
+    if ( b->rupper <= rseq ) {
+        // b is the last block, and it comes completely before the new block.
         __chunk* c = __new_chunk(data, rseq, rupper - rseq, excpt, ctx);
         __link_chunk(sink, b, c, excpt, ctx);
-		return c;
+        return c;
     }
 
-	if ( rupper <= b->rseq ) {
-		// The new block comes completely before b.
+    if ( rupper <= b->rseq ) {
+        // The new block comes completely before b.
         __chunk* c = __new_chunk(data, rseq, rupper - rseq, excpt, ctx);
         __link_chunk(sink, b->prev, c, excpt, ctx);
         return c;
-		}
+    }
 
     __chunk* new_b = 0;
 
-	// The blocks overlap, complain.
+    // The blocks overlap, complain.
 
-	if ( rseq < b->rseq ) {
-		// The new block has a prefix that comes before b.
-		int64_t prefix_len = b->rseq - rseq;
+    if ( rseq < b->rseq ) {
+        // The new block has a prefix that comes before b.
+        int64_t prefix_len = b->rseq - rseq;
 
         if ( data ) {
             hlt_iterator_bytes begin = hlt_bytes_begin(data, excpt, ctx);
@@ -599,17 +625,17 @@ static __chunk* __add_and_check(binpac_sink* sink, __chunk* b, uint64_t rseq, ui
             data = hlt_bytes_sub(i, end, excpt, ctx);
         }
 
-		rseq += prefix_len;
+        rseq += prefix_len;
     }
 
-	else
+    else
         new_b = b;
 
-	uint64_t overlap_start = rseq;
-	int64_t overlap_offset = overlap_start - b->rseq;
-	int64_t new_b_len = rupper - rseq;
-	int64_t b_len = (b->rupper - overlap_start);
-	int64_t overlap_len = (new_b_len < b_len ? new_b_len : b_len);
+    uint64_t overlap_start = rseq;
+    int64_t overlap_offset = overlap_start - b->rseq;
+    int64_t new_b_len = rupper - rseq;
+    int64_t b_len = (b->rupper - overlap_start);
+    int64_t overlap_len = (new_b_len < b_len ? new_b_len : b_len);
 
     hlt_bytes* old_data = 0;
     hlt_bytes* new_data = 0;
@@ -629,29 +655,30 @@ static __chunk* __add_and_check(binpac_sink* sink, __chunk* b, uint64_t rseq, ui
 
     __report_overlap(sink, old_data, new_data, overlap_start, user, excpt, ctx);
 
-	if ( overlap_len < new_b_len ) {
+    if ( overlap_len < new_b_len ) {
         // Recurse to resolve remainder of the new data.
         hlt_iterator_bytes i = hlt_bytes_begin(data, excpt, ctx);
         hlt_iterator_bytes end = hlt_bytes_end(data, excpt, ctx);
         i = hlt_iterator_bytes_incr_by(i, overlap_len, excpt, ctx);
         data = hlt_bytes_sub(i, end, excpt, ctx);
-		rseq += overlap_len;
+        rseq += overlap_len;
 
-		if ( new_b == b )
-			new_b = __add_and_check(sink, b, rseq, rupper, data, user, excpt, ctx);
-		else
-			(void) __add_and_check(sink, b, rseq, rupper, data, user, excpt, ctx);
-		}
+        if ( new_b == b )
+            new_b = __add_and_check(sink, b, rseq, rupper, data, user, excpt, ctx);
+        else
+            (void)__add_and_check(sink, b, rseq, rupper, data, user, excpt, ctx);
+    }
 
-	return new_b;
+    return new_b;
 }
 
 // data==null signals a gap.
-static void __new_block(binpac_sink* sink, hlt_bytes* data, uint64_t rseq, hlt_bytes_size len, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __new_block(binpac_sink* sink, hlt_bytes* data, uint64_t rseq, hlt_bytes_size len,
+                        void* user, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-	if ( len == 0 )
+    if ( len == 0 )
         // Nothing to do.
-		return;
+        return;
 
     // Fast-path: if it's right at the end of the input stream, and we
     // haven't anything buffered, just pass on.
@@ -665,13 +692,13 @@ static void __new_block(binpac_sink* sink, hlt_bytes* data, uint64_t rseq, hlt_b
 
     uint64_t rupper_rseq = rseq + len;
 
-	if ( rupper_rseq <= sink->trim_rseq )
-		// Old data, don't do any work for it.
+    if ( rupper_rseq <= sink->trim_rseq )
+        // Old data, don't do any work for it.
         goto exit;
 
-	if ( rseq < sink->trim_rseq ) {
+    if ( rseq < sink->trim_rseq ) {
         // Partially old data, just keep the good stuff.
-		int64_t amount_old = sink->trim_rseq - rseq;
+        int64_t amount_old = sink->trim_rseq - rseq;
         rseq += amount_old;
 
         if ( data ) {
@@ -691,19 +718,19 @@ static void __new_block(binpac_sink* sink, hlt_bytes* data, uint64_t rseq, hlt_b
     }
 
     else
-		c = __add_and_check(sink, sink->first_chunk, rseq, rupper_rseq, data, user, excpt, ctx);
+        c = __add_and_check(sink, sink->first_chunk, rseq, rupper_rseq, data, user, excpt, ctx);
 
-    // See if we have data in order now to deliver.
+// See if we have data in order now to deliver.
 
 #if 0
     binpac_dbg_reassembler(sink, "AFTER add_and_check", c->data, c->rseq, c->rupper - c->rseq, excpt, ctx);
     binpac_dbg_reassembler_buffer(sink, "buffer", excpt, ctx);
 #endif
 
-	if ( c->rseq > sink->last_reassem_rseq || c->rupper <= sink->last_reassem_rseq )
+    if ( c->rseq > sink->last_reassem_rseq || c->rupper <= sink->last_reassem_rseq )
         goto exit;
 
-	// We've filled a leading hole. Deliver as much as possible.
+    // We've filled a leading hole. Deliver as much as possible.
     __try_deliver(sink, c, user, excpt, ctx);
 
 exit:
@@ -712,9 +739,9 @@ exit:
 
 void binpac_sink_dtor(hlt_type_info* ti, binpac_sink* sink, hlt_execution_context* ctx)
 {
-    // TODO: This is not consistnely called because HILTI is actually using
-    // its own type info for the dummy struct type. We should unify that, but
-    // it's not clear how .. For now, we can't rely on this running.
+// TODO: This is not consistnely called because HILTI is actually using
+// its own type info for the dummy struct type. We should unify that, but
+// it's not clear how .. For now, we can't rely on this running.
 #if 0
     while ( sink->head )
         __unlink_state(sink, sink->head);
@@ -744,18 +771,23 @@ binpac_sink* binpachilti_sink_new(hlt_exception** excpt, hlt_execution_context* 
     return sink;
 }
 
-void binpachilti_sink_set_initial_sequence_number(binpac_sink* sink, uint64_t initial_seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_set_initial_sequence_number(binpac_sink* sink, uint64_t initial_seq,
+                                                  void* user, hlt_exception** excpt,
+                                                  hlt_execution_context* ctx)
 {
     if ( sink->cur_rseq || sink->first_chunk ) {
         binpachilti_sink_close(sink, user, excpt, ctx);
-        hlt_string msg = hlt_string_from_asciiz("sink cannot change initial sequence number retrospectively", excpt, ctx);
+        hlt_string msg =
+            hlt_string_from_asciiz("sink cannot change initial sequence number retrospectively",
+                                   excpt, ctx);
         hlt_set_exception(excpt, &binpac_exception_valueerror, msg, ctx);
     }
 
     sink->initial_seq = initial_seq;
 }
 
-void binpachilti_sink_set_policy(binpac_sink* sink, int64_t policy, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_set_policy(binpac_sink* sink, int64_t policy, void* user,
+                                 hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( policy == hlt_enum_value(BinPAC_ReassemblyPolicy_First, excpt, ctx) )
         return;
@@ -765,22 +797,28 @@ void binpachilti_sink_set_policy(binpac_sink* sink, int64_t policy, void* user, 
     hlt_set_exception(excpt, &binpac_exception_notimplemented, msg, ctx);
 }
 
-void binpachilti_sink_set_auto_trim(binpac_sink* sink, int8_t enable, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_set_auto_trim(binpac_sink* sink, int8_t enable, void* user,
+                                    hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( enable )
         return;
 
     binpachilti_sink_close(sink, user, excpt, ctx);
-    hlt_string msg = hlt_string_from_asciiz("disabling sink auto-trim not yet supported", excpt, ctx);
+    hlt_string msg =
+        hlt_string_from_asciiz("disabling sink auto-trim not yet supported", excpt, ctx);
     hlt_set_exception(excpt, &binpac_exception_notimplemented, msg, ctx);
 }
 
-void binpachilti_sink_connect(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_connect(binpac_sink* sink, const hlt_type_info* type, void** pobj,
+                              binpac_parser* parser, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     _binpachilti_sink_connect_intern(sink, type, pobj, parser, 0, excpt, ctx);
 }
 
-void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_bytes* mtype, hlt_exception** excpt, hlt_execution_context* ctx)
+void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* type, void** pobj,
+                                      binpac_parser* parser, hlt_bytes* mtype,
+                                      hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __parser_state* state = hlt_malloc(sizeof(__parser_state));
     state->parser = parser;
@@ -800,7 +838,8 @@ void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* ty
         char* r1 = hlt_string_to_native(s, excpt, ctx);
         char* r2 = hlt_string_to_native(parser->name, excpt, ctx);
 
-        DBG_LOG("binpac-sinks", "connected parser %s [%p] to sink %p for MIME type %s", r2, *pobj, sink, r1);
+        DBG_LOG("binpac-sinks", "connected parser %s [%p] to sink %p for MIME type %s", r2, *pobj,
+                sink, r1);
 
         hlt_free(r1);
         hlt_free(r2);
@@ -811,10 +850,10 @@ void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* ty
         hlt_free(p);
     }
 #endif
-
 }
 
-void binpachilti_sink_disconnect(binpac_sink* sink, const hlt_type_info* type, void** pobj, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_disconnect(binpac_sink* sink, const hlt_type_info* type, void** pobj,
+                                 hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! sink )
         return;
@@ -841,7 +880,8 @@ void binpachilti_sink_disconnect(binpac_sink* sink, const hlt_type_info* type, v
     s->disconnected = 1;
 }
 
-void binpac_dbg_deliver(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_dbg_deliver(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter,
+                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
 #ifdef DEBUG
     // Log data with non-printable characters escaped and output trimmed if
@@ -877,14 +917,17 @@ void binpac_dbg_deliver(binpac_sink* sink, hlt_bytes* data, binpac_filter* filte
     hlt_bytes_size len = hlt_bytes_len(data, excpt, ctx);
 
     if ( ! filter )
-        DBG_LOG("binpac-sinks", "delivering to sink %p: |%s%s| (%" PRIu64 " bytes)", sink, buffer, dots, len);
+        DBG_LOG("binpac-sinks", "delivering to sink %p: |%s%s| (%" PRIu64 " bytes)", sink, buffer,
+                dots, len);
     else
-        DBG_LOG("binpac-sinks", "    filtered by %s: |%s%s| (%" PRIu64 " bytes)", filter->def->name, buffer, dots, len);
+        DBG_LOG("binpac-sinks", "    filtered by %s: |%s%s| (%" PRIu64 " bytes)", filter->def->name,
+                buffer, dots, len);
 
 #endif
 }
 
-void binpac_dbg_reassembler_buffer(binpac_sink* sink, const char* msg, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_dbg_reassembler_buffer(binpac_sink* sink, const char* msg, hlt_exception** excpt,
+                                   hlt_execution_context* ctx)
 {
 #ifdef DEBUG
     if ( ! sink->first_chunk ) {
@@ -895,17 +938,20 @@ void binpac_dbg_reassembler_buffer(binpac_sink* sink, const char* msg, hlt_excep
     char buffer[128];
     int i = 0;
 
-    uint64_t initial_seq;  // Initial sequence number.
-    uint64_t cur_rseq;     // Sequence of last delivered byte + 1 (i.e., seq of next)
+    uint64_t initial_seq;       // Initial sequence number.
+    uint64_t cur_rseq;          // Sequence of last delivered byte + 1 (i.e., seq of next)
     uint64_t last_reassem_rseq; // Sequence of last byte reassembled and delivered + 1.
-    uint64_t trim_rseq;    // Sequence of last byte trimmed so far + 1.
-    __chunk* first_chunk;  // First not yet reassembled chunk. Has ownership.
-    __chunk* last_chunk;   // Last not yet reassembled chunk.
+    uint64_t trim_rseq;         // Sequence of last byte trimmed so far + 1.
+    __chunk* first_chunk;       // First not yet reassembled chunk. Has ownership.
+    __chunk* last_chunk;        // Last not yet reassembled chunk.
 
 
-    DBG_LOG("binpac-sinks", "reassembler/%p: %s ("
-            "cur_rseq=%" PRIu64 " "
-            "last_reassem_rseq=%" PRIu64 " "
+    DBG_LOG("binpac-sinks",
+            "reassembler/%p: %s ("
+            "cur_rseq=%" PRIu64
+            " "
+            "last_reassem_rseq=%" PRIu64
+            " "
             "trim_rseq=%" PRIu64 ")",
             sink, msg, sink->cur_rseq, sink->last_reassem_rseq, sink->trim_rseq);
 
@@ -917,7 +963,8 @@ void binpac_dbg_reassembler_buffer(binpac_sink* sink, const char* msg, hlt_excep
 #endif
 }
 
-void binpac_dbg_reassembler(binpac_sink* sink, const char* msg, hlt_bytes* data, uint64_t seq, int64_t len, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_dbg_reassembler(binpac_sink* sink, const char* msg, hlt_bytes* data, uint64_t seq,
+                            int64_t len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
 #ifdef DEBUG
     // Log data with non-printable characters escaped and output trimmed if
@@ -959,27 +1006,34 @@ void binpac_dbg_reassembler(binpac_sink* sink, const char* msg, hlt_bytes* data,
 
     if ( data ) {
         if ( len >= 0 )
-            DBG_LOG("binpac-sinks", "reassembler/%p: %s seq=% " PRIu64 " upper=%" PRIu64 " |%s%s| (%" PRIu64 " bytes)", sink, msg, seq, seq + len, buffer, dots, dlen);
+            DBG_LOG("binpac-sinks", "reassembler/%p: %s seq=% " PRIu64 " upper=%" PRIu64
+                                    " |%s%s| (%" PRIu64 " bytes)",
+                    sink, msg, seq, seq + len, buffer, dots, dlen);
         else
-            DBG_LOG("binpac-sinks", "reassembler/%p: %s seq=% " PRIu64 " |%s%s| (%" PRIu64 " bytes)", sink, msg, seq, buffer, dots, dlen);
+            DBG_LOG("binpac-sinks",
+                    "reassembler/%p: %s seq=% " PRIu64 " |%s%s| (%" PRIu64 " bytes)", sink, msg,
+                    seq, buffer, dots, dlen);
     }
 
     else {
         if ( len >= 0 )
-            DBG_LOG("binpac-sinks", "reassembler/%p: %s seq=%" PRIu64 " upper=%" PRIu64 " <GAP>", sink, msg, seq, seq + len);
+            DBG_LOG("binpac-sinks", "reassembler/%p: %s seq=%" PRIu64 " upper=%" PRIu64 " <GAP>",
+                    sink, msg, seq, seq + len);
         else
             DBG_LOG("binpac-sinks", "reassembler/%p: %s seq=%" PRIu64 " <GAP>", sink, msg, seq);
     }
 #endif
 }
 
-void binpachilti_sink_append(binpac_sink* sink, hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_append(binpac_sink* sink, hlt_bytes* data, void* user, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     hlt_bytes_size len = hlt_bytes_len(data, excpt, ctx);
     __new_block(sink, data, sink->cur_rseq, len, user, excpt, ctx);
 }
 
-void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, uint64_t seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, uint64_t seq, void* user,
+                            hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -988,7 +1042,9 @@ void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, uint64_t seq, vo
     __new_block(sink, data, (seq - sink->initial_seq), len, user, excpt, ctx);
 }
 
-void binpachilti_sink_write_custom_length(binpac_sink* sink, hlt_bytes* data, uint64_t seq, uint64_t len, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_write_custom_length(binpac_sink* sink, hlt_bytes* data, uint64_t seq,
+                                          uint64_t len, void* user, hlt_exception** excpt,
+                                          hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -996,7 +1052,8 @@ void binpachilti_sink_write_custom_length(binpac_sink* sink, hlt_bytes* data, ui
     __new_block(sink, data, (seq - sink->initial_seq), len, user, excpt, ctx);
 }
 
-void binpachilti_sink_gap(binpac_sink* sink, uint64_t seq, uint64_t len, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_gap(binpac_sink* sink, uint64_t seq, uint64_t len, void* user,
+                          hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -1004,7 +1061,8 @@ void binpachilti_sink_gap(binpac_sink* sink, uint64_t seq, uint64_t len, void* u
     __new_block(sink, 0, (seq - sink->initial_seq), len, user, excpt, ctx);
 }
 
-void binpachilti_sink_trim(binpac_sink* sink, uint64_t seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_trim(binpac_sink* sink, uint64_t seq, void* user, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -1013,7 +1071,8 @@ void binpachilti_sink_trim(binpac_sink* sink, uint64_t seq, void* user, hlt_exce
     binpac_dbg_reassembler_buffer(sink, "buffer after trim", excpt, ctx);
 }
 
-void binpachilti_sink_skip(binpac_sink* sink, uint64_t seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_skip(binpac_sink* sink, uint64_t seq, void* user, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -1022,7 +1081,8 @@ void binpachilti_sink_skip(binpac_sink* sink, uint64_t seq, void* user, hlt_exce
     binpac_dbg_reassembler_buffer(sink, "buffer after skip", excpt, ctx);
 }
 
-void binpachilti_sink_close(binpac_sink* sink, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_close(binpac_sink* sink, void* user, hlt_exception** excpt,
+                            hlt_execution_context* ctx)
 {
     DBG_LOG("binpac-sinks", "closing sink %p", sink);
 
@@ -1031,7 +1091,7 @@ void binpachilti_sink_close(binpac_sink* sink, void* user, hlt_exception** excpt
         GC_CLEAR(sink->filter, binpac_filter, ctx);
     }
 
-    while( sink->head )
+    while ( sink->head )
         __finish_parser(sink, sink->head, excpt, ctx);
 
     __trim(sink, UINT64_MAX, user, excpt, ctx);
@@ -1045,7 +1105,8 @@ void binpachilti_sink_close(binpac_sink* sink, void* user, hlt_exception** excpt
     DBG_LOG("binpac-sinks", "closed sink %p, disconnected all parsers", sink);
 }
 
-void binpachilti_sink_add_filter(binpac_sink* sink, hlt_enum ftype, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_add_filter(binpac_sink* sink, hlt_enum ftype, hlt_exception** excpt,
+                                 hlt_execution_context* ctx)
 {
     binpac_filter* old_filter = sink->filter;
     sink->filter = binpachilti_filter_add(sink->filter, ftype, excpt, ctx);
@@ -1060,9 +1121,9 @@ uint64_t binpachilti_sink_size(binpac_sink* sink, hlt_exception** excpt, hlt_exe
     return sink->size;
 }
 
-uint64_t binpachilti_sink_sequence(binpac_sink* sink, hlt_exception** excpt, hlt_execution_context* ctx)
+uint64_t binpachilti_sink_sequence(binpac_sink* sink, hlt_exception** excpt,
+                                   hlt_execution_context* ctx)
 {
     // XXX
     return sink->cur_rseq + sink->initial_seq;
 }
-

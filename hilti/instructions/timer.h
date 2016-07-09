@@ -18,12 +18,13 @@
 #include "define-instruction.h"
 
 iBegin(timer, New, "new")
-    iTarget(optype::refTimer)
-    iOp1(optype::typeTimer, true)
-    iOp2(optype::function, true)
-    iOp3(optype::tuple, true)
+    iTarget(optype::refTimer);
+    iOp1(optype::typeTimer, true);
+    iOp2(optype::function, true);
+    iOp3(optype::tuple, true);
 
-    iValidate {
+    iValidate
+    {
         // TODO: Check arguments.
     }
 
@@ -38,9 +39,10 @@ iEnd
 
 
 iBegin(timer, Cancel, "timer.cancel")
-    iOp1(optype::refTimer, false)
+    iOp1(optype::refTimer, false);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -51,10 +53,11 @@ iBegin(timer, Cancel, "timer.cancel")
 iEnd
 
 iBegin(timer, Update, "timer.update")
-    iOp1(optype::refTimer, false)
-    iOp2(optype::time, true)
+    iOp1(optype::refTimer, false);
+    iOp2(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -64,4 +67,3 @@ iBegin(timer, Update, "timer.update")
     )")
 
 iEnd
-

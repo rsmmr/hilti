@@ -12,11 +12,12 @@
 #include "define-instruction.h"
 
 iBegin(network, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::network, true);
     iOp2(optype::network, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -30,11 +31,12 @@ iBegin(network, Equal, "equal")
 iEnd
 
 iBegin(network, EqualAddr, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::network, true);
     iOp2(optype::address, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -43,11 +45,12 @@ iBegin(network, EqualAddr, "equal")
 iEnd
 
 iBegin(network, Family, "net.family")
-    iTarget(optype::enum_)
-    iOp1(optype::network, true)
+    iTarget(optype::enum_);
+    iOp1(optype::network, true);
 
-    iValidate {
-        auto ty_target = as<type::Enum>(target->type());
+    iValidate
+    {
+        auto ty_target = ast::rtti::checkedCast<type::Enum>(target->type());
 
         if ( ty_target->id()->pathAsString() != "Hilti::AddrFamily" )
             error(target, "target must be of type hilti::AddrFamily");
@@ -61,10 +64,11 @@ iBegin(network, Family, "net.family")
 iEnd
 
 iBegin(network, Length, "net.length")
-    iTarget(optype::int8)
-    iOp1(optype::network, true)
+    iTarget(optype::int8);
+    iOp1(optype::network, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -74,10 +78,11 @@ iBegin(network, Length, "net.length")
 iEnd
 
 iBegin(network, Prefix, "net.prefix")
-    iTarget(optype::address)
-    iOp1(optype::network, true)
+    iTarget(optype::address);
+    iOp1(optype::network, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -86,11 +91,12 @@ iBegin(network, Prefix, "net.prefix")
 iEnd
 
 iBegin(network, Contains, "net.contains")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::network, true);
     iOp2(optype::address, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -98,6 +104,3 @@ iBegin(network, Contains, "net.contains")
     )")
 
 iEnd
-
-
-

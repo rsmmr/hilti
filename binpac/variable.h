@@ -10,8 +10,7 @@
 namespace binpac {
 
 /// Base class for AST variable nodes.
-class Variable : public ast::Variable<AstInfo>
-{
+class Variable : public ast::Variable<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -22,7 +21,8 @@ public:
     /// Expression: An optional initialization expression, or null if none.
     ///
     /// l: Associated location.
-    Variable(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const Location& l=Location::None);
+    Variable(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr,
+             const Location& l = Location::None);
 
     ACCEPT_VISITOR_ROOT();
 };
@@ -30,8 +30,7 @@ public:
 namespace variable {
 
 /// AST node representing a global variable.
-class Global : public binpac::Variable, public ast::variable::mixin::Global<AstInfo>
-{
+class Global : public binpac::Variable, public ast::variable::mixin::Global<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -42,14 +41,14 @@ public:
     /// Expression: An optional initialization expression, or null if none.
     ///
     /// l: Associated location.
-    Global(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const Location& l=Location::None);
+    Global(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr,
+           const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Variable);
 };
 
 /// AST node representing a local variable.
-class Local : public binpac::Variable, public ast::variable::mixin::Local<AstInfo>
-{
+class Local : public binpac::Variable, public ast::variable::mixin::Local<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -60,14 +59,12 @@ public:
     /// Expression: An optional initialization expression, or null if none.
     ///
     /// l: Associated location.
-    Local(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const Location& l=Location::None);
+    Local(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr,
+          const Location& l = Location::None);
 
     ACCEPT_VISITOR(binpac::Variable);
 };
-
 }
-
 }
 
 #endif
-

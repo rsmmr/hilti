@@ -18,7 +18,8 @@ typedef struct {
 /// type: The type of the tuple.
 ///
 /// \hlt_c
-extern int hlt_tuple_length(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int hlt_tuple_length(const hlt_type_info* type, hlt_exception** excpt,
+                            hlt_execution_context* ctx);
 
 /// Returns a pointer to a tuple element at a given index.
 ///
@@ -29,7 +30,8 @@ extern int hlt_tuple_length(const hlt_type_info* type, hlt_exception** excpt, hl
 /// idex: The zero-based index of the element to return.
 ///
 /// \hlt_c
-extern void* hlt_tuple_get(const hlt_type_info* type, void* obj, int index, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void* hlt_tuple_get(const hlt_type_info* type, void* obj, int index, hlt_exception** excpt,
+                           hlt_execution_context* ctx);
 
 /// Returns the type of the tuple element at a given index.
 ///
@@ -38,13 +40,14 @@ extern void* hlt_tuple_get(const hlt_type_info* type, void* obj, int index, hlt_
 /// index: The zero-based index of the element to return.
 ///
 /// \hlt_c
-extern hlt_tuple_element hlt_tuple_get_type(const hlt_type_info* type, int index, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_tuple_element hlt_tuple_get_type(const hlt_type_info* type, int index,
+                                            hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts a HILTI tuple into a HILTI string.
 ///
 /// \hlt_to_string
-extern hlt_string hlt_tuple_to_string(const hlt_type_info* type, void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_tuple_to_string(const hlt_type_info* type, void* obj, int32_t options,
+                                      __hlt_pointer_stack* seen, hlt_exception** excpt,
+                                      hlt_execution_context* ctx);
 
 #endif
-
-

@@ -12,22 +12,27 @@ using namespace binpac;
 using namespace binpac::passes;
 
 // A helper pass that replaces an ID expression with a different node within a subtree.
-class IDExprReplacer : public ast::Pass<AstInfo>
-{
+class IDExprReplacer : public ast::Pass<AstInfo> {
 public:
-    IDExprReplacer(shared_ptr<ID> old, shared_ptr<Node> new_) : ast::Pass<AstInfo>("binpac::normalizer::IDExprReplacer", true) {
+    IDExprReplacer(shared_ptr<ID> old, shared_ptr<Node> new_)
+        : ast::Pass<AstInfo>("binpac::normalizer::IDExprReplacer", true)
+    {
         _old = old;
         _new = new_;
     }
 
-    virtual ~IDExprReplacer() {}
+    virtual ~IDExprReplacer()
+    {
+    }
 
-    bool run(shared_ptr<ast::NodeBase> node) override {
+    bool run(shared_ptr<ast::NodeBase> node) override
+    {
         return processAllPreOrder(node);
     }
 
 protected:
-    void visit(expression::ID* i) override {
+    void visit(expression::ID* i) override
+    {
         if ( i->id()->pathAsString() == _old->pathAsString() )
             i->replace(_new);
     }
@@ -113,7 +118,7 @@ void IDResolver::visit(expression::ID* i)
         if ( id->id()->isScoped() && path.front() == module->id()->name() ) {
             path.pop_front();
             auto x = std::make_shared<ID>(path);
-	    vals = scope->lookup(x, true);
+            vals = scope->lookup(x, true);
         }
     }
 
@@ -139,9 +144,10 @@ void IDResolver::visit(expression::ID* i)
 
     if ( vals.size() > 1 ) {
         // Only functions can be overloaded.
-        for ( auto v: vals ) {
+        for ( auto v : vals ) {
             if ( ! ast::tryCast<expression::Function>(v) ) {
-                error(i, util::fmt("ID %s defined more than once", id->id()->pathAsString().c_str()));
+                error(i,
+                      util::fmt("ID %s defined more than once", id->id()->pathAsString().c_str()));
                 return;
             }
         }
@@ -175,7 +181,6 @@ void IDResolver::visit(expression::ID* i)
 
     if ( id->id()->isScoped() )
         val->setScope(id->id()->scope());
-
 }
 
 void IDResolver::visit(expression::ListComprehension* c)
@@ -344,13 +349,18 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
     auto type = ast::tryCast<expression::Type>(expr);
 
     if ( ctor )
-        nfield = std::make_shared<type::unit::item::field::Ctor>(name, ctor->ctor(), kind, condition, hooks, attributes, sinks, location);
+        nfield =
+            std::make_shared<type::unit::item::field::Ctor>(name, ctor->ctor(), kind, condition,
+                                                            hooks, attributes, sinks, location);
 
     if ( constant )
-        nfield = std::make_shared<type::unit::item::field::Constant>(name, constant->constant(), kind, condition, hooks, attributes, sinks, location);
+        nfield = std::make_shared<type::unit::item::field::Constant>(name, constant->constant(),
+                                                                     kind, condition, hooks,
+                                                                     attributes, sinks, location);
 
     if ( type )
-        nfield = type::unit::item::Field::createByType(type->typeValue(), name, kind, condition, hooks, attributes, params, sinks, location);
+        nfield = type::unit::item::Field::createByType(type->typeValue(), name, kind, condition,
+                                                       hooks, attributes, params, sinks, location);
 
     nfield->scope()->setParent(f->scope()->parent());
     nfield->setParent(f->parent());

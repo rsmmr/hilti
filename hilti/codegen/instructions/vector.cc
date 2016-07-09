@@ -9,7 +9,7 @@ using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::vector::New* i)
 {
-    auto etype = ast::as<type::Vector>(typedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Vector>(typedType(i->op1()))->argType();
     auto def = builder::codegen::create(etype, cg()->typeInfo(etype)->init_val);
 
     shared_ptr<Expression> op2 = i->op2();
@@ -31,7 +31,7 @@ void StatementBuilder::visit(statement::instruction::vector::New* i)
 
 void StatementBuilder::visit(statement::instruction::vector::Get* i)
 {
-    auto etype = ast::as<type::Vector>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Vector>(referencedType(i->op1()))->argType();
     auto op2 = i->op2()->coerceTo(builder::integer::type(64));
 
     CodeGen::expr_list args;
@@ -59,7 +59,7 @@ void StatementBuilder::visit(statement::instruction::vector::Exists* i)
 
 void StatementBuilder::visit(statement::instruction::vector::PushBack* i)
 {
-    auto etype = ast::as<type::Vector>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Vector>(referencedType(i->op1()))->argType();
     auto op2 = i->op2()->coerceTo(etype);
 
     CodeGen::expr_list args;
@@ -80,7 +80,7 @@ void StatementBuilder::visit(statement::instruction::vector::Reserve* i)
 
 void StatementBuilder::visit(statement::instruction::vector::Set* i)
 {
-    auto etype = ast::as<type::Vector>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Vector>(referencedType(i->op1()))->argType();
     auto op2 = i->op2()->coerceTo(builder::integer::type(64));
     auto op3 = i->op3()->coerceTo(etype);
 
@@ -148,7 +148,7 @@ void StatementBuilder::visit(statement::instruction::iterVector::Equal* i)
 
 void StatementBuilder::visit(statement::instruction::iterVector::Deref* i)
 {
-    auto etype = ast::as<type::Vector>(iteratedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Vector>(iteratedType(i->op1()))->argType();
 
     CodeGen::expr_list args;
     args.push_back(i->op1());

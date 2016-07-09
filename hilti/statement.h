@@ -1,36 +1,39 @@
 
 #ifndef HILTI_STATEMENT_H
-# define HILTI_STATEMENT_H
+#define HILTI_STATEMENT_H
 
-# include <ast/statement.h>
+#include <ast/statement.h>
 
-# include "common.h"
-# include "id.h"
-# include "instruction.h"
-# include "scope.h"
-# include "declaration.h"
-# include "flow-info.h"
+#include "common.h"
+#include "declaration.h"
+#include "flow-info.h"
+#include "id.h"
+#include "instruction.h"
+#include "scope.h"
 
 namespace hilti {
 namespace passes {
-    class InstructionResolver;
+class InstructionResolver;
 }
 
 /// Base class for AST statement nodes.
-class Statement : public ast::Statement<AstInfo>
-{
+class Statement : public ast::Statement<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
     /// l: An associated location.
-    Statement(const Location& l=Location::None);
+    Statement(const Location& l = Location::None);
 
     typedef ::FlowInfo FlowInfo;
     typedef ::FlowVariable FlowVariable;
     typedef ::FlowInfo::variable_set variable_set;
 
     /// Returns a number identying the statement which is unique across all statements.
-    uint64_t number() const { return _number; }
+    uint64_t number() const
+    {
+        return _number;
+    }
 
     /// Returns the direct successor statement if the statement is part of a
     /// block. Note that flowInfo() instead gives access to successor
@@ -75,25 +78,29 @@ namespace statement {
 /// A no-op statement.
 ///
 /// \todo This should move into \a ast.
-class Noop : public Statement
-{
+class Noop : public Statement {
+    AST_RTTI
 public:
     /// Constructor.
     ///
     /// l: An associated location.
-    Noop(const Location& l=Location::None) : Statement(l) {}
+    Noop(const Location& l = Location::None) : Statement(l)
+    {
+    }
 
-    FlowInfo flowInfo() override { return FlowInfo(); }
+    FlowInfo flowInfo() override
+    {
+        return FlowInfo();
+    }
 
     ACCEPT_VISITOR(Statement);
-
 };
 
 /// A block statement. A block has associated with it (1) an optional name to
 /// reference it; (2) a set of declarations visible in the block's scope; and
 /// (3) and set of statements making up the code body.
-class Block : public Statement
-{
+class Block : public Statement {
+    AST_RTTI
 public:
     typedef std::list<node_ptr<Statement>> stmt_list;
     typedef std::list<node_ptr<Declaration>> decl_list;
@@ -108,7 +115,9 @@ public:
     ///
     ///
     /// l: An associated location.
-    Block(shared_ptr<Scope> parent, shared_ptr<ID> id = nullptr, const Location& l=Location::None) : Statement(l) {
+    Block(shared_ptr<Scope> parent, shared_ptr<ID> id = nullptr, const Location& l = Location::None)
+        : Statement(l)
+    {
         decl_list decls;
         stmt_list stmts;
         _init(parent, id, decls, stmts, l);
@@ -126,12 +135,18 @@ public:
     /// id: An optional name for the block.
     ///
     /// l: An associated location.
-    Block(const decl_list& decls, const stmt_list& stmts, shared_ptr<Scope> parent, shared_ptr<ID> id = nullptr, const Location& l=Location::None) : Statement(l) {
+    Block(const decl_list& decls, const stmt_list& stmts, shared_ptr<Scope> parent,
+          shared_ptr<ID> id = nullptr, const Location& l = Location::None)
+        : Statement(l)
+    {
         _init(parent, id, decls, stmts, l);
     }
 
     /// Returns the block's name.
-    shared_ptr<ID> id() const { return _id; }
+    shared_ptr<ID> id() const
+    {
+        return _id;
+    }
 
     /// Sets the block's name.
     ///
@@ -139,19 +154,31 @@ public:
     void setID(shared_ptr<ID> id);
 
     /// Returns the block's scope.
-    shared_ptr<Scope> scope() const { return _scope; }
+    shared_ptr<Scope> scope() const
+    {
+        return _scope;
+    }
 
     /// Sets the block's scope.
-    void setScope(shared_ptr<Scope> scope) { _scope = scope; }
+    void setScope(shared_ptr<Scope> scope)
+    {
+        _scope = scope;
+    }
 
     /// Returns the block's statements.
-    stmt_list statements() const { return _stmts; }
+    stmt_list statements() const
+    {
+        return _stmts;
+    }
 
     /// Sets the block's statements.
     void setStatements(stmt_list stmts);
 
     /// Returns the block's declaratations..
-    const decl_list& declarations() const { return _decls; }
+    const decl_list& declarations() const
+    {
+        return _decls;
+    }
 
     /// Sets the block's declarations.
     void setDeclarations(decl_list decls);
@@ -160,7 +187,8 @@ public:
     /// the block via addStatement().
     ///
     /// comment: The comment.
-    void setNextComment(string comment) {
+    void setNextComment(string comment)
+    {
         _next_comment = comment;
     }
 
@@ -207,9 +235,11 @@ public:
     ACCEPT_VISITOR(Statement);
 
 private:
-    void _init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l=Location::None);
+    void _init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls,
+               const stmt_list& stmts, const Location& l = Location::None);
     void _addComment(shared_ptr<Node> node);
-    shared_ptr<Statement> _firstNonBlock(shared_ptr<statement::Block> block, std::set<shared_ptr<statement::Block>>* done);
+    shared_ptr<Statement> _firstNonBlock(shared_ptr<statement::Block> block,
+                                         std::set<shared_ptr<statement::Block>>* done);
 
     node_ptr<ID> _id;
     shared_ptr<Scope> _scope;
@@ -221,8 +251,8 @@ private:
 namespace try_ {
 
 /// A single catch clause for a Try statement.
-class Catch : public Node
-{
+class Catch : public Node {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -233,25 +263,41 @@ public:
     /// assible in \a block. Must be null if \a type is.
     ///
     /// block: The code block for the catch.
-    Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> block, const Location& l=Location::None);
+    Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> block,
+          const Location& l = Location::None);
 
     /// Returns the type being caught. This will be of type type::Exception.
     /// Will return null for a catch-all clause.
-    shared_ptr<Type> type() const { if ( _type ) return _type; else return variable() ? variable()->type() : nullptr; }
+    shared_ptr<Type> type() const
+    {
+        if ( _type )
+            return _type;
+        else
+            return variable() ? variable()->type() : nullptr;
+    }
 
     /// Returns the local ID assigned to the caught exception instance. Will
     /// return null for a catch-all clause.
-    shared_ptr<ID> id() const { return _id; }
+    shared_ptr<ID> id() const
+    {
+        return _id;
+    }
 
     /// Returns the catch's code block.
-    shared_ptr<Block> block() const { return _block; }
+    shared_ptr<Block> block() const
+    {
+        return _block;
+    }
 
     /// If an ID was given to the constructor, this returns a local variable
     /// referecning the exception value. If not, it returns null.
     shared_ptr<variable::Local> variable() const;
 
     /// Returns true if this is a catch-all clause.
-    bool catchAll() const { return _type.get() == nullptr && _id.get() == nullptr; }
+    bool catchAll() const
+    {
+        return _type.get() == nullptr && _id.get() == nullptr;
+    }
 
     ACCEPT_VISITOR_ROOT();
 
@@ -261,12 +307,11 @@ private:
     node_ptr<Block> _block;
     node_ptr<declaration::Variable> _decl = nullptr;
 };
-
 }
 
 /// A try-encapsulated block, with \a catch handlers.
-class Try : public Statement
-{
+class Try : public Statement {
+    AST_RTTI
 public:
     typedef std::list<node_ptr<try_::Catch>> catch_list;
 
@@ -278,13 +323,19 @@ public:
     /// catches: List of \c catch clauses handling exceptions thrown during
     /// executing \a try. Note that there must not be more than one catch-all
     /// clause.
-    Try(shared_ptr<Block> try_, const catch_list& catches, const Location& l=Location::None);
+    Try(shared_ptr<Block> try_, const catch_list& catches, const Location& l = Location::None);
 
     /// Returns the \a try block.
-    shared_ptr<Block> block() const { return _try; }
+    shared_ptr<Block> block() const
+    {
+        return _try;
+    }
 
     /// Returns the list of all catch clauses.
-    const catch_list& catches() const { return _catches; }
+    const catch_list& catches() const
+    {
+        return _catches;
+    }
 
     FlowInfo flowInfo() override;
 
@@ -297,19 +348,18 @@ private:
 
 namespace foreach {
 
-    /// A "magic" block label that can be branched to inside a loop for
-    /// proceeding directly with the next iteration.
-    static const char* IDLoopNext = "@__LOOP_NEXT";
+/// A "magic" block label that can be branched to inside a loop for
+/// proceeding directly with the next iteration.
+static const char* IDLoopNext = "@__LOOP_NEXT";
 
-    /// A "magic" block label that can be branched to inside a loop for abort
-    /// the iteration.
-    static const char* IDLoopBreak = "@__LOOP_END";
-
+/// A "magic" block label that can be branched to inside a loop for abort
+/// the iteration.
+static const char* IDLoopBreak = "@__LOOP_END";
 }
 
 /// A for-each loop iterating over a sequence.
-class ForEach : public Statement
-{
+class ForEach : public Statement {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -320,16 +370,23 @@ public:
     /// body: The loop body.
     ///
     /// l: Associated location information.
-    ForEach(shared_ptr<ID> id, shared_ptr<Expression> seq, shared_ptr<Block> body, const Location& l=Location::None);
+    ForEach(shared_ptr<ID> id, shared_ptr<Expression> seq, shared_ptr<Block> body,
+            const Location& l = Location::None);
 
     /// Returns the iteration variable.
     shared_ptr<ID> id() const;
 
     /// Returns the seq block.
-    shared_ptr<Expression> sequence() const { return _seq; }
+    shared_ptr<Expression> sequence() const
+    {
+        return _seq;
+    }
 
     /// Returns the body block.
-    shared_ptr<Block> body() const { return _body; }
+    shared_ptr<Block> body() const
+    {
+        return _body;
+    }
 
     FlowInfo flowInfo() override;
 
@@ -343,36 +400,60 @@ private:
 };
 
 /// Base class for instruction statements.
-class Instruction : public Statement
-{
+class Instruction : public Statement {
+    AST_RTTI
 public:
     /// Returns the name of the instruction.
-    const shared_ptr<ID> id() const { return _id; }
+    const shared_ptr<ID> id() const
+    {
+        return _id;
+    }
 
     /// Returns the instructions operands. The first is the target and will be
     /// null if not used.
-    const hilti::instruction::Operands& operands() const { return _ops; }
+    const hilti::instruction::Operands& operands() const
+    {
+        return _ops;
+    }
 
     /// Returns the target operand. Null if not used.
-    shared_ptr<Expression> target() const { return _ops[0]; }
+    shared_ptr<Expression> target() const
+    {
+        return _ops[0];
+    }
 
     /// Returns the 1st operand. Null if not used.
-    shared_ptr<Expression> op1() const { return _ops[1]; }
+    shared_ptr<Expression> op1() const
+    {
+        return _ops[1];
+    }
 
     /// Returns the 2st operand. Null if not used.
-    shared_ptr<Expression> op2() const { return _ops[2]; }
+    shared_ptr<Expression> op2() const
+    {
+        return _ops[2];
+    }
 
     /// Returns the 3st operand. Null if not used.
-    shared_ptr<Expression> op3() const { return _ops[3]; }
+    shared_ptr<Expression> op3() const
+    {
+        return _ops[3];
+    }
 
     /// Returns a text representation of the instructions operand signature.
     string signature() const;
 
     /// Returns true if this function has been marked as internally added.
-    bool internal() const { return _internal; }
+    bool internal() const
+    {
+        return _internal;
+    }
 
     /// Marks this function as internally added.
-    void setInternal() { _internal = true; }
+    void setInternal()
+    {
+        _internal = true;
+    }
 
     /// Returns true the instruction's target operand is hoisted.
     bool hoisted() const;
@@ -388,7 +469,8 @@ public:
     /// filled with nullptr corresponding to unused operands.
     ///
     /// l: An associated location.
-    Instruction(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l=Location::None);
+    Instruction(shared_ptr<ID> id, const hilti::instruction::Operands& ops,
+                const Location& l = Location::None);
 
 private:
     bool _internal = false;
@@ -401,8 +483,8 @@ namespace instruction {
 /// A not yet resolved instruction. Initially, instructions are instantiated
 /// as Unresolved and later turned into instances derived from Resolved by
 /// passes::InstructionResolver.
-class Unresolved : public Instruction
-{
+class Unresolved : public Instruction {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -411,7 +493,8 @@ public:
     /// ops: The list of operands. The first is the target and may be null if none is used.
     ///
     /// l: An associated location.
-    Unresolved(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l=Location::None);
+    Unresolved(shared_ptr<ID> id, const hilti::instruction::Operands& ops,
+               const Location& l = Location::None);
 
     /// Constructor.
     ///
@@ -420,7 +503,8 @@ public:
     /// ops: The list of operands. The first is the target and may be null if none is used.
     ///
     /// l: An associated location.
-    Unresolved(const ::string& name, const hilti::instruction::Operands& ops, const Location& l=Location::None);
+    Unresolved(const ::string& name, const hilti::instruction::Operands& ops,
+               const Location& l = Location::None);
 
     /// Constructor. This variant is for when the instruction itself is
     /// already known, but not all operands may be resolved yet.
@@ -430,11 +514,15 @@ public:
     /// ops: The list of operands. The first is the target and may be null if none is used.
     ///
     /// l: An associated location.
-    Unresolved(shared_ptr<hilti::Instruction> instr, const hilti::instruction::Operands& ops, const Location& l=Location::None);
+    Unresolved(shared_ptr<hilti::Instruction> instr, const hilti::instruction::Operands& ops,
+               const Location& l = Location::None);
 
     /// If an instruction instance was passed to the constructor, this
     /// returned; otherwise null.
-    shared_ptr<hilti::Instruction> instruction() const { return _instr; }
+    shared_ptr<hilti::Instruction> instruction() const
+    {
+        return _instr;
+    }
 
     FlowInfo flowInfo() override;
 
@@ -450,8 +538,8 @@ private:
 /// instructions/define-instruction.h does that). For each Unresolved
 /// instruction, the passes::InstructionResolver instantiates the right
 /// class.
-class Resolved : public Instruction
-{
+class Resolved : public Instruction {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -460,10 +548,14 @@ public:
     /// ops: The list of operands. The first is the target and may be null if none is used.
     ///
     /// l: An associated location.
-    Resolved(shared_ptr<hilti::Instruction> instruction, const hilti::instruction::Operands& ops, const Location& l=Location::None);
+    Resolved(shared_ptr<hilti::Instruction> instruction, const hilti::instruction::Operands& ops,
+             const Location& l = Location::None);
 
     /// Returns the instruction the statement uses.
-    const shared_ptr<hilti::Instruction> instruction() const { return _instruction; }
+    const shared_ptr<hilti::Instruction> instruction() const
+    {
+        return _instruction;
+    }
 
     FlowInfo flowInfo() override;
 
@@ -472,11 +564,8 @@ public:
 private:
     shared_ptr<hilti::Instruction> _instruction;
 };
-
 }
-
 }
-
 }
 
 #endif

@@ -1,23 +1,23 @@
 
 #include <stdio.h>
 
-#include "memory_.h"
-#include "context.h"
-#include "rtti.h"
-#include "globals.h"
-#include "exceptions.h"
 #include "config.h"
-#include "profiler.h"
+#include "context.h"
+#include "exceptions.h"
+#include "globals.h"
 #include "linker.h"
+#include "memory_.h"
+#include "profiler.h"
+#include "rtti.h"
 #include "timer.h"
 
 hlt_execution_context* __hlt_execution_context_new_ref(hlt_vthread_id vid, int8_t run_module_init)
 {
-    hlt_execution_context* ctx = (hlt_execution_context*)
-        hlt_malloc(sizeof(hlt_execution_context) + __hlt_globals_size());
+    hlt_execution_context* ctx = (hlt_execution_context*)hlt_malloc(sizeof(hlt_execution_context) +
+                                                                    __hlt_globals()->globals_size);
 
     ctx->vid = vid;
-    ctx->nullbuffer = __hlt_memory_nullbuffer_new(); // init first 
+    ctx->nullbuffer = __hlt_memory_nullbuffer_new(); // init first
     ctx->excpt = 0;
     ctx->fiber = 0;
     ctx->fiber_pool = __hlt_fiber_pool_new();
@@ -35,7 +35,7 @@ hlt_execution_context* __hlt_execution_context_new_ref(hlt_vthread_id vid, int8_
         __hlt_modules_init(ctx);
 
     if ( ctx->excpt )
-        __hlt_exception_print_uncaught_abort(ctx->excpt, ctx);
+        hlt_exception_print_uncaught_abort(ctx->excpt, ctx);
 
     return ctx;
 }

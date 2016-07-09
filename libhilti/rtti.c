@@ -1,7 +1,7 @@
 
 #include <assert.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "rtti.h"
 

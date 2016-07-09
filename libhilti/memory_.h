@@ -20,7 +20,7 @@ extern const char* __hlt_make_location(const char* file, int line);
 ///
 /// If you change something here, also adapt ``hlt.gcdhr`` in ``libhilti.ll``.
 typedef struct {
-    int64_t ref_cnt;  /// The number of references to the object currently retained.
+    int64_t ref_cnt; /// The number of references to the object currently retained.
 } __hlt_gchdr;
 
 /// Statistics about the current state of memory allocations. Some are only
@@ -28,8 +28,10 @@ typedef struct {
 typedef struct {
     uint64_t size_heap;      /// Current size of heap in bytes.
     uint64_t size_alloced;   /// Total number of bytes currently handed out by allocations.
-    uint64_t size_stacks;    /// Total number of bytes currently allocated for stacks via hlt_alloc_stack() (debug-only).
-    uint64_t num_stacks;     /// Total number of stacks currently allocated via hlt_alloc_stack() (debug-only)
+    uint64_t size_stacks;    /// Total number of bytes currently allocated for stacks via
+                             /// hlt_alloc_stack() (debug-only).
+    uint64_t num_stacks;     /// Total number of stacks currently allocated via hlt_alloc_stack()
+                             /// (debug-only)
     uint64_t num_allocs;     /// Total number of calls to allocation functions (debug-only).
     uint64_t num_deallocs;   /// Total number of calls to deallocation functions (debug-only).
     uint64_t num_refs;       /// Total number of reference count increments (debug-only).
@@ -111,10 +113,12 @@ extern void* __hlt_calloc(uint64_t count, uint64_t size, const char* type, const
 ///
 /// \note This shouldn't be called directly by user code. Use the macro \c
 /// hlt_calloc instead.
-extern void* __hlt_realloc(void* ptr, uint64_t size, uint64_t old_size, const char* type, const char* location);
+extern void* __hlt_realloc(void* ptr, uint64_t size, uint64_t old_size, const char* type,
+                           const char* location);
 
 /// XXXX
-extern void* __hlt_realloc_no_init(void* ptr, uint64_t size, const char* type, const char* location);
+extern void* __hlt_realloc_no_init(void* ptr, uint64_t size, const char* type,
+                                   const char* location);
 
 /// Frees an unmanaged memory chunk formerly allocated with ``hlt_malloc``.
 /// This operates pretty much like the standard ``free``.
@@ -157,14 +161,19 @@ extern void hlt_stack_free(void* stack, size_t size);
 /// call.
 extern void hlt_stack_invalidate(void* stack, size_t size);
 
-#define hlt_malloc(size)                 __hlt_malloc(size, "-", __hlt_make_location(__FILE__,__LINE__))
-#define hlt_malloc_no_init(size)         __hlt_malloc_no_init(size, "-", __hlt_make_location(__FILE__,__LINE__))
-#define hlt_calloc(count, size)          __hlt_calloc(count, size, "-", __hlt_make_location(__FILE__,__LINE__))
-#define hlt_realloc(ptr, size, old_size) __hlt_realloc(ptr, size, old_size, "-", __hlt_make_location(__FILE__,__LINE__))
-#define hlt_realloc_no_init(ptr, size)   __hlt_realloc_no_init(ptr, size, "-", __hlt_make_location(__FILE__,__LINE__))
-#define hlt_free(ptr)                    __hlt_free(ptr, "-", __hlt_make_location(__FILE__,__LINE__))
+#define hlt_malloc(size) __hlt_malloc(size, "-", __hlt_make_location(__FILE__, __LINE__))
+#define hlt_malloc_no_init(size)                                                                   \
+    __hlt_malloc_no_init(size, "-", __hlt_make_location(__FILE__, __LINE__))
+#define hlt_calloc(count, size)                                                                    \
+    __hlt_calloc(count, size, "-", __hlt_make_location(__FILE__, __LINE__))
+#define hlt_realloc(ptr, size, old_size)                                                           \
+    __hlt_realloc(ptr, size, old_size, "-", __hlt_make_location(__FILE__, __LINE__))
+#define hlt_realloc_no_init(ptr, size)                                                             \
+    __hlt_realloc_no_init(ptr, size, "-", __hlt_make_location(__FILE__, __LINE__))
+#define hlt_free(ptr) __hlt_free(ptr, "-", __hlt_make_location(__FILE__, __LINE__))
 
-#define hlt_memory_safepoint(ctx)        __hlt_memory_safepoint(ctx, __hlt_make_location(__FILE__,__LINE__))
+#define hlt_memory_safepoint(ctx)                                                                  \
+    __hlt_memory_safepoint(ctx, __hlt_make_location(__FILE__, __LINE__))
 
 // Internal function to increaes a memory managed object's reference count by
 // one. Not to be used directly from user code.
@@ -174,116 +183,137 @@ extern void __hlt_object_ref(const hlt_type_info* ti, void* obj, hlt_execution_c
 // one. Not to be used directly from user code.
 extern void __hlt_object_unref(const hlt_type_info* ti, void* obj, hlt_execution_context* ctx);
 
-/// XXX For heap types only. Runs their object destructor without releasing memory. obj is a *direct* pointer to the object.
-extern void __hlt_object_destroy(const hlt_type_info* ti, void* obj, const char* location, hlt_execution_context* ctx);
+/// XXX For heap types only. Runs their object destructor without releasing memory. obj is a
+/// *direct* pointer to the object.
+extern void __hlt_object_destroy(const hlt_type_info* ti, void* obj, const char* location,
+                                 hlt_execution_context* ctx);
 
 /// XXX
-extern void __hlt_object_dtor(const hlt_type_info* ti, void* obj, const char* location, hlt_execution_context* ctx);
+extern void __hlt_object_dtor(const hlt_type_info* ti, void* obj, const char* location,
+                              hlt_execution_context* ctx);
 
 /// XXX
-extern void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location, hlt_execution_context* ctx);
+extern void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location,
+                               hlt_execution_context* ctx);
 
 /// XXX
-extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* location, hlt_execution_context* ctx);
-extern void* __hlt_object_new_ref(const hlt_type_info* ti, uint64_t size, const char* location, hlt_execution_context* ctx);
+extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* location,
+                              hlt_execution_context* ctx);
+extern void* __hlt_object_new_ref(const hlt_type_info* ti, uint64_t size, const char* location,
+                                  hlt_execution_context* ctx);
 
 /// XXX
-extern void* __hlt_object_new_no_init(const hlt_type_info* ti, uint64_t size, const char* location, hlt_execution_context* ctx);
-extern void* __hlt_object_new_no_init_ref(const hlt_type_info* ti, uint64_t size, const char* location, hlt_execution_context* ctx);
+extern void* __hlt_object_new_no_init(const hlt_type_info* ti, uint64_t size, const char* location,
+                                      hlt_execution_context* ctx);
+extern void* __hlt_object_new_no_init_ref(const hlt_type_info* ti, uint64_t size,
+                                          const char* location, hlt_execution_context* ctx);
 
 /// XXX
-extern void  __hlt_memory_safepoint(hlt_execution_context* ctx, const char* location);
+extern void __hlt_memory_safepoint(hlt_execution_context* ctx, const char* location);
 
 /// XXX
-#define GC_ASSIGN(obj, val, tag, ctx) \
-   { \
-   tag* tmp = val; \
-   __hlt_object_cctor(&hlt_type_info_##tag, (void*)&val, __hlt_make_location(__FILE__,__LINE__), ctx); \
-   __hlt_object_dtor(&hlt_type_info_##tag, (void*)&obj, __hlt_make_location(__FILE__,__LINE__), ctx); \
-   obj = tmp; \
-   }
+#define GC_ASSIGN(obj, val, tag, ctx)                                                              \
+    {                                                                                              \
+        tag* tmp = val;                                                                            \
+        __hlt_object_cctor(&hlt_type_info_##tag, (void*)&val,                                      \
+                           __hlt_make_location(__FILE__, __LINE__), ctx);                          \
+        __hlt_object_dtor(&hlt_type_info_##tag, (void*)&obj,                                       \
+                          __hlt_make_location(__FILE__, __LINE__), ctx);                           \
+        obj = tmp;                                                                                 \
+    }
 
 /// XXX
-#define GC_ASSIGN_REFED(obj, val, tag, ctx) \
-   { \
-   tag* tmp = val; \
-   __hlt_object_dtor(&hlt_type_info_##tag, (void*)&obj, __hlt_make_location(__FILE__,__LINE__), ctx); \
-   obj = tmp; \
-   }
+#define GC_ASSIGN_REFED(obj, val, tag, ctx)                                                        \
+    {                                                                                              \
+        tag* tmp = val;                                                                            \
+        __hlt_object_dtor(&hlt_type_info_##tag, (void*)&obj,                                       \
+                          __hlt_make_location(__FILE__, __LINE__), ctx);                           \
+        obj = tmp;                                                                                 \
+    }
 
 /// XXX
-#define GC_INIT(obj, val, tag, ctx) \
-   { \
-   obj = val; \
-   __hlt_object_cctor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__), ctx); \
-   }
+#define GC_INIT(obj, val, tag, ctx)                                                                \
+    {                                                                                              \
+        obj = val;                                                                                 \
+        __hlt_object_cctor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__, __LINE__),    \
+                           ctx);                                                                   \
+    }
 
 /// XXX
-#define GC_NEW(tag, ctx) \
-   __hlt_object_new(&hlt_type_info_##tag, sizeof(tag), __hlt_make_location(__FILE__,__LINE__), ctx);
+#define GC_NEW(tag, ctx)                                                                           \
+    __hlt_object_new(&hlt_type_info_##tag, sizeof(tag), __hlt_make_location(__FILE__, __LINE__),   \
+                     ctx);
 
-#define GC_NEW_REF(tag, ctx) \
-   __hlt_object_new_ref(&hlt_type_info_##tag, sizeof(tag), __hlt_make_location(__FILE__,__LINE__), ctx);
-
-/// XXX
-#define GC_NEW_NO_INIT(tag, ctx) \
-   __hlt_object_new_no_init(&hlt_type_info_##tag, sizeof(tag), __hlt_make_location(__FILE__,__LINE__), ctx);
-
-#define GC_NEW_NO_INIT_REF(tag, ctx) \
-   __hlt_object_new_no_init_ref(&hlt_type_info_##tag, sizeof(tag), __hlt_make_location(__FILE__,__LINE__), ctx);
+#define GC_NEW_REF(tag, ctx)                                                                       \
+    __hlt_object_new_ref(&hlt_type_info_##tag, sizeof(tag),                                        \
+                         __hlt_make_location(__FILE__, __LINE__), ctx);
 
 /// XXX
-#define GC_NEW_CUSTOM_SIZE(tag, size, ctx) \
-   __hlt_object_new(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__,__LINE__), ctx);
+#define GC_NEW_NO_INIT(tag, ctx)                                                                   \
+    __hlt_object_new_no_init(&hlt_type_info_##tag, sizeof(tag),                                    \
+                             __hlt_make_location(__FILE__, __LINE__), ctx);
 
-#define GC_NEW_CUSTOM_SIZE_REF(tag, size, ctx) \
-   __hlt_object_new_ref(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__,__LINE__), ctx);
-
-/// XXX
-#define GC_NEW_CUSTOM_SIZE_NO_INIT(tag, size, ctx) \
-   __hlt_object_new_no_init(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__,__LINE__), ctx);
+#define GC_NEW_NO_INIT_REF(tag, ctx)                                                               \
+    __hlt_object_new_no_init_ref(&hlt_type_info_##tag, sizeof(tag),                                \
+                                 __hlt_make_location(__FILE__, __LINE__), ctx);
 
 /// XXX
-#define GC_NEW_CUSTOM_SIZE_NO_INIT_REF(tag, size, ctx) \
-   __hlt_object_new_no_init_ref(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__,__LINE__), ctx);
+#define GC_NEW_CUSTOM_SIZE(tag, size, ctx)                                                         \
+    __hlt_object_new(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__, __LINE__), ctx);
+
+#define GC_NEW_CUSTOM_SIZE_REF(tag, size, ctx)                                                     \
+    __hlt_object_new_ref(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__, __LINE__), ctx);
 
 /// XXX
-#define GC_NEW_CUSTOM_SIZE_GENERIC(ti, size, ctx) \
-   __hlt_object_new(ti, size, __hlt_make_location(__FILE__,__LINE__), ctx);
-
-#define GC_NEW_CUSTOM_SIZE_GENERIC_REF(ti, size, ctx) \
-   __hlt_object_new_ref(ti, size, __hlt_make_location(__FILE__,__LINE__), ctx);
+#define GC_NEW_CUSTOM_SIZE_NO_INIT(tag, size, ctx)                                                 \
+    __hlt_object_new_no_init(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__, __LINE__),  \
+                             ctx);
 
 /// XXX
-#define GC_DTOR(obj, tag, ctx) \
-   { \
-       __hlt_object_dtor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__), ctx); \
-   }
+#define GC_NEW_CUSTOM_SIZE_NO_INIT_REF(tag, size, ctx)                                             \
+    __hlt_object_new_no_init_ref(&hlt_type_info_##tag, size,                                       \
+                                 __hlt_make_location(__FILE__, __LINE__), ctx);
 
 /// XXX
-#define GC_DTOR_GENERIC(objptr, ti, ctx) \
-   { \
-       __hlt_object_dtor(ti, objptr, __hlt_make_location(__FILE__,__LINE__), ctx); \
-   }
+#define GC_NEW_CUSTOM_SIZE_GENERIC(ti, size, ctx)                                                  \
+    __hlt_object_new(ti, size, __hlt_make_location(__FILE__, __LINE__), ctx);
+
+#define GC_NEW_CUSTOM_SIZE_GENERIC_REF(ti, size, ctx)                                              \
+    __hlt_object_new_ref(ti, size, __hlt_make_location(__FILE__, __LINE__), ctx);
 
 /// XXX
-#define GC_CCTOR(obj, tag, ctx) \
-   { \
-       __hlt_object_cctor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__), ctx); \
-   }
+#define GC_DTOR(obj, tag, ctx)                                                                     \
+    {                                                                                              \
+        __hlt_object_dtor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__, __LINE__),     \
+                          ctx);                                                                    \
+    }
 
 /// XXX
-#define GC_CCTOR_GENERIC(objptr, ti, ctx) \
-   { \
-       __hlt_object_cctor(ti, objptr, __hlt_make_location(__FILE__,__LINE__), ctx); \
-   }
+#define GC_DTOR_GENERIC(objptr, ti, ctx)                                                           \
+    {                                                                                              \
+        __hlt_object_dtor(ti, objptr, __hlt_make_location(__FILE__, __LINE__), ctx);               \
+    }
 
 /// XXX
-#define GC_CLEAR(obj, tag, ctx) \
-   { \
-       __hlt_object_dtor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__), ctx); \
-       obj = 0; \
-   }
+#define GC_CCTOR(obj, tag, ctx)                                                                    \
+    {                                                                                              \
+        __hlt_object_cctor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__, __LINE__),    \
+                           ctx);                                                                   \
+    }
+
+/// XXX
+#define GC_CCTOR_GENERIC(objptr, ti, ctx)                                                          \
+    {                                                                                              \
+        __hlt_object_cctor(ti, objptr, __hlt_make_location(__FILE__, __LINE__), ctx);              \
+    }
+
+/// XXX
+#define GC_CLEAR(obj, tag, ctx)                                                                    \
+    {                                                                                              \
+        __hlt_object_dtor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__, __LINE__),     \
+                          ctx);                                                                    \
+        obj = 0;                                                                                   \
+    }
 
 typedef struct __hlt_free_list_block {
     struct __hlt_free_list_block* next;
@@ -334,40 +364,42 @@ void hlt_free_list_deletes(hlt_free_list* list);
 
 /// XXX
 
-#define HLT_MEMORY_POOL_INLINE(name, size) \
-   hlt_memory_pool mpool;           \
-   char __ ## name ## _data[size];
+#define HLT_MEMORY_POOL_INLINE(name, size)                                                         \
+    hlt_memory_pool mpool;                                                                         \
+    char __##name##_data[size];
 
-#define HLT_MEMORY_POOL_INLINE_INIT(obj, name) \
-   hlt_memory_pool_init(&obj->name, sizeof(obj->__ ## name ## _data))
+#define HLT_MEMORY_POOL_INLINE_INIT(obj, name)                                                     \
+    hlt_memory_pool_init(&obj->name, sizeof(obj->__##name##_data))
 
 typedef struct __hlt_memory_pool_block {
     struct __hlt_memory_pool_block* next;
     char* cur;
     char* end;
-    char data[0];
+    char data[];
 } __hlt_memory_pool_block;
 
 typedef struct {
-    __hlt_memory_pool_block first; // We store the first inline.
     __hlt_memory_pool_block* last;
+    __hlt_memory_pool_block first; // We store the first inline.
 } hlt_memory_pool;
 
-
 extern __hlt_memory_nullbuffer* __hlt_memory_nullbuffer_new();
-extern void   __hlt_memory_nullbuffer_add(__hlt_memory_nullbuffer* nbuf, const hlt_type_info* ti, void *obj, hlt_execution_context* ctx);
-extern void   __hlt_memory_nullbuffer_remove(__hlt_memory_nullbuffer* nbuf, void *obj);
-extern int8_t __hlt_memory_nullbuffer_contains(__hlt_memory_nullbuffer* nbuf, void *obj);
-extern void   __hlt_memory_nullbuffer_flush(__hlt_memory_nullbuffer* nbuf, hlt_execution_context* ctx);
-extern void   __hlt_memory_nullbuffer_delete(__hlt_memory_nullbuffer* nbuf, hlt_execution_context* ctx);
+extern void __hlt_memory_nullbuffer_add(__hlt_memory_nullbuffer* nbuf, const hlt_type_info* ti,
+                                        void* obj, hlt_execution_context* ctx);
+extern void __hlt_memory_nullbuffer_remove(__hlt_memory_nullbuffer* nbuf, void* obj);
+extern int8_t __hlt_memory_nullbuffer_contains(__hlt_memory_nullbuffer* nbuf, void* obj);
+extern void __hlt_memory_nullbuffer_flush(__hlt_memory_nullbuffer* nbuf,
+                                          hlt_execution_context* ctx);
+extern void __hlt_memory_nullbuffer_delete(__hlt_memory_nullbuffer* nbuf,
+                                           hlt_execution_context* ctx);
 
 
 // XXX Allocations are fast. All allocations part of a pool will be released
 // on dtor.
-void  hlt_memory_pool_init(hlt_memory_pool* p, size_t size);
-void  hlt_memory_pool_dtor(hlt_memory_pool* p);
+void hlt_memory_pool_init(hlt_memory_pool* p, size_t size);
+void hlt_memory_pool_dtor(hlt_memory_pool* p);
 void* hlt_memory_pool_malloc(hlt_memory_pool* p, size_t n);
 void* hlt_memory_pool_calloc(hlt_memory_pool* p, size_t count, size_t n);
-void  hlt_memory_pool_free(hlt_memory_pool* p, void* b); // just a hint, not mandatory
+void hlt_memory_pool_free(hlt_memory_pool* p, void* b); // just a hint, not mandatory
 
 #endif

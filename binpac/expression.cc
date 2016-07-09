@@ -50,18 +50,18 @@ bool Expression::canCoerceTo(shared_ptr<Type> target) const
     // Coercer there (whihc however will break HILTI, which then should
     // implement data-type specific coercion in simialr way as we do here.)
     // And then this code should move there.
-    auto const_ = dynamic_cast<const expression::Constant *>(this);
+    auto const_ = dynamicCast(this, const expression::Constant*);
 
-//    std::cerr << "    " << (const_ ? "is a constant" : "is not a constant") << std::endl;
+    //    std::cerr << "    " << (const_ ? "is a constant" : "is not a constant") << std::endl;
 
     if ( const_ && ConstantCoercer().canCoerceTo(const_->constant(), target) ) {
-//        std::cerr << "    const-coerce succeeds" << std::endl;
+        //        std::cerr << "    const-coerce succeeds" << std::endl;
         result = true;
     }
     else
         result = Coercer().canCoerceTo(type(), target);
 
-//    std::cerr << "    " << (result ? "true" : "false") << std::endl;
+    //    std::cerr << "    " << (result ? "true" : "false") << std::endl;
     return result;
 }
 
@@ -82,9 +82,10 @@ shared_ptr<binpac::Expression> Expression::coerceTo(shared_ptr<Type> target)
     if ( t->equal(target) || ast::isA<type::Any>(target) )
         return sharedPtr<binpac::Expression>();
 
-    auto const_ = dynamic_cast<const expression::Constant *>(this);
+    auto const_ = dynamicCast(this, const expression::Constant*);
     if ( const_ && ConstantCoercer().canCoerceTo(const_->constant(), target) )
-        return std::make_shared<expression::Constant>(ConstantCoercer().coerceTo(const_->constant(), target));
+        return std::make_shared<expression::Constant>(
+            ConstantCoercer().coerceTo(const_->constant(), target));
 
     return std::make_shared<CoercedExpression>(sharedPtr<binpac::Expression>(), target, location());
 }
@@ -150,7 +151,8 @@ expression::ID::ID(shared_ptr<binpac::ID> id, const Location& l)
 {
 }
 
-expression::Parameter::Parameter(shared_ptr<binpac::type::function::Parameter> param, const Location& l)
+expression::Parameter::Parameter(shared_ptr<binpac::type::function::Parameter> param,
+                                 const Location& l)
     : binpac::Expression(l), ast::expression::mixin::Parameter<AstInfo>(this, param)
 {
 }
@@ -160,12 +162,14 @@ expression::Function::Function(shared_ptr<binpac::Function> func, const Location
 {
 }
 
-expression::Coerced::Coerced(shared_ptr<binpac::Expression> expr, shared_ptr<binpac::Type> dst, const Location& l)
+expression::Coerced::Coerced(shared_ptr<binpac::Expression> expr, shared_ptr<binpac::Type> dst,
+                             const Location& l)
     : binpac::Expression(l), ast::expression::mixin::Coerced<AstInfo>(this, expr, dst)
 {
 }
 
-expression::CodeGen::CodeGen(shared_ptr<binpac::Type> type, shared_ptr<hilti::Expression> value, const Location& l)
+expression::CodeGen::CodeGen(shared_ptr<binpac::Type> type, shared_ptr<hilti::Expression> value,
+                             const Location& l)
     : CustomExpression(l)
 {
     _type = type;
@@ -203,7 +207,9 @@ shared_ptr<Type> expression::MemberAttribute::type() const
     return _type;
 }
 
-expression::ParserState::ParserState(Kind kind, shared_ptr<binpac::ID> id, shared_ptr<Type> unit, shared_ptr<Type> type, const Location& l) : CustomExpression(l)
+expression::ParserState::ParserState(Kind kind, shared_ptr<binpac::ID> id, shared_ptr<Type> unit,
+                                     shared_ptr<Type> type, const Location& l)
+    : CustomExpression(l)
 {
     _kind = kind;
     _id = id;
@@ -261,7 +267,8 @@ void expression::ParserState::setType(shared_ptr<binpac::Type> type)
     addChild(_type);
 }
 
-expression::Assign::Assign(shared_ptr<Expression> dst, shared_ptr<Expression> src, const Location& l)
+expression::Assign::Assign(shared_ptr<Expression> dst, shared_ptr<Expression> src,
+                           const Location& l)
     : CustomExpression(l)
 {
     _src = src;
@@ -286,7 +293,8 @@ shared_ptr<Type> expression::Assign::type() const
 }
 
 
-expression::Conditional::Conditional(shared_ptr<Expression> cond, shared_ptr<Expression> true_, shared_ptr<Expression> false_, const Location& l)
+expression::Conditional::Conditional(shared_ptr<Expression> cond, shared_ptr<Expression> true_,
+                                     shared_ptr<Expression> false_, const Location& l)
 {
     _cond = cond;
     _true = true_;
@@ -318,7 +326,8 @@ shared_ptr<Type> expression::Conditional::type() const
     return _true->type();
 }
 
-expression::UnresolvedOperator::UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops, const Location& l)
+expression::UnresolvedOperator::UnresolvedOperator(binpac::operator_::Kind kind,
+                                                   const expression_list& ops, const Location& l)
     : CustomExpression(l)
 {
     _kind = kind;
@@ -354,7 +363,8 @@ shared_ptr<Type> expression::UnresolvedOperator::type() const
     return std::make_shared<type::Unknown>(location());
 }
 
-expression::ResolvedOperator::ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<binpac::Module> module, const Location& l)
+expression::ResolvedOperator::ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops,
+                                               shared_ptr<binpac::Module> module, const Location& l)
     : CustomExpression(l)
 {
     _op = op;
@@ -425,7 +435,11 @@ shared_ptr<Type> expression::PlaceHolder::type() const
     return _type;
 }
 
-expression::ListComprehension::ListComprehension(shared_ptr<Expression> output, shared_ptr<binpac::ID> variable, shared_ptr<Expression> input, shared_ptr<Expression> predicate, const Location& l)
+expression::ListComprehension::ListComprehension(shared_ptr<Expression> output,
+                                                 shared_ptr<binpac::ID> variable,
+                                                 shared_ptr<Expression> input,
+                                                 shared_ptr<Expression> predicate,
+                                                 const Location& l)
 {
     _output = output;
     _variable = variable;

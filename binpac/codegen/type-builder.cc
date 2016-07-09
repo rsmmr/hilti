@@ -1,17 +1,16 @@
 
 #include "type-builder.h"
-#include "../type.h"
-#include "../module.h"
 #include "../attribute.h"
 #include "../expression.h"
+#include "../module.h"
+#include "../type.h"
 
 #include <hilti/builder/builder.h>
 
 using namespace binpac;
 using namespace binpac::codegen;
 
-TypeBuilder::TypeBuilder(CodeGen* cg)
-    : CGVisitor<TypeInfo>(cg, "TypeBuilder")
+TypeBuilder::TypeBuilder(CodeGen* cg) : CGVisitor<TypeInfo>(cg, "TypeBuilder")
 {
 }
 
@@ -19,11 +18,12 @@ TypeBuilder::~TypeBuilder()
 {
 }
 
-void TypeBuilder::_addHostType(shared_ptr<::hilti::Type> type, int pac_type, shared_ptr<::hilti::Expression> aux)
+void TypeBuilder::_addHostType(shared_ptr<::hilti::Type> type, int pac_type,
+                               shared_ptr<::hilti::Expression> aux)
 {
     auto i = ::hilti::builder::integer::create(pac_type);
 
-    ::hilti::builder::tuple::element_list elems = { i };
+    ::hilti::builder::tuple::element_list elems = {i};
 
     if ( aux )
         elems.push_back(aux);
@@ -33,7 +33,8 @@ void TypeBuilder::_addHostType(shared_ptr<::hilti::Type> type, int pac_type, sha
     type->attributes().add(::hilti::attribute::HOSTAPP_TYPE, t);
 }
 
-shared_ptr<::hilti::Type> TypeBuilder::_buildType(shared_ptr<::hilti::Type> type, int pac_type, shared_ptr<::hilti::Expression> aux)
+shared_ptr<::hilti::Type> TypeBuilder::_buildType(shared_ptr<::hilti::Type> type, int pac_type,
+                                                  shared_ptr<::hilti::Expression> aux)
 {
 #if 0
     auto mbuilder = cg()->moduleBuilder();
@@ -62,7 +63,7 @@ shared_ptr<::hilti::Type> TypeBuilder::_buildType(shared_ptr<::hilti::Type> type
     auto glob = mbuilder->addType(id, type, true);
     mbuilder->cacheNode("type-builder", cidx, glob);
     return glob;
-#endif    
+#endif
 }
 
 shared_ptr<hilti::Type> TypeBuilder::hiltiType(shared_ptr<Type> type, id_list* deps)
@@ -87,14 +88,17 @@ shared_ptr<hilti::ID> TypeBuilder::hiltiTypeID(shared_ptr<Type> type)
     return result.hilti_id;
 }
 
-shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type, bool null_on_default, bool can_be_unset)
+shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type, bool null_on_default,
+                                                        bool can_be_unset)
 {
     TypeInfo result;
     bool success = processOne(type, &result);
     assert(success);
 
-    auto val = result.hilti_default ? result.hilti_default
-        : (null_on_default ? shared_ptr<hilti::Expression>() : hilti::builder::expression::default_(result.hilti_type));
+    auto val = result.hilti_default ?
+                   result.hilti_default :
+                   (null_on_default ? shared_ptr<hilti::Expression>() :
+                                      hilti::builder::expression::default_(result.hilti_type));
 
     if ( result.always_initialize || ! can_be_unset )
         return val;
@@ -112,7 +116,8 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiAddParseObjectTypeInfo(shared_pt
     // type   - HILTI type of the item's value.
     // kind   - The item type as a BINPAC_UNIT_ITEM_* constant.
     // hide   - Boolean that's true if the &hide attribute is present.
-    // path   - A tuple of int<64> that describe the access path to the item from the top-level unit.
+    // path   - A tuple of int<64> that describe the access path to the item from the top-level
+    // unit.
     //
     // Note that when changing anything here, libbinpac/rtti.c must be
     // adapted accordingly.
@@ -124,15 +129,14 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiAddParseObjectTypeInfo(shared_pt
     std::set<string> seen;
 
     for ( auto i : u->flattenedItems() ) {
-
         if ( i->anonymous() )
             continue;
 
         if ( i->attributes()->has("transient") )
             continue;
 
-        if ( seen.find(i->id()->name())  != seen.end() )
-             continue;
+        if ( seen.find(i->id()->name()) != seen.end() )
+            continue;
 
         binpac_unit_item_kind kind = BINPAC_UNIT_ITEM_NONE;
 
@@ -257,7 +261,8 @@ void TypeBuilder::visit(type::Enum* e)
     auto et = hilti::builder::enum_::type(labels, e->location());
 
     ti.hilti_type = _buildType(et, BINPAC_TYPE_ENUM);
-    ti.hilti_default = ti.hilti_type->typeScope()->lookupUnique(::hilti::builder::id::node("Undef"));
+    ti.hilti_default =
+        ti.hilti_type->typeScope()->lookupUnique(::hilti::builder::id::node("Undef"));
     assert(ti.hilti_default);
 
     auto id = cg() ? cg()->hiltiID(e->id(), true) : nullptr;
@@ -357,7 +362,8 @@ void TypeBuilder::visit(type::Map* m)
 
     TypeInfo ti;
     ti.hilti_type = hilti::builder::reference::type(bt);
-    ti.hilti_default = hilti::builder::map::create(key, val, {}, nullptr, hilti::AttributeSet(), m->location());
+    ti.hilti_default =
+        hilti::builder::map::create(key, val, {}, nullptr, hilti::AttributeSet(), m->location());
     ti.always_initialize = true;
     setResult(ti);
 }
@@ -379,8 +385,8 @@ void TypeBuilder::visit(type::Optional* o)
     shared_ptr<::hilti::Type> ht;
 
     if ( o->argType() ) {
-        ::hilti::builder::type_list t = { hiltiType(o->argType()) };
-        ht = ::hilti::builder::union_::type(t, o->location() );
+        ::hilti::builder::type_list t = {hiltiType(o->argType())};
+        ht = ::hilti::builder::union_::type(t, o->location());
     }
 
     else

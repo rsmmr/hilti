@@ -4,16 +4,15 @@
 
 #include <ast/pass.h>
 
-#include "../common.h"
 #include "../ast-info.h"
+#include "../common.h"
 
 namespace binpac {
 namespace passes {
 
 /// Resolves ID references. It replaces nodes of type ID with the node that
 /// it's referencing.
-class IDResolver : public ast::Pass<AstInfo>
-{
+class IDResolver : public ast::Pass<AstInfo> {
 public:
     /// Constructor.
     IDResolver();
@@ -43,7 +42,6 @@ private:
     bool _report_unresolved = true;
     std::set<string> _locals;
 };
-
 }
 }
 

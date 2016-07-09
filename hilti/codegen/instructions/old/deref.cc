@@ -9,34 +9,32 @@ using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::deref::Deref* i)
 {
+    /*
+        auto op1 = cg()->llvmValue(i->op1(), X);
 
-/*
-    auto op1 = cg()->llvmValue(i->op1(), X);
+        auto result = builder()->
 
-    auto result = builder()->
+        cg()->llvmStore(i, result);
+    */
 
-    cg()->llvmStore(i, result);
-*/
+    /*
+        CodeGen::expr_list args;
+        args.push_back(i->op1());
 
-/*
-    CodeGen::expr_list args;
-    args.push_back(i->op1());
+        auto result = cg()->llvmCall("hlt::X", args);
 
-    auto result = cg()->llvmCall("hlt::X", args);
-
-    cg()->llvmStore(i, result);
-*/
+        cg()->llvmStore(i, result);
+    */
 
 
-/*
-    def _codegen(self, cg):
-        ops = _findOverloadedOperator(self)
-        assert ops
-        self._callOps(ops, "_codegen", cg)
+    /*
+        def _codegen(self, cg):
+            ops = _findOverloadedOperator(self)
+            assert ops
+            self._callOps(ops, "_codegen", cg)
 
-        for op in ops:
-            self._llvm_target = op._llvm_target
+            for op in ops:
+                self._llvm_target = op._llvm_target
 
-*/
+    */
 }
-

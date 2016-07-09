@@ -2,21 +2,22 @@
 #ifndef AST_LOGGER_H
 #define AST_LOGGER_H
 
-#include <iostream>
 #include "exception.h"
 #include "location.h"
+#include <iostream>
 
 namespace ast {
 
 /// Exception signaling a fatal error reported to a Logger via
 /// Logger::fatalError().
-class FatalLoggerError : public RuntimeError
-{
+class FatalLoggerError : public RuntimeError {
 public:
     /// Constructor.
     ///
     /// what: A string describing the error.
-    FatalLoggerError(string what) : RuntimeError(what) {}
+    FatalLoggerError(string what) : RuntimeError(what)
+    {
+    }
 };
 
 /// Class providing logging and debug output infrastructure. The default is
@@ -30,28 +31,40 @@ public:
 /// - C++-style stream output ("<<").
 ///
 /// No documentation until that's done.
-class Logger
-{
+class Logger {
 public:
-    Logger(const string& name = "", std::ostream& output = std::cerr) : _output(output) {
-       _name = name;
+    Logger(const string& name = "", std::ostream& output = std::cerr) : _output(output)
+    {
+        _name = name;
     }
 
-    Logger(const string& name, Logger* forward_to) {
-       _forward = forward_to;
-       _name = name;
+    Logger(const string& name, Logger* forward_to)
+    {
+        _forward = forward_to;
+        _name = name;
     }
 
     virtual ~Logger();
 
-    const string& loggerName() const { return _name; }
-    void setLoggerName(const string& name) { _name = name; }
+    const string& loggerName() const
+    {
+        return _name;
+    }
+    void setLoggerName(const string& name)
+    {
+        _name = name;
+    }
 
-    void forwardLoggingTo(Logger* logger) { _forward = logger; }
+    void forwardLoggingTo(Logger* logger)
+    {
+        _forward = logger;
+    }
 
-    void fatalError(const string& message, const string& location = "") const;
-    void fatalError(const string& message, shared_ptr<NodeBase> node) const;
-    void fatalError(const string& message, NodeBase* node) const;
+    void fatalError(const string& message, const string& location = "") const
+        __attribute__((noreturn));
+    void fatalError(const string& message, shared_ptr<NodeBase> node) const
+        __attribute__((noreturn));
+    void fatalError(const string& message, NodeBase* node) const __attribute__((noreturn));
 
     void error(const string& message, const string& location = "") const;
     void error(const string& message, shared_ptr<NodeBase> node) const;
@@ -65,9 +78,18 @@ public:
     void warning(const string& message, shared_ptr<NodeBase> node) const;
     void warning(const string& message, NodeBase* node) const;
 
-    int errors() const { return _forward ? _forward->errors() : _errors; }
-    int warnings() const { return _forward ? _forward->warnings() : _errors; }
-    void reset() { _errors = _warnings = 0; }
+    int errors() const
+    {
+        return _forward ? _forward->errors() : _errors;
+    }
+    int warnings() const
+    {
+        return _forward ? _forward->warnings() : _errors;
+    }
+    void reset()
+    {
+        _errors = _warnings = 0;
+    }
 
     int debugLevel() const;
     void debugSetLevel(int level);
@@ -87,9 +109,9 @@ private:
 
 protected:
     enum ErrorType { Warning, Error, Internal, Fatal };
-    virtual void doError(const string& message, NodeBase* node, const string& location, ErrorType type) const;
+    virtual void doError(const string& message, NodeBase* node, const string& location,
+                         ErrorType type) const;
 };
-
 }
 
 #endif

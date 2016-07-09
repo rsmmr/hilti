@@ -1,15 +1,18 @@
 
-static shared_ptr<type::overlay::Field> _overlayField(const Instruction* i, shared_ptr<Type> overlay, shared_ptr<Expression> field)
+static shared_ptr<type::overlay::Field> _overlayField(const Instruction* i,
+                                                      shared_ptr<Type> overlay,
+                                                      shared_ptr<Expression> field)
 {
-    auto otype = ast::checkedCast<type::Overlay>(overlay);;
-    auto cexpr = ast::as<expression::Constant>(field);
+    auto otype = ast::rtti::checkedCast<type::Overlay>(overlay);
+    ;
+    auto cexpr = ast::rtti::tryCast<expression::Constant>(field);
 
     if ( ! cexpr ) {
         i->error(field, "overlay field must be a constant");
         return nullptr;
     }
 
-    auto cval = ast::as<constant::String>(cexpr->constant());
+    auto cval = ast::rtti::tryCast<constant::String>(cexpr->constant());
 
     if ( ! cval ) {
         i->error(field, "overlay field must be a constant string");
@@ -26,10 +29,11 @@ static shared_ptr<type::overlay::Field> _overlayField(const Instruction* i, shar
 }
 
 iBegin(overlay, Attach, "overlay.attach")
-    iOp1(optype::overlay, false)
-    iOp2(optype::iterBytes, true)
+    iOp1(optype::overlay, false);
+    iOp2(optype::iterBytes, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -42,13 +46,14 @@ iBegin(overlay, Attach, "overlay.attach")
 iEnd
 
 iBegin(overlay, Get, "overlay.get")
-    iTarget(optype::any)
-    iOp1(optype::overlay, false)
-    iOp2(optype::string, true)
-    iOp3(optype::optional(optype::refBytes), true)
+    iTarget(optype::any);
+    iOp1(optype::overlay, false);
+    iOp2(optype::string, true);
+    iOp3(optype::optional(optype::refBytes), true);
 
-    iValidate {
-        auto otype = ast::as<type::Overlay>(op1->type());
+    iValidate
+    {
+        auto otype = ast::rtti::tryCast<type::Overlay>(op1->type());
 
         if ( ! isConstant(op2) )
             return;
@@ -77,13 +82,14 @@ iBegin(overlay, Get, "overlay.get")
 iEnd
 
 iBegin(overlay, GetStatic, "overlay.get")
-    iTarget(optype::any)
-    iOp1(optype::typeOverlay, true)
-    iOp2(optype::string, true)
-    iOp3(optype::refBytes, true)
+    iTarget(optype::any);
+    iOp1(optype::typeOverlay, true);
+    iOp2(optype::string, true);
+    iOp3(optype::refBytes, true);
 
-    iValidate {
-        auto otype = ast::checkedCast<type::Overlay>(typedType(op1));
+    iValidate
+    {
+        auto otype = ast::rtti::checkedCast<type::Overlay>(typedType(op1));
 
         if ( ! isConstant(op2) )
             return;
@@ -107,4 +113,3 @@ iBegin(overlay, GetStatic, "overlay.get")
     )")
 
 iEnd
-

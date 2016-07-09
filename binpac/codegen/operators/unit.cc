@@ -1,6 +1,6 @@
 
-#include "cg-operator-common.h"
 #include "../../attribute.h"
+#include "cg-operator-common.h"
 #include <binpac/autogen/operators/unit.h>
 
 using namespace binpac;
@@ -20,7 +20,8 @@ void CodeBuilder::visit(ctor::Unit* m)
     hparams.push_back(hilti::builder::boolean::create(false));
     hparams.push_back(cg()->hiltiCookie());
 
-    cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, func, hilti::builder::tuple::create(hparams));
+    cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, func,
+                                    hilti::builder::tuple::create(hparams));
 
     auto hfields = ast::checkedCast<hilti::type::Struct>(hunit)->fields();
     auto vars = unit->variables();
@@ -38,7 +39,8 @@ void CodeBuilder::visit(ctor::Unit* m)
         auto val = hiltiExpression(init, itype);
         cg()->hiltiItemSet(result, item, val);
 
-        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::AttributeNotSet")),
+        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName(
+                                       "BinPACHilti::AttributeNotSet")),
                                    hilti::builder::id::node("e"));
         // Nothing to do in catch.
         cg()->builder()->popCatch();
@@ -121,11 +123,13 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::TryAttribute* i)
     cg()->moduleBuilder()->pushBuilder(attr_set);
     auto ival = cg()->hiltiItemGet(cg()->hiltiExpression(i->op1()), item);
     setResult(ival);
-    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());                                    ;
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    ;
     cg()->moduleBuilder()->popBuilder(attr_set);
 
     cg()->moduleBuilder()->pushBuilder(attr_not_set);
-    cg()->builder()->addThrow("BinPACHilti::AttributeNotSet", hilti::builder::string::create(attr->id()->name()));
+    cg()->builder()->addThrow("BinPACHilti::AttributeNotSet",
+                              hilti::builder::string::create(attr->id()->name()));
     cg()->moduleBuilder()->popBuilder(attr_not_set);
 
     cg()->moduleBuilder()->pushBuilder(done);
@@ -150,7 +154,8 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
     hparams.push_back(cg()->hiltiCookie());
 
     auto result = cg()->builder()->addTmp("pobj", cg()->hiltiType(unit));
-    cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, func, hilti::builder::tuple::create(hparams));
+    cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, func,
+                                    hilti::builder::tuple::create(hparams));
 
     setResult(result);
 }
@@ -195,15 +200,16 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::AddFilter* i)
     auto filter = callParameter(i->op3(), 0);
 
     // TODO: This cast here isn't ideal, better way?
-    auto filter_type = cg()->hiltiCastEnum(cg()->hiltiExpression(filter), hilti::builder::type::byName("BinPACHilti::Filter"));
+    auto filter_type = cg()->hiltiCastEnum(cg()->hiltiExpression(filter),
+                                           hilti::builder::type::byName("BinPACHilti::Filter"));
 
-    auto ft = hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::ParseFilter"));
+    auto ft =
+        hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::ParseFilter"));
     auto head = cg()->hiltiItemGet(self, "__filter", ft, hilti::builder::reference::createNull());
 
-    cg()->builder()->addInstruction(head,
-                                    hilti::instruction::flow::CallResult,
+    cg()->builder()->addInstruction(head, hilti::instruction::flow::CallResult,
                                     hilti::builder::id::create("BinPACHilti::filter_add"),
-                                    hilti::builder::tuple::create( { head, filter_type } ));
+                                    hilti::builder::tuple::create({head, filter_type}));
 
     cg()->hiltiItemSet(self, "__filter", head);
 
@@ -219,7 +225,7 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::Disconnect* i)
 
     cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
                                     hilti::builder::id::create("BinPACHilti::sink_disconnect"),
-                                    hilti::builder::tuple::create( { sink, self } ));
+                                    hilti::builder::tuple::create({sink, self}));
 
     setResult(std::make_shared<hilti::expression::Void>());
 }
@@ -234,7 +240,8 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::MimeType* i)
 
 void CodeBuilder::visit(binpac::expression::operator_::unit::Backtrack* i)
 {
-    cg()->builder()->addThrow("BinPACHilti::Backtrack", ::hilti::builder::string::create("backtracking triggered"));
+    cg()->builder()->addThrow("BinPACHilti::Backtrack",
+                              ::hilti::builder::string::create("backtracking triggered"));
     setResult(std::make_shared<hilti::expression::Void>());
 }
 
@@ -258,4 +265,3 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::Disable* i)
     cg()->hiltiDisable(self, unit, msg);
     setResult(std::make_shared<hilti::expression::Void>());
 }
-

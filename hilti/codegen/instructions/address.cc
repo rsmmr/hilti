@@ -11,7 +11,7 @@ void StatementBuilder::visit(statement::instruction::address::Equal* i)
     auto op1 = cg()->llvmValue(i->op1());
     auto op2 = cg()->llvmValue(i->op2());
 
-    // TODO: Not sure which version is faster.
+// TODO: Not sure which version is faster.
 
 #if 1
     auto v1 = cg()->llvmExtractValue(op1, 0);
@@ -57,4 +57,3 @@ void StatementBuilder::visit(statement::instruction::address::Family* i)
 
     cg()->llvmStore(i, result);
 }
-

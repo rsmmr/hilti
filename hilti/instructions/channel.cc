@@ -1,11 +1,12 @@
 
 #include "define-instruction.h"
 
-#include "channel.h"
 #include "../module.h"
+#include "channel.h"
 
 iBeginCC(channel)
-    iValidateCC(New) {
+    iValidateCC(New)
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -18,7 +19,8 @@ iBeginCC(channel)
 iEndCC
 
 iBeginCC(channel)
-    iValidateCC(Read) {
+    iValidateCC(Read)
+    {
         canCoerceTo(argType(op1), target);
     }
 
@@ -30,7 +32,8 @@ iBeginCC(channel)
 iEndCC
 
 iBeginCC(channel)
-    iValidateCC(ReadTry) {
+    iValidateCC(ReadTry)
+    {
         canCoerceTo(argType(op1), target);
     }
 
@@ -42,7 +45,8 @@ iBeginCC(channel)
 iEndCC
 
 iBeginCC(channel)
-    iValidateCC(Size) {
+    iValidateCC(Size)
+    {
     }
 
     iDocCC(Size, R"(    
@@ -52,7 +56,8 @@ iBeginCC(channel)
 iEndCC
 
 iBeginCC(channel)
-    iValidateCC(Write) {
+    iValidateCC(Write)
+    {
         canCoerceTo(op2, argType(op1));
     }
 
@@ -63,7 +68,8 @@ iBeginCC(channel)
 iEndCC
 
 iBeginCC(channel)
-    iValidateCC(WriteTry) {
+    iValidateCC(WriteTry)
+    {
         canCoerceTo(op2, argType(op1));
     }
 

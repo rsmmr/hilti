@@ -1,13 +1,14 @@
 
 #include "define-instruction.h"
 
-#include "tuple.h"
+#include "../expression.h"
 #include "../module.h"
 #include "../type.h"
-#include "../expression.h"
+#include "tuple.h"
 
 iBeginCC(tuple)
-    iValidateCC(Equal) {
+    iValidateCC(Equal)
+    {
         equalTypes(op1, op2);
         // TODO: Check that we can compare the tuple element recursively.
     }
@@ -18,16 +19,17 @@ iBeginCC(tuple)
 iEndCC
 
 iBeginCC(tuple)
-    iValidateCC(Index) {
+    iValidateCC(Index)
+    {
         auto ty_target = target->type();
-        auto ttype = ast::as<type::Tuple>(op1->type());
+        auto ttype = ast::rtti::tryCast<type::Tuple>(op1->type());
 
         isConstant(op2);
 
-        auto c = ast::as<expression::Constant>(op2)->constant();
-        auto idx = ast::as<constant::Integer>(c)->value();
+        auto c = ast::rtti::tryCast<expression::Constant>(op2)->constant();
+        auto idx = ast::rtti::tryCast<constant::Integer>(c)->value();
 
-        if ( idx < 0 || (size_t) idx >= ttype->typeList().size() ) {
+        if ( idx < 0 || (size_t)idx >= ttype->typeList().size() ) {
             error(op2, "tuple index out of range");
             return;
         }
@@ -45,11 +47,11 @@ iBeginCC(tuple)
 iEndCC
 
 iBeginCC(tuple)
-    iValidateCC(Length) {
+    iValidateCC(Length)
+    {
     }
 
     iDocCC(Length, R"(
        Returns the number of elements that the tuple *op1* has.
     )")
 iEndCC
-

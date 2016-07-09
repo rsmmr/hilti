@@ -2,14 +2,15 @@
 #include "define-instruction.h"
 
 iBegin(caddr, Function, "caddr.function")
-    iTarget(optype::tuple)
-    iOp1(optype::function, true)
+    iTarget(optype::tuple);
+    iOp1(optype::function, true);
 
-    iValidate {
-        auto ty_target = as<type::Tuple>(target->type());
+    iValidate
+    {
+        auto ty_target = ast::rtti::checkedCast<type::Tuple>(target->type());
 
         auto cat = builder::caddr::type();
-        builder::type_list tt = { cat, cat };
+        builder::type_list tt = {cat, cat};
 
         equalTypes(builder::tuple::type(tt), ty_target);
     }
@@ -27,11 +28,12 @@ iBegin(caddr, Function, "caddr.function")
 iEnd
 
 iBegin(caddr, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::caddr, true);
     iOp2(optype::caddr, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(

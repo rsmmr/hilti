@@ -1,12 +1,12 @@
 
 #include "validator.h"
-#include "../type.h"
+#include "../attribute.h"
 #include "../declaration.h"
 #include "../expression.h"
-#include "../statement.h"
 #include "../grammar.h"
-#include "../attribute.h"
 #include "../scope.h"
+#include "../statement.h"
+#include "../type.h"
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -24,7 +24,8 @@ Validator::~Validator()
 {
 }
 
-void Validator::wrongType(ast::NodeBase* node, const string& msg, shared_ptr<Type> have, shared_ptr<Type> want)
+void Validator::wrongType(ast::NodeBase* node, const string& msg, shared_ptr<Type> have,
+                          shared_ptr<Type> want)
 {
     string m = msg;
 
@@ -37,7 +38,8 @@ void Validator::wrongType(ast::NodeBase* node, const string& msg, shared_ptr<Typ
     return error(node, m);
 }
 
-void Validator::wrongType(shared_ptr<Node> node, const string& msg, shared_ptr<Type> have, shared_ptr<Type> want)
+void Validator::wrongType(shared_ptr<Node> node, const string& msg, shared_ptr<Type> have,
+                          shared_ptr<Type> want)
 {
     return wrongType(node.get(), msg, have, want);
 }
@@ -218,12 +220,12 @@ void Validator::visit(declaration::Type* t)
     auto unit = ast::tryCast<type::Unit>(t->type());
 
     if ( unit ) {
-        // TODO: It's ok to have the same field name multiple times under
-        // certain constraints: it's ok if the fields using the name are on
-        // the same "level", i.e., all inside the top unit, or inside cases
-        // of the same switch. It's not ok to be on different levels, or
-        // within separate switches (as that will be messed up due to the
-        // unions used for compiling it).
+// TODO: It's ok to have the same field name multiple times under
+// certain constraints: it's ok if the fields using the name are on
+// the same "level", i.e., all inside the top unit, or inside cases
+// of the same switch. It's not ok to be on different levels, or
+// within separate switches (as that will be messed up due to the
+// unions used for compiling it).
 #if 0
         std::set<string> have;
 
@@ -689,7 +691,8 @@ void Validator::visit(type::unit::item::Field* f)
         }
 
         if ( attr->value() && ! attr->value()->canCoerceTo(ptype) ) {
-            wrongType(attr->value(), "attribute value's type does not match", attr->value()->type(), ptype);
+            wrongType(attr->value(), "attribute value's type does not match", attr->value()->type(),
+                      ptype);
             continue;
         }
     }
@@ -704,7 +707,8 @@ void Validator::visit(type::unit::item::Property* p)
     auto prop = p->property();
 
     if ( ::util::startsWith(prop->key(), "skip-") ) {
-        if ( prop->value() && ! ast::type::trait::hasTrait<type::trait::Parseable>(prop->value()->type()) )
+        if ( prop->value() &&
+             ! ast::type::trait::hasTrait<type::trait::Parseable>(prop->value()->type()) )
             error(p, "skip expression is not of parseable type");
     }
 }
@@ -747,7 +751,6 @@ void Validator::visit(type::unit::item::field::Switch* s)
     std::set<string> have;
 
     for ( auto c : s->cases() ) {
-
         if ( c->fields().empty() ) {
             error(c, "switch case without any item");
         }
@@ -807,4 +810,3 @@ void Validator::visit(variable::Global* g)
 void Validator::visit(variable::Local* l)
 {
 }
-

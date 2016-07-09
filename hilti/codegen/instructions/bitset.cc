@@ -45,4 +45,3 @@ void StatementBuilder::visit(statement::instruction::bitset::Set* i)
 
     cg()->llvmStore(i, result);
 }
-

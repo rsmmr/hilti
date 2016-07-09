@@ -5,8 +5,8 @@
 #include "../common.h"
 #include "../visitor.h"
 
-#include "common.h"
 #include "codegen.h"
+#include "common.h"
 
 namespace hilti {
 namespace codegen {
@@ -39,32 +39,30 @@ struct PackArgs {
 typedef llvm::Value* PackResult;
 
 /// Visitor that generates the code packing HILTI data into binary.
-class Packer : public CGVisitor<int, PackArgs, PackResult>
-{
+class Packer : public CGVisitor<int, PackArgs, PackResult> {
 public:
-   /// Constructor.
-   ///
-   /// cg: The code generator to use.
-   Packer(CodeGen* cg);
-   virtual ~Packer();
+    /// Constructor.
+    ///
+    /// cg: The code generator to use.
+    Packer(CodeGen* cg);
+    virtual ~Packer();
 
-   /// Packs an instance of a type into binary data.
-   ///
-   /// args: The arguments to the Pack operation.
-   ///
-   /// Returns: The packed value.
-   PackResult llvmPack(const PackArgs& args);
+    /// Packs an instance of a type into binary data.
+    ///
+    /// args: The arguments to the Pack operation.
+    ///
+    /// Returns: The packed value.
+    PackResult llvmPack(const PackArgs& args);
 
 protected:
-   virtual void visit(type::Reference* t) override;
-   virtual void visit(type::Bytes* t) override;
-   virtual void visit(type::Integer* t) override;
-   virtual void visit(type::Address* t) override;
-   virtual void visit(type::Port* t) override;
-   virtual void visit(type::Bool* t) override;
-   virtual void visit(type::Double* t) override;
+    virtual void visit(type::Reference* t) override;
+    virtual void visit(type::Bytes* t) override;
+    virtual void visit(type::Integer* t) override;
+    virtual void visit(type::Address* t) override;
+    virtual void visit(type::Port* t) override;
+    virtual void visit(type::Bool* t) override;
+    virtual void visit(type::Double* t) override;
 };
-
 }
 }
 

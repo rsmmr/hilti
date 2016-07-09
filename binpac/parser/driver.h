@@ -5,28 +5,26 @@
 #include <iostream>
 #include <string>
 
-#include "../common.h"
 #include "../attribute.h"
-#include "../declaration.h"
-#include "../ctor.h"
-#include "../type.h"
-#include "../function.h"
+#include "../common.h"
 #include "../context.h"
+#include "../ctor.h"
+#include "../declaration.h"
+#include "../function.h"
+#include "../type.h"
 #include "../visitor-interface.h"
 
 #undef YY_DECL
-#define	YY_DECL						                 \
-    binpac_parser::Parser::token_type				 \
-    binpac_parser::Scanner::lex(				         \
-        binpac_parser::Parser::semantic_type* yylval, \
-        binpac_parser::Parser::location_type* yylloc, \
-        binpac_parser::Driver& driver                 \
-        )
+#define YY_DECL                                                                                    \
+    binpac_parser::Parser::token_type                                                              \
+    binpac_parser::Scanner::lex(binpac_parser::Parser::semantic_type* yylval,                      \
+                                binpac_parser::Parser::location_type* yylloc,                      \
+                                binpac_parser::Driver& driver)
 
 struct yystype_binpac {
-    bool        bval;
-    double      dval;
-    int64_t     ival;
+    bool bval;
+    double dval;
+    int64_t ival;
     std::string sval;
 
     binpac::ctor::Map::element map_element;
@@ -101,18 +99,32 @@ class location;
 
 class Driver : public ast::Logger {
 public:
-    shared_ptr<binpac::Module> parse(binpac::CompilerContext* ctx, std::istream& in, const std::string& sname);
-    shared_ptr<binpac::Expression> parseExpression(binpac::CompilerContext* ctx, const std::string& expr);
+    shared_ptr<binpac::Module> parse(binpac::CompilerContext* ctx, std::istream& in,
+                                     const std::string& sname);
+    shared_ptr<binpac::Expression> parseExpression(binpac::CompilerContext* ctx,
+                                                   const std::string& expr);
 
     // Report parsing errors.
     void error(const std::string& m, const binpac_parser::location& l);
 
     // The Bison parser needs a non-const pointer here. Grmpf.
-    std::string* streamName() { return &_sname; }
+    std::string* streamName()
+    {
+        return &_sname;
+    }
 
-    Scanner* scanner() const { return _scanner; }
-    Parser* parser() const { return _parser; }
-    binpac::CompilerContext* context() const { return _context; }
+    Scanner* scanner() const
+    {
+        return _scanner;
+    }
+    Parser* parser() const
+    {
+        return _parser;
+    }
+    binpac::CompilerContext* context() const
+    {
+        return _context;
+    }
 
     shared_ptr<binpac::Module> module() const;
     void setModule(shared_ptr<binpac::Module> module);
@@ -157,7 +169,6 @@ private:
     std::list<shared_ptr<binpac::Scope>> _scopes;
     std::list<shared_ptr<binpac::statement::Block>> _blocks;
 };
-
 }
 
 #endif

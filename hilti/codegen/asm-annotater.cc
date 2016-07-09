@@ -1,14 +1,20 @@
 
+// Note: This file is compiled with -fno-rtti so that we can derive from LLVM classes.
+#ifndef HILTI_NO_RTTI
+#error File must be compiled with HILTI_NO_RTTI
+#endif
+
 #include "asm-annotater.h"
-#include "../id.h"
-#include "codegen.h"
+#include "llvm-common.h"
+#include "symbols.h"
 
 using namespace hilti;
 using namespace codegen;
 
-void AssemblyAnnotationWriter::emitInstructionAnnot(const llvm::Instruction *i, llvm::formatted_raw_ostream& out)
+void AssemblyAnnotationWriter::emitInstructionAnnot(const llvm::Instruction* i,
+                                                    llvm::formatted_raw_ostream& out)
 {
-    auto md = i->getMetadata(symbols::MetaComment);
+    auto md = i->getMetadata("symbols::MetaComment");
 
     if ( md ) {
         out << "\n";
@@ -18,5 +24,4 @@ void AssemblyAnnotationWriter::emitInstructionAnnot(const llvm::Instruction *i, 
             out << "  ; " << str->getString() << "\n";
         }
     }
-
 }

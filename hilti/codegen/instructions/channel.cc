@@ -8,13 +8,13 @@ using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::channel::New* i)
 {
-   auto etype = ast::as<type::Channel>(typedType(i->op1()))->argType();
-   auto op1 = builder::type::create(etype);
+    auto etype = ast::rtti::tryCast<type::Channel>(typedType(i->op1()))->argType();
+    auto op1 = builder::type::create(etype);
 
-   auto op2 = i->op2();
+    auto op2 = i->op2();
 
-   if ( ! op2 )
-       op2 = builder::integer::create(0);
+    if ( ! op2 )
+        op2 = builder::integer::create(0);
 
     CodeGen::expr_list args;
     args.push_back(op1);
@@ -25,14 +25,14 @@ void StatementBuilder::visit(statement::instruction::channel::New* i)
 
 static llvm::Value* _readTry(CodeGen* cg, statement::Instruction* i)
 {
-    CodeGen::expr_list args = { i->op1() };
+    CodeGen::expr_list args = {i->op1()};
     return cg->llvmCall("hlt::channel_read_try", args, false, false);
 }
 
 static void _readFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* result)
 {
-    auto rtype = ast::checkedCast<type::Reference>(i->op1()->type());
-    auto etype = ast::checkedCast<type::Channel>(rtype->argType())->argType();
+    auto rtype = ast::rtti::checkedCast<type::Reference>(i->op1()->type());
+    auto etype = ast::rtti::checkedCast<type::Channel>(rtype->argType())->argType();
     auto casted = cg->builder()->CreateBitCast(result, cg->llvmTypePtr(cg->llvmType(etype)));
     result = cg->builder()->CreateLoad(casted);
     cg->llvmStore(i, result);
@@ -63,10 +63,10 @@ void StatementBuilder::visit(statement::instruction::channel::Size* i)
 
 static llvm::Value* _writeTry(CodeGen* cg, statement::Instruction* i)
 {
-    auto rtype = ast::checkedCast<type::Reference>(i->op1()->type());
-    auto etype = ast::checkedCast<type::Channel>(rtype->argType())->argType();
+    auto rtype = ast::rtti::checkedCast<type::Reference>(i->op1()->type());
+    auto etype = ast::rtti::checkedCast<type::Channel>(rtype->argType())->argType();
 
-    CodeGen::expr_list args = { i->op1(), i->op2()->coerceTo(etype) };
+    CodeGen::expr_list args = {i->op1(), i->op2()->coerceTo(etype)};
     return cg->llvmCall("hlt::channel_write_try", args, false, false);
 }
 
@@ -87,4 +87,3 @@ void StatementBuilder::visit(statement::instruction::channel::WriteTry* i)
 
     _writeFinish(cg(), i, val);
 }
-

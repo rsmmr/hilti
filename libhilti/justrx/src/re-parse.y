@@ -16,8 +16,8 @@ extern int RElex(void* yylval_param, void* yyscanner);
 
 %}
 
-%name-prefix = "RE"
-%file-prefix = "re-parse"
+%name-prefix "RE"
+%file-prefix "re-parse"
 %defines
 
 %pure-parser

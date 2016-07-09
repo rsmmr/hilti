@@ -1,14 +1,14 @@
 
 
-#include "attribute.h"
 #include "type.h"
+#include "attribute.h"
 #include "constant.h"
 #include "declaration.h"
 #include "expression.h"
-#include "statement.h"
-#include "scope.h"
 #include "grammar.h"
 #include "passes/printer.h"
+#include "scope.h"
+#include "statement.h"
 
 using namespace binpac;
 using namespace type;
@@ -19,7 +19,7 @@ trait::Parseable::~Parseable()
 
 shared_ptr<binpac::Type> trait::Parseable::fieldType()
 {
-    auto t = dynamic_cast<binpac::Type*>(this);
+    auto t = dynamicCast(this, binpac::Type*);
     assert(t);
     return t->sharedPtr<binpac::Type>();
 }
@@ -77,7 +77,7 @@ PacType::PacType(const Location& l) : binpac::Type(l)
     _attrs = std::make_shared<AttributeSet>(l);
 }
 
-PacType::PacType(const attribute_list& attrs,  const Location& l) : binpac::Type(l)
+PacType::PacType(const attribute_list& attrs, const Location& l) : binpac::Type(l)
 {
     _attrs = std::make_shared<AttributeSet>(attrs, l);
 }
@@ -158,7 +158,8 @@ shared_ptr<ID> Unknown::id() const
     return _id;
 }
 
-UnknownElementType::UnknownElementType(node_ptr<Expression> expr, const Location& l) : binpac::Type(l)
+UnknownElementType::UnknownElementType(node_ptr<Expression> expr, const Location& l)
+    : binpac::Type(l)
 {
     _expr = expr;
     addChild(_expr);
@@ -186,7 +187,7 @@ const shared_ptr<ID> TypeByName::id() const
 
 bool TypeByName::_equal(shared_ptr<binpac::Type> other) const
 {
-    return std::dynamic_pointer_cast<TypeByName>(other)->_id->name() == _id->name();
+    return dynamicPointerCast(other)->_id->name() == _id->name(, TypeByName);
 }
 
 Unset::Unset(const Location& l) : PacType(l)
@@ -216,7 +217,7 @@ string MemberAttribute::render()
 
 bool MemberAttribute::_equal(shared_ptr<binpac::Type> other) const
 {
-    auto mother = std::dynamic_pointer_cast<MemberAttribute>(other);
+    auto mother = dynamicPointerCast(other, MemberAttribute);
     assert(mother);
 
     return _attribute && mother->_attribute ? (*_attribute == *mother->_attribute) : true;
@@ -242,11 +243,11 @@ Address::Address(const Location& l) : PacType(l)
 
 std::list<trait::Parseable::ParseAttribute> Address::parseAttributes() const
 {
-    return {
-        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false },
-        { "ipv4", nullptr, nullptr, false },
-        { "ipv6", nullptr, nullptr, false }
-    };
+    return {{"byteorder",
+             std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr,
+             false},
+            {"ipv4", nullptr, nullptr, false},
+            {"ipv6", nullptr, nullptr, false}};
 }
 
 Network::Network(const Location& l) : PacType(l)
@@ -271,7 +272,9 @@ Bitset::Bitset(const label_list& labels, const Location& l) : PacType(l)
         _labels.push_back(make_pair(label.first, bit));
     }
 
-    _labels.sort([] (const Label& lhs, const Label& rhs) { return lhs.first->name().compare(rhs.first->name()) < 0; });
+    _labels.sort([](const Label& lhs, const Label& rhs) {
+        return lhs.first->name().compare(rhs.first->name()) < 0;
+    });
 }
 
 Bitset::Bitset(const Location& l) : PacType(l)
@@ -291,7 +294,8 @@ int Bitset::labelBit(shared_ptr<ID> label) const
             return l.second;
     }
 
-    throw ast::InternalError(util::fmt("unknown bitset label %s", label->pathAsString().c_str()), this);
+    throw ast::InternalError(util::fmt("unknown bitset label %s", label->pathAsString().c_str()),
+                             this);
 }
 
 shared_ptr<Scope> Bitset::typeScope()
@@ -303,7 +307,7 @@ shared_ptr<Scope> Bitset::typeScope()
 
     for ( auto label : _labels ) {
         auto p = shared_from_this();
-        auto p2 = std::dynamic_pointer_cast<binpac::Type>(p);
+        auto p2 = dynamicPointerCast(p, binpac::Type);
         constant::Bitset::bit_list bl;
         bl.push_back(label.first);
         auto val = shared_ptr<Constant>(new constant::Bitset(bl, p2, location()));
@@ -316,7 +320,7 @@ shared_ptr<Scope> Bitset::typeScope()
 
 bool Bitset::_equal(shared_ptr<Type> other) const
 {
-    auto bother = std::dynamic_pointer_cast<Bitset>(other);
+    auto bother = dynamicPointerCast(other, Bitset);
     assert(bother);
 
     if ( _labels.size() != bother->_labels.size() )
@@ -333,7 +337,8 @@ bool Bitset::_equal(shared_ptr<Type> other) const
     return true;
 }
 
-bitfield::Bits::Bits(shared_ptr<ID> id, int lower, int upper, int parent_width, const attribute_list& attrs, const Location& l)
+bitfield::Bits::Bits(shared_ptr<ID> id, int lower, int upper, int parent_width,
+                     const attribute_list& attrs, const Location& l)
 {
     _id = id;
     _attrs = std::make_shared<AttributeSet>(attrs);
@@ -445,8 +450,10 @@ void Bitfield::setBitOrder(shared_ptr<Expression> order)
 std::list<trait::Parseable::ParseAttribute> Bitfield::parseAttributes() const
 {
     return {
-        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false },
-        { "bitorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::BitOrder")), nullptr, false },
+        {"byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")),
+         nullptr, false},
+        {"bitorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::BitOrder")),
+         nullptr, false},
     };
 }
 
@@ -476,7 +483,9 @@ Enum::Enum(const label_list& labels, const Location& l) : PacType(l)
     }
 
     _labels.push_back(make_pair(std::make_shared<ID>("Undef"), -1));
-    _labels.sort([] (const Label& lhs, const Label& rhs) { return lhs.first->name().compare(rhs.first->name()) < 0; });
+    _labels.sort([](const Label& lhs, const Label& rhs) {
+        return lhs.first->name().compare(rhs.first->name()) < 0;
+    });
 }
 
 Enum::Enum(const Location& l) : PacType(l)
@@ -493,7 +502,7 @@ shared_ptr<Scope> Enum::typeScope()
 
     for ( auto label : _labels ) {
         auto p = shared_from_this();
-        auto p2 = std::dynamic_pointer_cast<binpac::Type>(p);
+        auto p2 = dynamicPointerCast(p, binpac::Type);
         auto val = shared_ptr<Constant>(new constant::Enum(label.first, p2, location()));
         auto expr = shared_ptr<expression::Constant>(new expression::Constant(val, location()));
         _scope->insert(label.first, expr);
@@ -509,13 +518,14 @@ int Enum::labelValue(shared_ptr<ID> label) const
             return l.second;
     }
 
-    throw ast::InternalError(util::fmt("unknown enum label %s", label->pathAsString().c_str()), this);
+    throw ast::InternalError(util::fmt("unknown enum label %s", label->pathAsString().c_str()),
+                             this);
     return -1;
 }
 
 bool Enum::_equal(shared_ptr<Type> other) const
 {
-    auto eother = std::dynamic_pointer_cast<Enum>(other);
+    auto eother = dynamicPointerCast(other, Enum);
     assert(eother);
 
     if ( _labels.size() != eother->_labels.size() )
@@ -548,9 +558,10 @@ Double::Double(const Location& l) : PacType(l)
 std::list<trait::Parseable::ParseAttribute> Double::parseAttributes() const
 {
     return {
-        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false },
-        { "precision", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::Precision")),
-                       std::make_shared<expression::ID>(std::make_shared<ID>("BinPAC::Precision::Double")), true },
+        {"byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")),
+         nullptr, false},
+        {"precision", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::Precision")),
+         std::make_shared<expression::ID>(std::make_shared<ID>("BinPAC::Precision::Double")), true},
     };
 }
 
@@ -602,7 +613,8 @@ bool Integer::_equal(shared_ptr<binpac::Type> other) const
 std::list<trait::Parseable::ParseAttribute> Integer::parseAttributes() const
 {
     return {
-        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false },
+        {"byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")),
+         nullptr, false},
     };
 }
 
@@ -667,7 +679,8 @@ bool Tuple::_equal(shared_ptr<binpac::Type> other) const
 
 TypeType::TypeType(shared_ptr<binpac::Type> type, const Location& l) : binpac::Type(l)
 {
-    _rtype = type; addChild(_rtype);
+    _rtype = type;
+    addChild(_rtype);
 }
 
 TypeType::TypeType(const Location& l) : binpac::Type()
@@ -682,10 +695,11 @@ shared_ptr<binpac::Type> TypeType::typeType() const
 
 bool TypeType::_equal(shared_ptr<binpac::Type> other) const
 {
-    return _rtype->equal(std::dynamic_pointer_cast<TypeType>(other)->_rtype);
+    return _rtype->equal(dynamicPointerCast(other)->_rtype, TypeType);
 }
 
-Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l) : TypedPacType(arg, l)
+Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l)
+    : TypedPacType(arg, l)
 {
     _base = base;
     addChild(_base);
@@ -720,15 +734,18 @@ string Exception::libraryType() const
     return _libtype;
 }
 
-type::Function::Function(shared_ptr<type::function::Result> result, const parameter_list& args, type::function::CallingConvention cc, const Location& l)
-: binpac::Type(l), ast::type::mixin::Function<AstInfo>(this, result, args)
+type::Function::Function(shared_ptr<type::function::Result> result, const parameter_list& args,
+                         type::function::CallingConvention cc, const Location& l)
+    : binpac::Type(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
     _cc = cc;
 }
 
 type::Function::Function(const Location& l)
     : binpac::Type(l),
-    ast::type::mixin::Function<AstInfo>(this, std::make_shared<function::Result>(std::make_shared<Void>(), false, l), parameter_list())
+      ast::type::mixin::Function<
+          AstInfo>(this, std::make_shared<function::Result>(std::make_shared<Void>(), false, l),
+                   parameter_list())
 {
     setWildcard(true);
 }
@@ -767,7 +784,8 @@ bool type::Function::_equal(shared_ptr<binpac::Type> o) const
     return true;
 }
 
-function::Parameter::Parameter(shared_ptr<binpac::ID> id, shared_ptr<Type> type, bool constant, bool clear, shared_ptr<Expression> default_value, Location l)
+function::Parameter::Parameter(shared_ptr<binpac::ID> id, shared_ptr<Type> type, bool constant,
+                               bool clear, shared_ptr<Expression> default_value, Location l)
     : ast::type::mixin::function::Parameter<AstInfo>(id, type, constant, default_value, l)
 {
     _clear = clear;
@@ -783,7 +801,8 @@ function::Result::Result(shared_ptr<Type> type, bool constant, Location l)
 {
 }
 
-type::Hook::Hook(shared_ptr<binpac::type::function::Result> result, const parameter_list& args, const Location& l)
+type::Hook::Hook(shared_ptr<binpac::type::function::Result> result, const parameter_list& args,
+                 const Location& l)
     : Function(result, args, type::function::BINPAC)
 {
 }
@@ -808,12 +827,13 @@ shared_ptr<binpac::Type> Bytes::elementType()
 
 std::list<trait::Parseable::ParseAttribute> Bytes::parseAttributes() const
 {
-    auto one = std::make_shared<expression::Constant>(std::make_shared<constant::Integer>(1, 64, false));
+    auto one =
+        std::make_shared<expression::Constant>(std::make_shared<constant::Integer>(1, 64, false));
 
     return {
-        { "chunked", std::make_shared<type::Integer>(64, false), one, false },
-        { "until", std::make_shared<type::Bytes>(), nullptr, false },
-        { "eod", nullptr, nullptr, false },
+        {"chunked", std::make_shared<type::Integer>(64, false), one, false},
+        {"until", std::make_shared<type::Bytes>(), nullptr, false},
+        {"eod", nullptr, nullptr, false},
     };
 }
 
@@ -825,7 +845,8 @@ File::File(const Location& l) : PacType(l)
 {
 }
 
-iterator::ContainerIterator::ContainerIterator(shared_ptr<Type> ctype, const Location& l) : Iterator(ctype)
+iterator::ContainerIterator::ContainerIterator(shared_ptr<Type> ctype, const Location& l)
+    : Iterator(ctype)
 {
 }
 
@@ -845,8 +866,7 @@ iterator::List::List(shared_ptr<Type> ctype, const Location& l) : ContainerItera
 {
 }
 
-List::List(shared_ptr<Type> etype, const Location& l)
-: TypedPacType(etype, l)
+List::List(shared_ptr<Type> etype, const Location& l) : TypedPacType(etype, l)
 {
 }
 
@@ -866,16 +886,13 @@ shared_ptr<binpac::Type> List::elementType()
 
 std::list<trait::Parseable::ParseAttribute> List::parseAttributes() const
 {
-    return {
-        { "count", std::make_shared<type::Integer>(64, false), nullptr, false },
-        { "until", std::make_shared<type::Bool>(), nullptr, false },
-        { "until_including", std::make_shared<type::Bool>(), nullptr, false },
-        { "while", std::make_shared<type::Bool>(), nullptr, false }
-    };
+    return {{"count", std::make_shared<type::Integer>(64, false), nullptr, false},
+            {"until", std::make_shared<type::Bool>(), nullptr, false},
+            {"until_including", std::make_shared<type::Bool>(), nullptr, false},
+            {"while", std::make_shared<type::Bool>(), nullptr, false}};
 }
 
-Vector::Vector(shared_ptr<Type> etype, const Location& l)
-: TypedPacType(etype, l)
+Vector::Vector(shared_ptr<Type> etype, const Location& l) : TypedPacType(etype, l)
 {
 }
 
@@ -893,8 +910,7 @@ shared_ptr<binpac::Type> Vector::elementType()
     return argType();
 }
 
-Set::Set(shared_ptr<Type> etype, const Location& l)
-: TypedPacType(etype, l)
+Set::Set(shared_ptr<Type> etype, const Location& l) : TypedPacType(etype, l)
 {
 }
 
@@ -912,10 +928,12 @@ shared_ptr<binpac::Type> Set::elementType()
     return argType();
 }
 
-Map::Map(shared_ptr<Type> key, shared_ptr<Type> value, const Location& l)
-: PacType(l)
+Map::Map(shared_ptr<Type> key, shared_ptr<Type> value, const Location& l) : PacType(l)
 {
-    _key = key; _value = value; addChild(_key); addChild(_value);
+    _key = key;
+    _value = value;
+    addChild(_key);
+    addChild(_value);
 }
 
 shared_ptr<binpac::Type> Map::iterType()
@@ -925,7 +943,7 @@ shared_ptr<binpac::Type> Map::iterType()
 
 shared_ptr<binpac::Type> Map::elementType()
 {
-    type_list types = { _key, _value };
+    type_list types = {_key, _value};
     return std::make_shared<Tuple>(types, location());
 }
 
@@ -972,7 +990,7 @@ trait::Parameterized::type_parameter_list RegExp::parameters() const
     if ( _attrs->has("&nosub") )
         flags = 1;
 
-    type_parameter_list params = { std::make_shared<trait::parameter::Integer>(flags) };
+    type_parameter_list params = {std::make_shared<trait::parameter::Integer>(flags)};
     return params;
 }
 
@@ -992,7 +1010,9 @@ Timer::Timer(const Location& l) : PacType(l)
 
 int unit::Item::Item::_id_counter = 0;
 
-unit::Item::Item(shared_ptr<ID> id, shared_ptr<Type> type, const hook_list& hooks, const attribute_list& attrs, const Location& l) : Node(l)
+unit::Item::Item(shared_ptr<ID> id, shared_ptr<Type> type, const hook_list& hooks,
+                 const attribute_list& attrs, const Location& l)
+    : Node(l)
 {
     if ( ! id ) {
         id = std::make_shared<ID>(util::fmt("__anon%d", ++_id_counter), l);
@@ -1132,15 +1152,10 @@ bool unit::Item::hooksEnabled()
     return _do_hooks != 0;
 }
 
-unit::item::Field::Field(shared_ptr<ID> id,
-                         shared_ptr<binpac::Type> type,
-                         Kind kind,
-                         shared_ptr<Expression> cond,
-                         const hook_list& hooks,
-                         const attribute_list& attrs,
-                         const expression_list& params,
-                         const expression_list& sinks,
-                         const Location& l)
+unit::item::Field::Field(shared_ptr<ID> id, shared_ptr<binpac::Type> type, Kind kind,
+                         shared_ptr<Expression> cond, const hook_list& hooks,
+                         const attribute_list& attrs, const expression_list& params,
+                         const expression_list& sinks, const Location& l)
     : Item(id, type, hooks, attrs, l)
 {
     _kind = kind;
@@ -1172,25 +1187,27 @@ shared_ptr<Type> unit::item::Field::fieldType()
     return ftype;
 }
 
-shared_ptr<unit::item::Field> unit::item::Field::createByType(shared_ptr<Type> type,
-                                                              shared_ptr<ID> id,
-                                                              Kind kind,
-                                                              shared_ptr<Expression> condition,
-                                                              const hook_list& hooks,
-                                                              const attribute_list& attributes,
-                                                              const expression_list& parameters,
-                                                              const expression_list& sinks,
-                                                              const Location& location)
+shared_ptr<unit::item::Field> unit::item::Field::createByType(
+    shared_ptr<Type> type, shared_ptr<ID> id, Kind kind, shared_ptr<Expression> condition,
+    const hook_list& hooks, const attribute_list& attributes, const expression_list& parameters,
+    const expression_list& sinks, const Location& location)
 {
     if ( auto unit = ast::tryCast<type::Unit>(type) )
-        return std::make_shared<type::unit::item::field::Unit>(id, unit, kind, condition, hooks, attributes, parameters, sinks, location);
+        return std::make_shared<type::unit::item::field::Unit>(id, unit, kind, condition, hooks,
+                                                               attributes, parameters, sinks,
+                                                               location);
 
     if ( auto list = ast::tryCast<type::List>(type) ) {
-        auto field = createByType(list->argType(), nullptr, kind, nullptr, hook_list(), attribute_list(), expression_list(), expression_list(), location);
-        return std::make_shared<type::unit::item::field::container::List>(id, field, kind, condition, hooks, attributes, sinks, location);
+        auto field = createByType(list->argType(), nullptr, kind, nullptr, hook_list(),
+                                  attribute_list(), expression_list(), expression_list(), location);
+        return std::make_shared<type::unit::item::field::container::List>(id, field, kind,
+                                                                          condition, hooks,
+                                                                          attributes, sinks,
+                                                                          location);
     }
 
-    return std::make_shared<type::unit::item::field::AtomicType>(id, type, kind, condition, hooks, attributes, sinks, location);
+    return std::make_shared<type::unit::item::field::AtomicType>(id, type, kind, condition, hooks,
+                                                                 attributes, sinks, location);
 }
 
 unit::item::Field::Kind unit::item::Field::kind() const
@@ -1254,14 +1271,10 @@ void unit::item::Field::setParent(Field* parent)
     _parent = parent;
 }
 
-unit::item::field::Constant::Constant(shared_ptr<ID> id,
-                                      shared_ptr<binpac::Constant> const_,
-                                      Kind kind,
-                                      shared_ptr<Expression> cond,
-                                      const hook_list& hooks,
-                                      const attribute_list& attrs,
-                                      const expression_list& sinks,
-                                      const Location& l)
+unit::item::field::Constant::Constant(shared_ptr<ID> id, shared_ptr<binpac::Constant> const_,
+                                      Kind kind, shared_ptr<Expression> cond,
+                                      const hook_list& hooks, const attribute_list& attrs,
+                                      const expression_list& sinks, const Location& l)
     : Field(id, const_->type(), kind, cond, hooks, attrs, expression_list(), sinks, l)
 {
     _const = const_;
@@ -1273,15 +1286,10 @@ shared_ptr<binpac::Constant> unit::item::field::Constant::constant() const
     return _const;
 }
 
-unit::item::field::Unknown::Unknown(shared_ptr<ID> id,
-                                    shared_ptr<binpac::ID> scope_id,
-                                    Kind kind,
-                                    shared_ptr<Expression> cond,
-                                    const hook_list& hooks,
-                                    const attribute_list& attrs,
-                                    const expression_list& params,
-                                    const expression_list& sinks,
-                                    const Location& l)
+unit::item::field::Unknown::Unknown(shared_ptr<ID> id, shared_ptr<binpac::ID> scope_id, Kind kind,
+                                    shared_ptr<Expression> cond, const hook_list& hooks,
+                                    const attribute_list& attrs, const expression_list& params,
+                                    const expression_list& sinks, const Location& l)
     : Field(id, nullptr, kind, cond, hooks, attrs, params, sinks, l)
 {
     _scope_id = scope_id;
@@ -1293,38 +1301,25 @@ shared_ptr<binpac::ID> unit::item::field::Unknown::scopeID() const
     return _scope_id;
 }
 
-unit::item::field::AtomicType::AtomicType(shared_ptr<ID> id,
-                                          shared_ptr<binpac::Type> type,
-                                          Kind kind,
-                                          shared_ptr<Expression> cond,
-                                          const hook_list& hooks,
-                                          const attribute_list& attrs,
-                                          const expression_list& sinks,
-                                          const Location& l)
+unit::item::field::AtomicType::AtomicType(shared_ptr<ID> id, shared_ptr<binpac::Type> type,
+                                          Kind kind, shared_ptr<Expression> cond,
+                                          const hook_list& hooks, const attribute_list& attrs,
+                                          const expression_list& sinks, const Location& l)
     : Field(id, type, kind, cond, hooks, attrs, expression_list(), sinks, l)
 {
 }
 
-unit::item::field::Unit::Unit(shared_ptr<ID> id,
-                              shared_ptr<binpac::Type> type,
-                              Kind kind,
-                              shared_ptr<Expression> cond,
-                              const hook_list& hooks,
-                              const attribute_list& attrs,
-                              const expression_list& params,
-                              const expression_list& sinks,
-                              const Location& l)
+unit::item::field::Unit::Unit(shared_ptr<ID> id, shared_ptr<binpac::Type> type, Kind kind,
+                              shared_ptr<Expression> cond, const hook_list& hooks,
+                              const attribute_list& attrs, const expression_list& params,
+                              const expression_list& sinks, const Location& l)
     : Field(id, type, kind, cond, hooks, attrs, params, sinks, l)
 {
 }
 
-unit::item::field::Ctor::Ctor(shared_ptr<ID> id,
-                              shared_ptr<binpac::Ctor> ctor,
-                              Kind kind,
-                              shared_ptr<Expression> cond,
-                              const hook_list& hooks,
-                              const attribute_list& attrs,
-                              const expression_list& sinks,
+unit::item::field::Ctor::Ctor(shared_ptr<ID> id, shared_ptr<binpac::Ctor> ctor, Kind kind,
+                              shared_ptr<Expression> cond, const hook_list& hooks,
+                              const attribute_list& attrs, const expression_list& sinks,
                               const Location& l)
     : Field(id, ctor->type(), kind, cond, hooks, attrs, expression_list(), sinks, l)
 {
@@ -1337,15 +1332,12 @@ shared_ptr<binpac::Ctor> unit::item::field::Ctor::ctor() const
     return _ctor;
 }
 
-unit::item::field::Container::Container(shared_ptr<ID> id,
-                                        shared_ptr<Field> field,
-                                        Kind kind,
-                                        shared_ptr<Expression> cond,
-                                        const hook_list& hooks,
-                                        const attribute_list& attrs,
-                                        const expression_list& sinks,
+unit::item::field::Container::Container(shared_ptr<ID> id, shared_ptr<Field> field, Kind kind,
+                                        shared_ptr<Expression> cond, const hook_list& hooks,
+                                        const attribute_list& attrs, const expression_list& sinks,
                                         const Location& l)
-    : Field(id, std::make_shared<type::Bytes>(), kind, cond, hooks, attrs, expression_list(), sinks, l)
+    : Field(id, std::make_shared<type::Bytes>(), kind, cond, hooks, attrs, expression_list(), sinks,
+            l)
 {
     _field = field;
     _field->scope()->setParent(scope());
@@ -1360,20 +1352,26 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
 
         auto self = std::make_shared<expression::ID>(std::make_shared<ID>("self", l), l);
         auto dd = std::make_shared<expression::ID>(std::make_shared<ID>("$$", l), l);
-        expression_list dd_list = { dd };
+        expression_list dd_list = {dd};
         auto params = std::make_shared<constant::Tuple>(dd_list, l);
-        auto name = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>(Item::id()->name(), l), l);
+        auto name =
+            std::make_shared<expression::MemberAttribute>(std::make_shared<ID>(Item::id()->name(),
+                                                                               l),
+                                                          l);
 
-        expression_list ops = { self, name };
+        expression_list ops = {self, name};
         auto op1 = std::make_shared<expression::UnresolvedOperator>(operator_::Attribute, ops, l);
-        auto op2 = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>("push_back", l), l);
+        auto op2 =
+            std::make_shared<expression::MemberAttribute>(std::make_shared<ID>("push_back", l), l);
         auto op3 = std::make_shared<expression::Constant>(params, l);
 
-        ops = { op1, op2, op3 };
-        auto push_back = std::make_shared<expression::UnresolvedOperator>(operator_::MethodCall, ops, l);
+        ops = {op1, op2, op3};
+        auto push_back =
+            std::make_shared<expression::UnresolvedOperator>(operator_::MethodCall, ops, l);
         body_push->addStatement(std::make_shared<statement::Expression>(push_back, l));
 
-        auto hook_push = std::make_shared<binpac::Hook>(body_push, binpac::Hook::PARSE, 254, false, true, parameter_list(), l);
+        auto hook_push = std::make_shared<binpac::Hook>(body_push, binpac::Hook::PARSE, 254, false,
+                                                        true, parameter_list(), l);
         addHook(hook_push);
     }
 
@@ -1392,19 +1390,22 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
         auto body = std::make_shared<statement::Block>(nullptr, l);
 
         if ( until )
-            body->addStatement(std::make_shared<statement::IfElse>(until->value(), stop, nullptr, l));
+            body->addStatement(
+                std::make_shared<statement::IfElse>(until->value(), stop, nullptr, l));
 
         if ( until_including )
-            body->addStatement(std::make_shared<statement::IfElse>(until_including->value(), stop, nullptr, l));
+            body->addStatement(
+                std::make_shared<statement::IfElse>(until_including->value(), stop, nullptr, l));
 
         if ( while_ ) {
-            expression_list ops = { while_->value() };
+            expression_list ops = {while_->value()};
             auto neg = std::make_shared<expression::UnresolvedOperator>(operator_::Not, ops, l);
             body->addStatement(std::make_shared<statement::IfElse>(neg, stop, nullptr, l));
         }
 
         auto prio = until_including ? -255 : 255;
-        auto hook = std::make_shared<binpac::Hook>(body, binpac::Hook::PARSE, prio, false, true, parameter_list(), l);
+        auto hook = std::make_shared<binpac::Hook>(body, binpac::Hook::PARSE, prio, false, true,
+                                                   parameter_list(), l);
         addHook(hook);
 
         if ( until )
@@ -1423,13 +1424,9 @@ shared_ptr<unit::item::Field> unit::item::field::Container::field() const
     return _field;
 }
 
-unit::item::field::container::List::List(shared_ptr<ID> id,
-                                         shared_ptr<Field> field,
-                                         Kind kind,
-                                         shared_ptr<Expression> cond,
-                                         const hook_list& hooks,
-                                         const attribute_list& attrs,
-                                         const expression_list& sinks,
+unit::item::field::container::List::List(shared_ptr<ID> id, shared_ptr<Field> field, Kind kind,
+                                         shared_ptr<Expression> cond, const hook_list& hooks,
+                                         const attribute_list& attrs, const expression_list& sinks,
                                          const Location& l)
     : Container(id, field, kind, cond, hooks, attrs, sinks, l)
 {
@@ -1446,15 +1443,11 @@ shared_ptr<binpac::Type> unit::item::field::container::List::type()
     return unit::Item::type();
 }
 
-unit::item::field::container::Vector::Vector(shared_ptr<ID> id,
-                                             shared_ptr<Field> field,
-                                             shared_ptr<Expression> length,
-                                             Kind kind,
-                                             shared_ptr<Expression> cond,
-                                             const hook_list& hooks,
+unit::item::field::container::Vector::Vector(shared_ptr<ID> id, shared_ptr<Field> field,
+                                             shared_ptr<Expression> length, Kind kind,
+                                             shared_ptr<Expression> cond, const hook_list& hooks,
                                              const attribute_list& attrs,
-                                             const expression_list& sinks,
-                                             const Location& l)
+                                             const expression_list& sinks, const Location& l)
     : Container(id, field, kind, cond, hooks, attrs, sinks, l)
 {
     _length = length;
@@ -1478,7 +1471,9 @@ shared_ptr<binpac::Type> unit::item::field::container::Vector::type()
     return unit::Item::type();
 }
 
-unit::item::field::switch_::Case::Case(const expression_list& exprs, shared_ptr<type::unit::item::Field> item, const Location& l) : Node(l)
+unit::item::field::switch_::Case::Case(const expression_list& exprs,
+                                       shared_ptr<type::unit::item::Field> item, const Location& l)
+    : Node(l)
 {
     for ( auto e : exprs )
         _exprs.push_back(e);
@@ -1490,7 +1485,9 @@ unit::item::field::switch_::Case::Case(const expression_list& exprs, shared_ptr<
     addChild(_items.front());
 }
 
-unit::item::field::switch_::Case::Case(const expression_list& exprs, const unit_field_list& items, const Location& l) : Node(l)
+unit::item::field::switch_::Case::Case(const expression_list& exprs, const unit_field_list& items,
+                                       const Location& l)
+    : Node(l)
 {
     for ( auto e : exprs )
         _exprs.push_back(e);
@@ -1505,7 +1502,8 @@ unit::item::field::switch_::Case::Case(const expression_list& exprs, const unit_
         addChild(i);
 }
 
-unit::item::field::switch_::Case::Case(shared_ptr<type::unit::item::Field> item, const Location& l) : Node(l)
+unit::item::field::switch_::Case::Case(shared_ptr<type::unit::item::Field> item, const Location& l)
+    : Node(l)
 {
     _default = true;
     _items.push_back(item);
@@ -1562,8 +1560,11 @@ std::string unit::item::field::switch_::Case::uniqueName()
     return ::util::uitoa_n(::util::hash(s), 62, 5);
 }
 
-unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, Kind kind, shared_ptr<Expression> cond, const hook_list& hooks, const Location& l)
-    : Field(nullptr, nullptr, kind, cond, hooks, attribute_list(), expression_list(), expression_list(), l)
+unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, Kind kind,
+                                  shared_ptr<Expression> cond, const hook_list& hooks,
+                                  const Location& l)
+    : Field(nullptr, nullptr, kind, cond, hooks, attribute_list(), expression_list(),
+            expression_list(), l)
 {
     _expr = expr;
     addChild(_expr);
@@ -1634,7 +1635,9 @@ std::string unit::item::field::Switch::uniqueName()
     return ::util::uitoa_n(::util::hash(s), 62, 5);
 }
 
-unit::item::Variable::Variable(shared_ptr<binpac::ID> id, shared_ptr<binpac::Type> type, shared_ptr<Expression> default_, const hook_list& hooks, const attribute_list& attrs, const Location& l)
+unit::item::Variable::Variable(shared_ptr<binpac::ID> id, shared_ptr<binpac::Type> type,
+                               shared_ptr<Expression> default_, const hook_list& hooks,
+                               const attribute_list& attrs, const Location& l)
     : Item(id, type, hooks, attrs, l)
 {
     if ( default_ )
@@ -1981,7 +1984,8 @@ bool Unit::ctorNoNames() const
     return true;
 }
 
-shared_ptr<binpac::Expression> Unit::inheritedProperty(const string& pname, shared_ptr<type::unit::Item> item)
+shared_ptr<binpac::Expression> Unit::inheritedProperty(const string& pname,
+                                                       shared_ptr<type::unit::Item> item)
 {
     shared_ptr<binpac::Expression> expr = nullptr;
 
@@ -2027,29 +2031,22 @@ Sink::~Sink()
 {
 }
 
-EmbeddedObject::EmbeddedObject(shared_ptr<Type> etype, const Location& l)
-    : TypedPacType(etype, l)
+EmbeddedObject::EmbeddedObject(shared_ptr<Type> etype, const Location& l) : TypedPacType(etype, l)
 {
 }
 
-EmbeddedObject::EmbeddedObject(const Location& l)
-    : TypedPacType(l)
+EmbeddedObject::EmbeddedObject(const Location& l) : TypedPacType(l)
 {
 }
 
-Mark::Mark(const Location& l)
-    : PacType(l)
+Mark::Mark(const Location& l) : PacType(l)
 {
 }
 
-Optional::Optional(shared_ptr<Type> type, const Location& l)
-    : TypedPacType(type, l)
+Optional::Optional(shared_ptr<Type> type, const Location& l) : TypedPacType(type, l)
 {
 }
 
-Optional::Optional(const Location& l)
-    : TypedPacType(l)
+Optional::Optional(const Location& l) : TypedPacType(l)
 {
 }
-
-

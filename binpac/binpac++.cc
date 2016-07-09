@@ -2,7 +2,9 @@
 #include "binpac++.h"
 
 // Automatically generated.
-namespace binpac { extern void __registerAllOperators(); }
+namespace binpac {
+extern void __registerAllOperators();
+}
 
 void binpac::init()
 {

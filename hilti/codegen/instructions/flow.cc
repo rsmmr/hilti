@@ -10,7 +10,7 @@ using namespace codegen;
 void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
 {
     auto func = current<declaration::Function>();
-    auto rtype = as<type::Function>(func->function()->type())->result()->type();
+    auto rtype = ast::rtti::checkedCast<type::Function>(func->function()->type())->result()->type();
     auto op1 = cg()->llvmValue(i->op1(), rtype);
     cg()->llvmBuildInstructionCleanup();
     cg()->llvmReturn(func->function()->type()->result()->type(), op1, false);
@@ -81,9 +81,7 @@ void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
 
         auto rtype = func ? func->function()->type()->result()->type() : nullptr;
 
-        if ( func
-             && ! ast::isA<type::Void>(rtype) ) {
-
+        if ( func && ! ast::rtti::isA<type::Void>(rtype) ) {
 #if 0
             // Doesn't work currently, see above.
             if ( is_reachable(this, i->sharedPtr<Statement>()) ) {
@@ -102,11 +100,12 @@ void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
     }
 }
 
-void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call)
+void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args,
+                                   CodeGen::expr_list* call_params, bool before_call)
 {
-    auto rtype = ast::tryCast<type::Reference>(func->type());
-    auto ftype = ast::checkedCast<type::Function>(rtype ? rtype->argType() : func->type());
-    auto expr = ast::checkedCast<expression::Constant>(args);
+    auto rtype = ast::rtti::tryCast<type::Reference>(func->type());
+    auto ftype = ast::rtti::checkedCast<type::Function>(rtype ? rtype->argType() : func->type());
+    auto expr = ast::rtti::checkedCast<expression::Constant>(args);
     auto params = ftype->parameters();
     auto p = params.begin();
 
@@ -116,7 +115,7 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
         // just to then disassemble it again (LLVM should be able to optimize the
         // overhead in any case, but it's better readable this way.)
 
-        for ( auto a : ast::as<constant::Tuple>(expr->constant())->value() ) {
+        for ( auto a : ast::rtti::tryCast<constant::Tuple>(expr->constant())->value() ) {
             call_params->push_back(a->coerceTo((*p)->type()));
             ++p;
         }
@@ -124,7 +123,7 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
 
     else {
         // Standard case: dissect the tuple struct.
-        auto ttype = ast::as<type::Tuple>(args->type());
+        auto ttype = ast::rtti::tryCast<type::Tuple>(args->type());
         auto tval = cg()->llvmValue(args);
 
         int i = 0;
@@ -156,7 +155,7 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
 void StatementBuilder::visit(statement::instruction::flow::CallVoid* i)
 {
     auto func = cg()->llvmValue(i->op1());
-    auto ftype = ast::as<type::Function>(i->op1()->type());
+    auto ftype = ast::rtti::tryCast<type::Function>(i->op1()->type());
 
     CodeGen::expr_list params;
     prepareCall(i->op1(), i->op2(), &params, true);
@@ -166,19 +165,20 @@ void StatementBuilder::visit(statement::instruction::flow::CallVoid* i)
 void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
 {
     auto func = cg()->llvmValue(i->op1());
-    auto ftype = ast::as<type::Function>(i->op1()->type());
+    auto ftype = ast::rtti::tryCast<type::Function>(i->op1()->type());
 
     CodeGen::expr_list params;
     prepareCall(i->op1(), i->op2(), &params, true);
     auto result = cg()->llvmCall(func, ftype, params);
 
-    auto var = ast::checkedCast<expression::Variable>(i->target());
+    auto var = ast::rtti::checkedCast<expression::Variable>(i->target());
 
-    if ( ast::isA<type::Any>(ftype->result()->type()) ) {
+    if ( ast::rtti::isA<type::Any>(ftype->result()->type()) ) {
         auto ttype = i->target()->type();
 
         if ( ftype->callingConvention() == type::function::HILTI_C ) {
-            auto casted = builder()->CreateBitCast(result, cg()->llvmTypePtr(cg()->llvmType(ttype)));
+            auto casted =
+                builder()->CreateBitCast(result, cg()->llvmTypePtr(cg()->llvmType(ttype)));
             result = builder()->CreateLoad(casted);
         }
 
@@ -186,8 +186,8 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
             result = cg()->builder()->CreateBitCast(result, cg()->llvmType(ttype));
     }
 
-    if ( (! ast::isA<variable::Local>(var->variable())) ||
-        cg()->hiltiModule()->liveness()->liveOut(i->sharedPtr<Statement>(), i->target()) )
+    if ( (! ast::rtti::isA<variable::Local>(var->variable())) ||
+         cg()->hiltiModule()->liveness()->liveOut(i->sharedPtr<Statement>(), i->target()) )
         cg()->llvmStore(i->target(), result, false);
 
     cg()->llvmDebugPrint("hilti-trace", "end-of-call-result");
@@ -195,7 +195,7 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
 
 void StatementBuilder::visit(statement::instruction::flow::CallCallableVoid* i)
 {
-    auto ctype = ast::as<type::Callable>(referencedType(i->op1()));
+    auto ctype = ast::rtti::tryCast<type::Callable>(referencedType(i->op1()));
 
     auto op1 = cg()->llvmValue(i->op1());
 
@@ -209,7 +209,7 @@ void StatementBuilder::visit(statement::instruction::flow::CallCallableVoid* i)
 
 void StatementBuilder::visit(statement::instruction::flow::CallCallableResult* i)
 {
-    auto ctype = ast::as<type::Callable>(referencedType(i->op1()));
+    auto ctype = ast::rtti::tryCast<type::Callable>(referencedType(i->op1()));
 
     auto op1 = cg()->llvmValue(i->op1());
 
@@ -263,16 +263,16 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
     auto default_ = llvm::cast<llvm::BasicBlock>(cg()->llvmValue(i->op2()));
-    auto a1 = ast::as<expression::Constant>(i->op3());
-    auto a2 = ast::as<constant::Tuple>(a1->constant());
+    auto a1 = ast::rtti::tryCast<expression::Constant>(i->op3());
+    auto a2 = ast::rtti::tryCast<constant::Tuple>(a1->constant());
 
     std::list<std::pair<llvm::Value*, llvm::BasicBlock*>> alts;
 
     bool all_const = true;
 
     for ( auto c : a2->value() ) {
-        auto c1 = ast::as<expression::Constant>(c);
-        auto c2 = ast::as<constant::Tuple>(c1->constant());
+        auto c1 = ast::rtti::tryCast<expression::Constant>(c);
+        auto c2 = ast::rtti::tryCast<constant::Tuple>(c1->constant());
 
         auto v = c2->value();
         auto j = v.begin();
@@ -285,7 +285,7 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
         alts.push_back(std::make_pair(val, block));
     }
 
-    if ( all_const && ast::isA<type::Integer>(i->op1()->type()) ) {
+    if ( all_const && ast::rtti::isA<type::Integer>(i->op1()->type()) ) {
         cg()->llvmBuildInstructionCleanup();
 
         // We optimize for constant integers here, for which LLVM directly
@@ -322,10 +322,12 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
 
         int n = 1;
         for ( auto a : alts ) {
-            cg()->llvmInstruction(cmp, instruction::operator_::Equal, i->op1(), builder::codegen::create(i->op1()->type(), a.first));
+            cg()->llvmInstruction(cmp, instruction::operator_::Equal, i->op1(),
+                                  builder::codegen::create(i->op1()->type(), a.first));
             auto next_block = cg()->newBuilder("switch-chain");
             auto found = cg()->newBuilder("switch-match");
-            cg()->builder()->CreateCondBr(cg()->llvmValue(cmp), found->GetInsertBlock(), next_block->GetInsertBlock());
+            cg()->builder()->CreateCondBr(cg()->llvmValue(cmp), found->GetInsertBlock(),
+                                          next_block->GetInsertBlock());
 
             cg()->pushBuilder(found);
             cg()->llvmCreateStore(cg()->llvmConstInt(n++, 64), destination);
@@ -342,7 +344,8 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
         cg()->llvmBuildInstructionCleanup();
 
         // Do the indirect branch.
-        auto switch_ = cg()->builder()->CreateSwitch(cg()->builder()->CreateLoad(destination), default_);
+        auto switch_ =
+            cg()->builder()->CreateSwitch(cg()->builder()->CreateLoad(destination), default_);
 
         n = 1;
         for ( auto a : alts )
@@ -355,14 +358,14 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
 void StatementBuilder::visit(statement::instruction::flow::DispatchUnion* i)
 {
     auto default_ = llvm::cast<llvm::BasicBlock>(cg()->llvmValue(i->op2()));
-    auto a1 = ast::as<expression::Constant>(i->op3());
-    auto a2 = ast::as<constant::Tuple>(a1->constant());
+    auto a1 = ast::rtti::tryCast<expression::Constant>(i->op3());
+    auto a2 = ast::rtti::tryCast<constant::Tuple>(a1->constant());
 
     std::list<std::pair<llvm::Value*, llvm::BasicBlock*>> alts;
 
     for ( auto c : a2->value() ) {
-        auto c1 = ast::as<expression::Constant>(c);
-        auto c2 = ast::as<constant::Tuple>(c1->constant());
+        auto c1 = ast::rtti::tryCast<expression::Constant>(c);
+        auto c2 = ast::rtti::tryCast<constant::Tuple>(c1->constant());
 
         auto v = c2->value();
         auto j = v.begin();
@@ -378,9 +381,8 @@ void StatementBuilder::visit(statement::instruction::flow::DispatchUnion* i)
     auto done = cg()->newBuilder("dispatch-done");
 
     auto addr = cg()->llvmValueAddress(i->op1());
-    CodeGen::value_list args = { cg()->llvmRtti(i->op1()->type()),
-                                 cg()->builder()->CreateBitCast(addr, cg()->llvmTypePtr())
-                               };
+    CodeGen::value_list args = {cg()->llvmRtti(i->op1()->type()),
+                                cg()->builder()->CreateBitCast(addr, cg()->llvmTypePtr())};
 
     auto union_type = cg()->llvmCallC("__hlt_union_type", args, false, false);
 
@@ -390,8 +392,7 @@ void StatementBuilder::visit(statement::instruction::flow::DispatchUnion* i)
     int n = 1;
 
     for ( auto a : alts ) {
-
-        CodeGen::value_list args = { union_type, a.first };
+        CodeGen::value_list args = {union_type, a.first};
         auto match = cg()->llvmCallC("__hlt_type_equal", args, false, false);
         auto next_block = cg()->newBuilder("dispatch-chain");
         auto found = cg()->newBuilder("dispatch-match");
@@ -403,7 +404,7 @@ void StatementBuilder::visit(statement::instruction::flow::DispatchUnion* i)
         cg()->popBuilder();
 
         cg()->pushBuilder(next_block);
-        }
+    }
 
     cg()->builder()->CreateBr(done->GetInsertBlock());
 
@@ -412,7 +413,8 @@ void StatementBuilder::visit(statement::instruction::flow::DispatchUnion* i)
     cg()->llvmBuildInstructionCleanup();
 
     // Do the indirect branch.
-    auto switch_ = cg()->builder()->CreateSwitch(cg()->builder()->CreateLoad(destination), default_);
+    auto switch_ =
+        cg()->builder()->CreateSwitch(cg()->builder()->CreateLoad(destination), default_);
 
     n = 1;
     for ( auto a : alts )
@@ -420,4 +422,3 @@ void StatementBuilder::visit(statement::instruction::flow::DispatchUnion* i)
 
     cg()->popBuilder();
 }
-

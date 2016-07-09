@@ -1,9 +1,9 @@
 
 #include "ctor.h"
-#include "id.h"
 #include "expression.h"
-#include "type.h"
+#include "id.h"
 #include "passes/printer.h"
+#include "type.h"
 
 using namespace binpac;
 using namespace binpac::ctor;
@@ -137,7 +137,9 @@ expression_list Set::elements() const
     return elems;
 }
 
-Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l) : Ctor(l)
+Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems,
+         const Location& l)
+    : Ctor(l)
 {
     assert(ktype);
     assert(vtype);
@@ -174,7 +176,7 @@ Map::element_list Map::elements() const
 
 RegExp::RegExp(const string& regexp, const attribute_list& attrs, const Location& l) : Ctor(l)
 {
-    _patterns = { regexp };
+    _patterns = {regexp};
     _attributes = attrs;
     _type = std::make_shared<type::RegExp>(l);
 }
@@ -226,7 +228,8 @@ Unit::Unit(const item_list& items, const Location& l) : Ctor(l)
         if ( no_id )
             id = std::make_shared<ID>(::util::fmt("_i%d", ++cnt));
 
-        auto ui = std::make_shared<type::unit::item::Variable>(id, type, def, hook_list(), attribute_list(), location());
+        auto ui = std::make_shared<type::unit::item::Variable>(id, type, def, hook_list(),
+                                                               attribute_list(), location());
 
         if ( no_id )
             ui->setCtorNoName();

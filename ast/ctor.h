@@ -10,9 +10,8 @@ namespace ast {
 
 /// Base class for AST nodes representing constructed (but non-constant)
 /// values..
-template<typename AstInfo>
-class Ctor : public AstInfo::node
-{
+template <typename AstInfo>
+class Ctor : public AstInfo::node {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::visitor_interface VisitorInterface;
@@ -20,8 +19,9 @@ public:
     // Constructor.
     //
     /// l: A location associated with the ctor.
-    Ctor(const Location& l=Location::None)
-       : AstInfo::node(l) {}
+    Ctor(const Location& l = Location::None) : AstInfo::node(l)
+    {
+    }
 
     /// Returns the type of the ctor. Must be overriden by derived
     /// classes.
@@ -29,7 +29,6 @@ public:
 
     ACCEPT_DISABLED;
 };
-
 }
 
 #endif

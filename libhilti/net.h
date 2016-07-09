@@ -29,23 +29,25 @@ extern int8_t hlt_net_is_v6(hlt_net net, hlt_exception** excpt, hlt_execution_co
 /// net: The network to convert.
 ///
 /// excpt: &
-/// ctx: & 
-extern struct in_addr hlt_net_to_in4(hlt_net net, hlt_exception** excpt, hlt_execution_context* ctx);
+/// ctx: &
+extern struct in_addr hlt_net_to_in4(hlt_net net, hlt_exception** excpt,
+                                     hlt_execution_context* ctx);
 
 /// Converts a network's prefix into an \c in6_addr representation.
 ///
 /// net: The network to convert.
 ///
 /// excpt: &
-/// ctx: & 
-extern struct in6_addr hlt_net_to_in6(hlt_net net, hlt_exception** excpt, hlt_execution_context* ctx);
+/// ctx: &
+extern struct in6_addr hlt_net_to_in6(hlt_net net, hlt_exception** excpt,
+                                      hlt_execution_context* ctx);
 
 /// Returns the length's of a network's prefix.
 ///
 /// net: The network to return the length for.
 ///
 /// excpt: &
-/// ctx: & 
+/// ctx: &
 extern uint8_t hlt_net_length(hlt_net net, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts a IPv4 \c in_addr into a network.
@@ -55,7 +57,8 @@ extern uint8_t hlt_net_length(hlt_net net, hlt_exception** excpt, hlt_execution_
 /// len: The length of the network.
 ///
 /// excpt: &
-extern hlt_net hlt_net_from_in4(struct in_addr in, uint8_t length, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_net hlt_net_from_in4(struct in_addr in, uint8_t length, hlt_exception** excpt,
+                                hlt_execution_context* ctx);
 
 /// Converts a IPv6 \c in6_addr into a network.
 ///
@@ -64,10 +67,12 @@ extern hlt_net hlt_net_from_in4(struct in_addr in, uint8_t length, hlt_exception
 /// len: The length of the network.
 ///
 /// excpt: &
-extern hlt_net hlt_net_from_in6(struct in6_addr in, uint8_t length, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_net hlt_net_from_in6(struct in6_addr in, uint8_t length, hlt_exception** excpt,
+                                hlt_execution_context* ctx);
 
 /// XXX
-extern hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                                    __hlt_pointer_stack* seen, hlt_exception** excpt,
+                                    hlt_execution_context* ctx);
 
 #endif
-

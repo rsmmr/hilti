@@ -41,7 +41,7 @@ bool MetaInfo::has(const string& key)
 shared_ptr<MetaNode> MetaInfo::lookup(const string& key) const
 {
     auto i = _nodes.find(key);
-    return i != _nodes.end() ? (*i).second: nullptr;
+    return i != _nodes.end() ? (*i).second : nullptr;
 }
 
 std::list<shared_ptr<MetaNode>> MetaInfo::lookupAll(const string& key) const

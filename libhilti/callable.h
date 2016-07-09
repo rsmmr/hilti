@@ -5,9 +5,9 @@
 #define HLT_CALLABLE_H
 
 #include "memory_.h"
-#include "types.h"
 #include "rtti.h"
 #include "threading.h"
+#include "types.h"
 
 // Static part of callable description. This is function-specific but not
 // argument specific.
@@ -16,10 +16,12 @@
 //
 // TODO: This would be better move into RTTI.
 typedef struct {
-    void* run;   // Run function with HILTI linkage.
-    void* run_c; // Run function with HILTI-C linkage that can be called from C via HLT_CALLABLE_RUN.
+    void* run; // Run function with HILTI linkage.
+    void*
+        run_c; // Run function with HILTI-C linkage that can be called from C via HLT_CALLABLE_RUN.
     void (*dtor)(hlt_callable* callable, hlt_execution_context* ctx); // Dtor function.
-    void (*clone_init)(hlt_callable* dst, hlt_callable* src, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx); // Clone init function.
+    void (*clone_init)(hlt_callable* dst, hlt_callable* src, __hlt_clone_state* cstate,
+                       hlt_exception** excpt, hlt_execution_context* ctx); // Clone init function.
     int64_t object_size; // Total size of the __hlt_callable object.
 } __hlt_callable_func;
 
@@ -27,8 +29,8 @@ typedef struct {
 //
 // Adapt hlt.callable when making changes here!
 struct __hlt_callable {
-    __hlt_gchdr __gch;                     // Header for garbage collection.
-    __hlt_callable_func* __func;           // Pointer to the set of function for the callable.
+    __hlt_gchdr __gch;           // Header for garbage collection.
+    __hlt_callable_func* __func; // Pointer to the set of function for the callable.
     // ;                                   // Arguments follow here in memory.
 };
 
@@ -44,7 +46,7 @@ struct __hlt_callable {
 /// declaring a HILTI type \c "type Foo = callable<int, string>" and then running \c "hiltic -P".
 ///
 /// args: The arguments to the callable, with the standard addtional HILTI-C arguments.
-#define HLT_CALLABLE_RUN(callable, target, prototype, ...) \
-   (*(prototype)((callable)->__func->run_c))((callable), target, __VA_ARGS__)
+#define HLT_CALLABLE_RUN(callable, target, prototype, ...)                                         \
+    (*(prototype)((callable)->__func->run_c))((callable), target, __VA_ARGS__)
 
 #endif

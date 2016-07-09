@@ -1,17 +1,18 @@
 
 #include <algorithm>
 
-#include <sys/time.h>
-#include <sys/stat.h>
 #include <execinfo.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/time.h>
 
 #include "util.h"
 
 namespace utf8 {
 // We include these here directly, and withan a namespace, so that the
 // function names don't clash with those in libhilti-rt.
-#include "3rdparty/utf8proc/utf8proc.h"
 #include "3rdparty/utf8proc/utf8proc.c"
+#include "3rdparty/utf8proc/utf8proc.h"
 }
 
 using namespace util;
@@ -86,8 +87,11 @@ string util::strtoupper(const string& s)
 string util::strtrim(const string& s)
 {
     auto t = s;
-    t.erase(t.begin(), std::find_if(t.begin(), t.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
-    t.erase(std::find_if(t.rbegin(), t.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), t.end());
+    t.erase(t.begin(),
+            std::find_if(t.begin(), t.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    t.erase(std::find_if(t.rbegin(), t.rend(), std::not1(std::ptr_fun<int, int>(std::isspace)))
+                .base(),
+            t.end());
     return t;
 }
 
@@ -103,7 +107,7 @@ uint64_t util::hash(const char* data, size_t len)
     while ( len-- )
         h = (h << 5) - h + (uint64_t)*data++;
 
-	return h;
+    return h;
 }
 
 string util::uitoa_n(uint64_t value, int base, int n)
@@ -114,12 +118,12 @@ string util::uitoa_n(uint64_t value, int base, int n)
 
     string s;
 
-	do {
-		s.append(1, dig[value % base]);
-		value /= base;
-	} while ( value && (n < 0 || s.size() < n - 1 ));
+    do {
+        s.append(1, dig[value % base]);
+        value /= base;
+    } while ( value && (n < 0 || s.size() < n - 1) );
 
-	return s;
+    return s;
 }
 
 bool util::pathExists(const string& path)
@@ -161,7 +165,6 @@ string util::expandEscapes(const string& s)
     string d;
 
     for ( auto c = s.begin(); c != s.end(); ) {
-
         if ( *c != '\\' ) {
             d += *c++;
             continue;
@@ -173,77 +176,76 @@ string util::expandEscapes(const string& s)
             throw std::runtime_error("broken escape sequence");
 
         switch ( *c++ ) {
-         case '\\':
+        case '\\':
             d += '\\';
             break;
 
-         case '"':
+        case '"':
             d += '"';
             break;
 
-         case 'n':
+        case 'n':
             d += '\n';
             break;
 
-         case 'r':
+        case 'r':
             d += '\r';
             break;
 
-         case 't':
+        case 't':
             d += '\t';
             break;
 
-         case 'u': {
-             int32_t val;
-             auto end = c + 4;
-             c = atoi_n(c, end, 16, &val);
+        case 'u': {
+            int32_t val;
+            auto end = c + 4;
+            c = atoi_n(c, end, 16, &val);
 
-             if ( c != end )
-                 throw std::runtime_error("cannot decode character");
+            if ( c != end )
+                throw std::runtime_error("cannot decode character");
 
-             uint8_t tmp[4];
-             int len = utf8::utf8proc_encode_char(val, tmp);
+            uint8_t tmp[4];
+            int len = utf8::utf8proc_encode_char(val, tmp);
 
-             if ( ! len )
-                 throw std::runtime_error("cannot encode unicode code point");
+            if ( ! len )
+                throw std::runtime_error("cannot encode unicode code point");
 
-             d.append((char *)tmp, len);
-             break;
-         }
+            d.append((char*)tmp, len);
+            break;
+        }
 
-         case 'U': {
-             int32_t val;
-             auto end = c + 8;
-             c = atoi_n(c, end, 16, &val);
+        case 'U': {
+            int32_t val;
+            auto end = c + 8;
+            c = atoi_n(c, end, 16, &val);
 
-             if ( c != end )
-                 throw std::runtime_error("cannot decode character");
+            if ( c != end )
+                throw std::runtime_error("cannot decode character");
 
-             uint8_t tmp[4];
-             int len = utf8::utf8proc_encode_char(val, tmp);
+            uint8_t tmp[4];
+            int len = utf8::utf8proc_encode_char(val, tmp);
 
-             if ( ! len )
-                 throw std::runtime_error("cannot encode unicode code point");
+            if ( ! len )
+                throw std::runtime_error("cannot encode unicode code point");
 
-             d.append((char *)tmp, len);
-             break;
-         }
+            d.append((char*)tmp, len);
+            break;
+        }
 
-         case 'x': {
-             char val;
-             auto end = c + 2;
-             c = atoi_n(c, end, 16, &val);
+        case 'x': {
+            char val;
+            auto end = c + 2;
+            c = atoi_n(c, end, 16, &val);
 
-             if ( c != end )
-                 throw std::runtime_error("cannot decode character");
+            if ( c != end )
+                throw std::runtime_error("cannot decode character");
 
-             d.append(&val, 1);
-             break;
-         }
+            d.append(&val, 1);
+            break;
+        }
 
-         default:
+        default:
             throw std::runtime_error("unknown escape sequence");
-
         }
     }
 
@@ -260,7 +262,7 @@ string util::escapeUTF8(const string& s)
     while ( p < e ) {
         int32_t cp;
 
-        ssize_t n = utf8::utf8proc_iterate((const uint8_t *)p, e - p, &cp);
+        ssize_t n = utf8::utf8proc_iterate((const uint8_t*)p, e - p, &cp);
 
         if ( n < 0 ) {
             esc += "<illegal UTF8 sequence>";
@@ -369,7 +371,7 @@ string util::basename(const string& path)
     if ( i == string::npos )
         return path;
 
-    return path.substr(i+1, string::npos);
+    return path.substr(i + 1, string::npos);
 }
 
 bool util::makeDir(const string& path)

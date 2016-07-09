@@ -1,13 +1,13 @@
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
-#include "hook.h"
 #include "globals.h"
-#include "threading.h"
+#include "hook.h"
 #include "memory_.h"
+#include "threading.h"
 
 // A table defining the hooks' state, which currently consists of the
 // information which groups are enabled. The global hook state is defined in
@@ -45,7 +45,8 @@ void __hlt_hooks_done()
     hlt_free(__hlt_globals()->hook_state);
 }
 
-void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     assert(group >= 0);
     assert(__hlt_globals()->hook_state);
@@ -59,10 +60,13 @@ void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception** excpt,
         int64_t old_size = __hlt_globals()->hook_state->size;
         int64_t new_size = n + 1;
 
-        __hlt_globals()->hook_state->state = hlt_realloc(__hlt_globals()->hook_state->state, new_size * sizeof(int32_t), old_size * sizeof(int32_t));
+        __hlt_globals()->hook_state->state =
+            hlt_realloc(__hlt_globals()->hook_state->state, new_size * sizeof(int32_t),
+                        old_size * sizeof(int32_t));
 
         // Default is enabled.
-        memset(__hlt_globals()->hook_state->state + old_size, 255, (new_size - old_size)  * sizeof(int32_t));
+        memset(__hlt_globals()->hook_state->state + old_size, 255,
+               (new_size - old_size) * sizeof(int32_t));
         __hlt_globals()->hook_state->size = new_size;
     }
 
@@ -73,7 +77,6 @@ void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception** excpt,
     else
         __hlt_globals()->hook_state->state[n] &= ~bit;
 
-exit:
     if ( hlt_is_multi_threaded() && pthread_mutex_unlock(&__hlt_globals()->hook_state_lock) != 0 )
         _fatal_error("cannot release lock");
 }
@@ -95,4 +98,3 @@ int8_t hlt_hook_group_is_enabled(int64_t group, hlt_exception** excpt, hlt_execu
 
     return (__hlt_globals()->hook_state->state[n] & bit) != 0;
 }
-

@@ -3,7 +3,7 @@
 
 extern int _initialized;
 
-static __binpac_globals  _our_globals;
+static __binpac_globals _our_globals;
 __binpac_globals* _globals = 0;
 
 __binpac_globals* __binpac_globals_get()
@@ -26,7 +26,8 @@ void __binpac_globals_init()
     _globals->parsers = hlt_list_new(&hlt_type_info_hlt_BinPACHilti_Parser, 0, &excpt, ctx);
     GC_CCTOR(_globals->parsers, hlt_list, ctx);
 
-    _globals->mime_types = hlt_map_new(&hlt_type_info_hlt_bytes, &hlt_type_info___mime_parser, 0, &excpt, ctx);
+    _globals->mime_types =
+        hlt_map_new(&hlt_type_info_hlt_bytes, &hlt_type_info___mime_parser, 0, &excpt, ctx);
     GC_CCTOR(_globals->mime_types, hlt_map, ctx);
 
     _globals->debugging = 0;
@@ -41,8 +42,6 @@ void __binpac_globals_done()
 
 void __binpac_globals_set(__binpac_globals* state)
 {
-    assert(!_globals);
+    assert(! _globals);
     _globals = state;
 }
-
-

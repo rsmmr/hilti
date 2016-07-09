@@ -1,4 +1,6 @@
 
+include(DefaultCompilerSettings)
+
 add_library (ast OBJECT
     exception.cc
     location.cc
@@ -7,5 +9,8 @@ add_library (ast OBJECT
     node.cc
     type.cc
     visitor.cc
+    rtti.cc
 )
+
+include(ShowCompilerSettings)
 

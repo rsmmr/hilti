@@ -3,13 +3,13 @@
 
 #include "../hilti.h"
 
-#include "type-builder.h"
-#include "codegen.h"
 #include "../passes/printer.h"
+#include "codegen.h"
+#include "type-builder.h"
 
-#include "../../libhilti/rtti.h"
-#include "../../libhilti/port.h"
 #include "../../libhilti/enum.h"
+#include "../../libhilti/port.h"
+#include "../../libhilti/rtti.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -18,20 +18,17 @@ PointerMap::PointerMap(CodeGen* cg, hilti::Type* type)
 {
     _cg = cg;
 
-    auto tl = type::asTrait<type::trait::TypeList>(type);
-
-    if ( ! tl )
-        cg->internalError("Type passed to PointerMap TypeList ctor is not a TypeList");
+    auto tl = ast::type::checkedTrait<type::trait::TypeList>(type);
 
     std::vector<llvm::Type*> fields;
 
-    if ( type::hasTrait<type::trait::GarbageCollected>(type) )
+    if ( ast::type::hasTrait<type::trait::GarbageCollected>(type) )
         fields.push_back(cg->llvmLibType("hlt.ref_cnt"));
 
     std::list<int> ptr_indices;
 
     for ( auto t : tl->typeList() ) {
-        if ( type::hasTrait<type::trait::GarbageCollected>(t) )
+        if ( ast::type::hasTrait<type::trait::GarbageCollected>(t) )
             ptr_indices.push_back(fields.size());
         fields.push_back(cg->llvmType(t));
     }
@@ -54,7 +51,7 @@ llvm::Constant* PointerMap::llvmMap()
     return _cg->llvmAddConst("ptrmap", cval);
 }
 
-TypeBuilder::TypeBuilder(CodeGen* cg) : CGVisitor<TypeInfo *, bool>(cg, "codegen::TypeBuilder")
+TypeBuilder::TypeBuilder(CodeGen* cg) : CGVisitor<TypeInfo*, bool>(cg, "codegen::TypeBuilder")
 {
 }
 
@@ -85,6 +82,7 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_onl
     TypeInfo* ti;
     bool success = processOne(type, &ti);
     assert(success);
+    _UNUSED(success);
 
 #ifdef DEBUG
     if ( ! ti ) {
@@ -99,18 +97,18 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_onl
     if ( ! ti->llvm_type && ti->lib_type.size() ) {
         ti->llvm_type = cg()->llvmLibType(ti->lib_type);
 
-        if ( type::hasTrait<type::trait::HeapType>(type) )
+        if ( ast::type::hasTrait<type::trait::HeapType>(type) )
             ti->llvm_type = cg()->llvmTypePtr(ti->llvm_type);
     }
 
-    if ( type::hasTrait<type::trait::HeapType>(type) ) {
+    if ( ast::type::hasTrait<type::trait::HeapType>(type) ) {
         ti->obj_dtor = ti->dtor;
         ti->obj_dtor_func = ti->dtor_func;
         ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
         ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
     }
 
-    if ( type::hasTrait<type::trait::GarbageCollected>(type) ) {
+    if ( ast::type::hasTrait<type::trait::GarbageCollected>(type) ) {
         if ( ! ti->cctor_func )
             ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
 
@@ -118,8 +116,8 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_onl
             ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
     }
 
-    if ( type::hasTrait<type::trait::Hashable>(type) &&
-         type::hasTrait<type::trait::ValueType>(type) ) {
+    if ( ast::type::hasTrait<type::trait::Hashable>(type) &&
+         ast::type::hasTrait<type::trait::ValueType>(type) ) {
         if ( ti->hash == "" )
             ti->hash = "hlt::default_hash";
 
@@ -137,41 +135,45 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_onl
         ti->name = s.str();
     }
 
-    if ( ti->llvm_type && ! ti->init_val && type::hasTrait<type::trait::ValueType>(type) )
+    if ( ti->llvm_type && ! ti->init_val && ast::type::hasTrait<type::trait::ValueType>(type) )
         ti->init_val = cg()->llvmConstNull(ti->llvm_type);
 
     if ( ! ti )
-        internalError(::util::fmt("typeInfo() not available for type '%s'", type->render().c_str()));
+        internalError(
+            ::util::fmt("typeInfo() not available for type '%s'", type->render().c_str()));
 
     if ( ! ti->llvm_type && ti->init_val )
         ti->llvm_type = ti->init_val->getType();
 
     if ( ti->id == HLT_TYPE_ERROR )
-        internalError(::util::fmt("type info for type %s does not set an RTTI id", type->render().c_str()));
+        internalError(
+            ::util::fmt("type info for type %s does not set an RTTI id", type->render().c_str()));
 
-    if ( ast::isA<type::HiltiType>(type) && ! ti->llvm_type )
-        internalError(::util::fmt("type info for %s does not define an llvm_type", ti->name.c_str()));
+    if ( ast::rtti::isA<type::HiltiType>(type) && ! ti->llvm_type )
+        internalError(
+            ::util::fmt("type info for %s does not define an llvm_type", ti->name.c_str()));
 
-    if ( type::hasTrait<type::trait::ValueType>(type) && ! ti->init_val )
-        internalError(::util::fmt("type info for %s does not define an init value", ti->name.c_str()));
+    if ( ast::type::hasTrait<type::trait::ValueType>(type) && ! ti->init_val )
+        internalError(
+            ::util::fmt("type info for %s does not define an init value", ti->name.c_str()));
 
 #if 0
-    if ( type::hasTrait<type::trait::GarbageCollected>(type) && ! ti->ptr_map )
+    if ( ast::type::hasTrait<type::trait::GarbageCollected>(type) && ! ti->ptr_map )
         internalError(::util::fmt("type info for %s does not define a ptr map", ti->name.c_str()));
 
-    if ( type::hasTrait<type::trait::GarbageCollected>(type) && ! ti->dtor )
+    if ( ast::type::hasTrait<type::trait::GarbageCollected>(type) && ! ti->dtor )
         internalError(::util::fmt("type info for %s does not define a dtor function", ti->name.c_str()));
 #endif
 
     if ( ! llvm_type_only )
-        _ti_cache.insert(make_tuple(type, ti));
+        _ti_cache.insert(make_pair(type, ti));
 
     return ti;
 }
 
 llvm::Type* TypeBuilder::llvmType(shared_ptr<Type> type)
 {
-    auto rtype = ast::as<type::Reference>(type);
+    auto rtype = ast::rtti::tryCast<type::Reference>(type);
 
     if ( rtype && ! rtype->wildcard() )
         // For references, "unwrap" directly here to avoid recursion trouble
@@ -200,13 +202,13 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     int gc = 0;
     int atomic = 0;
 
-    auto rt = ast::as<type::Reference>(type);
+    auto rt = ast::rtti::tryCast<type::Reference>(type);
 
-    if ( type::hasTrait<type::trait::GarbageCollected>(type)
-         || (rt && type::hasTrait<type::trait::GarbageCollected>(rt->argType())) )
+    if ( ast::type::hasTrait<type::trait::GarbageCollected>(type) ||
+         (rt && ast::type::hasTrait<type::trait::GarbageCollected>(rt->argType())) )
         gc = 1;
 
-    if ( type::hasTrait<type::trait::Atomic>(type) )
+    if ( ast::type::hasTrait<type::trait::Atomic>(type) )
         atomic = 1;
 
     auto ti = typeInfo(type);
@@ -214,25 +216,31 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     llvm::Constant* sizeof_ = nullptr;
 
     if ( ti->init_val )
-        sizeof_ = llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->init_val), cg()->llvmTypeInt(16));
+        sizeof_ =
+            llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->init_val), cg()->llvmTypeInt(16));
     else
         sizeof_ = cg()->llvmConstInt(0, 16);
 
     llvm::Constant* object_size = nullptr;
 
     if ( gc && ti->object_type )
-        object_size = llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->object_type), cg()->llvmTypeInt(16));
+        object_size =
+            llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->object_type), cg()->llvmTypeInt(16));
     else
         object_size = cg()->llvmConstInt(0, 16);
 
-    if ( ti->atomic && (ti->clone_init.size() || ti->clone_init_func || ti->clone_alloc.size() || ti->clone_alloc_func) )
-        internalError(::util::fmt("clone function(s) specified for atomic type '%s'", type->render().c_str()));
+    if ( ti->atomic && (ti->clone_init.size() || ti->clone_init_func || ti->clone_alloc.size() ||
+                        ti->clone_alloc_func) )
+        internalError(::util::fmt("clone function(s) specified for atomic type '%s'",
+                                  type->render().c_str()));
 
-    if ( ti->atomic && (ti->obj_dtor.size() || ti->obj_dtor_func || ti->cctor_func || ti->dtor_func) )
-        internalError(::util::fmt("ctor or dtor function(s) specified for atomic type '%s'", type->render().c_str()));
+    if ( ti->atomic &&
+         (ti->obj_dtor.size() || ti->obj_dtor_func || ti->cctor_func || ti->dtor_func) )
+        internalError(::util::fmt("ctor or dtor function(s) specified for atomic type '%s'",
+                                  type->render().c_str()));
 
     // Ok if not the right type here.
-    shared_ptr<type::trait::Parameterized> ptype = std::dynamic_pointer_cast<type::trait::Parameterized>(ti->type);
+    auto ptype = ast::type::tryTrait<type::trait::Parameterized>(ti->type);
 
     int num_params = 0;
 
@@ -285,10 +293,10 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     if ( ptype ) {
         // Add type parameters.
         for ( auto p : ptype->parameters() ) {
-            auto pt = dynamic_cast<type::trait::parameter::Type *>(p.get());
-            auto pi = dynamic_cast<type::trait::parameter::Integer *>(p.get());
-            auto pe = dynamic_cast<type::trait::parameter::Enum *>(p.get());
-            auto pa = dynamic_cast<type::trait::parameter::Attribute *>(p.get());
+            auto pt = ast::rtti::tryCast<type::trait::parameter::Type>(p.get());
+            auto pi = ast::rtti::tryCast<type::trait::parameter::Integer>(p.get());
+            auto pe = ast::rtti::tryCast<type::trait::parameter::Enum>(p.get());
+            auto pa = ast::rtti::tryCast<type::trait::parameter::Attribute>(p.get());
 
             if ( pt ) {
                 if ( ! _rtti_type_only )
@@ -303,7 +311,7 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
             else if ( pe ) {
                 auto expr = cg()->hiltiModule()->body()->scope()->lookupUnique(pe->label());
                 assert(expr);
-                auto val = ast::as<type::Enum>(expr->type())->labelValue(pe->label());
+                auto val = ast::rtti::tryCast<type::Enum>(expr->type())->labelValue(pe->label());
                 vals.push_back(cg()->llvmConstInt(val, 64));
             }
 
@@ -439,7 +447,8 @@ void TypeBuilder::visit(type::iterator::IOSource* i)
     // If we just lookup hlt.iterator.iosrc, we get type conflicts due to
     // LLVM's type unification. So we build it manually.
     auto src_type = cg()->llvmTypePtr(cg()->llvmLibType("hlt.iosrc"));
-    CodeGen::type_list iter_fields = { src_type, cg()->llvmTypeInt(64), cg()->llvmTypePtr(cg()->llvmLibType("hlt.bytes")) };
+    CodeGen::type_list iter_fields = {src_type, cg()->llvmTypeInt(64),
+                                      cg()->llvmTypePtr(cg()->llvmLibType("hlt.bytes"))};
     auto iter_type = cg()->llvmTypeStruct("", iter_fields);
 
     TypeInfo* ti = new TypeInfo(i);
@@ -487,15 +496,16 @@ llvm::Function* TypeBuilder::_makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, b
 
     // Build tuple type. Can't use llvmType() as that would recurse.
     std::vector<llvm::Type*> fields;
-    for ( auto t : t->typeList() )
-        fields.push_back(cg->llvmType(t));
+    for ( auto i : t->typeList() )
+        fields.push_back(cg->llvmType(i));
 
     auto llvm_type = cg->llvmTypeStruct("", fields);
 
     CodeGen::llvm_parameter_list params;
     params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
     params.push_back(std::make_pair("tuple", cg->llvmTypePtr(llvm_type)));
-    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg->llvmTypePtr(cg->llvmTypeExecutionContext())));
+    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext,
+                                    cg->llvmTypePtr(cg->llvmTypeExecutionContext())));
 
     auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
     func->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
@@ -504,7 +514,7 @@ llvm::Function* TypeBuilder::_makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, b
 
     auto a = func->arg_begin();
     ++a;
-    auto tval = cg->builder()->CreateLoad(a);
+    auto tval = cg->builder()->CreateLoad(&(*a));
 
     int idx = 0;
 
@@ -529,8 +539,8 @@ void TypeBuilder::visit(type::Tuple* t)
     // The default value for tuples sets all elements to their default.
     std::vector<llvm::Constant*> elems;
 
-    for ( auto t : t->typeList() )
-        elems.push_back(cg()->llvmInitVal(t));
+    for ( auto i : t->typeList() )
+        elems.push_back(cg()->llvmInitVal(i));
 
     auto init_val = cg()->llvmConstStruct(elems);
 
@@ -555,7 +565,7 @@ void TypeBuilder::visit(type::Tuple* t)
         auto offset = cg()->llvmGEP(null, zero, idx);
         offset = llvm::ConstantExpr::getPtrToInt(offset, cg()->llvmTypeInt(16));
 
-        CodeGen::constant_list pair { name, offset };
+        CodeGen::constant_list pair{name, offset};
         array.push_back(cg()->llvmConstStruct(pair));
 
         ++i;
@@ -744,7 +754,8 @@ void TypeBuilder::visit(type::Interval* t)
     ti->to_string = "hlt::interval_to_string";
     ti->to_double = "hlt::interval_to_double";
     ti->to_int64 = "hlt::interval_to_int64";
-    setResult(ti);}
+    setResult(ti);
+}
 
 void TypeBuilder::visit(type::Time* t)
 {
@@ -909,7 +920,8 @@ llvm::Function* TypeBuilder::_makeOverlayDtor(CodeGen* cg, type::Overlay* t, llv
     return _makeOverlayFuncHelper(cg, t, llvm_type, true);
 }
 
-llvm::Function* TypeBuilder::_makeOverlayFuncHelper(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type, bool dtor)
+llvm::Function* TypeBuilder::_makeOverlayFuncHelper(CodeGen* cg, type::Overlay* t,
+                                                    llvm::Type* llvm_type, bool dtor)
 {
     string prefix = dtor ? "dtor_" : "cctor_";
     string name = prefix + ::util::fmt("dtor_overlay_dep%d", t->numDependencies());
@@ -922,16 +934,17 @@ llvm::Function* TypeBuilder::_makeOverlayFuncHelper(CodeGen* cg, type::Overlay* 
     CodeGen::llvm_parameter_list params;
     params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
     params.push_back(std::make_pair("overlay", cg->llvmTypePtr(llvm_type)));
-    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg->llvmTypePtr(cg->llvmTypeExecutionContext())));
+    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext,
+                                    cg->llvmTypePtr(cg->llvmTypeExecutionContext())));
 
     auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
 
     cg->pushFunction(func);
 
     auto itype = builder::iterator::type(builder::bytes::type());
-    auto oval = cg->builder()->CreateLoad(++func->arg_begin());
+    auto oval = cg->builder()->CreateLoad(&(*++func->arg_begin()));
 
-    for ( int i = 0; i < 1 + t->numDependencies(); ++i) {
+    for ( int i = 0; i < 1 + t->numDependencies(); ++i ) {
         auto iter = cg->llvmExtractValue(oval, i);
 
         if ( dtor )
@@ -995,7 +1008,8 @@ void TypeBuilder::visit(type::MatchTokenState* t)
 // the end when all type information has been generated. Otherwise we'd run
 // into trouble with cyclic structures as they function already needs the
 // fields' type information already.
-llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llvm_type, const string& external_name)
+llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llvm_type,
+                                                const string& external_name)
 {
     auto type = t->sharedPtr<Type>();
 
@@ -1009,7 +1023,8 @@ llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llv
     CodeGen::llvm_parameter_list params;
     params.push_back(std::make_pair("type", cg()->llvmTypePtr(cg()->llvmTypeRtti())));
     params.push_back(std::make_pair("struct", cg()->llvmTypePtr(llvm_type)));
-    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext, cg()->llvmTypePtr(cg()->llvmTypeExecutionContext())));
+    params.push_back(std::make_pair(codegen::symbols::ArgExecutionContext,
+                                    cg()->llvmTypePtr(cg()->llvmTypeExecutionContext())));
 
     auto func = cg()->llvmAddFunction(name, cg()->llvmTypeVoid(), params, false);
 
@@ -1024,7 +1039,7 @@ llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llv
 
     cg()->cacheValue("dtor-struct", name, func);
 
-   if ( ! external_name.size() )
+    if ( ! external_name.size() )
         _struct_dtors.push_back(std::make_pair(t, func));
 
     return func;
@@ -1036,13 +1051,12 @@ void TypeBuilder::_makeStructDtor(type::Struct* t, llvm::Function* func)
 
     auto a = func->arg_begin();
     ++a;
-    auto sval = cg()->builder()->CreateLoad(a);
+    auto sval = cg()->builder()->CreateLoad(&(*a));
     auto mask = cg()->llvmExtractValue(sval, 1);
 
     int idx = 0;
 
     for ( auto et : t->typeList() ) {
-
         auto bit = cg()->llvmConstInt(1 << idx, 32);
         auto isset = builder()->CreateAnd(bit, mask);
 
@@ -1102,7 +1116,7 @@ void TypeBuilder::visit(type::Struct* t)
         _known_structs.insert(std::make_pair(sname, stype));
 
         // Now add the fields.
-        CodeGen::type_list fields { cg()->llvmLibType("hlt.gchdr"), cg()->llvmTypeInt(32) };
+        CodeGen::type_list fields{cg()->llvmLibType("hlt.gchdr"), cg()->llvmTypeInt(32)};
 
         for ( auto f : t->fields() )
             fields.push_back(cg()->llvmType(f->type()));
@@ -1127,7 +1141,9 @@ void TypeBuilder::visit(type::Struct* t)
 
     if ( ! llvm_type_only ) {
         if ( ! t->wildcard() )
-            ti->dtor_func = _declareStructDtor(t, stype, t->attributes().getAsString(attribute::LIBHILTI_DTOR, ""));
+            ti->dtor_func =
+                _declareStructDtor(t, stype,
+                                   t->attributes().getAsString(attribute::LIBHILTI_DTOR, ""));
         else
             // Generic versions working with all tuples.
             ti->dtor = "hlt::struct_dtor";
@@ -1157,7 +1173,7 @@ void TypeBuilder::visit(type::Struct* t)
             auto offset = cg()->llvmGEP(null, zero, idx);
             offset = llvm::ConstantExpr::getPtrToInt(offset, cg()->llvmTypeInt(16));
 
-            CodeGen::constant_list pair { name, offset };
+            CodeGen::constant_list pair{name, offset};
             array.push_back(cg()->llvmConstStruct(pair));
 
             ++i;
@@ -1254,7 +1270,7 @@ void TypeBuilder::visit(type::Union* t)
 
         // Now add the fields.
         data_type = llvm::ArrayType::get(cg()->llvmTypeInt(8), max_size);
-        CodeGen::type_list fields { cg()->llvmTypeInt(32), data_type };
+        CodeGen::type_list fields{cg()->llvmTypeInt(32), data_type};
 
         for ( auto f : t->fields() )
             fields.push_back(cg()->llvmType(f->type()));
@@ -1264,7 +1280,8 @@ void TypeBuilder::visit(type::Union* t)
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_UNION;
-    ti->init_val = cg()->llvmConstStruct({ cg()->llvmConstInt(-1, 32), cg()->llvmConstNull(data_type) });
+    ti->init_val =
+        cg()->llvmConstStruct({cg()->llvmConstInt(-1, 32), cg()->llvmConstNull(data_type)});
     ti->object_type = stype;
     ti->to_string = "hlt::union_to_string";
     ti->hash = "hlt::union_hash";
@@ -1282,16 +1299,17 @@ void TypeBuilder::visit(type::Union* t)
         CodeGen::constant_list array;
 
         for ( auto f : t->fields() ) {
-            auto name = (t->anonymousFields() || f->anonymous())
-                ? cg()->llvmConstNull(cg()->llvmTypePtr())
-                : cg()->llvmConstAsciizPtr(f->id()->name());
+            auto name = (t->anonymousFields() || f->anonymous()) ?
+                            cg()->llvmConstNull(cg()->llvmTypePtr()) :
+                            cg()->llvmConstAsciizPtr(f->id()->name());
 
-            CodeGen::constant_list pair { cg()->llvmRtti(f->type()), name };
+            CodeGen::constant_list pair{cg()->llvmRtti(f->type()), name};
             array.push_back(cg()->llvmConstStruct(pair));
         }
 
         // Add null pointers as end markers.
-        CodeGen::constant_list pair { cg()->llvmConstNull(cg()->llvmTypeRtti()), cg()->llvmConstNull() };
+        CodeGen::constant_list pair{cg()->llvmConstNull(cg()->llvmTypeRtti()),
+                                    cg()->llvmConstNull()};
         array.push_back(cg()->llvmConstStruct(pair));
 
         llvm::GlobalVariable* glob = nullptr;

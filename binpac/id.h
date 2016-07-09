@@ -10,28 +10,26 @@
 namespace binpac {
 
 /// AST node for a source-level identifier.
-class ID : public ast::ID<AstInfo>
-{
+class ID : public ast::ID<AstInfo> {
 public:
     /// Constructor.
     ///
     /// path: The name of the identifier, either scoped or unscoped.
     ///
     /// l: Associated location.
-    ID(string path, const Location& l=Location::None);
+    ID(string path, const Location& l = Location::None);
 
     /// Constructor.
     ///
     /// path: Scope components.
     ///
     /// l: Associated location.
-    ID(component_list path, const Location& l=Location::None);
+    ID(component_list path, const Location& l = Location::None);
 
     ACCEPT_VISITOR_ROOT();
 
 private:
 };
-
 }
 
 #endif

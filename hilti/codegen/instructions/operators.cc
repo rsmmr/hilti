@@ -41,7 +41,8 @@ void StatementBuilder::visit(statement::instruction::operator_::Unequal* i)
 {
     auto eq = cg()->makeLocal("eq", builder::boolean::type());
     cg()->llvmInstruction(eq, instruction::operator_::Equal, i->op1(), i->op2());
-    auto result = cg()->builder()->CreateSelect(cg()->llvmValue(eq), cg()->llvmConstInt(0, 1), cg()->llvmConstInt(1, 1));
+    auto result = cg()->builder()->CreateSelect(cg()->llvmValue(eq), cg()->llvmConstInt(0, 1),
+                                                cg()->llvmConstInt(1, 1));
     cg()->llvmStore(i, result);
 }
 
@@ -57,8 +58,8 @@ void StatementBuilder::visit(statement::instruction::operator_::Assign* i)
         //
         // TODO: Not sure we should hard-code local variables here, but
         // whereelse is a good place to do this?
-        auto texpr = ast::checkedCast<expression::Variable>(i->target());
-        auto tvar  = ast::checkedCast<variable::Local>(texpr->variable());
+        auto texpr = ast::rtti::checkedCast<expression::Variable>(i->target());
+        auto tvar = ast::rtti::checkedCast<variable::Local>(texpr->variable());
         auto dst = cg()->llvmLocal(tvar->internalName());
         cg()->llvmValueInto(dst, i->op1(), i->target()->type());
     }
@@ -71,7 +72,7 @@ void StatementBuilder::visit(statement::instruction::operator_::Unpack* i)
     auto end = cg()->llvmTupleElement(i->op1()->type(), iters, 1, false);
     auto fmt = cg()->llvmValue(i->op2());
 
-    auto tl = ast::as<type::Tuple>(i->target()->type())->typeList();
+    auto tl = ast::rtti::tryCast<type::Tuple>(i->target()->type())->typeList();
     auto ty = tl.front();
 
     llvm::Value* arg = i->op3() ? cg()->llvmValue(i->op3()) : nullptr;
@@ -79,7 +80,7 @@ void StatementBuilder::visit(statement::instruction::operator_::Unpack* i)
 
     auto unpack_result = cg()->llvmUnpack(ty, begin, end, fmt, arg, arg_type, i->location());
 
-    auto result = cg()->llvmTuple({ unpack_result.first, unpack_result.second });
+    auto result = cg()->llvmTuple({unpack_result.first, unpack_result.second});
     cg()->llvmStore(i, result);
 }
 
@@ -115,7 +116,7 @@ void StatementBuilder::visit(statement::instruction::operator_::Clone* i)
     auto src_casted = cg()->builder()->CreateBitCast(src, cg()->llvmTypePtr());
     auto dst_casted = cg()->builder()->CreateBitCast(dst, cg()->llvmTypePtr());
 
-    CodeGen::value_list vals = { dst_casted, ti, src_casted };
+    CodeGen::value_list vals = {dst_casted, ti, src_casted};
     cg()->llvmCallC("hlt_clone_deep", vals, true, true);
 
     // Comes back refed.
@@ -132,4 +133,3 @@ void StatementBuilder::visit(statement::instruction::operator_::Hash* i)
     auto result = cg()->llvmCall("hlt::hash_object", args);
     cg()->llvmStore(i, result);
 }
-

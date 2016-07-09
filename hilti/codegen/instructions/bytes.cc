@@ -15,7 +15,7 @@ void StatementBuilder::visit(statement::instruction::bytes::New* i)
     }
 
     else {
-        CodeGen::expr_list args = { i->target() };
+        CodeGen::expr_list args = {i->target()};
         cg()->llvmCall("hlt::bytes_new_hoisted", args);
     }
 }
@@ -31,13 +31,13 @@ void StatementBuilder::visit(statement::instruction::bytes::Append* i)
 void StatementBuilder::visit(statement::instruction::bytes::Concat* i)
 {
     if ( ! i->hoisted() ) {
-        CodeGen::expr_list args = { i->op1(), i->op2() };
+        CodeGen::expr_list args = {i->op1(), i->op2()};
         auto result = cg()->llvmCall("hlt::bytes_concat", args);
         cg()->llvmStore(i, result);
     }
 
     else {
-        CodeGen::expr_list args = { i->target(), i->op1(), i->op2() };
+        CodeGen::expr_list args = {i->target(), i->op1(), i->op2()};
         cg()->llvmCall("hlt::bytes_concat_hoisted", args);
     }
 }
@@ -68,13 +68,13 @@ void StatementBuilder::visit(statement::instruction::bytes::Equal* i)
 void StatementBuilder::visit(statement::instruction::bytes::Copy* i)
 {
     if ( ! i->hoisted() ) {
-        CodeGen::expr_list args = { i->op1() };
+        CodeGen::expr_list args = {i->op1()};
         auto result = cg()->llvmCall("hlt::bytes_copy", args);
         cg()->llvmStore(i, result);
     }
 
     else {
-        CodeGen::expr_list args = { i->target(), i->op1() };
+        CodeGen::expr_list args = {i->target(), i->op1()};
         cg()->llvmCall("hlt::bytes_copy_hoisted", args);
     }
 }
@@ -103,7 +103,7 @@ void StatementBuilder::visit(statement::instruction::bytes::Empty* i)
 void StatementBuilder::visit(statement::instruction::bytes::Freeze* i)
 {
     auto cone = shared_ptr<constant::Integer>(new constant::Integer(1, 64, i->location()));
-    auto one  = shared_ptr<expression::Constant>(new expression::Constant(cone, i->location()));
+    auto one = shared_ptr<expression::Constant>(new expression::Constant(cone, i->location()));
 
     CodeGen::expr_list args;
     args.push_back(i->op1());
@@ -188,13 +188,13 @@ void StatementBuilder::visit(statement::instruction::bytes::Offset* i)
 void StatementBuilder::visit(statement::instruction::bytes::Sub* i)
 {
     if ( ! i->hoisted() ) {
-        CodeGen::expr_list args = { i->op1(), i->op2() };
+        CodeGen::expr_list args = {i->op1(), i->op2()};
         auto result = cg()->llvmCall("hlt::bytes_sub", args);
         cg()->llvmStore(i, result);
     }
 
     else {
-        CodeGen::expr_list args = { i->target(), i->op1(), i->op2() };
+        CodeGen::expr_list args = {i->target(), i->op1(), i->op2()};
         cg()->llvmCall("hlt::bytes_sub_hoisted", args);
     }
 }
@@ -210,7 +210,7 @@ void StatementBuilder::visit(statement::instruction::bytes::Trim* i)
 void StatementBuilder::visit(statement::instruction::bytes::Unfreeze* i)
 {
     auto czero = shared_ptr<constant::Integer>(new constant::Integer(0, 64, i->location()));
-    auto zero  = shared_ptr<expression::Constant>(new expression::Constant(czero, i->location()));
+    auto zero = shared_ptr<expression::Constant>(new expression::Constant(czero, i->location()));
 
     CodeGen::expr_list args;
     args.push_back(i->op1());
@@ -248,13 +248,13 @@ void StatementBuilder::visit(statement::instruction::bytes::ToIntFromBinary* i)
 void StatementBuilder::visit(statement::instruction::bytes::Lower* i)
 {
     if ( ! i->hoisted() ) {
-        CodeGen::expr_list args = { i->op1() };
+        CodeGen::expr_list args = {i->op1()};
         auto result = cg()->llvmCall("hlt::bytes_lower", args);
         cg()->llvmStore(i, result);
     }
 
     else {
-        CodeGen::expr_list args = { i->target(), i->op1() };
+        CodeGen::expr_list args = {i->target(), i->op1()};
         cg()->llvmCall("hlt::bytes_lower_hoisted", args);
     }
 }
@@ -262,13 +262,13 @@ void StatementBuilder::visit(statement::instruction::bytes::Lower* i)
 void StatementBuilder::visit(statement::instruction::bytes::Upper* i)
 {
     if ( ! i->hoisted() ) {
-        CodeGen::expr_list args = { i->op1() };
+        CodeGen::expr_list args = {i->op1()};
         auto result = cg()->llvmCall("hlt::bytes_upper", args);
         cg()->llvmStore(i, result);
     }
 
     else {
-        CodeGen::expr_list args = { i->target(), i->op1() };
+        CodeGen::expr_list args = {i->target(), i->op1()};
         cg()->llvmCall("hlt::bytes_upper_hoisted", args);
     }
 }
@@ -292,13 +292,13 @@ void StatementBuilder::visit(statement::instruction::bytes::Strip* i)
     auto side = builder::codegen::create(cg()->typeByName("Hilti::Side"), op2);
 
     if ( ! i->hoisted() ) {
-        CodeGen::expr_list args = { i->op1(), side, ltb};
+        CodeGen::expr_list args = {i->op1(), side, ltb};
         auto result = cg()->llvmCall("hlt::bytes_strip", args);
         cg()->llvmStore(i, result);
     }
 
     else {
-        CodeGen::expr_list args = { i->target(), i->op1(), side, ltb };
+        CodeGen::expr_list args = {i->target(), i->op1(), side, ltb};
         cg()->llvmCall("hlt::bytes_strip_hoisted", args);
     }
 }
@@ -324,20 +324,20 @@ void StatementBuilder::visit(statement::instruction::bytes::Split* i)
 void StatementBuilder::visit(statement::instruction::bytes::Join* i)
 {
     if ( ! i->hoisted() ) {
-        CodeGen::expr_list args = { i->op1(), i->op2() };
+        CodeGen::expr_list args = {i->op1(), i->op2()};
         auto result = cg()->llvmCall("hlt::bytes_join", args);
         cg()->llvmStore(i, result);
     }
 
     else {
-        CodeGen::expr_list args = { i->target(), i->op1(), i->op2() };
+        CodeGen::expr_list args = {i->target(), i->op1(), i->op2()};
         cg()->llvmCall("hlt::bytes_join_hoisted", args);
     }
 }
 
 void StatementBuilder::visit(statement::instruction::bytes::AppendObject* i)
 {
-    CodeGen::expr_list args = { i->op1(), i->op2() };
+    CodeGen::expr_list args = {i->op1(), i->op2()};
     cg()->llvmCall("hlt::bytes_append_object", args);
 }
 
@@ -345,7 +345,7 @@ void StatementBuilder::visit(statement::instruction::bytes::RetrieveObject* i)
 {
     auto t = i->target()->type();
 
-    CodeGen::expr_list args = { i->op1(), builder::type::create(t) };
+    CodeGen::expr_list args = {i->op1(), builder::type::create(t)};
     auto voidp = cg()->llvmCall("hlt::bytes_retrieve_object", args);
     auto casted = cg()->builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(t)));
     cg()->llvmStore(i, cg()->builder()->CreateLoad(casted));
@@ -354,13 +354,13 @@ void StatementBuilder::visit(statement::instruction::bytes::RetrieveObject* i)
 void StatementBuilder::visit(statement::instruction::bytes::AtObject* i)
 {
     if ( ! i->op2() ) {
-        CodeGen::expr_list args = { i->op1() };
+        CodeGen::expr_list args = {i->op1()};
         auto result = cg()->llvmCall("hlt::bytes_at_object", args);
         cg()->llvmStore(i, result);
     }
 
     else {
-        CodeGen::expr_list args = { i->op1(), i->op2() };
+        CodeGen::expr_list args = {i->op1(), i->op2()};
         auto result = cg()->llvmCall("hlt::bytes_at_object_of_type", args);
         cg()->llvmStore(i, result);
     }
@@ -368,34 +368,34 @@ void StatementBuilder::visit(statement::instruction::bytes::AtObject* i)
 
 void StatementBuilder::visit(statement::instruction::bytes::SkipObject* i)
 {
-    CodeGen::expr_list args = { i->op1() };
+    CodeGen::expr_list args = {i->op1()};
     auto result = cg()->llvmCall("hlt::bytes_skip_object", args);
     cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::bytes::NextObject* i)
 {
-    CodeGen::expr_list args = { i->op1() };
+    CodeGen::expr_list args = {i->op1()};
     auto result = cg()->llvmCall("hlt::bytes_next_object", args);
     cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::bytes::AppendMark* i)
 {
-    CodeGen::expr_list args = { i->op1() };
+    CodeGen::expr_list args = {i->op1()};
     cg()->llvmCall("hlt::bytes_append_mark", args);
 }
 
 void StatementBuilder::visit(statement::instruction::bytes::NextMark* i)
 {
-    CodeGen::expr_list args = { i->op1() };
+    CodeGen::expr_list args = {i->op1()};
     auto result = cg()->llvmCall("hlt::bytes_next_mark", args);
     cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::bytes::AtMark* i)
 {
-    CodeGen::expr_list args = { i->op1() };
+    CodeGen::expr_list args = {i->op1()};
     auto result = cg()->llvmCall("hlt::bytes_at_mark", args);
     cg()->llvmStore(i, result);
 }

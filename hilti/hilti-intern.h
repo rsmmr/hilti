@@ -6,33 +6,36 @@
 
 #include <fstream>
 
+#include "id.h"
+
+#include "attribute.h"
 #include "common.h"
-#include "context.h"
-#include "module.h"
 #include "constant.h"
+#include "context.h"
 #include "ctor.h"
 #include "declaration.h"
 #include "expression.h"
 #include "function.h"
-#include "id.h"
 #include "instruction.h"
+#include "module.h"
 #include "pass.h"
 #include "statement.h"
 #include "type.h"
 #include "variable.h"
-#include "attribute.h"
 
-#include "passes/passes.h"
 #include "builder/builder.h"
+#include "codegen/asm-annotater.h"
 #include "codegen/codegen.h"
 #include "codegen/linker.h"
 #include "codegen/protogen.h"
-#include "codegen/asm-annotater.h"
+#include "passes/passes.h"
 
 // Must come last.
 #include "visitor-interface.h"
 
-namespace llvm { class Module; }
+namespace llvm {
+class Module;
+}
 
 namespace hilti {
 
@@ -46,7 +49,6 @@ extern void init();
 typedef InstructionRegistry::instr_list instruction_list;
 
 instruction_list instructions();
-
 }
 
 #endif

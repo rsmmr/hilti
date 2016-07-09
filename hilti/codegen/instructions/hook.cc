@@ -35,9 +35,9 @@ void StatementBuilder::visit(statement::instruction::hook::GroupEnabled* i)
 
 void StatementBuilder::visit(statement::instruction::hook::Run* i)
 {
-    auto func = ast::as<expression::Function>(i->op1())->function();
-    auto has_result = (! ast::isA<type::Void>(func->type()->result()->type()));
-    auto hook = ast::as<Hook>(func);
+    auto func = ast::rtti::tryCast<expression::Function>(i->op1())->function();
+    auto has_result = (! ast::rtti::isA<type::Void>(func->type()->result()->type()));
+    auto hook = ast::rtti::tryCast<Hook>(func);
     assert(hook);
 
     llvm::Value* result = nullptr;
@@ -67,10 +67,9 @@ void StatementBuilder::visit(statement::instruction::hook::Stop* i)
     if ( i->op1() ) {
         // Store result in last parameter.
         auto val = cg()->llvmValue(i->op1(), nullptr);
-        cg()->llvmCreateStore(val, --cg()->function()->arg_end());
+        cg()->llvmCreateStore(val, &(*--cg()->function()->arg_end()));
     }
 
     cg()->llvmBuildInstructionCleanup();
     cg()->llvmReturn(0, cg()->llvmConstInt(1, 1)); // Return true.
 }
-

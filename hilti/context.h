@@ -3,28 +3,29 @@
 #define HILTI_CONTEXT_H
 
 #include <ast/logger.h>
+#include <util/file-cache.h>
+
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
 
 #include "common.h"
 #include "module.h"
-#include "util/file-cache.h"
-
-namespace llvm {
-    class Module;
-    class ExecutionEngine;
-}
 
 namespace hilti {
 
-namespace passes { class ScopeBuilder; }
-namespace jit { class JIT; }
+class JIT;
+
+namespace passes {
+class ScopeBuilder;
+}
 
 class Options;
 
 /// A module context that groups a set of modules compiled jointly. This
 /// class provides the main top-level interface for parsing, compiling, and
 /// linking HILTI modules.
-class CompilerContext : public ast::Logger, public std::enable_shared_from_this<CompilerContext>
-{
+class CompilerContext : public ast::Logger, public std::enable_shared_from_this<CompilerContext> {
 public:
     /// Constructor.
     CompilerContext(std::shared_ptr<Options> options);
@@ -120,9 +121,8 @@ public:
     ///
     /// module: The module to compile.
     ///
-    /// Returns: The HILTI module, or null if errors are encountered. Passes
-    /// ownership to the caller.
-    llvm::Module* compile(shared_ptr<Module> module);
+    /// Returns: The HILTI module, or null if errors are encountered.
+    std::unique_ptr<llvm::Module> compile(shared_ptr<Module> module);
 
     /// Compiles an AST into a LLVM module. This is a variant of compile()
     /// that takes a prepopulated cache key under which the compiled module
@@ -137,7 +137,8 @@ public:
     ///
     /// Returns: The HILTI module, or null if errors are encountered. Passes
     /// ownership to the caller.
-    llvm::Module* compile(shared_ptr<Module> module, const ::util::cache::FileCache::Key& key);
+    std::unique_ptr<Module> compile(shared_ptr<Module> module,
+                                    const ::util::cache::FileCache::Key& key);
 
     /// Renders an AST back into HILTI source code.
     ///
@@ -198,42 +199,32 @@ public:
     /// will need.
     ///
     /// Returns: The composite LLVM module, or null if errors are encountered.
-    llvm::Module* linkModules(string output,
-                              std::list<llvm::Module*> modules,
-                              std::list<string> libs = {},
-                              path_list bcas = {},
-                              path_list dylds = {},
-                              bool add_stdlibs = true,
-                              bool add_sharedlibs = false);
+    std::unique_ptr<llvm::Module> linkModules(string output,
+                                              std::list<std::unique_ptr<llvm::Module>>& modules,
+                                              std::list<string> libs = {}, path_list bcas = {},
+                                              path_list dylds = {}, bool add_stdlibs = true,
+                                              bool add_sharedlibs = false);
 
     /// JITs an LLVM module retuned by linkModules(). This also optimizes the
     /// code according to the current set of options.
     ///
     /// module: The module. The function takes ownership.
     ///
-    /// Returns: The LLVM execution engine that was used for JITing the
-    /// module, or null if there was an error. This passes ownership of the
-    /// engine to the caller.
-    llvm::ExecutionEngine* jitModule(llvm::Module* module);
+    /// Returns: A JIT instance, or null if there was an error.
+    std::unique_ptr<JIT> jit(std::unique_ptr<llvm::Module> module);
 
-    /// Returns a pointer to a compiled, native function after a module has
-    /// beed JITed. This must only be called after jitModule().
-    ///
-    /// module: The LLVM module that was passed to jitModule().
-    ///
-    /// ee: The LLVM execution engine that jitModule() returned.
-    ///
-    /// function: The name of the function.
-    ///
-    /// Returns: A pointer to the function (which must be suitably casted),
-    /// or null if that function doesn't exist.
-    void* nativeFunction(llvm::Module* module, llvm::ExecutionEngine* ee, const string& function);
+    /// Returns the LLVM context to use with all LLVM calls.
+    llvm::LLVMContext& llvmContext()
+    {
+        return _llvm_context;
+    }
 
     struct FunctionMapping {
         const char* name; /// Name of the function.
-        void *func;       /// Address of the function.
+        void* func;       /// Address of the function.
     };
 
+#if 0
     /// Installs a table to resolve functions at JIT time that are located
     /// statically inside the main process.
     ///
@@ -248,6 +239,7 @@ public:
     /// Returns: A pointer to the function, or null if there's no function
     /// under that name.
     void* lookupJITFunctionInTable(const std::string& name);
+#endif
 
     /// Returns the file cache the context is using, or null if none.
     shared_ptr<util::cache::FileCache> fileCache() const;
@@ -271,21 +263,23 @@ public:
     /// Returns: The cached modules if available, or an empty list if not.
     /// The latter will always be the case if the context is not using
     /// caching.
-    std::list<llvm::Module*> checkCache(const ::util::cache::FileCache::Key& key);
+    ///
+    /// TODO: Disabled. Always returns an empty list current.
+    std::list<std::unique_ptr<llvm::Module>> checkCache(const ::util::cache::FileCache::Key& key);
 
-    /// Stores/Updates cached versions for a set of LLVM modules.
-    ///
-    /// key: The key to associate with *all* the modules.
-    ///
-    /// module: THe modules to cache under \a key.
-    void updateCache(const ::util::cache::FileCache::Key& key, std::list<llvm::Module*> module);
+    /// TODO: Disabled. Always returns an empty list current.
+    void updateCache(const ::util::cache::FileCache::Key& key,
+                     std::list<std::unique_ptr<llvm::Module>> module);
 
     /// Stores/updates cached version of a single LLVM module.
     ///
     /// key: The key to associate with the module.
     ///
     /// module: THe module to cache under \a key.
-    void updateCache(const ::util::cache::FileCache::Key& key, llvm::Module* module);
+    ///
+    /// TODO: Disabled. Always returns an empty list current.
+    void updateCache(const ::util::cache::FileCache::Key& key,
+                     std::unique_ptr<llvm::Module> module);
 
     /// Augments the cache key with values suitable to check if a HILTI
     /// module (or any of its dependencies) has changed.
@@ -327,8 +321,8 @@ private:
     /// is_linked: True if this is the final linked module, false if it's an
     /// individual module that will later be linked.
     ///
-    /// Returns: True if successful.
-    bool _optimize(llvm::Module* module, bool is_linked);
+    /// Returns: A new optimized module if successful.
+    std::unique_ptr<llvm::Module> _optimize(std::unique_ptr<llvm::Module> module, bool is_linked);
 
     // Backend for finalize().
     bool _finalize(shared_ptr<Module> module, bool verify);
@@ -360,8 +354,8 @@ private:
     void _endPass();
 
     shared_ptr<Options> _options;
+    llvm::LLVMContext _llvm_context;
 
-    jit::JIT* _jit = nullptr;
     shared_ptr<util::cache::FileCache> _cache;
 
     /// We keep global maps of all module nodes and, separately, their
@@ -384,9 +378,11 @@ private:
     pass_list _passes;
 
 public:
-    pass_list& passes() { return _passes; }
+    pass_list& passes()
+    {
+        return _passes;
+    }
 };
-
 }
 
 #endif

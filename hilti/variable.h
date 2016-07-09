@@ -9,81 +9,93 @@
 namespace hilti {
 
 /// Base class for AST variable nodes.
-class Variable : public ast::Variable<AstInfo>, public NodeWithAttributes
-{
+class Variable : public ast::Variable<AstInfo>, public NodeWithAttributes {
+    AST_RTTI
 public:
-   /// Constructor.
-   ///
-   /// id: The name of the variable. Must be non-scoped.
-   ///
-   /// type: The type of the variable.
-   ///
-   /// Expression: An optional initialization expression, or null if none.
-   ///
-   /// l: Associated location.
-   Variable(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const Location& l=Location::None)
-       : ast::Variable<AstInfo>(id, type, init, l), NodeWithAttributes(this) {}
+    /// Constructor.
+    ///
+    /// id: The name of the variable. Must be non-scoped.
+    ///
+    /// type: The type of the variable.
+    ///
+    /// Expression: An optional initialization expression, or null if none.
+    ///
+    /// l: Associated location.
+    Variable(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr,
+             const Location& l = Location::None)
+        : ast::Variable<AstInfo>(id, type, init, l), NodeWithAttributes(this)
+    {
+    }
 
-   ACCEPT_VISITOR_ROOT();
+    ACCEPT_VISITOR_ROOT();
 };
 
 namespace variable {
 
 
 /// AST node representing a global variable.
-class Global : public hilti::Variable, public ast::variable::mixin::Global<AstInfo>
-{
+class Global : public hilti::Variable, public ast::variable::mixin::Global<AstInfo> {
+    AST_RTTI
 public:
-   /// Constructor.
-   ///
-   /// id: The name of the variable. Must be non-scoped.
-   ///
-   /// type: The type of the variable.
-   ///
-   /// Expression: An optional initialization expression, or null if none.
-   ///
-   /// l: Associated location.
-   Global(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const Location& l=Location::None)
-       : hilti::Variable(id, type, init, l), ast::variable::mixin::Global<AstInfo>(this) {}
+    /// Constructor.
+    ///
+    /// id: The name of the variable. Must be non-scoped.
+    ///
+    /// type: The type of the variable.
+    ///
+    /// Expression: An optional initialization expression, or null if none.
+    ///
+    /// l: Associated location.
+    Global(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr,
+           const Location& l = Location::None)
+        : hilti::Variable(id, type, init, l), ast::variable::mixin::Global<AstInfo>(this)
+    {
+    }
 
-   ACCEPT_VISITOR(hilti::Variable);
+    ACCEPT_VISITOR(hilti::Variable);
 };
 
 /// AST node representing a local variable.
-class Local : public hilti::Variable, public ast::variable::mixin::Local<AstInfo>
-{
+class Local : public hilti::Variable, public ast::variable::mixin::Local<AstInfo> {
+    AST_RTTI
 public:
-   /// Constructor.
-   ///
-   /// id: The name of the variable. Must be non-scoped.
-   ///
-   /// type: The type of the variable.
-   ///
-   /// Expression: An optional initialization expression, or null if none.
-   ///
-   /// l: Associated location.
-   Local(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, const Location& l=Location::None)
-       : hilti::Variable(id, type, init, l), ast::variable::mixin::Local<AstInfo>(this) {}
+    /// Constructor.
+    ///
+    /// id: The name of the variable. Must be non-scoped.
+    ///
+    /// type: The type of the variable.
+    ///
+    /// Expression: An optional initialization expression, or null if none.
+    ///
+    /// l: Associated location.
+    Local(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr,
+          const Location& l = Location::None)
+        : hilti::Variable(id, type, init, l), ast::variable::mixin::Local<AstInfo>(this)
+    {
+    }
 
-   /// Returns an internal name set by the ID resolver. This name will be
-   /// unique across the function the local is defined in (even if there are
-   /// other locals of the same name in other blocks.) Returns the ID itself
-   /// as long as nobody has set anything.
-   string internalName() { return _internal_name.size() ? _internal_name : id()->name(); }
+    /// Returns an internal name set by the ID resolver. This name will be
+    /// unique across the function the local is defined in (even if there are
+    /// other locals of the same name in other blocks.) Returns the ID itself
+    /// as long as nobody has set anything.
+    string internalName()
+    {
+        return _internal_name.size() ? _internal_name : id()->name();
+    }
 
-   /// Sets the internal name returned by internalName. This should be called
-   /// only by the ID resolver.
-   void setInternalName(const string& name) { _internal_name = name; }
+    /// Sets the internal name returned by internalName. This should be called
+    /// only by the ID resolver.
+    void setInternalName(const string& name)
+    {
+        _internal_name = name;
+    }
 
-   ACCEPT_VISITOR(hilti::Variable);
+    ACCEPT_VISITOR(hilti::Variable);
 
 private:
-   string _internal_name = "";
+    string _internal_name = "";
 };
-
 }
-
 }
 
 #endif
-

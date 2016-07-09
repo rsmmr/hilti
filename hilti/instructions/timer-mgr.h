@@ -1,16 +1,17 @@
 /// \type Timer Manager
 ///
 /// TODO.
-/// 
+///
 /// \cproto hlt_timer_mgr*
 
 #include "define-instruction.h"
 
 iBegin(timer_mgr, New, "new")
-    iTarget(optype::refTimerMgr)
+    iTarget(optype::refTimerMgr);
     iOp1(optype::typeTimerMgr, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -22,10 +23,11 @@ iEnd
 
 
 iBegin(timer_mgr, Advance, "timer_mgr.advance")
-    iOp1(optype::time, true)
-    iOp2(optype::optional(optype::refTimerMgr), false)
+    iOp1(optype::time, true);
+    iOp2(optype::optional(optype::refTimerMgr), false);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -37,9 +39,10 @@ iBegin(timer_mgr, Advance, "timer_mgr.advance")
 iEnd
 
 iBegin(timer_mgr, AdvanceGlobal, "timer_mgr.advance_global")
-    iOp1(optype::time, true)
+    iOp1(optype::time, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -52,10 +55,11 @@ iBegin(timer_mgr, AdvanceGlobal, "timer_mgr.advance_global")
 iEnd
 
 iBegin(timer_mgr, Current, "timer_mgr.current")
-    iTarget(optype::time)
-    iOp1(optype::optional(optype::refTimerMgr), true)
+    iTarget(optype::time);
+    iOp1(optype::optional(optype::refTimerMgr), true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -66,10 +70,11 @@ iBegin(timer_mgr, Current, "timer_mgr.current")
 iEnd
 
 iBegin(timer_mgr, Expire, "timer_mgr.expire")
-    iOp1(optype::boolean, true)
-    iOp2(optype::optional(optype::refTimerMgr), false)
+    iOp1(optype::boolean, true);
+    iOp2(optype::optional(optype::refTimerMgr), false);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -83,11 +88,12 @@ iBegin(timer_mgr, Expire, "timer_mgr.expire")
 iEnd
 
 iBegin(timer_mgr, Schedule, "timer_mgr.schedule")
-    iOp1(optype::time, true)
-    iOp2(optype::refTimer, false)
-    iOp3(optype::optional(optype::refTimerMgr), false)
+    iOp1(optype::time, true);
+    iOp2(optype::refTimer, false);
+    iOp3(optype::optional(optype::refTimerMgr), false);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -102,4 +108,3 @@ iBegin(timer_mgr, Schedule, "timer_mgr.schedule")
     )")
 
 iEnd
-

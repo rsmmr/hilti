@@ -11,16 +11,17 @@
 
 namespace binpac_parser {
 
-class Scanner : public BinPACFlexLexer
-{
+class Scanner : public BinPACFlexLexer {
 public:
-    Scanner(std::istream* yyin = 0, std::ostream* yyout = 0) : BinPACFlexLexer(yyin, yyout) {}
-    virtual Parser::token_type lex(Parser::semantic_type* yylval, Parser::location_type* yylloc, binpac_parser::Driver& driver);
+    Scanner(std::istream* yyin = 0, std::ostream* yyout = 0) : BinPACFlexLexer(yyin, yyout)
+    {
+    }
+    virtual Parser::token_type lex(Parser::semantic_type* yylval, Parser::location_type* yylloc,
+                                   binpac_parser::Driver& driver);
 
     void disablePatternMode();
     void enablePatternMode();
 };
-
 }
 
 #endif

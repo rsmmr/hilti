@@ -1,0 +1,373 @@
+#
+# Classes derived from ast::Node.
+#
+# These are automatically turned into corresponding methods for
+# visitors and RTTI information.
+
+AttributeSet
+  : Node
+
+ID
+  : Node
+
+Module
+  : Node
+
+Function
+  : Node
+Hook
+  : Function
+
+Instruction
+  : Node
+
+Type
+  : Node
+type::OptionalArgument
+  : Type
+type::HiltiType
+  : Type
+type::ValueType
+  : type::HiltiType
+  : type::trait::Hashable
+  : type::trait::ValueType
+type::HeapType
+  : type::HiltiType
+  : type::trait::GarbageCollected
+  : type::trait::HeapType
+type::TypedHeapType
+  : type::HeapType
+  : type::trait::Parameterized
+type::TypedValueType
+  : type::ValueType
+  : type::trait::Parameterized
+type::Iterator
+  : type::TypedValueType
+type::Any
+  : Type
+type::Unknown
+  : Type
+type::TypeByName
+  : Type
+type::Unset
+  : type::ValueType
+type::Block
+  : Type
+type::Module
+  : Type
+type::Void
+  : Type
+type::Label
+  : Type
+type::String
+  : type::ValueType
+  : type::trait::GarbageCollected
+type::Address
+  : type::ValueType
+  : type::trait::Atomic
+  : type::trait::Unpackable
+  : type::trait::Classifiable
+type::Network
+  : type::ValueType
+  : type::trait::Atomic
+  : type::trait::Classifiable
+type::Port
+  : type::ValueType
+  : type::trait::Atomic
+  : type::trait::Unpackable
+  : type::trait::Classifiable
+type::Bitset
+  : type::ValueType
+  : type::trait::Atomic
+type::Enum
+  : type::ValueType
+  : type::trait::Atomic
+type::CAddr
+  : type::ValueType
+  : type::trait::Atomic
+type::Double
+  : type::ValueType
+  : type::trait::Atomic
+  : type::trait::Unpackable
+type::Bool
+  : type::ValueType
+  : type::trait::Atomic
+  : type::trait::Unpackable
+  : type::trait::Classifiable
+type::Interval
+  : type::ValueType
+  : type::trait::Atomic
+type::Time
+  : type::ValueType
+  : type::trait::Atomic
+type::Integer
+  : type::ValueType
+  : type::trait::Atomic
+  : type::trait::Parameterized
+  : type::trait::Unpackable
+  : type::trait::Classifiable
+type::Tuple
+  : type::ValueType
+  : type::trait::Parameterized
+  : type::trait::TypeList
+type::TypeType
+  : Type
+type::Exception
+  : type::TypedHeapType
+type::Reference
+  : type::TypedValueType
+type::Function
+  : type::HiltiType
+type::HiltiFunction
+  : type::Function
+  : type::trait::ValueType
+type::Hook
+  : type::Function
+  : type::trait::ValueType
+type::Callable
+  : type::Function
+  : type::trait::HeapType
+  : type::trait::GarbageCollected
+  : type::trait::Parameterized
+type::Bytes
+  : type::HeapType
+  : type::trait::Iterable
+  : type::trait::Unpackable
+  : type::trait::Hashable
+  : type::trait::Classifiable
+  : type::trait::Blockable
+type::Classifier
+  : type::HeapType
+  : type::trait::Parameterized
+type::Overlay
+  : type::ValueType
+type::File
+  : type::HeapType
+type::Channel
+  : type::TypedHeapType
+type::IOSource
+  : type::HeapType
+  : type::trait::Parameterized
+  : type::trait::Iterable
+type::List
+  : type::TypedHeapType
+  : type::trait::Container
+type::Vector
+  : type::TypedHeapType
+  : type::trait::Container
+type::Set
+  : type::TypedHeapType
+  : type::trait::Container
+type::Map
+  : type::HeapType
+  : type::trait::Parameterized
+  : type::trait::Container
+type::RegExp
+  : type::HeapType
+type::MatchTokenState
+  : type::HeapType
+type::Timer
+  : type::HeapType
+type::TimerMgr
+  : type::HeapType
+type::Struct
+  : type::HeapType
+  : type::trait::TypeList
+  : type::trait::Hashable
+  : type::trait::Parameterized
+type::Context
+  : type::Struct
+type::Union
+  : type::ValueType
+  : type::trait::TypeList
+  : type::trait::Parameterized
+type::Scope
+  : type::HiltiType
+
+type::function::Parameter
+  : Node
+type::function::Result
+  # sic. Not paremeter, because this inherits through the AST template class.
+  : Node
+
+type::iterator::Bytes
+  : type::Iterator
+type::iterator::IOSource
+  : type::Iterator
+type::iterator::List
+  : type::Iterator
+type::iterator::Map
+  : type::Iterator
+type::iterator::Set
+  : type::Iterator
+type::iterator::Vector
+  : type::Iterator
+
+type::struct_::Field
+  : Node
+type::overlay::Field
+  : Node
+
+type::trait::Trait
+
+type::trait::Parameterized
+  : type::trait::Trait
+type::trait::TypeList
+  : type::trait::Trait
+type::trait::GarbageCollected
+  : type::trait::Trait
+type::trait::Atomic
+  : type::trait::Trait
+type::trait::Iterable
+  : type::trait::Trait
+type::trait::Hashable
+  : type::trait::Trait
+type::trait::Container
+  : type::trait::Trait
+  : type::trait::Iterable
+type::trait::Blockable
+  : type::trait::Trait
+type::trait::Unpackable
+  : type::trait::Trait
+type::trait::Classifiable
+  : type::trait::Trait
+type::trait::HeapType
+  : type::trait::Trait
+type::trait::ValueType
+  : type::trait::Trait
+
+type::trait::parameter::Base
+
+type::trait::parameter::Attribute
+  : type::trait::parameter::Base
+type::trait::parameter::Enum
+  : type::trait::parameter::Base
+type::trait::parameter::Integer
+  : type::trait::parameter::Base
+type::trait::parameter::Type
+  : type::trait::parameter::Base
+
+Constant
+  : Node
+constant::Address
+  : Constant
+constant::Bitset
+  : Constant
+constant::Bool
+  : Constant
+constant::CAddr
+  : Constant
+constant::Double
+  : Constant
+constant::Enum
+  : Constant
+constant::Integer
+  : Constant
+constant::Interval
+  : Constant
+constant::Label
+  : Constant
+constant::Network
+  : Constant
+constant::Port
+  : Constant
+constant::Reference
+  : Constant
+constant::String
+  : Constant
+constant::Time
+  : Constant
+constant::Tuple
+  : Constant
+constant::Unset
+  : Constant
+constant::Union
+  : Constant
+
+Ctor
+  : Node
+ctor::Bytes
+  : Ctor
+ctor::List
+  : Ctor
+ctor::Map
+  : Ctor
+ctor::RegExp
+  : Ctor
+ctor::Set
+  : Ctor
+ctor::Vector
+  : Ctor
+ctor::Callable
+  : Ctor
+
+Expression
+  : Node
+expression::Block
+  : Expression
+expression::CodeGen
+  : Expression
+expression::Coerced
+  : Expression
+expression::Constant
+  : Expression
+expression::Ctor
+  : Expression
+expression::Default
+  : Expression
+expression::Function
+  : Expression
+expression::ID
+  : Expression
+expression::List
+  : Expression
+expression::Module
+  : Expression
+expression::Parameter
+  : Expression
+expression::Type
+  : Expression
+expression::Variable
+  : Expression
+expression::Void
+  : Expression
+
+Declaration
+  : Node
+declaration::Constant
+  : Declaration
+declaration::Function
+  : Declaration
+declaration::Hook
+  : declaration::Function
+declaration::Type
+  : Declaration
+declaration::Variable
+  : Declaration
+
+Variable
+  : Node
+variable::Local
+  : Variable
+variable::Global
+  : Variable
+
+Statement
+  : Node
+statement::Block
+  : Statement
+statement::Instruction
+  : Statement
+statement::Noop
+  : Statement
+statement::Try
+  : Statement
+statement::try_::Catch
+  : Node
+statement::ForEach
+  : Statement
+statement::instruction::Resolved
+  : statement::Instruction
+statement::instruction::Unresolved
+  : statement::Instruction
+

@@ -1,15 +1,15 @@
 
 #include <hilti/hilti.h>
 
-#include "composer.h"
+#include "../attribute.h"
+#include "../declaration.h"
 #include "../expression.h"
 #include "../grammar.h"
+#include "../options.h"
 #include "../production.h"
 #include "../statement.h"
 #include "../type.h"
-#include "../declaration.h"
-#include "../attribute.h"
-#include "../options.h"
+#include "composer.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -17,32 +17,30 @@ using namespace binpac::codegen;
 static shared_ptr<hilti::Type> _hiltiTypeOutputFunction(CodeGen* cg)
 {
     auto rtype = hilti::builder::function::result(hilti::builder::void_::type());
-    auto arg1 = hilti::builder::function::parameter("data", hilti::builder::reference::type(::hilti::builder::bytes::type()), false, nullptr);
-    auto arg2 = hilti::builder::function::parameter("obj",  hilti::builder::any::type(), false, nullptr);
-    auto arg3 = hilti::builder::function::parameter("__cookie", cg->hiltiTypeCookie(), false, nullptr);
+    auto arg1 = hilti::builder::function::parameter("data", hilti::builder::reference::type(
+                                                                ::hilti::builder::bytes::type()),
+                                                    false, nullptr);
+    auto arg2 =
+        hilti::builder::function::parameter("obj", hilti::builder::any::type(), false, nullptr);
+    auto arg3 =
+        hilti::builder::function::parameter("__cookie", cg->hiltiTypeCookie(), false, nullptr);
 
-    hilti::builder::function::parameter_list params = { arg1, arg2, arg3 };
+    hilti::builder::function::parameter_list params = {arg1, arg2, arg3};
     return hilti::builder::function::type(rtype, params, ::hilti::type::function::HILTI_C);
 }
 
 // A class collecting the current set of composer arguments.
-class binpac::codegen::ComposerState
-{
+class binpac::codegen::ComposerState {
 public:
-    ComposerState(shared_ptr<binpac::type::Unit> unit,
-           shared_ptr<hilti::Expression> self = nullptr,
-           shared_ptr<hilti::Expression> output_function = nullptr,
-           shared_ptr<hilti::Expression> cookie = nullptr
-           );
+    ComposerState(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> self = nullptr,
+                  shared_ptr<hilti::Expression> output_function = nullptr,
+                  shared_ptr<hilti::Expression> cookie = nullptr);
 
     shared_ptr<hilti::Expression> hiltiArguments() const;
 
-    shared_ptr<ComposerState> clone() const {
-        auto state = std::make_shared<ComposerState>(unit,
-                                                   self,
-                                                   output_function,
-                                                   cookie
-                                                   );
+    shared_ptr<ComposerState> clone() const
+    {
+        auto state = std::make_shared<ComposerState>(unit, self, output_function, cookie);
 
         return state;
     }
@@ -54,14 +52,14 @@ public:
 };
 
 ComposerState::ComposerState(shared_ptr<binpac::type::Unit> arg_unit,
-               shared_ptr<hilti::Expression> arg_self,
-               shared_ptr<hilti::Expression> arg_output_function,
-               shared_ptr<hilti::Expression> arg_cookie
-               )
+                             shared_ptr<hilti::Expression> arg_self,
+                             shared_ptr<hilti::Expression> arg_output_function,
+                             shared_ptr<hilti::Expression> arg_cookie)
 {
     unit = arg_unit;
     self = (arg_self ? arg_self : hilti::builder::id::create("__self"));
-    output_function = (arg_output_function ? arg_output_function : hilti::builder::id::create("__outfunc"));
+    output_function =
+        (arg_output_function ? arg_output_function : hilti::builder::id::create("__outfunc"));
     cookie = (arg_cookie ? arg_cookie : hilti::builder::id::create("__cookie"));
 }
 
@@ -69,7 +67,7 @@ shared_ptr<hilti::Expression> ComposerState::hiltiArguments() const
 {
     hilti::builder::tuple::element_list args;
 
-    args = { self, output_function, cookie };
+    args = {self, output_function, cookie};
     return hilti::builder::tuple::create(args, unit->location());
 }
 
@@ -132,7 +130,8 @@ void Composer::compose(shared_ptr<Node> node, shared_ptr<type::unit::item::Field
     compose(node, nullptr, field);
 }
 
-void Composer::compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj, shared_ptr<type::unit::item::Field> field)
+void Composer::compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj,
+                       shared_ptr<type::unit::item::Field> field)
 {
     auto prod = ast::tryCast<Production>(node);
 
@@ -144,7 +143,7 @@ void Composer::compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj,
 
     // If we got an obj, and are parsing a unit, we need push a new state.
     auto child = ast::tryCast<production::ChildGrammar>(node);
-    if ( child && obj) {
+    if ( child && obj ) {
         auto pstate = std::make_shared<ComposerState>(child->childType(), obj);
         pushState(pstate);
         obj = hilti::builder::id::create("__self");
@@ -175,7 +174,6 @@ void Composer::compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj,
     if ( child && obj ) {
         popState();
     }
-
 }
 
 shared_ptr<hilti::Expression> Composer::hiltiCreateHostFunction(shared_ptr<type::Unit> unit)
@@ -184,10 +182,12 @@ shared_ptr<hilti::Expression> Composer::hiltiCreateHostFunction(shared_ptr<type:
 
     auto rtype = hilti::builder::function::result(hilti::builder::void_::type());
     auto arg1 = hilti::builder::function::parameter("__self", utype, false, nullptr);
-    auto arg2 = hilti::builder::function::parameter("__outfunc", _hiltiTypeOutputFunction(cg()), false, nullptr);
-    auto arg3 = hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr);
+    auto arg2 = hilti::builder::function::parameter("__outfunc", _hiltiTypeOutputFunction(cg()),
+                                                    false, nullptr);
+    auto arg3 =
+        hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr);
 
-    hilti::builder::function::parameter_list args = { arg1, arg2, arg3 };
+    hilti::builder::function::parameter_list args = {arg1, arg2, arg3};
 
     string name = util::fmt("compose_%s", unit->id()->name());
 
@@ -242,16 +242,20 @@ shared_ptr<hilti::Expression> Composer::hiltiCreateComposeFunction(shared_ptr<ty
     return func;
 }
 
-shared_ptr<hilti::Expression> Composer::_newComposeFunction(const string& name, shared_ptr<type::Unit> unit, shared_ptr<hilti::Type> value_type)
+shared_ptr<hilti::Expression> Composer::_newComposeFunction(const string& name,
+                                                            shared_ptr<type::Unit> unit,
+                                                            shared_ptr<hilti::Type> value_type)
 {
     auto utype = cg()->hiltiType(unit);
 
     auto rtype = hilti::builder::function::result(hilti::builder::void_::type());
     auto arg1 = hilti::builder::function::parameter("__self", utype, false, nullptr);
-    auto arg2 = hilti::builder::function::parameter("__outfunc", _hiltiTypeOutputFunction(cg()), false, nullptr);
-    auto arg3 = hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr);
+    auto arg2 = hilti::builder::function::parameter("__outfunc", _hiltiTypeOutputFunction(cg()),
+                                                    false, nullptr);
+    auto arg3 =
+        hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr);
 
-    hilti::builder::function::parameter_list params = { arg1, arg2, arg3 };
+    hilti::builder::function::parameter_list params = {arg1, arg2, arg3};
     auto func = cg()->moduleBuilder()->pushFunction(name, rtype, params);
 
     pushState(std::make_shared<ComposerState>(unit));
@@ -265,7 +269,8 @@ void Composer::_finishComposeFunction()
     cg()->moduleBuilder()->popFunction();
 }
 
-void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj, shared_ptr<type::unit::item::Field> f)
+void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj,
+                             shared_ptr<type::unit::item::Field> f)
 {
     shared_ptr<type::unit::item::Field> field;
     shared_ptr<hilti::builder::BlockBuilder> cont;
@@ -315,7 +320,9 @@ void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<hilti::Expression
     }
 }
 
-void Composer::_hiltiComposeContainer(shared_ptr<hilti::Expression> value, shared_ptr<Production> body, shared_ptr<type::unit::item::field::Container> container)
+void Composer::_hiltiComposeContainer(shared_ptr<hilti::Expression> value,
+                                      shared_ptr<Production> body,
+                                      shared_ptr<type::unit::item::field::Container> container)
 {
     auto iterable = ast::type::checkedTrait<type::trait::Iterable>(container->fieldType());
     assert(iterable);
@@ -335,7 +342,8 @@ void Composer::_hiltiComposeContainer(shared_ptr<hilti::Expression> value, share
 
     cg()->moduleBuilder()->pushBuilder(loop);
     cg()->builder()->addInstruction(atend, hilti::instruction::operator_::Equal, i, end);
-    cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, atend, cont->block(), compose_one->block());
+    cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, atend, cont->block(),
+                                    compose_one->block());
     cg()->moduleBuilder()->popBuilder(loop);
 
     cg()->moduleBuilder()->pushBuilder(compose_one);
@@ -351,9 +359,11 @@ void Composer::_hiltiComposeContainer(shared_ptr<hilti::Expression> value, share
     cg()->moduleBuilder()->pushBuilder(cont);
 }
 
-void Composer::_hiltiCallComposeFunction(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func)
+void Composer::_hiltiCallComposeFunction(shared_ptr<binpac::type::Unit> unit,
+                                         shared_ptr<hilti::Expression> func)
 {
-    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid, func, state()->hiltiArguments());
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid, func,
+                                    state()->hiltiArguments());
 }
 
 void Composer::_hiltiRunFieldHooks(shared_ptr<type::unit::item::Field> field)
@@ -367,7 +377,8 @@ void Composer::_hiltiFilterOutput()
     // XXX
 }
 
-void Composer::_startingProduction(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field)
+void Composer::_startingProduction(shared_ptr<Production> p,
+                                   shared_ptr<type::unit::item::Field> field)
 {
     cg()->builder()->addComment(util::fmt("Production: %s", util::strtrim(p->render().c_str())));
     cg()->builder()->addComment("");
@@ -377,12 +388,16 @@ void Composer::_startingProduction(shared_ptr<Production> p, shared_ptr<type::un
 
 void Composer::_startingUnit()
 {
-    cg()->hiltiRunHook(state()->unit, state()->self, cg()->hookForUnit(state()->unit, "%init", true), {}, nullptr, false, nullptr, true, state()->cookie);
+    cg()->hiltiRunHook(state()->unit, state()->self,
+                       cg()->hookForUnit(state()->unit, "%init", true), {}, nullptr, false, nullptr,
+                       true, state()->cookie);
 }
 
 void Composer::_finishedUnit()
 {
-    cg()->hiltiRunHook(state()->unit, state()->self, cg()->hookForUnit(state()->unit, "%done", true), {}, nullptr, false, nullptr, true, state()->cookie);
+    cg()->hiltiRunHook(state()->unit, state()->self,
+                       cg()->hookForUnit(state()->unit, "%done", true), {}, nullptr, false, nullptr,
+                       true, state()->cookie);
 }
 
 void Composer::_finishedProduction(shared_ptr<Production> p)
@@ -392,8 +407,7 @@ void Composer::_finishedProduction(shared_ptr<Production> p)
 }
 
 void Composer::hiltiPack(shared_ptr<type::unit::item::Field> field,
-                         shared_ptr<hilti::Expression> op1,
-                         shared_ptr<hilti::Expression> op2,
+                         shared_ptr<hilti::Expression> op1, shared_ptr<hilti::Expression> op2,
                          shared_ptr<hilti::Expression> op3)
 {
     auto rbytes = hilti::builder::reference::type(hilti::builder::bytes::type());
@@ -402,17 +416,20 @@ void Composer::hiltiPack(shared_ptr<type::unit::item::Field> field,
     _hiltiDataComposed(packed, field);
 }
 
-void Composer::_hiltiDataComposed(shared_ptr<hilti::Expression> data, shared_ptr<type::unit::item::Field> field)
+void Composer::_hiltiDataComposed(shared_ptr<hilti::Expression> data,
+                                  shared_ptr<type::unit::item::Field> field)
 {
     assert(field);
 
-    if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type()))
-        cg()->builder()->addDebugMsg("binpac-compose", util::fmt("%s = %%s", field->id()->name()), data);
+    if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type()) )
+        cg()->builder()->addDebugMsg("binpac-compose", util::fmt("%s = %%s", field->id()->name()),
+                                     data);
 
     auto obj = (field->anonymous() ? hilti::builder::reference::createNull() : hiltiObject());
 
-    hilti::builder::tuple::element_list args = { data, obj, state()->cookie };
-    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid, state()->output_function, hilti::builder::tuple::create(args));
+    hilti::builder::tuple::element_list args = {data, obj, state()->cookie};
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid, state()->output_function,
+                                    hilti::builder::tuple::create(args));
 }
 
 void Composer::_hiltiDebug(const string& msg)
@@ -438,10 +455,10 @@ void Composer::_hiltiComposeError(const string& msg)
     _hiltiDebugVerbose("triggering compose error");
 
     auto etype = builder::type::byName("BinPACHilti::ComposeError");
-    auto excpt = cg()->builder()->addTmp("__compose_error_excpt", hilti::builder::reference::type(etype));
+    auto excpt =
+        cg()->builder()->addTmp("__compose_error_excpt", hilti::builder::reference::type(etype));
 
-    cg()->builder()->addInstruction(excpt,
-                                    hilti::instruction::exception::NewWithArg,
+    cg()->builder()->addInstruction(excpt, hilti::instruction::exception::NewWithArg,
                                     hilti::builder::type::create(etype),
                                     hilti::builder::string::create(msg));
 
@@ -583,7 +600,8 @@ void Composer::visit(production::Counter* c)
     if ( auto cont = ast::tryCast<type::unit::item::field::Container>(field) )
         _hiltiComposeContainer(hiltiObject(field), c->body(), cont);
     else
-        internalError(::util::fmt("composing counter of field %s not implemented", field->render()));
+        internalError(
+            ::util::fmt("composing counter of field %s not implemented", field->render()));
 
     _finishedProduction(c->sharedPtr<Production>());
 }
@@ -614,7 +632,8 @@ void Composer::visit(production::Literal* l)
 
     _startingProduction(l->sharedPtr<Production>(), field);
 
-    cg()->builder()->addComment(util::fmt("Literal: %s (id %d)", field->id()->name(), l->tokenID()));
+    cg()->builder()->addComment(
+        util::fmt("Literal: %s (id %d)", field->id()->name(), l->tokenID()));
 
     compose(l->literal(), field);
 
@@ -754,35 +773,36 @@ void Composer::visit(type::Address* i)
     assert((v4 || v6) && ! (v4 && v6));
 
     auto byteorder = field->inheritedProperty("byteorder");
-    auto hltbo = byteorder ? cg()->hiltiExpression(byteorder) : hilti::builder::id::create("BinPAC::ByteOrder::Big");
+    auto hltbo = byteorder ? cg()->hiltiExpression(byteorder) :
+                             hilti::builder::id::create("BinPAC::ByteOrder::Big");
 
     string big, little, host;
 
     if ( v4 ) {
         host = "IPv4";
-        little= "IPv4Little";
+        little = "IPv4Little";
         big = "IPv4Big";
         // FIXME: We don't have HILTI enums for little endian addresses.
     }
     else {
         host = "IPv6";
-        little= "IPv6Little";
+        little = "IPv6Little";
         big = "IPv6Big";
     }
 
-    auto t1 = hilti::builder::tuple::create({
-        hilti::builder::id::create("BinPAC::ByteOrder::Little"),
-        hilti::builder::id::create(string("Hilti::Packed::") + little) });
+    auto t1 = hilti::builder::tuple::create(
+        {hilti::builder::id::create("BinPAC::ByteOrder::Little"),
+         hilti::builder::id::create(string("Hilti::Packed::") + little)});
 
-    auto t2 = hilti::builder::tuple::create({
-        hilti::builder::id::create("BinPAC::ByteOrder::Big"),
-        hilti::builder::id::create(string("Hilti::Packed::") + big) });
+    auto t2 = hilti::builder::tuple::create(
+        {hilti::builder::id::create("BinPAC::ByteOrder::Big"),
+         hilti::builder::id::create(string("Hilti::Packed::") + big)});
 
-    auto t3 = hilti::builder::tuple::create({
-        hilti::builder::id::create("BinPAC::ByteOrder::Host"),
-        hilti::builder::id::create(string("Hilti::Packed::") + host) });
+    auto t3 = hilti::builder::tuple::create(
+        {hilti::builder::id::create("BinPAC::ByteOrder::Host"),
+         hilti::builder::id::create(string("Hilti::Packed::") + host)});
 
-    auto tuple = hilti::builder::tuple::create({ t1, t2, t3 });
+    auto tuple = hilti::builder::tuple::create({t1, t2, t3});
     auto fmt = cg()->moduleBuilder()->addTmp("fmt", hilti::builder::type::byName("Hilti::Packed"));
     cg()->builder()->addInstruction(fmt, hilti::instruction::Misc::SelectValue, hltbo, tuple);
 
@@ -804,13 +824,15 @@ void Composer::visit(type::Bitfield* btype)
     int i = 0;
 
     for ( auto b : btype->bits() ) {
-        cg()->builder()->addInstruction(elem, hilti::instruction::tuple::Index, bval, hilti::builder::integer::create(i++));
+        cg()->builder()->addInstruction(elem, hilti::instruction::tuple::Index, bval,
+                                        hilti::builder::integer::create(i++));
         auto nelem = cg()->hiltiApplyAttributesToValue(elem, btype->attributes());
 
-        auto bits = cg()->hiltiInsertBitsIntoInteger(nelem, std::make_shared<type::Integer>(width, false),
-                                                     btype->bitOrder(),
-                                                     hilti::builder::integer::create(b->lower()),
-                                                     hilti::builder::integer::create(b->upper()));
+        auto bits =
+            cg()->hiltiInsertBitsIntoInteger(nelem, std::make_shared<type::Integer>(width, false),
+                                             btype->bitOrder(),
+                                             hilti::builder::integer::create(b->lower()),
+                                             hilti::builder::integer::create(b->upper()));
 
         cg()->builder()->addInstruction(ival, hilti::instruction::integer::Or, ival, bits);
     }

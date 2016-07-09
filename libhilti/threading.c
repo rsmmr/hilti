@@ -8,7 +8,7 @@
 #define _POSIX_C_SOURCE 199309
 #define _C99_SOURCE // snprintf is gone on Darwain with the POSIX defines.
 
-#define DBG_STREAM       "hilti-threads"
+#define DBG_STREAM "hilti-threads"
 #define DBG_STREAM_STATS "hilti-threads-stats"
 
 #include <errno.h>
@@ -18,14 +18,15 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "threading.h"
-#include "debug.h"
-#include "config.h"
-#include "callable.h"
-#include "context.h"
-#include "globals.h"
-#include "exceptions.h"
 #include "autogen/hilti-hlt.h"
+#include "callable.h"
+#include "config.h"
+#include "context.h"
+#include "debug.h"
+#include "exceptions.h"
+#include "globals.h"
+#include "system.h"
+#include "threading.h"
 
 typedef hlt_hash khint_t;
 #include "3rdparty/khash/khash.h"
@@ -38,7 +39,7 @@ typedef struct __hlt_blocked_job {
 typedef struct __kh_blocked_jobs_t {
     // These are used by khash and copied from there (see README.HILTI).
     khint_t n_buckets, size, n_occupied, upper_bound;
-    uint32_t *flags;
+    uint32_t* flags;
     const void** keys;
     hlt_blocked_job** vals;
 } kh_blocked_jobs_t;
@@ -60,7 +61,7 @@ KHASH_INIT(blocked_jobs, const void*, hlt_blocked_job*, 1, __kh_ptr_hash_func, _
 
 // Number of pending elements across all job qeueus that correspond to the
 // maximum load of 1.0.
-#define QUEUE_MAX_LOAD   (QUEUE_BATCH_SIZE * 3 * mgr->num_workers)
+#define QUEUE_MAX_LOAD (QUEUE_BATCH_SIZE * 3 * mgr->num_workers)
 
 static void _fatal_error(const char* msg)
 {
@@ -82,7 +83,8 @@ static hlt_execution_context* _worker_get_ctx(hlt_worker_thread* thread, hlt_vth
         while ( new_max < vid )
             new_max *= 2;
 
-        thread->ctxs = hlt_realloc(thread->ctxs, (new_max+1) * sizeof(hlt_execution_context*), (max+1) * sizeof(hlt_execution_context*));
+        thread->ctxs = hlt_realloc(thread->ctxs, (new_max + 1) * sizeof(hlt_execution_context*),
+                                   (max + 1) * sizeof(hlt_execution_context*));
         thread->max_vid = new_max;
     }
 
@@ -223,7 +225,7 @@ static void _terminate_threads(hlt_thread_mgr* mgr, hlt_thread_mgr_state state)
         hlt_thread_queue_terminate_writer(mgr->workers[i]->jobs, 0);
 
     switch ( state ) {
-      case HLT_THREAD_MGR_FINISH:
+    case HLT_THREAD_MGR_FINISH:
         DBG_LOG(DBG_STREAM, "waiting for all threads to become idle");
 
         // This loop is not free of race conditions. However, I claim that
@@ -243,24 +245,24 @@ static void _terminate_threads(hlt_thread_mgr* mgr, hlt_thread_mgr_state state)
         }
 
         mgr->state = state = HLT_THREAD_MGR_STOP;
-        // Fall-through.
+    // Fall-through.
 
-      case HLT_THREAD_MGR_STOP:
+    case HLT_THREAD_MGR_STOP:
         // Workers will check for this state.
         break;
 
-      case HLT_THREAD_MGR_KILL:
+    case HLT_THREAD_MGR_KILL:
         _kill_all_threads(mgr);
         break;
 
-      default:
+    default:
         _fatal_error("internal error: unknown state in terminate threads");
     }
 
     DBG_LOG(DBG_STREAM, "joining workers");
 
     // Join all the workers.
-    for ( i = 0; i < mgr->num_workers; i++ ) {
+    for ( int i = 0; i < mgr->num_workers; i++ ) {
         DBG_LOG(DBG_STREAM, "joining %s", mgr->workers[i]->name);
         if ( pthread_join(mgr->workers[i]->handle, 0) != 0 )
             _fatal_error("cannot join worker thread");
@@ -269,9 +271,11 @@ static void _terminate_threads(hlt_thread_mgr* mgr, hlt_thread_mgr_state state)
     DBG_LOG(DBG_STREAM, "all workers joined");
 }
 
-static void _add_to_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockable* resource, hlt_job* job)
+static void _add_to_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockable* resource,
+                            hlt_job* job)
 {
-    DBG_LOG(DBG_STREAM, "added job %lu to blocked queue for %s with blockable %p", job->id, thread->name, job->blockable);
+    DBG_LOG(DBG_STREAM, "added job %lu to blocked queue for %s with blockable %p", job->id,
+            thread->name, job->blockable);
 
     hlt_blocked_job* bjob = hlt_malloc(sizeof(hlt_blocked_job));
     bjob->job = job;
@@ -292,12 +296,13 @@ static void _add_to_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockabl
     ++resource->num_blocked;
 }
 
-// The top-level function to run inside a job's fiber. The received argument is the callable to execute.
-static void _worker_fiber_entry(hlt_fiber* fiber, void *callable)
+// The top-level function to run inside a job's fiber. The received argument is the callable to
+// execute.
+static void _worker_fiber_entry(hlt_fiber* fiber, void* callable)
 {
     hlt_execution_context* ctx = hlt_fiber_context(fiber);
     hlt_exception* excpt = 0;
-    HLT_CALLABLE_RUN((hlt_callable *)callable, 0, Hilti_CallbackSchedule, &excpt, ctx);
+    HLT_CALLABLE_RUN((hlt_callable*)callable, 0, Hilti_CallbackSchedule, &excpt, ctx);
     GC_DTOR(callable, hlt_callable, ctx);
 
     if ( excpt ) {
@@ -309,7 +314,8 @@ static void _worker_fiber_entry(hlt_fiber* fiber, void *callable)
 }
 
 // Schedules a job to a worker thread.
-static void _worker_schedule_job(hlt_worker_thread* current, hlt_worker_thread* target, hlt_job* job)
+static void _worker_schedule_job(hlt_worker_thread* current, hlt_worker_thread* target,
+                                 hlt_job* job)
 {
     DBG_LOG(DBG_STREAM, "scheduling job %lu for vid %d to %s", job->id, job->vid, target->name);
 
@@ -319,7 +325,8 @@ static void _worker_schedule_job(hlt_worker_thread* current, hlt_worker_thread* 
         _add_to_blocked(target, job->blockable, job);
 }
 
-static void _unblock_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockable* resource, hlt_execution_context* ctx)
+static void _unblock_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockable* resource,
+                             hlt_execution_context* ctx)
 {
     khiter_t i = kh_get_blocked_jobs(thread->jobs_blocked, resource, 0);
 
@@ -348,7 +355,9 @@ static void _unblock_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockab
 }
 
 // func at +1, tcontext at +1.
-static void _worker_schedule(hlt_worker_thread* current, hlt_worker_thread* target, hlt_vthread_id vid, hlt_callable* func, hlt_type_info* tcontext_type, void* tcontext, hlt_execution_context* ctx)
+static void _worker_schedule(hlt_worker_thread* current, hlt_worker_thread* target,
+                             hlt_vthread_id vid, hlt_callable* func, hlt_type_info* tcontext_type,
+                             void* tcontext, hlt_execution_context* ctx)
 {
     if ( target->mgr->state != HLT_THREAD_MGR_RUN && target->mgr->state != HLT_THREAD_MGR_FINISH ) {
         DBG_LOG(DBG_STREAM, "omitting scheduling of job because mgr signaled termination");
@@ -372,12 +381,16 @@ static void _worker_schedule(hlt_worker_thread* current, hlt_worker_thread* targ
 
 #ifdef DEBUG
 
+#if 0
 static void _debug_print_queue_stats(const hlt_thread_queue_stats* stats)
 {
-    fprintf(stderr, " elems=%" PRIu64 "  batches=%" PRIu64 "  blocked=%" PRIu64 "  locked=%" PRIu64 "\n",
+    fprintf(stderr,
+            " elems=%" PRIu64 "  batches=%" PRIu64 "  blocked=%" PRIu64 "  locked=%" PRIu64 "\n",
             stats->elems, stats->batches, stats->blocked, stats->locked);
 }
+#endif
 
+#if 0
 static void _debug_print_job_summary(hlt_thread_mgr* mgr)
 {
     for ( int i = 0; i < mgr->num_workers; i++ ) {
@@ -390,14 +403,18 @@ static void _debug_print_job_summary(hlt_thread_mgr* mgr)
         fprintf(stderr, "=== %s\n", thread->name);
         fprintf(stderr, "  %20s : ", "read");
         _debug_print_queue_stats(hlt_thread_queue_stats_reader(queue));
-        fprintf(stderr, "  %20s : %" PRIu64 "   queue size: %" PRIu64 "  batches pending: %" PRIu64 "\n", "blocked jobs", kh_size(thread->jobs_blocked), hlt_thread_queue_size(thread->jobs), size);
+        fprintf(stderr,
+                "  %20s : %" PRIu64 "   queue size: %" PRIu64 "  batches pending: %" PRIu64 "\n",
+                "blocked jobs", kh_size(thread->jobs_blocked), hlt_thread_queue_size(thread->jobs),
+                size);
         for ( int j = 0; j < mgr->num_workers + 1; j++ ) {
-            fprintf(stderr, "  %20s[%d] : ", (j==0 ? "writer-main" : "writer-worker"), j);
+            fprintf(stderr, "  %20s[%d] : ", (j == 0 ? "writer-main" : "writer-worker"), j);
             _debug_print_queue_stats(hlt_thread_queue_stats_writer(queue, j));
         }
     }
-            fprintf(stderr, "\n");
+    fprintf(stderr, "\n");
 }
+#endif
 
 static void _debug_adapt_thread_name(hlt_worker_thread* thread)
 {
@@ -405,13 +422,13 @@ static void _debug_adapt_thread_name(hlt_worker_thread* thread)
     uint64_t size = hlt_thread_queue_size(thread->jobs);
     char name_buffer[128];
     snprintf(name_buffer, sizeof(name_buffer), "%s (%" PRIu64 ")", thread->name, size);
-    name_buffer[sizeof(name_buffer)-1] = '\0';
+    name_buffer[sizeof(name_buffer) - 1] = '\0';
     hlt_set_thread_name(name_buffer);
 }
 
 #endif
 
-void __hlt_thread_mgr_unblock(__hlt_thread_mgr_blockable *resource, hlt_execution_context* ctx)
+void __hlt_thread_mgr_unblock(__hlt_thread_mgr_blockable* resource, hlt_execution_context* ctx)
 {
     DBG_LOG(DBG_STREAM, "unblocking blocklable %p (#%d)", resource, resource->num_blocked);
 
@@ -425,9 +442,8 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
 
     hlt_execution_context* ctx = hlt_fiber_context(job->fiber);
 
-    DBG_LOG(DBG_STREAM, "executing job %" PRIu64 " with context %p and thread context %p", job->id, ctx, job->tcontext);
-
-    hlt_exception* excpt = 0;
+    DBG_LOG(DBG_STREAM, "executing job %" PRIu64 " with context %p and thread context %p", job->id,
+            ctx, job->tcontext);
 
     __hlt_context_set_fiber(ctx, job->fiber);
     __hlt_context_set_thread_context(ctx, job->tcontext_type, job->tcontext);
@@ -460,7 +476,7 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
 // Entry function for the worker threads.
 static void* _worker(void* worker_thread_ptr)
 {
-    hlt_worker_thread* thread = (hlt_worker_thread*) worker_thread_ptr;
+    hlt_worker_thread* thread = (hlt_worker_thread*)worker_thread_ptr;
     hlt_thread_mgr* mgr = thread->mgr;
 
     __hlt_thread_mgr_init_native_thread(mgr, thread->name, thread->id);
@@ -491,7 +507,6 @@ static void* _worker(void* worker_thread_ptr)
             }
             else
                 thread->idle = 0;
-
         }
 
         if ( job ) {
@@ -638,11 +653,12 @@ void __hlt_threading_done(hlt_exception** excpt)
     if ( mgr->state != HLT_THREAD_MGR_DEAD ) {
         DBG_LOG(DBG_STREAM, "stopping threading system");
 
-        assert( mgr->state == HLT_THREAD_MGR_RUN );
+        assert(mgr->state == HLT_THREAD_MGR_RUN);
         // Threads are still running so shut them down. If we don't have any
         // exceptions, we give them a chance to shutdown gracefully,
         // otherwise we just kill the threads.
-        hlt_thread_mgr_set_state(mgr, hlt_check_exception(excpt) ? HLT_THREAD_MGR_KILL : HLT_THREAD_MGR_STOP);
+        hlt_thread_mgr_set_state(mgr, hlt_check_exception(excpt) ? HLT_THREAD_MGR_KILL :
+                                                                   HLT_THREAD_MGR_STOP);
     }
 
     assert(mgr->state == HLT_THREAD_MGR_DEAD);
@@ -651,7 +667,8 @@ void __hlt_threading_done(hlt_exception** excpt)
     // exceptions and then delete the thread manager.
     if ( ! hlt_check_exception(excpt) && mgr->num_excpts != 0 ) {
         DBG_LOG(DBG_STREAM, "raising UncaughtThreadException");
-        hlt_set_exception(excpt, &hlt_exception_uncaught_thread_exception, 0, hlt_global_execution_context());
+        hlt_set_exception(excpt, &hlt_exception_uncaught_thread_exception, 0,
+                          hlt_global_execution_context());
     }
 
     hlt_thread_mgr_delete(hlt_global_thread_mgr());
@@ -719,7 +736,7 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
 
     int i;
 
-    for ( i = 0 ; i < mgr->num_workers; i++ ) {
+    for ( i = 0; i < mgr->num_workers; i++ ) {
         hlt_worker_thread* thread = hlt_malloc(sizeof(hlt_worker_thread));
         thread->mgr = mgr;
         // We must not give a size limit for the queue here as otherwise the
@@ -730,11 +747,12 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
         thread->max_vid = 2;
         thread->global_time = 0;
         thread->fiber_pool = __hlt_fiber_pool_new();
-        thread->id = i + 1; // We leave zero for the main thread so that we can use that as its writer id.
+        thread->id =
+            i + 1; // We leave zero for the main thread so that we can use that as its writer id.
         thread->idle = 0;
         thread->jobs_blocked = kh_init(blocked_jobs);
 
-        char* name = (char*) hlt_malloc(20);
+        char* name = (char*)hlt_malloc(20);
         snprintf(name, 20, "worker-%d", thread->id);
         thread->name = name;
 
@@ -743,11 +761,11 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
 
     // Do this loop separately so that all thread data structures are
     // initialized before any of them starts up.
-    for ( i = 0 ; i < mgr->num_workers; i++ ) {
+    for ( i = 0; i < mgr->num_workers; i++ ) {
         hlt_worker_thread* thread = mgr->workers[i];
 
-        if ( pthread_create(&thread->handle, &attr, _worker, (void*) thread) != 0 ) {
-            fprintf(stderr, "cannot create worker %d: %s\n", i+1, strerror(errno));
+        if ( pthread_create(&thread->handle, &attr, _worker, (void*)thread) != 0 ) {
+            fprintf(stderr, "cannot create worker %d: %s\n", i + 1, strerror(errno));
             _fatal_error("cannot create worker threads");
         }
 
@@ -790,7 +808,8 @@ uint32_t hlt_thread_mgr_num_threads(hlt_thread_mgr* mgr)
     return mgr->num_workers;
 }
 
-void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_callable* func,
+                               hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! hlt_is_multi_threaded() ) {
         hlt_set_exception(excpt, &hlt_exception_no_threading, 0, ctx);
@@ -801,7 +820,9 @@ void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_call
     _worker_schedule(ctx->worker, thread, vid, func, 0, 0, ctx);
 }
 
-void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, hlt_type_info* type, void* tcontext, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, hlt_type_info* type, void* tcontext,
+                                        hlt_callable* func, hlt_exception** excpt,
+                                        hlt_execution_context* ctx)
 {
     if ( ! hlt_is_multi_threaded() ) {
         hlt_set_exception(excpt, &hlt_exception_no_threading, 0, ctx);
@@ -838,7 +859,8 @@ const char* hlt_thread_mgr_current_native_thread()
     return id ? id : "<no-thread-id>";
 }
 
-void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, int default_affinity)
+void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name,
+                                         int default_affinity)
 {
     if ( ! mgr )
         return;
@@ -864,7 +886,7 @@ void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, 
         p = p ? strstr(p, name) : 0;
 
         if ( p ) {
-            const char *end = p + strlen(name);
+            const char* end = p + strlen(name);
             if ( *end == ':' )
                 core = atoi(++end);
         }
@@ -874,9 +896,10 @@ void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, 
         hlt_set_thread_affinity(core);
 }
 
-__hlt_thread_mgr_blockable* __hlt_object_blockable(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+__hlt_thread_mgr_blockable* __hlt_object_blockable(const hlt_type_info* type, const void* obj,
+                                                   hlt_exception** excpt,
+                                                   hlt_execution_context* ctx)
 {
     assert(type->blockable);
     return type->blockable(type, obj, excpt, ctx);
 }
-

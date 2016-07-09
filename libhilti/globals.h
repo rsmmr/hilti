@@ -15,11 +15,19 @@
 //
 // Note: Global variables should be limited to a mininum, and must be ensured
 // that they are used in a thread-safe fashion. All globals *must be* listed
-// in this struct, no exception (other than the global pointer to this struct
-// :)
-
+// in this struct, no exception.
 struct __hlt_global_state {
-    hlt_execution_context* context;    // The global execution context.
+    // Flag indicating __hlt_global_state_init() has completed.
+    int initialized;
+
+    // Flag indicating __hlt_global_state_done() has completed.
+    int finished;
+
+    // Size of the space we need for global HILTI variables.
+    uint64_t globals_size;
+
+    // The global execution context.
+    hlt_execution_context* context;
 
     // These are managed by the corresponding subsystems. Access shouldn't be
     // happening from elsehwere. They must be initialized by their
@@ -40,7 +48,7 @@ struct __hlt_global_state {
     pthread_t queue_manager;
 
     // threading.c
-    hlt_thread_mgr*        thread_mgr; // The global thread manager.
+    hlt_thread_mgr* thread_mgr; // The global thread manager.
     int8_t multi_threaded;
     int8_t thread_mgr_terminate;
 
@@ -61,7 +69,7 @@ struct __hlt_global_state {
     _Atomic(uint_fast64_t) global_time;
 
     // fiber.c
-    __hlt_fiber_pool* synced_fiber_pool; // Global fiber pool.
+    __hlt_fiber_pool* synced_fiber_pool;    // Global fiber pool.
     pthread_mutex_t synced_fiber_pool_lock; // Lock to protect access to pool.
 
     // The following are for debugging only. However, we can't compile them
@@ -100,31 +108,29 @@ extern hlt_thread_mgr* hlt_global_thread_mgr();
 /// called by the threading code.
 extern void __hlt_global_set_thread_mgr(hlt_thread_mgr* mgr);
 
-/// Initializes all global state. The function is called from hlt_init() and
-/// other initialization code. If init is zero, it will allocate the memory
-/// for the globals but not yet initalized its content.
-extern void __hlt_global_state_init(int init);
-
-/// Cleans up all global state. The function is called from hlt_done(). Note
-/// that when multiple instance of libhilti share a set of global state (via
-/// \a __hlt_global_state_set), they all must call this function before it's
-/// gets released. Note however that this function is not thread-safe.
+/// Initializes all global state. The function is called from hlt_init().
 ///
-/// \todo: Should it be thread-safe?
-extern void __hlt_global_state_done();
+/// The function is safe against multiple executions; all calls after the
+/// first will be ignored. Returns true if it was the first execution, and
+/// false otherwise.
+extern int __hlt_global_state_init();
 
-/// Returns a pointer to the set of global state. This is primarily for use
-/// with \a __hlt_global_state_set().
+/// Cleans up all global state. The function is called from hlt_done().
 ///
-/// \todo: Should this function be thread-safe?
-extern __hlt_global_state*  __hlt_globals();
+/// The function is safe against multiple executions; all calls after the
+/// first will be ignored. Returns true if it was the first execution after
+/// __hlt_global_state_init(), and false otherwise.
+extern int __hlt_global_state_done();
 
-/// Instructs libhilti to use a different set of global state. This can be
-/// used when a process has loaded libhilti twice (e.g., itself and via JIT),
-/// to sync the two instances. This can be used instead or after
-/// __hlt_global_state_init().
+/// Returns a pointer to the set of global state.
+extern __hlt_global_state* __hlt_globals();
+
+/// Dumps out a debug representation of the global state.
 ///
-/// \todo: Should this function be thread-safe?
-extern void __hlt_globals_set(__hlt_global_state* state);
+/// f: The file handle to write to.
+extern void hlt_global_state_dump(FILE* f);
+
+extern void* __hlt_runtime_state_get();
+extern void __hlt_runtime_state_set(void* state);
 
 #endif

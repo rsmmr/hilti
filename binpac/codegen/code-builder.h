@@ -15,8 +15,7 @@ namespace codegen {
 ///
 /// \note: The visitor arguments (expression, type) are only used for
 /// evaluation expressions.
-class CodeBuilder : public CGVisitor<shared_ptr<hilti::Node>, shared_ptr<Type>>
-{
+class CodeBuilder : public CGVisitor<shared_ptr<hilti::Node>, shared_ptr<Type>> {
 public:
     /// Constructor.
     ///
@@ -38,7 +37,8 @@ public:
     /// it's evaluated. It's assumed that the coercion is legal and supported.
     ///
     /// Returns: The computed HILTI expression.
-    shared_ptr<hilti::Expression> hiltiExpression(shared_ptr<Expression> expr, shared_ptr<Type> coerce_to = nullptr);
+    shared_ptr<hilti::Expression> hiltiExpression(shared_ptr<Expression> expr,
+                                                  shared_ptr<Type> coerce_to = nullptr);
 
     /// Binds the $$ identifier to a given value.
     ///
@@ -122,15 +122,13 @@ protected:
     void visit(variable::Global* v) override;
     void visit(variable::Local* v) override;
 
-    /// Automatically generated visit() methods for ResolverOperator-derived
-    /// classes.
-    #include <binpac/autogen/operators/operators-expression-builder.h>
+/// Automatically generated visit() methods for ResolverOperator-derived
+/// classes.
+#include <binpac/autogen/operators/operators-expression-builder.h>
 
 private:
     shared_ptr<hilti::Expression> _dollardollar = nullptr;
-
 };
-
 }
 }
 

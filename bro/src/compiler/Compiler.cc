@@ -111,7 +111,7 @@ TraversalCode NormalizerCallBack::PreExpr(const ::Expr* expr)
 	{
 	if ( expr->Tag() == EXPR_CONST )
 		{
-		auto val = dynamic_cast<const ::ConstExpr *>(expr)->Value();
+		auto val = dynamicCast(expr)->Value(, const ::ConstExpr *);
 		assert(val);
 
 		if ( val->Type()->Tag() == TYPE_FUNC )
@@ -788,7 +788,7 @@ std::pair<bool, ::Func*> Compiler::BroExprToFunc(const ::Expr* func)
 
 	else if ( func->Tag() == EXPR_EVENT )
 		{
-		auto ee = dynamic_cast<const ::EventExpr *>(func);
+		auto ee = dynamicCast(func, const ::EventExpr *);
 
 		// Just a double-check ... Bro actually doesn't support indirect events, so nor do we.
 		if ( ::global_scope()->Lookup(ee->Name()) )
@@ -805,7 +805,7 @@ std::pair<bool, ::Func*> Compiler::BroExprToFunc(const ::Expr* func)
 
 	else if ( func->Tag() == EXPR_CONST )
 		{
-		auto cexpr = dynamic_cast<const ::ConstExpr*>(func);
+		auto cexpr = dynamicCast(func, const ::ConstExpr*);
 		return std::make_pair(true, cexpr->Value()->AsFunc());
 		}
 

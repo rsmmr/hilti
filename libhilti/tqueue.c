@@ -1,14 +1,14 @@
 
+#include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
-#include <assert.h>
 #include <string.h>
 
-#include "memory_.h"
-#include "tqueue.h"
 #include "hutil.h"
+#include "memory_.h"
 #include "system.h"
+#include "tqueue.h"
 
 typedef struct __batch {
     struct __batch* next; // Link to next batch in chain.
@@ -26,22 +26,22 @@ struct __hlt_thread_queue {
     int max_batches;
 
     // These are safe to access from the writers without locking.
-    batch**   writer_batches;     // Array of batches, one for each writer.
+    batch** writer_batches;       // Array of batches, one for each writer.
     uint64_t* writer_num_written; // Array of total number of elements written so far per writer.
 
     // These are safe to access without locking from the reader only.
-    batch*   reader_head;                 // First batch the reader is working on.
-    int      reader_pos;                  // Position for next read in reader_head.
-    uint64_t reader_num_read;             // Total number of elements read so far.
-    int      reader_num_terminated;       // Number of writers the reader has found to have terminated.
+    batch* reader_head;        // First batch the reader is working on.
+    int reader_pos;            // Position for next read in reader_head.
+    uint64_t reader_num_read;  // Total number of elements read so far.
+    int reader_num_terminated; // Number of writers the reader has found to have terminated.
     hlt_thread_queue_stats* reader_stats; // Stats fo reader.
 
     // These must use the lock for access.
-    int     lock_num_pending;             // Number of batches waiting for reader to pick up.
-    batch*  lock_pending_head;            // First batch waiting for the reader to pick up.
-    batch*  lock_pending_tail;            // Last batch waiting for the reader to pick up.
-    int     lock_block;                   // Max capacity reached, writes will block/fail.
-    int*    lock_writers_terminated;      // Array indicating which writers have terminated.
+    int lock_num_pending;                 // Number of batches waiting for reader to pick up.
+    batch* lock_pending_head;             // First batch waiting for the reader to pick up.
+    batch* lock_pending_tail;             // Last batch waiting for the reader to pick up.
+    int lock_block;                       // Max capacity reached, writes will block/fail.
+    int* lock_writers_terminated;         // Array indicating which writers have terminated.
     hlt_thread_queue_stats* writer_stats; // Array with stats for writer.
 
     // The reader writes this and the writers reads, so there may be a slight
@@ -69,7 +69,6 @@ inline static void _acquire_lock(hlt_thread_queue* queue, int* i, int reader, in
         _fatal_error("cannot acquire lock");
 
     // fprintf(stderr, "acquired %p %d %d\n", queue, reader, thread);
-
 }
 
 inline static void _release_lock(hlt_thread_queue* queue, int i, int reader, int thread)
@@ -117,7 +116,7 @@ static void _debug_print_queue(const char *prefix, hlt_thread_queue* q, int read
 
 hlt_thread_queue* hlt_thread_queue_new(int writers, int batch_size, int max_batches)
 {
-    hlt_thread_queue *queue = (hlt_thread_queue *) hlt_malloc(sizeof(hlt_thread_queue));
+    hlt_thread_queue* queue = (hlt_thread_queue*)hlt_malloc(sizeof(hlt_thread_queue));
     if ( ! queue )
         _fatal_error("out of memory");
 
@@ -129,18 +128,19 @@ hlt_thread_queue* hlt_thread_queue_new(int writers, int batch_size, int max_batc
     queue->reader_pos = 0;
     queue->reader_num_read = 0;
     queue->reader_num_terminated = 0;
-    queue->reader_stats = (hlt_thread_queue_stats*) hlt_malloc(sizeof(hlt_thread_queue_stats));
+    queue->reader_stats = (hlt_thread_queue_stats*)hlt_malloc(sizeof(hlt_thread_queue_stats));
     memset(queue->reader_stats, 0, sizeof(hlt_thread_queue_stats));
 
-    queue->writer_batches = (batch**) hlt_malloc(sizeof(batch*) * writers);
-    queue->writer_num_written = (uint64_t*) hlt_malloc(sizeof(uint64_t) * writers);
-    queue->writer_stats = (hlt_thread_queue_stats*) hlt_malloc(sizeof(hlt_thread_queue_stats) * writers);
+    queue->writer_batches = (batch**)hlt_malloc(sizeof(batch*) * writers);
+    queue->writer_num_written = (uint64_t*)hlt_malloc(sizeof(uint64_t) * writers);
+    queue->writer_stats =
+        (hlt_thread_queue_stats*)hlt_malloc(sizeof(hlt_thread_queue_stats) * writers);
 
     queue->lock_num_pending = 0;
     queue->lock_pending_head = 0;
     queue->lock_pending_tail = 0;
     queue->lock_block = 0;
-    queue->lock_writers_terminated = (int*) hlt_malloc(sizeof(int) * writers);
+    queue->lock_writers_terminated = (int*)hlt_malloc(sizeof(int) * writers);
     memset(queue->writer_stats, 0, sizeof(hlt_thread_queue_stats) * writers);
 
     for ( int i = 0; i < writers; ++i ) {
@@ -193,7 +193,7 @@ void hlt_thread_queue_delete(hlt_thread_queue* queue)
     hlt_free(queue);
 }
 
-void hlt_thread_queue_write(hlt_thread_queue* queue, int writer, void *elem)
+void hlt_thread_queue_write(hlt_thread_queue* queue, int writer, void* elem)
 {
     if ( queue->lock_writers_terminated[writer] )
         // Ignore when we have already terminated. We can read this without
@@ -205,7 +205,7 @@ void hlt_thread_queue_write(hlt_thread_queue* queue, int writer, void *elem)
 
         // If we don't have a batch, get us one.
         if ( ! b ) {
-            b = (batch*) hlt_malloc(sizeof(batch) * queue->batch_size * sizeof(void*));
+            b = (batch*)hlt_malloc(sizeof(batch) * queue->batch_size * sizeof(void*));
             if ( ! b )
                 _fatal_error("out of memory");
 
@@ -237,7 +237,7 @@ void hlt_thread_queue_flush(hlt_thread_queue* queue, int writer)
 
     batch* b = queue->writer_batches[writer];
 
-    if ( ! ( b && b->write_pos ) )
+    if ( ! (b && b->write_pos) )
         // Nothing to do.
         return;
 
@@ -299,7 +299,6 @@ void* hlt_thread_queue_read(hlt_thread_queue* queue, int timeout)
     timeout *= 1000; // Turn it into nanoseconds.
 
     while ( 1 ) {
-
         while ( queue->reader_head ) {
             // We still have stuff to do, so do it.
 

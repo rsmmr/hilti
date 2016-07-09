@@ -12,8 +12,8 @@ namespace binpac {
 namespace codegen {
 
 enum SynchronizerType {
-    SynchronizeAt, // Do not consume the mached synchronization object.
-    SynchronizeAfter, // Consume the mached synchronization object.
+    SynchronizeAt,         // Do not consume the mached synchronization object.
+    SynchronizeAfter,      // Consume the mached synchronization object.
     SynchronizeUnspecified // Placeholder when not yet set.
 };
 
@@ -25,8 +25,7 @@ public:
 };
 
 /// Generates code to (re-)synchronize parsing based on an upcoming field.
-class Synchronizer : public CGVisitor<>
-{
+class Synchronizer : public CGVisitor<> {
 public:
     Synchronizer(CodeGen* cg);
     virtual ~Synchronizer();
@@ -41,10 +40,14 @@ public:
     /// cur: The current input position in \a data
     ///
     /// Returns: The new input position.
-    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<Production> p, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur);
+    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<Production> p,
+                                                   shared_ptr<hilti::Expression> data,
+                                                   shared_ptr<hilti::Expression> cur);
 
     /// XXX
-    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> cur);
+    shared_ptr<hilti::Expression> hiltiSynchronize(shared_ptr<type::Unit> unit,
+                                                   shared_ptr<hilti::Expression> data,
+                                                   shared_ptr<hilti::Expression> cur);
 
 protected:
     SynchronizerState* state();
@@ -88,9 +91,7 @@ private:
     void _hiltiDebugVerbose(const string& msg);
 
     SynchronizerState _state;
-
 };
-
 }
 }
 

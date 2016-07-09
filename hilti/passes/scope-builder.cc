@@ -3,23 +3,31 @@
 
 using namespace hilti::passes;
 
-class ScopeClearer : public Pass<>
-{
+class ScopeClearer : public Pass<> {
 public:
-   ScopeClearer() : Pass<>("hilti::ScopeClearer") {}
-   virtual ~ScopeClearer() {}
+    ScopeClearer() : Pass<>("hilti::ScopeClearer")
+    {
+    }
+    virtual ~ScopeClearer()
+    {
+    }
 
-   bool run(shared_ptr<Node> module) override { return processAllPreOrder(module); }
+    bool run(shared_ptr<Node> module) override
+    {
+        return processAllPreOrder(module);
+    }
 
 protected:
-   void visit(statement::Block* b) override { b->scope()->clear(); }
-
+    void visit(statement::Block* b) override
+    {
+        b->scope()->clear();
+    }
 };
 
 shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
 {
     auto id = decl->id();
-    auto is_hook = dynamic_cast<declaration::Hook*>(decl);
+    auto is_hook = ast::rtti::isA<declaration::Hook>(decl);
 
     if ( ! id ) {
         error(decl, "declaration without an ID");
@@ -36,7 +44,8 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
     auto block = current<statement::Block>();
 
     if ( ! block ) {
-        error(decl, util::fmt("declaration of %s is not part of a block", decl->id()->name().c_str()));
+        error(decl,
+              util::fmt("declaration of %s is not part of a block", decl->id()->name().c_str()));
         return 0;
     }
 
@@ -62,7 +71,7 @@ bool ScopeBuilder::run(shared_ptr<Node> module)
     ScopeClearer clearer;
     clearer.run(module);
 
-    auto m = ast::as<Module>(module);
+    auto m = ast::rtti::tryCast<Module>(module);
     m->body()->scope()->clear();
 
     if ( ! processAllPreOrder(module) )
@@ -92,7 +101,7 @@ void ScopeBuilder::visit(statement::Block* b)
 
     auto func = current<hilti::Function>();
 
-    if ( ! func ) // TODO: Too bad current() doesn't follow the class hierarchy ... 
+    if ( ! func ) // TODO: Too bad current() doesn't follow the class hierarchy ...
         func = current<hilti::Hook>();
 
     if ( func ) {
@@ -100,7 +109,7 @@ void ScopeBuilder::visit(statement::Block* b)
             // Just a declaration without implementation.
             return;
 
-        scope = ast::checkedCast<statement::Block>(func->body())->scope();
+        scope = ast::rtti::checkedCast<statement::Block>(func->body())->scope();
     }
 
     else {
@@ -184,7 +193,7 @@ void ScopeBuilder::visit(declaration::Function* f)
         return;
 
     // Add parameters to body's scope.
-    scope = ast::checkedCast<statement::Block>(func->body())->scope();
+    scope = ast::rtti::checkedCast<statement::Block>(func->body())->scope();
 
     for ( auto p : func->type()->parameters() ) {
         auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
@@ -200,11 +209,10 @@ void ScopePrinter::visit(statement::Block* b)
 {
     auto mod = current<Module>();
 
-    _out << "Module " << ( mod ? mod->id()->name() : string("<null>") ) << std::endl;
+    _out << "Module " << (mod ? mod->id()->name() : string("<null>")) << std::endl;
 
     b->scope()->dump(_out);
     _out << std::endl;
     _out << "+++++" << std::endl;
     _out << std::endl;
 }
-

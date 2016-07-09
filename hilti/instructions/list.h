@@ -1,6 +1,6 @@
 ///
 /// \type List
-/// 
+///
 /// \ctor ``list(1,2,3)``, ``list()``
 ///
 /// \cproto hlt_list*
@@ -18,7 +18,8 @@ iBegin(iterList, Begin, "begin")
     iTarget(optype::iterList);
     iOp1(optype::refList, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -31,7 +32,8 @@ iBegin(iterList, End, "end")
     iTarget(optype::iterList);
     iOp1(optype::refList, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -44,7 +46,8 @@ iBegin(iterList, Incr, "incr")
     iTarget(optype::iterList);
     iOp1(optype::iterList, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(target, op1);
     }
 
@@ -54,11 +57,12 @@ iBegin(iterList, Incr, "incr")
 iEnd
 
 iBegin(iterList, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::iterList, true);
     iOp2(optype::iterList, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(op1, op2);
     }
 
@@ -69,10 +73,11 @@ iBegin(iterList, Equal, "equal")
 iEnd
 
 iBegin(iterList, Deref, "deref")
-    iTarget(optype::any)
+    iTarget(optype::any);
     iOp1(optype::iterList, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(elementType(iteratedType(op1)), target);
     }
 
@@ -83,11 +88,12 @@ iBegin(iterList, Deref, "deref")
 iEnd
 
 iBegin(list, New, "new")
-    iTarget(optype::refList)
-    iOp1(optype::typeList, true)
-    iOp2(optype::optional(optype::refTimerMgr), true)
+    iTarget(optype::refList);
+    iOp1(optype::typeList, true);
+    iOp2(optype::optional(optype::refTimerMgr), true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -99,10 +105,11 @@ iEnd
 
 
 iBegin(list, Back, "list.back")
-    iTarget(optype::any)
-    iOp1(optype::refList, true)
+    iTarget(optype::any);
+    iOp1(optype::refList, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(elementType(referencedType(op1)), target);
     }
 
@@ -114,9 +121,10 @@ iBegin(list, Back, "list.back")
 iEnd
 
 iBegin(list, Erase, "list.erase")
-    iOp1(optype::iterList, false)
+    iOp1(optype::iterList, false);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -126,10 +134,11 @@ iBegin(list, Erase, "list.erase")
 iEnd
 
 iBegin(list, Front, "list.front")
-    iTarget(optype::any)
-    iOp1(optype::refList, true)
+    iTarget(optype::any);
+    iOp1(optype::refList, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(elementType(referencedType(op1)), target);
     }
 
@@ -141,10 +150,11 @@ iBegin(list, Front, "list.front")
 iEnd
 
 iBegin(list, Insert, "list.insert")
-    iOp1(optype::any, false)
-    iOp2(optype::iterList, true)
+    iOp1(optype::any, false);
+    iOp2(optype::iterList, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, elementType(iteratedType(op2)));
     }
 
@@ -157,10 +167,11 @@ iBegin(list, Insert, "list.insert")
 iEnd
 
 iBegin(list, PopBack, "list.pop_back")
-    iTarget(optype::any)
-    iOp1(optype::refList, true)
+    iTarget(optype::any);
+    iOp1(optype::refList, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(elementType(referencedType(op1)), target);
     }
 
@@ -172,10 +183,11 @@ iBegin(list, PopBack, "list.pop_back")
 iEnd
 
 iBegin(list, PopFront, "list.pop_front")
-    iTarget(optype::any)
-    iOp1(optype::refList, true)
+    iTarget(optype::any);
+    iOp1(optype::refList, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(elementType(referencedType(op1)), target);
     }
 
@@ -187,10 +199,11 @@ iBegin(list, PopFront, "list.pop_front")
 iEnd
 
 iBegin(list, PushBack, "list.push_back")
-    iOp1(optype::refList, false)
-    iOp2(optype::any, false)
+    iOp1(optype::refList, false);
+    iOp2(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
@@ -201,10 +214,11 @@ iBegin(list, PushBack, "list.push_back")
 iEnd
 
 iBegin(list, PushFront, "list.push_front")
-    iOp1(optype::refList, false)
-    iOp2(optype::any, false)
+    iOp1(optype::refList, false);
+    iOp2(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
@@ -215,10 +229,11 @@ iBegin(list, PushFront, "list.push_front")
 iEnd
 
 iBegin(list, Append, "list.append")
-    iOp1(optype::refList, false)
-    iOp2(optype::refList, false)
+    iOp1(optype::refList, false);
+    iOp2(optype::refList, false);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(elementType(referencedType(op1)), elementType(referencedType(op2)));
     }
 
@@ -229,10 +244,11 @@ iBegin(list, Append, "list.append")
 iEnd
 
 iBegin(list, Size, "list.size")
-    iTarget(optype::int64)
-    iOp1(optype::refList, true)
+    iTarget(optype::int64);
+    iOp1(optype::refList, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -242,12 +258,13 @@ iBegin(list, Size, "list.size")
 iEnd
 
 iBegin(list, Timeout, "list.timeout")
-    iOp1(optype::refList, true)
-    iOp2(optype::enum_, true)
-    iOp3(optype::interval, true)
+    iOp1(optype::refList, true);
+    iOp2(optype::enum_, true);
+    iOp3(optype::interval, true);
 
-    iValidate {
-        auto ty_op2 = as<type::Enum>(op2->type());
+    iValidate
+    {
+        auto ty_op2 = ast::rtti::checkedCast<type::Enum>(op2->type());
 
         // TODO: Check the enum.
     }
@@ -262,4 +279,3 @@ iBegin(list, Timeout, "list.timeout")
     )")
 
 iEnd
-

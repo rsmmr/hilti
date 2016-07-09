@@ -11,11 +11,12 @@
 #include "define-instruction.h"
 
 iBegin(double_, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -24,11 +25,12 @@ iBegin(double_, Equal, "equal")
 iEnd
 
 iBegin(double_, Add, "double.add")
-    iTarget(optype::double_)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::double_);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -39,10 +41,11 @@ iBegin(double_, Add, "double.add")
 iEnd
 
 iBegin(double_, AsInterval, "double.as_interval")
-    iTarget(optype::interval)
-    iOp1(optype::double_, true)
+    iTarget(optype::interval);
+    iOp1(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -53,10 +56,11 @@ iBegin(double_, AsInterval, "double.as_interval")
 iEnd
 
 iBegin(double_, AsSInt, "double.as_sint")
-    iTarget(optype::integer)
-    iOp1(optype::double_, true)
+    iTarget(optype::integer);
+    iOp1(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -67,10 +71,11 @@ iBegin(double_, AsSInt, "double.as_sint")
 iEnd
 
 iBegin(double_, AsTime, "double.as_time")
-    iTarget(optype::time)
-    iOp1(optype::double_, true)
+    iTarget(optype::time);
+    iOp1(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -81,10 +86,11 @@ iBegin(double_, AsTime, "double.as_time")
 iEnd
 
 iBegin(double_, AsUInt, "double.as_uint")
-    iTarget(optype::integer)
-    iOp1(optype::double_, true)
+    iTarget(optype::integer);
+    iOp1(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -95,15 +101,16 @@ iBegin(double_, AsUInt, "double.as_uint")
 iEnd
 
 iBegin(double_, Div, "double.div")
-    iTarget(optype::double_)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::double_);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
-        auto cexpr = ast::as<expression::Constant>(op2);
+    iValidate
+    {
+        auto cexpr = ast::rtti::tryCast<expression::Constant>(op2);
 
         if ( cexpr ) {
-            auto d = ast::as<constant::Double>(cexpr->constant())->value();
+            auto d = ast::rtti::tryCast<constant::Double>(cexpr->constant())->value();
 
             if ( d == 0 )
                 error(op2, "division by zero");
@@ -118,11 +125,12 @@ iBegin(double_, Div, "double.div")
 iEnd
 
 iBegin(double_, Eq, "double.eq")
-    iTarget(optype::boolean)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::boolean);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -132,11 +140,12 @@ iBegin(double_, Eq, "double.eq")
 iEnd
 
 iBegin(double_, Gt, "double.gt")
-    iTarget(optype::boolean)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::boolean);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -146,11 +155,12 @@ iBegin(double_, Gt, "double.gt")
 iEnd
 
 iBegin(double_, Geq, "double.geq")
-    iTarget(optype::boolean)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::boolean);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -160,11 +170,12 @@ iBegin(double_, Geq, "double.geq")
 iEnd
 
 iBegin(double_, Lt, "double.lt")
-    iTarget(optype::boolean)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::boolean);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -173,11 +184,12 @@ iBegin(double_, Lt, "double.lt")
 iEnd
 
 iBegin(double_, Leq, "double.leq")
-    iTarget(optype::boolean)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::boolean);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -186,15 +198,16 @@ iBegin(double_, Leq, "double.leq")
 iEnd
 
 iBegin(double_, Mod, "double.mod")
-    iTarget(optype::double_)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::double_);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
-        auto cexpr = ast::as<expression::Constant>(op2);
+    iValidate
+    {
+        auto cexpr = ast::rtti::tryCast<expression::Constant>(op2);
 
         if ( cexpr ) {
-            auto d = ast::as<constant::Double>(cexpr->constant())->value();
+            auto d = ast::rtti::tryCast<constant::Double>(cexpr->constant())->value();
 
             if ( d == 0 )
                 error(op2, "division by zero");
@@ -209,11 +222,12 @@ iBegin(double_, Mod, "double.mod")
 iEnd
 
 iBegin(double_, Mul, "double.mul")
-    iTarget(optype::double_)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::double_);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -224,11 +238,12 @@ iBegin(double_, Mul, "double.mul")
 iEnd
 
 iBegin(double_, PowDouble, "double.pow")
-    iTarget(optype::double_)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::double_);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -239,11 +254,12 @@ iBegin(double_, PowDouble, "double.pow")
 iEnd
 
 iBegin(double_, Sub, "double.sub")
-    iTarget(optype::double_)
-    iOp1(optype::double_, true)
-    iOp2(optype::double_, true)
+    iTarget(optype::double_);
+    iOp1(optype::double_, true);
+    iOp2(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -252,5 +268,3 @@ iBegin(double_, Sub, "double.sub")
     )")
 
 iEnd
-
-

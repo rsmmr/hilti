@@ -33,21 +33,21 @@ extern void __hlt_cmd_queue_done();
 extern void __hlt_cmd_queue_kill();
 
 // The command types currently defined.
-#define __HLT_CMD_FILE   1  // File operations.
+#define __HLT_CMD_FILE 1 // File operations.
 
 // The common header for all commands. Custom data may follow this header in
 // per-command structs.
 typedef struct __hlt_cmd {
-    uint16_t type;               // One of __HLT_CMD_*
-    hlt_execution_context* ctx;  // The context of the writer (not set currently).
-    struct __hlt_cmd* next;      // We keep them in a queue.
+    uint16_t type;              // One of __HLT_CMD_*
+    hlt_execution_context* ctx; // The context of the writer (not set currently).
+    struct __hlt_cmd* next;     // We keep them in a queue.
 } __hlt_cmd;
 
 // Initializes a command. This initializes the common ~~__hlt_cmd header.
 //
 // cmd: The command to initialize.
 // type: One of __HLT_CMD_*.
-void __hlt_cmdqueue_init_cmd(__hlt_cmd *cmd, uint16_t type);
+void __hlt_cmdqueue_init_cmd(__hlt_cmd* cmd, uint16_t type);
 
 // Writes a command for execution into the queue.
 //
@@ -55,7 +55,7 @@ void __hlt_cmdqueue_init_cmd(__hlt_cmd *cmd, uint16_t type);
 //
 // Note that in a non-threaded configuration, this will directly execute the
 // command and return only after it has finished.
-extern void __hlt_cmdqueue_push(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void __hlt_cmdqueue_push(__hlt_cmd* cmd, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Signals that a worker thread is about to terminate.
 extern void __hlt_cmd_worker_terminating(int worker);

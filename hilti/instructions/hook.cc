@@ -1,11 +1,12 @@
 
 #include "define-instruction.h"
 
-#include "hook.h"
 #include "../builder/nodes.h"
+#include "hook.h"
 
 iBeginCC(hook)
-    iValidateCC(DisableGroup) {
+    iValidateCC(DisableGroup)
+    {
     }
 
     iDocCC(DisableGroup, R"(    
@@ -15,7 +16,8 @@ iBeginCC(hook)
 iEndCC
 
 iBeginCC(hook)
-    iValidateCC(EnableGroup) {
+    iValidateCC(EnableGroup)
+    {
     }
 
     iDocCC(EnableGroup, R"(    
@@ -25,7 +27,8 @@ iBeginCC(hook)
 iEndCC
 
 iBeginCC(hook)
-    iValidateCC(GroupEnabled) {
+    iValidateCC(GroupEnabled)
+    {
     }
 
     iDocCC(GroupEnabled, R"(    
@@ -36,14 +39,16 @@ iBeginCC(hook)
 iEndCC
 
 iBeginCC(hook)
-    iValidateCC(Run) {
-        auto htype = as<type::Hook>(op1->type());
+    iValidateCC(Run)
+    {
+        auto htype = ast::rtti::checkedCast<type::Hook>(op1->type());
         auto rtype = htype->result()->type();
         checkCallParameters(htype, op2);
         checkCallResult(rtype, target ? target->type() : nullptr);
     }
 
-    iFlowInfoCC(Run) {
+    iFlowInfoCC(Run)
+    {
         fi.modified = util::set_union(fi.modified, fi.defined);
         return fi;
     }
@@ -56,7 +61,8 @@ iBeginCC(hook)
 iEndCC
 
 iBeginCC(hook)
-    iValidateCC(Stop) {
+    iValidateCC(Stop)
+    {
         // To find out if hook.stop is used outside of a hook, we walk up the
         // current path. If we aren't the child of an expression, the we need
         // to find a hook declaration.
@@ -68,14 +74,14 @@ iBeginCC(hook)
         for ( auto i = nodes.rbegin(); i != nodes.rend(); i++ ) {
             auto n = *i;
 
-            hook = ast::tryCast<declaration::Hook>(n);
+            hook = ast::rtti::tryCast<declaration::Hook>(n);
 
             if ( hook ) {
                 ok = true;
                 break;
             }
 
-            if ( ast::tryCast<Expression>(n) ) {
+            if ( ast::rtti::isA<Expression>(n) ) {
                 ok = true;
                 break;
             }
@@ -94,7 +100,8 @@ iBeginCC(hook)
         checkCallResult(rtype, op1);
     }
 
-    iSuccessorsCC(Stop) {
+    iSuccessorsCC(Stop)
+    {
         return std::set<shared_ptr<Expression>>();
     }
 
@@ -104,4 +111,3 @@ iBeginCC(hook)
     )")
 
 iEndCC
-

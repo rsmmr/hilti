@@ -5,8 +5,8 @@
 #include "../common.h"
 #include "../visitor.h"
 
-#include "common.h"
 #include "codegen.h"
+#include "common.h"
 
 namespace hilti {
 namespace codegen {
@@ -53,35 +53,33 @@ struct UnpackResult {
 
 /// Visitor that generates the code unpacking binary data into HILTI data
 /// types.
-class Unpacker : public CGVisitor<int, UnpackArgs, UnpackResult>
-{
+class Unpacker : public CGVisitor<int, UnpackArgs, UnpackResult> {
 public:
-   /// Constructor.
-   ///
-   /// cg: The code generator to use.
-   Unpacker(CodeGen* cg);
-   virtual ~Unpacker();
+    /// Constructor.
+    ///
+    /// cg: The code generator to use.
+    Unpacker(CodeGen* cg);
+    virtual ~Unpacker();
 
-   /// Unpacks an instance of a type from binary data.
-   ///
-   /// args: The arguments to the unpack operation.
-   ///
-   /// Returns: A pair in which the first value is the unpacked value, and
-   /// the second a byte iterator pointing one beyond the last consumed input
-   /// byte (which can't be further than *end*). None of the tuples elements
-   /// will have their cctor applied.
-   UnpackResult llvmUnpack(const UnpackArgs& args);
+    /// Unpacks an instance of a type from binary data.
+    ///
+    /// args: The arguments to the unpack operation.
+    ///
+    /// Returns: A pair in which the first value is the unpacked value, and
+    /// the second a byte iterator pointing one beyond the last consumed input
+    /// byte (which can't be further than *end*). None of the tuples elements
+    /// will have their cctor applied.
+    UnpackResult llvmUnpack(const UnpackArgs& args);
 
 protected:
-   virtual void visit(type::Reference* t) override;
-   virtual void visit(type::Bytes* t) override;
-   virtual void visit(type::Integer* t) override;
-   virtual void visit(type::Address* t) override;
-   virtual void visit(type::Port* t) override;
-   virtual void visit(type::Bool* t) override;
-   virtual void visit(type::Double* t) override;
+    virtual void visit(type::Reference* t) override;
+    virtual void visit(type::Bytes* t) override;
+    virtual void visit(type::Integer* t) override;
+    virtual void visit(type::Address* t) override;
+    virtual void visit(type::Port* t) override;
+    virtual void visit(type::Bool* t) override;
+    virtual void visit(type::Double* t) override;
 };
-
 }
 }
 

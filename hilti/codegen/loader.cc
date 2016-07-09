@@ -3,10 +3,10 @@
 
 #include "../hilti.h"
 
-#include "loader.h"
 #include "codegen.h"
-#include "util.h"
+#include "loader.h"
 #include "type-builder.h"
+#include "util.h"
 
 #include "libhilti/enum.h"
 #include "libhilti/port.h"
@@ -23,7 +23,8 @@ Loader::~Loader()
 {
 }
 
-llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type, bool cctor, llvm::Value* dst)
+llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type, bool cctor,
+                                llvm::Value* dst)
 {
     if ( ! dst ) {
         if ( cctor ) {
@@ -33,7 +34,8 @@ llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type
 
         else {
             if ( result.cctor )
-                cg()->llvmDtorAfterInstruction(result.value, type, result.is_ptr, result.is_hoisted, "Loader.normResult");
+                cg()->llvmDtorAfterInstruction(result.value, type, result.is_ptr, result.is_hoisted,
+                                               "Loader.normResult");
         }
     }
 
@@ -59,7 +61,8 @@ llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type
     }
 }
 
-llvm::Value* Loader::llvmValue(shared_ptr<Expression> expr, bool cctor, shared_ptr<hilti::Type> coerce_to)
+llvm::Value* Loader::llvmValue(shared_ptr<Expression> expr, bool cctor,
+                               shared_ptr<hilti::Type> coerce_to)
 {
     if ( coerce_to )
         expr = expr->coerceTo(coerce_to);
@@ -70,11 +73,13 @@ llvm::Value* Loader::llvmValue(shared_ptr<Expression> expr, bool cctor, shared_p
     setArg1(coerce_to);
     bool success = processOne(expr, &result);
     assert(success);
+    _UNUSED(success);
 
     return normResult(result, expr->type(), cctor, nullptr);
 }
 
-void Loader::llvmValueInto(llvm::Value* dst, shared_ptr<Expression> expr, bool cctor, shared_ptr<hilti::Type> coerce_to)
+void Loader::llvmValueInto(llvm::Value* dst, shared_ptr<Expression> expr, bool cctor,
+                           shared_ptr<hilti::Type> coerce_to)
 {
     if ( coerce_to )
         expr = expr->coerceTo(coerce_to);
@@ -85,6 +90,7 @@ void Loader::llvmValueInto(llvm::Value* dst, shared_ptr<Expression> expr, bool c
     setArg1(coerce_to);
     bool success = processOne(expr, &result);
     assert(success);
+    _UNUSED(success);
 
     normResult(result, expr->type(), cctor, dst);
 }
@@ -97,6 +103,7 @@ llvm::Value* Loader::llvmValueAddress(shared_ptr<Expression> expr)
     setArg1(nullptr);
     bool success = processOne(expr, &result);
     assert(success);
+    _UNUSED(success);
 
     return result.is_ptr ? result.value : nullptr;
 }
@@ -108,6 +115,7 @@ llvm::Value* Loader::llvmValue(shared_ptr<Constant> constant, bool cctor)
     _LoadResult result;
     bool success = processOne(constant, &result);
     assert(success);
+    _UNUSED(success);
 
     return normResult(result, constant->type(), cctor, nullptr);
 }
@@ -119,6 +127,7 @@ void Loader::llvmValueInto(llvm::Value* dst, shared_ptr<Constant> constant, bool
     _LoadResult result;
     bool success = processOne(constant, &result);
     assert(success);
+    _UNUSED(success);
 
     normResult(result, constant->type(), cctor, dst);
 }
@@ -130,6 +139,7 @@ llvm::Value* Loader::llvmValue(shared_ptr<Ctor> ctor, bool cctor)
     _LoadResult result;
     bool success = processOne(ctor, &result);
     assert(success);
+    _UNUSED(success);
 
     return normResult(result, ctor->type(), cctor, nullptr);
 }
@@ -141,6 +151,7 @@ void Loader::llvmValueInto(llvm::Value* dst, shared_ptr<Ctor> ctor, bool cctor)
     _LoadResult result;
     bool success = processOne(ctor, &result);
     assert(success);
+    _UNUSED(success);
 
     normResult(result, ctor->type(), cctor, dst);
 }
@@ -232,7 +243,8 @@ void Loader::visit(expression::CodeGen* c)
 
 void Loader::visit(constant::Integer* c)
 {
-    auto val = cg()->llvmConstInt(c->value(), as<type::Integer>(c->type())->width());
+    auto val =
+        cg()->llvmConstInt(c->value(), ast::rtti::checkedCast<type::Integer>(c->type())->width());
     setResult(val, false, false);
 }
 
@@ -279,7 +291,7 @@ void Loader::visit(constant::Tuple* t)
 
 void Loader::visit(constant::Unset* t)
 {
-    if ( ast::tryCast<type::Unset>(t->type()) )
+    if ( ast::rtti::isA<type::Unset>(t->type()) )
         // Just a dummy value.
         setResult(cg()->llvmConstInt(0, 1), false, false);
     else
@@ -292,7 +304,7 @@ void Loader::visit(constant::Union* c)
 
     // TODO: Should factor this out into codegen, and then use from
     // instructions/unit.cc as well.
-    auto utype = ast::as<type::Union>(c->type());
+    auto utype = ast::rtti::tryCast<type::Union>(c->type());
     auto data_type = llvm::cast<llvm::StructType>(cg()->llvmType(utype))->getElementType(1);
 
     shared_ptr<type::union_::Field> field;
@@ -307,7 +319,9 @@ void Loader::visit(constant::Union* c)
     }
 
     if ( ! field ) {
-        auto t = ast::isA<type::Union>(dtype) ? dtype : std::make_shared<type::Union>(type::Union::type_list());
+        auto t = ast::rtti::isA<type::Union>(dtype) ?
+                     dtype :
+                     std::make_shared<type::Union>(type::Union::type_list());
         auto ht = cg()->llvmType(t);
         llvm::Value* none = cg()->llvmConstNull(ht);
         none = cg()->llvmInsertValue(none, cg()->llvmConstInt(-1, 32), 0);
@@ -332,7 +346,7 @@ void Loader::visit(constant::Union* c)
     auto val = cg()->llvmReinterpret(op, data_type);
     auto idx = cg()->llvmConstInt(fidx, 32);
 
-    CodeGen::value_list elems = { idx, val };
+    CodeGen::value_list elems = {idx, val};
     auto result = cg()->llvmValueStruct(elems);
     setResult(result, false, false);
 }
@@ -345,26 +359,27 @@ void Loader::visit(constant::Reference* r)
     setResult(val, false, false);
 }
 
-static CodeGen::constant_list _loadAddressVal(CodeGen* cg, const constant::AddressVal& val, int width)
+static CodeGen::constant_list _loadAddressVal(CodeGen* cg, const constant::AddressVal& val,
+                                              int width)
 {
     uint64_t a, b;
 
     switch ( val.family ) {
-     case constant::AddressVal::IPv4: {
-        uint32_t* p = (uint32_t*) &val.in.in4.s_addr;
+    case constant::AddressVal::IPv4: {
+        uint32_t* p = (uint32_t*)&val.in.in4.s_addr;
         a = 0;
         b = codegen::util::ntoh32(p[0]);
         break;
-     }
+    }
 
-     case constant::AddressVal::IPv6: {
-        uint64_t* p = (uint64_t*) &val.in.in6.s6_addr;
+    case constant::AddressVal::IPv6: {
+        uint64_t* p = (uint64_t*)&val.in.in6.s6_addr;
         a = codegen::util::ntoh64(p[0]);
         b = codegen::util::ntoh64(p[1]);
         break;
-     }
+    }
 
-     default:
+    default:
         assert(false);
     }
 
@@ -415,7 +430,7 @@ void Loader::visit(constant::Double* c)
 
 void Loader::visit(constant::Bitset* c)
 {
-    auto bstype = ast::as<type::Bitset>(c->type());
+    auto bstype = ast::rtti::tryCast<type::Bitset>(c->type());
     assert(bstype);
 
     auto bits = c->value();
@@ -432,8 +447,8 @@ void Loader::visit(constant::Bitset* c)
 
 void Loader::visit(constant::Enum* c)
 {
-    auto etype = ast::as<type::Enum>(c->type());
-    assert(etype);
+    auto etype = ast::rtti::checkedCast<type::Enum>(c->type());
+    ;
 
     auto bits = c->value();
 
@@ -474,15 +489,15 @@ void Loader::visit(constant::Port* c)
     int proto = 0;
 
     switch ( p.proto ) {
-     case constant::PortVal::TCP:
+    case constant::PortVal::TCP:
         proto = HLT_PORT_TCP;
         break;
 
-     case constant::PortVal::UDP:
+    case constant::PortVal::UDP:
         proto = HLT_PORT_UDP;
         break;
 
-     default:
+    default:
         internalError(c, "unknown port protocol");
     }
 
@@ -498,21 +513,21 @@ void Loader::visit(ctor::Bytes* c)
 {
     std::vector<llvm::Constant*> vec_data;
 
-    for ( auto c : c->value() )
-        vec_data.push_back(cg()->llvmConstInt(c, 8));
+    for ( auto i : c->value() )
+        vec_data.push_back(cg()->llvmConstInt(i, 8));
 
     auto array = cg()->llvmConstArray(cg()->llvmTypeInt(8), vec_data);
     llvm::Constant* data = cg()->llvmAddConst("bytes", array);
     data = llvm::ConstantExpr::getBitCast(data, cg()->llvmTypePtr());
 
     if ( ! _dst ) {
-        CodeGen::value_list args = { data, cg()->llvmConstInt(c->value().size(), 64) };
+        CodeGen::value_list args = {data, cg()->llvmConstInt(c->value().size(), 64)};
         auto val = cg()->llvmCallC("hlt_bytes_new_from_data_copy", args, true, false);
         setResult(val, false, false);
     }
 
     else {
-        CodeGen::value_list args = { _dst, data, cg()->llvmConstInt(c->value().size(), 64) };
+        CodeGen::value_list args = {_dst, data, cg()->llvmConstInt(c->value().size(), 64)};
         cg()->llvmCallC("hlt_bytes_new_from_data_copy_hoisted", args, true, false);
         setResult(nullptr, false, false, true);
     }
@@ -527,9 +542,9 @@ static shared_ptr<Expression> _tmgrNull(CodeGen* cg)
 
 void Loader::visit(ctor::List* c)
 {
-    auto rtype = ast::as<type::Reference>(c->type())->argType();
-    auto etype = ast::as<type::List>(rtype)->argType();
-    assert(etype);
+    auto rtype = ast::rtti::tryCast<type::Reference>(c->type())->argType();
+    auto etype = ast::rtti::checkedCast<type::List>(rtype)->argType();
+    ;
 
     auto op1 = builder::type::create(etype);
     auto op2 = _tmgrNull(cg());
@@ -541,7 +556,7 @@ void Loader::visit(ctor::List* c)
 
     for ( auto e : c->elements() ) {
         e = e->coerceTo(etype);
-        CodeGen::expr_list args = { listop, e };
+        CodeGen::expr_list args = {listop, e};
         cg()->llvmCall("hlt::list_push_back", args, false);
     }
 
@@ -550,8 +565,8 @@ void Loader::visit(ctor::List* c)
 
 void Loader::visit(ctor::Set* c)
 {
-    auto rtype = ast::as<type::Reference>(c->type())->argType();
-    auto etype = ast::as<type::Set>(rtype)->argType();
+    auto rtype = ast::rtti::tryCast<type::Reference>(c->type())->argType();
+    auto etype = ast::rtti::tryCast<type::Set>(rtype)->argType();
     assert(etype);
 
     auto op1 = builder::type::create(etype);
@@ -564,7 +579,7 @@ void Loader::visit(ctor::Set* c)
 
     for ( auto e : c->elements() ) {
         e = e->coerceTo(etype);
-        CodeGen::expr_list args = { setop, e };
+        CodeGen::expr_list args = {setop, e};
         cg()->llvmCall("hlt::set_insert", args);
     }
 
@@ -573,9 +588,9 @@ void Loader::visit(ctor::Set* c)
 
 void Loader::visit(ctor::Vector* c)
 {
-    auto rtype = ast::as<type::Reference>(c->type())->argType();
-    auto etype = ast::as<type::Vector>(rtype)->argType();
-    assert(etype);
+    auto rtype = ast::rtti::tryCast<type::Reference>(c->type())->argType();
+    auto etype = ast::rtti::checkedCast<type::Vector>(rtype)->argType();
+    ;
 
     auto def = builder::codegen::create(etype, cg()->typeInfo(etype)->init_val);
     auto op2 = _tmgrNull(cg());
@@ -587,7 +602,7 @@ void Loader::visit(ctor::Vector* c)
 
     for ( auto e : c->elements() ) {
         e = e->coerceTo(etype);
-        CodeGen::expr_list args = { vecop, e };
+        CodeGen::expr_list args = {vecop, e};
         cg()->llvmCall("hlt::vector_push_back", args);
     }
 
@@ -596,9 +611,9 @@ void Loader::visit(ctor::Vector* c)
 
 void Loader::visit(ctor::Map* c)
 {
-    auto rtype = ast::as<type::Reference>(c->type())->argType();
-    auto ktype = ast::as<type::Map>(rtype)->keyType();
-    auto vtype = ast::as<type::Map>(rtype)->valueType();
+    auto rtype = ast::rtti::tryCast<type::Reference>(c->type())->argType();
+    auto ktype = ast::rtti::tryCast<type::Map>(rtype)->keyType();
+    auto vtype = ast::rtti::tryCast<type::Map>(rtype)->valueType();
     assert(ktype && vtype);
 
     auto op1 = builder::type::create(ktype);
@@ -613,17 +628,17 @@ void Loader::visit(ctor::Map* c)
     for ( auto e : c->elements() ) {
         auto k = e.first->coerceTo(ktype);
         auto v = e.second->coerceTo(vtype);
-        CodeGen::expr_list args = { mapop, k, v };
+        CodeGen::expr_list args = {mapop, k, v};
         cg()->llvmCall("hlt::map_insert", args);
     }
 
     if ( auto def = c->default_() ) {
-        auto rtype = ast::tryCast<type::Reference>(def->type());
+        auto rtype = ast::rtti::tryCast<type::Reference>(def->type());
 
-        if ( ! (rtype && ast::isA<type::Callable>(rtype->argType())) )
+        if ( ! (rtype && ast::rtti::isA<type::Callable>(rtype->argType())) )
             def = c->default_()->coerceTo(vtype);
 
-        args = { mapop, def };
+        args = {mapop, def};
         cg()->llvmCall("hlt::map_default", args);
     }
 
@@ -640,7 +655,7 @@ void Loader::visit(ctor::RegExp* c)
     if ( c->attributes().has(attribute::FIRSTMATCH) )
         flags |= HLT_REGEXP_FIRST_MATCH;
 
-    CodeGen::expr_list args = { builder::integer::create(flags) };
+    CodeGen::expr_list args = {builder::integer::create(flags)};
     auto regexp = cg()->llvmCall("hlt::regexp_new", args);
 
     auto op1 = builder::codegen::create(c->type(), regexp);
@@ -660,18 +675,18 @@ void Loader::visit(ctor::RegExp* c)
         // More than one pattern. We built a list of the patterns and then
         // call compile_set.
         auto ttmgr = builder::reference::type(builder::timer_mgr::type());
-        auto tmgr = builder::codegen::create(ttmgr, cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmLibType("hlt.timer_mgr"))));
-        CodeGen::expr_list args = { builder::type::create(builder::string::type()), tmgr };
+        auto tmgr = builder::codegen::create(ttmgr, cg()->llvmConstNull(cg()->llvmTypePtr(
+                                                        cg()->llvmLibType("hlt.timer_mgr"))));
+        CodeGen::expr_list args = {builder::type::create(builder::string::type()), tmgr};
         auto list = cg()->llvmCall("hlt::list_new", args);
         auto ltype = builder::reference::type(builder::list::type(builder::string::type()));
 
         for ( auto p : patterns ) {
-            args = { builder::codegen::create(ltype, list),
-                     builder::string::create(p) };
+            args = {builder::codegen::create(ltype, list), builder::string::create(p)};
             cg()->llvmCall("hlt::list_push_back", args);
         }
 
-        args = { op1, builder::codegen::create(ltype, list) };
+        args = {op1, builder::codegen::create(ltype, list)};
         cg()->llvmCall("hlt::regexp_compile_set", args);
     }
 
@@ -680,8 +695,8 @@ void Loader::visit(ctor::RegExp* c)
 
 void Loader::visit(ctor::Callable* c)
 {
-    auto func = ast::checkedCast<expression::Function>(c->function())->function();
-    auto hook = ast::tryCast<Hook>(func);
+    auto func = ast::rtti::checkedCast<expression::Function>(c->function())->function();
+    auto hook = ast::rtti::tryCast<Hook>(func);
     auto ftype = func->type();
     auto tuple = ::builder::tuple::create(c->arguments());
 
@@ -689,13 +704,14 @@ void Loader::visit(ctor::Callable* c)
     cg()->prepareCall(c->function(), tuple, &params, false);
 
     if ( hook ) {
-        auto htype = ast::checkedCast<type::Hook>(ftype);
+        auto htype = ast::rtti::checkedCast<type::Hook>(ftype);
         auto callable = cg()->llvmCallableBind(hook, params, false, false);
         setResult(callable, false, false);
     }
 
     else {
-        auto callable = cg()->llvmCallableBind(cg()->llvmValue(c->function()), ftype, params, false, false);
+        auto callable =
+            cg()->llvmCallableBind(cg()->llvmValue(c->function()), ftype, params, false, false);
         setResult(callable, false, false);
     }
 }

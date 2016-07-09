@@ -1,11 +1,12 @@
 
 #include "define-instruction.h"
 
-#include "classifier.h"
-#include "../module.h"
 #include "../builder/nodes.h"
+#include "../module.h"
+#include "classifier.h"
 
-static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, shared_ptr<Expression> op)
+static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype,
+                               shared_ptr<Expression> op)
 {
     // FIXME: The logic below currently doesn't support the simplified case
     // where one skips the priority.
@@ -14,7 +15,7 @@ static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, sha
 
 #if 0
     shared_ptr<Type> stype = nullptr;
-    auto ttype = ast::as<type::Tuple>(op->type());
+    auto ttype = ast::rtti::tryCast<type::Tuple>(op->type());
 
     if ( ! ttype ) {
         i->error(op, "operand must be tuple (struct, int)");
@@ -32,22 +33,22 @@ static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, sha
     stype = *j++;
     auto itype = *j++;
 
-    if ( ! ast::isA<type::Integer>(itype) ) {
+    if ( ! ast::rtti::isA<type::Integer>(itype) ) {
         i->error(ttype, "tuple must be of type (struct, int)");
         return;
     }
 
     assert(stype);
 
-    auto ref = ast::as<type::Reference>(stype);
+    auto ref = ast::rtti::tryCast<type::Reference>(stype);
 
     if ( ! ref ) {
         i->error(op, "rule value must be a reference to a struct");
         return;
     }
 
-    auto s = ast::as<type::Struct>(ref->argType());
-    auto r = ast::as<type::Struct>(rtype);
+    auto s = ast::rtti::tryCast<type::Struct>(ref->argType());
+    auto r = ast::rtti::tryCast<type::Struct>(rtype);
     assert(r);
 
     if ( ! s ) {
@@ -69,8 +70,7 @@ static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, sha
 
         bool match = false;
 
-        auto ct = ast::as<type::trait::Classifiable>(j.first);
-        assert(ct);
+        auto ct = ast::type::checkedTrait<type::trait::Classifiable>(j.first);
 
         for ( auto t : ct->alsoMatchableTo() ) {
             if ( i->canCoerceTo(j.second, t) )
@@ -86,7 +86,8 @@ static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, sha
 }
 
 iBeginCC(classifier)
-    iValidateCC(New) {
+    iValidateCC(New)
+    {
     }
 
     iDocCC(New, R"(
@@ -97,9 +98,10 @@ iBeginCC(classifier)
 iEndCC
 
 iBeginCC(classifier)
-    iValidateCC(Add) {
-        auto rtype = ast::as<type::Classifier>(referencedType(op1))->ruleType();
-        assert(rtype);
+    iValidateCC(Add)
+    {
+        auto rtype = ast::rtti::checkedCast<type::Classifier>(referencedType(op1))->ruleType();
+        ;
 
         _validateRuleValue(this, rtype, op2);
     }
@@ -116,7 +118,8 @@ iBeginCC(classifier)
 iEndCC
 
 iBeginCC(classifier)
-    iValidateCC(Compile) {
+    iValidateCC(Compile)
+    {
     }
 
     iDocCC(Compile, R"(
@@ -126,8 +129,9 @@ iBeginCC(classifier)
 iEndCC
 
 iBeginCC(classifier)
-    iValidateCC(Get) {
-        auto rtype = ast::as<type::Classifier>(referencedType(op1))->ruleType();
+    iValidateCC(Get)
+    {
+        auto rtype = ast::rtti::tryCast<type::Classifier>(referencedType(op1))->ruleType();
         canCoerceTo(op2, builder::reference::type(rtype));
     }
 
@@ -142,8 +146,9 @@ iBeginCC(classifier)
 iEndCC
 
 iBeginCC(classifier)
-    iValidateCC(Matches) {
-        auto rtype = ast::as<type::Classifier>(referencedType(op1))->ruleType();
+    iValidateCC(Matches)
+    {
+        auto rtype = ast::rtti::tryCast<type::Classifier>(referencedType(op1))->ruleType();
         canCoerceTo(op2, builder::reference::type(rtype));
     }
 
@@ -154,5 +159,3 @@ iBeginCC(classifier)
     )")
 
 iEndCC
-
-

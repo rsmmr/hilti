@@ -25,7 +25,10 @@ void binpac::CompilerContext::setOptions(std::shared_ptr<Options> options)
         ast::enableDebuggingForAllVisitors(false);
 }
 
-llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm::Module*> modules, std::list<string> libs, path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)
+llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm::Module*> modules,
+                                                   std::list<string> libs, path_list bcas,
+                                                   path_list dylds, bool add_stdlibs,
+                                                   bool add_sharedlibs)
 {
     if ( add_stdlibs ) {
         if ( options().debug )
@@ -34,12 +37,11 @@ llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm
             bcas.push_back(configuration().runtime_library_bca);
     };
 
-    return _hilti_context->linkModules(output, modules, libs, bcas, dylds, add_stdlibs, add_sharedlibs);
+    return _hilti_context->linkModules(output, modules, libs, bcas, dylds, add_stdlibs,
+                                       add_sharedlibs);
 }
 
 llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm::Module*> modules)
 {
-    return linkModules(output, modules,
-                       std::list<string>(),
-                       path_list(), path_list());
+    return linkModules(output, modules, std::list<string>(), path_list(), path_list());
 }

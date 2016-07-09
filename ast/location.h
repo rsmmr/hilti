@@ -9,7 +9,6 @@ namespace ast {
 /// Location information attached to AST nodes.
 class Location {
 public:
-
     /// Constructor. A location can have a filename and a range of line
     /// numbers.
     ///
@@ -18,17 +17,25 @@ public:
     /// from: The first line number of the described range. -1 if not available.
     ///
     /// to: The last line number of the described range. -1 if not available.
-    Location(const std::string& file = "", int from = -1, int to = -1) {
-       _file = file; _from = from; _to = to;
+    Location(const std::string& file = "", int from = -1, int to = -1)
+    {
+        _file = file;
+        _from = from;
+        _to = to;
     }
 
     Location(const Location&) = default;
     Location& operator=(const Location&) = default;
-    ~Location() {}
+    ~Location()
+    {
+    }
 
     /// Returns true if the location is set. Being set is defined as not
     /// having been assigned, or constructed from, #None.
-    operator bool() const { return _file != None._file; }
+    operator bool() const
+    {
+        return _file != None._file;
+    }
 
     /// Returns a readable representation of the location. It includes only
     /// information that's set.
@@ -42,7 +49,6 @@ private:
     int _from;
     int _to;
 };
-
 }
 
 #endif

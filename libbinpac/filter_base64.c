@@ -10,17 +10,20 @@ typedef struct {
 
 binpac_filter* __binpac_filter_base64_allocate(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __binpac_filter_base64* filter = GC_NEW_CUSTOM_SIZE(binpac_filter, sizeof(__binpac_filter_base64), ctx);
+    __binpac_filter_base64* filter =
+        GC_NEW_CUSTOM_SIZE(binpac_filter, sizeof(__binpac_filter_base64), ctx);
     base64_init_decodestate(&filter->state);
     return (binpac_filter*)filter;
 }
 
-void __binpac_filter_base64_dtor(hlt_type_info* ti, binpac_filter* filter, hlt_execution_context* ctx)
+void __binpac_filter_base64_dtor(hlt_type_info* ti, binpac_filter* filter,
+                                 hlt_execution_context* ctx)
 {
     // Nothing to do.
 }
 
-void __binpac_filter_base64_close(binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx_)
+void __binpac_filter_base64_close(binpac_filter* filter, hlt_exception** excpt,
+                                  hlt_execution_context* ctx_)
 {
     // Unclear in which state we should be here if all has been decoded. I'd
     // think just "step_a", but I have also observed "step_d" even though all
@@ -29,9 +32,10 @@ void __binpac_filter_base64_close(binpac_filter* filter, hlt_exception** excpt, 
     // anyway.
 }
 
-hlt_bytes* __binpac_filter_base64_decode(binpac_filter* filter_gen, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* __binpac_filter_base64_decode(binpac_filter* filter_gen, hlt_bytes* data,
+                                         hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __binpac_filter_base64* filter = (__binpac_filter_base64 *)filter_gen;
+    __binpac_filter_base64* filter = (__binpac_filter_base64*)filter_gen;
 
     void* cookie = 0;
     hlt_bytes_block block;
@@ -51,7 +55,7 @@ hlt_bytes* __binpac_filter_base64_decode(binpac_filter* filter_gen, hlt_bytes* d
         // We will allocate a bit more than we'll need here.
         int8_t* buffer = hlt_malloc(len);
 
-        int n = base64_decode_block((const char*)block.start, len, (char *)buffer, &filter->state);
+        int n = base64_decode_block((const char*)block.start, len, (char*)buffer, &filter->state);
 
         if ( n > 0 ) {
             if ( ! decoded ) {
@@ -60,7 +64,7 @@ hlt_bytes* __binpac_filter_base64_decode(binpac_filter* filter_gen, hlt_bytes* d
             }
             else
                 hlt_bytes_append_raw(decoded, buffer, n, excpt, ctx);
-                buffer = 0;
+            buffer = 0;
         }
 
         if ( buffer )

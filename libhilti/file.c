@@ -1,22 +1,22 @@
 
-#include <fcntl.h>
-#include <string.h>
-#include <errno.h>
 #include <ctype.h>
-#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
+#include <string.h>
+#include <unistd.h>
 
-#include "file.h"
-#include "memory_.h"
-#include "globals.h"
 #include "autogen/hilti-hlt.h"
+#include "file.h"
+#include "globals.h"
+#include "memory_.h"
 
 // This struct describes one currently open file. We memory-manage this ourselves.
 struct __hlt_file_info {
-    hlt_string path;    // The path of the file.
-    int fd;             // The file descriptor.
-    int writers;        // The number of file objects having the file open from the OS perspective.
-    bool error;         // True if we run into an error.
+    hlt_string path; // The path of the file.
+    int fd;          // The file descriptor.
+    int writers;     // The number of file objects having the file open from the OS perspective.
+    bool error;      // True if we run into an error.
 
     struct __hlt_file_info* next; // We keep them in a list.
     struct __hlt_file_info* prev;
@@ -27,21 +27,21 @@ struct __hlt_file {
     __hlt_gchdr __gchdr;   // Header for memory management.
     __hlt_file_info* info; // The internal file object.
     hlt_string path;       // The path of the file; keep here as well for threads.
-    hlt_enum charset;    // The charset for a text file.
+    hlt_enum charset;      // The charset for a text file.
     hlt_enum type;         // Hilti_FileType_* constant.
     int8_t open;           // 1 if open, 0 if closed.
 };
 
 // A single write command inserted into the command queue.
 typedef struct __hlt_cmd_file {
-    __hlt_cmd cmd;             // The common header for all commands.
-    __hlt_file_info* info;     // The file to write to.
-    int type;                  // 1 for writing data; 1 if it's a close command; and 2 for a change in parameters.
-    char* data;                // Bytes to write.
-    int len;                   // Number of bytes to write.
+    __hlt_cmd cmd;         // The common header for all commands.
+    __hlt_file_info* info; // The file to write to.
+    int type;   // 1 for writing data; 1 if it's a close command; and 2 for a change in parameters.
+    char* data; // Bytes to write.
+    int len;    // Number of bytes to write.
 
-    hlt_enum param_type;       // For type 0: The type.
-    hlt_enum param_mode;       // For type 0: The mode.
+    hlt_enum param_type; // For type 0: The type.
+    hlt_enum param_mode; // For type 0: The mode.
 } __hlt_cmd_file;
 
 void hlt_file_dtor(hlt_type_info* ti, hlt_file* f, hlt_execution_context* ctx)
@@ -114,19 +114,21 @@ hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx)
     return file;
 }
 
-void* hlt_file_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_file_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate,
+                           hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return GC_NEW_REF(hlt_file, ctx);
 }
 
-void hlt_file_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_file_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate,
+                         hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_file* src = *(hlt_file**)srcp;
     hlt_file* dst = *(hlt_file**)dstp;
 
     // Not so great that we need to lock here, but we need to to increase the
     // writer count.
-    // 
+    //
     // TODO: can we make this an atomic variable instead?
 
     if ( src->info && src->open ) {
@@ -144,7 +146,8 @@ void hlt_file_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_
     __hlt_clone(&dst->path, &hlt_type_info_hlt_string, &src->path, cstate, excpt, ctx);
 }
 
-void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_enum charset,
+                   hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( file->open ) {
         hlt_string err = hlt_string_from_asciiz("file already open", excpt, ctx);
@@ -198,12 +201,12 @@ init_instance:
 
     // Send open command.
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
-    __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
+    __hlt_cmdqueue_init_cmd((__hlt_cmd*)cmd, __HLT_CMD_FILE);
     cmd->info = file->info;
     cmd->type = 1; // Open.
     cmd->param_type = type;
     cmd->param_mode = mode;
-    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
+    __hlt_cmdqueue_push((__hlt_cmd*)cmd, excpt, ctx);
 }
 
 void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -215,10 +218,10 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
     }
 
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
-    __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
+    __hlt_cmdqueue_init_cmd((__hlt_cmd*)cmd, __HLT_CMD_FILE);
     cmd->info = file->info;
     cmd->type = 3; // Close.
-    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
+    __hlt_cmdqueue_push((__hlt_cmd*)cmd, excpt, ctx);
 
     file->open = 0;
     GC_CLEAR(file->path, hlt_string, ctx);
@@ -229,7 +232,8 @@ hlt_string hlt_file_name(hlt_file* file, hlt_exception** excpt, hlt_execution_co
     return file->path;
 }
 
-void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_string_encode(str, file->charset, excpt, ctx);
     if ( hlt_check_exception(excpt) )
@@ -246,7 +250,8 @@ static void _add_to_cmd_data(__hlt_cmd_file* cmd, const int8_t* data, int len)
     memcpy(cmd->data + old_len, data, len);
 }
 
-void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     if ( ! file->open ) {
         hlt_string err = hlt_string_from_asciiz("file not open", excpt, ctx);
@@ -255,7 +260,7 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt
     }
 
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
-    __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
+    __hlt_cmdqueue_init_cmd((__hlt_cmd*)cmd, __HLT_CMD_FILE);
     cmd->info = file->info;
     cmd->type = 2; // Write.
     cmd->data = 0;
@@ -265,7 +270,7 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt
     hlt_iterator_bytes start = hlt_bytes_begin(data, excpt, ctx);
     hlt_iterator_bytes end = hlt_bytes_end(data, excpt, ctx);
     void* cookie = 0;
-    int8_t buf[5] = { '\\', 'x', 'X', 'X', '0' };
+    int8_t buf[5] = {'\\', 'x', 'X', 'X', '0'};
 
     while ( 1 ) {
         cookie = hlt_bytes_iterate_raw(&block, cookie, start, end, excpt, ctx);
@@ -314,126 +319,127 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt
     if ( hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx) )
         _add_to_cmd_data(cmd, (int8_t*)"\n", 1);
 
-    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
+    __hlt_cmdqueue_push((__hlt_cmd*)cmd, excpt, ctx);
 }
 
 void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_execution_context* ctx)
 {
-    __hlt_cmd_file* cmd = (__hlt_cmd_file*) c;
+    __hlt_cmd_file* cmd = (__hlt_cmd_file*)c;
 
     // This will be called from the command queue thread only.
     switch ( cmd->type ) {
+    case 1: {
+        if ( cmd->info->error )
+            return;
 
-     case 1: {
-         if ( cmd->info->error )
-             return;
+        // Open command.
+        int s = 0;
+        acqire_lock(&s);
 
-         // Open command.
-         int s = 0;
-         acqire_lock(&s);
+        if ( cmd->info->fd < 0 ) {
+            // Not open yet.
 
-         if ( cmd->info->fd < 0 ) {
-             // Not open yet.
+            hlt_exception* excpt = 0;
+            char* fn = hlt_string_to_native(cmd->info->path, &excpt, ctx);
+            if ( excpt ) {
+                release_lock(s);
+                break;
+            }
 
-             hlt_exception* excpt = 0;
-             char* fn = hlt_string_to_native(cmd->info->path, &excpt, ctx);
-             if ( excpt ) {
-                 release_lock(s);
-                 break;
-             }
+            int8_t append = hlt_enum_equal(cmd->param_mode, Hilti_FileMode_Append, &excpt, ctx);
+            int oflags = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
+            int fd = open(fn, oflags, 0666);
 
-             int8_t append = hlt_enum_equal(cmd->param_mode, Hilti_FileMode_Append, &excpt, ctx);
-             int oflags = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
-             int fd = open(fn, oflags, 0666);
+            hlt_free(fn);
 
-             hlt_free(fn);
+            if ( fd < 0 ) {
+                cmd->info->error = 1;
+                // TODO: We don't have a good way to report errors unfortunately.
+                release_lock(s);
+                return;
+            }
 
-             if ( fd < 0 ) {
-                 cmd->info->error = 1;
-                 // TODO: We don't have a good way to report errors unfortunately.
-                 release_lock(s);
-                 return;
-             }
+            cmd->info->fd = fd;
+        }
 
-             cmd->info->fd = fd;
-         }
+        release_lock(s);
+        break;
 
-         release_lock(s);
-         break;
+    case 2: {
+        // Write comment.
 
-      case 2: {
-          // Write comment.
+        if ( cmd->info->fd < 0 )
+            return;
 
-          if ( cmd->info->fd < 0 )
-              return;
+        if ( cmd->info->error )
+            return;
 
-          if ( cmd->info->error )
-              return;
+        if ( cmd->len ) {
+            if ( ! __hlt_safe_write(cmd->info->fd, cmd->data, cmd->len) )
+                cmd->info->error = 1;
 
-          if ( cmd->len ) {
-              if ( ! __hlt_safe_write(cmd->info->fd, cmd->data, cmd->len) )
-                  cmd->info->error = 1;
+            hlt_free(cmd->data);
+        }
 
-              hlt_free(cmd->data);
-          }
+        break;
+    }
 
-          break;
-      }
+    case 3: {
+        // Close command.
 
-      case 3: {
-          // Close command.
+        if ( cmd->info->fd < 0 )
+            return;
 
-          if ( cmd->info->fd < 0 )
-              return;
+        int s = 0;
+        acqire_lock(&s);
 
-          int s = 0;
-          acqire_lock(&s);
+        assert(cmd->info->writers);
 
-          assert(cmd->info->writers);
+        if ( --cmd->info->writers == 0 ) {
+            close(cmd->info->fd);
 
-          if ( --cmd->info->writers == 0 ) {
-              close(cmd->info->fd);
+            // Delete from list.
+            __hlt_file_info* cur;
+            for ( cur = __hlt_globals()->files; cur; cur = cur->next ) {
+                if ( cur != cmd->info )
+                    continue;
 
-              // Delete from list.
-              __hlt_file_info* cur;
-              for ( cur = __hlt_globals()->files; cur; cur = cur->next ) {
-                  if ( cur != cmd->info )
-                      continue;
+                if ( cur->prev )
+                    cur->prev->next = cur->next;
+                else
+                    __hlt_globals()->files = cur->next;
 
-                  if ( cur->prev )
-                      cur->prev->next = cur->next;
-                  else
-                      __hlt_globals()->files = cur->next;
+                if ( cur->next )
+                    cur->next->prev = cur->prev;
 
-                  if ( cur->next )
-                      cur->next->prev = cur->prev;
+                break;
+            }
 
-                  break;
-              }
+            if ( ! cur )
+                fatal_error("file to close not found");
 
-              if ( ! cur )
-                  fatal_error("file to close not found");
+            GC_DTOR(cmd->info->path, hlt_string, hlt_global_execution_context());
+            hlt_free(cmd->info);
 
-              GC_DTOR(cmd->info->path, hlt_string, hlt_global_execution_context());
-              hlt_free(cmd->info);
+            cmd->info = 0;
+        }
 
-              cmd->info = 0;
-          }
+        release_lock(s);
+        break;
+    }
 
-          release_lock(s);
-          break;
-      }
-
-      default:
-         fatal_error("unknown data type in write");
-     }
+    default:
+        fatal_error("unknown data type in write");
+    }
     }
 }
 
-hlt_string hlt_file_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_file_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                              __hlt_pointer_stack* seen, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_FILE);
-    hlt_file* file = *((hlt_file **)obj);
+    hlt_file* file = *((hlt_file**)obj);
 
     if ( ! file )
         return hlt_string_from_asciiz("(Null)", excpt, ctx);

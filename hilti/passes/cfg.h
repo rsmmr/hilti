@@ -19,8 +19,7 @@ class DepthOrderTraversal;
 /// particularly so this is good only for intra-prodecural analysis. We don't
 /// know what exceptions instructions can throw and hence need to do lots of
 /// worst case edges inside try blocks.
-class CFG : public Pass<>
-{
+class CFG : public Pass<> {
 public:
     /// Constructor.
     CFG(CompilerContext* context);
@@ -35,7 +34,7 @@ public:
     /// differently for blocks and non-block statements: the predecessors of
     /// a block will be other blocks, while that of a statement inside a
     /// block will be the previous statement (or null for the first).
-    /// 
+    ///
     /// Must only be called after run().
     ///
     /// TODO: The block chaining does't work right yet and disabled. Indeed
@@ -67,8 +66,8 @@ protected:
     void visit(statement::Block* s) override;
     void visit(statement::instruction::Resolved* s) override;
     void visit(statement::instruction::Unresolved* s) override;
-    void visit(statement::instruction::exception::__BeginHandler* i);
-    void visit(statement::instruction::exception::__EndHandler* i);
+    void visit(statement::instruction::exception::__BeginHandler* i) override;
+    void visit(statement::instruction::exception::__EndHandler* i) override;
 
 private:
     CompilerContext* _context;
@@ -86,9 +85,7 @@ private:
     stmt_map _predecessors;
     stmt_map _successors;
 };
-
 }
-
 }
 
 #endif

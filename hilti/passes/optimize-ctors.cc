@@ -1,11 +1,11 @@
 
-#include "../statement.h"
-#include "../module.h"
 #include "../builder/nodes.h"
+#include "../module.h"
+#include "../statement.h"
 
+#include "hilti/autogen/instructions.h"
 #include "optimize-ctors.h"
 #include "printer.h"
-#include "hilti/autogen/instructions.h"
 
 using namespace hilti;
 using namespace passes;
@@ -18,7 +18,7 @@ OptimizeCtors::OptimizeCtors() : Pass<>("hilti::OptimizeCtors", true)
 
 bool OptimizeCtors::run(shared_ptr<hilti::Node> module)
 {
-    _module = ast::checkedCast<Module>(module);
+    _module = ast::rtti::checkedCast<Module>(module);
     return processAllPreOrder(module);
 }
 
@@ -36,10 +36,9 @@ void OptimizeCtors::visit(expression::Ctor* c)
     shared_ptr<ast::NodeBase> child_of_child_of_child_of_parent = nullptr;
     shared_ptr<ast::NodeBase> direct_parent = nullptr;
 
-    for ( Pass::node_list::const_reverse_iterator i = nodes.rbegin();
-          i != nodes.rend(); i++ ) {
-
-        if ( ! (ast::isA<Expression>(*i) || ast::isA<Constant>(*i)) && (*i).get() != c ) {
+    for ( Pass::node_list::const_reverse_iterator i = nodes.rbegin(); i != nodes.rend(); i++ ) {
+        if ( ! (ast::rtti::isA<Expression>(*i) || ast::rtti::isA<Constant>(*i)) &&
+             (*i).get() != c ) {
             parent = *i;
             break;
         }
@@ -62,7 +61,7 @@ void OptimizeCtors::visit(expression::Ctor* c)
     // If it's an instruction, determine if the child we came through here
     // (i.e., the operand) is a constant.
 
-    if ( auto stmt = ast::tryCast<statement::instruction::Resolved>(parent) ) {
+    if ( auto stmt = ast::rtti::tryCast<statement::instruction::Resolved>(parent) ) {
         auto ins = stmt->instruction();
 
         if ( stmt->op1() == child_of_parent )
@@ -79,28 +78,28 @@ void OptimizeCtors::visit(expression::Ctor* c)
         shared_ptr<hilti::type::Function> ftype = nullptr;
         shared_ptr<hilti::Expression> tuple_op = nullptr;
 
-        if ( ast::isA<statement::instruction::flow::CallResult>(stmt) ||
-             ast::isA<statement::instruction::flow::CallVoid>(stmt) ||
-             ast::isA<statement::instruction::thread::Schedule>(stmt) ) {
-            ftype = ast::checkedCast<type::Function>(stmt->op1()->type());
+        if ( ast::rtti::isA<statement::instruction::flow::CallResult>(stmt) ||
+             ast::rtti::isA<statement::instruction::flow::CallVoid>(stmt) ||
+             ast::rtti::isA<statement::instruction::thread::Schedule>(stmt) ) {
+            ftype = ast::rtti::checkedCast<type::Function>(stmt->op1()->type());
             tuple_op = stmt->op2();
         }
 
-        if ( ast::isA<statement::instruction::flow::CallCallableResult>(stmt) ||
-             ast::isA<statement::instruction::flow::CallCallableVoid>(stmt) ) {
-            auto rt = ast::checkedCast<type::Reference>(stmt->op1()->type());
-            ftype = ast::checkedCast<type::Callable>(rt->argType());
+        if ( ast::rtti::isA<statement::instruction::flow::CallCallableResult>(stmt) ||
+             ast::rtti::isA<statement::instruction::flow::CallCallableVoid>(stmt) ) {
+            auto rt = ast::rtti::checkedCast<type::Reference>(stmt->op1()->type());
+            ftype = ast::rtti::checkedCast<type::Callable>(rt->argType());
             tuple_op = stmt->op2();
         }
 
-        if ( ast::isA<statement::instruction::hook::Run>(stmt) ) {
-            ftype = ast::checkedCast<type::Hook>(stmt->op1()->type());
+        if ( ast::rtti::isA<statement::instruction::hook::Run>(stmt) ) {
+            ftype = ast::rtti::checkedCast<type::Hook>(stmt->op1()->type());
             tuple_op = stmt->op2();
         }
 
         if ( ftype && tuple_op && tuple_op.get() == child_of_parent.get() ) {
-            auto args_expr = ast::checkedCast<expression::Constant>(tuple_op);
-            auto args_tuple = ast::checkedCast<constant::Tuple>(args_expr->constant());
+            auto args_expr = ast::rtti::checkedCast<expression::Constant>(tuple_op);
+            auto args_tuple = ast::rtti::checkedCast<constant::Tuple>(args_expr->constant());
 
             auto fparams = ftype->parameters();
             auto p = fparams.begin();
@@ -137,5 +136,3 @@ void OptimizeCtors::visit(expression::Ctor* c)
 
     c->replace(nexpr, direct_parent);
 }
-
-

@@ -31,13 +31,18 @@ struct Configuration {
     };
 
     std::list<string> compiler_cflags = {
+        "-D_GNU_SOURCE",
+        "-D__STDC_CONSTANT_MACROS",
+        "-D__STDC_FORMAT_MACROS",
+        "-D__STDC_LIMIT_MACROS",
     };
 
     std::list<string> compiler_cxxflags = {
-        "-fexceptions",
-        "-frtti",
-        "-stdlib=libc++",
-        "-std=c++0x"
+        "-D_GNU_SOURCE",
+        "-D__STDC_CONSTANT_MACROS",
+        "-D__STDC_FORMAT_MACROS",
+        "-D__STDC_LIMIT_MACROS",
+        "-fno-rtti",
     };
 
     string compiler_llvm_cxxflags = "${LLVM_CXXFLAGS_AS_STRING}";
@@ -63,7 +68,6 @@ struct Configuration {
     };
 
     std::list<string> compiler_static_libraries_jit = {
-        "hilti-jit"
     };
 
     std::list<string> compiler_shared_libraries_jit = {

@@ -17,8 +17,12 @@ extern uint64_t hlt_time_nsecs(hlt_time t, hlt_exception** excpt, hlt_execution_
 extern hlt_time hlt_time_from_timestamp(double ts);
 extern double hlt_time_to_timestamp(hlt_time t);
 
-extern hlt_string hlt_time_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
-extern int64_t hlt_time_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
-extern double hlt_time_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
+extern hlt_string hlt_time_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                                     __hlt_pointer_stack* seen, hlt_exception** excpt,
+                                     hlt_execution_context* ctx);
+extern int64_t hlt_time_to_int64(const hlt_type_info* type, const void* obj, int32_t options,
+                                 hlt_exception** expt, hlt_execution_context* ctx);
+extern double hlt_time_to_double(const hlt_type_info* type, const void* obj, int32_t options,
+                                 hlt_exception** expt, hlt_execution_context* ctx);
 
 #endif

@@ -1,0 +1,3 @@
+- Many ast::rtti::tryCast should be ast::rtti::checkedCast (they used
+  to be ast::as before we had the checked version).
+- Move implementation of instructions to *.cc where not done yet.

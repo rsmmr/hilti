@@ -4,8 +4,8 @@
 
 #include <ast/pass.h>
 
-#include "../common.h"
 #include "../ast-info.h"
+#include "../common.h"
 
 namespace binpac {
 
@@ -15,8 +15,7 @@ namespace passes {
 
 /// Populates the scopes inside units. This can only run after IDs have been
 /// resolved and hence it split into a separate pass.
-class UnitScopeBuilder : public ast::Pass<AstInfo>
-{
+class UnitScopeBuilder : public ast::Pass<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -34,9 +33,7 @@ public:
 protected:
     void visit(declaration::Type* t) override;
 };
-
 }
-
 }
 
 #endif

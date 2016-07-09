@@ -42,10 +42,10 @@ void hlt_thread_queue_delete(hlt_thread_queue* queue);
 ///
 /// elem: The element to write into the queue. The queue just stores the
 /// pointer.
-void hlt_thread_queue_write(hlt_thread_queue* queue, int writer, void *elem);
+void hlt_thread_queue_write(hlt_thread_queue* queue, int writer, void* elem);
 
 /// Reads an element from the queue. This function must only be called from a
-/// single thread. Note that it may not return an element even if there are 
+/// single thread. Note that it may not return an element even if there are
 /// still unprocessed ones pending. Call ~~flush if you want to be sure to
 /// get everything.
 ///

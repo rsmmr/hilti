@@ -251,7 +251,7 @@ static const double __ac_HASH_UPPER = 0.77;
 			__ac_set_isdel_true(h->flags, x);							\
 			--h->size;													\
 		}																\
-	}
+	}                                                                   \
 
 /* --- BEGIN OF HASH FUNCTIONS --- */
 

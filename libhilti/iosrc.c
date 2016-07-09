@@ -1,16 +1,17 @@
 
 #include <pcap.h>
 
-#include "iosrc.h"
 #include "autogen/hilti-hlt.h"
+#include "iosrc.h"
 
-typedef struct  {
+typedef struct {
     hlt_iosrc* src;
     hlt_time t;
     hlt_bytes* pkt;
 } __hlt_iterator_iosrc;
 
-void hlt_iterator_iosrc_cctor(hlt_type_info* ti, __hlt_iterator_iosrc* i, hlt_execution_context* ctx)
+void hlt_iterator_iosrc_cctor(hlt_type_info* ti, __hlt_iterator_iosrc* i,
+                              hlt_execution_context* ctx)
 {
     GC_CCTOR(i->src, hlt_iosrc, ctx);
     GC_CCTOR(i->pkt, hlt_bytes, ctx);
@@ -22,7 +23,8 @@ void hlt_iterator_iosrc_dtor(hlt_type_info* ti, __hlt_iterator_iosrc* i, hlt_exe
     GC_DTOR(i->pkt, hlt_bytes, ctx);
 }
 
-static void _raise_error(hlt_iosrc* src, const char* errbuf, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _raise_error(hlt_iosrc* src, const char* errbuf, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     const char* err = errbuf ? errbuf : pcap_geterr(src->handle);
 
@@ -37,32 +39,33 @@ static void _raise_error(hlt_iosrc* src, const char* errbuf, hlt_exception** exc
     hlt_set_exception(excpt, &hlt_exception_io_error, msg, ctx);
 }
 
-static void _strip_link_layer(hlt_iosrc* src, const char** pkt, int* caplen, int datalink, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _strip_link_layer(hlt_iosrc* src, const char** pkt, int* caplen, int datalink,
+                              hlt_exception** excpt, hlt_execution_context* ctx)
 {
     int hdr_size = 0;
 
     switch ( datalink ) {
-      case DLT_NULL:
+    case DLT_NULL:
         hdr_size = 4;
         break;
 
-      case DLT_EN10MB:
+    case DLT_EN10MB:
         hdr_size = 14;
         break;
 
-      case DLT_FDDI:
+    case DLT_FDDI:
         hdr_size = 21;
         break;
 
-      case DLT_LINUX_SLL:
+    case DLT_LINUX_SLL:
         hdr_size = 16;
         break;
 
-      case DLT_RAW:
+    case DLT_RAW:
         hdr_size = 0;
         break;
 
-      default:
+    default:
         _raise_error(src, "unsupported link layer type", excpt, ctx);
         return;
     }
@@ -84,7 +87,9 @@ void hlt_iosrc_dtor(hlt_type_info* ti, hlt_iosrc* c, hlt_execution_context* ctx)
     GC_CLEAR(c->iface, hlt_string, ctx);
 }
 
-hlt_string hlt_iosrc_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_iosrc_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                               __hlt_pointer_stack* seen, hlt_exception** excpt,
+                               hlt_execution_context* ctx)
 {
     const hlt_iosrc* src = *((const hlt_iosrc**)obj);
 
@@ -100,7 +105,8 @@ hlt_string hlt_iosrc_to_string(const hlt_type_info* type, const void* obj, int32
     return str;
 }
 
-hlt_iosrc* hlt_iosrc_new_live(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iosrc* hlt_iosrc_new_live(hlt_string interface, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     hlt_iosrc* src = GC_NEW(hlt_iosrc, ctx);
     src->type = Hilti_IOSrc_PcapLive;
@@ -112,7 +118,7 @@ hlt_iosrc* hlt_iosrc_new_live(hlt_string interface, hlt_exception** excpt, hlt_e
         return 0;
 
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t *p = pcap_create(iface, errbuf);
+    pcap_t* p = pcap_create(iface, errbuf);
 
     hlt_free(iface);
 
@@ -145,7 +151,8 @@ error:
     return 0;
 }
 
-hlt_iosrc* hlt_iosrc_new_offline(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iosrc* hlt_iosrc_new_offline(hlt_string interface, hlt_exception** excpt,
+                                 hlt_execution_context* ctx)
 {
     hlt_iosrc* src = GC_NEW(hlt_iosrc, ctx);
     src->type = Hilti_IOSrc_PcapOffline;
@@ -157,7 +164,7 @@ hlt_iosrc* hlt_iosrc_new_offline(hlt_string interface, hlt_exception** excpt, hl
         return 0;
 
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t *p = pcap_open_offline(iface, errbuf);
+    pcap_t* p = pcap_open_offline(iface, errbuf);
 
     hlt_free(iface);
 
@@ -170,9 +177,10 @@ hlt_iosrc* hlt_iosrc_new_offline(hlt_string interface, hlt_exception** excpt, hl
     return src;
 }
 
-hlt_packet hlt_iosrc_read_try(hlt_iosrc* src, int8_t keep_link_layer, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_packet hlt_iosrc_read_try(hlt_iosrc* src, int8_t keep_link_layer, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
-    hlt_packet result = { 0.0, NULL };
+    hlt_packet result = {0.0, NULL};
 
     if ( ! src->handle ) {
         _raise_error(src, "already closed", excpt, ctx);
@@ -188,7 +196,8 @@ hlt_packet hlt_iosrc_read_try(hlt_iosrc* src, int8_t keep_link_layer, hlt_except
     if ( rc > 0 ) {
         // Got a packet.
         if ( ! keep_link_layer ) {
-            _strip_link_layer(src, (const char**)&data, &caplen, pcap_datalink(src->handle), excpt, ctx);
+            _strip_link_layer(src, (const char**)&data, &caplen, pcap_datalink(src->handle), excpt,
+                              ctx);
             if ( hlt_check_exception(excpt) )
                 return result;
         }
@@ -231,4 +240,3 @@ void hlt_iosrc_close(hlt_iosrc* src, hlt_exception** excpt, hlt_execution_contex
     pcap_close(src->handle);
     src->handle = 0;
 }
-

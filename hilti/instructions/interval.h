@@ -2,14 +2,14 @@
 ///
 /// The ``interval`` data type represent a time period of certain length, with
 /// nanosecond resolution.
-/// 
+///
 /// Interval constants are specified in seconds, either as integers (``42``)
 /// or as floating poing values (``42.123456789``). In the latter
 /// case, there may be at most 9 digits for the fractional part.
-/// 
+///
 /// Note that when operating on ``interval`` values, behaviour in case of
 /// under- and overflow is undefined.
-/// 
+///
 /// Internally, intervals use a fixed-point represenation with 32 bit for full
 /// seconds, and 32 bit for the fraction of a second.
 ///
@@ -22,11 +22,12 @@
 #include "define-instruction.h"
 
 iBegin(interval, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::interval, true);
     iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -36,11 +37,12 @@ iBegin(interval, Equal, "equal")
 iEnd
 
 iBegin(interval, Add, "interval.add")
-    iTarget(optype::interval)
-    iOp1(optype::interval, true)
-    iOp2(optype::interval, true)
+    iTarget(optype::interval);
+    iOp1(optype::interval, true);
+    iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -50,10 +52,11 @@ iBegin(interval, Add, "interval.add")
 iEnd
 
 iBegin(interval, AsDouble, "interval.as_double")
-    iTarget(optype::double_)
-    iOp1(optype::interval, true)
+    iTarget(optype::double_);
+    iOp1(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -64,10 +67,11 @@ iBegin(interval, AsDouble, "interval.as_double")
 iEnd
 
 iBegin(interval, FromDouble, "interval.from_double")
-    iTarget(optype::interval)
-    iOp1(optype::double_, true)
+    iTarget(optype::interval);
+    iOp1(optype::double_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -76,10 +80,11 @@ iBegin(interval, FromDouble, "interval.from_double")
 iEnd
 
 iBegin(interval, AsInt, "interval.as_int")
-    iTarget(optype::int64)
-    iOp1(optype::interval, true)
+    iTarget(optype::int64);
+    iOp1(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -89,11 +94,12 @@ iBegin(interval, AsInt, "interval.as_int")
 iEnd
 
 iBegin(interval, Eq, "interval.eq")
-    iTarget(optype::boolean)
-    iOp1(optype::interval, true)
-    iOp2(optype::interval, true)
+    iTarget(optype::boolean);
+    iOp1(optype::interval, true);
+    iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -104,11 +110,12 @@ iBegin(interval, Eq, "interval.eq")
 iEnd
 
 iBegin(interval, Gt, "interval.gt")
-    iTarget(optype::boolean)
-    iOp1(optype::interval, true)
-    iOp2(optype::interval, true)
+    iTarget(optype::boolean);
+    iOp1(optype::interval, true);
+    iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -119,11 +126,12 @@ iBegin(interval, Gt, "interval.gt")
 iEnd
 
 iBegin(interval, Lt, "interval.lt")
-    iTarget(optype::boolean)
-    iOp1(optype::interval, true)
-    iOp2(optype::interval, true)
+    iTarget(optype::boolean);
+    iOp1(optype::interval, true);
+    iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -134,11 +142,12 @@ iBegin(interval, Lt, "interval.lt")
 iEnd
 
 iBegin(interval, Geq, "interval.geq")
-    iTarget(optype::boolean)
-    iOp1(optype::interval, true)
-    iOp2(optype::interval, true)
+    iTarget(optype::boolean);
+    iOp1(optype::interval, true);
+    iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -149,11 +158,12 @@ iBegin(interval, Geq, "interval.geq")
 iEnd
 
 iBegin(interval, Leq, "interval.leq")
-    iTarget(optype::boolean)
-    iOp1(optype::interval, true)
-    iOp2(optype::interval, true)
+    iTarget(optype::boolean);
+    iOp1(optype::interval, true);
+    iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -164,11 +174,12 @@ iBegin(interval, Leq, "interval.leq")
 iEnd
 
 iBegin(interval, Mul, "interval.mul")
-    iTarget(optype::interval)
-    iOp1(optype::interval, true)
-    iOp2(optype::int64, true)
+    iTarget(optype::interval);
+    iOp1(optype::interval, true);
+    iOp2(optype::int64, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -178,10 +189,11 @@ iBegin(interval, Mul, "interval.mul")
 iEnd
 
 iBegin(interval, Nsecs, "interval.nsecs")
-    iTarget(optype::int64)
-    iOp1(optype::interval, true)
+    iTarget(optype::int64);
+    iOp1(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -191,11 +203,12 @@ iBegin(interval, Nsecs, "interval.nsecs")
 iEnd
 
 iBegin(interval, Sub, "interval.sub")
-    iTarget(optype::interval)
-    iOp1(optype::interval, true)
-    iOp2(optype::interval, true)
+    iTarget(optype::interval);
+    iOp1(optype::interval, true);
+    iOp2(optype::interval, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -203,4 +216,3 @@ iBegin(interval, Sub, "interval.sub")
     )")
 
 iEnd
-

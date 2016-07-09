@@ -11,7 +11,7 @@ struct AstInfo;
 /// A shared pointer to an AST node. Note that with two pointes pointing to
 /// the same node, both will get updated if we change one to point somewhere
 /// else.
-template<typename T>
+template <typename T>
 using node_ptr = typename ast::node_ptr<T>;
 
 /// Base class for all HILTI AST nodes.
@@ -19,9 +19,9 @@ typedef ast::Node<AstInfo> Node;
 
 class Coercer;
 class ConstantCoercer;
+class Scope;
 class VisitorInterface;
 
-/// Declares types for the AST library.
 struct AstInfo {
     typedef hilti::Coercer coercer;
     typedef hilti::Constant constant;
@@ -60,7 +60,6 @@ struct AstInfo {
 
     typedef hilti::Expression scope_value;
 };
-
 }
 
 #endif

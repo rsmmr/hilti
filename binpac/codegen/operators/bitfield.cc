@@ -21,10 +21,10 @@ void CodeBuilder::visit(expression::operator_::bitfield::Attribute* i)
 
         auto t = cg()->hiltiType(b->fieldType());
         auto result = builder()->addTmp("bits", t);
-        cg()->builder()->addInstruction(result, hilti::instruction::tuple::Index, op1, ::hilti::builder::integer::create(idx));
+        cg()->builder()->addInstruction(result, hilti::instruction::tuple::Index, op1,
+                                        ::hilti::builder::integer::create(idx));
 
         setResult(result);
         break;
     }
 }
-

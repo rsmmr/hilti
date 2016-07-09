@@ -130,4 +130,3 @@ void CodeBuilder::visit(expression::operator_::double_::Power* i)
     cg()->builder()->addInstruction(result, hilti::instruction::double_::PowDouble, op1, op2);
     setResult(result);
 }
-

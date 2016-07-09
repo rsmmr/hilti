@@ -6,15 +6,14 @@
 
 #include <ast/pass.h>
 
-#include "../common.h"
 #include "../ast-info.h"
+#include "../common.h"
 
 namespace binpac {
 namespace passes {
 
 /// Compiles the grammars for all unit types.
-class GrammarBuilder : public ast::Pass<AstInfo, shared_ptr<Production>>
-{
+class GrammarBuilder : public ast::Pass<AstInfo, shared_ptr<Production>> {
 public:
     /// Constructir.
     ///
@@ -57,7 +56,6 @@ private:
     typedef std::map<shared_ptr<Node>, shared_ptr<Production>> production_map;
     static production_map _compiled;
 };
-
 }
 }
 

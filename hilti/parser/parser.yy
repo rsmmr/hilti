@@ -11,8 +11,8 @@ namespace hilti_parser { class Parser; }
 
 %locations
 
-%name-prefix="hilti_parser"
-%define "parser_class_name" "Parser"
+%name-prefix "hilti_parser"
+%define parser_class_name { Parser }
 
 %initial-action
 {
@@ -518,7 +518,7 @@ constant      : CINTEGER                         { $$ = builder::integer::create
               | TIME '(' CDOUBLE ')'             { $$ = builder::time::create($3, loc(@$)); }
               | TIME '(' CINTEGER ')'            { $$ = builder::time::create((uint64_t)$3, loc(@$)); }
               | tuple                            { $$ = builder::tuple::create($1, loc(@$));  }
-| union_constant opt_attributes    { $$ = $1; ast::checkedCast<expression::Constant>($1)->constant()->setAttributes($2); }
+              | union_constant opt_attributes    { $$ = $1; ast::rtti::checkedCast<expression::Constant>($1)->constant()->setAttributes($2); }
 
 union_constant: UNION '<' type '>' '(' union_constant_field ')'
                                                  { $$ = builder::union_::create($3, $6.first, $6.second, loc(@$)); }

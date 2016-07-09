@@ -1,13 +1,13 @@
 
-#include "declaration.h"
 #include "statement.h"
-#include "variable.h"
-#include "function.h"
-#include "declaration.h"
-#include "instruction.h"
 #include "builder/nodes.h"
-#include "passes/printer.h"
+#include "declaration.h"
+#include "declaration.h"
+#include "function.h"
 #include "hilti/autogen/instructions.h"
+#include "instruction.h"
+#include "passes/printer.h"
+#include "variable.h"
 
 using namespace hilti;
 
@@ -15,12 +15,12 @@ uint64_t Statement::_counter = 0;
 
 static void _addExpressionToVariables(Statement::variable_set* vars, shared_ptr<Expression> expr)
 {
-    if ( auto v = ast::tryCast<expression::Variable>(expr) ) {
-        if ( auto l = ast::tryCast<variable::Local>(v->variable()) )
+    if ( auto v = ast::rtti::tryCast<expression::Variable>(expr) ) {
+        if ( auto l = ast::rtti::tryCast<variable::Local>(v->variable()) )
             vars->insert(std::make_shared<Statement::FlowVariable>(v));
     }
 
-    if ( auto p = ast::tryCast<expression::Parameter>(expr) )
+    if ( auto p = ast::rtti::tryCast<expression::Parameter>(expr) )
         vars->insert(std::make_shared<Statement::FlowVariable>(p));
 }
 
@@ -28,7 +28,7 @@ Statement::FlowVariable::FlowVariable(shared_ptr<expression::Variable> var)
 {
     auto v = var->variable();
 
-    if ( auto local = ast::tryCast<variable::Local>(v) )
+    if ( auto local = ast::rtti::tryCast<variable::Local>(v) )
         name = local->internalName();
     else
         name = v->id()->name();
@@ -88,7 +88,8 @@ shared_ptr<Statement> Statement::firstNonBlock()
     return sharedPtr<Statement>();
 }
 
-statement::Instruction::Instruction(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l)
+statement::Instruction::Instruction(shared_ptr<ID> id, const hilti::instruction::Operands& ops,
+                                    const Location& l)
     : Statement(l)
 {
     _id = id ? id->clone() : nullptr;
@@ -122,7 +123,8 @@ string statement::Instruction::signature() const
         }
     }
 
-    return util::fmt("%s: %s%s", _id->name().c_str(), util::strjoin(ops, ", ").c_str(), target.c_str());
+    return util::fmt("%s: %s%s", _id->name().c_str(), util::strjoin(ops, ", ").c_str(),
+                     target.c_str());
 }
 
 bool statement::Instruction::hoisted() const
@@ -176,7 +178,8 @@ void statement::Block::setID(shared_ptr<ID> id)
     addChild(_id);
 }
 
-void statement::Block::_init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l)
+void statement::Block::_init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls,
+                             const stmt_list& stmts, const Location& l)
 {
     _id = id ? id->clone() : nullptr;
     _stmts = stmts;
@@ -208,12 +211,12 @@ bool statement::Block::terminated() const
         return false;
 
     shared_ptr<Statement> s = _stmts.back();
-    auto b = ast::as<statement::Block>(s);
+    auto b = ast::rtti::tryCast<statement::Block>(s);
 
     if ( b )
         return b->terminated();
 
-    auto i = ast::as<statement::instruction::Resolved>(s);
+    auto i = ast::rtti::tryCast<statement::instruction::Resolved>(s);
 
     if ( ! i )
         return false;
@@ -226,9 +229,9 @@ void statement::Block::removeUseless()
     stmt_list nstmts;
 
     for ( auto s : _stmts ) {
-        auto i = ast::tryCast<statement::instruction::Resolved>(s);
+        auto i = ast::rtti::tryCast<statement::instruction::Resolved>(s);
 
-        if ( i && ast::isA<instruction::Misc::Nop>(i) )
+        if ( i && ast::rtti::isA<instruction::Misc::Nop>(i) )
             continue;
 
         nstmts.push_back(s);
@@ -274,10 +277,11 @@ shared_ptr<Statement> statement::Block::firstNonBlock()
     return _firstNonBlock(sharedPtr<statement::Block>(), &done);
 }
 
-shared_ptr<Statement> statement::Block::_firstNonBlock(shared_ptr<statement::Block> block, std::set<shared_ptr<statement::Block>>* done)
+shared_ptr<Statement> statement::Block::_firstNonBlock(shared_ptr<statement::Block> block,
+                                                       std::set<shared_ptr<statement::Block>>* done)
 {
     for ( auto s : block->_stmts ) {
-        auto b = ast::tryCast<statement::Block>(s);
+        auto b = ast::rtti::tryCast<statement::Block>(s);
 
         if ( ! b )
             return s;
@@ -300,16 +304,15 @@ Statement::FlowInfo statement::Block::flowInfo()
     FlowInfo fi;
 
     for ( auto stmt : _stmts ) {
-
         auto sfi = stmt->flowInfo();
 
         auto killed = ::util::set_union(fi.defined, fi.cleared);
 
         auto modified = ::util::set_difference(sfi.modified, killed);
-        auto read     = ::util::set_difference(sfi.read, killed);
+        auto read = ::util::set_difference(sfi.read, killed);
 
         fi.modified = ::util::set_union(fi.modified, modified);
-        fi.read     = ::util::set_union(fi.read, read);
+        fi.read = ::util::set_union(fi.read, read);
 
         fi.defined = ::util::set_union(fi.defined, sfi.defined);
         fi.cleared = ::util::set_union(fi.cleared, sfi.cleared);
@@ -329,10 +332,13 @@ Statement::FlowInfo statement::Block::flowInfo()
     return fi;
 }
 
-statement::instruction::Resolved::Resolved(shared_ptr<hilti::Instruction> instruction, const hilti::instruction::Operands& ops, const Location& l)
-    : Instruction(instruction->id(), ops, l) {
-           _instruction = instruction;
-       }
+statement::instruction::Resolved::Resolved(shared_ptr<hilti::Instruction> instruction,
+                                           const hilti::instruction::Operands& ops,
+                                           const Location& l)
+    : Instruction(instruction->id(), ops, l)
+{
+    _instruction = instruction;
+}
 
 Statement::FlowInfo statement::instruction::Resolved::flowInfo()
 {
@@ -342,10 +348,9 @@ Statement::FlowInfo statement::instruction::Resolved::flowInfo()
     FlowInfo fi;
 
     if ( target() ) {
-
         variable_set vars;
 
-        for ( auto e :target()->flatten() )
+        for ( auto e : target()->flatten() )
             _addExpressionToVariables(&vars, e);
 
         fi.defined = util::set_union(fi.defined, vars);
@@ -355,7 +360,6 @@ Statement::FlowInfo statement::instruction::Resolved::flowInfo()
 
     int i = 0;
     for ( auto op : ops ) {
-
         if ( i == 0 || ! op ) {
             ++i;
             continue;
@@ -382,22 +386,39 @@ Statement::FlowInfo statement::instruction::Resolved::flowInfo()
     return ins->flowInfo(fi);
 }
 
-statement::instruction::Unresolved::Unresolved(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l)
-    : Instruction(id, ops, l) {}
+statement::instruction::Unresolved::Unresolved(shared_ptr<ID> id,
+                                               const hilti::instruction::Operands& ops,
+                                               const Location& l)
+    : Instruction(id, ops, l)
+{
+}
 
-statement::instruction::Unresolved::Unresolved(const ::string& name, const hilti::instruction::Operands& ops, const Location& l)
-    : Instruction(shared_ptr<ID>(new ID(name)), ops, l) {}
+statement::instruction::Unresolved::Unresolved(const ::string& name,
+                                               const hilti::instruction::Operands& ops,
+                                               const Location& l)
+    : Instruction(shared_ptr<ID>(new ID(name)), ops, l)
+{
+}
 
-statement::instruction::Unresolved::Unresolved(shared_ptr<hilti::Instruction> instr, const hilti::instruction::Operands& ops, const Location& l)
-    : Instruction(instr->id(), ops, l) { _instr = instr; }
+statement::instruction::Unresolved::Unresolved(shared_ptr<hilti::Instruction> instr,
+                                               const hilti::instruction::Operands& ops,
+                                               const Location& l)
+    : Instruction(instr->id(), ops, l)
+{
+    _instr = instr;
+}
 
 Statement::FlowInfo statement::instruction::Unresolved::flowInfo()
 {
-    fprintf(stderr, "internal error: Unresolved::flowInfo() called, not all instructions were resolved (%s)\n", id()->name().c_str());
+    fprintf(
+        stderr,
+        "internal error: Unresolved::flowInfo() called, not all instructions were resolved (%s)\n",
+        id()->name().c_str());
     abort();
 }
 
-statement::try_::Catch::Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> block, const Location& l)
+statement::try_::Catch::Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> block,
+                              const Location& l)
     : Node(l)
 {
     _id = id;
@@ -422,7 +443,7 @@ statement::try_::Catch::Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_p
 
 shared_ptr<variable::Local> statement::try_::Catch::Catch::variable() const
 {
-    return _decl ? ast::as<variable::Local>(_decl->variable()) : nullptr;
+    return _decl ? ast::rtti::tryCast<variable::Local>(_decl->variable()) : nullptr;
 }
 
 statement::Try::Try(shared_ptr<Block> try_, const catch_list& catches, const Location& l)
@@ -454,7 +475,8 @@ Statement::FlowInfo statement::Try::flowInfo()
     return fi;
 }
 
-statement::ForEach::ForEach(shared_ptr<ID> id, shared_ptr<Expression> seq, shared_ptr<Block> body, const Location& l)
+statement::ForEach::ForEach(shared_ptr<ID> id, shared_ptr<Expression> seq, shared_ptr<Block> body,
+                            const Location& l)
     : Statement(l)
 {
     _id = id;
@@ -491,4 +513,3 @@ Statement::FlowInfo statement::ForEach::flowInfo()
 
     return fi;
 }
-

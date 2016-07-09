@@ -12,8 +12,7 @@
 namespace binpac {
 
 /// An key/value attribute.
-class Attribute : public Node
-{
+class Attribute : public Node {
 public:
     /// Constructor.
     ///
@@ -27,7 +26,8 @@ public:
     /// won't be printed by the printer.
     ///
     /// l: Associated location.
-    Attribute(const string& key, shared_ptr<Expression> value = nullptr, bool internal=false, const Location& l=Location::None);
+    Attribute(const string& key, shared_ptr<Expression> value = nullptr, bool internal = false,
+              const Location& l = Location::None);
 
     /// Returns the attribute's key (without any leading ampersand).
     const string& key() const;
@@ -53,20 +53,21 @@ private:
 };
 
 /// A collection of attributes.
-class AttributeSet : public Node
-{
+class AttributeSet : public Node {
 public:
     /// Ctor.
     ///
     /// l: Associated location.
-    AttributeSet(const Location& l=Location::None) : ast::Node<AstInfo>(l) {}
+    AttributeSet(const Location& l = Location::None) : ast::Node<AstInfo>(l)
+    {
+    }
 
     /// Ctor.
     ///
     /// attrs: Attributes to initialize the set with.
     ///
     /// l: Associated location.
-    AttributeSet(const attribute_list& attrs, const Location& l=Location::None);
+    AttributeSet(const attribute_list& attrs, const Location& l = Location::None);
 
     /// Inserts an attribute into the set. If the same key already exists,
     /// it's overwritten.
@@ -98,7 +99,6 @@ public:
 private:
     std::map<string, node_ptr<Attribute>> _attrs;
 };
-
 }
 
 #endif

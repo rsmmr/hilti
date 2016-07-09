@@ -1,4 +1,6 @@
 
+include(DefaultCompilerSettings)
+
 file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" HILTI_VERSION LIMIT_COUNT 1)
 
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
@@ -7,31 +9,7 @@ set(ffi     "${CMAKE_CURRENT_BINARY_DIR}/autogen/ffi")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${ffi})
 
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-## PAPI
-
-find_package(PAPI)
-
-if (${PAPI_FOUND} STREQUAL "TRUE" )
-    set(HAVE_PAPI "1")
-else ()
-    set(HAVE_PAPI "0")
-endif ()
-
-## Perftools
-
-set(HAVE_PERFTOOLS "0")
-
-if ( NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
-    find_package(GooglePerftools)
-
-    if ("${GOOGLEPERFTOOLS_FOUND}" STREQUAL "TRUE" )
-        set(HAVE_PERFTOOLS "1")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_PERFTOOLS")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_PERFTOOLS")
-    endif ()
-endif ()
+include_directories(${LLVM_INCLUDE_DIR})
 
 ## Create config file.
 
@@ -42,7 +20,24 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/hilti-config.h.in ${CMAKE_CURRENT_BIN
 include_directories(${ffi})
 add_subdirectory(codegen/libffi)
 
+### Generate visitor interface and RTTI information.
+add_custom_command(
+   OUTPUT   ${autogen}/visitor-types.h
+            ${autogen}/visitor-interface.h
+            ${autogen}/visitor-rtti.cc
+   COMMAND  ${scripts}/make-visitor-interface hilti ${CMAKE_CURRENT_SOURCE_DIR}/nodes.decl ${autogen}
+   DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/nodes.decl ${scripts}/make-visitor-interface
+)
+
+SET_SOURCE_FILES_PROPERTIES(${autogen}/visitor-interface.h PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${autogen}/visitor-types.h     PROPERTIES GENERATED 1)
+
 ### Generate the Bison/Flex parser.
+
+FindRequiredPackage(FLEX)
+FindRequiredPackage(BISON)
+
+include_directories(${FLEX_INCLUDE_DIR})
 
 bison_target(Parser parser/parser.yy
              ${autogen}/parser.cc
@@ -57,6 +52,8 @@ ADD_CUSTOM_TARGET(generate_parser_hilti
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/scanner.cc PROPERTIES GENERATED 1)
 SET_SOURCE_FILES_PROPERTIES(${autogen}/parser.cc  PROPERTIES GENERATED 1)
+
+set_property(SOURCE ${autogen}/scanner.cc APPEND PROPERTY COMPILE_FLAGS "-Wno-null-conversion")
 
 ### Generate the instruction declarations.
 
@@ -113,7 +110,6 @@ add_custom_command(
 )
 
 foreach(hdr ${instructions})
-
    string(REPLACE ".h" ".cc" cc "${hdr}")
    string(REPLACE "instructions/" "${autogen}/instructions/" cc "${cc}")
 
@@ -126,7 +122,6 @@ foreach(hdr ${instructions})
    )
 
    SET_SOURCE_FILES_PROPERTIES(${cc} PROPERTIES GENERATED 1)
-
 endforeach ()
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions.h PROPERTIES GENERATED 1)
@@ -170,6 +165,7 @@ add_library (hilti STATIC
     instructions/iosrc.cc
     instructions/misc.cc
     instructions/operators.cc
+    instructions/optypes.cc
     instructions/port.cc
     instructions/profiler.cc
     instructions/struct.cc
@@ -259,6 +255,8 @@ add_library (hilti STATIC
     ${autogen}/instructions-register.cc
     ${autogen}/instructions-define.cc
 
+    ${autogen}/visitor-rtti.cc
+
     ${autogen}/scanner.cc
     ${autogen}/parser.cc
     ${instructions_cc}
@@ -268,9 +266,11 @@ add_library (hilti STATIC
     $<TARGET_OBJECTS:hilti-ffi>
 )
 
+set_property(SOURCE codegen/asm-annotater.cc APPEND PROPERTY COMPILE_FLAGS "-fno-rtti -DHILTI_NO_RTTI")
+set_property(SOURCE codegen/linker.cc APPEND PROPERTY COMPILE_FLAGS "-fno-rtti -DHILTI_NO_RTTI")
+set_property(SOURCE codegen/util.cc APPEND PROPERTY COMPILE_FLAGS "-fno-rtti -DHILTI_NO_RTTI")
+
 ADD_DEPENDENCIES(hilti generate_parser_hilti)
 target_link_libraries(hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
-add_library (hilti-jit STATIC jit/libhilti-jit.cc)
-ADD_DEPENDENCIES(hilti-jit hilti)
-
+include(ShowCompilerSettings)

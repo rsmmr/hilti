@@ -1,11 +1,5 @@
 
 %{
-#pragma clang diagnostic ignored "-Wunused-value"
-
-#if ( __clang_major__ == 3 && __clang_minor__ >= 4 )
-#pragma clang diagnostic ignored "-Wdeprecated-register"
-#endif
-
 #include <string>
 
 #include <hilti/parser/scanner.h>

@@ -1,19 +1,20 @@
 
 #include "define-instruction.h"
 
-#include "flow.h"
-#include "../module.h"
 #include "../builder/nodes.h"
+#include "../module.h"
+#include "flow.h"
 
-static void _validateBranches(const Instruction* ins, shared_ptr<Expression> op, shared_ptr<Type> ty_op1, bool by_type)
+static void _validateBranches(const Instruction* ins, shared_ptr<Expression> op,
+                              shared_ptr<Type> ty_op1, bool by_type)
 {
     ins->isConstant(op);
 
-    auto a1 = ast::as<expression::Constant>(op);
-    auto a2 = ast::as<constant::Tuple>(a1->constant());
+    auto a1 = ast::rtti::tryCast<expression::Constant>(op);
+    auto a2 = ast::rtti::tryCast<constant::Tuple>(a1->constant());
 
     for ( auto i : a2->value() ) {
-        auto t = ast::as<type::Tuple>(i->type());
+        auto t = ast::rtti::tryCast<type::Tuple>(i->type());
 
         if ( ! t ) {
             ins->error(i, "not a tuple");
@@ -27,8 +28,8 @@ static void _validateBranches(const Instruction* ins, shared_ptr<Expression> op,
 
         ins->isConstant(i);
 
-        auto c1 = ast::as<expression::Constant>(i);
-        auto c2 = ast::as<constant::Tuple>(c1->constant());
+        auto c1 = ast::rtti::tryCast<expression::Constant>(i);
+        auto c2 = ast::rtti::tryCast<constant::Tuple>(c1->constant());
 
         auto list = c2->value();
         auto j = list.begin();
@@ -41,31 +42,33 @@ static void _validateBranches(const Instruction* ins, shared_ptr<Expression> op,
         }
 
         else {
-            auto t = ast::as<expression::Type>(t1);
+            auto t = ast::rtti::tryCast<expression::Type>(t1);
 
             if ( ! t ) {
                 ins->error(t1, "not a type");
                 return;
             }
 
-            auto types = ast::checkedCast<type::Union>(ty_op1)->fields(t->typeValue());
+            auto types = ast::rtti::checkedCast<type::Union>(ty_op1)->fields(t->typeValue());
             if ( ! types.size() )
                 ins->error(t1, "type does not exist in union");
         }
     }
 }
 
-static std::set<shared_ptr<Expression>> _successorBranches(const Instruction* ins, shared_ptr<Expression> op, shared_ptr<Expression> def)
+static std::set<shared_ptr<Expression>> _successorBranches(const Instruction* ins,
+                                                           shared_ptr<Expression> op,
+                                                           shared_ptr<Expression> def)
 {
-    std::set<shared_ptr<Expression>> succ = { def };
+    std::set<shared_ptr<Expression>> succ = {def};
 
-    auto a1 = ast::as<expression::Constant>(op);
-    auto a2 = ast::as<constant::Tuple>(a1->constant());
+    auto a1 = ast::rtti::tryCast<expression::Constant>(op);
+    auto a2 = ast::rtti::tryCast<constant::Tuple>(a1->constant());
 
     for ( auto i : a2->value() ) {
-        auto t = ast::as<type::Tuple>(i->type());
-        auto c1 = ast::as<expression::Constant>(i);
-        auto c2 = ast::as<constant::Tuple>(c1->constant());
+        auto t = ast::rtti::tryCast<type::Tuple>(i->type());
+        auto c1 = ast::rtti::tryCast<expression::Constant>(i);
+        auto c2 = ast::rtti::tryCast<constant::Tuple>(c1->constant());
 
         auto list = c2->value();
         auto j = list.begin();
@@ -79,94 +82,107 @@ static std::set<shared_ptr<Expression>> _successorBranches(const Instruction* in
 }
 
 iBeginCC(flow)
-    iValidateCC(ReturnResult) {
+    iValidateCC(ReturnResult)
+    {
         auto decl = validator()->current<Declaration>();
 
-        if ( decl && ast::tryCast<declaration::Hook>(decl) ) {
+        if ( decl && ast::rtti::isA<declaration::Hook>(decl) ) {
             error(nullptr, "return.result must not be used inside a hook; use hook.stop instead");
             return;
         }
     }
 
-    iSuccessorsCC(ReturnResult) {
+    iSuccessorsCC(ReturnResult)
+    {
         return std::set<shared_ptr<Expression>>();
     }
 
-    iDocCC(ReturnResult, "")
+    iDocCC(ReturnResult, "");
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(ReturnVoid) {
+    iValidateCC(ReturnVoid)
+    {
     }
 
-    iSuccessorsCC(ReturnVoid) {
+    iSuccessorsCC(ReturnVoid)
+    {
         return std::set<shared_ptr<Expression>>();
     }
 
-    iDocCC(ReturnVoid, "")
+    iDocCC(ReturnVoid, "");
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(BlockEnd) {
+    iValidateCC(BlockEnd)
+    {
     }
 
-    iSuccessorsCC(BlockEnd) {
+    iSuccessorsCC(BlockEnd)
+    {
         return std::set<shared_ptr<Expression>>();
     }
 
-    iDocCC(BlockEnd, "Internal instruction marking the end of a block that doesn't have any other terminator.")
+    iDocCC(
+        BlockEnd,
+        "Internal instruction marking the end of a block that doesn't have any other terminator.");
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(CallVoid) {
-        auto ftype = as<type::Function>(op1->type());
+    iValidateCC(CallVoid)
+    {
+        auto ftype = ast::rtti::checkedCast<type::Function>(op1->type());
         auto rtype = ftype->result()->type();
         shared_ptr<Type> none = nullptr;
         checkCallParameters(ftype, op2);
         checkCallResult(rtype, none);
     }
 
-    iDocCC(CallVoid, "")
+    iDocCC(CallVoid, "");
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(CallResult) {
-        auto ftype = as<type::Function>(op1->type());
+    iValidateCC(CallResult)
+    {
+        auto ftype = ast::rtti::checkedCast<type::Function>(op1->type());
         auto rtype = ftype->result()->type();
         checkCallParameters(ftype, op2);
         checkCallResult(rtype, target->type());
     }
 
-    iDocCC(CallResult, "")
+    iDocCC(CallResult, "");
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(CallCallableResult) {
-        auto rt = ast::checkedCast<type::Reference>(op1->type());
-        auto ftype = ast::checkedCast<type::Callable>(rt->argType());
+    iValidateCC(CallCallableResult)
+    {
+        auto rt = ast::rtti::checkedCast<type::Reference>(op1->type());
+        auto ftype = ast::rtti::checkedCast<type::Callable>(rt->argType());
         auto rtype = ftype->result()->type();
         checkCallParameters(ftype, op2);
         checkCallResult(rtype, target->type());
     }
 
-    iDocCC(CallCallableResult, "")
+    iDocCC(CallCallableResult, "");
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(CallCallableVoid) {
-        auto rt = ast::checkedCast<type::Reference>(op1->type());
-        auto ftype = ast::checkedCast<type::Callable>(rt->argType());
+    iValidateCC(CallCallableVoid)
+    {
+        auto rt = ast::rtti::checkedCast<type::Reference>(op1->type());
+        auto ftype = ast::rtti::checkedCast<type::Callable>(rt->argType());
         auto rtype = ftype->result()->type();
         shared_ptr<Type> none = nullptr;
         checkCallParameters(ftype, op2);
         checkCallResult(rtype, none);
     }
 
-    iDocCC(CallCallableVoid, "")
+    iDocCC(CallCallableVoid, "");
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(Yield) {
+    iValidateCC(Yield)
+    {
     }
 
     iDocCC(Yield, R"(
@@ -179,14 +195,15 @@ iBeginCC(flow)
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(YieldUntil) {
+    iValidateCC(YieldUntil)
+    {
         shared_ptr<Type> ty = op1->type();
-        auto rtype = ast::as<type::Reference>(ty);
+        auto rtype = ast::rtti::tryCast<type::Reference>(ty);
 
         if ( rtype )
             ty = rtype->argType();
 
-        if ( ! type::hasTrait<type::trait::Blockable>(ty) )
+        if ( ! ast::type::hasTrait<type::trait::Blockable>(ty) )
             error(op1, "operand type does not support yield.until");
     }
 
@@ -196,11 +213,13 @@ iBeginCC(flow)
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(IfElse) {
+    iValidateCC(IfElse)
+    {
     }
 
-    iSuccessorsCC(IfElse) {
-        return { op2, op3 };
+    iSuccessorsCC(IfElse)
+    {
+        return {op2, op3};
     }
 
     iDocCC(IfElse, R"(
@@ -211,11 +230,13 @@ iBeginCC(flow)
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(Jump) {
+    iValidateCC(Jump)
+    {
     }
 
-    iSuccessorsCC(Jump) {
-        return { op1 };
+    iSuccessorsCC(Jump)
+    {
+        return {op1};
     }
 
     iDocCC(Jump, R"(
@@ -225,12 +246,13 @@ iBeginCC(flow)
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(Switch) {
+    iValidateCC(Switch)
+    {
         auto ty_op1 = op1->type();
-        auto ty_op2 = as<type::Label>(op2->type());
-        auto ty_op3 = as<type::Tuple>(op3->type());
+        auto ty_op2 = ast::rtti::checkedCast<type::Label>(op2->type());
+        auto ty_op3 = ast::rtti::checkedCast<type::Tuple>(op3->type());
 
-        if ( ! type::hasTrait<type::trait::ValueType>(ty_op1) ) {
+        if ( ! ast::type::hasTrait<type::trait::ValueType>(ty_op1) ) {
             error(op1, "switch operand must be a value type");
             return;
         }
@@ -238,7 +260,8 @@ iBeginCC(flow)
         _validateBranches(this, op3, ty_op1, false);
     }
 
-    iSuccessorsCC(Switch) {
+    iSuccessorsCC(Switch)
+    {
         return _successorBranches(this, op3, op2);
     }
 
@@ -256,15 +279,17 @@ iBeginCC(flow)
 iEndCC
 
 iBeginCC(flow)
-    iValidateCC(DispatchUnion) {
+    iValidateCC(DispatchUnion)
+    {
         auto ty_op1 = op1->type();
-        auto ty_op2 = as<type::Label>(op2->type());
-        auto ty_op3 = as<type::Tuple>(op3->type());
+        auto ty_op2 = ast::rtti::checkedCast<type::Label>(op2->type());
+        auto ty_op3 = ast::rtti::checkedCast<type::Tuple>(op3->type());
 
         _validateBranches(this, op3, ty_op1, true);
     }
 
-    iSuccessorsCC(DispatchUnion) {
+    iSuccessorsCC(DispatchUnion)
+    {
         return _successorBranches(this, op3, op2);
     }
 
@@ -280,5 +305,3 @@ iBeginCC(flow)
     )")
 
 iEndCC
-
-

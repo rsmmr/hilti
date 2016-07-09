@@ -2,8 +2,8 @@
 #include "operator-resolver.h"
 #include "id-resolver.h"
 
-#include "../operator.h"
 #include "../expression.h"
+#include "../operator.h"
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -22,7 +22,8 @@ static string _fmtOps(const expression_list& ops)
     return s + ")";
 }
 
-static string _fmtOpCandidates(const OperatorRegistry::matching_result& candidates, const expression_list& ops)
+static string _fmtOpCandidates(const OperatorRegistry::matching_result& candidates,
+                               const expression_list& ops)
 {
     string s = "";
 
@@ -36,7 +37,8 @@ static string _fmtOpCandidates(const OperatorRegistry::matching_result& candidat
 }
 
 
-OperatorResolver::OperatorResolver(shared_ptr<Module> module) : Pass<AstInfo>("binpac::OperatorResolver", true)
+OperatorResolver::OperatorResolver(shared_ptr<Module> module)
+    : Pass<AstInfo>("binpac::OperatorResolver", true)
 {
     _module = module;
 }
@@ -69,7 +71,8 @@ bool OperatorResolver::run(shared_ptr<ast::NodeBase> module)
         for ( auto a : all )
             matches.push_back(std::make_pair(a, expression_list()));
 
-        error(o, "no matching operator found for types\n" + _fmtOpCandidates(matches, o->operands()));
+        error(o,
+              "no matching operator found for types\n" + _fmtOpCandidates(matches, o->operands()));
     }
 
     return _unknowns.size() == 0;
@@ -80,22 +83,23 @@ void OperatorResolver::visit(expression::UnresolvedOperator* o)
     auto matches = OperatorRegistry::globalRegistry()->getMatching(o->kind(), o->operands());
 
     switch ( matches.size() ) {
-     case 0: {
-         // Record for now, we may resolve it later.
-         _unknowns.push_back(o);
-         break;
-     }
+    case 0: {
+        // Record for now, we may resolve it later.
+        _unknowns.push_back(o);
+        break;
+    }
 
-     case 1: {
-         // Everthing is fine. Replace with the actual operator.
-         auto match = matches.front();
-         auto nop = OperatorRegistry::globalRegistry()->resolveOperator(match.first, match.second, _module, o->location());
-         o->replace(nop);
-         nop->setUsesTryAttribute(o->usesTryAttribute());
-         break;
-     }
+    case 1: {
+        // Everthing is fine. Replace with the actual operator.
+        auto match = matches.front();
+        auto nop = OperatorRegistry::globalRegistry()->resolveOperator(match.first, match.second,
+                                                                       _module, o->location());
+        o->replace(nop);
+        nop->setUsesTryAttribute(o->usesTryAttribute());
+        break;
+    }
 
-     default:
+    default:
         error(o, "operator use is ambigious\n" + _fmtOpCandidates(matches, o->operands()));
         break;
     }
@@ -103,7 +107,8 @@ void OperatorResolver::visit(expression::UnresolvedOperator* o)
 
 void OperatorResolver::visit(Variable* i)
 {
-    if ( i->init() && ast::isA<type::Unknown>(i->type()) && ! ast::isA<type::Unknown>(i->init()->type()) )
+    if ( i->init() && ast::isA<type::Unknown>(i->type()) &&
+         ! ast::isA<type::Unknown>(i->init()->type()) )
         // We should have resolved the init expression by now.
         i->setType(i->init()->type());
 }

@@ -1,92 +1,104 @@
 
 opBegin(iterator::Equal)
-    opOp1(std::make_shared<type::Iterator>())
-    opOp2(std::make_shared<type::Iterator>())
+    opOp1(std::make_shared<type::Iterator>());
+    opOp2(std::make_shared<type::Iterator>());
 
-    opDoc("Compares two iterators.")
+    opDoc("Compares two iterators.");
 
-    opValidate() {
+    opValidate()
+    {
         sameType(op1()->type(), op2()->type());
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(iterator::Deref)
-    opOp1(std::make_shared<type::Iterator>())
+    opOp1(std::make_shared<type::Iterator>());
 
-    opDoc("Returns the element referenced by the iterator.")
+    opDoc("Returns the element referenced by the iterator.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         auto atype = ast::checkedCast<type::Iterator>(op1()->type())->argType();
         return ast::type::checkedTrait<type::trait::Iterable>(atype)->elementType();
     }
 opEnd
 
 opBegin(iterator::IncrPostfix)
-    opOp1(std::make_shared<type::Iterator>())
+    opOp1(std::make_shared<type::Iterator>());
 
-    opDoc("Advances the iterator by one element, returning the previous iterator.")
+    opDoc("Advances the iterator by one element, returning the previous iterator.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return op1()->type();
     }
 opEnd
 
 opBegin(iterator::IncrPrefix)
-    opOp1(std::make_shared<type::Iterator>())
+    opOp1(std::make_shared<type::Iterator>());
 
-    opDoc("Advances the iterator by one element, returning the new iterator.")
+    opDoc("Advances the iterator by one element, returning the new iterator.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return op1()->type();
     }
 opEnd
 
 opBegin(iterator::Plus)
-    opOp1(std::make_shared<type::Iterator>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Iterator>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Returns an iterator advanced by a given number of elements.")
+    opDoc("Returns an iterator advanced by a given number of elements.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return op1()->type();
     }
 opEnd
 
 opBegin(iterator::PlusAssign)
-    opOp1(std::make_shared<type::Iterator>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Iterator>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Advances the iterator by a given number of elements.")
+    opDoc("Advances the iterator by a given number of elements.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return op1()->type();
     }
 opEnd
 
-// opBegin(iterator::Plus)
-//     opOp1(std::make_shared<type::Iterator>())
-//     opOp2(std::make_shared<type::Integer>())
+// opBegin(iterator::Plus);
+//     opOp1(std::make_shared<type::Iterator>());
+//     opOp2(std::make_shared<type::Integer>());
 //
-//     opDoc("Returns the iterator advanced by a given number of elements.")
+//     opDoc("Returns the iterator advanced by a given number of elements.");
 //
 //     opValidate() {
 //         if ( ast::checkedCast<type::Integer>(op2()->type())->signed_() )
@@ -98,11 +110,11 @@ opEnd
 //     }
 // opEnd
 //
-// opBegin(iterator::PlusAssign)
-//     opOp1(std::make_shared<type::Iterator>())
-//     opOp2(std::make_shared<type::Integer>())
+// opBegin(iterator::PlusAssign);
+//     opOp1(std::make_shared<type::Iterator>());
+//     opOp2(std::make_shared<type::Integer>());
 //
-//     opDoc("Advances the iterator by a given number of elements.")
+//     opDoc("Advances the iterator by a given number of elements.");
 //
 //     opValidate() {
 //         if ( ast::checkedCast<type::Integer>(op2()->type())->signed_() )

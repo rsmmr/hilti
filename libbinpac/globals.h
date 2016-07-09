@@ -7,7 +7,7 @@
 typedef struct {
     hlt_list* parsers;
     hlt_map* mime_types;
-    int8_t    debugging;
+    int8_t debugging;
 } __binpac_globals;
 
 extern void __binpac_globals_init();

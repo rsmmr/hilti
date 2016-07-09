@@ -15,10 +15,10 @@
 #ifndef LIBHILTI_FILE_H
 #define LIBHILTI_FILE_H
 
-#include "enum.h"
 #include "bytes.h"
-#include "string_.h"
 #include "cmdqueue.h"
+#include "enum.h"
+#include "string_.h"
 
 typedef struct __hlt_file hlt_file;
 
@@ -27,21 +27,21 @@ typedef struct __hlt_file hlt_file;
 /// When opening a file with this mode, an already existing file with the
 /// same name will be overwritten. This is the default if no
 /// ``HLT_FILE_OPEN_*`` mode is specified.
-#define HLT_FILE_OPEN_CREATE  1
+#define HLT_FILE_OPEN_CREATE 1
 
 /// When opening a file with this mode, an already existing file will be
 /// extended, not overwritten.
-#define HLT_FILE_OPEN_APPEND  2
+#define HLT_FILE_OPEN_APPEND 2
 
 /// When opening a file in text mode, each write operation will be terminated
 /// with a newline character. Furthermore, all non-printable characters will
 /// be suitably escaped. This is the default if no ``HLT_FILE_TYPE_*`` mode
 /// is specified.
-#define HLT_FILE_TYPE_TEXT    4
+#define HLT_FILE_TYPE_TEXT 4
 
 /// When opening a file in binary mode, write operation will output all bytes
 /// unmodified.
-#define HLT_FILE_TYPE_BINARY  8
+#define HLT_FILE_TYPE_BINARY 8
 
 /// Instantiates a new file object, which will initially be closed and not
 /// associated with any actual file.
@@ -74,7 +74,8 @@ hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx);
 /// Todo: We aren't very good yet in figuring out whether two different paths
 /// may reference the same physical file. Currently, we just do a simple
 /// string comparision.
-void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_enum charset, hlt_exception** excpt, hlt_execution_context* ctx);
+void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_enum charset,
+                   hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Closes a file. Further write operations will not be possible (unless
 /// reopened).
@@ -101,7 +102,8 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
 /// str: The string to write.
 ///
 /// excpt: &
-void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx);
+void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt,
+                           hlt_execution_context* ctx);
 
 /// Writes a bytes object into a file. If the file was opened in text mode,
 /// unprintable characters will be suitably escaped.
@@ -116,7 +118,8 @@ void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt
 /// bytes: The bytes to write.
 ///
 /// excpt: &
-void hlt_file_write_bytes(hlt_file* file, struct __hlt_bytes* bytes, hlt_exception** excpt, hlt_execution_context* ctx);
+void hlt_file_write_bytes(hlt_file* file, struct __hlt_bytes* bytes, hlt_exception** excpt,
+                          hlt_execution_context* ctx);
 
 /// Returns a file's path.
 ///

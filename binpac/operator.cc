@@ -1,13 +1,13 @@
 
-#include <stdlib.h>
 #include <cxxabi.h>
+#include <stdlib.h>
 
-#include "operator.h"
-#include "expression.h"
 #include "coercer.h"
 #include "constant.h"
-#include "statement.h"
+#include "expression.h"
+#include "operator.h"
 #include "scope.h"
+#include "statement.h"
 
 #include "passes/validator.h"
 
@@ -32,7 +32,7 @@ operator_::Kind Operator::kind()
 
 bool Operator::match(const expression_list& ops, bool coerce, expression_list* new_ops)
 {
-    std::list<shared_ptr<Type>> types = { __typeOp1(), __typeOp2(), __typeOp3() };
+    std::list<shared_ptr<Type>> types = {__typeOp1(), __typeOp2(), __typeOp3()};
 
     auto o = ops.begin();
     auto t = types.begin();
@@ -43,8 +43,8 @@ bool Operator::match(const expression_list& ops, bool coerce, expression_list* n
 
     while ( o != ops.end() ) {
         // fprintf(stderr, "%s -> %s\n", (*o)->render().c_str(), (*t)->render().c_str());
-        // fprintf(stderr, "  X %s\n", typeid(*(*o).get()).name());
-        // fprintf(stderr, "  X %s\n", typeid(*(*o)->type().get()).name());
+        // fprintf(stderr, "  X %s\n", typeName(*(*o).get()));
+        // fprintf(stderr, "  X %s\n", typeName(*(*o)->type().get()));
 
         if ( t == types.end() || ! *t )
             // Too many arguments.
@@ -163,7 +163,7 @@ shared_ptr<Type> Operator::type(shared_ptr<Module> module, const expression_list
 
 shared_ptr<Type> Operator::__typeOp3() const
 {
-    if ( _kind != operator_::MethodCall)
+    if ( _kind != operator_::MethodCall )
         return nullptr;
     else
         return std::make_shared<type::Tuple>();
@@ -267,7 +267,8 @@ bool Operator::matchCallArgs(shared_ptr<Expression> tuple, const type_list& type
     return (result.first == nullptr);
 }
 
-std::pair<shared_ptr<Node>, string> Operator::matchArgsInternal(shared_ptr<Expression> tuple, const type_list& types)
+std::pair<shared_ptr<Node>, string> Operator::matchArgsInternal(shared_ptr<Expression> tuple,
+                                                                const type_list& types)
 {
     if ( ! tuple ) {
         expression_list empty;
@@ -309,7 +310,7 @@ string _clsName(shared_ptr<Type> t)
         return "";
 
     int status;
-    return abi::__cxa_demangle(typeid(*t).name(), 0, 0, &status);
+    return abi::__cxa_demangle(typeName(*t), 0, 0, &status);
 }
 
 Operator::Info Operator::info() const
@@ -346,7 +347,10 @@ OperatorRegistry::~OperatorRegistry()
 {
 }
 
-OperatorRegistry::matching_result OperatorRegistry::getMatching(operator_::Kind kind, const expression_list& ops, bool try_coercion, bool try_commutative) const
+OperatorRegistry::matching_result OperatorRegistry::getMatching(operator_::Kind kind,
+                                                                const expression_list& ops,
+                                                                bool try_coercion,
+                                                                bool try_commutative) const
 {
     matching_result matches;
 
@@ -384,12 +388,13 @@ OperatorRegistry::matching_result OperatorRegistry::getMatching(operator_::Kind 
     auto opdef = operator_::OperatorDefinitions.find(kind);
     assert(opdef != operator_::OperatorDefinitions.end());
 
-    if ( try_commutative && opdef->second.type == operator_::BINARY_COMMUTATIVE && ops.size() == 2 ) {
+    if ( try_commutative && opdef->second.type == operator_::BINARY_COMMUTATIVE &&
+         ops.size() == 2 ) {
         auto i = ops.begin();
         auto op1 = *i++;
         auto op2 = *i++;
 
-        expression_list new_ops = { op2, op1 };
+        expression_list new_ops = {op2, op1};
         matches = getMatching(kind, new_ops, try_coercion, false);
     }
 
@@ -408,7 +413,9 @@ operator_list OperatorRegistry::byKind(operator_::Kind kind) const
     return ops;
 }
 
-shared_ptr<expression::ResolvedOperator> OperatorRegistry::resolveOperator(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<Module> module, const Location& l)
+shared_ptr<expression::ResolvedOperator> OperatorRegistry::resolveOperator(
+    shared_ptr<Operator> op, const expression_list& ops, shared_ptr<Module> module,
+    const Location& l)
 {
     return (op->factory())(op, ops, module, l);
 }
@@ -452,61 +459,59 @@ string Operator::render() const
         return util::fmt("%s %s %s", op1->render(), op.display, op2->render());
 
     switch ( op.kind ) {
-     case operator_::Add:
+    case operator_::Add:
         return util::fmt("add %s[%s]", op1->render(), op2->render());
 
-     case operator_::Attribute:
+    case operator_::Attribute:
         return util::fmt("%s.%s", op1->render(), op2->render());
 
-     case operator_::AttributeAssign:
+    case operator_::AttributeAssign:
         return util::fmt("%s.%s = %s", op1->render(), op2->render(), op3->render());
 
-     case operator_::Call:
+    case operator_::Call:
         return util::fmt("%s(%s)", op1->render(), op2->render());
 
-     case operator_::Coerce:
+    case operator_::Coerce:
         return util::fmt("(%s coerced to %s)", op1->render(), op2->render());
 
-     case operator_::Cast:
+    case operator_::Cast:
         return util::fmt("cast<%s>(%s)", op2->render(), op1->render());
 
-     case operator_::DecrPostfix:
+    case operator_::DecrPostfix:
         return util::fmt("%s--", op1->render());
 
-     case operator_::Delete:
+    case operator_::Delete:
         return util::fmt("delete %s[%s]", op1->render(), op2->render());
 
-     case operator_::HasAttribute:
+    case operator_::HasAttribute:
         return util::fmt("%s?.%s", op1->render(), op2->render());
 
-     case operator_::IncrPostfix:
+    case operator_::IncrPostfix:
         return util::fmt("%s++", op1->render());
 
-     case operator_::Index:
+    case operator_::Index:
         return util::fmt("%s[%s]", op1->render(), op2->render());
 
-     case operator_::IndexAssign:
+    case operator_::IndexAssign:
         return util::fmt("%s[%s] = %s", op1->render(), op2->render(), op3->render());
 
-     case operator_::MethodCall: {
-         std::list<string> args;
-         for ( auto t : _callArgs() )
-             args.push_back(t->render());
+    case operator_::MethodCall: {
+        std::list<string> args;
+        for ( auto t : _callArgs() )
+            args.push_back(t->render());
 
-         return util::fmt("%s.%s(%s)", op1->render(), op2->render(), ::util::strjoin(args, ","));
-     }
+        return util::fmt("%s.%s(%s)", op1->render(), op2->render(), ::util::strjoin(args, ","));
+    }
 
-     case operator_::Size:
+    case operator_::Size:
         return util::fmt("|%s|", op1->render());
 
-     case operator_::TryAttribute:
+    case operator_::TryAttribute:
         return util::fmt("%s.?%s", op1->render(), op2->render());
 
-     default:
+    default:
         fprintf(stderr, "unknown operator %d in Operator::render()", (int)op.kind);
         assert(false);
         return "";
     }
 }
-
-

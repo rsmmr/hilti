@@ -9,8 +9,8 @@ using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::map::New* i)
 {
-    auto ktype = ast::as<type::Map>(typedType(i->op1()))->keyType();
-    auto vtype = ast::as<type::Map>(typedType(i->op1()))->valueType();
+    auto ktype = ast::rtti::tryCast<type::Map>(typedType(i->op1()))->keyType();
+    auto vtype = ast::rtti::tryCast<type::Map>(typedType(i->op1()))->valueType();
 
     auto op1 = builder::type::create(ktype);
     auto op2 = builder::type::create(vtype);
@@ -42,12 +42,12 @@ void StatementBuilder::visit(statement::instruction::map::Clear* i)
 
 void StatementBuilder::visit(statement::instruction::map::Default* i)
 {
-    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->valueType();
+    auto vtype = ast::rtti::tryCast<type::Map>(referencedType(i->op1()))->valueType();
     auto op2 = i->op2();
 
-    auto rtype = ast::tryCast<type::Reference>(i->op2()->type());
+    auto rtype = ast::rtti::tryCast<type::Reference>(i->op2()->type());
 
-    if ( ! (rtype && ast::isA<type::Callable>(rtype->argType())) )
+    if ( ! (rtype && ast::rtti::isA<type::Callable>(rtype->argType())) )
         op2 = op2->coerceTo(vtype);
 
     CodeGen::expr_list args;
@@ -58,7 +58,7 @@ void StatementBuilder::visit(statement::instruction::map::Default* i)
 
 void StatementBuilder::visit(statement::instruction::map::Exists* i)
 {
-    auto ktype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
+    auto ktype = ast::rtti::tryCast<type::Map>(referencedType(i->op1()))->keyType();
     auto op2 = i->op2()->coerceTo(ktype);
 
     CodeGen::expr_list args;
@@ -71,8 +71,8 @@ void StatementBuilder::visit(statement::instruction::map::Exists* i)
 
 void StatementBuilder::visit(statement::instruction::map::Get* i)
 {
-    auto ktype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
-    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->valueType();
+    auto ktype = ast::rtti::tryCast<type::Map>(referencedType(i->op1()))->keyType();
+    auto vtype = ast::rtti::tryCast<type::Map>(referencedType(i->op1()))->valueType();
     auto op2 = i->op2()->coerceTo(ktype);
 
     CodeGen::expr_list args;
@@ -88,8 +88,8 @@ void StatementBuilder::visit(statement::instruction::map::Get* i)
 
 void StatementBuilder::visit(statement::instruction::map::GetDefault* i)
 {
-    auto ktype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
-    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->valueType();
+    auto ktype = ast::rtti::tryCast<type::Map>(referencedType(i->op1()))->keyType();
+    auto vtype = ast::rtti::tryCast<type::Map>(referencedType(i->op1()))->valueType();
     auto op2 = i->op2()->coerceTo(ktype);
     auto op3 = i->op3()->coerceTo(vtype);
 
@@ -107,8 +107,8 @@ void StatementBuilder::visit(statement::instruction::map::GetDefault* i)
 
 void StatementBuilder::visit(statement::instruction::map::Insert* i)
 {
-    auto ktype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
-    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->valueType();
+    auto ktype = ast::rtti::tryCast<type::Map>(referencedType(i->op1()))->keyType();
+    auto vtype = ast::rtti::tryCast<type::Map>(referencedType(i->op1()))->valueType();
     auto op2 = i->op2()->coerceTo(ktype);
     auto op3 = i->op3()->coerceTo(vtype);
 
@@ -122,7 +122,7 @@ void StatementBuilder::visit(statement::instruction::map::Insert* i)
 
 void StatementBuilder::visit(statement::instruction::map::Remove* i)
 {
-    auto ktype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
+    auto ktype = ast::rtti::tryCast<type::Map>(referencedType(i->op1()))->keyType();
     auto op2 = i->op2()->coerceTo(ktype);
 
     CodeGen::expr_list args;
@@ -192,7 +192,9 @@ void StatementBuilder::visit(statement::instruction::iterMap::Deref* i)
     args.push_back(builder::type::create(i->target()->type()));
     args.push_back(i->op1());
     auto voidp = cg()->llvmCall("hlt::iterator_map_deref", args);
-    auto casted = cg()->builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(i->target()->type())));
+    auto casted =
+        cg()->builder()->CreateBitCast(voidp,
+                                       cg()->llvmTypePtr(cg()->llvmType(i->target()->type())));
 
     cg()->llvmStore(i, cg()->builder()->CreateLoad(casted));
 }

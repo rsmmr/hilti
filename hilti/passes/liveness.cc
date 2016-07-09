@@ -58,7 +58,7 @@ size_t Liveness::hashLiveness()
 
 bool Liveness::run(shared_ptr<Node> module)
 {
-    _module = ast::checkedCast<Module>(module);
+    _module = ast::rtti::checkedCast<Module>(module);
 
     int round = 0;
 
@@ -68,7 +68,7 @@ bool Liveness::run(shared_ptr<Node> module)
     size_t old_size;
     size_t old_hash;
 
-    do  {
+    do {
         old_size = _livenesses.size();
         old_hash = hashLiveness();
 
@@ -109,12 +109,13 @@ Liveness::LivenessSets Liveness::liveness(shared_ptr<Statement> stmt) const
 
 bool Liveness::have(shared_ptr<Statement> stmt) const
 {
-    return  _livenesses.find(stmt) != _livenesses.end();
+    return _livenesses.find(stmt) != _livenesses.end();
 }
 
-bool Liveness::liveIn(shared_ptr<Statement> stmt, shared_ptr<hilti::type::function::Parameter> p) const
+bool Liveness::liveIn(shared_ptr<Statement> stmt,
+                      shared_ptr<hilti::type::function::Parameter> p) const
 {
-    auto block = ast::tryCast<statement::Block>(stmt);
+    auto block = ast::rtti::tryCast<statement::Block>(stmt);
 
     if ( block )
         stmt = block->firstNonBlock();
@@ -127,7 +128,7 @@ bool Liveness::liveIn(shared_ptr<Statement> stmt, shared_ptr<hilti::type::functi
 
 bool Liveness::liveIn(shared_ptr<Statement> stmt, shared_ptr<variable::Local> v) const
 {
-    auto block = ast::tryCast<statement::Block>(stmt);
+    auto block = ast::rtti::tryCast<statement::Block>(stmt);
 
     if ( block )
         stmt = block->firstNonBlock();
@@ -140,7 +141,7 @@ bool Liveness::liveIn(shared_ptr<Statement> stmt, shared_ptr<variable::Local> v)
 
 bool Liveness::deadOut(shared_ptr<Statement> stmt, shared_ptr<Expression> e) const
 {
-    auto block = ast::tryCast<statement::Block>(stmt);
+    auto block = ast::rtti::tryCast<statement::Block>(stmt);
 
     if ( block )
         stmt = block->firstNonBlock();
@@ -149,10 +150,10 @@ bool Liveness::deadOut(shared_ptr<Statement> stmt, shared_ptr<Expression> e) con
 
     shared_ptr<Statement::FlowVariable> fv = nullptr;
 
-    if ( auto ep = ast::tryCast<expression::Parameter>(e) )
+    if ( auto ep = ast::rtti::tryCast<expression::Parameter>(e) )
         fv = std::make_shared<Statement::FlowVariable>(ep);
 
-    else if ( auto ev = ast::tryCast<expression::Variable>(e) )
+    else if ( auto ev = ast::rtti::tryCast<expression::Variable>(e) )
         fv = std::make_shared<Statement::FlowVariable>(ev);
 
     assert(fv);
@@ -162,7 +163,7 @@ bool Liveness::deadOut(shared_ptr<Statement> stmt, shared_ptr<Expression> e) con
 
 bool Liveness::liveOut(shared_ptr<Statement> stmt, shared_ptr<Expression> e) const
 {
-    auto block = ast::tryCast<statement::Block>(stmt);
+    auto block = ast::rtti::tryCast<statement::Block>(stmt);
 
     if ( block )
         stmt = block->firstNonBlock();
@@ -171,10 +172,10 @@ bool Liveness::liveOut(shared_ptr<Statement> stmt, shared_ptr<Expression> e) con
 
     shared_ptr<Statement::FlowVariable> fv = nullptr;
 
-    if ( auto ep = ast::tryCast<expression::Parameter>(e) )
+    if ( auto ep = ast::rtti::tryCast<expression::Parameter>(e) )
         fv = std::make_shared<Statement::FlowVariable>(ep);
 
-    else if ( auto ev = ast::tryCast<expression::Variable>(e) )
+    else if ( auto ev = ast::rtti::tryCast<expression::Variable>(e) )
         fv = std::make_shared<Statement::FlowVariable>(ev);
 
     assert(fv);
@@ -184,7 +185,7 @@ bool Liveness::liveOut(shared_ptr<Statement> stmt, shared_ptr<Expression> e) con
 
 bool Liveness::liveIn(shared_ptr<Statement> stmt, shared_ptr<Expression> e) const
 {
-    auto block = ast::tryCast<statement::Block>(stmt);
+    auto block = ast::rtti::tryCast<statement::Block>(stmt);
 
     if ( block )
         stmt = block->firstNonBlock();
@@ -193,10 +194,10 @@ bool Liveness::liveIn(shared_ptr<Statement> stmt, shared_ptr<Expression> e) cons
 
     shared_ptr<Statement::FlowVariable> fv = nullptr;
 
-    if ( auto ep = ast::tryCast<expression::Parameter>(e) )
+    if ( auto ep = ast::rtti::tryCast<expression::Parameter>(e) )
         fv = std::make_shared<Statement::FlowVariable>(ep);
 
-    else if ( auto ev = ast::tryCast<expression::Variable>(e) )
+    else if ( auto ev = ast::rtti::tryCast<expression::Variable>(e) )
         fv = std::make_shared<Statement::FlowVariable>(ev);
 
     assert(fv);
@@ -250,7 +251,7 @@ void Liveness::addLiveness(shared_ptr<Statement> stmt, variable_set in, variable
 
 void Liveness::processStatement(shared_ptr<Statement> stmt)
 {
-    assert(! ast::tryCast<statement::Block>(stmt));
+    assert(! ast::rtti::tryCast<statement::Block>(stmt));
 
     variable_set in, out;
 
@@ -275,6 +276,3 @@ void Liveness::processStatement(shared_ptr<Statement> stmt)
 
     setLiveness(stmt, in, out);
 }
-
-
-

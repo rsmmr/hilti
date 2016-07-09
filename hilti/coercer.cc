@@ -1,9 +1,9 @@
 
-#include "id.h"
-#include "expression.h"
-#include "statement.h"
-#include "module.h"
 #include "coercer.h"
+#include "expression.h"
+#include "id.h"
+#include "module.h"
+#include "statement.h"
 
 using namespace hilti;
 
@@ -11,9 +11,7 @@ void Coercer::visit(type::Integer* i)
 {
     setResult(false);
 
-    auto dst_b = ast::as<type::Bool>(arg1());
-
-    if ( dst_b ) {
+    if ( ast::rtti::isA<type::Bool>(arg1()) ) {
         setResult(true);
         return;
     }
@@ -26,22 +24,18 @@ void Coercer::visit(type::Reference* r)
 {
     setResult(false);
 
-    auto dst_ref = ast::as<type::Reference>(arg1());
-
-    if ( dst_ref ) {
-
-        if ( ast::isA<type::RegExp>(r->argType()) && ast::isA<type::RegExp>(dst_ref->argType()) ) {
+    if ( auto dst = ast::rtti::tryCast<type::Reference>(arg1()) ) {
+        if ( ast::rtti::isA<type::RegExp>(r->argType()) &&
+             ast::rtti::isA<type::RegExp>(dst->argType()) ) {
             setResult(true);
             return;
         }
 
-        setResult(dst_ref->wildcard());
+        setResult(dst->wildcard());
         return;
     }
 
-    auto dst_b = ast::as<type::Bool>(arg1());
-
-    if ( dst_b ) {
+    if ( ast::rtti::isA<type::Bool>(arg1()) ) {
         setResult(true);
         return;
     }
@@ -51,10 +45,8 @@ void Coercer::visit(type::Iterator* i)
 {
     setResult(false);
 
-    auto dst_iter = ast::as<type::Iterator>(arg1());
-
-    if ( dst_iter ) {
-        setResult(dst_iter->wildcard());
+    if ( auto dst = ast::rtti::tryCast<type::Iterator>(arg1()) ) {
+        setResult(dst->wildcard());
         return;
     }
 }
@@ -63,10 +55,8 @@ void Coercer::visit(type::Tuple* t)
 {
     setResult(false);
 
-    auto rtype = ast::as<type::Reference>(arg1());
-
-    if ( rtype ) {
-        auto stype = ast::as<type::Struct>(rtype->argType());
+    if ( auto rtype = ast::rtti::tryCast<type::Reference>(arg1()) ) {
+        auto stype = ast::rtti::tryCast<type::Struct>(rtype->argType());
 
         if ( ! stype )
             return;
@@ -75,16 +65,15 @@ void Coercer::visit(type::Tuple* t)
         // element coerce.
 
         if ( t->typeList().size() == 0 ) {
-	    setResult(true);
-	    return;
-	}
+            setResult(true);
+            return;
+        }
 
         if ( t->typeList().size() != stype->typeList().size() )
             return;
 
         for ( auto i : util::zip2(t->typeList(), stype->typeList()) ) {
-
-            if ( ast::as<type::Unset>(i.first) )
+            if ( ast::rtti::isA<type::Unset>(i.first) )
                 continue;
 
             if ( ! canCoerceTo(i.first, i.second) )
@@ -95,38 +84,33 @@ void Coercer::visit(type::Tuple* t)
         return;
     }
 
-    auto dst = ast::as<type::Tuple>(arg1());
-
-    if ( ! dst )
-        return;
-
-    if ( dst->wildcard() ) {
-        setResult(true);
-        return;
-    }
-
-    auto dst_types = dst->typeList();
-
-    if ( dst_types.size() != t->typeList().size() )
-        return;
-
-    auto d = dst_types.begin();
-
-    for ( auto e : t->typeList() ) {
-        if ( ! canCoerceTo(e, *d++) )
+    if ( auto dst = ast::rtti::tryCast<type::Tuple>(arg1()) ) {
+        if ( dst->wildcard() ) {
+            setResult(true);
             return;
-    }
+        }
 
-    setResult(true);
+        auto dst_types = dst->typeList();
+
+        if ( dst_types.size() != t->typeList().size() )
+            return;
+
+        auto d = dst_types.begin();
+
+        for ( auto e : t->typeList() ) {
+            if ( ! canCoerceTo(e, *d++) )
+                return;
+        }
+
+        setResult(true);
+    }
 }
 
 void Coercer::visit(type::Address* t)
 {
     setResult(false);
 
-    auto dst_net = ast::as<type::Network>(arg1());
-
-    if ( dst_net ) {
+    if ( ast::rtti::isA<type::Network>(arg1()) ) {
         setResult(true);
         return;
     }
@@ -136,9 +120,7 @@ void Coercer::visit(type::CAddr* c)
 {
     setResult(false);
 
-    auto dst_b = ast::as<type::Bool>(arg1());
-
-    if ( dst_b ) {
+    if ( ast::rtti::isA<type::Bool>(arg1()) ) {
         setResult(true);
         return;
     }
@@ -155,9 +137,7 @@ void Coercer::visit(type::Union* c)
 {
     setResult(false);
 
-    auto dst_b = ast::as<type::Bool>(arg1());
-
-    if ( dst_b ) {
+    if ( ast::rtti::isA<type::Bool>(arg1()) ) {
         setResult(true);
         return;
     }

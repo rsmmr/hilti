@@ -9,15 +9,21 @@
 
 namespace binpac {
 
-namespace type { namespace unit { namespace item { class Field; } } }
+namespace type {
+namespace unit {
+namespace item {
+class Field;
+}
+}
+}
 
 namespace codegen {
 
 class ParserState;
 
 /// Generates code to parse input according to a grammar.
-class ParserBuilder : public CGVisitor<shared_ptr<hilti::Expression>, shared_ptr<type::unit::item::Field>>
-{
+class ParserBuilder
+    : public CGVisitor<shared_ptr<hilti::Expression>, shared_ptr<type::unit::item::Field>> {
 public:
     ParserBuilder(CodeGen* cg);
     virtual ~ParserBuilder();
@@ -61,15 +67,18 @@ public:
     shared_ptr<hilti::Expression> hiltiCookie();
 
     /// Confirms a parser by turning of DFD "try mode" if it's active.
-    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> try_mode, shared_ptr<hilti::Expression> cookie);
+    void hiltiConfirm(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit,
+                      shared_ptr<hilti::Expression> try_mode, shared_ptr<hilti::Expression> cookie);
 
     /// Disables the current parser by throwing a corresponding signal to the
     /// host application.
-    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, const string& msg, bool throw_directly = false);
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit,
+                      const string& msg, bool throw_directly = false);
 
     /// Disables the current parser by throwing a corresponding signal to the
     /// host application.
-    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> msg, bool throw_directly = false);
+    void hiltiDisable(shared_ptr<hilti::Expression> self, shared_ptr<binpac::type::Unit> unit,
+                      shared_ptr<hilti::Expression> msg, bool throw_directly = false);
 
     /// Writes a new chunk of data into a field's sinks.
     ///
@@ -82,7 +91,9 @@ public:
     ///
     /// len: The length inside the sequence space; defaults to length of
     /// data.
-    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
+    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field,
+                           shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq,
+                           shared_ptr<hilti::Expression> len);
 
     /// Writes a new chunk of data into a sink.
     ///
@@ -95,22 +106,26 @@ public:
     ///
     /// len: The length inside the sequence space; defaults to length of
     /// data.
-    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data, shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data,
+                          shared_ptr<hilti::Expression> seq, shared_ptr<hilti::Expression> len);
 
     // Returns a function that can be called from C to trigger a global unit hook.
     //
     // XXX
-    shared_ptr<hilti::Expression> hiltiFunctionGlobalHook(shared_ptr<type::Unit> unit, const std::string& hook, parameter_list params);
+    shared_ptr<hilti::Expression> hiltiFunctionGlobalHook(shared_ptr<type::Unit> unit,
+                                                          const std::string& hook,
+                                                          parameter_list params);
 
 protected:
     /// Parse a given entity. This a wrapper around processOne() that adds
     /// additional logic around it.
-    bool parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result = nullptr, shared_ptr<type::unit::item::Field> field = nullptr);
+    bool parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result = nullptr,
+               shared_ptr<type::unit::item::Field> field = nullptr);
 
     /// Returns the current parsing state.
     shared_ptr<ParserState> state() const;
 
-    typedef std::function<void ()> unpack_callback;
+    typedef std::function<void()> unpack_callback;
 
     /// Generates a HILTI ``unpack`` instruction wrapped in error handling
     /// code. The error handling code will do "the right thing" when either a
@@ -208,7 +223,8 @@ protected:
     void visit(type::Vector* v) override;
 
 private:
-    typedef std::list<std::pair<shared_ptr<hilti::Expression>, shared_ptr<Type>>> hilti_expression_type_list;
+    typedef std::list<std::pair<shared_ptr<hilti::Expression>, shared_ptr<Type>>>
+        hilti_expression_type_list;
     typedef std::list<shared_ptr<hilti::Expression>> hilti_expression_list;
 
     // Pushes an empty parse function with the right standard signature. If
@@ -216,21 +232,26 @@ private:
     // additional element of that type for passing back the parsed value.
     //
     // Returns: An expression referencing the function.
-    shared_ptr<hilti::Expression> _newParseFunction(const string& name, shared_ptr<type::Unit> unit, shared_ptr<hilti::Type> value_type = nullptr);
+    shared_ptr<hilti::Expression> _newParseFunction(const string& name, shared_ptr<type::Unit> unit,
+                                                    shared_ptr<hilti::Type> value_type = nullptr);
 
     // Finishes a functions tarted with _newParseFunction().
     void _finishParseFunction(bool finalize_pobj);
 
     /// Generates the body code for parsing a given node. Same parameters as
     /// parse().
-    bool _hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result, shared_ptr<type::unit::item::Field> f);
+    bool _hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result,
+                     shared_ptr<type::unit::item::Field> f);
 
     // Allocates and initializes a new parse object.
     shared_ptr<hilti::Expression> _allocateParseObject(shared_ptr<Type> unit, bool store_in_self);
 
     // Initializes the current parse object before starting the parsing
     // process.
-    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr, shared_ptr<hilti::Expression> try_mode = nullptr);
+    void _prepareParseObject(const hilti_expression_type_list& params,
+                             shared_ptr<hilti::Expression> sink = nullptr,
+                             shared_ptr<hilti::Expression> mimetype = nullptr,
+                             shared_ptr<hilti::Expression> try_mode = nullptr);
 
     // Finalizes the current parser when the parsing process has finished.
     void _finalizeParseObject(bool success);
@@ -246,14 +267,17 @@ private:
     // doing the actual assignment and triggering the corresponding hook. If
     // value is nullptr, the fields current value is taken to trigger the
     // hook.
-    void _newValueForField(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value);
+    void _newValueForField(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field,
+                           shared_ptr<hilti::Expression> value);
 
     // Creates the host-facing parser function. If sink is true, we generate
     // a slightly different version for internal use with sinks.
     shared_ptr<hilti::Expression> _hiltiCreateHostFunction(shared_ptr<type::Unit> unit, bool sink);
 
     // Calls a parse function with the current parsing state.
-    shared_ptr<hilti::Expression> _hiltiCallParseFunction(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func, bool catch_parse_error, shared_ptr<hilti::Type> presult_value_type);
+    shared_ptr<hilti::Expression> _hiltiCallParseFunction(
+        shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func,
+        bool catch_parse_error, shared_ptr<hilti::Type> presult_value_type);
 
     // Prints the given message to the binpac debug stream.
     void _hiltiDebug(const string& msg);
@@ -269,22 +293,24 @@ private:
 
     // Scans for a look-ahead symbol out of an expected set and sets the
     // state()->lah* accordingly if found. Raises a parse error if not.
-    void _hiltiGetLookAhead(shared_ptr<Production> prod, const std::list<shared_ptr<production::Terminal>>& terms, bool must_find);
+    void _hiltiGetLookAhead(shared_ptr<Production> prod,
+                            const std::list<shared_ptr<production::Terminal>>& terms,
+                            bool must_find);
 
     // Generates HILTI code to initialize the matching state for finding the
     // next token.
-    shared_ptr<hilti::Expression> _hiltiMatchTokenInit(const string& name, const std::list<shared_ptr<production::Terminal>>& terms);
+    shared_ptr<hilti::Expression> _hiltiMatchTokenInit(
+        const string& name, const std::list<shared_ptr<production::Terminal>>& terms);
 
     // Performs the matching of the next token. Throws execeptions if the matching fails.
     shared_ptr<hilti::Expression> _hiltiMatchTokenAdvance(shared_ptr<hilti::Expression> mstate);
 
     // Adds the standard error cases for a switch statement switching on the match result.
-    shared_ptr<hilti::builder::BlockBuilder> _hiltiAddMatchTokenErrorCases(shared_ptr<Production> prod,
-                                                                           hilti::builder::BlockBuilder::case_list* cases,
-                                                                           shared_ptr<hilti::builder::BlockBuilder> repeat,
-                                                                           std::list<shared_ptr<production::Terminal>> expected,
-                                                                           shared_ptr<hilti::builder::BlockBuilder> cont = nullptr
-                                                                          );
+    shared_ptr<hilti::builder::BlockBuilder> _hiltiAddMatchTokenErrorCases(
+        shared_ptr<Production> prod, hilti::builder::BlockBuilder::case_list* cases,
+        shared_ptr<hilti::builder::BlockBuilder> repeat,
+        std::list<shared_ptr<production::Terminal>> expected,
+        shared_ptr<hilti::builder::BlockBuilder> cont = nullptr);
 
     // Raises a ParseError exception.
     void _hiltiParseError(const string& msg);
@@ -294,10 +320,12 @@ private:
 
     // Gnerates the HILTI code to handle an out-of-input situation by
     // retrying next time if possible.
-    void _hiltiYieldAndTryAgain(shared_ptr<Production> prod, shared_ptr<hilti::builder::BlockBuilder> cont);
+    void _hiltiYieldAndTryAgain(shared_ptr<Production> prod,
+                                shared_ptr<hilti::builder::BlockBuilder> cont);
 
     // Generates the HILTI code to report insufficient input during matching.
-    shared_ptr<hilti::Expression> _hiltiInsufficientInputHandler(bool eod_ok = false, shared_ptr<hilti::Expression> iter = nullptr);
+    shared_ptr<hilti::Expression> _hiltiInsufficientInputHandler(
+        bool eod_ok = false, shared_ptr<hilti::Expression> iter = nullptr);
 
     // Disables saving parsed values in a parse objects. This is primarily
     // for parsing container items that aren't directly stored there.
@@ -321,7 +349,8 @@ private:
 
     // Turns a unit's parameters into a HILTI function parameter list, adding
     // to the given list.
-    void _hiltiUnitParameters(shared_ptr<type::Unit> unit, hilti::builder::function::parameter_list* args) const;
+    void _hiltiUnitParameters(shared_ptr<type::Unit> unit,
+                              hilti::builder::function::parameter_list* args) const;
 
     // Helper to transparently pipe input through a chain of filters if a
     // parsing object has defined any. It adjust the parsing arguments
@@ -336,17 +365,21 @@ private:
     void _hiltiCheckChunk(shared_ptr<type::unit::item::Field> field);
 
     // Synchronize parsing with a given production.
-    void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<Production> p);
+    void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state,
+                           shared_ptr<Production> p);
 
     // Synchronize parsing with a given unit.
     void _hiltiSynchronize(shared_ptr<type::Unit> unit, shared_ptr<ParserState> hook_state);
 
     // Synchronize parsing by moving ahead a given number of bytes.
-    void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> i);
+    void _hiltiSynchronize(shared_ptr<Node> n, shared_ptr<ParserState> hook_state,
+                           shared_ptr<hilti::Expression> i);
 
     // When parsing a production that can resynchronize on errors, insert
     // code to prepare for that.
-    void _hiltiPrepareSynchronize(Production* sync_check, shared_ptr<Production> sync_on, shared_ptr<ParserState> hook_state, shared_ptr<hilti::Expression> cont);
+    void _hiltiPrepareSynchronize(Production* sync_check, shared_ptr<Production> sync_on,
+                                  shared_ptr<ParserState> hook_state,
+                                  shared_ptr<hilti::Expression> cont);
 
     // When parsing a production that can resynchronize on errors, insert
     // code to finalize that.
@@ -376,13 +409,15 @@ private:
     // Returns a HILTI boolean indicating if a given input position reflects
     // the end of the input data. The type indicates further constraints to
     // test for.
-    shared_ptr<hilti::Expression> _hiltiAtEod(shared_ptr<hilti::Expression> pos, EodDataType type = EodStandard);
+    shared_ptr<hilti::Expression> _hiltiAtEod(shared_ptr<hilti::Expression> pos,
+                                              EodDataType type = EodStandard);
 
     // Advances the current input position to the given iterator. If the
     // distance between current and new position is known, it can be passed
     // in as a hint in the form of an integer expression; which will make the
     // generated code more efficient. Note that embedded objects don't count.
-    void _hiltiAdvanceTo(shared_ptr<hilti::Expression> ncur, shared_ptr<hilti::Expression> distance = nullptr);
+    void _hiltiAdvanceTo(shared_ptr<hilti::Expression> ncur,
+                         shared_ptr<hilti::Expression> distance = nullptr);
 
     // Advances the current input position by the given number of bytes.
     void _hiltiAdvanceBy(shared_ptr<hilti::Expression> n);
@@ -400,7 +435,6 @@ private:
     shared_ptr<production::Literal> _cur_literal;
     int _store_values;
 };
-
 }
 }
 

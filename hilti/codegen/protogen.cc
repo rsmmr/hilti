@@ -89,7 +89,6 @@ void ProtoGen::visit(type::Enum* t)
     std::ostream& out = output();
 
     for ( auto l : t->labels() ) {
-
         if ( *l.first == "Undef" )
             continue;
 
@@ -98,7 +97,8 @@ void ProtoGen::visit(type::Enum* t)
         auto id = l.first->pathAsString();
         auto value = t->labelValue(l.first);
 
-        auto proto = ::util::fmt("static const hlt_enum %s_%s_%s = { 0, %d };", mod.c_str(), scope.c_str(), id.c_str(), value);
+        auto proto = ::util::fmt("static const hlt_enum %s_%s_%s = { 0, %d };", mod.c_str(),
+                                 scope.c_str(), id.c_str(), value);
 
         out << proto.c_str() << std::endl;
     }
@@ -111,13 +111,13 @@ void ProtoGen::visit(type::Callable* t)
     if ( ! decl )
         return;
 
-    auto params =  t->parameters();
+    auto params = t->parameters();
     params.pop_front(); // Pop return type.
 
     std::string p_args;
 
     for ( auto p : params ) {
-        auto t = dynamic_cast<type::trait::parameter::Type *>(p.get());
+        auto t = ast::rtti::checkedCast<type::trait::parameter::Type>(p.get());
         p_args += mapType(t->type()) + "*, ";
     }
 
@@ -130,7 +130,9 @@ void ProtoGen::visit(type::Callable* t)
     if ( _generated.find(p_id) != _generated.end() )
         return;
 
-    output() << ::util::fmt("typedef %s (*%s)(hlt_callable*, void*, %s%s);", p_result, p_id, p_args, p_addl) << std::endl;
+    output() << ::util::fmt("typedef %s (*%s)(hlt_callable*, void*, %s%s);", p_result, p_id, p_args,
+                            p_addl)
+             << std::endl;
 
     _generated.insert(p_id);
 }
@@ -139,14 +141,16 @@ void ProtoGen::visit(declaration::Function* f)
 {
     auto func = f->function();
 
-    if ( ! (f->linkage() == Declaration::EXPORTED && func->type()->callingConvention() == type::function::HILTI) )
+    if ( ! (f->linkage() == Declaration::EXPORTED &&
+            func->type()->callingConvention() == type::function::HILTI) )
         return;
 
     std::ostream& out = output();
 
     // These must match what CodeGen::llvmBuildCWrapper() generates.
     auto name1 = util::mangle(func->id(), true, func->module()->id(), "", false);
-    auto name2 = util::mangle(func->id()->name() + "_resume", true, func->module()->id(), "", false);
+    auto name2 =
+        util::mangle(func->id()->name() + "_resume", true, func->module()->id(), "", false);
 
     auto result = func->type()->result()->type();
 
@@ -177,7 +181,8 @@ void ProtoGen::visit(declaration::Type* t)
     //
     // TODO: We should factor this out (but we don't have access to a CodeGen
     // here).
-    string name = util::mangle(string("hlt_type_info_hlt_") + type->render(), true, nullptr, "", false);
+    string name =
+        util::mangle(string("hlt_type_info_hlt_") + type->render(), true, nullptr, "", false);
     name = ::util::strreplace(name, "_ref", "");
     name = ::util::strreplace(name, "_any", "");
 
@@ -190,5 +195,3 @@ void ProtoGen::visit(declaration::Type* t)
 
     _generated.insert(name);
 }
-
-

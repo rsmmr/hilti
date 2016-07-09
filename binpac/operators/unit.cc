@@ -1,11 +1,12 @@
 
 opBegin(unit::Attribute)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>())
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>());
 
-    opDoc("Access a unit field.")
+    opDoc("Access a unit field.");
 
-    opValidate() {
+    opValidate()
+    {
         auto unit = ast::checkedCast<type::Unit>(op1()->type());
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
@@ -13,7 +14,8 @@ opBegin(unit::Attribute)
             error(op2(), "unknown unit item");
     }
 
-    opResult() {
+    opResult()
+    {
         auto unit = ast::checkedCast<type::Unit>(op1()->type());
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
@@ -28,12 +30,13 @@ opBegin(unit::Attribute)
 opEnd
 
 opBegin(unit::HasAttribute)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>())
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>());
 
-    opDoc("Returns true if a unit field is set.")
+    opDoc("Returns true if a unit field is set.");
 
-    opValidate() {
+    opValidate()
+    {
         auto unit = ast::checkedCast<type::Unit>(op1()->type());
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
@@ -41,18 +44,22 @@ opBegin(unit::HasAttribute)
             error(op2(), "unknown unit item");
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(unit::TryAttribute)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>())
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>());
 
-    opDoc("Returns the value of a unit field if it's set; otherwise throws an BinPAC::AttributeNotSet exception.")
+    opDoc(
+        "Returns the value of a unit field if it's set; otherwise throws an "
+        "BinPAC::AttributeNotSet exception.");
 
-    opValidate() {
+    opValidate()
+    {
         auto unit = ast::checkedCast<type::Unit>(op1()->type());
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
@@ -60,7 +67,8 @@ opBegin(unit::TryAttribute)
             error(op2(), "unknown unit item");
     }
 
-    opResult() {
+    opResult()
+    {
         auto unit = ast::checkedCast<type::Unit>(op1()->type());
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
@@ -75,13 +83,14 @@ opBegin(unit::TryAttribute)
 opEnd
 
 opBegin(unit::AttributeAssign)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>())
-    opOp3(std::make_shared<type::Any>())
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>());
+    opOp3(std::make_shared<type::Any>());
 
-    opDoc("Assign a value to a unit field.")
+    opDoc("Assign a value to a unit field.");
 
-    opValidate() {
+    opValidate()
+    {
         auto unit = ast::checkedCast<type::Unit>(op1()->type());
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
@@ -89,7 +98,8 @@ opBegin(unit::AttributeAssign)
             error(op2(), "unknown unit item");
     }
 
-    opResult() {
+    opResult()
+    {
         auto unit = ast::checkedCast<type::Unit>(op1()->type());
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
@@ -106,17 +116,19 @@ opBegin(unit::AttributeAssign)
 opEnd
 
 opBegin(unit::New)
-    opOp1(std::make_shared<type::TypeType>())
-    opOp2(std::make_shared<type::OptionalArgument>(std::make_shared<type::Tuple>()))
+    opOp1(std::make_shared<type::TypeType>());
+    opOp2(std::make_shared<type::OptionalArgument>(std::make_shared<type::Tuple>()));
 
-    opDoc("Instantiates a new parse object for a given unit type.")
+    opDoc("Instantiates a new parse object for a given unit type.");
 
-    opMatch() {
+    opMatch()
+    {
         auto type = ast::checkedCast<type::TypeType>(op1()->type())->typeType();
         return ast::isA<type::Unit>(type);
     }
 
-    opValidate() {
+    opValidate()
+    {
         auto ttype = ast::checkedCast<type::TypeType>(op1()->type());
         auto unit = ast::checkedCast<type::Unit>(ttype->typeType());
 
@@ -127,14 +139,15 @@ opBegin(unit::New)
             checkCallArgs(nullptr, unit->parameterTypes());
     }
 
-    opResult() {
+    opResult()
+    {
         auto type = ast::checkedCast<type::TypeType>(op1()->type())->typeType();
         return type;
     }
 opEnd
 
 static const string _doc_input =
-   R"(
+    R"(
     Returns an ``iter<bytes>`` referencing the first byte of the raw data
     for parsing the unit. This method must only be called while the unit is
     being parsed, and will throw an ``UndefinedValue`` exception otherwise.
@@ -146,18 +159,19 @@ static const string _doc_input =
    )";
 
 opBegin(unit::Input : MethodCall)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("input")))
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("input")));
 
-    opDoc(_doc_input)
+    opDoc(_doc_input);
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::iterator::Bytes>();
     }
 opEnd
 
 static const string _doc_set_position =
-   R"(
+    R"(
     Changes the position in the input stream to continue parsing from. The
     new position is a new ``iter<bytes>`` where subsequent parsing will
     proceed. Note this changes the position *globally*: all subsequent field
@@ -172,19 +186,20 @@ static const string _doc_set_position =
    )";
 
 opBegin(unit::SetPosition : MethodCall)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_position")))
-    opCallArg1("b", std::make_shared<type::iterator::Bytes>())
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_position")));
+    opCallArg1("b", std::make_shared<type::iterator::Bytes>());
 
-    opDoc(_doc_set_position)
+    opDoc(_doc_set_position);
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::iterator::Bytes>();
     }
 opEnd
 
 static const string _doc_offset =
-   R"(
+    R"(
     Returns the an \c uint<64> offset of the current parsing position relative to the
     start of the current parsing unit. This method must only be called while
     the unit is being parsed, and will throw an ``UndefinedValue`` exception
@@ -204,18 +219,19 @@ static const string _doc_offset =
    )";
 
 opBegin(unit::Offset : MethodCall)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("offset")))
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("offset")));
 
-    opDoc(_doc_offset)
+    opDoc(_doc_offset);
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Integer>(64, false);
     }
 opEnd
 
 static const string _doc_add_filter =
-   R"(
+    R"(
     Adds an input filter of type ~~BinPAC::Filter to the
     unit object. The filter will receive all parsed input first,
     transform it according to its semantics, and then the unit will parse the
@@ -240,23 +256,25 @@ static const string _doc_add_filter =
    )";
 
 opBegin(unit::AddFilter : MethodCall)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("add_filter")))
-    opCallArg1("f", std::make_shared<type::Enum>())
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("add_filter")));
+    opCallArg1("f", std::make_shared<type::Enum>());
 
-    opDoc(_doc_add_filter)
+    opDoc(_doc_add_filter);
 
-    opValidate() {
+    opValidate()
+    {
         // FIXME: Check for actual type.
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_disconnect =
-   R"(
+    R"(
     Disconnect the unit from its parent sink. The unit gets signaled a
     regular end of data, so if it still has input pending, that might be
     processed before the method returns.  If the unit is not connected to a
@@ -264,18 +282,19 @@ static const string _doc_disconnect =
    )";
 
 opBegin(unit::Disconnect : MethodCall)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("disconnect")))
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("disconnect")));
 
-    opDoc(_doc_disconnect)
+    opDoc(_doc_disconnect);
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_mime_type =
-   R"(
+    R"(
    Returns the MIME type that was specified when the unit was
    instantiated (e.g., via ~~sink.connect_mime_type()). Returns an
    empty ``bytes`` object if none was specified. This method can
@@ -283,67 +302,68 @@ static const string _doc_mime_type =
    )";
 
 opBegin(unit::MimeType : MethodCall)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("mime_type")))
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("mime_type")));
 
-    opDoc(_doc_mime_type)
+    opDoc(_doc_mime_type);
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bytes>();
     }
 opEnd
 
 static const string _doc_backtrack =
-   R"(
+    R"(
        Abort parsing at the current position and returns back to the most revent ``&try`` attribute.
        Turns into a parse error if there's no ``&try``.
    )";
 
 opBegin(unit::Backtrack : MethodCall)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("backtrack")))
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("backtrack")));
 
-    opDoc(_doc_backtrack)
+    opDoc(_doc_backtrack);
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_confirm =
-   R"(
+    R"(
    Confirms that the unit's input is indeed in the expected format. When in DFD "try mode", this
    switches to normal parsing mode.
    )";
 
 opBegin(unit::Confirm : MethodCall)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("confirm")))
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("confirm")));
 
-    opDoc(_doc_backtrack)
+    opDoc(_doc_backtrack);
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_disable =
-   R"(
+    R"(
    Signals that this unit's input is not in the expected parsing, aborting parsing with a
    ~ParserDisabled exception. *msg* gives a reason.
    )";
 
 opBegin(unit::Disable : MethodCall)
-    opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("disable")))
-    opCallArg1("msg", std::make_shared<type::String>())
+    opOp1(std::make_shared<type::Unit>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("disable")));
+    opCallArg1("msg", std::make_shared<type::String>());
 
-    opDoc(_doc_backtrack)
+    opDoc(_doc_backtrack);
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
-
-
-

@@ -1,7 +1,7 @@
 
 #include "options.h"
-#include "util/util.h"
 #include "hilti/autogen/hilti-config.h"
+#include "util/util.h"
 
 using namespace hilti;
 
@@ -27,7 +27,8 @@ bool Options::cgDebugging(const string& label) const
 
 Options::string_set Options::cgDebugLabels() const
 {
-    return { "codegen", "linker", "parser", "scanner", "scopes", "context", "dump-ast", "print-ast", "visitors", "cache", "time", "liveness" };
+    return {"codegen",  "linker",    "parser",   "scanner", "scopes", "context",
+            "dump-ast", "print-ast", "visitors", "cache",   "time",   "liveness"};
 }
 
 Options::string_set Options::optimizationLabels() const

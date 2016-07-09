@@ -13,8 +13,7 @@
 namespace binpac {
 
 /// A BinPAC++ grammar.
-class Grammar
-{
+class Grammar {
 public:
     typedef std::list<std::pair<shared_ptr<ID>, shared_ptr<Type>>> parameter_list;
     typedef std::list<shared_ptr<production::NonTerminal>> nterm_list;
@@ -35,8 +34,9 @@ public:
     /// l: Associated location.
     ///
     /// \todo: I don't think we need attrs and params anymore?
-    Grammar(const string& name, shared_ptr<Production> root, const parameter_list& params = parameter_list(),
-           const parameter_list& attrs = parameter_list(), const Location& l = Location::None);
+    Grammar(const string& name, shared_ptr<Production> root,
+            const parameter_list& params = parameter_list(),
+            const parameter_list& attrs = parameter_list(), const Location& l = Location::None);
 
     /// Returns the name of the grammar. The name uniquely identifies the
     /// grammar.
@@ -86,7 +86,8 @@ private:
     void _computeTables();
 
     void _computeClosure(shared_ptr<Production> root, std::set<string>* used);
-    bool _add(std::map<string, symbol_set>* tbl, shared_ptr<Production> dst, const symbol_set& src, bool changed);
+    bool _add(std::map<string, symbol_set>* tbl, shared_ptr<Production> dst, const symbol_set& src,
+              bool changed);
     bool _isNullable(production_list::iterator i, production_list::iterator j);
     symbol_set _getFirst(shared_ptr<Production> p);
     symbol_set _getFirstOfRhs(production_list rhs);
@@ -110,7 +111,6 @@ private:
     std::map<string, symbol_set> _first;
     std::map<string, symbol_set> _follow;
 };
-
 }
 
 #endif

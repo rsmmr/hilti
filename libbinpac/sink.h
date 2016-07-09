@@ -3,8 +3,8 @@
 #ifndef LIBBINPAC_SINK_H
 #define LIBBINPAC_SINK_H
 
-#include "libbinpac++.h"
 #include "filter.h"
+#include "libbinpac++.h"
 
 typedef struct binpac_sink binpac_sink;
 
@@ -35,7 +35,9 @@ extern binpac_sink* binpachilti_sink_new(hlt_exception** excpt, hlt_execution_co
 ///
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_set_initial_sequence_number(binpac_sink* sink, uint64_t initial_seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_set_initial_sequence_number(binpac_sink* sink, uint64_t initial_seq,
+                                                         void* user, hlt_exception** excpt,
+                                                         hlt_execution_context* ctx);
 
 /// Sets the reassembly policy for a sink. If not set, the policy defaults
 /// to.
@@ -51,7 +53,8 @@ extern void binpachilti_sink_set_initial_sequence_number(binpac_sink* sink, uint
 ///
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_set_policy(binpac_sink* sink, int64_t policy, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_set_policy(binpac_sink* sink, int64_t policy, void* user,
+                                        hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Sets the state of auto-trimming. If on (which is the default), the sink
 /// will automatically trim all data that been processed by the parser. If
@@ -66,7 +69,8 @@ extern void binpachilti_sink_set_policy(binpac_sink* sink, int64_t policy, void*
 ///
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_set_auto_trim(binpac_sink* sink, int8_t enable, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_set_auto_trim(binpac_sink* sink, int8_t enable, void* user,
+                                           hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Connects a parser to a sink. Note that there can be only one parser of
 /// each type. If there's already one of the same kind, the request is
@@ -77,10 +81,14 @@ extern void binpachilti_sink_set_auto_trim(binpac_sink* sink, int8_t enable, voi
 /// parser: The parser to which the parsing object belongs.
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_connect(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_connect(binpac_sink* sink, const hlt_type_info* type, void** pobj,
+                                     binpac_parser* parser, hlt_exception** excpt,
+                                     hlt_execution_context* ctx);
 
 // Internal version which also optionally takes the MIME type for better debugging output.
-extern void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_bytes* mtype, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_info* type,
+                                             void** pobj, binpac_parser* parser, hlt_bytes* mtype,
+                                             hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Disconnects a parser from a sink. The parser is first signaled an
 /// end-of-data (and thus it might still be doing some work), and then
@@ -91,7 +99,8 @@ extern void _binpachilti_sink_connect_intern(binpac_sink* sink, const hlt_type_i
 /// pobj: The parsing object for the parser to be disconnected.
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_disconnect(binpac_sink* sink, const hlt_type_info* type, void** pobj, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_disconnect(binpac_sink* sink, const hlt_type_info* type, void** pobj,
+                                        hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Writes data into a sink, appending it at the end of the data passed in so
 /// far.
@@ -100,7 +109,8 @@ extern void binpachilti_sink_disconnect(binpac_sink* sink, const hlt_type_info* 
 /// data: The data to write into the sink.
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_append(binpac_sink* sink, hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_append(binpac_sink* sink, hlt_bytes* data, void* user,
+                                    hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Writes data into a sink. The data will be inserted into the byte stream
 /// at the given position.
@@ -114,11 +124,12 @@ extern void binpachilti_sink_append(binpac_sink* sink, hlt_bytes* data, void* us
 ///
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, uint64_t seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, uint64_t seq, void* user,
+                                   hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Writes data into a sink. The data will be inserted into the byte stream
 /// at the given position. This version can associate a custom length with
-/// the chunk for reassembly. 
+/// the chunk for reassembly.
 ///
 /// sink: The sink to write to.
 ///
@@ -133,7 +144,9 @@ extern void binpachilti_sink_write(binpac_sink* sink, hlt_bytes* data, uint64_t 
 ///
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_write_custom_length(binpac_sink* sink, hlt_bytes* data, uint64_t seq, uint64_t len, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_write_custom_length(binpac_sink* sink, hlt_bytes* data, uint64_t seq,
+                                                 uint64_t len, void* user, hlt_exception** excpt,
+                                                 hlt_execution_context* ctx);
 
 /// Reports a gap in the input stream, i.e., data that for sure will be not
 /// be seen anymore. If processing reaches a gap, it will stop there and
@@ -148,7 +161,8 @@ extern void binpachilti_sink_write_custom_length(binpac_sink* sink, hlt_bytes* d
 ///
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_gap(binpac_sink* sink, uint64_t seq, uint64_t len, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_gap(binpac_sink* sink, uint64_t seq, uint64_t len, void* user,
+                                 hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Skips ahead in the input stream to a given given sequence number. This is
 /// useful for skipping over data that's not interesting. Data that has still
@@ -164,7 +178,8 @@ extern void binpachilti_sink_gap(binpac_sink* sink, uint64_t seq, uint64_t len, 
 ///
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_skip(binpac_sink* sink, uint64_t seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_skip(binpac_sink* sink, uint64_t seq, void* user,
+                                  hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Trims input data up to a given given sequence number. This means that all
 /// still buffered before that point will be discarded. If new data comes in
@@ -179,7 +194,8 @@ extern void binpachilti_sink_skip(binpac_sink* sink, uint64_t seq, void* user, h
 ///
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_trim(binpac_sink* sink, uint64_t seq, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_trim(binpac_sink* sink, uint64_t seq, void* user,
+                                  hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Close a sink by disconnecting all parsers.  Afterwards, the sink most no
 /// longer be used.
@@ -187,7 +203,8 @@ extern void binpachilti_sink_trim(binpac_sink* sink, uint64_t seq, void* user, h
 /// sink: The sink to close.
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_close(binpac_sink* sink, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_close(binpac_sink* sink, void* user, hlt_exception** excpt,
+                                   hlt_execution_context* ctx);
 
 /// Attaches a filter to the sink. All data written to the sink will
 /// then be passed through the filter first. Multiple filters can be attached, and the
@@ -197,7 +214,8 @@ extern void binpachilti_sink_close(binpac_sink* sink, void* user, hlt_exception*
 /// filter: The filter type to attach.
 /// excpt: &
 /// ctx: &
-extern void binpachilti_sink_add_filter(binpac_sink* sink, hlt_enum ftype, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpachilti_sink_add_filter(binpac_sink* sink, hlt_enum ftype, hlt_exception** excpt,
+                                        hlt_execution_context* ctx);
 
 /// Returns the number of bytes written to a sink so far. If the sink has
 /// filters attached, this returns the size after filtering.
@@ -205,7 +223,8 @@ extern void binpachilti_sink_add_filter(binpac_sink* sink, hlt_enum ftype, hlt_e
 /// sink: The sink to report the value for..
 /// excpt: &
 /// ctx: &
-extern uint64_t binpachilti_sink_size(binpac_sink* sink, hlt_exception** excpt, hlt_execution_context* ctx);
+extern uint64_t binpachilti_sink_size(binpac_sink* sink, hlt_exception** excpt,
+                                      hlt_execution_context* ctx);
 
 /// Returns the sequence number of the current position in input stream being
 /// parsed.
@@ -213,7 +232,8 @@ extern uint64_t binpachilti_sink_size(binpac_sink* sink, hlt_exception** excpt, 
 /// sink: The sink to report the value for.
 /// excpt: &
 /// ctx: &
-extern uint64_t binpachilti_sink_sequence(binpac_sink* sink, hlt_exception** excpt, hlt_execution_context* ctx);
+extern uint64_t binpachilti_sink_sequence(binpac_sink* sink, hlt_exception** excpt,
+                                          hlt_execution_context* ctx);
 
 
 #endif

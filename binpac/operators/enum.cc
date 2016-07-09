@@ -1,60 +1,69 @@
 
 opBegin(enum_::Equal)
-    opOp1(std::make_shared<type::Enum>())
-    opOp2(std::make_shared<type::Enum>())
+    opOp1(std::make_shared<type::Enum>());
+    opOp2(std::make_shared<type::Enum>());
 
-    opDoc("Compared two boolean values.")
+    opDoc("Compared two boolean values.");
 
-    opValidate() {
+    opValidate()
+    {
         sameType(op1()->type(), op2()->type());
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(enum_::Call)
-    opOp1(std::make_shared<type::TypeType>())
-    opOp2(std::make_shared<type::Any>())
+    opOp1(std::make_shared<type::TypeType>());
+    opOp2(std::make_shared<type::Any>());
 
-    opDoc("Converts an integer into an enum.")
+    opDoc("Converts an integer into an enum.");
 
-    opMatch() {
+    opMatch()
+    {
         auto type = ast::tryCast<type::TypeType>(op1()->type());
         return type && ast::isA<type::Enum>(type->typeType());
     }
 
-    opResult() {
+    opResult()
+    {
         return ast::checkedCast<type::TypeType>(op1()->type())->typeType();
     }
 opEnd
 
 opBegin(enum_::CastInteger : Cast)
-    opOp1(std::make_shared<type::Enum>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Integer>()))
+    opOp1(std::make_shared<type::Enum>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Integer>()));
 
-    opDoc("Casts an enum into an integer, returning a value that is consistent and unique among all labels of the enum's type.")
+    opDoc(
+        "Casts an enum into an integer, returning a value that is consistent and unique among all "
+        "labels of the enum's type.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Integer>();
     }
 opEnd
 
 opBegin(enum_::CoerceBool : Coerce)
-    opOp1(std::make_shared<type::Enum>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Bool>()))
+    opOp1(std::make_shared<type::Enum>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Bool>()));
 
-    opDoc("Enums coerce to boolean, returning true if the value corresponds to a known label.")
+    opDoc("Enums coerce to boolean, returning true if the value corresponds to a known label.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
-

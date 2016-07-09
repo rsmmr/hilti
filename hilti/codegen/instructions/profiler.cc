@@ -15,19 +15,19 @@ void StatementBuilder::visit(statement::instruction::profiler::Start* i)
     llvm::Value* tmgr = i->op3() ? cg()->llvmValue(i->op3()) : nullptr;
 
     if ( i->op2() ) {
-        if ( ast::isA<type::Enum>(i->op2()) ) {
+        if ( ast::rtti::isA<type::Enum>(i->op2()) ) {
             style = cg()->llvmValue(i->op2());
         }
 
         else {
-            auto cexpr = ast::checkedCast<expression::Constant>(i->op2());
-            auto vals = ast::checkedCast<constant::Tuple>(cexpr->constant())->value();
+            auto cexpr = ast::rtti::checkedCast<expression::Constant>(i->op2());
+            auto vals = ast::rtti::checkedCast<constant::Tuple>(cexpr->constant())->value();
             auto v = vals.begin();
             style = cg()->llvmValue(*v++);
 
             auto p = *v;
 
-            if ( ast::isA<type::Interval>(p->type()) )
+            if ( ast::rtti::isA<type::Interval>(p->type()) )
                 param = cg()->llvmValue(p);
             else
                 param = cg()->llvmValue(p, builder::integer::type(64));
@@ -54,4 +54,3 @@ void StatementBuilder::visit(statement::instruction::profiler::Update* i)
 
     cg()->llvmProfilerUpdate(tag, arg);
 }
-

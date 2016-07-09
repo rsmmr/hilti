@@ -8,40 +8,35 @@
 #include <string.h>
 
 #include "autogen/hilti-hlt.h"
+#include "enum.h"
+#include "interval.h"
 #include "list.h"
 #include "timer.h"
-#include "interval.h"
-#include "enum.h"
-
-// Initial allocation size for the free list.
-static const uint32_t InitialCapacity = 2;
-
-// Factor by which to growth free array when allocating more memory.
-static const float GrowthFactor = 1.5;
 
 struct __hlt_list_node {
-    __hlt_gchdr __gchdr;    // Header for memory management.
-    __hlt_list_node* next;  // Successor node. Memory-managed.
-    __hlt_list_node* prev;  // Predecessor node. Not memory-managed to avoid cycles.
-    hlt_timer* timer;       // The entry's timer, or null if none is set. Not memory-managed to avoid cycles.
-    const hlt_type_info* type;  // FIXME: Do we get around storing this with each node?
-    int64_t invalid;        // True if node has been invalidated.
-                            // FIXME: int64_t to align the data; how else to do that?
-    char data[];            // Node data starts here, with size determined by elem type.
+    __hlt_gchdr __gchdr;   // Header for memory management.
+    __hlt_list_node* next; // Successor node. Memory-managed.
+    __hlt_list_node* prev; // Predecessor node. Not memory-managed to avoid cycles.
+    hlt_timer*
+        timer; // The entry's timer, or null if none is set. Not memory-managed to avoid cycles.
+    const hlt_type_info* type; // FIXME: Do we get around storing this with each node?
+    int64_t invalid;           // True if node has been invalidated.
+                               // FIXME: int64_t to align the data; how else to do that?
+    char data[];               // Node data starts here, with size determined by elem type.
 };
 
 struct __hlt_list {
-    __hlt_gchdr __gchdr;         // Header for memory management.
-    __hlt_list_node* head;       // First list element. Memory-managed.
-    __hlt_list_node* tail;       // Last list element. Not memory-managed to avoid cycles.
-    int64_t size;                // Current list size.
-    const hlt_type_info* type;   // Element type.
-    hlt_timer_mgr* tmgr;         // The timer manager, or null if not used.
-    hlt_interval timeout;        // The timeout value, or 0 if disabled.
-    hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
+    __hlt_gchdr __gchdr;       // Header for memory management.
+    __hlt_list_node* head;     // First list element. Memory-managed.
+    __hlt_list_node* tail;     // Last list element. Not memory-managed to avoid cycles.
+    int64_t size;              // Current list size.
+    const hlt_type_info* type; // Element type.
+    hlt_timer_mgr* tmgr;       // The timer manager, or null if not used.
+    hlt_interval timeout;      // The timeout value, or 0 if disabled.
+    hlt_enum strategy;         // Expiration strategy if set; zero otherwise.
 };
 
-__HLT_RTTI_GC_TYPE(__hlt_list_node,  HLT_TYPE_LIST_NODE)
+__HLT_RTTI_GC_TYPE(__hlt_list_node, HLT_TYPE_LIST_NODE)
 
 void __hlt_list_node_dtor(hlt_type_info* ti, __hlt_list_node* n, hlt_execution_context* ctx)
 {
@@ -100,7 +95,8 @@ static void _link(hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos, hlt_exe
 
 // Unlinks the node from the list and invalidates it, including stopping its
 // timer.
-static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt,
+                    hlt_execution_context* ctx)
 {
     if ( n->next )
         n->next->prev = n->prev;
@@ -134,9 +130,11 @@ static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_
 }
 
 // Returns a ref'ed node. Val not yet ref'ed.
-static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt, hlt_execution_context* ctx)
+static __hlt_list_node* _make_node(hlt_list* l, void* val, hlt_exception** excpt,
+                                   hlt_execution_context* ctx)
 {
-    __hlt_list_node* n = GC_NEW_CUSTOM_SIZE_REF(__hlt_list_node, sizeof(__hlt_list_node) + l->type->size, ctx);
+    __hlt_list_node* n =
+        GC_NEW_CUSTOM_SIZE_REF(__hlt_list_node, sizeof(__hlt_list_node) + l->type->size, ctx);
     n->type = l->type;
 
     // Other fields are null initialized.
@@ -144,11 +142,12 @@ static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt
     memcpy(&n->data, val, l->type->size);
     GC_CCTOR_GENERIC(&n->data, l->type, ctx);
 
-    hlt_time t = (l->tmgr && l->timeout) ? hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout : 0;
+    hlt_time t =
+        (l->tmgr && l->timeout) ? hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout : 0;
 
     if ( t ) {
         assert(l->tmgr);
-        __hlt_list_timer_cookie cookie = { l, n };
+        __hlt_list_timer_cookie cookie = {l, n};
         GC_CCTOR(cookie, hlt_iterator_list, ctx);
         n->timer = __hlt_timer_new_list(cookie, excpt, ctx);
         hlt_timer_mgr_schedule(l->tmgr, t, n->timer, excpt, ctx);
@@ -167,9 +166,11 @@ static int _invalid_node(__hlt_list_node* n)
     return n->invalid;
 }
 
-static inline void _access(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _access(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
-    if ( ! l->tmgr || ! hlt_enum_equal(l->strategy, Hilti_ExpireStrategy_Access, excpt, ctx) || l->timeout == 0 )
+    if ( ! l->tmgr || ! hlt_enum_equal(l->strategy, Hilti_ExpireStrategy_Access, excpt, ctx) ||
+         l->timeout == 0 )
         return;
 
     if ( ! n->timer )
@@ -179,7 +180,8 @@ static inline void _access(hlt_list* l, __hlt_list_node* n, hlt_exception** excp
     hlt_timer_update(n->timer, t, excpt, ctx);
 }
 
-static inline void _hlt_list_init(hlt_list* l, const hlt_type_info* elemtype, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_list_init(hlt_list* l, const hlt_type_info* elemtype, hlt_timer_mgr* tmgr,
+                                  hlt_exception** excpt, hlt_execution_context* ctx)
 {
     GC_INIT(l->tmgr, tmgr, hlt_timer_mgr, ctx);
     l->head = l->tail = 0;
@@ -189,14 +191,16 @@ static inline void _hlt_list_init(hlt_list* l, const hlt_type_info* elemtype, hl
     l->strategy = hlt_enum_unset(excpt, ctx);
 }
 
-hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_timer_mgr* tmgr, hlt_exception** excpt,
+                       hlt_execution_context* ctx)
 {
     hlt_list* l = GC_NEW(hlt_list, ctx);
     _hlt_list_init(l, elemtype, tmgr, excpt, ctx);
     return l;
 }
 
-static void _clone_init_in_thread(const hlt_type_info* ti, void* dstp, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _clone_init_in_thread(const hlt_type_info* ti, void* dstp, hlt_exception** excpt,
+                                  hlt_execution_context* ctx)
 {
     hlt_list* dst = *(hlt_list**)dstp;
 
@@ -214,18 +218,21 @@ static void _clone_init_in_thread(const hlt_type_info* ti, void* dstp, hlt_excep
     }
 }
 
-void* hlt_list_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_list_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate,
+                           hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return GC_NEW_REF(hlt_list, ctx);
 }
 
-void hlt_list_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate,
+                         hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_list* src = *(hlt_list**)srcp;
     hlt_list* dst = *(hlt_list**)dstp;
 
     if ( src->tmgr && src->tmgr != ctx->tmgr ) {
-        hlt_string msg = hlt_string_from_asciiz("list with non-standard timer mgr cannot be cloned", excpt, ctx);
+        hlt_string msg =
+            hlt_string_from_asciiz("list with non-standard timer mgr cannot be cloned", excpt, ctx);
         hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg, ctx);
         return;
     }
@@ -238,13 +245,14 @@ void hlt_list_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_
     dst->tmgr = 0; // Set by init_in_thread().
 
     for ( __hlt_list_node* ns = src->head; ns; ns = ns->next ) {
-        __hlt_list_node* nd = GC_NEW_CUSTOM_SIZE_REF(__hlt_list_node, sizeof(__hlt_list_node) + dst->type->size, ctx);
+        __hlt_list_node* nd =
+            GC_NEW_CUSTOM_SIZE_REF(__hlt_list_node, sizeof(__hlt_list_node) + dst->type->size, ctx);
         nd->type = ns->type;
 
         __hlt_clone(&nd->data, nd->type, &ns->data, cstate, excpt, ctx);
 
         if ( ns->timer ) {
-            __hlt_list_timer_cookie cookie = { dst, nd };
+            __hlt_list_timer_cookie cookie = {dst, nd};
             GC_CCTOR(cookie, hlt_iterator_list, ctx);
             hlt_timer* t = __hlt_timer_new_list(cookie, excpt, ctx);
             t->time = ns->timer->time;
@@ -261,7 +269,8 @@ void hlt_list_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_
         __hlt_clone_init_in_thread(_clone_init_in_thread, ti, dstp, cstate, excpt, ctx);
 }
 
-void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt,
+                      hlt_execution_context* ctx)
 {
     l->timeout = timeout;
     l->strategy = strategy;
@@ -270,7 +279,8 @@ void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_
         GC_ASSIGN(l->tmgr, ctx->tmgr, hlt_timer_mgr, ctx);
 }
 
-void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     assert(__hlt_type_equal(l->type, type));
 
@@ -283,7 +293,8 @@ void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_
     _link(l, n, 0, ctx);
 }
 
-void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt,
+                        hlt_execution_context* ctx)
 {
     // fprintf(stderr, "%s|%s\n", l->type->tag, type->tag);
 
@@ -370,12 +381,14 @@ void hlt_list_erase(hlt_iterator_list i, hlt_exception** excpt, hlt_execution_co
     _unlink(i.list, i.node, excpt, ctx);
 }
 
-void hlt_list_expire(__hlt_list_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_expire(__hlt_list_timer_cookie cookie, hlt_exception** excpt,
+                     hlt_execution_context* ctx)
 {
     _unlink(cookie.list, cookie.node, 0, 0); // don't pass context on
 }
 
-void hlt_list_insert(const hlt_type_info* type, void* val, hlt_iterator_list i, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_insert(const hlt_type_info* type, void* val, hlt_iterator_list i,
+                     hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( (i.node && _invalid_node(i.node)) || ! i.list ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
@@ -413,7 +426,8 @@ hlt_iterator_list hlt_list_end(hlt_list* l, hlt_exception** excpt, hlt_execution
     return i;
 }
 
-hlt_iterator_list hlt_iterator_list_incr(hlt_iterator_list i, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_list hlt_iterator_list_incr(hlt_iterator_list i, hlt_exception** excpt,
+                                         hlt_execution_context* ctx)
 {
     if ( (i.node && _invalid_node(i.node)) || ! i.list ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
@@ -431,7 +445,8 @@ hlt_iterator_list hlt_iterator_list_incr(hlt_iterator_list i, hlt_exception** ex
     return j;
 }
 
-void* hlt_iterator_list_deref(const hlt_iterator_list i, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_iterator_list_deref(const hlt_iterator_list i, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     if ( ! i.list || ! i.node || _invalid_node(i.node) ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
@@ -443,12 +458,14 @@ void* hlt_iterator_list_deref(const hlt_iterator_list i, hlt_exception** excpt, 
     return &i.node->data;
 }
 
-const hlt_type_info* hlt_iterator_deref_type(const hlt_iterator_list i, hlt_exception** excpt, hlt_execution_context* ctx)
+const hlt_type_info* hlt_iterator_deref_type(const hlt_iterator_list i, hlt_exception** excpt,
+                                             hlt_execution_context* ctx)
 {
     return i.list->type;
 }
 
-int8_t hlt_iterator_list_eq(const hlt_iterator_list i1, const hlt_iterator_list i2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_iterator_list_eq(const hlt_iterator_list i1, const hlt_iterator_list i2,
+                            hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( i1.node )
         _access(i1.list, i1.node, excpt, ctx);
@@ -460,7 +477,9 @@ int8_t hlt_iterator_list_eq(const hlt_iterator_list i1, const hlt_iterator_list 
 }
 
 
-hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                              __hlt_pointer_stack* seen, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     const hlt_list* l = *((const hlt_list**)obj);
 
@@ -472,10 +491,8 @@ hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_
     hlt_string separator = hlt_string_from_asciiz(", ", excpt, ctx);
 
     hlt_string s = prefix;
-    hlt_string result = 0;
 
     for ( __hlt_list_node* n = l->head; n; n = n->next ) {
-
         hlt_string t = __hlt_object_to_string(l->type, &n->data, options, seen, excpt, ctx);
 
         if ( hlt_check_exception(excpt) )
@@ -492,12 +509,14 @@ hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_
     return hlt_string_concat(s, postfix, excpt, ctx);
 }
 
-const hlt_type_info* hlt_list_element_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+const hlt_type_info* hlt_list_element_type(const hlt_type_info* type, hlt_exception** excpt,
+                                           hlt_execution_context* ctx)
 {
-    return ((hlt_type_info**) &type->type_params)[0];
+    return ((hlt_type_info**)&type->type_params)[0];
 }
 
-const hlt_type_info* hlt_list_element_type_from_list(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+const hlt_type_info* hlt_list_element_type_from_list(hlt_list* l, hlt_exception** excpt,
+                                                     hlt_execution_context* ctx)
 {
     return l->type;
 }

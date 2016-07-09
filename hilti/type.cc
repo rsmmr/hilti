@@ -1,12 +1,12 @@
 
 #include <initializer_list>
 
+#include "builder/nodes.h"
 #include "expression.h"
+#include "function.h"
+#include "passes/printer.h"
 #include "type.h"
 #include "variable.h"
-#include "function.h"
-#include "builder/nodes.h"
-#include "passes/printer.h"
 
 using namespace hilti;
 
@@ -27,48 +27,132 @@ type::trait::Trait::~Trait()
 {
 }
 
-type::Address::~Address() {}
-type::Any::~Any() {}
-type::Bitset::~Bitset() {}
-type::Block::~Block() {}
-type::Bool::~Bool() {}
-type::Bytes::~Bytes() {}
-type::CAddr::~CAddr() {}
-type::Callable::~Callable() {}
-type::Context::~Context() {}
-type::Channel::~Channel() {}
-type::Classifier::~Classifier() {}
-type::Double::~Double() {}
-type::Enum::~Enum() {}
-type::Exception::~Exception() {}
-type::File::~File() {}
-type::Hook::~Hook() {}
-type::IOSource::~IOSource() {}
-type::Integer::~Integer() {}
-type::Interval::~Interval() {}
-type::Label::~Label() {}
-type::List::~List() {}
-type::Map::~Map() {}
-type::MatchTokenState::~MatchTokenState() {}
-type::Module::~Module() {}
-type::Network::~Network() {}
-type::Overlay::~Overlay() {}
-type::Port::~Port() {}
-type::RegExp::~RegExp() {}
-type::Set::~Set() {}
-type::String::~String() {}
-type::Struct::~Struct() {}
-type::Union::~Union() {}
-type::Scope::~Scope() {}
-type::Time::~Time() {}
-type::Timer::~Timer() {}
-type::TimerMgr::~TimerMgr() {}
-type::TypeType::~TypeType() {}
-type::TypeByName::~TypeByName() {}
-type::Unknown::~Unknown() {}
-type::Unset::~Unset() {}
-type::Vector::~Vector() {}
-type::Void::~Void() {}
+type::Address::~Address()
+{
+}
+type::Any::~Any()
+{
+}
+type::Bitset::~Bitset()
+{
+}
+type::Block::~Block()
+{
+}
+type::Bool::~Bool()
+{
+}
+type::Bytes::~Bytes()
+{
+}
+type::CAddr::~CAddr()
+{
+}
+type::Callable::~Callable()
+{
+}
+type::Context::~Context()
+{
+}
+type::Channel::~Channel()
+{
+}
+type::Classifier::~Classifier()
+{
+}
+type::Double::~Double()
+{
+}
+type::Enum::~Enum()
+{
+}
+type::Exception::~Exception()
+{
+}
+type::File::~File()
+{
+}
+type::Hook::~Hook()
+{
+}
+type::IOSource::~IOSource()
+{
+}
+type::Integer::~Integer()
+{
+}
+type::Interval::~Interval()
+{
+}
+type::Label::~Label()
+{
+}
+type::List::~List()
+{
+}
+type::Map::~Map()
+{
+}
+type::MatchTokenState::~MatchTokenState()
+{
+}
+type::Module::~Module()
+{
+}
+type::Network::~Network()
+{
+}
+type::Overlay::~Overlay()
+{
+}
+type::Port::~Port()
+{
+}
+type::RegExp::~RegExp()
+{
+}
+type::Set::~Set()
+{
+}
+type::String::~String()
+{
+}
+type::Struct::~Struct()
+{
+}
+type::Union::~Union()
+{
+}
+type::Scope::~Scope()
+{
+}
+type::Time::~Time()
+{
+}
+type::Timer::~Timer()
+{
+}
+type::TimerMgr::~TimerMgr()
+{
+}
+type::TypeType::~TypeType()
+{
+}
+type::TypeByName::~TypeByName()
+{
+}
+type::Unknown::~Unknown()
+{
+}
+type::Unset::~Unset()
+{
+}
+type::Vector::~Vector()
+{
+}
+type::Void::~Void()
+{
+}
 
 type::HiltiType::HiltiType(const Location& l) : Type(l)
 {
@@ -76,9 +160,7 @@ type::HiltiType::HiltiType(const Location& l) : Type(l)
 
 bool type::trait::Parameterized::equal(shared_ptr<hilti::Type> other) const
 {
-    auto pother = std::dynamic_pointer_cast<type::trait::Parameterized>(other);
-    assert(pother);
-
+    auto pother = ast::type::checkedTrait<type::trait::Parameterized>(other);
     auto params = parameters();
     auto oparams = pother->parameters();
 
@@ -92,7 +174,10 @@ bool type::trait::Parameterized::equal(shared_ptr<hilti::Type> other) const
         if ( ! (*i1 && *i2) )
             return false;
 
-        if ( typeid(**i1) != typeid(**i2) )
+        auto t1 = *i1;
+        auto t2 = *i2;
+
+        if ( typeId(*t1) != typeId(*t2) )
             return false;
 
         if ( ! (*i1)->_equal(*i2) )
@@ -148,16 +233,21 @@ type::trait::Parameterized::parameter_list type::TypedValueType::parameters() co
     return params;
 }
 
-type::Function::Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l)
+type::Function::Function(shared_ptr<hilti::type::function::Result> result,
+                         const function::parameter_list& args,
+                         hilti::type::function::CallingConvention cc, const Location& l)
     : HiltiType(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
     _cc = cc;
-    _plusone = (cc == function::CallingConvention::HILTI || cc == function::CallingConvention::CALLABLE);
+    _plusone =
+        (cc == function::CallingConvention::HILTI || cc == function::CallingConvention::CALLABLE);
 }
 
 type::Function::Function(const Location& l)
     : HiltiType(l),
-    ast::type::mixin::Function<AstInfo>(this, std::make_shared<function::Result>(std::make_shared<Void>(), false, l), parameter_list())
+      ast::type::mixin::Function<
+          AstInfo>(this, std::make_shared<function::Result>(std::make_shared<Void>(), false, l),
+                   parameter_list())
 {
     setWildcard(true);
     _cc = function::CallingConvention::HILTI;
@@ -174,23 +264,23 @@ bool type::Function::mayTriggerSafepoint() const
 bool type::Function::mayYield() const
 {
     switch ( _cc ) {
-     case type::function::HILTI:
-     case type::function::HOOK:
+    case type::function::HILTI:
+    case type::function::HOOK:
         // Default is may yield.
         return ! attributes().has(attribute::NOYIELD);
 
-     case type::function::HILTI_C:
+    case type::function::HILTI_C:
         // Default is no yield.
         return attributes().has(attribute::MAYYIELD);
 
-     case type::function::C:
+    case type::function::C:
         return false;
 
-     case type::function::CALLABLE:
+    case type::function::CALLABLE:
         assert(false);
         return false;
 
-     default:
+    default:
         assert(false);
         return false;
     }
@@ -200,7 +290,8 @@ type::HiltiFunction::~HiltiFunction()
 {
 }
 
-type::function::Parameter::Parameter(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value, Location l)
+type::function::Parameter::Parameter(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool constant,
+                                     shared_ptr<Expression> default_value, Location l)
     : ast::type::mixin::function::Parameter<AstInfo>(id, type, constant, default_value, l)
 {
 }
@@ -210,8 +301,9 @@ type::function::Result::Result(shared_ptr<Type> type, bool constant, Location l)
 {
 }
 
-type::Hook::Hook(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args,
-                 const Location& l) : Function(result, args, function::HOOK, l)
+type::Hook::Hook(shared_ptr<hilti::type::function::Result> result,
+                 const function::parameter_list& args, const Location& l)
+    : Function(result, args, function::HOOK, l)
 {
     setCcPlusOne(false); /* ccPplus is tricky for the linker. */
 }
@@ -338,11 +430,12 @@ type::trait::Parameterized::parameter_list type::Map::parameters() const
 
 shared_ptr<hilti::Type> type::Map::elementType()
 {
-    builder::type_list ty = { _key, _value };
+    builder::type_list ty = {_key, _value};
     return builder::tuple::type(ty);
 }
 
-type::Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l) : TypedHeapType(arg, l)
+type::Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l)
+    : TypedHeapType(arg, l)
 {
     _base = base;
     addChild(_base);
@@ -351,11 +444,18 @@ type::Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Lo
 int type::Exception::level() const
 {
     int i = 0;
+    auto t = this;
 
-    for ( auto t = this; t; t = dynamic_cast<type::Exception *>(t->baseType().get()) )
+    while ( true ) {
         i++;
 
-    return i;
+        auto n = ast::rtti::tryCast<type::Exception>(t->baseType());
+
+        if ( ! n )
+            return i;
+
+        t = n.get();
+    }
 }
 
 type::trait::Parameterized::parameter_list type::Callable::parameters() const
@@ -387,48 +487,51 @@ shared_ptr<Type> type::IOSource::iterType()
 
 shared_ptr<Type> type::IOSource::elementType()
 {
-    builder::type_list elems = { builder::time::type(), builder::reference::type(builder::bytes::type()) };
+    builder::type_list elems = {builder::time::type(),
+                                builder::reference::type(builder::bytes::type())};
     return builder::tuple::type(elems);
 }
 
 // FIXME: We won't need this anymore with C++11 initializer lists.
-template< typename T, size_t N >
-std::vector<T> makeVector( const T (&data)[N] )
+template <typename T, size_t N>
+std::vector<T> makeVector(const T (&data)[N])
 {
-    return std::vector<T>(data, data+N);
-
+    return std::vector<T>(data, data + N);
 }
 
-template<typename T>
+template <typename T>
 shared_ptr<T> sharedPtr(T* t)
 {
     return shared_ptr<T>(t);
 }
 
 type::trait::Unpackable::Format _unpack_formats_bytes[] = {
-    { "BytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "A series of bytes preceded by an uint indicating its length." },
+    {"BytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "A series of bytes preceded by an uint indicating its length."},
 
-    { "BytesFixed", std::make_shared<type::Integer>(64), nullptr, false,
-      "A series of bytes of fixed length specified by an additional integer argument" },
+    {"BytesFixed", std::make_shared<type::Integer>(64), nullptr, false,
+     "A series of bytes of fixed length specified by an additional integer argument"},
 
-    { "BytesFixedOrEod", std::make_shared<type::Integer>(64), nullptr, false,
-      "A series of bytes of fixed length specified by an additional integer argument, or until end-of-data if the input is frozen, whatever comes first." },
+    {"BytesFixedOrEod", std::make_shared<type::Integer>(64), nullptr, false,
+     "A series of bytes of fixed length specified by an additional integer argument, or until "
+     "end-of-data if the input is frozen, whatever comes first."},
 
-    { "BytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), nullptr, false,
-      "A series of bytes delimited by a final byte-sequence specified by an additional argument." },
+    {"BytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), nullptr,
+     false,
+     "A series of bytes delimited by a final byte-sequence specified by an additional argument."},
 
-    { "SkipBytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "Like BytesRunLength, but does not return unpacked value." },
+    {"SkipBytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "Like BytesRunLength, but does not return unpacked value."},
 
-    { "SkipBytesFixedOrEod", std::make_shared<type::Integer>(64), nullptr, false,
-      "Like BytesFixed, but does not return unpacked value." },
+    {"SkipBytesFixedOrEod", std::make_shared<type::Integer>(64), nullptr, false,
+     "Like BytesFixed, but does not return unpacked value."},
 
-    { "SkipBytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), nullptr, false,
-      "Like BytesDelim, but does not return unpacked value." },
+    {"SkipBytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), nullptr,
+     false, "Like BytesDelim, but does not return unpacked value."},
 };
 
-std::vector<type::trait::Unpackable::Format> unpack_formats_bytes(makeVector(_unpack_formats_bytes));
+std::vector<type::trait::Unpackable::Format> unpack_formats_bytes(
+    makeVector(_unpack_formats_bytes));
 
 const std::vector<type::trait::Unpackable::Format>& type::Bytes::unpackFormats() const
 {
@@ -449,7 +552,9 @@ type::Bitset::Bitset(const label_list& labels, const Location& l) : ValueType(l)
         _labels.push_back(make_pair(label.first, bit));
     }
 
-    _labels.sort([] (const Label& lhs, const Label& rhs) { return lhs.first->name().compare(rhs.first->name()) < 0; });
+    _labels.sort([](const Label& lhs, const Label& rhs) {
+        return lhs.first->name().compare(rhs.first->name()) < 0;
+    });
 }
 
 shared_ptr<hilti::Scope> type::Bitset::typeScope()
@@ -460,8 +565,8 @@ shared_ptr<hilti::Scope> type::Bitset::typeScope()
     _scope = shared_ptr<hilti::Scope>(new hilti::Scope());
 
     for ( auto label : _labels ) {
-        auto p = shared_from_this();
-        auto p2 = std::dynamic_pointer_cast<hilti::Type>(p);
+        auto p = Node::shared_from_this();
+        auto p2 = ast::rtti::checkedCast<hilti::Type>(p);
         constant::Bitset::bit_list bl;
         bl.push_back(label.first);
         auto val = shared_ptr<Constant>(new constant::Bitset(bl, p2, location()));
@@ -479,13 +584,13 @@ int type::Bitset::labelBit(shared_ptr<ID> label) const
             return l.second;
     }
 
-    throw ast::InternalError(util::fmt("unknown bitset label %s", label->pathAsString().c_str()), this);
+    throw ast::InternalError(util::fmt("unknown bitset label %s", label->pathAsString().c_str()),
+                             this);
 }
 
 bool type::Bitset::_equal(shared_ptr<Type> other) const
 {
-    auto bother = std::dynamic_pointer_cast<type::Bitset>(other);
-    assert(bother);
+    auto bother = ast::rtti::checkedCast<type::Bitset>(other);
 
     if ( _labels.size() != bother->_labels.size() )
         return false;
@@ -519,7 +624,9 @@ type::Enum::Enum(const label_list& labels, const Location& l) : ValueType(l)
     }
 
     _labels.push_back(make_pair(std::make_shared<ID>("Undef"), -1));
-    _labels.sort([] (const Label& lhs, const Label& rhs) { return lhs.first->name().compare(rhs.first->name()) < 0; });
+    _labels.sort([](const Label& lhs, const Label& rhs) {
+        return lhs.first->name().compare(rhs.first->name()) < 0;
+    });
 }
 
 shared_ptr<hilti::Scope> type::Enum::typeScope()
@@ -531,7 +638,7 @@ shared_ptr<hilti::Scope> type::Enum::typeScope()
 
     for ( auto label : _labels ) {
         auto p = shared_from_this();
-        auto p2 = std::dynamic_pointer_cast<hilti::Type>(p);
+        auto p2 = ast::rtti::checkedCast<hilti::Type>(p);
         auto val = shared_ptr<Constant>(new constant::Enum(label.first, p2, location()));
         auto expr = shared_ptr<expression::Constant>(new expression::Constant(val, location()));
         _scope->insert(label.first, expr);
@@ -547,14 +654,14 @@ int type::Enum::labelValue(shared_ptr<ID> label) const
             return l.second;
     }
 
-    throw ast::InternalError(util::fmt("unknown enum label %s", label->pathAsString().c_str()), this);
+    throw ast::InternalError(util::fmt("unknown enum label %s", label->pathAsString().c_str()),
+                             this);
     return -1;
 }
 
 bool type::Enum::_equal(shared_ptr<Type> other) const
 {
-    auto eother = std::dynamic_pointer_cast<type::Enum>(other);
-    assert(eother);
+    auto eother = ast::rtti::checkedCast<type::Enum>(other);
 
     if ( _labels.size() != eother->_labels.size() )
         return false;
@@ -572,8 +679,7 @@ bool type::Enum::_equal(shared_ptr<Type> other) const
 
 bool type::Scope::_equal(shared_ptr<Type> other) const
 {
-    auto sother = std::dynamic_pointer_cast<type::Scope>(other);
-    assert(sother);
+    auto sother = ast::rtti::checkedCast<type::Scope>(other);
 
     if ( _fields.size() != sother->_fields.size() )
         return false;
@@ -586,7 +692,8 @@ bool type::Scope::_equal(shared_ptr<Type> other) const
     return true;
 }
 
-type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, bool internal, const Location& l)
+type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, bool internal,
+                            const Location& l)
     : Node(l), NodeWithAttributes(this), _id(id), _type(type), _internal(internal)
 {
     addChild(_id);
@@ -650,8 +757,9 @@ type::Struct::field_list type::Struct::sortedFields()
 {
     field_list sorted = _fields;
 
-    sorted.sort([] (shared_ptr<struct_::Field> lhs, shared_ptr<struct_::Field> rhs) {
-        return lhs->id()->name().compare(rhs->id()->name()) < 0; });
+    sorted.sort([](shared_ptr<struct_::Field> lhs, shared_ptr<struct_::Field> rhs) {
+        return lhs->id()->name().compare(rhs->id()->name()) < 0;
+    });
 
     return sorted;
 }
@@ -682,7 +790,7 @@ bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
 {
     // Comparing the types by rendering them to avoid infinite recursion
     // for cycles.
-    return const_cast<type::Struct *>(this)->render() == ty->render();
+    return const_cast<type::Struct*>(this)->render() == ty->render();
 }
 
 type::Union::Union(const Location& l) : ValueType(l)
@@ -762,8 +870,9 @@ type::Union::field_list type::Union::sortedFields()
 {
     field_list sorted = _fields;
 
-    sorted.sort([] (shared_ptr<union_::Field> lhs, shared_ptr<union_::Field> rhs) {
-        return lhs->id()->name().compare(rhs->id()->name()) < 0; });
+    sorted.sort([](shared_ptr<union_::Field> lhs, shared_ptr<union_::Field> rhs) {
+        return lhs->id()->name().compare(rhs->id()->name()) < 0;
+    });
 
     return sorted;
 }
@@ -794,12 +903,12 @@ bool type::Union::_equal(shared_ptr<hilti::Type> ty) const
 {
     // Comparing the types by rendering them to avoid infinite recursion
     // for cycles.
-    return const_cast<type::Union *>(this)->render() == ty->render();
+    return const_cast<type::Union*>(this)->render() == ty->render();
 }
 
 bool type::Function::_equal(shared_ptr<hilti::Type> o) const
 {
-    auto other = ast::as<type::Function>(o);
+    auto other = ast::rtti::checkedCast<type::Function>(o);
 
     if ( ((*result()) != (*other->result())) )
         return false;
@@ -821,34 +930,58 @@ bool type::Function::_equal(shared_ptr<hilti::Type> o) const
     return true;
 }
 
-type::trait::Unpackable::Format _unpack_formats_integer[] = {
-    { "Int8", std::make_shared<type::Tuple>(), nullptr, true, "8-bit signed integer in host byte order." },
-    { "Int16", std::make_shared<type::Tuple>(), nullptr, true, "16-bit signed integer in host byte order." },
-    { "Int32", std::make_shared<type::Tuple>(), nullptr, true, "32-bit signed integer in host byte order." },
-    { "Int64", std::make_shared<type::Tuple>(), nullptr, true, "64-bit signed integer in host byte order." },
-    { "Int8Big", std::make_shared<type::Tuple>(), nullptr, true, "8-bit signed integer in big-endian byte order." },
-    { "Int16Big", std::make_shared<type::Tuple>(), nullptr, true, "16-bit signed integer in big-endian byte order." },
-    { "Int32Big", std::make_shared<type::Tuple>(), nullptr, true, "32-bit signed integer in big-endian byte order." },
-    { "Int64Big", std::make_shared<type::Tuple>(), nullptr, true, "64-bit signed integer in big-endian byte order." },
-    { "Int8Little", std::make_shared<type::Tuple>(), nullptr, true, "8-bit signed integer in little-endian byte order." },
-    { "Int16Little", std::make_shared<type::Tuple>(), nullptr, true, "16-bit signed integer in little-endian byte order." },
-    { "Int32Little", std::make_shared<type::Tuple>(), nullptr, true, "32-bit signed integer in little-endian byte order." },
-    { "Int64Little", std::make_shared<type::Tuple>(), nullptr, true, "64-bit signed integer in little-endian byte order." },
-    { "UInt8", std::make_shared<type::Tuple>(), nullptr, true, "8-bit unsigned integer in host byte order." },
-    { "UInt16", std::make_shared<type::Tuple>(), nullptr, true, "16-bit unsigned integer in host byte order." },
-    { "UInt32", std::make_shared<type::Tuple>(), nullptr, true, "32-bit unsigned integer in host byte order." },
-    { "UInt64", std::make_shared<type::Tuple>(), nullptr, true, "64-bit unsigned integer in host byte order." },
-    { "UInt8Big", std::make_shared<type::Tuple>(), nullptr, true, "8-bit unsigned integer in big-endian byte order." },
-    { "UInt16Big", std::make_shared<type::Tuple>(), nullptr, true, "16-bit unsigned integer in big-endian byte order." },
-    { "UInt32Big", std::make_shared<type::Tuple>(), nullptr, true, "32-bit unsigned integer in big-endian byte order." },
-    { "UInt64Big", std::make_shared<type::Tuple>(), nullptr, true, "64-bit unsigned integer in big-endian byte order." },
-    { "UInt8Little", std::make_shared<type::Tuple>(), nullptr, true, "8-bit unsigned integer in little-endian byte order." },
-    { "UInt16Little", std::make_shared<type::Tuple>(), nullptr, true, "16-bit unsigned integer in little-endian byte order." },
-    { "UInt32Little", std::make_shared<type::Tuple>(), nullptr, true, "32-bit unsigned integer in little-endian byte order." },
-    { "UInt64Little", std::make_shared<type::Tuple>(), nullptr, true, "64-bit unsigned integer in little-endian byte order." }
-};
+type::trait::Unpackable::Format _unpack_formats_integer[] =
+    {{"Int8", std::make_shared<type::Tuple>(), nullptr, true,
+      "8-bit signed integer in host byte order."},
+     {"Int16", std::make_shared<type::Tuple>(), nullptr, true,
+      "16-bit signed integer in host byte order."},
+     {"Int32", std::make_shared<type::Tuple>(), nullptr, true,
+      "32-bit signed integer in host byte order."},
+     {"Int64", std::make_shared<type::Tuple>(), nullptr, true,
+      "64-bit signed integer in host byte order."},
+     {"Int8Big", std::make_shared<type::Tuple>(), nullptr, true,
+      "8-bit signed integer in big-endian byte order."},
+     {"Int16Big", std::make_shared<type::Tuple>(), nullptr, true,
+      "16-bit signed integer in big-endian byte order."},
+     {"Int32Big", std::make_shared<type::Tuple>(), nullptr, true,
+      "32-bit signed integer in big-endian byte order."},
+     {"Int64Big", std::make_shared<type::Tuple>(), nullptr, true,
+      "64-bit signed integer in big-endian byte order."},
+     {"Int8Little", std::make_shared<type::Tuple>(), nullptr, true,
+      "8-bit signed integer in little-endian byte order."},
+     {"Int16Little", std::make_shared<type::Tuple>(), nullptr, true,
+      "16-bit signed integer in little-endian byte order."},
+     {"Int32Little", std::make_shared<type::Tuple>(), nullptr, true,
+      "32-bit signed integer in little-endian byte order."},
+     {"Int64Little", std::make_shared<type::Tuple>(), nullptr, true,
+      "64-bit signed integer in little-endian byte order."},
+     {"UInt8", std::make_shared<type::Tuple>(), nullptr, true,
+      "8-bit unsigned integer in host byte order."},
+     {"UInt16", std::make_shared<type::Tuple>(), nullptr, true,
+      "16-bit unsigned integer in host byte order."},
+     {"UInt32", std::make_shared<type::Tuple>(), nullptr, true,
+      "32-bit unsigned integer in host byte order."},
+     {"UInt64", std::make_shared<type::Tuple>(), nullptr, true,
+      "64-bit unsigned integer in host byte order."},
+     {"UInt8Big", std::make_shared<type::Tuple>(), nullptr, true,
+      "8-bit unsigned integer in big-endian byte order."},
+     {"UInt16Big", std::make_shared<type::Tuple>(), nullptr, true,
+      "16-bit unsigned integer in big-endian byte order."},
+     {"UInt32Big", std::make_shared<type::Tuple>(), nullptr, true,
+      "32-bit unsigned integer in big-endian byte order."},
+     {"UInt64Big", std::make_shared<type::Tuple>(), nullptr, true,
+      "64-bit unsigned integer in big-endian byte order."},
+     {"UInt8Little", std::make_shared<type::Tuple>(), nullptr, true,
+      "8-bit unsigned integer in little-endian byte order."},
+     {"UInt16Little", std::make_shared<type::Tuple>(), nullptr, true,
+      "16-bit unsigned integer in little-endian byte order."},
+     {"UInt32Little", std::make_shared<type::Tuple>(), nullptr, true,
+      "32-bit unsigned integer in little-endian byte order."},
+     {"UInt64Little", std::make_shared<type::Tuple>(), nullptr, true,
+      "64-bit unsigned integer in little-endian byte order."}};
 
-std::vector<type::trait::Unpackable::Format> unpack_formats_integer(makeVector(_unpack_formats_integer));
+std::vector<type::trait::Unpackable::Format> unpack_formats_integer(
+    makeVector(_unpack_formats_integer));
 
 const std::vector<type::trait::Unpackable::Format>& type::Integer::unpackFormats() const
 {
@@ -856,17 +989,17 @@ const std::vector<type::trait::Unpackable::Format>& type::Integer::unpackFormats
 }
 
 type::trait::Unpackable::Format _unpack_formats_addr[] = {
-    { "IPv4", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "32-bit IPv4 address stored in host byte order." },
+    {"IPv4", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "32-bit IPv4 address stored in host byte order."},
 
-    { "IPv4Network", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "32-bit IPv4 address stored in network byte order." },
+    {"IPv4Network", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "32-bit IPv4 address stored in network byte order."},
 
-    { "IPv6", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "128-bit IPv6 address stored in host byte order." },
+    {"IPv6", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "128-bit IPv6 address stored in host byte order."},
 
-    { "IPv6Network", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "128-bit IPv6 address stored in network byte order." },
+    {"IPv6Network", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "128-bit IPv6 address stored in network byte order."},
 };
 
 std::vector<type::trait::Unpackable::Format> unpack_formats_addr(makeVector(_unpack_formats_addr));
@@ -877,17 +1010,17 @@ const std::vector<type::trait::Unpackable::Format>& type::Address::unpackFormats
 }
 
 type::trait::Unpackable::Format _unpack_formats_port[] = {
-    { "PortTCP", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "A 16-bit TCP port value stored in host byte order." },
+    {"PortTCP", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "A 16-bit TCP port value stored in host byte order."},
 
-    { "PortTCPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "A 16-bit TCP port value stored in network byte order." },
+    {"PortTCPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "A 16-bit TCP port value stored in network byte order."},
 
-    { "PortUDP", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "A 16-bit UDP port value stored in host byte order." },
+    {"PortUDP", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "A 16-bit UDP port value stored in host byte order."},
 
-    { "PortUDPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      "A 16-bit UDP port value stored in network byte order." },
+    {"PortUDPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     "A 16-bit UDP port value stored in network byte order."},
 };
 
 std::vector<type::trait::Unpackable::Format> unpack_formats_port(makeVector(_unpack_formats_port));
@@ -898,12 +1031,11 @@ const std::vector<type::trait::Unpackable::Format>& type::Port::unpackFormats() 
 }
 
 type::trait::Unpackable::Format _unpack_formats_bool[] = {
-    { "Bool", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      R"(A single bytes and, per default, returns ``True` if that byte is non-zero
+    {"Bool", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     R"(A single bytes and, per default, returns ``True` if that byte is non-zero
         and ``False`` otherwise. Optionally, one can specify a particular bit
         (0-7) as additional ``unpack`` arguments and the result will then
-        reflect the value of that bit.)" }
-};
+        reflect the value of that bit.)"}};
 
 std::vector<type::trait::Unpackable::Format> unpack_formats_bool(makeVector(_unpack_formats_bool));
 
@@ -913,25 +1045,26 @@ const std::vector<type::trait::Unpackable::Format>& type::Bool::unpackFormats() 
 }
 
 type::trait::Unpackable::Format _unpack_formats_double[] = {
-    { "Double", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      R"(An 8-byte IEEE 754 double value stored in host byte order.)" },
-    { "DoubleNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      R"(An 8-byte IEEE 754 double value stored in network byte order.)" },
-    { "DoubleBig", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      R"(An 8-byte IEEE 754 double value stored in big endian byte order.)" },
-    { "DoubleLittle", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      R"(An 8-byte IEEE 754 double value stored in little endian byte order.)" },
-    { "Float", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      R"(An 4-byte IEEE 754 double value stored in host byte order.)" },
-    { "FloatNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      R"(An 4-byte IEEE 754 double value stored in network byte order.)" },
-    { "FloatBig", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      R"(An 4-byte IEEE 754 double value stored in big endian byte order.)" },
-    { "FloatLittle", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
-      R"(An 8-byte IEEE 754 double value stored in little endian byte order.)" },
+    {"Double", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     R"(An 8-byte IEEE 754 double value stored in host byte order.)"},
+    {"DoubleNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     R"(An 8-byte IEEE 754 double value stored in network byte order.)"},
+    {"DoubleBig", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     R"(An 8-byte IEEE 754 double value stored in big endian byte order.)"},
+    {"DoubleLittle", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     R"(An 8-byte IEEE 754 double value stored in little endian byte order.)"},
+    {"Float", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     R"(An 4-byte IEEE 754 double value stored in host byte order.)"},
+    {"FloatNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     R"(An 4-byte IEEE 754 double value stored in network byte order.)"},
+    {"FloatBig", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     R"(An 4-byte IEEE 754 double value stored in big endian byte order.)"},
+    {"FloatLittle", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
+     R"(An 8-byte IEEE 754 double value stored in little endian byte order.)"},
 };
 
-std::vector<type::trait::Unpackable::Format> unpack_formats_double(makeVector(_unpack_formats_double));
+std::vector<type::trait::Unpackable::Format> unpack_formats_double(
+    makeVector(_unpack_formats_double));
 
 const std::vector<type::trait::Unpackable::Format>& type::Double::unpackFormats() const
 {
@@ -960,19 +1093,19 @@ type::trait::Parameterized::parameter_list type::Classifier::parameters() const
     auto rtype = std::make_shared<trait::parameter::Type>(_rtype);
     auto vtype = std::make_shared<trait::parameter::Type>(_vtype);
 
-    parameter_list params = { rtype, vtype };
+    parameter_list params = {rtype, vtype};
     return params;
 }
 
 bool type::Classifier::_equal(shared_ptr<hilti::Type> t) const
 {
-    auto other = ast::as<type::Classifier>(t);
-    assert(other);
-
+    auto other = ast::rtti::checkedCast<type::Classifier>(t);
     return _rtype->equal(other->_rtype) && _vtype->equal(other->_vtype);
 }
 
-type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, shared_ptr<ID> start, shared_ptr<Expression> fmt, shared_ptr<Expression> arg, const Location& l)
+type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, shared_ptr<ID> start,
+                            shared_ptr<Expression> fmt, shared_ptr<Expression> arg,
+                            const Location& l)
     : Node(l)
 {
     _name = name;
@@ -990,7 +1123,9 @@ type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, shared_p
     addChild(_fmt_arg);
 }
 
-type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, int start, shared_ptr<Expression> fmt, shared_ptr<Expression> arg, const Location& l)
+type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, int start,
+                            shared_ptr<Expression> fmt, shared_ptr<Expression> arg,
+                            const Location& l)
     : Node(l)
 {
     _name = name;
@@ -1038,8 +1173,7 @@ bool type::overlay::Field::equal(shared_ptr<Field> other) const
 #endif
 }
 
-type::Overlay::Overlay(const field_list& fields, const Location& l)
-    : ValueType(l)
+type::Overlay::Overlay(const field_list& fields, const Location& l) : ValueType(l)
 {
     _fields = fields;
 
@@ -1065,7 +1199,7 @@ void type::Overlay::Init()
         f->_deps = dep->_deps;
         f->_deps.push_back(dep);
 
-        if ( dep->_idx < 0)
+        if ( dep->_idx < 0 )
             // Dep fields needs an index for caching.
             dep->_idx = ++_idxcnt;
     }
@@ -1093,8 +1227,7 @@ shared_ptr<type::overlay::Field> type::Overlay::field(shared_ptr<ID> name) const
 
 bool type::Overlay::_equal(shared_ptr<hilti::Type> t) const
 {
-    auto other = ast::as<type::Overlay>(t);
-    assert(other);
+    auto other = ast::rtti::checkedCast<type::Overlay>(t);
 
     if ( _fields.size() != other->_fields.size() )
         return false;

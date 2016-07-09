@@ -140,5 +140,10 @@ configure_file (
 # Use C to compile the assembly (this way preprocessor is used)
 set_source_files_properties ( ${SRC_ASM} PROPERTIES LANGUAGE C )
 
+message(${SRC_C})
+set_property(SOURCE src/closures.c APPEND PROPERTY COMPILE_FLAGS "-Wno-parentheses-equality")
+set_property(SOURCE src/dlmalloc.c APPEND PROPERTY COMPILE_FLAGS "-Wno-parentheses-equality")
+set_property(SOURCE src/x86/ffi.c  APPEND PROPERTY COMPILE_FLAGS "-Wno-empty-translation-unit")
+
 # Compile libffi
 add_library (hilti-ffi OBJECT ${SRC_C} ${SRC_ASM})

@@ -11,11 +11,19 @@ all: release
 
 debug:
 	test -d build || mkdir build
-	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
+	( cd build; test -e Makefile || cmake -D CMAKE_BUILD_TYPE=Debug -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
+
+debug-ninja:
+	test -d build || mkdir build
+	( cd build; test -e build.ninja || cmake -G Ninja -D CMAKE_BUILD_TYPE=Debug -D BRO_DIST=$${BRO_DIST} ..; ninja )
 
 release:
 	test -d build || mkdir build
-	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
+	( cd build; test -e Makefile || cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
+
+release-ninja:
+	test -d build || mkdir build
+	( cd build; test -e build.ninja || cmake -G Ninja -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BRO_DIST=$${BRO_DIST} ..; ninja )
 
 clean:
 	rm -rf build
@@ -27,6 +35,11 @@ test:
 
 tags:
 	update-tags
+
+clang-format:
+	@test $$(clang-format -version | cut -d ' ' -f 3 | sed 's/\.//g') -ge 390 || (echo "Must have clang-format >= 3.9"; exit 1)
+	@(clang-format -dump-config | grep -q SpacesAroundConditions) || (echo "Must have patched version of clang-format"; exit 1)
+	clang-format -i $$(scripts/source-files)
 
 docker-build:
 	rm -rf $(DOCKER_TMP)

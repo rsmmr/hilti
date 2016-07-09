@@ -33,19 +33,20 @@
 #ifndef LIBHILTI_bytes_H
 #define LIBHILTI_bytes_H
 
+#include "int.h"
+#include "rtti.h"
 #include "types.h"
 #include "vector.h"
-#include "rtti.h"
-#include "int.h"
 
-typedef int64_t hlt_bytes_size;     ///< Size of a ~~hlt_bytes instance, and also used for offsets.
+typedef int64_t hlt_bytes_size; ///< Size of a ~~hlt_bytes instance, and also used for offsets.
 typedef struct __hlt_bytes hlt_bytes; ///< Type for representing a HILTI ~~bytes object.
-typedef struct __hlt_bytes_hoisted __hlt_bytes_hoisted; ///< Type for representing a HILTI ~~bytes object.
+typedef struct __hlt_bytes_hoisted
+    __hlt_bytes_hoisted; ///< Type for representing a HILTI ~~bytes object.
 
 /// A position with a ~~hlt_bytes instance.
 typedef struct hlt_iterator_bytes {
-    hlt_bytes* bytes;  // Current *chunk*. Ref counted.
-    int8_t* cur;       // Current position in chunk.
+    hlt_bytes* bytes; // Current *chunk*. Ref counted.
+    int8_t* cur;      // Current position in chunk.
 
     // Note: At some point there was a 3rd pointer.  However, LLVM has
     // trouble passing struct with three pointers by value as return value,
@@ -84,7 +85,8 @@ extern hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ct
 /// \hlt_c
 ///
 /// Returns: The new bytes object.
-extern hlt_bytes* hlt_bytes_new_from_data(int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_new_from_data(int8_t* data, hlt_bytes_size len, hlt_exception** excpt,
+                                          hlt_execution_context* ctx);
 
 /// Like hlt_new_bytes_from_data(), but does not take ownership of data.
 ///
@@ -95,7 +97,8 @@ extern hlt_bytes* hlt_bytes_new_from_data(int8_t* data, hlt_bytes_size len, hlt_
 /// \hlt_c
 ///
 /// Returns: The new bytes object.
-extern hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_size len,
+                                               hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the number of individual bytes stored in a bytes object.
 ///
@@ -106,7 +109,8 @@ extern hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_siz
 /// Returns: The number of bytes stored in *b*.
 ///
 /// Note: Calculating the length can potentially be expensive; it's not O(1).
-extern hlt_bytes_size hlt_bytes_len(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes_size hlt_bytes_len(hlt_bytes* b, hlt_exception** excpt,
+                                    hlt_execution_context* ctx);
 
 /// Tests whether a bytes object is empty.
 ///
@@ -129,7 +133,8 @@ extern int8_t hlt_bytes_empty(hlt_bytes* b, hlt_exception** excpt, hlt_execution
 ///
 /// Returns: 0 if the two are equal; -1 if *b1* is lexicographically smaller
 /// than *b2*, and 1 if *b2* is lexicographically smaller than *b1*.
-extern int8_t hlt_bytes_cmp(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_cmp(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt,
+                            hlt_execution_context* ctx);
 
 /// Appends the contents of a bytes object to another. The two objects must not be the same.
 ///
@@ -139,10 +144,12 @@ extern int8_t hlt_bytes_cmp(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt,
 ///
 /// Raises: ValueError - If the two objects are the same, or *b* has been
 /// frozen.
-extern void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_append(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt,
+                             hlt_execution_context* ctx);
 
 /// XXX
-extern hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt,
+                                   hlt_execution_context* ctx);
 
 /// Appends a sequence of raw bytes in memory to a bytes object. After
 /// appending, the memory by the raw bytes must not be modified or freed as
@@ -156,7 +163,8 @@ extern hlt_bytes* hlt_bytes_concat(hlt_bytes* b1, hlt_bytes* b2, hlt_exception**
 /// len: The number of bytes to append starting from *raw*. \hlt_c
 ///
 /// Raises: ValueError - If *b* has been frozen.
-extern void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len,
+                                 hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Appends a sequence of raw bytes in memory to a bytes object. This
 /// function does not take ownership of the appended data, but makes a copy
@@ -169,16 +177,18 @@ extern void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, 
 /// len: The number of bytes to append starting from *raw*. \hlt_c
 ///
 /// Raises: ValueError - If *b* has been frozen.
-extern void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size len,
+                                      hlt_exception** excpt, hlt_execution_context* ctx);
 
-/// Searches for the first occurance of a specific byte in a bytes object. 
+/// Searches for the first occurance of a specific byte in a bytes object.
 ///
 /// b: The bytes object to search.
 /// chr: The byte to search.
 /// \hlt_c
 ///
 /// Returns: The position where the byte is found, or ~~hlt_bytes_end if not found.
-extern hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt,
+                                              hlt_execution_context* ctx);
 
 /// Checks if a another bytes object is subsequence of a bytes object.
 ///
@@ -187,7 +197,8 @@ extern hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exce
 /// \hlt_c
 ///
 /// Returns: True if *other* was found *b*.
-extern int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt,
+                                       hlt_execution_context* ctx);
 
 /// Searches for the first occurance of another bytes object in a bytes object.
 ///
@@ -196,7 +207,8 @@ extern int8_t hlt_bytes_contains_bytes(hlt_bytes* b, hlt_bytes* other, hlt_excep
 /// \hlt_c
 ///
 /// Returns: The position where bytes is found, or ~~hlt_bytes_end if not found.
-extern hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other,
+                                               hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Searches for the first occurance of another bytes object from an iterator position onwards.
 ///
@@ -210,16 +222,20 @@ extern hlt_iterator_bytes hlt_bytes_find_bytes(hlt_bytes* b, hlt_bytes* other, h
 /// the result struct indicates failure and return the last position that
 /// guarantees no overlap with any potential match if the underlying bytes
 /// object were further extended.
-extern hlt_bytes_find_at_iter_result hlt_bytes_find_bytes_at_iter(hlt_iterator_bytes i, hlt_bytes* needle, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes_find_at_iter_result hlt_bytes_find_bytes_at_iter(hlt_iterator_bytes i,
+                                                                  hlt_bytes* needle,
+                                                                  hlt_exception** excpt,
+                                                                  hlt_execution_context* ctx);
 
-/// Matches a bytes objects against the sequence started by an interator. 
+/// Matches a bytes objects against the sequence started by an interator.
 ///
 /// pos: The position where to match *b* againt.
 /// b: The bytes to search.
 /// \hlt_c
 ///
 /// Returns: True if bytes a position *pos* start with b.
-extern int8_t hlt_bytes_match_at(hlt_iterator_bytes pos, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_match_at(hlt_iterator_bytes pos, hlt_bytes* b, hlt_exception** excpt,
+                                 hlt_execution_context* ctx);
 
 /// Returns a subsequence of a bytes object.
 ///
@@ -230,7 +246,8 @@ extern int8_t hlt_bytes_match_at(hlt_iterator_bytes pos, hlt_bytes* b, hlt_excep
 /// Returns: A new bytes object representing the subsequence.
 ///
 /// Raises: ValueError - If any of the positions is found to be out of range.
-extern hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end,
+                                hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns a subsequence of a bytes object as a raw C array.
 ///
@@ -250,7 +267,9 @@ extern hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end
 /// content of \a dst will now be undefined.
 ///
 /// Raises: ValueError - If any position is found to be out of range.
-extern int8_t* hlt_bytes_sub_raw(int8_t* dst, size_t dst_len, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t* hlt_bytes_sub_raw(int8_t* dst, size_t dst_len, hlt_iterator_bytes start,
+                                 hlt_iterator_bytes end, hlt_exception** excpt,
+                                 hlt_execution_context* ctx);
 
 /// Copies a byte object into a new instance.
 ///
@@ -274,7 +293,8 @@ extern hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execut
 /// Returns: Returns \a dst if successful. In that case ``hlt_bytes_size(b)``
 /// number of bytes are valid. Returns 0 if dst is too small; in that case,
 /// the content of \a dst will now be undefined.
-extern int8_t* hlt_bytes_to_raw(int8_t* dst, size_t dst_len, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t* hlt_bytes_to_raw(int8_t* dst, size_t dst_len, hlt_bytes* b, hlt_exception** excpt,
+                                hlt_execution_context* ctx);
 
 /// Returns one byte from a bytes object.
 ///
@@ -297,7 +317,8 @@ extern int8_t* hlt_bytes_to_raw(int8_t* dst, size_t dst_len, hlt_bytes* b, hlt_e
 ///
 /// Todo: Once we start compiling libhilti with llvm-gcc, calls to this function
 /// should be optimized away. Check that.
-extern int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_bytes end,
+                                      hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Creates a new position object representing a specific offset.
 ///
@@ -312,7 +333,8 @@ extern int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_byte
 /// Note: Determing the length can be expensive; it's not O(1).
 ///
 /// Raises: ValueError - If *offset* is found to be out of range.
-extern hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size offset, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size offset,
+                                           hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns a position representing the first element of a bytes object.
 ///
@@ -320,7 +342,8 @@ extern hlt_iterator_bytes hlt_bytes_offset(hlt_bytes* b, hlt_bytes_size offset, 
 /// \hlt_c
 ///
 /// Returns: The position.
-extern hlt_iterator_bytes hlt_bytes_begin(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_begin(hlt_bytes* b, hlt_exception** excpt,
+                                          hlt_execution_context* ctx);
 
 /// Returns a position representing the end of any bytes object.
 ///
@@ -328,7 +351,8 @@ extern hlt_iterator_bytes hlt_bytes_begin(hlt_bytes* b, hlt_exception** excpt, h
 /// \hlt_c
 ///
 /// Returns: The position.
-extern hlt_iterator_bytes hlt_bytes_end(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_end(hlt_bytes* b, hlt_exception** excpt,
+                                        hlt_execution_context* ctx);
 
 /// Returns a position representing the end of *any* bytes object.
 ///
@@ -351,7 +375,8 @@ extern hlt_iterator_bytes hlt_bytes_generic_end(hlt_exception** excpt, hlt_execu
 /// \hlt_c
 ///
 /// Raises: ValueError - If the bytes object is empty.
-extern void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt,
+                             hlt_execution_context* ctx);
 
 /// Returns whether a bytes object has been frozen. For an empty object, this
 /// returns always 0.
@@ -370,13 +395,16 @@ extern int8_t hlt_bytes_is_frozen(hlt_bytes* b, hlt_exception** excpt, hlt_execu
 ///
 /// b: The bytes object to be trimmed.
 ///
-/// pos: The position up to which to trim. Afterwards, the bytes object will start with the bytes located by *pos*.
+/// pos: The position up to which to trim. Afterwards, the bytes object will start with the bytes
+/// located by *pos*.
 ///
 /// \hlt_c
 ///
-/// Note that the result is undefined if the given iterator does actually not refer to a location inside the
+/// Note that the result is undefined if the given iterator does actually not refer to a location
+/// inside the
 /// bytes object.
-void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx);
+void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes pos, hlt_exception** excpt,
+                    hlt_execution_context* ctx);
 
 /// Returns whether the bytes object a position is refering to has been
 /// frozen. For an empty bytes object as well as for the generic end
@@ -387,7 +415,8 @@ void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes pos, hlt_exception** excpt,
 /// \hlt_c
 ///
 /// Returns: 1 if frozen, 0 otherwise..
-extern int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excpt,
+                                           hlt_execution_context* ctx);
 
 /// Creates a copy of a bytes iterator. The copy will point to the same location.
 ///
@@ -395,7 +424,8 @@ extern int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception
 /// \hlt_c
 ///
 /// Returns: The copied iterator.
-extern hlt_iterator_bytes hlt_iterator_bytes_copy(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_iterator_bytes_copy(hlt_iterator_bytes pos, hlt_exception** excpt,
+                                                  hlt_execution_context* ctx);
 
 /// Extracts the element at a position.
 ///
@@ -405,7 +435,8 @@ extern hlt_iterator_bytes hlt_iterator_bytes_copy(hlt_iterator_bytes pos, hlt_ex
 /// Returns: The element.
 ///
 /// Raises: ValueError - If *pos* is found to be out of range.
-extern int8_t hlt_iterator_bytes_deref(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_iterator_bytes_deref(hlt_iterator_bytes pos, hlt_exception** excpt,
+                                       hlt_execution_context* ctx);
 
 /// Increases a position by one. If the given position is already the last
 /// one, the increased position will return True if compated with
@@ -414,7 +445,8 @@ extern int8_t hlt_iterator_bytes_deref(hlt_iterator_bytes pos, hlt_exception** e
 ///
 /// pos: The position to increase.
 /// \hlt_c
-extern hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes pos, hlt_exception** excpt,
+                                                  hlt_execution_context* ctx);
 
 /// Increases a position by a given number of positions. If this exceeds the
 /// number of available bytes, the return position will return True if
@@ -423,7 +455,9 @@ extern hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes pos, hlt_ex
 /// pos: The position to increase.
 /// n: The number of bytes to skip.
 /// \hlt_c
-extern hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes pos, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes pos, int64_t n,
+                                                     hlt_exception** excpt,
+                                                     hlt_execution_context* ctx);
 
 /// Compares two positions whether they refer to the same offset within a bytes object.
 ///
@@ -433,41 +467,47 @@ extern hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes pos, int
 ///
 /// Returns: True if the position refer to the same location. Returns false in
 /// particular when *pos1* and *pos2* do not refer to the same bytes object.
-extern int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2,
+                                    hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Calculates the number of bytes between two position. Both positions must
 /// refer to the same bytes object.
 ///
 /// pos1: The starting position.
-/// pos2: The end position; the byte pointed to by *pos* is not counted anymore. *end* must be >= *start*.
+/// pos2: The end position; the byte pointed to by *pos* is not counted anymore. *end* must be >=
+/// *start*.
 /// \hlt_c
 ///
 /// Returns: The number of bytes between *pos1* and *pos2*.
 ///
 /// Raises: ValueError - If any of the positions is found to be out of range.
-extern hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2,
+                                              hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the offset of the byte an iterator points to relative to the
 /// beginning of the underlying bytes object.
 ///
 /// b: The offset of the iterator.
 /// \hlt_c
-extern hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes_size hlt_iterator_bytes_index(hlt_iterator_bytes i, hlt_exception** excpt,
+                                               hlt_execution_context* ctx);
 
 /// Converts a bytes object into a string object.
 ///
 /// Include: include-to-string-sig.txt
 ///
 /// Note: The conversion can be expensive.
-hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
+hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                               __hlt_pointer_stack* seen, hlt_exception** excpt,
+                               hlt_execution_context* ctx);
 
 ///< A block used for iteration by ~~hlt_bytes_iterate_raw.
 struct hlt_bytes_block {
     const int8_t* start; ///< Pointer to first data byte of block
     const int8_t* end;   ///< Pointer to one beyond last data byte of block.
 
-    hlt_bytes* next;     // Pointer to next chunk.
-    };
+    hlt_bytes* next; // Pointer to next chunk.
+};
 
 typedef struct hlt_bytes_block hlt_bytes_block;
 
@@ -494,16 +534,21 @@ typedef struct hlt_bytes_block hlt_bytes_block;
 /// Returns: Cookie for next call, or NULL if end has been reached. In the
 /// latter case, block will still contain the final data (which may have a
 /// length of zero); don't call the function again then.
-extern void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_bytes start,
+                                   hlt_iterator_bytes end, hlt_exception** excpt,
+                                   hlt_execution_context* ctx);
 
 /// XXX
-int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt, hlt_execution_context* ctx);
+int64_t hlt_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt,
+                         hlt_execution_context* ctx);
 
 /// XXX
-int64_t hlt_bytes_to_int_binary(hlt_bytes* data, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx);
+int64_t hlt_bytes_to_int_binary(hlt_bytes* data, hlt_enum byte_order, hlt_exception** excpt,
+                                hlt_execution_context* ctx);
 
 /// XXX
-int64_t hlt_bytes_to_uint_binary(hlt_bytes* data, hlt_enum byte_order, hlt_exception** excpt, hlt_execution_context* ctx);
+int64_t hlt_bytes_to_uint_binary(hlt_bytes* data, hlt_enum byte_order, hlt_exception** excpt,
+                                 hlt_execution_context* ctx);
 
 /// XXX
 extern hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -512,19 +557,24 @@ extern hlt_bytes* hlt_bytes_lower(hlt_bytes* b, hlt_exception** excpt, hlt_execu
 extern hlt_bytes* hlt_bytes_upper(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
-extern int8_t hlt_bytes_starts_with(hlt_bytes* b, hlt_bytes* s, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_starts_with(hlt_bytes* b, hlt_bytes* s, hlt_exception** excpt,
+                                    hlt_execution_context* ctx);
 
 /// XXX
-extern hlt_bytes_pair hlt_bytes_split1(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes_pair hlt_bytes_split1(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt,
+                                       hlt_execution_context* ctx);
 
 /// XXX
-extern hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_vector* hlt_bytes_split(hlt_bytes* b, hlt_bytes* sep, hlt_exception** excpt,
+                                   hlt_execution_context* ctx);
 
 /// XXX
-extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* p, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_strip(hlt_bytes* b, hlt_enum side, hlt_bytes* p, hlt_exception** excpt,
+                                  hlt_execution_context* ctx);
 
 /// XXX
-extern hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** excpt,
+                                 hlt_execution_context* ctx);
 
 /// Inserts a separator objects of arbitrary type to the end of the bytes
 /// objects. When iterating over a bytes object, reaching the object will
@@ -539,7 +589,8 @@ extern hlt_bytes* hlt_bytes_join(hlt_bytes* sep, hlt_list* l, hlt_exception** ex
 /// obj: A pointer to the object.
 ///
 /// \hlt_c
-extern void hlt_bytes_append_object(hlt_bytes* b, const hlt_type_info* type, void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_append_object(hlt_bytes* b, const hlt_type_info* type, void* obj,
+                                    hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Retrieves a separator object at a given iterator position. The object's
 /// expected type must be specified. If there's no object at the position,
@@ -553,7 +604,8 @@ extern void hlt_bytes_append_object(hlt_bytes* b, const hlt_type_info* type, voi
 /// \hlt_c
 ///
 /// Returns: A pointer to the retrieved object.
-extern void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info* type,
+                                       hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Checks if there's a separator object located at a given iterator position.
 ///
@@ -562,7 +614,8 @@ extern void* hlt_bytes_retrieve_object(hlt_iterator_bytes i, const hlt_type_info
 /// \hlt_c
 ///
 /// Returns: 1 if there's an object (of any type); 0 otherwise.
-extern int8_t hlt_bytes_at_object(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_at_object(hlt_iterator_bytes i, const hlt_type_info* type,
+                                  hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Checks if there's a separator object of a specified type located at a
 /// given iterator position.
@@ -577,7 +630,8 @@ extern int8_t hlt_bytes_at_object(hlt_iterator_bytes i, const hlt_type_info* typ
 /// hlt_bytes_retrieve_object will succeed if given the same type. 0
 /// otherwise, including when there's an object but not of the type specified
 /// by \c type.
-extern int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_info* type,
+                                          hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Moves the iterator past an object. Throws \a ValueError if there's no
 /// object at the location.
@@ -585,15 +639,18 @@ extern int8_t hlt_bytes_at_object_of_type(hlt_iterator_bytes i, const hlt_type_i
 /// i: The position where to move over the object.
 ///
 /// Returns: The advanced iterator.
-extern hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_skip_object(hlt_iterator_bytes i, hlt_exception** excpt,
+                                                hlt_execution_context* ctx);
 
 /// Moves the iterator to the next embedded object. Returns the current
 /// position if that's pointing to an object already.
 ///
 /// i: The start position.
 ///
-/// Returns: The advanced iterator, which will be the end position if there's no further embedded object.
-extern hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+/// Returns: The advanced iterator, which will be the end position if there's no further embedded
+/// object.
+extern hlt_iterator_bytes hlt_bytes_next_object(hlt_iterator_bytes i, hlt_exception** excpt,
+                                                hlt_execution_context* ctx);
 
 /// Inserts a mark right after the current end of bytes object. When more
 /// bytes get added, the mark will be pointing to the first of them.
@@ -610,7 +667,8 @@ extern void hlt_bytes_append_mark(hlt_bytes* b, hlt_exception** excpt, hlt_execu
 ///
 /// Returns: The advanced iterator, which will be the end position if there's
 /// no further mark before the current end position.
-extern hlt_iterator_bytes hlt_bytes_next_mark(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_iterator_bytes hlt_bytes_next_mark(hlt_iterator_bytes i, hlt_exception** excpt,
+                                              hlt_execution_context* ctx);
 
 /// Checks if there's a mark at the position an iterator is pointing to.
 ///
@@ -619,18 +677,31 @@ extern hlt_iterator_bytes hlt_bytes_next_mark(hlt_iterator_bytes i, hlt_exceptio
 /// \hlt_c
 ///
 /// Returns: 1 if there's an object (of any type); 0 otherwise.
-extern int8_t hlt_bytes_at_mark(hlt_iterator_bytes i, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_bytes_at_mark(hlt_iterator_bytes i, hlt_exception** excpt,
+                                hlt_execution_context* ctx);
 
 // Hoisted versions.
-extern void hlt_bytes_new_hoisted(__hlt_bytes_hoisted* dst, hlt_exception** excpt, hlt_execution_context* ctx);
-extern void hlt_bytes_new_from_data_copy_hoisted(__hlt_bytes_hoisted* dst, const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
-extern void hlt_bytes_concat_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b1, hlt_bytes* b2, hlt_exception** excpt, hlt_execution_context* ctx);
-extern void hlt_bytes_sub_hoisted(__hlt_bytes_hoisted* dst, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
-extern void hlt_bytes_copy_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
-extern void hlt_bytes_lower_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
-extern void hlt_bytes_upper_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
-extern void hlt_bytes_strip_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_enum side, hlt_bytes* p, hlt_exception** excpt, hlt_execution_context* ctx);
-extern void hlt_bytes_join_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* sep, hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_new_hoisted(__hlt_bytes_hoisted* dst, hlt_exception** excpt,
+                                  hlt_execution_context* ctx);
+extern void hlt_bytes_new_from_data_copy_hoisted(__hlt_bytes_hoisted* dst, const int8_t* data,
+                                                 hlt_bytes_size len, hlt_exception** excpt,
+                                                 hlt_execution_context* ctx);
+extern void hlt_bytes_concat_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b1, hlt_bytes* b2,
+                                     hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_sub_hoisted(__hlt_bytes_hoisted* dst, hlt_iterator_bytes start,
+                                  hlt_iterator_bytes end, hlt_exception** excpt,
+                                  hlt_execution_context* ctx);
+extern void hlt_bytes_copy_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt,
+                                   hlt_execution_context* ctx);
+extern void hlt_bytes_lower_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt,
+                                    hlt_execution_context* ctx);
+extern void hlt_bytes_upper_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_exception** excpt,
+                                    hlt_execution_context* ctx);
+extern void hlt_bytes_strip_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* b, hlt_enum side,
+                                    hlt_bytes* p, hlt_exception** excpt,
+                                    hlt_execution_context* ctx);
+extern void hlt_bytes_join_hoisted(__hlt_bytes_hoisted* dst, hlt_bytes* sep, hlt_list* l,
+                                   hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// XXX
 

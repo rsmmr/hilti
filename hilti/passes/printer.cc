@@ -81,7 +81,9 @@ void Printer::printFlow(Statement* stmt, const string& prefix)
     Printer& p = *this;
 
     p << util::fmt("%s# %spred: { %s } succ: { %s }%s", pre, s, spred, ssucc, post) << endl;
-    p << util::fmt("%s# def: { %s } clear: { %s } mod: { %s } read: { %s }", pre, sdefined, scleared, smodified, sread) << endl;
+    p << util::fmt("%s# def: { %s } clear: { %s } mod: { %s } read: { %s }", pre, sdefined,
+                   scleared, smodified, sread)
+      << endl;
     p << util::fmt("%s# live-in: { %s } live-out: { %s }%s", pre, sin, sout, post) << endl;
     p << util::fmt("%s# now-dead: { %s }%s", pre, sdead, post) << endl;
     p << util::fmt("%s%s%s ", pre, _statementName(stmt), post);
@@ -393,7 +395,7 @@ void Printer::visit(declaration::Variable* v)
     Printer& p = *this;
 
     bool external = (v->linkage() == Declaration::IMPORTED);
-    const char* tag = ast::as<variable::Local>(v->variable()) ? "local" : "global";
+    const char* tag = ast::rtti::tryCast<variable::Local>(v->variable()) ? "local" : "global";
 
     if ( external )
         p << "declare ";
@@ -414,7 +416,7 @@ void Printer::visit(declaration::Type* t)
 
     disableTypeIDs();
 
-    auto is_ctx = ast::isA<type::Context>(t->type());
+    auto is_ctx = ast::rtti::isA<type::Context>(t->type());
 
     if ( ! is_ctx )
         p << "type " << t->id() << " = ";
@@ -433,8 +435,7 @@ void Printer::visit(declaration::Function* f)
 
     shared_ptr<Hook> hook = nullptr;
 
-    auto hook_decl = dynamic_cast<declaration::Hook *>(f);
-    if ( hook_decl )
+    if ( auto hook_decl = ast::rtti::tryCast<declaration::Hook>(f) )
         hook = hook_decl->hook();
 
     bool has_impl = static_cast<bool>(func->body());
@@ -452,20 +453,20 @@ void Printer::visit(declaration::Function* f)
         p << "hook ";
 
     switch ( ftype->callingConvention() ) {
-     case type::function::HILTI_C:
+    case type::function::HILTI_C:
         p << "\"C-HILTI\" ";
         break;
 
-     case type::function::C:
+    case type::function::C:
         p << "\"C\" ";
         break;
 
-     case type::function::HILTI:
-     case type::function::HOOK:
+    case type::function::HILTI:
+    case type::function::HOOK:
         // Default.
         break;
 
-     default:
+    default:
         internalError("unknown calling convention");
     }
 
@@ -491,7 +492,7 @@ void Printer::visit(type::function::Parameter* param)
 {
     Printer& p = *this;
 
-    if ( param->constant() && ! ast::isA<type::Void>(param->type()) )
+    if ( param->constant() && ! ast::rtti::isA<type::Void>(param->type()) )
         p << "const ";
 
     if ( param->type() )
@@ -512,29 +513,29 @@ void Printer::visit(type::function::Result* r)
     p << r->type();
 }
 
-void Printer::visit(type::HiltiFunction * t)
+void Printer::visit(type::HiltiFunction* t)
 {
     Printer& p = *this;
 
     switch ( t->callingConvention() ) {
-     case type::function::HILTI_C:
+    case type::function::HILTI_C:
         p << "\"C-HILTI\" ";
         break;
 
-     case type::function::C:
+    case type::function::C:
         p << "\"C\" ";
         break;
 
-     case type::function::CALLABLE:
+    case type::function::CALLABLE:
         p << "\"CALLABLE\" ";
         break;
 
-     case type::function::HILTI:
-     case type::function::HOOK:
+    case type::function::HILTI:
+    case type::function::HOOK:
         // Default.
         break;
 
-     default:
+    default:
         internalError("unknown calling convention");
     }
 
@@ -750,7 +751,6 @@ void Printer::visit(type::Tuple* t)
         bool first = true;
 
         for ( auto m : ::util::zip2(t->names(), t->typeList()) ) {
-
             if ( ! first )
                 p << ", ";
 
@@ -809,14 +809,13 @@ void Printer::visit(type::Bitset* c)
     bool first = true;
 
     for ( auto l : c->labels() ) {
-
         if ( ! first )
             p << ", ";
 
         p << l.first->pathAsString();
 
         if ( l.second >= 0 )
-                p << " = " << l.second;
+            p << " = " << l.second;
 
         first = false;
     }
@@ -836,7 +835,6 @@ void Printer::visit(type::Scope* s)
     bool first = true;
 
     for ( auto l : s->fields() ) {
-
         if ( ! first )
             p << ", ";
 
@@ -887,7 +885,6 @@ void Printer::visit(type::Enum* c)
     bool first = true;
 
     for ( auto l : c->labels() ) {
-
         if ( *l.first == "Undef" )
             continue;
 
@@ -897,7 +894,7 @@ void Printer::visit(type::Enum* c)
         p << l.first->pathAsString();
 
         if ( l.second >= 0 )
-                p << " = " << l.second;
+            p << " = " << l.second;
 
         first = false;
     }
@@ -1110,7 +1107,6 @@ void Printer::visit(type::Overlay* t)
 
     bool first = true;
     for ( auto f : t->fields() ) {
-
         if ( ! first )
             p << "," << endl;
 
@@ -1173,7 +1169,7 @@ void Printer::visit(type::Struct* t)
 
     Printer& p = *this;
 
-    auto kind = ast::isA<type::Context>(t->sharedPtr<type::Struct>()) ? "context" : "struct";
+    auto kind = ast::rtti::isA<type::Context>(t->sharedPtr<type::Struct>()) ? "context" : "struct";
 
     if ( ! t->fields().size() ) {
         p << kind << " { }" << endl;
@@ -1334,17 +1330,16 @@ static void _printAddr(Printer& p, const constant::AddressVal& addr)
     const char* result;
 
     switch ( addr.family ) {
-
-     case constant::AddressVal::IPv4:
+    case constant::AddressVal::IPv4:
         result = inet_ntop(AF_INET, &addr.in.in4, buffer, INET6_ADDRSTRLEN);
         break;
 
-     case constant::AddressVal::IPv6:
+    case constant::AddressVal::IPv6:
         result = inet_ntop(AF_INET6, &addr.in.in6, buffer, INET6_ADDRSTRLEN);
         break;
 
-     default:
-        assert(false);
+    default:
+        abort();
     }
 
     if ( result )
@@ -1383,7 +1378,6 @@ void Printer::visit(constant::Double* c)
 {
     Printer& p = *this;
     p << c->value();
-
 }
 
 void Printer::visit(constant::Enum* c)
@@ -1415,19 +1409,19 @@ void Printer::visit(constant::Port* c)
     auto v = c->value();
 
     switch ( v.proto ) {
-     case constant::PortVal::TCP:
+    case constant::PortVal::TCP:
         p << v.port << "/tcp";
         break;
 
-     case constant::PortVal::UDP:
+    case constant::PortVal::UDP:
         p << v.port << "/udp";
         break;
 
-     case constant::PortVal::ICMP:
+    case constant::PortVal::ICMP:
         p << v.port << "/icmp";
         break;
 
-     default:
+    default:
         internalError("unknown protocol");
     }
 }
@@ -1462,8 +1456,8 @@ void Printer::visit(ctor::Bytes* c)
 
 void Printer::visit(ctor::List* c)
 {
-    auto rtype = ast::checkedCast<type::Reference>(c->type());
-    auto etype = ast::checkedCast<type::List>(rtype->argType())->elementType();
+    auto rtype = ast::rtti::checkedCast<type::Reference>(c->type());
+    auto etype = ast::rtti::checkedCast<type::List>(rtype->argType())->elementType();
 
     Printer& p = *this;
 
@@ -1474,16 +1468,16 @@ void Printer::visit(ctor::List* c)
 
 void Printer::visit(ctor::Map* c)
 {
-    auto rtype = ast::checkedCast<type::Reference>(c->type());
-    auto ktype = ast::checkedCast<type::Map>(rtype->argType())->keyType();
-    auto vtype = ast::checkedCast<type::Map>(rtype->argType())->valueType();
+    auto rtype = ast::rtti::checkedCast<type::Reference>(c->type());
+    auto ktype = ast::rtti::checkedCast<type::Map>(rtype->argType())->keyType();
+    auto vtype = ast::rtti::checkedCast<type::Map>(rtype->argType())->valueType();
 
     Printer& p = *this;
 
     p << "map<" << ktype << ", " << vtype << ">(";
 
     bool first = true;
-    for ( auto e: c->elements() ) {
+    for ( auto e : c->elements() ) {
         if ( ! first )
             p << ", ";
 
@@ -1499,8 +1493,8 @@ void Printer::visit(ctor::Map* c)
 
 void Printer::visit(ctor::Set* c)
 {
-    auto rtype = ast::checkedCast<type::Reference>(c->type());
-    auto etype = ast::checkedCast<type::Set>(rtype->argType())->elementType();
+    auto rtype = ast::rtti::checkedCast<type::Reference>(c->type());
+    auto etype = ast::rtti::checkedCast<type::Set>(rtype->argType())->elementType();
 
     Printer& p = *this;
 
@@ -1512,8 +1506,8 @@ void Printer::visit(ctor::Set* c)
 
 void Printer::visit(ctor::Vector* c)
 {
-    auto rtype = ast::checkedCast<type::Reference>(c->type());
-    auto etype = ast::checkedCast<type::Vector>(rtype->argType())->elementType();
+    auto rtype = ast::rtti::checkedCast<type::Reference>(c->type());
+    auto etype = ast::rtti::checkedCast<type::Vector>(rtype->argType())->elementType();
 
     Printer& p = *this;
 
@@ -1531,14 +1525,14 @@ void Printer::visit(ctor::RegExp* c)
 
     printList(patterns, " | ");
 
-    auto rtype = ast::checkedCast<hilti::type::Reference>(c->type())->argType();
+    auto rtype = ast::rtti::checkedCast<hilti::type::Reference>(c->type())->argType();
     printAttributes(c->attributes());
 }
 
 void Printer::visit(ctor::Callable* c)
 {
-    auto rtype = ast::checkedCast<type::Reference>(c->type());
-    auto ctype = ast::checkedCast<type::Callable>(rtype->argType());
+    auto rtype = ast::rtti::checkedCast<type::Reference>(c->type());
+    auto ctype = ast::rtti::checkedCast<type::Callable>(rtype->argType());
 
     Printer& p = *this;
 
@@ -1550,5 +1544,4 @@ void Printer::visit(ctor::Callable* c)
     p << ">(" << c->function() << ", (";
     printList(c->arguments(), ", ");
     p << "))";
-
 }

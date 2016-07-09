@@ -1,13 +1,14 @@
 
 #include "../hilti.h"
 
-#include "storer.h"
 #include "codegen.h"
+#include "storer.h"
 
 using namespace hilti;
 using namespace codegen;
 
-Storer::Storer(CodeGen* cg) : CGVisitor<int, llvm::Value*, std::pair<bool, bool>>(cg, "codegen::Storer")
+Storer::Storer(CodeGen* cg)
+    : CGVisitor<int, llvm::Value*, std::pair<bool, bool>>(cg, "codegen::Storer")
 {
 }
 
@@ -15,7 +16,8 @@ Storer::~Storer()
 {
 }
 
-void Storer::llvmStore(shared_ptr<Expression> target, llvm::Value* value, bool plusone, bool dtor_first)
+void Storer::llvmStore(shared_ptr<Expression> target, llvm::Value* value, bool plusone,
+                       bool dtor_first)
 {
     setArg1(value);
     setArg2(std::make_pair(plusone, dtor_first));

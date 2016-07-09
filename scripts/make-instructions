@@ -79,7 +79,8 @@ EOF
         cat $hdr | getInstructions | while read line; do
             ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
             cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
-            echo "IMPLEMENT_INSTRUCTION($ns, $cls);" >>$cc
+            id=`echo "$cls::$ns" | sed 's/::/_/g'`
+            echo "IMPLEMENT_INSTRUCTION($ns, $cls, $id);" >>$cc
         done
     done
 fi
@@ -142,8 +143,8 @@ EOF
     cat $tmp | while read line; do
         ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
         cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
-        echo "namespace statement { namespace instruction { namespace $ns { class $cls; } } };" >>$dst/instructions-declare.h
-        echo "namespace instruction { namespace $ns { namespace __class { class $cls; } extern shared_ptr<::hilti::instruction::$ns::__class::$cls> $cls; } };" >>$dst/instructions-declare.h
+        echo "namespace hilti { namespace statement { namespace instruction { namespace $ns { class $cls; } } }; }" >>$dst/instructions-declare.h
+        echo "namespace hilti { namespace instruction { namespace $ns { namespace __class { class $cls; } extern shared_ptr<::hilti::instruction::$ns::__class::$cls> $cls; } }; }" >>$dst/instructions-declare.h
         echo "namespace hilti { namespace instruction { namespace $ns { namespace __class { class $cls; } shared_ptr<::hilti::instruction::$ns::__class::$cls> $cls; } } };" >>$dst/instructions-define.cc
 
         echo "       virtual void visit(statement::instruction::$ns::$cls* i) {}" >>$dst/instructions-visits.h

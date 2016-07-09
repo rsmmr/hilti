@@ -4,8 +4,10 @@
 ///
 
 #include <hilti.h>
+#if 0
 #include <binpac/type.h>
 #include <binpac/binpac++.h>
+#endif
 #include <util/util.h>
 #include <time.h>
 
@@ -16,6 +18,7 @@ string fmtHiltiType(shared_ptr<hilti::Type> t)
     return t ? t->render() : "";
 }
 
+#if 0
 string fmtPacType(shared_ptr<binpac::Type> t)
 {
     if ( ! t )
@@ -41,6 +44,7 @@ string fmtPacCallArg(std::pair<string, shared_ptr<binpac::Type>> t)
 
     return t.first + ": " + t.second->render();
 }
+#endif
 
 string fmtHiltiExpr(shared_ptr<hilti::Expression> e)
 {
@@ -71,10 +75,12 @@ int main(int argc, char** argv)
     cout << "date=" << date << endl;
     cout << endl;
 
+#if 0
     cout << "[binpac]" << endl;
     cout << "version=" << binpac::version() << endl;
     cout << "date=" << date << endl;
     cout << endl;
+#endif
 
     hilti::init();
 
@@ -97,6 +103,7 @@ int main(int argc, char** argv)
         cout << endl;
     }
 
+#if 0
     binpac::init();
 
     // Write one section per BinPAC operator.
@@ -122,6 +129,7 @@ int main(int argc, char** argv)
         cout << "render="           << fmtText(info.render) << endl;
         cout << endl;
     }
+#endif
 
     return 0;
 }

@@ -2,10 +2,11 @@
 #include "define-instruction.h"
 
 iBegin(reference, AsBool, "ref.as_bool")
-    iTarget(optype::boolean)
-    iOp1(optype::refAny, true)
+    iTarget(optype::boolean);
+    iOp1(optype::refAny, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -14,4 +15,3 @@ iBegin(reference, AsBool, "ref.as_bool")
     )")
 
 iEnd
-

@@ -28,7 +28,7 @@
 #include "define-instruction.h"
 
 iBeginH(bytes, New, "new")
-    iTarget(optype::refBytes)
+    iTarget(optype::refBytes);
     iOp1(optype::typeBytes, true);
 iEndH
 
@@ -38,25 +38,25 @@ iBeginH(bytes, Append, "bytes.append")
 iEndH
 
 iBeginH(bytes, Concat, "bytes.concat")
-    iTarget(optype::refBytes)
+    iTarget(optype::refBytes);
     iOp1(optype::refBytes, true);
     iOp2(optype::refBytes, true);
 iEndH
 
 iBeginH(bytes, Cmp, "bytes.cmp")
-    iTarget(optype::int8)
+    iTarget(optype::int8);
     iOp1(optype::refBytes, true);
     iOp2(optype::refBytes, true);
 iEndH
 
 iBeginH(bytes, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::refBytes, true);
     iOp2(optype::refBytes, true);
 iEndH
 
 iBeginH(bytes, Copy, "bytes.copy")
-    iTarget(optype::refBytes)
+    iTarget(optype::refBytes);
     iOp1(optype::refBytes, true);
 iEndH
 
@@ -153,37 +153,37 @@ iBeginH(bytes, Lower, "bytes.lower")
 iEndH
 
 iBeginH(bytes, Upper, "bytes.upper")
-    iTarget(optype::refBytes)
+    iTarget(optype::refBytes);
     iOp1(optype::refBytes, true);
 iEndH
 
 iBeginH(bytes, Strip, "bytes.strip")
-    iTarget(optype::refBytes)
+    iTarget(optype::refBytes);
     iOp1(optype::refBytes, true);
     iOp2(optype::optional(optype::enum_), true);
     iOp3(optype::optional(optype::refBytes), true);
 iEndH
 
 iBeginH(bytes, StartsWith, "bytes.startswith")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::refBytes, true);
     iOp2(optype::refBytes, true);
 iEndH
 
 iBeginH(bytes, Split1, "bytes.split1")
-    iTarget(optype::tuple)
+    iTarget(optype::tuple);
     iOp1(optype::refBytes, true);
     iOp2(optype::refBytes, true);
 iEndH
 
 iBeginH(bytes, Split, "bytes.split")
-    iTarget(optype::refVector)
+    iTarget(optype::refVector);
     iOp1(optype::refBytes, true);
     iOp2(optype::refBytes, true);
 iEndH
 
 iBeginH(bytes, Join, "bytes.join")
-    iTarget(optype::refBytes)
+    iTarget(optype::refBytes);
     iOp1(optype::refBytes, true);
     iOp2(optype::refList, true);
 iEndH
@@ -194,23 +194,23 @@ iBeginH(bytes, AppendObject, "bytes.append_object")
 iEndH
 
 iBeginH(bytes, RetrieveObject, "bytes.retrieve_object")
-    iTarget(optype::any)
+    iTarget(optype::any);
     iOp1(optype::iterBytes, true);
 iEndH
 
 iBeginH(bytes, AtObject, "bytes.at_object")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::iterBytes, true);
     iOp2(optype::optional(optype::typeAny), true);
 iEndH
 
 iBeginH(bytes, SkipObject, "bytes.skip_object")
-    iTarget(optype::iterBytes)
+    iTarget(optype::iterBytes);
     iOp1(optype::iterBytes, true);
 iEndH
 
 iBeginH(bytes, NextObject, "bytes.next_object")
-    iTarget(optype::iterBytes)
+    iTarget(optype::iterBytes);
     iOp1(optype::iterBytes, true);
 iEndH
 
@@ -219,12 +219,12 @@ iBeginH(bytes, AppendMark, "bytes.append_mark")
 iEndH
 
 iBeginH(bytes, NextMark, "bytes.next_mark")
-    iTarget(optype::iterBytes)
+    iTarget(optype::iterBytes);
     iOp1(optype::iterBytes, true);
 iEndH
 
 iBeginH(bytes, AtMark, "bytes.at_mark")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::iterBytes, true);
 iEndH
 
@@ -255,12 +255,12 @@ iBeginH(iterBytes, IncrBy, "incr_by")
 iEndH
 
 iBeginH(iterBytes, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::iterBytes, true);
     iOp2(optype::iterBytes, true);
 iEndH
 
 iBeginH(iterBytes, Deref, "deref")
-    iTarget(optype::int8)
+    iTarget(optype::int8);
     iOp1(optype::iterBytes, true);
 iEndH

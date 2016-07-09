@@ -1,6 +1,6 @@
 ///
 /// Filters are pipelines decoding input from one form to another. In
-/// BinPAC++, they can be attached to either sinks or parsing objects. 
+/// BinPAC++, they can be attached to either sinks or parsing objects.
 ///
 /// Currently, there's predefined list of filters available. In the future, it may be
 /// possible to write them in BinPAC++ directly as well.
@@ -13,10 +13,14 @@
 struct __binpac_filter_definition;
 struct binpac_filter;
 
-typedef struct binpac_filter* (*__binpac_filter_allocate)(hlt_exception** excpt, hlt_execution_context* ctx);
-typedef void                  (*__binpac_filter_dtor)(hlt_type_info* ti, struct binpac_filter*, hlt_execution_context* ctx);
-typedef hlt_bytes*            (*__binpac_filter_decode)(struct binpac_filter*, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx);
-typedef void                  (*__binpac_filter_close)(struct binpac_filter*, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef struct binpac_filter* (*__binpac_filter_allocate)(hlt_exception** excpt,
+                                                          hlt_execution_context* ctx);
+typedef void (*__binpac_filter_dtor)(hlt_type_info* ti, struct binpac_filter*,
+                                     hlt_execution_context* ctx);
+typedef hlt_bytes* (*__binpac_filter_decode)(struct binpac_filter*, hlt_bytes* data,
+                                             hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void (*__binpac_filter_close)(struct binpac_filter*, hlt_exception** excpt,
+                                      hlt_execution_context* ctx);
 
 // Internal definition of a filter type.
 struct __binpac_filter_definition {
@@ -33,11 +37,11 @@ typedef struct __binpac_filter_definition __binpac_filter_definition;
 /// A filter for decoding input from one representation into another. This is
 /// the common header of all filter structs. In filter_*.c, we define one
 /// additional struct per pre-defined filter type storing filter-specific
-/// information. 
+/// information.
 struct binpac_filter {
-    __hlt_gchdr __gch;                        /// Header for garbage collection.
-    __binpac_filter_definition* def;   /// Type object describing the filter type.
-    struct binpac_filter* next;               /// Link to next filter in chain.
+    __hlt_gchdr __gch;               /// Header for garbage collection.
+    __binpac_filter_definition* def; /// Type object describing the filter type.
+    struct binpac_filter* next;      /// Link to next filter in chain.
 };
 
 typedef struct binpac_filter binpac_filter;
@@ -54,7 +58,8 @@ __HLT_DECLARE_RTTI_GC_TYPE(binpac_filter)
 /// Returns: The new head of the filter chain at refcount +1.
 ///
 /// Raised: FilterUnsupported - If the given filter type is not supported by the run-time system.
-extern binpac_filter* binpachilti_filter_add(binpac_filter* head, hlt_enum ftype, hlt_exception** excpt, hlt_execution_context* ctx);
+extern binpac_filter* binpachilti_filter_add(binpac_filter* head, hlt_enum ftype,
+                                             hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Adds an already instantiated filter to a filter chain. For internal use.
 ///
@@ -66,7 +71,8 @@ extern binpac_filter* binpachilti_filter_add(binpac_filter* head, hlt_enum ftype
 /// Returns: The new head of the filter chain at refcount +1.
 ///
 /// Raised: FilterUnsupported - If the given filter type is not supported by the run-time system.
-extern binpac_filter* __binpachilti_filter_add(binpac_filter* head, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx);
+extern binpac_filter* __binpachilti_filter_add(binpac_filter* head, binpac_filter* filter,
+                                               hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Closes and deletes a filter chain.
 ///
@@ -78,8 +84,9 @@ extern binpac_filter* __binpachilti_filter_add(binpac_filter* head, binpac_filte
 /// processed normally anymore (e.g., because it didn't get sufficient input
 /// for decoding something completely), it must raise a FilterError
 /// exception. The assumption is that if no exception is raised, all input has
-/// been fully processed after closing the filter. 
-extern void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt, hlt_execution_context* ctx);
+/// been fully processed after closing the filter.
+extern void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt,
+                                     hlt_execution_context* ctx);
 
 /// Pipes data into a filter chain. If further filters have been chained to
 /// this one, the data is passed through all of them.
@@ -99,7 +106,9 @@ extern void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt,
 /// reported via exceptions.
 ///
 /// Raises: FilterError - If there's a problem with the filtering process.
-/// After raising this error, this filter must not be used again. 
-extern hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx); // ref!
+/// After raising this error, this filter must not be used again.
+extern hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data,
+                                            hlt_exception** excpt,
+                                            hlt_execution_context* ctx); // ref!
 
 #endif

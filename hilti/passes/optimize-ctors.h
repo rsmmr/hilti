@@ -9,21 +9,19 @@ namespace passes {
 
 /// Replaces ctors in constant contexts with a single global version of the
 /// value.
-class OptimizeCtors : public Pass<>
-{
+class OptimizeCtors : public Pass<> {
 public:
-   OptimizeCtors();
+    OptimizeCtors();
 
-   bool run(shared_ptr<hilti::Node> module);
+    bool run(shared_ptr<hilti::Node> module);
 
 protected:
-   virtual void visit(expression::Ctor* c);
+    virtual void visit(expression::Ctor* c);
 
 private:
-   shared_ptr<Module> _module;
-   static int _id_counter;
+    shared_ptr<Module> _module;
+    static int _id_counter;
 };
-
 }
 }
 

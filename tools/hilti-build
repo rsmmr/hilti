@@ -15,7 +15,7 @@ Target = "<unknown>"
 
 Cc           = "clang -gfull"                    # Note, we really need clang.
 CcOptSpec    = "-O2"                             # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
-OptOptSpec   = "-std-compile-opts -std-link-opts -disable-internalize"
+OptOptSpec   = "-O2 -std-link-opts"
 
 # Search file in shell PATH. Returns None if not found.
 def findInPATH(file):
@@ -233,17 +233,22 @@ def runHiltic(inputs, output, proto=False):
     inputs = " ".join(inputs)
     path = runConfig(HiltiConfig, "--hiltic-binary")
 
-    if not proto:
-        hiltic = "%s %s %s -o %s" % (path, inputs, flags, output)
-    else:
-        hiltic = "%s %s %s -o %s" % (path, inputs, flags, output)
+    if proto:
+        path = os.path.join(os.path.dirname(path), "hiltip")
+
+    hiltic = "%s %s %s -o %s" % (path, inputs, flags, output)
 
     if not execute(hiltic):
         error("error running hiltic, aborting")
 
-def optimize(input, output):
+def optimize(input, output, strip_debug=False):
     opt = "opt -f %s -o=%s %s" % (OptOptSpec, output, input)
     return execute(opt)
+
+# Not used currently.
+# def stripDebug(input, output):
+#     opt = "opt -strip-debug -o=%s %s" % (output, input)
+#     return execute(opt)
 
 def nativeLink(input, output):
     try:
@@ -276,7 +281,7 @@ def parseOptions():
         global ImportPaths
         ImportPaths += [value]
 
-    version = "hilti-build2 %s\ntarget: %s" % (Version, Target)
+    version = "hilti-build %s\ntarget: %s" % (Version, Target)
     usage = """%prog [options] -o <output> <inputs>
 
 Input files may be end in one of the following extensions:

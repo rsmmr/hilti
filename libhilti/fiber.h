@@ -2,8 +2,8 @@
 #ifndef LIBHILTI_FIBER_H
 #define LIBHILTI_FIBER_H
 
-#include <stdint.h>
 #include "types.h"
+#include <stdint.h>
 
 struct __hlt_execution_context;
 
@@ -25,7 +25,8 @@ typedef void (*hlt_fiber_func)(hlt_fiber* fiber, void* p);
 /// ctx: The current context.
 ///
 /// Returns: The new fiber.
-extern hlt_fiber* hlt_fiber_create(hlt_fiber_func func, struct __hlt_execution_context* fctx, void* p, struct __hlt_execution_context* ctx);
+extern hlt_fiber* hlt_fiber_create(hlt_fiber_func func, struct __hlt_execution_context* fctx,
+                                   void* p, struct __hlt_execution_context* ctx);
 
 /// Destroys a fiber. This release the stack, but note that it doesn't free
 /// any pointers the stack may still hold. That must already have been done
@@ -40,7 +41,7 @@ extern void hlt_fiber_delete(hlt_fiber* fiber, hlt_execution_context* ctx);
 /// created with hlt_fiber_create, processing will be kicked off; if it has
 /// yielded via hlt_fiver_yield(), processing will continue where it left
 /// off. This function returns only when the fiber finished or yielded. If
-/// finished, the fiber will be deleted and must not be used anymore. 
+/// finished, the fiber will be deleted and must not be used anymore.
 ///
 /// fiber: The fiber
 ///
@@ -89,7 +90,7 @@ extern __hlt_fiber_pool* __hlt_fiber_pool_new();
 extern void __hlt_fiber_pool_delete(__hlt_fiber_pool* pool);
 
 void __hlt_fiber_init();
-void __hlt_files_done();
+void __hlt_fiber_done();
 
 
 #endif

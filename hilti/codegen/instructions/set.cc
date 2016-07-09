@@ -8,7 +8,7 @@ using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::set::New* i)
 {
-    auto etype = ast::as<type::Set>(typedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Set>(typedType(i->op1()))->argType();
     auto op1 = builder::type::create(etype);
 
     shared_ptr<Expression> op2 = i->op2();
@@ -37,7 +37,7 @@ void StatementBuilder::visit(statement::instruction::set::Clear* i)
 
 void StatementBuilder::visit(statement::instruction::set::Exists* i)
 {
-    auto etype = ast::as<type::Set>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Set>(referencedType(i->op1()))->argType();
     auto op2 = i->op2()->coerceTo(etype);
 
     CodeGen::expr_list args;
@@ -50,7 +50,7 @@ void StatementBuilder::visit(statement::instruction::set::Exists* i)
 
 void StatementBuilder::visit(statement::instruction::set::Insert* i)
 {
-    auto etype = ast::as<type::Set>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Set>(referencedType(i->op1()))->argType();
     auto op2 = i->op2()->coerceTo(etype);
 
     CodeGen::expr_list args;
@@ -61,7 +61,7 @@ void StatementBuilder::visit(statement::instruction::set::Insert* i)
 
 void StatementBuilder::visit(statement::instruction::set::Remove* i)
 {
-    auto etype = ast::as<type::Set>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Set>(referencedType(i->op1()))->argType();
     auto op2 = i->op2()->coerceTo(etype);
 
     CodeGen::expr_list args;
@@ -127,7 +127,7 @@ void StatementBuilder::visit(statement::instruction::iterSet::Equal* i)
 
 void StatementBuilder::visit(statement::instruction::iterSet::Deref* i)
 {
-    auto etype = ast::as<type::Set>(iteratedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::Set>(iteratedType(i->op1()))->argType();
 
     CodeGen::expr_list args;
     args.push_back(i->op1());

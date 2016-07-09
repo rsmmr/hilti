@@ -8,7 +8,7 @@ using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::list::New* i)
 {
-    auto etype = ast::as<type::List>(typedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::List>(typedType(i->op1()))->argType();
     auto op1 = builder::type::create(etype);
 
     shared_ptr<Expression> op2 = i->op2(); // sic
@@ -30,7 +30,7 @@ void StatementBuilder::visit(statement::instruction::list::New* i)
 
 void StatementBuilder::visit(statement::instruction::list::Back* i)
 {
-    auto etype = ast::as<type::List>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::List>(referencedType(i->op1()))->argType();
 
     CodeGen::expr_list args;
     args.push_back(i->op1());
@@ -51,7 +51,7 @@ void StatementBuilder::visit(statement::instruction::list::Erase* i)
 
 void StatementBuilder::visit(statement::instruction::list::Front* i)
 {
-    auto etype = ast::as<type::List>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::List>(referencedType(i->op1()))->argType();
 
     CodeGen::expr_list args;
     args.push_back(i->op1());
@@ -65,7 +65,7 @@ void StatementBuilder::visit(statement::instruction::list::Front* i)
 
 void StatementBuilder::visit(statement::instruction::list::Insert* i)
 {
-    auto etype = ast::as<type::List>(iteratedType(i->op2()))->argType();
+    auto etype = ast::rtti::tryCast<type::List>(iteratedType(i->op2()))->argType();
     auto op1 = i->op1()->coerceTo(etype);
 
     CodeGen::expr_list args;
@@ -76,7 +76,7 @@ void StatementBuilder::visit(statement::instruction::list::Insert* i)
 
 void StatementBuilder::visit(statement::instruction::list::PopBack* i)
 {
-    auto etype = ast::as<type::List>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::List>(referencedType(i->op1()))->argType();
 
     CodeGen::expr_list args;
     args.push_back(i->op1());
@@ -92,7 +92,7 @@ void StatementBuilder::visit(statement::instruction::list::PopBack* i)
 
 void StatementBuilder::visit(statement::instruction::list::PopFront* i)
 {
-    auto etype = ast::as<type::List>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::List>(referencedType(i->op1()))->argType();
 
     CodeGen::expr_list args;
     args.push_back(i->op1());
@@ -108,7 +108,7 @@ void StatementBuilder::visit(statement::instruction::list::PopFront* i)
 
 void StatementBuilder::visit(statement::instruction::list::PushBack* i)
 {
-    auto etype = ast::as<type::List>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::List>(referencedType(i->op1()))->argType();
     auto op2 = i->op2()->coerceTo(etype);
 
     CodeGen::expr_list args;
@@ -119,7 +119,7 @@ void StatementBuilder::visit(statement::instruction::list::PushBack* i)
 
 void StatementBuilder::visit(statement::instruction::list::PushFront* i)
 {
-    auto etype = ast::as<type::List>(referencedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::List>(referencedType(i->op1()))->argType();
     auto op2 = i->op2()->coerceTo(etype);
 
     CodeGen::expr_list args;
@@ -193,7 +193,7 @@ void StatementBuilder::visit(statement::instruction::iterList::Equal* i)
 
 void StatementBuilder::visit(statement::instruction::iterList::Deref* i)
 {
-    auto etype = ast::as<type::List>(iteratedType(i->op1()))->argType();
+    auto etype = ast::rtti::tryCast<type::List>(iteratedType(i->op1()))->argType();
 
     CodeGen::expr_list args;
     args.push_back(i->op1());

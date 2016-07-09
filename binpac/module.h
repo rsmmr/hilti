@@ -15,8 +15,7 @@ namespace binpac {
 class CompilerContext;
 
 /// AST node for a top-level module.
-class Module : public ast::Module<AstInfo>
-{
+class Module : public ast::Module<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -27,7 +26,8 @@ public:
     /// path: A file system path associated with the module.
     ///
     /// l: Associated location.
-    Module(CompilerContext* ctx, shared_ptr<ID> id, const string& path = "-", const Location& l=Location::None);
+    Module(CompilerContext* ctx, shared_ptr<ID> id, const string& path = "-",
+           const Location& l = Location::None);
 
     /// Adds a property to the module.
     ///
@@ -38,7 +38,7 @@ public:
     std::list<shared_ptr<Attribute>> properties() const;
 
     /// Returns the property of a given name, or null if no such. If there
-    /// are more than one of that name, returns the last. 
+    /// are more than one of that name, returns the last.
     shared_ptr<Attribute> property(const string& prop) const;
 
     CompilerContext* context() const;
@@ -50,7 +50,6 @@ private:
 
     std::list<node_ptr<Attribute>> _properties;
 };
-
 }
 
 #endif

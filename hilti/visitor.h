@@ -10,8 +10,9 @@
 namespace hilti {
 
 /// Base class for HILTI visitors.
-template<typename Result=int, typename Arg1=int, typename Arg2=int>
-class Visitor : public ast::Visitor<AstInfo, Result, Arg1, Arg2> {};
+template <typename Result = int, typename Arg1 = int, typename Arg2 = int>
+class Visitor : public ast::Visitor<AstInfo, Result, Arg1, Arg2> {
+};
 }
 
 #endif

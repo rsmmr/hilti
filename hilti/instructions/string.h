@@ -23,11 +23,12 @@
 #include "define-instruction.h"
 
 iBegin(string, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -37,11 +38,12 @@ iBegin(string, Equal, "equal")
 iEnd
 
 iBegin(string, Cmp, "string.cmp")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -52,11 +54,12 @@ iBegin(string, Cmp, "string.cmp")
 iEnd
 
 iBegin(string, Concat, "string.concat")
-    iTarget(optype::string)
+    iTarget(optype::string);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -66,11 +69,12 @@ iBegin(string, Concat, "string.concat")
 iEnd
 
 iBegin(string, Decode, "string.decode")
-    iTarget(optype::string)
+    iTarget(optype::string);
     iOp1(optype::refBytes, true);
     iOp2(optype::enum_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -87,11 +91,12 @@ iBegin(string, Decode, "string.decode")
 iEnd
 
 iBegin(string, Encode, "string.encode")
-    iTarget(optype::refBytes)
+    iTarget(optype::refBytes);
     iOp1(optype::string, true);
     iOp2(optype::enum_, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -106,11 +111,12 @@ iBegin(string, Encode, "string.encode")
 iEnd
 
 iBegin(string, Find, "string.find")
-    iTarget(optype::int64)
+    iTarget(optype::int64);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -121,10 +127,11 @@ iBegin(string, Find, "string.find")
 iEnd
 
 iBegin(string, Length, "string.length")
-    iTarget(optype::int64)
+    iTarget(optype::int64);
     iOp1(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -134,11 +141,12 @@ iBegin(string, Length, "string.length")
 iEnd
 
 iBegin(string, Lt, "string.lt")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -149,12 +157,13 @@ iBegin(string, Lt, "string.lt")
 iEnd
 
 iBegin(string, Substr, "string.substr")
-    iTarget(optype::string)
-    iOp1(optype::string, true)
-    iOp2(optype::int64, true)
-    iOp3(optype::int64, true)
+    iTarget(optype::string);
+    iOp1(optype::string, true);
+    iOp2(optype::int64, true);
+    iOp3(optype::int64, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -164,11 +173,12 @@ iBegin(string, Substr, "string.substr")
 iEnd
 
 iBegin(string, Join, "string.join")
-    iTarget(optype::string)
-    iOp1(optype::string, true)
-    iOp2(optype::refList, true)
+    iTarget(optype::string);
+    iOp1(optype::string, true);
+    iOp2(optype::refList, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -176,5 +186,3 @@ iBegin(string, Join, "string.join")
          and then concatenates them using *op1* as the separator.
     )")
 iEnd
-
-

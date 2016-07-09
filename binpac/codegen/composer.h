@@ -10,15 +10,21 @@
 
 namespace binpac {
 
-namespace type { namespace unit { namespace item { class Field; } } }
+namespace type {
+namespace unit {
+namespace item {
+class Field;
+}
+}
+}
 
 namespace codegen {
 
 class ComposerState;
 
 /// Generates code to compose input according to a grammar.
-class Composer : public codegen::CGVisitor<shared_ptr<hilti::Expression>, shared_ptr<type::unit::item::Field>>
-{
+class Composer : public codegen::CGVisitor<shared_ptr<hilti::Expression>,
+                                           shared_ptr<type::unit::item::Field>> {
 public:
     Composer(CodeGen* cg);
     virtual ~Composer();
@@ -29,7 +35,8 @@ public:
 
     /// Returns the currently composed value. The method must only
     /// be called when composing is in progress.
-    shared_ptr<hilti::Expression> hiltiObject(shared_ptr<type::unit::item::Field> field = nullptr) const;
+    shared_ptr<hilti::Expression> hiltiObject(
+        shared_ptr<type::unit::item::Field> field = nullptr) const;
 
     // Creates the host-facing composer function.
     //
@@ -77,7 +84,8 @@ protected:
 
     /// Compose a given entity. This verson accepts an explicit pointer to
     /// the value to compose.
-    void compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj, shared_ptr<type::unit::item::Field> field = nullptr);
+    void compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj,
+                 shared_ptr<type::unit::item::Field> field = nullptr);
 
     /// Returns the current composing state.
     shared_ptr<ComposerState> state() const;
@@ -157,24 +165,29 @@ protected:
 #endif
 
 private:
-    typedef std::list<std::pair<shared_ptr<hilti::Expression>, shared_ptr<Type>>> hilti_expression_type_list;
+    typedef std::list<std::pair<shared_ptr<hilti::Expression>, shared_ptr<Type>>>
+        hilti_expression_type_list;
 
     // Pushes an empty compose function with the right standard signature. If
     // value_type is given, the function return tuple will contain an
     // additional element of that type for passing back the composed value.
     //
     // Returns: An expression referencing the function.
-    shared_ptr<hilti::Expression> _newComposeFunction(const string& name, shared_ptr<type::Unit> unit, shared_ptr<hilti::Type> value_type = nullptr);
+    shared_ptr<hilti::Expression> _newComposeFunction(const string& name,
+                                                      shared_ptr<type::Unit> unit,
+                                                      shared_ptr<hilti::Type> value_type = nullptr);
 
     // Finishes a functions started with _newcomposeFunction().
     void _finishComposeFunction();
 
     /// Generates the body code for composing a given node. Same parameters as
     /// compose().
-    void _hiltiCompose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj, shared_ptr<type::unit::item::Field> f);
+    void _hiltiCompose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj,
+                       shared_ptr<type::unit::item::Field> f);
 
     /// Composes a container value.
-    void _hiltiComposeContainer(shared_ptr<hilti::Expression> value, shared_ptr<Production> body, shared_ptr<type::unit::item::field::Container> container);
+    void _hiltiComposeContainer(shared_ptr<hilti::Expression> value, shared_ptr<Production> body,
+                                shared_ptr<type::unit::item::field::Container> container);
 
     // Called just before a production is being composed.
     void _startingProduction(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field);
@@ -194,18 +207,18 @@ private:
     /// field: The field associated with the data.
     ///
     /// op1, op2, op3: Same as with the regular ``pack`` instruction.
-    void hiltiPack(shared_ptr<type::unit::item::Field> field,
-                   shared_ptr<hilti::Expression> op1,
-                   shared_ptr<hilti::Expression> op2,
-                   shared_ptr<hilti::Expression> op3 = nullptr);
+    void hiltiPack(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> op1,
+                   shared_ptr<hilti::Expression> op2, shared_ptr<hilti::Expression> op3 = nullptr);
 
     /// Generates code to pass a chunk of composed data to host application.
     /// The data will be associated with the current position in the compose
     /// process.
-    void _hiltiDataComposed(shared_ptr<hilti::Expression> data, shared_ptr<type::unit::item::Field> field);
+    void _hiltiDataComposed(shared_ptr<hilti::Expression> data,
+                            shared_ptr<type::unit::item::Field> field);
 
     // Calls a compose function with the current composing state.
-    void _hiltiCallComposeFunction(shared_ptr<binpac::type::Unit> unit, shared_ptr<hilti::Expression> func);
+    void _hiltiCallComposeFunction(shared_ptr<binpac::type::Unit> unit,
+                                   shared_ptr<hilti::Expression> func);
 
     // Run a field's hooks.
     void _hiltiRunFieldHooks(shared_ptr<type::unit::item::Field> field);
@@ -234,7 +247,6 @@ private:
     std::list<shared_ptr<ComposerState>> _states;
     shared_ptr<hilti::Expression> _object;
 };
-
 }
 }
 

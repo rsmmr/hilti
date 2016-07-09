@@ -1,14 +1,14 @@
 
 #include <util/util.h>
 
-#include "grammar-builder.h"
+#include "../attribute.h"
+#include "../constant.h"
 #include "../declaration.h"
-#include "../type.h"
+#include "../expression.h"
 #include "../grammar.h"
 #include "../production.h"
-#include "../attribute.h"
-#include "../expression.h"
-#include "../constant.h"
+#include "../type.h"
+#include "grammar-builder.h"
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -24,7 +24,8 @@ GrammarBuilder::~GrammarBuilder()
 
 bool GrammarBuilder::run(shared_ptr<ast::NodeBase> ast)
 {
-    _in_decl = 0;;
+    _in_decl = 0;
+    ;
     _counters.clear();
     return processAllPreOrder(ast);
 }
@@ -65,7 +66,8 @@ shared_ptr<Production> GrammarBuilder::compileOne(shared_ptr<Node> n)
             prods.push_back(compileOne(_skip_post));
 
         auto name = util::fmt("skip%d", _skip_counter++);
-        production = std::make_shared<production::Sequence>(name, prods, nullptr, production->location());
+        production =
+            std::make_shared<production::Sequence>(name, prods, nullptr, production->location());
     }
 
     return production;
@@ -78,14 +80,14 @@ void GrammarBuilder::_resolveUnknown(shared_ptr<Production> production)
     if ( unknown ) {
         auto n = unknown->node();
         auto p = _compiled.find(n);
-        assert( p != _compiled.end());
+        assert(p != _compiled.end());
         if ( ast::isA<Production>(n) )
             production->replace(n);
     }
 
     for ( auto c : production->childs() ) {
         if ( ast::isA<Production>(c) )
-             _resolveUnknown(c->sharedPtr<binpac::Production>());
+            _resolveUnknown(c->sharedPtr<binpac::Production>());
     }
 }
 
@@ -134,7 +136,10 @@ static shared_ptr<type::unit::Item> _makeSkip(type::Unit* u, const std::string& 
         return nullptr;
 
     auto ctor = ast::checkedCast<expression::Ctor>(expr)->ctor();
-    auto skip = std::make_shared<type::unit::item::field::Ctor>(std::make_shared<ID>(::util::fmt("__%s", pname)), ctor, type::unit::item::Field::PARSE);
+    auto skip =
+        std::make_shared<type::unit::item::field::Ctor>(std::make_shared<ID>(
+                                                            ::util::fmt("__%s", pname)),
+                                                        ctor, type::unit::item::Field::PARSE);
     skip->setUnit(u);
     skip->attributes()->add(std::make_shared<Attribute>("transient"));
 
@@ -161,7 +166,8 @@ void GrammarBuilder::visit(type::Unit* u)
     else
         name = util::fmt("unit%d", _unit_counter++);
 
-    auto unit = std::make_shared<production::Sequence>(name, prods, u->sharedPtr<type::Unit>(), u->location());
+    auto unit = std::make_shared<production::Sequence>(name, prods, u->sharedPtr<type::Unit>(),
+                                                       u->location());
     setResult(unit);
 }
 
@@ -209,7 +215,8 @@ void GrammarBuilder::visit(type::unit::item::field::Switch* s)
         }
 
         auto sym = "switch:" + s->id()->name();
-        auto prod = std::make_shared<production::Switch>(sym, s->expression(), cases, default_, s->location());
+        auto prod = std::make_shared<production::Switch>(sym, s->expression(), cases, default_,
+                                                         s->location());
         prod->pgMeta()->field = s->sharedPtr<type::unit::item::Field>();
         setResult(prod);
     }
@@ -291,7 +298,9 @@ void GrammarBuilder::visit(type::unit::item::field::Unit* u)
         name = util::fmt("unit%d", _unit_counter++);
 
     assert(ast::isA<Production>(chprod));
-    auto child = std::make_shared<production::ChildGrammar>(name, chprod, ast::checkedCast<type::Unit>(u->type()), u->location());
+    auto child = std::make_shared<production::ChildGrammar>(name, chprod,
+                                                            ast::checkedCast<type::Unit>(u->type()),
+                                                            u->location());
     child->pgMeta()->field = u->sharedPtr<type::unit::item::field::Unit>();
     setResult(child);
 }
@@ -355,7 +364,8 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
         // List2 -> Epsilon | List1
 
         auto epsilon = std::make_shared<production::Epsilon>(l->location());
-        auto l1 = std::make_shared<production::Sequence>(sym + ":l1", Production::production_list(), nullptr, l->location());
+        auto l1 = std::make_shared<production::Sequence>(sym + ":l1", Production::production_list(),
+                                                         nullptr, l->location());
         auto l2 = std::make_shared<production::LookAhead>(sym + ":l2", epsilon, l1, l->location());
 
         l1->add(field);

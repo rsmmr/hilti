@@ -3,8 +3,8 @@
 #define HILTI_FLOW_INFO_H
 
 #include <memory>
-#include <string>
 #include <set>
+#include <string>
 
 using std::shared_ptr;
 using std::string;
@@ -15,8 +15,13 @@ class Statement;
 class Expression;
 class ID;
 
-namespace statement { class Block; }
-namespace expression { class Variable; class Parameter; }
+namespace statement {
+class Block;
+}
+namespace expression {
+class Variable;
+class Parameter;
+}
 
 /// Structure to describe a variable for data flow analysis.
 ///
@@ -31,8 +36,8 @@ struct FlowVariable {
     bool operator==(const FlowVariable& other) const;
     bool operator<(const FlowVariable& other) const;
 
-    string name;                       /// Name for this variable unique within its function. Used for comparision.
-    shared_ptr<ID> id;                 /// ID referencing this variable.
+    string name;       /// Name for this variable unique within its function. Used for comparision.
+    shared_ptr<ID> id; /// ID referencing this variable.
     shared_ptr<Expression> expression; /// Expression to reference the variable.
 };
 
@@ -66,7 +71,6 @@ struct FlowInfo {
     // statements operands.
     std::set<shared_ptr<statement::Block>> successors;
 };
-
 }
 
 #endif

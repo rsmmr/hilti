@@ -32,11 +32,12 @@
 #include "define-instruction.h"
 
 iBegin(integer, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -49,7 +50,8 @@ iBegin(integer, Incr, "incr")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
     }
 
@@ -63,7 +65,8 @@ iBegin(integer, IncrBy, "incr_by")
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -75,7 +78,8 @@ iBegin(integer, Decr, "decr")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
     }
 
@@ -89,7 +93,8 @@ iBegin(integer, DecrBy, "decr_by")
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -98,11 +103,12 @@ iBegin(integer, DecrBy, "decr_by")
 iEnd
 
 iBegin(integer, Add, "int.add")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
     }
@@ -116,11 +122,12 @@ iEnd
 
 
 iBegin(integer, Sub, "int.sub")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
     }
@@ -133,19 +140,20 @@ iBegin(integer, Sub, "int.sub")
 iEnd
 
 iBegin(integer, Div, "int.div")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
 
-        auto c = ast::as<expression::Constant>(op2);
+        auto c = ast::rtti::tryCast<expression::Constant>(op2);
 
         if ( c ) {
-            auto i = ast::as<constant::Integer>(c->constant());
-            assert(i);
+            auto i = ast::rtti::checkedCast<constant::Integer>(c->constant());
+            ;
 
             if ( i->value() == 0 )
                 error(op2, "Division by zero");
@@ -162,11 +170,12 @@ iBegin(integer, Div, "int.div")
 iEnd
 
 iBegin(integer, Sleq, "int.sleq")
-    iTarget(optype::boolean)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::boolean);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -178,24 +187,26 @@ iBegin(integer, Sleq, "int.sleq")
 iEnd
 
 iBegin(integer, AsSDouble, "int.as_sdouble")
-    iTarget(optype::double_)
-    iOp1(optype::integer, true)
+    iTarget(optype::double_);
+    iOp1(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
        Converts the signed integer *op1* into a double value.
      )")
 
- iEnd
+iEnd
 
 iBegin(integer, Pow, "int.pow")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -207,12 +218,13 @@ iBegin(integer, Pow, "int.pow")
 iEnd
 
 iBegin(integer, SExt, "int.sext")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
 
-    iValidate {
-        auto ty_target = as<type::Integer>(target->type());
-        auto ty_op1 = as<type::Integer>(op1->type());
+    iValidate
+    {
+        auto ty_target = ast::rtti::checkedCast<type::Integer>(target->type());
+        auto ty_op1 = ast::rtti::checkedCast<type::Integer>(op1->type());
 
         if ( ty_op1->width() > ty_target->width() )
             error(op1, "width of operand cannot be larger than that of target");
@@ -226,11 +238,12 @@ iBegin(integer, SExt, "int.sext")
 iEnd
 
 iBegin(integer, Shr, "int.shr")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
     }
@@ -244,11 +257,12 @@ iBegin(integer, Shr, "int.shr")
 iEnd
 
 iBegin(integer, Mul, "int.mul")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
     }
@@ -261,11 +275,12 @@ iBegin(integer, Mul, "int.mul")
 iEnd
 
 iBegin(integer, Shl, "int.shl")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
     }
@@ -279,11 +294,12 @@ iBegin(integer, Shl, "int.shl")
 iEnd
 
 iBegin(integer, Ult, "int.ult")
-    iTarget(optype::boolean)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::boolean);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -295,11 +311,12 @@ iBegin(integer, Ult, "int.ult")
 iEnd
 
 iBegin(integer, Uleq, "int.uleq")
-    iTarget(optype::boolean)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::boolean);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -311,11 +328,12 @@ iBegin(integer, Uleq, "int.uleq")
 iEnd
 
 iBegin(integer, Ashr, "int.ashr")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
     }
@@ -330,12 +348,13 @@ iBegin(integer, Ashr, "int.ashr")
 iEnd
 
 iBegin(integer, Mask, "int.mask")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
-    iOp3(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
+    iOp3(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
     }
 
@@ -347,19 +366,20 @@ iBegin(integer, Mask, "int.mask")
 iEnd
 
 iBegin(integer, Mod, "int.mod")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
 
-        auto c = ast::as<expression::Constant>(op2);
+        auto c = ast::rtti::tryCast<expression::Constant>(op2);
 
         if ( c ) {
-            auto i = ast::as<constant::Integer>(c->constant());
-            assert(i);
+            auto i = ast::rtti::checkedCast<constant::Integer>(c->constant());
+            ;
 
             if ( i->value() == 0 )
                 error(op2, "Division by zero");
@@ -375,11 +395,12 @@ iBegin(integer, Mod, "int.mod")
 iEnd
 
 iBegin(integer, Eq, "int.eq")
-    iTarget(optype::boolean)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::boolean);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -390,12 +411,13 @@ iBegin(integer, Eq, "int.eq")
 iEnd
 
 iBegin(integer, ZExt, "int.zext")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
 
-    iValidate {
-        auto ty_target = as<type::Integer>(target->type());
-        auto ty_op1 = as<type::Integer>(op1->type());
+    iValidate
+    {
+        auto ty_target = ast::rtti::checkedCast<type::Integer>(target->type());
+        auto ty_op1 = ast::rtti::checkedCast<type::Integer>(op1->type());
 
         if ( ty_op1->width() > ty_target->width() )
             error(op1, "width of operand cannot be larger than that of target");
@@ -409,24 +431,26 @@ iBegin(integer, ZExt, "int.zext")
 iEnd
 
 iBegin(integer, AsTime, "int.as_time")
-   iTarget(optype::time)
-     iOp1(optype::integer, true)
+    iTarget(optype::time);
+    iOp1(optype::integer, true);
 
-     iValidate {
-     }
+    iValidate
+    {
+    }
 
-     iDoc(R"(
+    iDoc(R"(
          Converts the integer *op1* into a time value, interpreting it as
          seconds since the epoch.
       )")
 iEnd
 
 iBegin(integer, Slt, "int.slt")
-    iTarget(optype::boolean)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::boolean);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -438,12 +462,13 @@ iBegin(integer, Slt, "int.slt")
 iEnd
 
 iBegin(integer, Trunc, "int.trunc")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
 
-    iValidate {
-        auto ty_target = as<type::Integer>(target->type());
-        auto ty_op1 = as<type::Integer>(op1->type());
+    iValidate
+    {
+        auto ty_target = ast::rtti::checkedCast<type::Integer>(target->type());
+        auto ty_op1 = ast::rtti::checkedCast<type::Integer>(op1->type());
 
         if ( ty_op1->width() < ty_target->width() )
             error(op1, "width of operand cannot be smaller than that of target");
@@ -457,11 +482,12 @@ iBegin(integer, Trunc, "int.trunc")
 iEnd
 
 iBegin(integer, Sgeq, "int.sgeq")
-    iTarget(optype::boolean)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::boolean);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -473,10 +499,11 @@ iBegin(integer, Sgeq, "int.sgeq")
 iEnd
 
 iBegin(integer, AsUDouble, "int.as_udouble")
-    iTarget(optype::double_)
-    iOp1(optype::integer, true)
+    iTarget(optype::double_);
+    iOp1(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -486,11 +513,12 @@ iBegin(integer, AsUDouble, "int.as_udouble")
 iEnd
 
 iBegin(integer, Or, "int.or")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
     }
@@ -503,11 +531,12 @@ iBegin(integer, Or, "int.or")
 iEnd
 
 iBegin(integer, Ugeq, "int.ugeq")
-    iTarget(optype::boolean)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::boolean);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -519,11 +548,12 @@ iBegin(integer, Ugeq, "int.ugeq")
 iEnd
 
 iBegin(integer, Sgt, "int.sgt")
-    iTarget(optype::boolean)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::boolean);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -535,10 +565,11 @@ iBegin(integer, Sgt, "int.sgt")
 iEnd
 
 iBegin(integer, AsInterval, "int.as_interval")
-    iTarget(optype::interval)
-    iOp1(optype::integer, true)
+    iTarget(optype::interval);
+    iOp1(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -548,11 +579,12 @@ iBegin(integer, AsInterval, "int.as_interval")
 iEnd
 
 iBegin(integer, Xor, "int.xor")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
     }
@@ -565,11 +597,12 @@ iBegin(integer, Xor, "int.xor")
 iEnd
 
 iBegin(integer, And, "int.and")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
         canCoerceTo(op2, target);
     }
@@ -582,11 +615,12 @@ iBegin(integer, And, "int.and")
 iEnd
 
 iBegin(integer, Ugt, "int.ugt")
-    iTarget(optype::boolean)
-    iOp1(optype::integer, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::boolean);
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTypes(op1, op2);
     }
 
@@ -598,11 +632,12 @@ iBegin(integer, Ugt, "int.ugt")
 iEnd
 
 iBegin(integer, ToHost, "int.to_host")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::enum_, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::enum_, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
     }
 
@@ -612,24 +647,26 @@ iBegin(integer, ToHost, "int.to_host")
 iEnd
 
 iBegin(integer, FromHost, "int.from_host")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
-    iOp2(optype::enum_, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+    iOp2(optype::enum_, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
     }
 
     iDoc(R"(
         Converts *op1* from host byte order to byte order *op2*.
      )")
-iEnd     
+iEnd
 
 iBegin(integer, Flip, "int.flip")
-    iTarget(optype::integer)
-    iOp1(optype::integer, true)
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op1, target);
     }
 

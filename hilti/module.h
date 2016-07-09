@@ -5,23 +5,23 @@
 #include <ast/module.h>
 
 #include "common.h"
-#include "id.h"
 #include "function.h"
+#include "id.h"
 #include "statement.h"
 #include "type.h"
 
 namespace hilti {
 
 namespace passes {
-    class CFG;
-    class Liveness;
+class CFG;
+class Liveness;
 }
 
 class CompilerContext;
 
 /// AST node for a top-level module.
-class Module : public ast::Module<AstInfo>
-{
+class Module : public ast::Module<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -33,7 +33,8 @@ public:
     /// this must be given as it's used to track modules already loaded.
     ///
     /// l: Associated location.
-    Module(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, const string& path = "-", const Location& l=Location::None);
+    Module(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, const string& path = "-",
+           const Location& l = Location::None);
 
     /// Returns the module's compiler context.
     shared_ptr<CompilerContext> compilerContext() const;
@@ -65,7 +66,6 @@ private:
     shared_ptr<passes::CFG> _cfg = nullptr;
     shared_ptr<passes::Liveness> _liveness = nullptr;
 };
-
 }
 
 #endif

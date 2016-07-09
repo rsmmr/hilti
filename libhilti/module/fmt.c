@@ -4,18 +4,19 @@
 // Todo: We currently understand only the %s format and no formatting
 // options.
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
-#include <inttypes.h>
 
-#include "module.h"
-#include "string_.h"
-#include "rtti.h"
 #include "exceptions.h"
+#include "module.h"
+#include "rtti.h"
+#include "string_.h"
 
 static const int BufferSize = 128;
 
-static void _add_char(int8_t c, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _add_char(int8_t c, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst,
+                      hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // Adds one character 'c' to the string we're building. If there's space
     // in the buffer, it's added there and 'dst' is returned unmodified. If
@@ -37,7 +38,9 @@ static void _add_char(int8_t c, int8_t* buffer, hlt_string_size* bpos, hlt_strin
     }
 }
 
-static void _add_chars(const int8_t* data, hlt_string_size len, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _add_chars(const int8_t* data, hlt_string_size len, int8_t* buffer,
+                       hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt,
+                       hlt_execution_context* ctx)
 {
     while ( len-- ) {
         _add_char(*data++, buffer, bpos, dst, excpt, ctx);
@@ -46,7 +49,8 @@ static void _add_chars(const int8_t* data, hlt_string_size len, int8_t* buffer, 
     }
 }
 
-static void _add_asciiz(const char* asciiz, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _add_asciiz(const char* asciiz, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst,
+                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     while ( *asciiz ) {
         _add_char(*asciiz++, buffer, bpos, dst, excpt, ctx);
@@ -55,23 +59,24 @@ static void _add_asciiz(const char* asciiz, int8_t* buffer, hlt_string_size* bpo
     }
 }
 
-static void _do_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, int *type_param, hlt_string_size* i, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _do_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, int* type_param,
+                    hlt_string_size* i, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst,
+                    hlt_exception** excpt, hlt_execution_context* ctx)
 {
     static const int tmp_size = 32;
     char tmp[tmp_size];
 
     const int8_t* p = fmt->bytes;
 
-    hlt_type_info** types = (hlt_type_info**) &type->type_params;
+    hlt_type_info** types = (hlt_type_info**)&type->type_params;
     hlt_type_info* fmt_type = types[*type_param];
 
-    hlt_tuple_element e = hlt_tuple_get_type(type, *type_param, excpt, ctx);
-    const void *fmt_arg = *type_param < type->num_params ? hlt_tuple_get(type, tuple, *type_param, excpt, ctx) : 0;
+    const void* fmt_arg =
+        *type_param < type->num_params ? hlt_tuple_get(type, tuple, *type_param, excpt, ctx) : 0;
     (*type_param)++;
 
     switch ( p[(*i)++] ) {
-
-      case 'd':
+    case 'd':
         if ( fmt_type->to_int64 ) {
             int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, HLT_CONVERT_NONE, excpt, ctx);
             if ( *excpt )
@@ -86,9 +91,10 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, int 
         }
         break;
 
-      case 'u':
+    case 'u':
         if ( fmt_type->to_int64 ) {
-            uint64_t i = (uint64_t)(*fmt_type->to_int64)(fmt_type, fmt_arg, HLT_CONVERT_UNSIGNED, excpt, ctx);
+            uint64_t i = (uint64_t)(*fmt_type->to_int64)(fmt_type, fmt_arg, HLT_CONVERT_UNSIGNED,
+                                                         excpt, ctx);
             if ( *excpt )
                 return;
 
@@ -102,9 +108,10 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, int 
 
         break;
 
-      case 'x':
+    case 'x':
         if ( fmt_type->to_int64 ) {
-            uint64_t i = (uint64_t)(*fmt_type->to_int64)(fmt_type, fmt_arg, HLT_CONVERT_UNSIGNED, excpt, ctx);
+            uint64_t i = (uint64_t)(*fmt_type->to_int64)(fmt_type, fmt_arg, HLT_CONVERT_UNSIGNED,
+                                                         excpt, ctx);
             if ( *excpt )
                 return;
 
@@ -118,7 +125,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, int 
 
         break;
 
-      case 'f':
+    case 'f':
         if ( fmt_type->to_double ) {
             double d = (*fmt_type->to_double)(fmt_type, fmt_arg, HLT_CONVERT_NONE, excpt, ctx);
             if ( *excpt )
@@ -134,9 +141,9 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, int 
 
         break;
 
-      case 'p':
-        if ( fmt_arg && * (void **)fmt_arg ) {
-            snprintf(tmp, tmp_size, "%p", * (void **)fmt_arg);
+    case 'p':
+        if ( fmt_arg && *(void**)fmt_arg ) {
+            snprintf(tmp, tmp_size, "%p", *(void**)fmt_arg);
             _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else
@@ -146,11 +153,12 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, int 
 
         break;
 
-      case 's':
+    case 's':
         if ( fmt_type->to_string ) {
             __hlt_pointer_stack seen;
             __hlt_pointer_stack_init(&seen);
-            hlt_string str = (*fmt_type->to_string)(fmt_type, fmt_arg, HLT_CONVERT_NONE, &seen, excpt, ctx);
+            hlt_string str =
+                (*fmt_type->to_string)(fmt_type, fmt_arg, HLT_CONVERT_NONE, &seen, excpt, ctx);
             __hlt_pointer_stack_destroy(&seen);
 
             if ( *excpt )
@@ -165,14 +173,14 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, int 
 
         break;
 
-      default:
+    default:
         // Unknown format character.
         hlt_set_exception(excpt, &hlt_exception_wrong_arguments, 0, ctx);
     }
-
 }
 
-hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, hlt_exception** excpt, hlt_execution_context* ctx) //
+hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, hlt_exception** excpt,
+                     hlt_execution_context* ctx) //
 {
     assert(type->type == HLT_TYPE_TUPLE);
 
@@ -185,7 +193,6 @@ hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, hlt
     hlt_string_size i = 0;
 
     while ( i < fmt->len ) {
-
         if ( p[i] == '%' ) {
             if ( ++i == fmt->len ) {
                 hlt_set_exception(excpt, &hlt_exception_wrong_arguments, 0, ctx);
@@ -218,5 +225,3 @@ hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, void* tuple, hlt
 
     return result;
 }
-
-

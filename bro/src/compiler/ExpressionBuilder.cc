@@ -472,13 +472,13 @@ std::shared_ptr<::hilti::Expression> ExpressionBuilder::CompileAssign(const ::Ex
 		return CompileAssign(lhs->AsNameExpr(), rhs);
 
         case EXPR_REF:
-		return CompileAssign(dynamic_cast<const ::RefExpr *>(lhs), rhs);
+		return CompileAssign(dynamicCast(lhs), rhs, const ::RefExpr *);
 
 	case EXPR_INDEX:
-		return CompileAssign(dynamic_cast<const ::IndexExpr *>(lhs), rhs);
+		return CompileAssign(dynamicCast(lhs), rhs, const ::IndexExpr *);
 
 	case EXPR_FIELD:
-		return CompileAssign(dynamic_cast<const ::FieldExpr *>(lhs), rhs);
+		return CompileAssign(dynamicCast(lhs), rhs, const ::FieldExpr *);
 
 	case EXPR_LIST:
 		return CompileAssign(lhs->AsListExpr(), rhs);
@@ -940,7 +940,7 @@ shared_ptr<::hilti::Expression> ExpressionBuilder::Compile(const ::RecordCoerceE
 	// We optimize here for the common case that the rhs is a record ctor.
 	if ( expr->Op()->Tag() == EXPR_RECORD_CONSTRUCTOR )
 		{
-		auto rctor = dynamic_cast<::RecordConstructorExpr *>(expr->Op());
+		auto rctor = dynamicCast(expr->Op(), ::RecordConstructorExpr *);
 		auto tuple = CompileListExprToRecordTuple(rctor->Op()->AsListExpr(), super_rtype);
 		return tuple;
 		}

@@ -47,7 +47,8 @@ void CodeBuilder::visit(expression::operator_::bool_::LogicalAnd* i)
     cg()->moduleBuilder()->popBuilder(op1_true);
 
     cg()->moduleBuilder()->pushBuilder(op1_false);
-    cg()->builder()->addInstruction(result, hilti::instruction::operator_::Assign, hilti::builder::boolean::create(false));
+    cg()->builder()->addInstruction(result, hilti::instruction::operator_::Assign,
+                                    hilti::builder::boolean::create(false));
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
     cg()->moduleBuilder()->popBuilder(op1_false);
 
@@ -68,7 +69,8 @@ void CodeBuilder::visit(expression::operator_::bool_::LogicalOr* i)
     auto done = std::get<2>(branches);
 
     cg()->moduleBuilder()->pushBuilder(op1_true);
-    cg()->builder()->addInstruction(result, hilti::instruction::operator_::Assign, hilti::builder::boolean::create(true));
+    cg()->builder()->addInstruction(result, hilti::instruction::operator_::Assign,
+                                    hilti::builder::boolean::create(true));
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
     cg()->moduleBuilder()->popBuilder(op1_true);
 

@@ -37,24 +37,19 @@
 # [Disabled for now. -Robin] LLVM_LIBS_JIT : ldflags needed to link against a LLVM JIT
 # [Disabled for now. -Robin] LLVM_LIBS_JIT_OBJECTS : objects you need to add to your source when using LLVM JIT
 
-if (LLVM_INCLUDE_DIR)
-  set(LLVM_FOUND TRUE)
-
-else ()
-
   find_program(LLVM_CONFIG_EXEC
       NAMES llvm-config
-      PATHS /opt/local/bin /opt/llvm/bin
+      PATHS /opt/local/bin
   )
 
   find_program(LLVM_CLANG_EXEC
       NAMES clang
-      PATHS /opt/local/bin  /opt/llvm/bin
+      PATHS /opt/local/bin
   )
 
   find_program(LLVM_CLANGXX_EXEC
       NAMES clang++
-      PATHS /opt/local/bin  /opt/llvm/bin
+      PATHS /opt/local/bin
   )
 
   set(LLVM_FOUND TRUE)
@@ -150,5 +145,3 @@ else ()
       MESSAGE(STATUS "Cannot find compiler-rt runtime directory (tried ${COMPILER_RT_LIB_DIR})")
       set(COMPILER_RT_LIB_DIR)
   endif ()
-
-endif ()

@@ -2,23 +2,24 @@
 #ifndef AST_EXPRESSION_H
 #define AST_EXPRESSION_H
 
-#include "node.h"
 #include "constant.h"
 #include "ctor.h"
 #include "mixin.h"
+#include "node.h"
 
 namespace ast {
 
-template<typename AstInfo>
+template <typename AstInfo>
 class Expression;
 
 /// Base class for mix-ins that want to override some of an expression's
 /// virtual methods. See Expression for documentation.
-template<typename AstInfo>
-class ExpressionOverrider : public Overrider<typename AstInfo::expression>
-{
+template <typename AstInfo>
+class ExpressionOverrider : public Overrider<typename AstInfo::expression> {
 public:
-    virtual ~ExpressionOverrider() {}
+    virtual ~ExpressionOverrider()
+    {
+    }
 
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::coercer Coercer;
@@ -28,7 +29,8 @@ public:
     typedef typename AstInfo::module Module;
 
     // See Expression::canCoerceTo().
-    virtual bool _canCoerceTo(shared_ptr<Type> target) const {
+    virtual bool _canCoerceTo(shared_ptr<Type> target) const
+    {
         return Coercer().canCoerceTo(this->object()->type(), target);
     };
 
@@ -36,17 +38,22 @@ public:
     virtual shared_ptr<Expression> _coerceTo(shared_ptr<Type> target);
 
     // See Expression::isConstant().
-    virtual bool _isConstant() const { return false; }
+    virtual bool _isConstant() const
+    {
+        return false;
+    }
 
     // See Expression::type().
-    virtual shared_ptr<Type> _type() const { assert(false); return nullptr; }
-
+    virtual shared_ptr<Type> _type() const
+    {
+        assert(false);
+        return nullptr;
+    }
 };
 
 /// Base class for AST nodes representing expressions.
-template<typename AstInfo>
-class Expression : public AstInfo::node, public Overridable<ExpressionOverrider<AstInfo>>
-{
+template <typename AstInfo>
+class Expression : public AstInfo::node, public Overridable<ExpressionOverrider<AstInfo>> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::coercer Coercer;
@@ -57,32 +64,42 @@ public:
     /// Constructor.
     ///
     /// l: A location associated with the expression.
-    Expression(const Location& l=Location::None) : AstInfo::node(l) {}
+    Expression(const Location& l = Location::None) : AstInfo::node(l)
+    {
+    }
 
     /// Associates a scope with this expression. When an expression is
     /// imported from another module, the scope remembers where it is coming
     /// from.
-    void setScope(const string& scope) { _scope = scope; }
+    void setScope(const string& scope)
+    {
+        _scope = scope;
+    }
 
     /// Returns the scope associated with the expression.  When an expression is
     /// imported from another module, the scope remembers where it is coming
     /// from. It is set with setScope().
-    const string& scope() const { return _scope; }
+    const string& scope() const
+    {
+        return _scope;
+    }
 
     /// Checks whether the expression can be coerced into a given target type.
     ///
     /// The default implementation asks the Coercer. Derived types can
     /// override the method to implement expression-specific coercion checks.
-    virtual bool canCoerceTo(shared_ptr<Type> target) const {
-       return this->overrider()->_canCoerceTo(target);
+    virtual bool canCoerceTo(shared_ptr<Type> target) const
+    {
+        return this->overrider()->_canCoerceTo(target);
     };
 
     /// Coerce an expression of one type into one of another type. This method
     /// must only be called in canCoerceTo() indicates that the coercion is
     /// legal. The default implementation returns an instance of a Coerced
     /// expression.
-    virtual shared_ptr<AIExpression> coerceTo(shared_ptr<Type> target) {
-       return this->overrider()->_coerceTo(target);
+    virtual shared_ptr<AIExpression> coerceTo(shared_ptr<Type> target)
+    {
+        return this->overrider()->_coerceTo(target);
     }
 
     /// Returns true if the constant represents constant value. Semantics of
@@ -91,11 +108,17 @@ public:
     /// default implementation always returns false.
     ///
     /// Returns: True of the expression value is guaranteed to never change.
-    virtual bool isConstant() const { return this->overrider()->_isConstant(); }
+    virtual bool isConstant() const
+    {
+        return this->overrider()->_isConstant();
+    }
 
     /// Returns the type of the expression. Must be overidden by derived
     /// classes.
-    virtual shared_ptr<Type> type() const { return this->overrider()->_type(); }
+    virtual shared_ptr<Type> type() const
+    {
+        return this->overrider()->_type();
+    }
 
     ACCEPT_DISABLED;
 
@@ -103,13 +126,14 @@ private:
     string _scope;
 };
 
-template<typename AstInfo>
-inline shared_ptr<typename AstInfo::expression> ExpressionOverrider<AstInfo>::_coerceTo(shared_ptr<Type> target)
+template <typename AstInfo>
+inline shared_ptr<typename AstInfo::expression> ExpressionOverrider<AstInfo>::_coerceTo(
+    shared_ptr<Type> target)
 {
     if ( this->object()->type()->equal(target) )
         return this->object();
 
-    auto t = ast::tryCast<OptionalType>(target);
+    auto t = ast::rtti::tryCast<OptionalType>(target);
 
     if ( t )
         return this->object()->coerceTo(t->argType());
@@ -118,8 +142,8 @@ inline shared_ptr<typename AstInfo::expression> ExpressionOverrider<AstInfo>::_c
     if ( ! this->object()->canCoerceTo(target) ) {
         std::cerr << ">> " << this->object()->render() << std::endl;
         std::cerr << util::fmt("cannot coerce expression of type %s to type %s",
-                               this->object()->type()->render().c_str(),
-                               target->render().c_str()) << std::endl;
+                               this->object()->type()->render().c_str(), target->render().c_str())
+                  << std::endl;
     }
 #endif
 
@@ -134,13 +158,13 @@ namespace expression {
 namespace mixin {
 
 // Short-cut to save some typing.
-#define __EXPRESSION_MIXIN ::ast::MixIn<typename AstInfo::expression, typename ::ast::ExpressionOverrider<AstInfo>>
+#define __EXPRESSION_MIXIN                                                                         \
+    ::ast::MixIn<typename AstInfo::expression, typename ::ast::ExpressionOverrider<AstInfo>>
 
 /// A mix-in class to define a list expression. Each element of the list is
 /// an expression itself.
-template<typename AstInfo>
-class List : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class List : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::expression Expression;
     typedef typename AstInfo::type Type;
@@ -153,7 +177,8 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// exprs: The list of expressions.
-    List(Expression* target, const expression_list& exprs) : __EXPRESSION_MIXIN(target, this) {
+    List(Expression* target, const expression_list& exprs) : __EXPRESSION_MIXIN(target, this)
+    {
         for ( auto e : exprs )
             _exprs.push_back(e);
 
@@ -161,10 +186,13 @@ public:
             target->addChild(i);
     }
 
-    virtual ~List() { }
+    virtual ~List()
+    {
+    }
 
     /// Returns the expressions.
-    expression_list expressions() const {
+    expression_list expressions() const
+    {
         expression_list exprs;
 
         for ( auto e : _exprs )
@@ -174,13 +202,15 @@ public:
     }
 
     /// Returns true if the last list expression is contant.
-    bool _isConstant() const /* override */ {
-       return _exprs.size() ? _exprs.back()->isConstant() : true;
+    bool _isConstant() const /* override */
+    {
+        return _exprs.size() ? _exprs.back()->isConstant() : true;
     }
 
     /// Returns the evaluation type of the list expression. The type is the
     /// type of the last expression in the list, or null if the list is empty.
-    shared_ptr<Type> _type() const /* override */ {
+    shared_ptr<Type> _type() const /* override */
+    {
         return _exprs.size() ? _exprs.back()->type() : std::make_shared<VoidType>();
     }
 
@@ -189,9 +219,8 @@ private:
 };
 
 /// A mix-in class to define a constructor expression.
-template<typename AstInfo>
-class Ctor : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Ctor : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::expression Expression;
@@ -202,18 +231,25 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// ctor: The construced value.
-    Ctor(Expression* target, shared_ptr<AICtor> ctor) : __EXPRESSION_MIXIN(target, this) {
-       _ctor = ctor;
-       target->addChild(_ctor);
+    Ctor(Expression* target, shared_ptr<AICtor> ctor) : __EXPRESSION_MIXIN(target, this)
+    {
+        _ctor = ctor;
+        target->addChild(_ctor);
     }
 
-    virtual ~Ctor() { }
+    virtual ~Ctor()
+    {
+    }
 
     /// Returns the constructed value.
-    shared_ptr<AICtor> ctor() const { return _ctor; }
+    shared_ptr<AICtor> ctor() const
+    {
+        return _ctor;
+    }
 
-    shared_ptr<Type> _type() const /* override */ {
-       return _ctor->type();
+    shared_ptr<Type> _type() const /* override */
+    {
+        return _ctor->type();
     }
 
 private:
@@ -221,9 +257,8 @@ private:
 };
 
 /// A mix-in class to define a constant expression.
-template<typename AstInfo>
-class Constant : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Constant : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::expression Expression;
@@ -240,19 +275,26 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// constant: The constant the expression is reflecting.
-    Constant(Expression* target, shared_ptr<AIConstant> constant) : __EXPRESSION_MIXIN(target, this) {
-       _constant = constant;
-       target->addChild(_constant);
+    Constant(Expression* target, shared_ptr<AIConstant> constant) : __EXPRESSION_MIXIN(target, this)
+    {
+        _constant = constant;
+        target->addChild(_constant);
     }
 
-    virtual ~Constant() { }
+    virtual ~Constant()
+    {
+    }
 
     /// Returns the expression's constant.
-    shared_ptr<AIConstant> constant() const { return _constant; }
+    shared_ptr<AIConstant> constant() const
+    {
+        return _constant;
+    }
 
     /// Return's the constants type.
-    shared_ptr<Type> _type() const /* override */  {
-       return _constant->type();
+    shared_ptr<Type> _type() const /* override */
+    {
+        return _constant->type();
     }
 
     /// Checks whether the constant can be coerced into a given target type.
@@ -263,14 +305,15 @@ public:
     /// target: The target type.
     ///
     /// Returns: True if the constant can be coerced.
-    bool _canCoerceTo(shared_ptr<Type> target) const /* override */ {
-       if ( this->object()->type()->equal(target) )
-           return true;
+    bool _canCoerceTo(shared_ptr<Type> target) const /* override */
+    {
+        if ( this->object()->type()->equal(target) )
+            return true;
 
-       if ( ConstantCoercer().canCoerceTo(_constant, target) )
-           return true;
+        if ( ConstantCoercer().canCoerceTo(_constant, target) )
+            return true;
 
-       return Coercer().canCoerceTo(this->object()->type(), target);
+        return Coercer().canCoerceTo(this->object()->type(), target);
     }
 
     /// Coerces constant into a constant of a given target type.
@@ -282,47 +325,51 @@ public:
     ///
     /// Returns: The coerced constant, or null if coercion to the target type
     /// isn't supported.
-    shared_ptr<Expression> _coerceTo(shared_ptr<Type> target) /* override */ {
-       if ( this->object()->type()->equal(target) )
-           return this->object();
+    shared_ptr<Expression> _coerceTo(shared_ptr<Type> target) /* override */
+    {
+        if ( this->object()->type()->equal(target) )
+            return this->object();
 
-       auto t = ast::tryCast<OptionalType>(target);
+        auto t = ast::rtti::tryCast<OptionalType>(target);
 
-       if ( t )
-           return this->object()->coerceTo(t->argType());
+        if ( t )
+            return this->object()->coerceTo(t->argType());
 
-       auto coerced = ConstantCoercer().coerceTo(_constant, target);
+        auto coerced = ConstantCoercer().coerceTo(_constant, target);
 
-       if ( coerced ) {
-           auto cexpr = new ConstantExpression(coerced, this->object()->location());
-           return shared_ptr<ConstantExpression>(cexpr);
-       }
+        if ( coerced ) {
+            auto cexpr = new ConstantExpression(coerced, this->object()->location());
+            return shared_ptr<ConstantExpression>(cexpr);
+        }
 
 #ifdef DEBUG
-    if ( ! this->object()->canCoerceTo(target) ) {
-        std::cerr << util::fmt("cannot coerce expression of type %s to type %s",
-                               this->object()->type()->render().c_str(),
-                               target->render().c_str()) << std::endl;
-    }
+        if ( ! this->object()->canCoerceTo(target) ) {
+            std::cerr << util::fmt("cannot coerce expression of type %s to type %s",
+                                   this->object()->type()->render().c_str(),
+                                   target->render().c_str())
+                      << std::endl;
+        }
 #endif
 
-       assert(this->object()->canCoerceTo(target));
+        assert(this->object()->canCoerceTo(target));
 
-       auto coerced2 = new CoercedExpression(this->object(), target, this->object()->location());
-       return shared_ptr<typename AstInfo::expression>(coerced2);
+        auto coerced2 = new CoercedExpression(this->object(), target, this->object()->location());
+        return shared_ptr<typename AstInfo::expression>(coerced2);
     }
 
     /// Always returns true. This is a constant expression.
-    bool _isConstant() const /* override */ { return true; }
+    bool _isConstant() const /* override */
+    {
+        return true;
+    }
 
 private:
     node_ptr<AIConstant> _constant;
 };
 
 /// A mix-in class to define expression referencing a Variable.
-template<typename AstInfo>
-class Variable : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Variable : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::expression Expression;
@@ -333,18 +380,27 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// var: The referenced variable.
-    Variable(Expression* target, shared_ptr<AIVariable> var) : __EXPRESSION_MIXIN(target, this) {
-       _var = var;
-       target->addChild(_var);
+    Variable(Expression* target, shared_ptr<AIVariable> var) : __EXPRESSION_MIXIN(target, this)
+    {
+        _var = var;
+        target->addChild(_var);
     }
 
-    virtual ~Variable() { }
+    virtual ~Variable()
+    {
+    }
 
     /// Returns the variable the expression is referening.
-    shared_ptr<AIVariable> variable() const { return _var; }
+    shared_ptr<AIVariable> variable() const
+    {
+        return _var;
+    }
 
     /// Returns the variable's tyoe.
-    shared_ptr<Type> _type() const /* override */ { return _var->type(); }
+    shared_ptr<Type> _type() const /* override */
+    {
+        return _var->type();
+    }
 
 private:
     node_ptr<AIVariable> _var;
@@ -352,9 +408,8 @@ private:
 
 
 /// A mix-in class to define an expression referencing a type.
-template<typename AstInfo>
-class Type : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Type : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type AIType;
     typedef typename AstInfo::type_type TypeType;
@@ -365,33 +420,42 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// type: The referenced type.
-    Type(Expression* target, shared_ptr<AIType> type) : __EXPRESSION_MIXIN(target, this) {
-       __type = type;
-       target->addChild(__type);
+    Type(Expression* target, shared_ptr<AIType> type) : __EXPRESSION_MIXIN(target, this)
+    {
+        __type = type;
+        target->addChild(__type);
     }
 
-    virtual ~Type() { }
+    virtual ~Type()
+    {
+    }
 
     /// Returns the referenced type.
-    const shared_ptr<AIType> typeValue() const { return __type; }
+    const shared_ptr<AIType> typeValue() const
+    {
+        return __type;
+    }
 
     /// Returns type type::Type. Sic! The type of this expression is not the
     /// type it represents, but a "meta type".
-    shared_ptr<AIType> _type() const /* override */ {
-       return shared_ptr<AIType>(new TypeType(__type));
+    shared_ptr<AIType> _type() const /* override */
+    {
+        return shared_ptr<AIType>(new TypeType(__type));
     }
 
     /// Always returns true. Types don't change.
-    bool _isConstant() const /* override */ { return true; }
+    bool _isConstant() const /* override */
+    {
+        return true;
+    }
 
 private:
     node_ptr<AIType> __type;
 };
 
 /// A mix-in class to define an expression constructing a type's default value.
-template<typename AstInfo>
-class Default : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Default : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type AIType;
     typedef typename AstInfo::type_type TypeType;
@@ -402,27 +466,35 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// type: The referenced type.
-    Default(Expression* target, shared_ptr<AIType> type) : __EXPRESSION_MIXIN(target, this) {
-       __type = type;
-       target->addChild(__type);
+    Default(Expression* target, shared_ptr<AIType> type) : __EXPRESSION_MIXIN(target, this)
+    {
+        __type = type;
+        target->addChild(__type);
     }
 
-    virtual ~Default() { }
+    virtual ~Default()
+    {
+    }
 
     /// Returns the expression's tyoe.
-    shared_ptr<AIType> _type() const /* override */ { return __type; }
+    shared_ptr<AIType> _type() const /* override */
+    {
+        return __type;
+    }
 
     /// Always returns true. Types don't change.
-    bool _isConstant() const /* override */ { return true; }
+    bool _isConstant() const /* override */
+    {
+        return true;
+    }
 
 private:
     node_ptr<AIType> __type;
 };
 
 /// A mix-in class to define an expression referencing a code block.
-template<typename AstInfo>
-class Block : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Block : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::block_type BlockType;
@@ -434,32 +506,41 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// block: The referenced block.
-    Block(Expression* target, shared_ptr<AIBlock> block) : __EXPRESSION_MIXIN(target, this) {
-       _block = block;
-       target->addChild(_block);
+    Block(Expression* target, shared_ptr<AIBlock> block) : __EXPRESSION_MIXIN(target, this)
+    {
+        _block = block;
+        target->addChild(_block);
     }
 
-    virtual ~Block() { }
+    virtual ~Block()
+    {
+    }
 
     /// Returns the referenced block.
-    const shared_ptr<AIBlock> block() const { return _block; }
+    const shared_ptr<AIBlock> block() const
+    {
+        return _block;
+    }
 
     /// Returns type::Block.
-    shared_ptr<Type> _type() const /* override */  {
-       return shared_ptr<Type>(new BlockType());
+    shared_ptr<Type> _type() const /* override */
+    {
+        return shared_ptr<Type>(new BlockType());
     }
 
     /// Always returns true. Code doesn't change.
-    bool _isConstant() const /* override */ { return true; }
+    bool _isConstant() const /* override */
+    {
+        return true;
+    }
 
 private:
     node_ptr<AIBlock> _block;
 };
 
 /// A mix-in class to define an expression referencing a module
-template<typename AstInfo>
-class Module : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Module : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::module_type ModuleType;
@@ -471,32 +552,41 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// module: The referenced Module.
-    Module(Expression* target, shared_ptr<AIModule> module) : __EXPRESSION_MIXIN(target, this) {
-       _module = module;
-       target->addChild(_module);
+    Module(Expression* target, shared_ptr<AIModule> module) : __EXPRESSION_MIXIN(target, this)
+    {
+        _module = module;
+        target->addChild(_module);
     }
 
-    virtual ~Module() { }
+    virtual ~Module()
+    {
+    }
 
     /// Returns the referenced module.
-    const shared_ptr<AIModule> module() const { return _module; }
+    const shared_ptr<AIModule> module() const
+    {
+        return _module;
+    }
 
     /// Returns type::Module.
-    shared_ptr<Type> _type() const /* override */  {
-       return shared_ptr<Type>(new ModuleType());
+    shared_ptr<Type> _type() const /* override */
+    {
+        return shared_ptr<Type>(new ModuleType());
     }
 
     // Always returns true. Modules don't change.
-    bool _isConstant() const /* override */ { return true; }
+    bool _isConstant() const /* override */
+    {
+        return true;
+    }
 
 private:
     node_ptr<AIModule> _module;
 };
 
 /// A mix-in class to define an expression referencing a function..
-template<typename AstInfo>
-class Function : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Function : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::expression Expression;
@@ -507,31 +597,43 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// func: The referenced function.
-    Function(Expression* target, shared_ptr<AIFunction> func) : __EXPRESSION_MIXIN(target, this) {
-       _func = func;
+    Function(Expression* target, shared_ptr<AIFunction> func) : __EXPRESSION_MIXIN(target, this)
+    {
+        _func = func;
     }
 
-    virtual ~Function() { }
+    virtual ~Function()
+    {
+    }
 
     /// Returns the refenenced function.
-    const shared_ptr<AIFunction> function() const { return _func; }
+    const shared_ptr<AIFunction> function() const
+    {
+        return _func;
+    }
 
     /// Returns the tupe of the referenced function.
-    shared_ptr<Type> _type() const /* override */  { return _func->type(); }
+    shared_ptr<Type> _type() const /* override */
+    {
+        return _func->type();
+    }
 
     /// Always returns true. Functions don't change.
-    bool _isConstant() const /* override */ { return true; }
+    bool _isConstant() const /* override */
+    {
+        return true;
+    }
 
 private:
-    shared_ptr<AIFunction> _func; // No node pointer, so that we don't traverse in there from an expression.
+    shared_ptr<AIFunction>
+        _func; // No node pointer, so that we don't traverse in there from an expression.
 };
 
 /// A mix-in class to define an expression referencing an ID. Normally, these
 /// epxression will be replaced with whatever the ID is referencing during a
 /// later resolving stage.
-template<typename AstInfo>
-class ID : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class ID : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::unknown_type UnknownType;
@@ -543,20 +645,27 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// id: The referenced ID.
-    ID(Expression* target, shared_ptr<AIID> id) : __EXPRESSION_MIXIN(target, this) {
-       _id = id;
-       target->addChild(_id);
+    ID(Expression* target, shared_ptr<AIID> id) : __EXPRESSION_MIXIN(target, this)
+    {
+        _id = id;
+        target->addChild(_id);
     }
 
-    virtual ~ID() { }
+    virtual ~ID()
+    {
+    }
 
     /// Returns the ID the expression is referencing.
-    const shared_ptr<AIID> id() const { return _id; }
+    const shared_ptr<AIID> id() const
+    {
+        return _id;
+    }
 
     /// Returns type::Unknown. This is because it's expected we'll resolve the
     /// ID eventually with another expression and then know the type.
-    shared_ptr<Type> _type() const /* override */  {
-       return shared_ptr<Type>(new UnknownType());
+    shared_ptr<Type> _type() const /* override */
+    {
+        return shared_ptr<Type>(new UnknownType());
     }
 
 private:
@@ -565,9 +674,8 @@ private:
 
 /// A mix-in class to define an expression that has been coerced to a
 /// different type.
-template<typename AstInfo>
-class Coerced : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Coerced : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::expression Expression;
@@ -580,23 +688,29 @@ public:
     ///
     /// dst: The type into which it has been coerced. Note that by creating
     /// this expression, we assume that the coercion into this type is legal.
-    Coerced(Expression* target, shared_ptr<Expression> expr, shared_ptr<Type> dst) : __EXPRESSION_MIXIN(target, this) {
-       _expr = expr;
-       __type = dst;
-       target->addChild(_expr);
-       target->addChild(dst);
+    Coerced(Expression* target, shared_ptr<Expression> expr, shared_ptr<Type> dst)
+        : __EXPRESSION_MIXIN(target, this)
+    {
+        _expr = expr;
+        __type = dst;
+        target->addChild(_expr);
+        target->addChild(dst);
     }
 
-    virtual ~Coerced() { }
+    virtual ~Coerced()
+    {
+    }
 
     /// Returns the original expression.
-    shared_ptr<Expression> expression() const {
-       return _expr;
-       }
+    shared_ptr<Expression> expression() const
+    {
+        return _expr;
+    }
 
     /// Returns the type into which the expression has been coerced.
-    shared_ptr<Type> _type() const /* override */  {
-       return __type;
+    shared_ptr<Type> _type() const /* override */
+    {
+        return __type;
     }
 
 private:
@@ -606,9 +720,8 @@ private:
 
 /// A mix-in class to define an expression that's interpretation is left to
 /// the code generator.
-template<typename AstInfo>
-class CodeGen : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class CodeGen : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::expression Expression;
@@ -620,19 +733,27 @@ public:
     /// type: The type of the expression.
     ///
     /// cookie: A value which's interpretation is left to the code generator.
-    CodeGen(Expression* target, shared_ptr<Type> type, void* cookie) : __EXPRESSION_MIXIN(target, this) {
-       _cookie = cookie;
-       __type = type;
+    CodeGen(Expression* target, shared_ptr<Type> type, void* cookie)
+        : __EXPRESSION_MIXIN(target, this)
+    {
+        _cookie = cookie;
+        __type = type;
     }
 
-    virtual ~CodeGen() { }
+    virtual ~CodeGen()
+    {
+    }
 
     /// Returns the value passed into Init.
-    void* cookie() const { return _cookie; }
+    void* cookie() const
+    {
+        return _cookie;
+    }
 
     /// Returns the type passed into Init.
-    shared_ptr<Type> _type() const /* override */ {
-       return __type;
+    shared_ptr<Type> _type() const /* override */
+    {
+        return __type;
     }
 
 private:
@@ -641,9 +762,8 @@ private:
 };
 
 /// A mix-in class to define an expression referencing a function parameter.
-template<typename AstInfo>
-class Parameter : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Parameter : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::expression Expression;
@@ -654,30 +774,39 @@ public:
     /// target: The expression we're mixed in with.
     ///
     /// param: The parameter referenced by the expression.
-    Parameter(Expression* target, shared_ptr<AIParameter> param) : __EXPRESSION_MIXIN(target, this) {
-       _param = param;
-       target->addChild(_param);
+    Parameter(Expression* target, shared_ptr<AIParameter> param) : __EXPRESSION_MIXIN(target, this)
+    {
+        _param = param;
+        target->addChild(_param);
     }
 
-    virtual ~Parameter() { }
+    virtual ~Parameter()
+    {
+    }
 
     /// Returns the parameter referenced by the expression.
-    const shared_ptr<AIParameter> parameter() const { return _param; }
+    const shared_ptr<AIParameter> parameter() const
+    {
+        return _param;
+    }
 
     /// Returns the type of the parameter.
-    shared_ptr<Type> _type() const /* override */  { return _param->type(); }
+    shared_ptr<Type> _type() const /* override */
+    {
+        return _param->type();
+    }
 
     /// Returns true if the parameter is marked as constant.
-    bool _isConstant() const /* override */ { return _param->constant(); }
+    bool _isConstant() const /* override */
+    {
+        return _param->constant();
+    }
 
 private:
     node_ptr<AIParameter> _param;
 };
-
 }
-
 }
-
 }
 
 #endif

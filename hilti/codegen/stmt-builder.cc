@@ -1,10 +1,10 @@
 
 #include "../hilti.h"
 
-#include "stmt-builder.h"
-#include "codegen.h"
-#include "util.h"
 #include "../options.h"
+#include "codegen.h"
+#include "stmt-builder.h"
+#include "util.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -22,14 +22,13 @@ void StatementBuilder::llvmStatement(shared_ptr<Statement> stmt, bool cleanup)
     string tag;
 
     if ( cg()->options().profile >= 2 ) {
-        auto instr = ast::tryCast<statement::instruction::Resolved>(stmt);
+        auto instr = ast::rtti::tryCast<statement::instruction::Resolved>(stmt);
 
         // Skip terminators, their code generation may end the current basic
         // block so that we can't add our code for profiler.stop.
         if ( instr && ! instr->instruction()->terminator() ) {
             auto name = instr->instruction()->id()->name();
-            if ( ! ::util::startsWith(name, "profiler.") &&
-                 ! ::util::startsWith(name, "call") )
+            if ( ! ::util::startsWith(name, "profiler.") && ! ::util::startsWith(name, "call") )
                 // tag = ::util::fmt("instr/%s#%p", name, stmt.get());
                 tag = ::util::fmt("instr/%s", name);
         }
@@ -56,8 +55,8 @@ passes::Liveness::LivenessSets StatementBuilder::liveness()
 
 void StatementBuilder::preAccept(shared_ptr<ast::NodeBase> node)
 {
-    auto stmt = ast::tryCast<Statement>(node);
-    auto block = ast::tryCast<statement::Block>(node);
+    auto stmt = ast::rtti::tryCast<Statement>(node);
+    auto block = ast::rtti::tryCast<statement::Block>(node);
 
     if ( ! stmt || block )
         return;
@@ -69,8 +68,8 @@ void StatementBuilder::postAccept(shared_ptr<ast::NodeBase> node)
 {
     cg()->llvmFlushLocalsClearedOnException();
 
-    auto stmt = ast::tryCast<Statement>(node);
-    auto block = ast::tryCast<statement::Block>(node);
+    auto stmt = ast::rtti::tryCast<Statement>(node);
+    auto block = ast::rtti::tryCast<statement::Block>(node);
 
     if ( ! stmt || block )
         return;
@@ -82,7 +81,8 @@ void StatementBuilder::postAccept(shared_ptr<ast::NodeBase> node)
     _stmts.pop_back();
 }
 
-shared_ptr<Type> StatementBuilder::coerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const
+shared_ptr<Type> StatementBuilder::coerceTypes(shared_ptr<Expression> op1,
+                                               shared_ptr<Expression> op2) const
 {
     if ( op1->canCoerceTo(op2->type()) )
         return op2->type();
@@ -116,8 +116,8 @@ void StatementBuilder::visit(statement::Block* b)
     cg()->llvmBuildInstructionCleanup();
 
     for ( auto s : b->statements() ) {
-
-        if ( cg()->options().debug && ! ast::isA<statement::Block>(s) && ! cg()->block()->getTerminator() ) {
+        if ( cg()->options().debug && ! ast::rtti::isA<statement::Block>(s) &&
+             ! cg()->block()->getTerminator() ) {
             // Insert the source instruction as comment into the generated
             // code.
             comment.str(string());
@@ -134,10 +134,10 @@ void StatementBuilder::visit(statement::Block* b)
                 if ( n != string::npos )
                     c = c.substr(n + 1, string::npos);
 
-                c +=  + ": " + comment.str();
+                c += +": " + comment.str();
 
                 // Send it also to the hilti-trace debug stream.
-                auto ins = ast::tryCast<statement::instruction::Resolved>(s);
+                auto ins = ast::rtti::tryCast<statement::instruction::Resolved>(s);
                 if ( ins && ! ins->instruction()->hideInDebugTrace() )
                     cg()->llvmDebugPrint("hilti-trace", c);
             }
@@ -214,10 +214,8 @@ void StatementBuilder::visit(statement::try_::Catch* c)
         // Check if it's our exception.
         match = cg()->newBuilder("caught-excpt");
 
-        auto rtype = ast::as<type::Reference>(c->type());
-        assert(rtype);
-        auto etype = ast::as<type::Exception>(rtype->argType());
-        assert(etype);
+        auto rtype = ast::rtti::checkedCast<type::Reference>(c->type());;
+        auto etype = ast::rtti::checkedCast<type::Exception>(rtype->argType());;
 
         auto cond = cg()->llvmMatchException(etype, cg()->llvmCurrentException());
         cg()->llvmCreateCondBr(cond, match, no_match);
@@ -258,7 +256,7 @@ void StatementBuilder::visit(declaration::Variable* v)
         return;
 
     auto var = v->variable();
-    auto local = ast::as<variable::Local>(var);
+    auto local = ast::rtti::tryCast<variable::Local>(var);
 
     if ( ! local )
         // GLobals are taken care of directly by the CodeGen.
@@ -276,7 +274,7 @@ void StatementBuilder::visit(declaration::Variable* v)
 
 void StatementBuilder::visit(declaration::Function* f)
 {
-    auto hook_decl = dynamic_cast<declaration::Hook*>(f);
+    auto hook_decl = ast::rtti::tryCast<declaration::Hook>(f);
 
     auto func = f->function();
     auto ftype = func->type();
@@ -291,7 +289,8 @@ void StatementBuilder::visit(declaration::Function* f)
 
     cg()->setLeaveFunc(f);
 
-    auto name = ::util::fmt("%s::%s", cg()->hiltiModule()->id()->name().c_str(), f->id()->name().c_str());
+    auto name =
+        ::util::fmt("%s::%s", cg()->hiltiModule()->id()->name().c_str(), f->id()->name().c_str());
 
     if ( cg()->options().debug )
         cg()->llvmDebugPrint("hilti-flow", string("entering ") + name);
@@ -307,7 +306,8 @@ void StatementBuilder::visit(declaration::Function* f)
 
         auto init = cg()->llvmParameter(p);
         auto shadow = "__shadow_" + p->id()->name();
-        cg()->llvmAddLocal(shadow, p->type(), std::make_shared<expression::CodeGen>(p->type(), init));
+        cg()->llvmAddLocal(shadow, p->type(),
+                           std::make_shared<expression::CodeGen>(p->type(), init));
     }
 
     if ( hook_decl ) {
@@ -330,7 +330,8 @@ void StatementBuilder::visit(declaration::Function* f)
         cg()->pushBuilder(cont);
 
         // Check whether the hook's group is enabled.
-        CodeGen::expr_list args { builder::integer::create(ftype->attributes().getAsInt(attribute::GROUP, 0)) };
+        CodeGen::expr_list args{
+            builder::integer::create(ftype->attributes().getAsInt(attribute::GROUP, 0))};
         auto cont2 = cg()->llvmCall("hlt::hook_group_is_enabled", args, false, false);
 
         auto disabled = cg()->pushBuilder("disabled");
@@ -352,7 +353,8 @@ void StatementBuilder::visit(declaration::Function* f)
 
     cg()->popFunction();
 
-    if ( f->linkage() == Declaration::EXPORTED && func->type()->callingConvention() == type::function::HILTI )
+    if ( f->linkage() == Declaration::EXPORTED &&
+         func->type()->callingConvention() == type::function::HILTI )
         cg()->llvmBuildCWrapper(func);
 
     // If it's a hook, add meta information about the implementation.
@@ -363,7 +365,7 @@ void StatementBuilder::visit(declaration::Function* f)
     if ( func->initFunction() ) {
         llvm::BasicBlock& block(cg()->llvmModuleInitFunction()->getEntryBlock());
         auto builder = util::newBuilder(cg()->llvmContext(), &block, false);
-        std::vector<llvm::Value *> args = { cg()->llvmExecutionContext() };
+        std::vector<llvm::Value*> args = {cg()->llvmExecutionContext()};
         util::checkedCreateCall(builder, "call-init-func", llvm_func, args);
         delete builder;
     }
@@ -378,20 +380,21 @@ void StatementBuilder::visit(declaration::Type* t)
 
 void StatementBuilder::visit(statement::ForEach* f)
 {
-    shared_ptr<type::Reference> r = ast::as<type::Reference>(f->sequence()->type());
+    shared_ptr<type::Reference> r = ast::rtti::tryCast<type::Reference>(f->sequence()->type());
     shared_ptr<Type> t = r ? r->argType() : f->sequence()->type();
-    auto iterable = ast::as<type::trait::Iterable>(t);
-    assert(iterable);
+    auto iterable = ast::type::checkedTrait<type::trait::Iterable>(t);
+    ;
 
     auto var = f->body()->scope()->lookupUnique(f->id());
     assert(var);
 
     // Add the local iteration variable..
-    auto v = ast::as<expression::Variable>(var)->variable();
-    auto local = ast::as<variable::Local>(v);
-    cg()->llvmAddLocal(local->internalName(), local->type(), nullptr, v->attributes().has(attribute::HOIST));
+    auto v = ast::rtti::tryCast<expression::Variable>(var)->variable();
+    auto local = ast::rtti::tryCast<variable::Local>(v);
+    cg()->llvmAddLocal(local->internalName(), local->type(), nullptr,
+                       v->attributes().has(attribute::HOIST));
 
-    auto end = cg()->makeLocal("end",  iterable->iterType());
+    auto end = cg()->makeLocal("end", iterable->iterType());
     auto iter = cg()->makeLocal("iter", iterable->iterType());
     auto cmp = cg()->makeLocal("cmp", builder::boolean::type());
 

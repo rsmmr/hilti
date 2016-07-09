@@ -2,12 +2,13 @@
 using namespace binpac;
 
 opBegin(bitfield::Attribute)
-    opOp1(std::make_shared<type::Bitfield>())
-    opOp2(std::make_shared<type::MemberAttribute>())
+    opOp1(std::make_shared<type::Bitfield>());
+    opOp2(std::make_shared<type::MemberAttribute>());
 
-    opDoc("Access a bitfield element.")
+    opDoc("Access a bitfield element.");
 
-    opValidate() {
+    opValidate()
+    {
         auto btype = ast::checkedCast<type::Bitfield>(op1()->type());
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
@@ -15,7 +16,8 @@ opBegin(bitfield::Attribute)
             error(op2(), "unknown bitfield element");
     }
 
-    opResult() {
+    opResult()
+    {
         auto btype = ast::checkedCast<type::Bitfield>(op1()->type());
         return std::make_shared<type::Integer>(btype->width(), false);
     }

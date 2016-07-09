@@ -5,8 +5,8 @@
 #ifndef LIBHILTI_INT_H
 #define LIBHILTI_INT_H
 
-#include "types.h"
 #include "enum.h"
+#include "types.h"
 
 /// Implements integer exponentation. Note that both base and exponent are
 /// unsigned.
@@ -16,7 +16,8 @@
 /// exp: The exponent.
 ///
 /// \hlt_c
-extern uint64_t hlt_int_pow(uint64_t base, uint64_t exp, hlt_exception** excpt, hlt_execution_context* ctx);
+extern uint64_t hlt_int_pow(uint64_t base, uint64_t exp, hlt_exception** excpt,
+                            hlt_execution_context* ctx);
 
 /// Converts an integer from a given byte order to host byte order.
 ///
@@ -27,7 +28,8 @@ extern uint64_t hlt_int_pow(uint64_t base, uint64_t exp, hlt_exception** excpt, 
 /// n: Number of bytes valid in *v*.
 ///
 /// Returns: v in host byte order.
-extern int64_t hlt_int_to_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int64_t hlt_int_to_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt,
+                               hlt_execution_context* ctx);
 
 /// Reverses the bytes in an integer.
 ///
@@ -36,7 +38,8 @@ extern int64_t hlt_int_to_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_ex
 /// n: Number of bytes valid in *v*.
 ///
 /// Returns: Reversed *n* bytes of *v*.
-extern int64_t hlt_int_flip(int64_t v, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int64_t hlt_int_flip(int64_t v, int64_t n, hlt_exception** excpt,
+                            hlt_execution_context* ctx);
 
 /// Converts an integer from host byte order to a given byte order.
 ///
@@ -47,24 +50,29 @@ extern int64_t hlt_int_flip(int64_t v, int64_t n, hlt_exception** excpt, hlt_exe
 /// n: Number of bytes valid in *v*.
 ///
 /// Returns: v in specified byte order.
-extern int64_t hlt_int_from_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int64_t hlt_int_from_host(int64_t v, hlt_enum byte_order, int64_t n, hlt_exception** excpt,
+                                 hlt_execution_context* ctx);
 
 /// Converts a HILTI tuple into a HILTI string.
 ///
 /// \hlt_to_string
-extern hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                                    __hlt_pointer_stack* seen, hlt_exception** excpt,
+                                    hlt_execution_context* ctx);
 
 /// Converts a HILTI tuple into a HILTI string.
 ///
 /// \hlt_to_int64
-extern int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
+extern int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t options,
+                                hlt_exception** expt, hlt_execution_context* ctx);
 
 /// Returns the bit width of an integer type.
 ///
 /// type: The integer type.
 ///
 /// \hlt_c
-extern int64_t hlt_int_width(const hlt_type_info* type, hlt_exception** expt, hlt_execution_context* ctx);
+extern int64_t hlt_int_width(const hlt_type_info* type, hlt_exception** expt,
+                             hlt_execution_context* ctx);
 
 
 #endif

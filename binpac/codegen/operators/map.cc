@@ -19,7 +19,8 @@ void CodeBuilder::visit(ctor::Map* m)
         elems.push_back(std::make_pair(k, v));
     }
 
-    auto result = hilti::builder::map::create(ktype, vtype, elems, nullptr, ::hilti::AttributeSet(), m->location());
+    auto result = hilti::builder::map::create(ktype, vtype, elems, nullptr, ::hilti::AttributeSet(),
+                                              m->location());
     setResult(result);
 }
 
@@ -84,7 +85,8 @@ void CodeBuilder::visit(expression::operator_::map::Get* i)
 
     if ( def ) {
         auto hdef = cg()->hiltiExpression(def);
-        cg()->builder()->addInstruction(result, hilti::instruction::map::GetDefault, op1, idx, hdef);
+        cg()->builder()->addInstruction(result, hilti::instruction::map::GetDefault, op1, idx,
+                                        hdef);
     }
 
     else

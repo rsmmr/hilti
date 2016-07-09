@@ -25,7 +25,8 @@ typedef struct {
 /// \hlt_c
 ///
 /// Returns: True if the union is set.
-extern int8_t hlt_union_is_set(hlt_union* u, int64_t idx, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_union_is_set(hlt_union* u, int64_t idx, hlt_exception** excpt,
+                               hlt_execution_context* ctx);
 
 /// Returns a pointer to the value of a union.
 ///
@@ -37,7 +38,8 @@ extern int8_t hlt_union_is_set(hlt_union* u, int64_t idx, hlt_exception** excpt,
 ///
 /// Returns: Returns a pointer to the value of the field with index \a idx if
 /// it's set, and null otherwise.
-extern void* hlt_union_get(hlt_union* u, int64_t idx, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void* hlt_union_get(hlt_union* u, int64_t idx, hlt_exception** excpt,
+                           hlt_execution_context* ctx);
 
 /// Returns the type and other meta information about the a field in a union.
 ///
@@ -54,13 +56,14 @@ extern void* hlt_union_get(hlt_union* u, int64_t idx, hlt_exception** excpt, hlt
 /// Returns: A pointer to the meta information. All pointers in there must be
 /// left untouched, ownership is *not* passed to caller. If idx is -1 and no
 /// field is currently set, the type information in there will be null.
-extern hlt_union_field hlt_union_get_type(const hlt_type_info* type, hlt_union* u, int idx, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_union_field hlt_union_get_type(const hlt_type_info* type, hlt_union* u, int idx,
+                                          hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts a HILTI union into a HILTI string.
 ///
 /// \hlt_to_string
-extern hlt_string hlt_union_to_string(const hlt_type_info* type, void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_string hlt_union_to_string(const hlt_type_info* type, void* obj, int32_t options,
+                                      __hlt_pointer_stack* seen, hlt_exception** excpt,
+                                      hlt_execution_context* ctx);
 
 #endif
-
-

@@ -2,12 +2,12 @@
 #ifndef HILTI_UTIL_FILE_CACHE_H
 #define HILTI_UTIL_FILE_CACHE_H
 
-#include <ostream>
 #include <istream>
-#include <set>
 #include <list>
-#include <string>
+#include <ostream>
+#include <set>
 #include <stdint.h>
+#include <string>
 
 namespace util {
 
@@ -16,8 +16,7 @@ namespace cache {
 /// A class that caches already computed files on disk, with a number of
 /// options to check if they are up to date with respect to a set of
 /// dependencies.
-class FileCache
-{
+class FileCache {
 public:
     struct Key {
         typedef std::string Hash;
@@ -65,9 +64,9 @@ public:
         bool operator==(const Key& other) const;
         bool operator!=(const Key& other) const;
 
-     private:
+    private:
         bool _invalid = false;
-        };
+    };
 
     /// Constructor.
     ///
@@ -114,7 +113,6 @@ private:
     bool touchFile(const std::string& path, time_t time);
 
     std::string _dir;
-
 };
 
 /// Helper functions that returns the current time.
@@ -144,18 +142,14 @@ FileCache::Key::Hash hash(const char* data, size_t len);
 ///
 /// Returns a hash on success, or "" if there's an error.
 FileCache::Key::Hash hash(size_t size);
-
-
 }
-
 }
 
 /// Outputs a key in an internal representation.
-std::ostream& operator<<(std::ostream &out, const util::cache::FileCache::Key& key);
+std::ostream& operator<<(std::ostream& out, const util::cache::FileCache::Key& key);
 
 /// Inputs a key in an internal representation.
-std::istream& operator>>(std::istream &in,  util::cache::FileCache::Key& key);
+std::istream& operator>>(std::istream& in, util::cache::FileCache::Key& key);
 
 
 #endif
-

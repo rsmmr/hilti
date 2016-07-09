@@ -64,5 +64,3 @@ void CodeBuilder::visit(expression::operator_::vector::Size* i)
     cg()->builder()->addInstruction(result, hilti::instruction::vector::Size, op1);
     setResult(result);
 }
-
-

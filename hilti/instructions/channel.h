@@ -20,33 +20,32 @@
 #include "define-instruction.h"
 
 iBeginH(channel, New, "new")
-    iTarget(optype::refChannel)
+    iTarget(optype::refChannel);
     iOp1(optype::typeChannel, true);
     iOp2(optype::optional(optype::int64), true);
 iEndH
 
 iBeginH(channel, Read, "channel.read")
-    iTarget(optype::any)
-    iOp1(optype::refChannel, true)
+    iTarget(optype::any);
+    iOp1(optype::refChannel, true);
 iEndH
 
 iBeginH(channel, ReadTry, "channel.read_try")
-    iTarget(optype::any)
-    iOp1(optype::refChannel, true)
+    iTarget(optype::any);
+    iOp1(optype::refChannel, true);
 iEndH
 
 iBeginH(channel, Size, "channel.size")
-    iTarget(optype::int64)
-    iOp1(optype::refChannel, true)
+    iTarget(optype::int64);
+    iOp1(optype::refChannel, true);
 iEndH
 
 iBeginH(channel, Write, "channel.write")
-    iOp1(optype::refChannel, false)
-    iOp2(optype::any, false)
+    iOp1(optype::refChannel, false);
+    iOp2(optype::any, false);
 iEndH
 
 iBeginH(channel, WriteTry, "channel.write_try")
-    iOp1(optype::refChannel, false)
-    iOp2(optype::any, false)
+    iOp1(optype::refChannel, false);
+    iOp2(optype::any, false);
 iEndH
-

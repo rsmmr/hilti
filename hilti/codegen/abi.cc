@@ -1,7 +1,7 @@
 
+#include "abi.h"
 #include "../module.h"
 #include "codegen.h"
-#include "abi.h"
 
 #include "libffi/src/x86/ffi64.h"
 
@@ -53,84 +53,84 @@ ABI::ByteOrder ABI::byteOrder() const
 static ffi_type* _llvmToCif(CodeGen* cg, llvm::Type* type)
 {
     switch ( type->getTypeID() ) {
-
-     case llvm::Type::VoidTyID:
+    case llvm::Type::VoidTyID:
         return &ffi_type_void;
 
-     case llvm::Type::DoubleTyID:
+    case llvm::Type::DoubleTyID:
         return &ffi_type_double;
 
-     case llvm::Type::PointerTyID:
+    case llvm::Type::PointerTyID:
         return &ffi_type_pointer;
 
-     case llvm::Type::IntegerTyID: {
-         int w = llvm::cast<llvm::IntegerType>(type)->getBitWidth();
+    case llvm::Type::IntegerTyID: {
+        int w = llvm::cast<llvm::IntegerType>(type)->getBitWidth();
 
-         if ( w <= 8 )
-             return &ffi_type_sint8;
+        if ( w <= 8 )
+            return &ffi_type_sint8;
 
-         if ( w <= 16 )
-             return &ffi_type_sint16;
+        if ( w <= 16 )
+            return &ffi_type_sint16;
 
-         if ( w <= 32 )
-             return &ffi_type_sint32;
+        if ( w <= 32 )
+            return &ffi_type_sint32;
 
-         if ( w <= 64 )
-             return &ffi_type_sint64;
+        if ( w <= 64 )
+            return &ffi_type_sint64;
 
-         cg->internalError("integer bitwidth >64 in llvmToCif");
-         break;
-     }
-
-     case llvm::Type::StructTyID: {
-         auto sty = llvm::cast<llvm::StructType>(type);
-         int n = sty->getNumElements();
-
-         ffi_type** elems_ffi = new ffi_type*[n+1];
-
-         for ( int i = 0; i < n; i++ )
-             elems_ffi[i] = _llvmToCif(cg, sty->getElementType(i));
-         elems_ffi[n] = 0;
-
-         auto cif = new ffi_type;
-         cif->size = cif->alignment = 0;
-         cif->type = FFI_TYPE_STRUCT;
-         cif->elements = elems_ffi;
-
-         return cif;
-     }
-
-     case llvm::Type::ArrayTyID: {
-         auto sty = llvm::cast<llvm::ArrayType>(type);
-         int n = sty->getNumElements();
-
-         ffi_type** elems_ffi = new ffi_type*[n+1];
-
-         for ( int i = 0; i < n; i++ )
-             elems_ffi[i] = _llvmToCif(cg, sty->getElementType());
-
-         elems_ffi[n] = 0;
-
-         auto cif = new ffi_type;
-         cif->size = cif->alignment = 0;
-         cif->type = FFI_TYPE_STRUCT;
-         cif->elements = elems_ffi;
-
-         return cif;
+        cg->internalError("integer bitwidth >64 in llvmToCif");
+        break;
     }
 
-     case llvm::Type::HalfTyID:
-     case llvm::Type::FloatTyID:
-     case llvm::Type::X86_FP80TyID:
-     case llvm::Type::FP128TyID:
-     case llvm::Type::PPC_FP128TyID:
-     case llvm::Type::LabelTyID:
-     case llvm::Type::MetadataTyID:
-     case llvm::Type::X86_MMXTyID:
-     case llvm::Type::FunctionTyID:
-     case llvm::Type::VectorTyID:
-     default:
-        cg->internalError(::util::fmt("unsupport argument type in llvmToCif: %s", type->getTypeID()));
+    case llvm::Type::StructTyID: {
+        auto sty = llvm::cast<llvm::StructType>(type);
+        int n = sty->getNumElements();
+
+        ffi_type** elems_ffi = new ffi_type*[n + 1];
+
+        for ( int i = 0; i < n; i++ )
+            elems_ffi[i] = _llvmToCif(cg, sty->getElementType(i));
+        elems_ffi[n] = 0;
+
+        auto cif = new ffi_type;
+        cif->size = cif->alignment = 0;
+        cif->type = FFI_TYPE_STRUCT;
+        cif->elements = elems_ffi;
+
+        return cif;
+    }
+
+    case llvm::Type::ArrayTyID: {
+        auto sty = llvm::cast<llvm::ArrayType>(type);
+        int n = sty->getNumElements();
+
+        ffi_type** elems_ffi = new ffi_type*[n + 1];
+
+        for ( int i = 0; i < n; i++ )
+            elems_ffi[i] = _llvmToCif(cg, sty->getElementType());
+
+        elems_ffi[n] = 0;
+
+        auto cif = new ffi_type;
+        cif->size = cif->alignment = 0;
+        cif->type = FFI_TYPE_STRUCT;
+        cif->elements = elems_ffi;
+
+        return cif;
+    }
+
+    case llvm::Type::HalfTyID:
+    case llvm::Type::FloatTyID:
+    case llvm::Type::X86_FP80TyID:
+    case llvm::Type::FP128TyID:
+    case llvm::Type::PPC_FP128TyID:
+    case llvm::Type::LabelTyID:
+    case llvm::Type::MetadataTyID:
+    case llvm::Type::X86_MMXTyID:
+    case llvm::Type::FunctionTyID:
+    case llvm::Type::VectorTyID:
+    default:
+        cg->internalError(
+            ::util::fmt("unsupport argument type in llvmToCif: %s", type->getTypeID()));
     }
 
     assert(false); // cannot be reached.
@@ -166,6 +166,7 @@ ffi_cif* ABI::getCIF(llvm::Type* rtype, const argument_type_list& args)
     auto cif = new ffi_cif;
     auto rc = ffi_prep_cif(cif, FFI_DEFAULT_ABI, nargs, rtype_ffi, args_ffi);
     assert(rc == FFI_OK);
+    _UNUSED(rc);
 
     return cif;
 }
@@ -175,7 +176,9 @@ ffi_cif* ABI::getCIF(llvm::Type* rtype, const argument_type_list& args)
 // are passed in registers and which aren't, but we don't do the register
 // assignment ourselves but hope that LLVM takes care of that correctly and
 // in alignment with what the FFI code would do ...
-abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& name, llvm::Type* rtype, const ABI::arg_list& args, type::function::CallingConvention cc)
+abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(
+    const string& name, llvm::Type* rtype, const ABI::arg_list& args,
+    type::function::CallingConvention cc)
 {
     ClassifiedArguments cargs;
 
@@ -189,9 +192,11 @@ abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& na
     auto ffi_arg_types = cif->arg_types;
 
     assert(ffi_avn == args.size());
+    _UNUSED(ffi_avn);
 
     // From ffi64.c.
-    cargs.return_in_mem = (cif->rtype->type == FFI_TYPE_STRUCT && (cif->flags & 0xff) == FFI_TYPE_VOID);
+    cargs.return_in_mem =
+        (cif->rtype->type == FFI_TYPE_STRUCT && (cif->flags & 0xff) == FFI_TYPE_VOID);
     cargs.return_type = rtype;
 
     // The following logic follows ffi_call() in libffi/src/x86/ffi64.c.
@@ -211,7 +216,7 @@ abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& na
         bool arg_in_mem = false;
         llvm::Type* new_llvm_type = args[i].second;
 
-        int n = ffi64_examine_argument (ffi_arg_types[i], classes, 0, &ngpr, &nsse);
+        int n = ffi64_examine_argument(ffi_arg_types[i], classes, 0, &ngpr, &nsse);
 
         // FIXME: The max register heuristic (which is copied from libffi)
         // doesn't seem to work. It kicks in when clang still doesn't pass
@@ -222,26 +227,26 @@ abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& na
 
         else {
             // The argument is passed entirely in registers.
-            for ( int j = 0; j < n; j++) {
+            for ( int j = 0; j < n; j++ ) {
                 switch ( classes[j] ) {
-                 case X86_64_INTEGER_CLASS:
-                 case X86_64_INTEGERSI_CLASS:
+                case X86_64_INTEGER_CLASS:
+                case X86_64_INTEGERSI_CLASS:
                     gprcount++;
                     break;
 
-                 case X86_64_SSE_CLASS:
-                 case X86_64_SSEDF_CLASS:
+                case X86_64_SSE_CLASS:
+                case X86_64_SSEDF_CLASS:
                     ssecount++;
                     break;
 
-                 case X86_64_SSESF_CLASS:
+                case X86_64_SSESF_CLASS:
                     ssecount++;
                     break;
 
-                 case X86_64_NO_CLASS:
+                case X86_64_NO_CLASS:
                     break;
 
-                 default:
+                default:
                     fprintf(stderr, "unsupported register form: %d\n", classes[j]);
                     abort();
                 }
@@ -284,7 +289,8 @@ llvm::Type* ABI::mapToIntType(llvm::StructType* stype)
     return rtype;
 }
 
-llvm::FunctionType* abi::X86_64::createFunctionType(llvm::Type* rtype, const ABI::arg_list& args, type::function::CallingConvention cc)
+llvm::FunctionType* abi::X86_64::createFunctionType(llvm::Type* rtype, const ABI::arg_list& args,
+                                                    type::function::CallingConvention cc)
 {
     auto t = createFunctionTypeInternal(rtype, args, cc, "");
     return std::get<0>(t);
@@ -292,8 +298,10 @@ llvm::FunctionType* abi::X86_64::createFunctionType(llvm::Type* rtype, const ABI
 
 /// FIXME: We currently just generally pass structures in memory for HILTI
 /// calling convention. For HILTI_C cc we leave them untouched.
-std::tuple<llvm::FunctionType*, abi::X86_64::ClassifiedArguments, std::vector<string>, std::vector<int>, int>
-abi::X86_64::createFunctionTypeInternal(llvm::Type* rtype, const ABI::arg_list& args, type::function::CallingConvention cc, const string& name)
+std::tuple<llvm::FunctionType*, abi::X86_64::ClassifiedArguments, std::vector<string>,
+           std::vector<int>, int>
+abi::X86_64::createFunctionTypeInternal(llvm::Type* rtype, const ABI::arg_list& args,
+                                        type::function::CallingConvention cc, const string& name)
 {
     auto cargs = classifyArguments(name, rtype, args, cc);
 
@@ -346,7 +354,11 @@ abi::X86_64::createFunctionTypeInternal(llvm::Type* rtype, const ABI::arg_list& 
     return std::make_tuple(ftype, cargs, nnames, byvals, arg_base);
 }
 
-llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
+llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtype,
+                                            const ABI::arg_list& args,
+                                            llvm::GlobalValue::LinkageTypes linkage,
+                                            llvm::Module* module,
+                                            type::function::CallingConvention cc)
 {
     auto t = createFunctionTypeInternal(rtype, args, cc, name);
     auto ftype = std::get<0>(t);
@@ -374,7 +386,9 @@ llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtyp
     return func;
 }
 
-llvm::Value* abi::X86_64::createCall(llvm::Value *callee, std::vector<llvm::Value *> args, llvm::Type* rtype, const arg_list& targs, type::function::CallingConvention cc)
+llvm::Value* abi::X86_64::createCall(llvm::Value* callee, std::vector<llvm::Value*> args,
+                                     llvm::Type* rtype, const arg_list& targs,
+                                     type::function::CallingConvention cc)
 {
     auto cargs = classifyArguments("", rtype, targs, cc);
 
@@ -443,10 +457,6 @@ llvm::Value* abi::X86_64::createCall(llvm::Value *callee, std::vector<llvm::Valu
 
 string abi::X86_64::dataLayout() const
 {
-#ifdef HAVE_LLVM_35
     // From clang.
     return "e-m:e-i64:64-f80:128-n8:16:32:64-S128";
-#else
-    return "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128";
-#endif
 }

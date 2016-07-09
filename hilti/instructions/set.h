@@ -31,7 +31,8 @@ iBegin(iterSet, Begin, "begin")
     iTarget(optype::iterSet);
     iOp1(optype::refSet, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -44,7 +45,8 @@ iBegin(iterSet, End, "end")
     iTarget(optype::iterSet);
     iOp1(optype::refSet, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -57,7 +59,8 @@ iBegin(iterSet, Incr, "incr")
     iTarget(optype::iterSet);
     iOp1(optype::iterSet, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(target, op1);
     }
 
@@ -67,11 +70,12 @@ iBegin(iterSet, Incr, "incr")
 iEnd
 
 iBegin(iterSet, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::iterSet, true);
     iOp2(optype::iterSet, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(op1, op2);
     }
 
@@ -82,10 +86,11 @@ iBegin(iterSet, Equal, "equal")
 iEnd
 
 iBegin(iterSet, Deref, "deref")
-    iTarget(optype::any)
+    iTarget(optype::any);
     iOp1(optype::iterSet, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(elementType(iteratedType(op1)), target);
     }
 
@@ -97,11 +102,12 @@ iEnd
 
 
 iBegin(set, New, "new")
-    iTarget(optype::refSet)
-    iOp1(optype::typeSet, true)
-    iOp2(optype::optional(optype::refTimerMgr), false)
+    iTarget(optype::refSet);
+    iOp1(optype::typeSet, true);
+    iOp2(optype::optional(optype::refTimerMgr), false);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -113,9 +119,10 @@ iEnd
 
 
 iBegin(set, Clear, "set.clear")
-    iOp1(optype::refSet, false)
+    iOp1(optype::refSet, false);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -125,11 +132,12 @@ iBegin(set, Clear, "set.clear")
 iEnd
 
 iBegin(set, Exists, "set.exists")
-    iTarget(optype::boolean)
-    iOp1(optype::refSet, true)
-    iOp2(optype::any, true)
+    iTarget(optype::boolean);
+    iOp1(optype::refSet, true);
+    iOp2(optype::any, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
@@ -141,10 +149,11 @@ iBegin(set, Exists, "set.exists")
 iEnd
 
 iBegin(set, Insert, "set.insert")
-    iOp1(optype::refSet, false)
-    iOp2(optype::any, false)
+    iOp1(optype::refSet, false);
+    iOp2(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
@@ -156,10 +165,11 @@ iBegin(set, Insert, "set.insert")
 iEnd
 
 iBegin(set, Remove, "set.remove")
-    iOp1(optype::refSet, false)
-    iOp2(optype::any, true)
+    iOp1(optype::refSet, false);
+    iOp2(optype::any, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
@@ -171,10 +181,11 @@ iBegin(set, Remove, "set.remove")
 iEnd
 
 iBegin(set, Size, "set.size")
-    iTarget(optype::int64)
-    iOp1(optype::refSet, true)
+    iTarget(optype::int64);
+    iOp1(optype::refSet, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -184,12 +195,13 @@ iBegin(set, Size, "set.size")
 iEnd
 
 iBegin(set, Timeout, "set.timeout")
-    iOp1(optype::refSet, true)
-    iOp2(optype::enum_, true)
-    iOp3(optype::interval, true)
+    iOp1(optype::refSet, true);
+    iOp2(optype::enum_, true);
+    iOp3(optype::interval, true);
 
-    iValidate {
-        auto ty_op2 = as<type::Enum>(op2->type());
+    iValidate
+    {
+        auto ty_op2 = ast::rtti::checkedCast<type::Enum>(op2->type());
 
         // TODO: Check the enum.
     }
@@ -204,4 +216,3 @@ iBegin(set, Timeout, "set.timeout")
     )")
 
 iEnd
-

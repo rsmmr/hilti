@@ -15,18 +15,17 @@ namespace binpac {
 class Expression;
 
 namespace type {
-    class Bitset;
-    class Enum;
+class Bitset;
+class Enum;
 }
 
 /// Base class for constant nodes.
-class Constant : public ast::Constant<AstInfo>
-{
+class Constant : public ast::Constant<AstInfo> {
 public:
     /// Constructor.
     ///
     /// l: An associated location.
-    Constant(const Location& l=Location::None);
+    Constant(const Location& l = Location::None);
 
     /// Returns a readable representation of the constant.
     string render() override;
@@ -38,8 +37,7 @@ namespace constant {
 
 /// Exception thrown when a constant cannot be parsed into the internal
 /// representation.
-class ConstantParseError : public ast::RuntimeError
-{
+class ConstantParseError : public ast::RuntimeError {
 public:
     ConstantParseError(Constant* c, const string& msg);
     ConstantParseError(shared_ptr<Constant> c, const string& msg);
@@ -75,22 +73,20 @@ private:
 #endif
 
 /// AST node for a constant of type String.
-class String : public ast::SpecificConstant<AstInfo, Constant, string>
-{
+class String : public ast::SpecificConstant<AstInfo, Constant, string> {
 public:
     /// Constructor.
     ///
     /// value: The value of the constant.
     ///
     /// l: An associated location.
-    String(const string& value, const Location& l=Location::None);
+    String(const string& value, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Constant);
 };
 
 /// AST node for a constant of type Integer.
-class Integer : public ast::SpecificConstant<AstInfo, Constant, int64_t>
-{
+class Integer : public ast::SpecificConstant<AstInfo, Constant, int64_t> {
 public:
     /// Constructor.
     ///
@@ -101,35 +97,33 @@ public:
     /// signed_: True if it's a signed integer.
     ///
     /// l: An associated location.
-    Integer(int64_t value, int width, bool sign, const Location& l=Location::None);
+    Integer(int64_t value, int width, bool sign, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Constant);
 };
 
 /// AST node for a constant of type Bool.
-class Bool : public ast::SpecificConstant<AstInfo, Constant, bool>
-{
+class Bool : public ast::SpecificConstant<AstInfo, Constant, bool> {
 public:
     /// Constructor.
     ///
     /// value: The value of the constant.
     ///
     /// l: An associated location.
-    Bool(bool value, const Location& l=Location::None);
+    Bool(bool value, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Constant);
 };
 
 /// AST node for a constant of type Tuple.
-class Tuple : public Constant
-{
+class Tuple : public Constant {
 public:
     /// Constructor.
     ///
     /// elem: The constant's elements.
     ///
     /// l: An associated location.
-    Tuple(const expression_list& elems, const Location& l=Location::None);
+    Tuple(const expression_list& elems, const Location& l = Location::None);
 
     /// Returns a list of the constant's elements.
     expression_list value() const;
@@ -144,8 +138,7 @@ private:
 };
 
 /// AST node for a constant of type Address.
-class Address : public ast::SpecificConstant<AstInfo, Constant, string>
-{
+class Address : public ast::SpecificConstant<AstInfo, Constant, string> {
 public:
     /// Constructor.
     ///
@@ -154,15 +147,14 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if the value is not valid.
-    Address(const string& addr, const Location& l=Location::None);
+    Address(const string& addr, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Constant);
 };
 
 
 /// AST node for a constant of type Network.
-class Network : public ast::SpecificConstant<AstInfo, Constant, string>
-{
+class Network : public ast::SpecificConstant<AstInfo, Constant, string> {
 public:
     /// Constructor.
     ///
@@ -171,7 +163,7 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if the value is not valid.
-    Network(const string& net, const Location& l=Location::None);
+    Network(const string& net, const Location& l = Location::None);
 
     /// Constructor.
     ///
@@ -182,14 +174,13 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if the value is not valid.
-    Network(const string& net, int width, const Location& l=Location::None);
+    Network(const string& net, int width, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Constant);
 };
 
 /// AST node for a constant of type Port.
-class Port : public ast::SpecificConstant<AstInfo, Constant, string>
-{
+class Port : public ast::SpecificConstant<AstInfo, Constant, string> {
 public:
     /// Constructor.
     ///
@@ -198,14 +189,13 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if the value is not valid.
-    Port(const string& port, const Location& l=Location::None);
+    Port(const string& port, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Constant);
 };
 
 /// AST node for a constant of type Bitset.
-class Bitset : public Constant
-{
+class Bitset : public Constant {
 public:
     typedef std::list<shared_ptr<ID>> bit_list;
 
@@ -219,7 +209,7 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if one of the \a bits is not defined by the type.
-    Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Location& l=Location::None);
+    Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Location& l = Location::None);
 
     /// Returns the bits set in the constant.
     const bit_list& value() const;
@@ -235,8 +225,7 @@ private:
 };
 
 /// AST node for a constant of type Enum.
-class Enum : public Constant
-{
+class Enum : public Constant {
 public:
     typedef std::list<string> bit_list;
 
@@ -249,7 +238,7 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if the label is not defined by the type.
-    Enum(shared_ptr<ID> label, shared_ptr<Type> etype, const Location& l=Location::None);
+    Enum(shared_ptr<ID> label, shared_ptr<Type> etype, const Location& l = Location::None);
 
     /// Returns the enum label.
     shared_ptr<ID> value() const;
@@ -265,22 +254,20 @@ private:
 };
 
 /// AST node for a constant of type Double.
-class Double : public ast::SpecificConstant<AstInfo, Constant, double>
-{
+class Double : public ast::SpecificConstant<AstInfo, Constant, double> {
 public:
     /// Constructor.
     ///
     /// value: The value of the constant.
     ///
     /// l: An associated location.
-    Double(double value, const Location& l=Location::None);
+    Double(double value, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Constant);
 };
 
 /// AST node for a constant of type Time.
-class Time : public Constant
-{
+class Time : public Constant {
 public:
     /// Constructor.
     ///
@@ -289,7 +276,7 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if the \a time isn't parseable.
-    Time(double time, const Location& l=Location::None);
+    Time(double time, const Location& l = Location::None);
 
     /// Constructor.
     ///
@@ -298,7 +285,7 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if the \a time isn't parseable.
-    Time(uint64_t time, const Location& l=Location::None);
+    Time(uint64_t time, const Location& l = Location::None);
 
     /// Returns the time as nano seconds since the epoch.
     uint64_t value() const;
@@ -313,8 +300,7 @@ private:
 };
 
 /// AST node for a constant of type Interval.
-class Interval : public Constant
-{
+class Interval : public Constant {
 public:
     /// Constructor.
     ///
@@ -323,7 +309,7 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if the \a interv isn't parseable.
-    Interval(uint64_t interv, const Location& l=Location::None);
+    Interval(uint64_t interv, const Location& l = Location::None);
 
     /// Constructor.
     ///
@@ -332,7 +318,7 @@ public:
     /// l: An associated location.
     ///
     /// Throws: ConstantParseError if the \a interv isn't parseable.
-    Interval(double interv, const Location& l=Location::None);
+    Interval(double interv, const Location& l = Location::None);
 
     /// Returns the interval in nano seconds.
     const uint64_t value() const;
@@ -347,21 +333,20 @@ private:
 };
 
 /// AST node for a constant of type Optional.
-class Optional : public Constant
-{
+class Optional : public Constant {
 public:
     /// Constructor for a set optional constant.
     ///
     /// expr: The expresssion to set the optional value to.
     ///
     /// l: An associated location.
-    Optional(shared_ptr<Expression> expr, const Location& l=Location::None);
+    Optional(shared_ptr<Expression> expr, const Location& l = Location::None);
 
     /// Constructor for an unset of optional constant. This creates a
     /// wildcard optional that coerces to any other optional.
     ///
     /// l: An associated location.
-    Optional(const Location& l=Location::None);
+    Optional(const Location& l = Location::None);
 
     /// Returns the optional's expression, or null if none for a wildcard
     /// constant.
@@ -375,9 +360,7 @@ public:
 private:
     node_ptr<Expression> _expr;
 };
-
 }
-
 }
 
 #endif

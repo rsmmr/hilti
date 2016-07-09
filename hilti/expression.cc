@@ -1,11 +1,11 @@
 
+#include "expression.h"
 #include "declaration.h"
-#include "statement.h"
-#include "variable.h"
 #include "function.h"
 #include "instruction.h"
-#include "expression.h"
 #include "passes/printer.h"
+#include "statement.h"
+#include "variable.h"
 
 bool Expression::hoisted()
 {
@@ -37,7 +37,7 @@ std::list<shared_ptr<hilti::Expression>> expression::List::flatten()
 
 std::list<shared_ptr<hilti::Expression>> expression::Constant::flatten()
 {
-    std::list<shared_ptr<hilti::Expression>> l = { this->sharedPtr<hilti::Expression>() };
+    std::list<shared_ptr<hilti::Expression>> l = {this->sharedPtr<hilti::Expression>()};
 
     if ( constant() )
         l.merge(constant()->flatten());
@@ -47,7 +47,7 @@ std::list<shared_ptr<hilti::Expression>> expression::Constant::flatten()
 
 std::list<shared_ptr<hilti::Expression>> expression::Ctor::flatten()
 {
-    std::list<shared_ptr<hilti::Expression>> l = { this->sharedPtr<hilti::Expression>() };
+    std::list<shared_ptr<hilti::Expression>> l = {this->sharedPtr<hilti::Expression>()};
 
     if ( ctor() )
         l.merge(ctor()->flatten());

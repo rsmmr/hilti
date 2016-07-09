@@ -9,7 +9,9 @@
 
 namespace binpac {
 
-namespace passes { class Validator; }
+namespace passes {
+class Validator;
+}
 
 namespace operator_ {
 
@@ -60,7 +62,10 @@ enum Kind {
 
 enum OpType { UNARY_PREFIX, UNARY_POSTFIX, BINARY, BINARY_COMMUTATIVE, OTHER };
 
-#define _OP(kind, display, type) {kind, OperatorDef(kind, #kind, display, type)}
+#define _OP(kind, display, type)                                                                   \
+    {                                                                                              \
+        kind, OperatorDef(kind, #kind, display, type)                                              \
+    }
 
 struct OperatorDef {
     Kind kind;
@@ -69,7 +74,9 @@ struct OperatorDef {
     OpType type;
 
     OperatorDef(Kind kind, string kind_txt, string display, OpType type)
-        : kind(kind), kind_txt(kind_txt), display(display), type(type) {}
+        : kind(kind), kind_txt(kind_txt), display(display), type(type)
+    {
+    }
 };
 
 // These are used by the printer.
@@ -119,16 +126,16 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(Size, "<Size>", OTHER),
     _OP(TryAttribute, "<TryAttribute>", OTHER),
 };
-
 }
 
 class OperatorRegistry;
 
 /// Base class for all operators.
-class Operator
-{
+class Operator {
 public:
-    typedef shared_ptr<expression::ResolvedOperator> (*expression_factory)(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<Module> module, const Location& l);
+    typedef shared_ptr<expression::ResolvedOperator> (*expression_factory)(
+        shared_ptr<Operator> op, const expression_list& ops, shared_ptr<Module> module,
+        const Location& l);
 
     Operator(operator_::Kind kind, expression_factory factory);
     virtual ~Operator();
@@ -175,18 +182,23 @@ public:
         string kind_txt;              /// A textual rendering of the kind.
         string description;           /// Textual description of the operator.
         string render;                /// Textual rendering of the operator.
-        shared_ptr<Type> type_op1;              /// Type of the operator's first operand.
-        shared_ptr<Type> type_op2;              /// Type of the operator's second operand.
-        shared_ptr<Type> type_op3;              /// Type of the operator's third operand.
-        shared_ptr<Type> type_result;           /// Type of the operator's result.
-        std::pair<string, shared_ptr<Type>> type_callarg1; /// Name and type of first method call argument.
-        std::pair<string, shared_ptr<Type>> type_callarg2; /// Name and type of first method call argument.
-        std::pair<string, shared_ptr<Type>> type_callarg3; /// Name and type of first method call argument.
-        std::pair<string, shared_ptr<Type>> type_callarg4; /// Name and type of first method call argument.
-        std::pair<string, shared_ptr<Type>> type_callarg5; /// Name and type of first method call argument.
-        string class_op1;             /// Name of class of the operator's first operand.
-        string class_op2;             /// Name of class of the operator's second operand.
-        string class_op3;             /// Name of class of the operator's third operand.
+        shared_ptr<Type> type_op1;    /// Type of the operator's first operand.
+        shared_ptr<Type> type_op2;    /// Type of the operator's second operand.
+        shared_ptr<Type> type_op3;    /// Type of the operator's third operand.
+        shared_ptr<Type> type_result; /// Type of the operator's result.
+        std::pair<string, shared_ptr<Type>>
+            type_callarg1; /// Name and type of first method call argument.
+        std::pair<string, shared_ptr<Type>>
+            type_callarg2; /// Name and type of first method call argument.
+        std::pair<string, shared_ptr<Type>>
+            type_callarg3; /// Name and type of first method call argument.
+        std::pair<string, shared_ptr<Type>>
+            type_callarg4; /// Name and type of first method call argument.
+        std::pair<string, shared_ptr<Type>>
+            type_callarg5; /// Name and type of first method call argument.
+        string class_op1;  /// Name of class of the operator's first operand.
+        string class_op2;  /// Name of class of the operator's second operand.
+        string class_op3;  /// Name of class of the operator's third operand.
 
         // Note, we don't store the result's type here as that's dynamically computed.
     };
@@ -195,23 +207,48 @@ public:
     Info info() const;
 
     /// Returns the current validator.
-    passes::Validator* validator() const { return _validator; }
+    passes::Validator* validator() const
+    {
+        return _validator;
+    }
 
     /// Returns the current set of operands. This is only defined while
     /// executing one of the virtual methods working on operands.
-    const expression_list& operands() const { assert(__operands.size()); return __operands.back(); }
+    const expression_list& operands() const
+    {
+        assert(__operands.size());
+        return __operands.back();
+    }
 
     /// Returns the current 1st operand. This is only defined while executing
     /// one of the virtual methods working on operands.
-    const shared_ptr<Expression> op1() const { assert(operands().size() >= 1); auto i = operands().begin(); return *i; }
+    const shared_ptr<Expression> op1() const
+    {
+        assert(operands().size() >= 1);
+        auto i = operands().begin();
+        return *i;
+    }
 
     /// Returns the current 2nd operand. This is only defined while executing
     /// one of the virtual methods working on operands.
-    const shared_ptr<Expression> op2() const { assert(operands().size() >= 2); auto i = operands().begin(); ++i; return *i; }
+    const shared_ptr<Expression> op2() const
+    {
+        assert(operands().size() >= 2);
+        auto i = operands().begin();
+        ++i;
+        return *i;
+    }
 
     /// Returns the current 3rd operand. This is only defined while executing
     /// one of the virtual methods working on operands.
-    const shared_ptr<Expression> op3() const { assert(operands().size() >= 3); auto i = operands().begin(); ++i; ++i; return *i; }
+    const shared_ptr<Expression> op3() const
+    {
+        assert(operands().size() >= 3);
+        auto i = operands().begin();
+        ++i;
+        ++i;
+        return *i;
+    }
 
     /// Returns true if the operator has a given operand defined.
     ///
@@ -295,7 +332,10 @@ public:
 protected:
     /// Returns a factory function that instantiates a resolved operator
     /// expression for this operator with the given operands.
-    expression_factory factory() const { return _factory; }
+    expression_factory factory() const
+    {
+        return _factory;
+    }
 
     /// For method calls, returns a list of argument types.
     type_list _callArgs() const;
@@ -310,56 +350,110 @@ protected:
     void validate(passes::Validator* v, const expression_list& ops);
 
     // The follwing may be overridden by derived classes via macros.
-    virtual shared_ptr<Type> __typeOp1() const    { return nullptr; }
-    virtual shared_ptr<Type> __typeOp2() const    { return nullptr; }
+    virtual shared_ptr<Type> __typeOp1() const
+    {
+        return nullptr;
+    }
+    virtual shared_ptr<Type> __typeOp2() const
+    {
+        return nullptr;
+    }
     virtual shared_ptr<Type> __typeOp3() const; // This one default to type::Tuple for MethodCalls.
     virtual shared_ptr<Type> __typeResult() const = 0;
 
-    virtual std::pair<string, shared_ptr<Type>> __typeCallArg1() const { return std::make_pair("", nullptr); }
-    virtual std::pair<string, shared_ptr<Type>> __typeCallArg2() const { return std::make_pair("", nullptr); }
-    virtual std::pair<string, shared_ptr<Type>> __typeCallArg3() const { return std::make_pair("", nullptr); }
-    virtual std::pair<string, shared_ptr<Type>> __typeCallArg4() const { return std::make_pair("", nullptr); }
-    virtual std::pair<string, shared_ptr<Type>> __typeCallArg5() const { return std::make_pair("", nullptr); }
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg1() const
+    {
+        return std::make_pair("", nullptr);
+    }
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg2() const
+    {
+        return std::make_pair("", nullptr);
+    }
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg3() const
+    {
+        return std::make_pair("", nullptr);
+    }
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg4() const
+    {
+        return std::make_pair("", nullptr);
+    }
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg5() const
+    {
+        return std::make_pair("", nullptr);
+    }
 
-    virtual bool                   __match() { return true; };
-    virtual void                   __validate() { };
-    virtual string                 __doc() const { return "<No documentation>"; }
-    virtual string                 __namespace() const { return "<no namespace>"; }
+    virtual bool __match()
+    {
+        return true;
+    };
+    virtual void __validate(){};
+    virtual string __doc() const
+    {
+        return "<No documentation>";
+    }
+    virtual string __namespace() const
+    {
+        return "<no namespace>";
+    }
 
-    virtual shared_ptr<Type> __docTypeOp1() const    { return __typeOp1() ? __typeOp1() : nullptr; }
-    virtual shared_ptr<Type> __docTypeOp2() const    { return __typeOp2() ? __typeOp2() : nullptr; }
-    virtual shared_ptr<Type> __docTypeOp3() const    { return __typeOp3() ? __typeOp3() : nullptr; }
-    virtual shared_ptr<Type> __docTypeResult() const  { return nullptr; }
+    virtual shared_ptr<Type> __docTypeOp1() const
+    {
+        return __typeOp1() ? __typeOp1() : nullptr;
+    }
+    virtual shared_ptr<Type> __docTypeOp2() const
+    {
+        return __typeOp2() ? __typeOp2() : nullptr;
+    }
+    virtual shared_ptr<Type> __docTypeOp3() const
+    {
+        return __typeOp3() ? __typeOp3() : nullptr;
+    }
+    virtual shared_ptr<Type> __docTypeResult() const
+    {
+        return nullptr;
+    }
 
-    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg1() const    {
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg1() const
+    {
         auto t = __typeCallArg1();
         return t.second ? t : std::make_pair(t.first, nullptr);
     }
 
-    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg2() const    {
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg2() const
+    {
         auto t = __typeCallArg2();
         return t.second ? t : std::make_pair(t.first, nullptr);
     }
 
-    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg3() const    {
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg3() const
+    {
         auto t = __typeCallArg3();
         return t.second ? t : std::make_pair(t.first, nullptr);
     }
 
-    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg4() const    {
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg4() const
+    {
         auto t = __typeCallArg4();
         return t.second ? t : std::make_pair(t.first, nullptr);
     }
 
-    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg5() const    {
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg5() const
+    {
         auto t = __typeCallArg5();
         return t.second ? t : std::make_pair(t.first, nullptr);
     }
 
 private:
-    void pushOperands(const expression_list& ops) { __operands.push_back(ops); }
-    void popOperands() { __operands.pop_back(); }
-    std::pair<shared_ptr<Node>, string> matchArgsInternal(shared_ptr<Expression> tuple, const type_list& types);
+    void pushOperands(const expression_list& ops)
+    {
+        __operands.push_back(ops);
+    }
+    void popOperands()
+    {
+        __operands.pop_back();
+    }
+    std::pair<shared_ptr<Node>, string> matchArgsInternal(shared_ptr<Expression> tuple,
+                                                          const type_list& types);
 
     friend class OperatorRegistry;
 
@@ -372,13 +466,13 @@ private:
 
 /// Singleton class that provides a register of all available BinPAC++
 /// operators.
-class OperatorRegistry
-{
+class OperatorRegistry {
 public:
     OperatorRegistry();
     ~OperatorRegistry();
 
-    typedef std::unordered_multimap<operator_::Kind, shared_ptr<Operator>, std::hash<int>> operator_map;
+    typedef std::unordered_multimap<operator_::Kind, shared_ptr<Operator>, std::hash<int>>
+        operator_map;
     typedef std::list<std::pair<shared_ptr<Operator>, expression_list>> matching_result;
 
     /// Returns a list of operators of a given Kind matching a set of
@@ -397,7 +491,8 @@ public:
     /// use with them. Usally, these operands are just those passed into the
     /// method, however the matching process may adapt them to make them
     /// compatible.
-    matching_result getMatching(operator_::Kind kind, const expression_list& ops, bool try_coercion = true, bool try_commutative = true) const;
+    matching_result getMatching(operator_::Kind kind, const expression_list& ops,
+                                bool try_coercion = true, bool try_commutative = true) const;
 
     /// Returns all operators of a given kind.
     ///
@@ -416,7 +511,10 @@ public:
     /// l: Associated location information.
     ///
     /// Returns: The resolved operator.
-    shared_ptr<expression::ResolvedOperator> resolveOperator(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<Module> module, const Location& l = Location::None);
+    shared_ptr<expression::ResolvedOperator> resolveOperator(shared_ptr<Operator> op,
+                                                             const expression_list& ops,
+                                                             shared_ptr<Module> module,
+                                                             const Location& l = Location::None);
 
     /// Registers an operator with the registry. This will be called from the
     /// autogenerated operator code.
@@ -433,7 +531,6 @@ private:
 
     static OperatorRegistry* _registry; // Singleton.
 };
-
 }
 
 #endif

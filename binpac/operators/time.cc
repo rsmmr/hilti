@@ -2,155 +2,177 @@
 using namespace binpac;
 
 opBegin(time::Equal)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::Time>())
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::Time>());
 
-    opDoc("Compares to times.")
+    opDoc("Compares to times.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(time::Lower)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::Time>())
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::Time>());
 
-    opDoc("Returns whether the first time is smaller than the second.")
+    opDoc("Returns whether the first time is smaller than the second.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(time::Greater)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::Time>())
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::Time>());
 
-    opDoc("Returns whether the first time is larger than the second.")
+    opDoc("Returns whether the first time is larger than the second.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(time::Minus)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::Time>())
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::Time>());
 
-    opDoc("Subtracts two times.")
+    opDoc("Subtracts two times.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Interval>();
     }
 opEnd
 
 opBegin(time::MinusInterval : Minus)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::Interval>())
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::Interval>());
 
-    opDoc("Subtracts an interval from a time.")
+    opDoc("Subtracts an interval from a time.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Interval>();
     }
 opEnd
 
 opBegin(time::PlusInterval1 : Plus)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::Interval>())
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::Interval>());
 
-    opDoc("Adds an interval to a time.")
+    opDoc("Adds an interval to a time.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Time>();
     }
 opEnd
 
 opBegin(time::PlusInterval2 : Plus)
-    opOp1(std::make_shared<type::Interval>())
-    opOp2(std::make_shared<type::Time>())
+    opOp1(std::make_shared<type::Interval>());
+    opOp2(std::make_shared<type::Time>());
 
-    opDoc("Adds an interval to a time.")
+    opDoc("Adds an interval to a time.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Time>();
     }
 opEnd
 
 opBegin(time::CoerceBool : Coerce)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Bool>()))
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Bool>()));
 
-    opDoc("Times coerce to boolean, returning true if the value is non-zero.")
+    opDoc("Times coerce to boolean, returning true if the value is non-zero.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(time::CastInteger : Cast)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Integer>()))
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Integer>()));
 
-    opDoc("Casts a time into an integer value, truncating any fractional value.")
+    opDoc("Casts a time into an integer value, truncating any fractional value.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return ast::checkedCast<type::TypeType>(op2()->type())->typeType();
     }
 opEnd
 
 opBegin(time::CastDouble : Cast)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Double>()))
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Double>()));
 
-    opDoc("Casts a time into a double.")
+    opDoc("Casts a time into a double.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Double>();
     }
 opEnd
 
 opBegin(time::Nsecs : MethodCall)
-    opOp1(std::make_shared<type::Time>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("nsecs")))
+    opOp1(std::make_shared<type::Time>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("nsecs")));
 
-    opDoc("Returns the time as nanoseconds.")
+    opDoc("Returns the time as nanoseconds.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Integer>(64, false);
     }
 opEnd

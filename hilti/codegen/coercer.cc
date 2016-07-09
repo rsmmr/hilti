@@ -1,13 +1,14 @@
 
 #include "../hilti.h"
 
-#include "coercer.h"
 #include "codegen.h"
+#include "coercer.h"
 
 using namespace hilti;
 using namespace codegen;
 
-codegen::Coercer::Coercer(CodeGen* cg) : CGVisitor<llvm::Value*, llvm::Value*, shared_ptr<hilti::Type>>(cg, "codegen::Coercer")
+codegen::Coercer::Coercer(CodeGen* cg)
+    : CGVisitor<llvm::Value*, llvm::Value*, shared_ptr<hilti::Type>>(cg, "codegen::Coercer")
 {
 }
 
@@ -15,7 +16,8 @@ codegen::Coercer::~Coercer()
 {
 }
 
-llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst, bool cctor)
+llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src,
+                                            shared_ptr<hilti::Type> dst, bool cctor)
 {
     _cctor = cctor;
 
@@ -26,8 +28,9 @@ llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti
         return value;
     }
 
-    if ( ast::isA<type::OptionalArgument>(dst) )
-        return llvmCoerceTo(value, src, ast::as<type::OptionalArgument>(dst)->argType(), cctor);
+    if ( ast::rtti::isA<type::OptionalArgument>(dst) )
+        return llvmCoerceTo(value, src, ast::rtti::tryCast<type::OptionalArgument>(dst)->argType(),
+                            cctor);
 
     setArg1(value);
     setArg2(dst);
@@ -35,6 +38,7 @@ llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti
     llvm::Value* result;
     bool success = processOne(src, &result);
     assert(success);
+    _UNUSED(success);
 
     if ( cctor )
         cg()->llvmDtor(value, src, false, "Coercer::llvmCoerceTo");
@@ -47,7 +51,7 @@ void codegen::Coercer::visit(type::Integer* t)
     auto val = arg1();
     auto dst = arg2();
 
-    shared_ptr<type::Bool> dst_b = ast::as<type::Bool>(dst);
+    shared_ptr<type::Bool> dst_b = ast::rtti::tryCast<type::Bool>(dst);
 
     if ( dst_b ) {
         auto width = llvm::cast<llvm::IntegerType>(val->getType())->getBitWidth();
@@ -64,10 +68,10 @@ void codegen::Coercer::visit(type::Tuple* t)
     auto val = arg1();
     auto dst = arg2();
 
-    auto rtype = ast::as<type::Reference>(dst);
+    auto rtype = ast::rtti::tryCast<type::Reference>(dst);
 
     if ( rtype ) {
-        auto stype = ast::as<type::Struct>(rtype->argType());
+        auto stype = ast::rtti::tryCast<type::Struct>(rtype->argType());
         assert(stype);
 
         auto sval = cg()->llvmStructNew(stype, _cctor);
@@ -81,8 +85,7 @@ void codegen::Coercer::visit(type::Tuple* t)
 
         auto idx = 0;
         for ( auto i : ::util::zip2(t->typeList(), stype->typeList()) ) {
-
-            if ( ast::as<type::Unset>(i.first) ) {
+            if ( ast::rtti::isA<type::Unset>(i.first) ) {
                 ++idx;
                 continue;
             }
@@ -98,7 +101,6 @@ void codegen::Coercer::visit(type::Tuple* t)
     assert(false); // Need to implement other coercions.
 
     setResult(val);
-
 }
 
 void codegen::Coercer::visit(type::Address* t)
@@ -106,14 +108,14 @@ void codegen::Coercer::visit(type::Address* t)
     auto val = arg1();
     auto dst = arg2();
 
-    shared_ptr<type::Network> dst_net = ast::as<type::Network>(dst);
+    shared_ptr<type::Network> dst_net = ast::rtti::tryCast<type::Network>(dst);
 
     if ( dst_net ) {
         auto a = cg()->llvmExtractValue(val, 0);
         auto b = cg()->llvmExtractValue(val, 1);
         auto w = cg()->llvmConstInt(128, 8);
 
-        CodeGen::value_list vals = { a, b, w };
+        CodeGen::value_list vals = {a, b, w};
         auto net = cg()->llvmValueStruct(vals);
 
         setResult(net);
@@ -128,12 +130,14 @@ void codegen::Coercer::visit(type::Reference* r)
     auto val = arg1();
     auto dst = arg2();
 
-    shared_ptr<type::Reference> dst_ref = ast::as<type::Reference>(dst);
+    shared_ptr<type::Reference> dst_ref = ast::rtti::tryCast<type::Reference>(dst);
 
     if ( dst_ref ) {
-        if ( ast::isA<type::RegExp>(r->argType()) && ast::isA<type::RegExp>(dst_ref->argType()) ) {
+        if ( ast::rtti::isA<type::RegExp>(r->argType()) &&
+             ast::rtti::isA<type::RegExp>(dst_ref->argType()) ) {
             auto top = dst_ref->argType();
-            CodeGen::expr_list args = { builder::type::create(top), builder::codegen::create(dst, val) };
+            CodeGen::expr_list args = {builder::type::create(top),
+                                       builder::codegen::create(dst, val)};
             auto func = _cctor ? "hlt::regexp_new_from_regexp" : "hlt::regexp_new_from_regexp";
             auto nregexp = cg()->llvmCall(func, args);
             setResult(nregexp);
@@ -149,7 +153,7 @@ void codegen::Coercer::visit(type::Reference* r)
         assert(false);
     }
 
-    auto dst_bool = ast::as<type::Bool>(dst);
+    auto dst_bool = ast::rtti::tryCast<type::Bool>(dst);
 
     if ( dst_bool ) {
         auto non_null = cg()->builder()->CreateICmpNE(val, cg()->llvmConstNull(val->getType()));
@@ -165,7 +169,7 @@ void codegen::Coercer::visit(type::CAddr* r)
     auto val = arg1();
     auto dst = arg2();
 
-    auto dst_bool = ast::as<type::Bool>(dst);
+    auto dst_bool = ast::rtti::tryCast<type::Bool>(dst);
 
     if ( dst_bool ) {
         auto non_null = cg()->builder()->CreateICmpNE(val, cg()->llvmConstNull(val->getType()));
@@ -180,7 +184,7 @@ void codegen::Coercer::visit(type::Unset* r)
 {
     auto dst = arg2();
 
-    assert(! ast::tryCast<type::Unset>(dst));
+    assert(! ast::rtti::tryCast<type::Unset>(dst));
     setResult(cg()->llvmInitVal(dst));
 }
 
@@ -191,12 +195,12 @@ void codegen::Coercer::visit(type::Union* t)
 
     auto type = t->sharedPtr<type::Union>();
 
-    auto dst_bool = ast::as<type::Bool>(dst);
+    auto dst_bool = ast::rtti::tryCast<type::Bool>(dst);
 
     if ( dst_bool ) {
         auto addr = cg()->llvmAddTmp("u", cg()->llvmType(type), val, false);
-        CodeGen::value_list args = { cg()->llvmRtti(type),
-                                     cg()->builder()->CreateBitCast(addr, cg()->llvmTypePtr()) };
+        CodeGen::value_list args = {cg()->llvmRtti(type),
+                                    cg()->builder()->CreateBitCast(addr, cg()->llvmTypePtr())};
 
         auto utype = cg()->llvmCallC("__hlt_union_type", args, false, false);
         auto non_null = cg()->builder()->CreateICmpNE(utype, cg()->llvmConstNull(utype->getType()));
@@ -204,7 +208,7 @@ void codegen::Coercer::visit(type::Union* t)
         return;
     }
 
-    auto dst_union = ast::as<type::Union>(dst);
+    auto dst_union = ast::rtti::tryCast<type::Union>(dst);
 
     if ( dst_union && t->wildcard() ) {
         auto t = cg()->llvmType(dst_union);

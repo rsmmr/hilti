@@ -5,6 +5,6 @@ output=$1
 shift
 inputs=$@
 
-llvm-link -o $output $inputs
+llvm-link -o $output -disable-debug-info-type-map $inputs
 
 

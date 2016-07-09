@@ -46,11 +46,13 @@ void StatementBuilder::visit(statement::instruction::file::Open* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
-    args.push_back(builder::codegen::create(cg()->typeByName("Hilti::FileType"), ty, i->location()));
-    args.push_back(builder::codegen::create(cg()->typeByName("Hilti::FileMode"), mode, i->location()));
-    args.push_back(builder::codegen::create(cg()->typeByName("Hilti::Charset"), chr, i->location()));
+    args.push_back(
+        builder::codegen::create(cg()->typeByName("Hilti::FileType"), ty, i->location()));
+    args.push_back(
+        builder::codegen::create(cg()->typeByName("Hilti::FileMode"), mode, i->location()));
+    args.push_back(
+        builder::codegen::create(cg()->typeByName("Hilti::Charset"), chr, i->location()));
     cg()->llvmCall("hlt::file_open", args);
-
 }
 
 void StatementBuilder::visit(statement::instruction::file::WriteBytes* i)

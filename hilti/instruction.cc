@@ -1,8 +1,8 @@
 
 #include "instruction.h"
+#include "module.h"
 #include "statement.h"
 #include "variable.h"
-#include "module.h"
 
 #include "passes/validator.h"
 
@@ -22,23 +22,17 @@ InstructionRegistry* InstructionRegistry::globalRegistry()
 
 shared_ptr<Type> InstructionHelper::typedType(shared_ptr<Expression> op) const
 {
-    auto t = ast::as<type::TypeType>(op->type());
-    assert(t);
-    return t->typeType();
+    return ast::rtti::checkedCast<type::TypeType>(op->type())->typeType();
 }
 
 shared_ptr<Type> InstructionHelper::referencedType(shared_ptr<Expression> op) const
 {
-    auto t = ast::as<type::Reference>(op->type());
-    assert(t);
-    return t->argType();
+    return ast::rtti::checkedCast<type::Reference>(op->type())->argType();
 }
 
 shared_ptr<Type> InstructionHelper::referencedType(shared_ptr<Type> ty) const
 {
-    auto t = ast::as<type::Reference>(ty);
-    assert(t);
-    return t->argType();
+    return ast::rtti::checkedCast<type::Reference>(ty)->argType();
 }
 
 shared_ptr<Type> InstructionHelper::elementType(shared_ptr<Expression> op) const
@@ -48,15 +42,10 @@ shared_ptr<Type> InstructionHelper::elementType(shared_ptr<Expression> op) const
 
 shared_ptr<Type> InstructionHelper::elementType(shared_ptr<Type> ty) const
 {
-    auto r = ast::as<type::Reference>(ty);
-
-    if ( r )
+    if ( auto r = ast::rtti::tryCast<type::Reference>(ty) )
         ty = r->argType();
 
-    auto t = ast::as<type::TypedHeapType>(ty);
-    assert(t);
-
-    return t->argType();
+    return ast::rtti::checkedCast<type::TypedHeapType>(ty)->argType();
 }
 
 shared_ptr<Type> InstructionHelper::argType(shared_ptr<Expression> op) const
@@ -66,20 +55,14 @@ shared_ptr<Type> InstructionHelper::argType(shared_ptr<Expression> op) const
 
 shared_ptr<Type> InstructionHelper::argType(shared_ptr<Type> ty) const
 {
-    auto r = ast::as<type::Reference>(ty);
-
-    if ( r )
+    if ( auto r = ast::rtti::tryCast<type::Reference>(ty) )
         ty = r->argType();
 
-    auto t1 = ast::as<type::TypedHeapType>(ty);
+    if ( auto t = ast::rtti::tryCast<type::TypedHeapType>(ty) )
+        return t->argType();
 
-    if ( t1 )
-        return t1->argType();
-
-    auto t2 = ast::as<type::TypedValueType>(ty);
-
-    if ( t2 )
-        return t2->argType();
+    if ( auto t = ast::rtti::tryCast<type::TypedValueType>(ty) )
+        return t->argType();
 
     assert(false);
     return nullptr;
@@ -87,8 +70,7 @@ shared_ptr<Type> InstructionHelper::argType(shared_ptr<Type> ty) const
 
 shared_ptr<Type> InstructionHelper::iteratedType(shared_ptr<Expression> op) const
 {
-    auto t = ast::as<type::Iterator>(op->type());
-    return t->argType();
+    return ast::rtti::checkedCast<type::Iterator>(op->type())->argType();
 }
 
 shared_ptr<Type> InstructionHelper::mapKeyType(shared_ptr<Expression> op) const
@@ -98,15 +80,10 @@ shared_ptr<Type> InstructionHelper::mapKeyType(shared_ptr<Expression> op) const
 
 shared_ptr<Type> InstructionHelper::mapKeyType(shared_ptr<Type> ty) const
 {
-    auto r = ast::as<type::Reference>(ty);
-
-    if ( r )
+    if ( auto r = ast::rtti::tryCast<type::Reference>(ty) )
         ty = r->argType();
 
-    auto t = ast::as<type::Map>(ty);
-    assert(t);
-
-    return t->keyType();
+    return ast::rtti::checkedCast<type::Map>(ty)->keyType();
 }
 
 shared_ptr<Type> InstructionHelper::mapValueType(shared_ptr<Expression> op) const
@@ -116,15 +93,10 @@ shared_ptr<Type> InstructionHelper::mapValueType(shared_ptr<Expression> op) cons
 
 shared_ptr<Type> InstructionHelper::mapValueType(shared_ptr<Type> ty) const
 {
-    auto r = ast::as<type::Reference>(ty);
-
-    if ( r )
+    if ( auto r = ast::rtti::tryCast<type::Reference>(ty) )
         ty = r->argType();
 
-    auto t = ast::as<type::Map>(ty);
-    assert(t);
-
-    return t->valueType();
+    return ast::rtti::checkedCast<type::Map>(ty)->valueType();
 }
 
 Instruction::operator string() const
@@ -153,7 +125,8 @@ void InstructionRegistry::addInstruction(shared_ptr<Instruction> ins)
     _instructions.insert(instr_map::value_type(ins->id()->name(), ins));
 }
 
-InstructionRegistry::instr_list InstructionRegistry::getMatching(shared_ptr<ID> id, const instruction::Operands& ops) const
+InstructionRegistry::instr_list InstructionRegistry::getMatching(
+    shared_ptr<ID> id, const instruction::Operands& ops) const
 {
     // We try this twice. First, without coerce, then with. To avoid
     // ambiguity, we prefer matches from the former.
@@ -194,7 +167,7 @@ InstructionRegistry::instr_list InstructionRegistry::byName(const string& name) 
     }
 
     // Make the order well-defined.
-    matches.sort([] (shared_ptr<Instruction> i1, shared_ptr<Instruction> i2) {
+    matches.sort([](shared_ptr<Instruction> i1, shared_ptr<Instruction> i2) {
         return string(*i1) < string(*i2);
     });
 
@@ -217,7 +190,7 @@ bool Instruction::matchesOperands(const instruction::Operands& ops, bool coerce)
     fprintf(stderr, "match: 0->%d 1->%d 2->%d 3->%d\n", (int)__matchOp0(ops[0], coerce), (int)__matchOp1(ops[1], coerce), (int)__matchOp2(ops[2], coerce),  (int)__matchOp3(ops[3], coerce));
 
     if ( ! ops[1] )
-        fprintf(stderr, " A %d\n", (int)ast::isA<type::OptionalArgument>(__typeOp1().first));
+        fprintf(stderr, " A %d\n", (int)ast::rtti::isA<type::OptionalArgument>(__typeOp1().first));
 
     if ( ! __typeOp1().first->equal(ops[1]->type()) )
         fprintf(stderr, " B F\n");
@@ -255,13 +228,15 @@ bool Instruction::matchesOperands(const instruction::Operands& ops, bool coerce)
     int num_changes = 0;
 
     for ( int i = 1; i <= 3; i++ ) {
-
         if ( ! ops[i] )
             continue;
 
         ++num_ops;
 
-        if ( typeid(*ops[i]->type()) != typeid(*typeOperand(i).first) )
+        auto t1 = (*ops[i]->type());
+        auto t2 = (*typeOperand(i).first);
+
+        if ( typeId(t1) != typeId(t2) )
             ++num_changes;
     }
 
@@ -305,8 +280,8 @@ bool Instruction::canCoerceTo(shared_ptr<Type> src, shared_ptr<Expression> targe
     if ( Coercer().canCoerceTo(src, target->type()) )
         return true;
 
-    error(target, util::fmt("type %s is not compatible with target type %s",
-                        src->render().c_str(), target->type()->render().c_str()));
+    error(target, util::fmt("type %s is not compatible with target type %s", src->render().c_str(),
+                            target->type()->render().c_str()));
     return false;
 }
 
@@ -315,18 +290,18 @@ bool Instruction::canCoerceTo(shared_ptr<Type> src, shared_ptr<Type> target) con
     if ( Coercer().canCoerceTo(src, target) )
         return true;
 
-    error(target, util::fmt("type %s is not compatible with target type %s",
-                        src->render().c_str(), target->render().c_str()));
+    error(target, util::fmt("type %s is not compatible with target type %s", src->render().c_str(),
+                            target->render().c_str()));
     return false;
 }
 
 bool Instruction::canCoerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const
 {
-   if ( op1->canCoerceTo(op2->type()) || op2->canCoerceTo(op1->type()) )
+    if ( op1->canCoerceTo(op2->type()) || op2->canCoerceTo(op1->type()) )
         return true;
 
     error(op1, util::fmt("operand types %s and %s are not compatible",
-                        op1->type()->render().c_str(), op2->type()->render().c_str()));
+                         op1->type()->render().c_str(), op2->type()->render().c_str()));
 
     return false;
 }
@@ -347,8 +322,8 @@ bool Instruction::equalTypes(shared_ptr<Type> ty1, shared_ptr<Type> ty2) const
     if ( ty1->equal(ty2) )
         return true;
 
-    error(ty1, util::fmt("types %s and %s do not match",
-                        ty1->render().c_str(), ty2->render().c_str()));
+    error(ty1,
+          util::fmt("types %s and %s do not match", ty1->render().c_str(), ty2->render().c_str()));
 
     return false;
 }
@@ -358,15 +333,15 @@ bool Instruction::equalTypes(shared_ptr<Expression> op1, shared_ptr<Expression> 
     if ( op1->type()->equal(op2->type()) )
         return true;
 
-    error(op1, util::fmt("operand types %s and %s do not match",
-                        op1->type()->render().c_str(), op2->type()->render().c_str()));
+    error(op1, util::fmt("operand types %s and %s do not match", op1->type()->render().c_str(),
+                         op2->type()->render().c_str()));
 
     return false;
 }
 
 bool Instruction::isConstant(shared_ptr<Expression> op) const
 {
-    if ( ast::as<expression::Constant>(op) )
+    if ( ast::rtti::isA<expression::Constant>(op) )
         return true;
 
     error(op, "operand must be a constant");
@@ -374,7 +349,8 @@ bool Instruction::isConstant(shared_ptr<Expression> op) const
     return false;
 }
 
-bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_ptr<Expression> args, bool allow_unbound) const
+bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_ptr<Expression> args,
+                                      bool allow_unbound) const
 {
     if ( ! args ) {
         constant::Tuple::element_list empty;
@@ -383,12 +359,15 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
     }
 
     if ( ! args->isConstant() ) {
-        // Currently, we don't support non-constasnt tuples, though is in principle, that should work.
+        // Currently, we don't support non-constasnt tuples, though is in principle, that should
+        // work.
         error(args, "deficiency: can only call with constant tuple argument currently");
         return 1;
     }
 
-    auto ops = ast::as<constant::Tuple>(ast::as<expression::Constant>(args)->constant())->value();
+    auto ops = ast::rtti::tryCast<constant::Tuple>(
+                   ast::rtti::tryCast<expression::Constant>(args)->constant())
+                   ->value();
 
     auto proto = func->parameters();
 
@@ -401,7 +380,9 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
         if ( ! (*o)->canCoerceTo((*p)->type()) ) {
             auto have = (*o)->type()->render();
             auto want = (*p)->type()->render();
-            error(*o, util::fmt("type of parameter %d does not match function, have %s but expected %s", i, have.c_str(), want.c_str()));
+            error(*o,
+                  util::fmt("type of parameter %d does not match function, have %s but expected %s",
+                            i, have.c_str(), want.c_str()));
             return false;
         }
 
@@ -414,7 +395,8 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
         return true;
 
     if ( o != ops.end() ) {
-        error(*o, util::fmt("too many arguments given, expected %d but got %d", proto.size(), ops.size()));
+        error(*o, util::fmt("too many arguments given, expected %d but got %d", proto.size(),
+                            ops.size()));
         return false;
     }
 
@@ -424,7 +406,8 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
     // Remaining ones must have defaults.
     while ( p != proto.end() ) {
         if ( ! (*p)->default_() ) {
-            error(*p, util::fmt("too few arguments given, expected %d but got %d", proto.size(), ops.size()));
+            error(*p, util::fmt("too few arguments given, expected %d but got %d", proto.size(),
+                                ops.size()));
             return false;
         }
 
@@ -436,8 +419,9 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
 
 bool Instruction::checkCallResult(shared_ptr<Type> rtype, shared_ptr<Type> ty) const
 {
-    bool func_is_void = ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype);
-    bool ty_is_void = (! ty) || ast::isA<type::Void>(ty);
+    bool func_is_void =
+        ast::rtti::isA<type::Void>(rtype) || ast::rtti::isA<type::OptionalArgument>(rtype);
+    bool ty_is_void = (! ty) || ast::rtti::isA<type::Void>(ty);
 
     if ( func_is_void && ! ty_is_void ) {
         error(nullptr, "function does not return a value");
@@ -458,15 +442,17 @@ bool Instruction::checkCallResult(shared_ptr<Type> rtype, shared_ptr<Type> ty) c
     auto have = ty->render();
     auto want = rtype->render();
 
-    error(ty, util::fmt("return type does not match function, have %s but expected %s", have.c_str(), want.c_str()));
+    error(ty, util::fmt("return type does not match function, have %s but expected %s",
+                        have.c_str(), want.c_str()));
 
     return false;
 }
 
 bool Instruction::checkCallResult(shared_ptr<Type> rtype, shared_ptr<Expression> op) const
 {
-    bool func_is_void = ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype);
-    bool ty_is_void = (! op) || ast::isA<type::Void>(op->type());
+    bool func_is_void =
+        ast::rtti::isA<type::Void>(rtype) || ast::rtti::isA<type::OptionalArgument>(rtype);
+    bool ty_is_void = (! op) || ast::rtti::isA<type::Void>(op->type());
 
     if ( func_is_void && ! ty_is_void ) {
         error(nullptr, "function does not return a value");
@@ -487,7 +473,8 @@ bool Instruction::checkCallResult(shared_ptr<Type> rtype, shared_ptr<Expression>
     auto have = op->type()->render();
     auto want = rtype->render();
 
-    error(op, util::fmt("return type does not match function, have %s but expected %s", have.c_str(), want.c_str()));
+    error(op, util::fmt("return type does not match function, have %s but expected %s",
+                        have.c_str(), want.c_str()));
 
     return false;
 }
@@ -512,12 +499,13 @@ Instruction::Info Instruction::info() const
     info.default_op3 = __defaultOp3();
 
     if ( ::util::startsWith(info.mnemonic, ".op.") )
-         info.mnemonic = info.mnemonic.substr(4, std::string::npos);
+        info.mnemonic = info.mnemonic.substr(4, std::string::npos);
 
     return info;
 }
 
-std::set<shared_ptr<statement::Block>> Instruction::successors(const hilti::instruction::Operands& ops, shared_ptr<Scope> scope) const
+std::set<shared_ptr<statement::Block>> Instruction::successors(
+    const hilti::instruction::Operands& ops, shared_ptr<Scope> scope) const
 {
     auto exprs = __successors(ops);
 
@@ -530,10 +518,10 @@ std::set<shared_ptr<statement::Block>> Instruction::successors(const hilti::inst
 
         shared_ptr<Expression> expr = nullptr;
 
-        auto c = ast::tryCast<expression::Constant>(e);
+        auto c = ast::rtti::tryCast<expression::Constant>(e);
 
         if ( c ) {
-            auto l = ast::checkedCast<constant::Label>(c->constant());
+            auto l = ast::rtti::checkedCast<constant::Label>(c->constant());
             auto exprs = scope->lookup(std::make_shared<ID>(l->value()));
 
             assert(exprs.size() == 1);
@@ -543,7 +531,7 @@ std::set<shared_ptr<statement::Block>> Instruction::successors(const hilti::inst
         else
             expr = e;
 
-        auto s = ast::checkedCast<expression::Block>(expr);
+        auto s = ast::rtti::checkedCast<expression::Block>(expr);
         succ.insert(s->block());
     }
 
@@ -553,15 +541,14 @@ std::set<shared_ptr<statement::Block>> Instruction::successors(const hilti::inst
 std::pair<shared_ptr<Type>, bool> Instruction::typeOperand(int n) const
 {
     switch ( n ) {
-     case 1:
+    case 1:
         return __typeOp1();
 
-     case 2:
+    case 2:
         return __typeOp2();
 
-     case 3:
+    case 3:
         return __typeOp3();
-
     }
     return std::make_pair(nullptr, false);
 }
@@ -571,7 +558,8 @@ shared_ptr<Type> Instruction::typeTarget() const
     return __typeOp0().first;
 }
 
-shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(shared_ptr<Instruction> instr, shared_ptr<statement::Instruction> stmt)
+shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(
+    shared_ptr<Instruction> instr, shared_ptr<statement::Instruction> stmt)
 {
     auto resolved = resolveStatement(instr, stmt->operands(), stmt->location());
 
@@ -584,7 +572,8 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
     return resolved;
 }
 
-shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(shared_ptr<Instruction> instr, const instruction::Operands& ops, const Location& l)
+shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(
+    shared_ptr<Instruction> instr, const instruction::Operands& ops, const Location& l)
 {
     instruction::Operands new_ops;
     instruction::Operands defaults;
@@ -599,19 +588,18 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
         auto op = ops[i];
 
         if ( op && instr ) {
-
             switch ( i ) {
-             case 1:
+            case 1:
                 if ( instr->__typeOp1().first )
                     op = op->coerceTo(instr->__typeOp1().first);
                 break;
 
-             case 2:
+            case 2:
                 if ( instr->__typeOp2().first )
                     op = op->coerceTo(instr->__typeOp2().first);
                 break;
 
-             case 3:
+            case 3:
                 if ( instr->__typeOp3().first )
                     op = op->coerceTo(instr->__typeOp3().first);
                 break;
@@ -625,4 +613,3 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
 
     return resolved;
 }
-

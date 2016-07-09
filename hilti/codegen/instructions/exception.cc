@@ -8,8 +8,8 @@ using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::exception::New* i)
 {
-    auto type = ast::as<expression::Type>(i->op1())->typeValue();
-    auto etype = ast::as<type::Exception>(type);
+    auto type = ast::rtti::tryCast<expression::Type>(i->op1())->typeValue();
+    auto etype = ast::rtti::tryCast<type::Exception>(type);
 
     CodeGen::value_list args;
     args.push_back(cg()->llvmExceptionTypeObject(etype));
@@ -22,8 +22,8 @@ void StatementBuilder::visit(statement::instruction::exception::New* i)
 
 void StatementBuilder::visit(statement::instruction::exception::NewWithArg* i)
 {
-    auto type = ast::as<expression::Type>(i->op1())->typeValue();
-    auto etype = ast::as<type::Exception>(type);
+    auto type = ast::rtti::tryCast<expression::Type>(i->op1())->typeValue();
+    auto etype = ast::rtti::tryCast<type::Exception>(type);
 
     auto arg = cg()->llvmValue(i->op2(), etype->argType());
     arg = builder()->CreateBitCast(arg, cg()->llvmTypePtr());
@@ -50,12 +50,13 @@ void StatementBuilder::visit(statement::instruction::exception::__BeginHandler* 
     auto parent = i->firstParent<statement::Block>();
     assert(parent);
 
-    auto const_ = ast::checkedCast<expression::Constant>(i->op1());
-    auto label = ast::checkedCast<constant::Label>(const_->constant());
+    auto const_ = ast::rtti::checkedCast<expression::Constant>(i->op1());
+    auto label = ast::rtti::checkedCast<constant::Label>(const_->constant());
     auto expr = std::make_shared<expression::Constant>(label);
 
-    auto type = i->op2() ? ast::checkedCast<expression::Type>(i->op2())->typeValue() : nullptr;
-    auto etype = type ? ast::checkedCast<type::Exception>(type) : nullptr;
+    auto type =
+        i->op2() ? ast::rtti::checkedCast<expression::Type>(i->op2())->typeValue() : nullptr;
+    auto etype = type ? ast::rtti::checkedCast<type::Exception>(type) : nullptr;
 
     cg()->pushExceptionHandler(expr, etype);
 }

@@ -3,7 +3,8 @@
 
 using namespace hilti;
 
-bool FlowVariablePtrCmp::operator()(const shared_ptr<FlowVariable>& f1, const shared_ptr<FlowVariable>& f2)
+bool FlowVariablePtrCmp::operator()(const shared_ptr<FlowVariable>& f1,
+                                    const shared_ptr<FlowVariable>& f2)
 {
     return f1->name < f2->name;
 }

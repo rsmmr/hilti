@@ -14,14 +14,15 @@ namespace codegen {
 
 // Codegen information about a BinPAC++ type.
 struct TypeInfo {
-    typedef std::function<shared_ptr<hilti::Expression> (CodeGen* cg, shared_ptr<binpac::Type> t)> expression_callback;
+    typedef std::function<shared_ptr<hilti::Expression>(CodeGen* cg, shared_ptr<binpac::Type> t)>
+        expression_callback;
 
     /// The corresponding HILTI type. If null, one can't create instances of
     /// this type.
-    shared_ptr<hilti::Type>       hilti_type = nullptr;
+    shared_ptr<hilti::Type> hilti_type = nullptr;
 
     /// An name optionally associated with the type.
-    shared_ptr<hilti::ID>         hilti_id = nullptr;
+    shared_ptr<hilti::ID> hilti_id = nullptr;
 
     /// The default HILTI value for instances of this type that aren't
     /// explicitly initialized. If null, we use HILTI's default for the type.
@@ -31,11 +32,10 @@ struct TypeInfo {
     /// hilti_default even if we could leave an instance unset (like in a
     /// union). That's typically useful for containters.
     bool always_initialize = false;
-    };
+};
 
 /// Visitor that returns the HILTI type that corresponds to a BinPAC type.
-class TypeBuilder : public CGVisitor<TypeInfo>
-{
+class TypeBuilder : public CGVisitor<TypeInfo> {
 public:
     typedef std::list<shared_ptr<::hilti::ID>> id_list;
 
@@ -78,7 +78,8 @@ public:
     /// value returned (unless \a null_on_default is set).
     ///
     /// Returns: The HILTI value, or null for HILTI's default.
-    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default, bool can_be_unset);
+    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default,
+                                               bool can_be_unset);
 
     /// Adds a global constant with a unit's auxiliary type information.
     ///
@@ -148,13 +149,13 @@ protected:
     void visit(type::unit::item::field::switch_::Case* c) override;
 
 private:
-    shared_ptr<::hilti::Type> _buildType(shared_ptr<::hilti::Type> type, int pac_type, shared_ptr<::hilti::Expression> aux = nullptr);
-    void _addHostType(shared_ptr<::hilti::Type> type, int pac_type, shared_ptr<::hilti::Expression> aux = nullptr);
+    shared_ptr<::hilti::Type> _buildType(shared_ptr<::hilti::Type> type, int pac_type,
+                                         shared_ptr<::hilti::Expression> aux = nullptr);
+    void _addHostType(shared_ptr<::hilti::Type> type, int pac_type,
+                      shared_ptr<::hilti::Expression> aux = nullptr);
 
     id_list* _deps;
-
 };
-
 }
 }
 

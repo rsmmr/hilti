@@ -12,14 +12,13 @@ void StatementBuilder::visit(statement::instruction::timer::New* i)
     prepareCall(i->op2(), i->op3(), &params, false);
 
     auto func = cg()->llvmValue(i->op2());
-    auto ftype = ast::as<type::Function>(i->op2()->type());
+    auto ftype = ast::rtti::tryCast<type::Function>(i->op2()->type());
     auto callable = cg()->llvmCallableBind(func, ftype, params, false, true);
 
-    CodeGen::value_list args = { callable };
+    CodeGen::value_list args = {callable};
     auto timer = cg()->llvmCallC("__hlt_timer_new_function", args, true);
 
     cg()->llvmStore(i->target(), timer);
-
 }
 
 void StatementBuilder::visit(statement::instruction::timer::Cancel* i)
@@ -36,4 +35,3 @@ void StatementBuilder::visit(statement::instruction::timer::Update* i)
     args.push_back(i->op2());
     cg()->llvmCall("hlt::timer_update", args);
 }
-

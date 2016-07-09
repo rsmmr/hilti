@@ -1,13 +1,15 @@
 
 #include "attribute.h"
-#include "type.h"
 #include "expression.h"
 #include "function.h"
 #include "id.h"
+#include "type.h"
 
 using namespace binpac;
 
-Attribute::Attribute(const string& key, shared_ptr<Expression> value, bool internal, const Location& l) : Node(l)
+Attribute::Attribute(const string& key, shared_ptr<Expression> value, bool internal,
+                     const Location& l)
+    : Node(l)
 {
     string k = key;
 
@@ -125,4 +127,3 @@ AttributeSet& AttributeSet::operator=(const attribute_list& attrs)
 
     return *this;
 }
-

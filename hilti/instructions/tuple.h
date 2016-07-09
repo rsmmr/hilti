@@ -19,12 +19,12 @@ iBeginH(tuple, Equal, "equal")
 iEndH
 
 iBeginH(tuple, Index, "tuple.index")
-    iTarget(optype::any)
-    iOp1(optype::tuple, true)
-    iOp2(optype::integer, true)
+    iTarget(optype::any);
+    iOp1(optype::tuple, true);
+    iOp2(optype::integer, true);
 iEndH
 
 iBeginH(tuple, Length, "tuple.length")
     iTarget(optype::int64);
-    iOp1(optype::tuple, true)
+    iOp1(optype::tuple, true);
 iEndH

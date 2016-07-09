@@ -13,4 +13,3 @@ void StatementBuilder::visit(statement::instruction::reference::AsBool* i)
     auto result = builder()->CreateIsNotNull(op1);
     cg()->llvmStore(i, result);
 }
-

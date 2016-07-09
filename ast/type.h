@@ -4,29 +4,34 @@
 
 #include <util/util.h>
 
-#include "node.h"
 #include "mixin.h"
+#include "node.h"
 
 namespace ast {
 
-template<class AstInfo>
+template <class AstInfo>
 class Type;
 
 /// Base class for mix-ins that want to override some of a type's virtual
 /// methods. See Type for documentation.
-template<class AstInfo>
+template <class AstInfo>
 class TypeOverrider : public Overrider<typename AstInfo::type> {
 public:
-    virtual ~TypeOverrider() {}
+    virtual ~TypeOverrider()
+    {
+    }
 
     /// See Type::repr().
-    virtual string repr() const { assert(false); return ""; }
+    virtual string repr() const
+    {
+        assert(false);
+        return "";
+    }
 };
 
 /// Base class for AST nodes representing types.
-template<class AstInfo>
-class Type : public AstInfo::node, public Overridable<TypeOverrider<AstInfo>>
-{
+template <class AstInfo>
+class Type : public AstInfo::node, public Overridable<TypeOverrider<AstInfo>> {
 public:
     typedef typename AstInfo::node Node;
     typedef typename AstInfo::type AIType;
@@ -35,7 +40,9 @@ public:
     /// Constructor.
     ///
     /// l: A location associated with the expression.
-    Type(Location l=Location::None) : AstInfo::node(l) {}
+    Type(Location l = Location::None) : AstInfo::node(l)
+    {
+    }
 
     /// Returns true if two types are equivalent.
     ///
@@ -50,18 +57,19 @@ public:
     ///      _equal() is passed on (which defaults to true).
     ///
     ///    - Otherwise, comparision fails.
-    virtual bool equal(shared_ptr<AIType> other) const {
-       if ( _any || other->_any )
-           return true;
+    virtual bool equal(shared_ptr<AIType> other) const
+    {
+        if ( _any || other->_any )
+            return true;
 
-       if ( typeid(*this) == typeid(*other) ) {
-           if ( _wildcard || other->_wildcard )
-               return true;
+        if ( typeId(*this) == typeId(*other) ) {
+            if ( _wildcard || other->_wildcard )
+                return true;
 
-           return _equal(other);
-       }
+            return _equal(other);
+        }
 
-       return false;
+        return false;
     }
 
     /// Compares two type instances of the same Type class. The default
@@ -71,44 +79,67 @@ public:
     /// the same type as \c *this.
     ///
     /// Note, when overriding, make sure to keep comparision commutative.
-    virtual bool _equal(shared_ptr<AIType> other) const { return true; }
+    virtual bool _equal(shared_ptr<AIType> other) const
+    {
+        return true;
+    }
 
     /// Returns the ID associated with the type, or null of none.
-    shared_ptr<ID> id() const { return _id; }
+    shared_ptr<ID> id() const
+    {
+        return _id;
+    }
 
     /// Associated an ID with the type.
-    void setID(shared_ptr<ID> id) {
-       if ( _id )
-           this->removeChild(_id);
+    void setID(shared_ptr<ID> id)
+    {
+        if ( _id )
+            this->removeChild(_id);
 
-       _id = id;
-       this->addChild(_id);
+        _id = id;
+        this->addChild(_id);
     }
 
     /// Returns the scope associated with the type, or an empty string if none.
-    std::string scope() const { return _scope; }
+    std::string scope() const
+    {
+        return _scope;
+    }
 
     /// Associates a scope with the type.
-    void setScope(const std::string& scope) {
-       _scope = scope;
+    void setScope(const std::string& scope)
+    {
+        _scope = scope;
     }
 
     /// Returns true if the type has been marked a wildcard type. See
     /// setWildcard().
-    bool wildcard(void) const { return _wildcard; }
+    bool wildcard(void) const
+    {
+        return _wildcard;
+    }
 
     /// Marks the type as wildcard type. When comparing types with
     /// operator==(), a wilcard type matches all other instances of the same
     /// Type class.
-    void setWildcard(bool wildcard) { _wildcard = wildcard; }
+    void setWildcard(bool wildcard)
+    {
+        _wildcard = wildcard;
+    }
 
     /// Returns true if the type has been marked to match any other. See
     /// setMatchesAny().
-    bool matchesAny(void) const { return _any; }
+    bool matchesAny(void) const
+    {
+        return _any;
+    }
 
     /// Marks the type as matching any other. When comparing types with
     /// operator==(), such a type will always match anything else.
-    void setMatchesAny(bool any) { _any = any; }
+    void setMatchesAny(bool any)
+    {
+        _any = any;
+    }
 
 private:
     bool operator==(const Type& other) const; // Disable.
@@ -129,9 +160,8 @@ namespace mixin {
 namespace function {
 
 /// A helper class for mixin::Function to describe a function paramemeter.
-template<typename AstInfo>
-class Parameter : public AstInfo::node
-{
+template <typename AstInfo>
+class Parameter : public AstInfo::node {
 public:
     typedef typename AstInfo::node Node;
     typedef typename AstInfo::type Type;
@@ -150,49 +180,70 @@ public:
     /// default_value: An optional default value for the parameters, or null if none.
     ///
     /// l: A location associated with the expression.
-    Parameter(shared_ptr<ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value = nullptr, Location l=Location::None)
-       : Node(l) { Init(id, type, constant, default_value); }
-
-    /// Returns the name of the parameter. Null for return values.
-    shared_ptr<ID> id() const { return _id; }
-
-    /// Returns true if the parameter is marked constant.
-    bool constant() const { return _constant; }
-
-    /// Returns the type of the parameter.
-    shared_ptr<Type> type() const { return _type; }
-
-    /// Returns the default value of the parameter, or null if none.
-    shared_ptr<Expression> default_() const { return _default_value; }
-
-    /// Returns a string representation of the parameter for type comparision.
-    string repr() const {
-       auto id = _id ? (string(" ") + _id->pathAsString()).c_str() : "";
-       return util::fmt("%s%s%s", (_constant ? "const " : ""), _type->render().c_str(), id);
+    Parameter(shared_ptr<ID> id, shared_ptr<Type> type, bool constant,
+              shared_ptr<Expression> default_value = nullptr, Location l = Location::None)
+        : Node(l)
+    {
+        Init(id, type, constant, default_value);
     }
 
-    bool operator==(const Parameter& other) {
+    /// Returns the name of the parameter. Null for return values.
+    shared_ptr<ID> id() const
+    {
+        return _id;
+    }
+
+    /// Returns true if the parameter is marked constant.
+    bool constant() const
+    {
+        return _constant;
+    }
+
+    /// Returns the type of the parameter.
+    shared_ptr<Type> type() const
+    {
+        return _type;
+    }
+
+    /// Returns the default value of the parameter, or null if none.
+    shared_ptr<Expression> default_() const
+    {
+        return _default_value;
+    }
+
+    /// Returns a string representation of the parameter for type comparision.
+    string repr() const
+    {
+        auto id = _id ? (string(" ") + _id->pathAsString()).c_str() : "";
+        return util::fmt("%s%s%s", (_constant ? "const " : ""), _type->render().c_str(), id);
+    }
+
+    bool operator==(const Parameter& other)
+    {
         auto p1 = util::fmt("%s%s", (_constant ? "const " : ""), _type->render().c_str());
-        auto p2 = util::fmt("%s%s", (other._constant ? "const " : ""), other._type->render().c_str());
+        auto p2 =
+            util::fmt("%s%s", (other._constant ? "const " : ""), other._type->render().c_str());
         return p1 == p2;
     }
 
-    bool operator!=(const Parameter& other) {
+    bool operator!=(const Parameter& other)
+    {
         return ! (*this == other);
     }
 
 private:
-    void Init(shared_ptr<ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value = nullptr);
+    void Init(shared_ptr<ID> id, shared_ptr<Type> type, bool constant,
+              shared_ptr<Expression> default_value = nullptr);
 
     node_ptr<ID> _id;
     bool _constant;
     node_ptr<Type> _type;
     node_ptr<Expression> _default_value;
-
 };
 
-template<typename AstInfo>
-inline void Parameter<AstInfo>::Init(shared_ptr<ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value)
+template <typename AstInfo>
+inline void Parameter<AstInfo>::Init(shared_ptr<ID> id, shared_ptr<Type> type, bool constant,
+                                     shared_ptr<Expression> default_value)
 {
     _id = id;
     _constant = constant;
@@ -206,9 +257,8 @@ inline void Parameter<AstInfo>::Init(shared_ptr<ID> id, shared_ptr<Type> type, b
     this->addChild(_default_value);
 }
 
-template<typename AstInfo>
-class Result : public Parameter<AstInfo>
-{
+template <typename AstInfo>
+class Result : public Parameter<AstInfo> {
 public:
     typedef typename AstInfo::type Type;
 
@@ -220,16 +270,16 @@ public:
     /// (i.e., a caller may not change its value.)
     ///
     /// l: A location associated with the expression.
-    Result(shared_ptr<Type> type, bool constant, Location l=Location::None)
-       : Parameter<AstInfo>(nullptr, type, constant, nullptr, l) {}
+    Result(shared_ptr<Type> type, bool constant, Location l = Location::None)
+        : Parameter<AstInfo>(nullptr, type, constant, nullptr, l)
+    {
+    }
 };
-
 }
 
 /// A mix-in class to define a function type.
-template<typename AstInfo>
-class Function : public __TYPE_MIXIN, public TypeOverrider<AstInfo>
-{
+template <typename AstInfo>
+class Function : public __TYPE_MIXIN, public TypeOverrider<AstInfo> {
 public:
     typedef typename AstInfo::node Node;
     typedef typename AstInfo::type Type;
@@ -248,10 +298,13 @@ public:
     /// params: The function's parameters.
     Function(Type* target, shared_ptr<Result> result, const parameter_list& params);
 
-    virtual ~Function() {}
+    virtual ~Function()
+    {
+    }
 
     /// Returns the function's parameters.
-    parameter_list parameters() const {
+    parameter_list parameters() const
+    {
         parameter_list params;
         for ( auto p : _params )
             params.push_back(p);
@@ -260,41 +313,46 @@ public:
     }
 
     /// Returns the function's result type.
-    shared_ptr<Result> result() const { return _result; }
+    shared_ptr<Result> result() const
+    {
+        return _result;
+    }
 
     /// Returns true if a list of expressions is compatiable with the
     /// function's parameters.
-    template<typename IterableExpression>
-    bool matchParameters(const IterableExpression& values) {
-       auto a = _params.begin();
+    template <typename IterableExpression>
+    bool matchParameters(const IterableExpression& values)
+    {
+        auto a = _params.begin();
 
-       for ( auto e : values ) {
-           if ( a == _params.end() )
-               return false;
+        for ( auto e : values ) {
+            if ( a == _params.end() )
+                return false;
 
-           if ( ! e.canCoerceTo(a.type) )
-               return false;
+            if ( ! e.canCoerceTo(a.type) )
+                return false;
 
-           if ( a->constant() && ! e->isConstant() )
-               return false;
-       }
+            if ( a->constant() && ! e->isConstant() )
+                return false;
+        }
 
-       // Left-over parameters must have a default value.
-       while ( a++ != _params.end() ) {
-           if ( ! a->default_value )
-               return false;
-       }
+        // Left-over parameters must have a default value.
+        while ( a++ != _params.end() ) {
+            if ( ! a->default_value )
+                return false;
+        }
 
-       return true;
+        return true;
     }
 
     /// Returns true if a list an expression is compatiable with the
     /// function's return type.
-    bool matchResult(shared_ptr<Expression> e) {
-       if ( ! e.canCoerceTo(_result.type()) )
-           return false;
+    bool matchResult(shared_ptr<Expression> e)
+    {
+        if ( ! e.canCoerceTo(_result.type()) )
+            return false;
 
-       return true;
+        return true;
     }
 
     string repr() const /* override*/;
@@ -303,7 +361,6 @@ protected:
     std::list<node_ptr<Parameter>> _params;
     node_ptr<Parameter> _result;
 };
-
 }
 
 //////////////////////// Traits.
@@ -313,19 +370,72 @@ protected:
 //
 // Note that Traits aren't (and can't) be derived from Node and thus aren't
 // AST nodes.
-class Trait
-{
+class Trait {
 public:
-    Trait() {}
+    Trait()
+    {
+    }
     virtual ~Trait();
 };
 
+/// Returns true if type \a t has trait \a T.
+template <typename T>
+inline bool hasTrait(shared_ptr<NodeBase> t)
+{
+    return ast::rtti::isA<T>(t);
+}
+
+/// Returns true if type \a t has trait \a T.
+template <typename T>
+inline bool hasTrait(NodeBase* t)
+{
+    return ast::rtti::isA<T>(t);
+}
+
+/// Dynamic-casts type \a t into trait class \a T. This version returns null
+/// if the cast fails.
+template <typename T>
+inline T* tryTrait(NodeBase* t)
+{
+    return ast::rtti::tryCast<T>(t);
+}
+
+/// Dynamic-casts type \a t into trait class \a T. This version returns null
+/// if the cast fails. Note that this returns a plain pointer, not a shared
+/// one.
+template <typename T>
+inline T* tryTrait(shared_ptr<NodeBase> t)
+{
+    return ast::rtti::tryCast<T>(t.get());
+}
+
+/// Dynamic-casts type \a t into trait class \a T. This version aborts if the
+/// cast fails.
+///
+/// Returns: The cast pointer.
+template <typename T>
+inline T* checkedTrait(NodeBase* t)
+{
+    return ast::rtti::checkedCast<T>(t);
+}
+
+/// Dynamic-casts type \a t into trait class \a T. This version aborts if the
+/// cast fails. Note that this returns a plain pointer, not a shared
+/// one.
+template <typename T>
+inline T* checkedTrait(shared_ptr<NodeBase> t)
+{
+    return ast::rtti::tryCast<T>(t.get());
+}
+
 namespace trait {
+
+#if 0
 
 namespace parameter {
 
 /// Base class for a type parameter. This is used with trait::Parameterized.
-class Base {
+class Base : virtual public ast::rtti::Base {
 public:
     virtual ~Base() {}
 
@@ -349,7 +459,7 @@ public:
     shared_ptr<AIType> type() const { return _type; }
 
     bool _equal(shared_ptr<Base> other) const override {
-       return _type->equal(std::dynamic_pointer_cast<Type>(other)->_type);
+        return _type->equal(ast::rtti::checkedCast<Type>(other)->_type);
     }
 
 private:
@@ -368,7 +478,7 @@ public:
     int64_t value() const { return _value; }
 
     bool _equal(shared_ptr<Base> other) const override {
-       return _value == std::dynamic_pointer_cast<Integer>(other)->_value;
+        return _value == rtti::tryCast<Integer>(other)->_value;
     }
 
 private:
@@ -391,7 +501,7 @@ public:
     shared_ptr<ID> label() const { return _label; }
 
     bool _equal(shared_ptr<Base> other) const override {
-       return _label->pathAsString() == std::dynamic_pointer_cast<Enum>(other)->_label->pathAsString();
+       return _label->pathAsString() == ast::rtti::checkedCast<Enum>(other)->_label->pathAsString();
     }
 
 private:
@@ -410,7 +520,7 @@ public:
     const string& value() const { return _attr; }
 
     bool _equal(shared_ptr<Base> other) const override {
-       return _attr == std::dynamic_pointer_cast<Attribute>(other)->_attr;
+       return _attr == ast::rtti::checkedCast<Attribute>(other)->_attr;
     }
 
 private:
@@ -431,7 +541,7 @@ public:
     /// Compares the type with another for equivalence, which must be an
     /// instance of the same type class.
     bool equal(shared_ptr<AIType> other) const {
-       auto pother = dynamic_cast<type::trait::Parameterized<AstInfo> *>(other.get());
+       auto pother = dynamicCast(other.get(), type::trait::Parameterized<AstInfo> *);
        if ( ! pother )
             return false;
 
@@ -448,7 +558,7 @@ public:
            if ( ! (*i1 && *i2) )
                return false;
 
-           if ( typeid(**i1) != typeid(**i2) )
+           if ( typeId(**i1) != typeId(**i2) )
                return false;
 
            if ( ! (*i1)->_equal(*i2) )
@@ -465,10 +575,11 @@ public:
     virtual type_parameter_list parameters() const = 0;
 };
 
+#endif
+
 /// Trait class marking a composite type that has a series of subtypes.
-template<typename AstInfo>
-class TypeList : public virtual Trait
-{
+template <typename AstInfo>
+class TypeList : public virtual Trait {
 public:
     typedef typename AstInfo::type AIType;
     typedef std::list<shared_ptr<AIType>> type_list;
@@ -478,9 +589,8 @@ public:
 };
 
 /// Trait class marking a type that provides iterators.
-template<typename AstInfo>
-class Iterable : public virtual Trait
-{
+template <typename AstInfo>
+class Iterable : public virtual Trait {
 public:
     typedef typename AstInfo::type AIType;
 
@@ -492,83 +602,21 @@ public:
 };
 
 /// Trait class marking a type that can be hashed for storing in containers.
-class Hashable : public virtual Trait
-{
+class Hashable : public virtual Trait {
 public:
 };
 
 /// Trait class marking a container type.
-template<typename AstInfo>
-class Container : public Iterable<AstInfo>
-{
+template <typename AstInfo>
+class Container : public Iterable<AstInfo> {
 };
-
-/// Returns true if type \a t has trait \a T.
-template<typename T>
-inline bool hasTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<T>(t) != 0; }
-
-/// Dynamic-casts type \a t into trait class \a T.
-///
-/// \deprecated: Use checkedTrait or tryTrait instead.
-template<typename T>
-inline T* asTrait(NodeBase* t) { return dynamic_cast<T*>(t); }
-
-/// Dynamic-casts type \a t into trait class \a T.
-///
-/// \deprecated: Use checkedTrait or tryTrait instead.
-template<typename T>
-inline T* asTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<T>(t); }
-
-}
-
-/// Dynamic-casts type \a t into trait class \a T. This version return null
-/// if the cast fails.
-template<typename T>
-inline T* tryTrait(NodeBase* t) { return dynamic_cast<T*>(t); }
-
-/// Dynamic-casts type \a t into trait class \a T. This version return null
-/// if the cast fails.
-template<typename T>
-inline shared_ptr<T> tryTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<T>(t); }
-
-/// Dynamic-casts type \a t into trait class \a T. This version aborts if the
-/// cast fails.
-///
-/// Returns: The cast pointer.
-template<typename T>
-inline shared_ptr<T> checkedTrait(NodeBase* t) {
-    auto c = std::dynamic_pointer_cast<T>(t);
-
-    if ( ! c ) {
-        fprintf(stderr, "internal error: ast::checkedTrait() failed; want '%s' but got a '%s'",
-                typeid(T).name(), typeid(*t).name());
-        abort();
-    }
-
-    return c;
-}
-
-/// Dynamic-casts type \a t into trait class \a T. This version aborts if the
-/// cast fails.
-///
-/// Returns: The cast pointer.
-template<typename T>
-inline T* checkedTrait(shared_ptr<NodeBase> t) {
-    auto c = dynamic_cast<T*>(t.get());
-
-    if ( ! c ) {
-        fprintf(stderr, "internal error: ast::checkedTrait() failed; want '%s' but got a '%s'",
-                typeid(T).name(), typeid(*t.get()).name());
-        abort();
-    }
-
-    return c;
 }
 
 //////////////////////// Implementations.
 
-template<typename AstInfo>
-inline mixin::Function<AstInfo>::Function(Type* target, shared_ptr<Result> result, const parameter_list& params)
+template <typename AstInfo>
+inline mixin::Function<AstInfo>::Function(Type* target, shared_ptr<Result> result,
+                                          const parameter_list& params)
     : __TYPE_MIXIN(target, this)
 {
     for ( auto p : params )
@@ -581,27 +629,26 @@ inline mixin::Function<AstInfo>::Function(Type* target, shared_ptr<Result> resul
     target->addChild(_result);
 }
 
-template<typename AstInfo>
-string mixin::Function<AstInfo>::repr() const {
+template <typename AstInfo>
+string mixin::Function<AstInfo>::repr() const
+{
     string s = _result->render() + string(" (");
 
     bool first = true;
     for ( auto a : _params ) {
-       if ( ! first )
-           s += ", ";
+        if ( ! first )
+            s += ", ";
 
-       s += a->repr();
+        s += a->repr();
 
-       first = false;
+        first = false;
     }
 
     s += ")";
 
     return s;
 }
-
 }
-
 }
 
 #endif

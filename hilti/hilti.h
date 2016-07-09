@@ -7,7 +7,7 @@
 #define HILTI_H
 
 #include "hilti-intern.h"
-#include "options.h"
 #include "hilti/autogen/instructions.h"
+#include "options.h"
 
 #endif

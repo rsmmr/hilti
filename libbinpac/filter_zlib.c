@@ -7,12 +7,13 @@
 
 typedef struct {
     binpac_filter base;
-	z_stream* zip;
+    z_stream* zip;
 } __binpac_filter_zlib;
 
-void __binpac_filter_zlib_close(binpac_filter* filter_gen, hlt_exception** excpt, hlt_execution_context* ctx_)
+void __binpac_filter_zlib_close(binpac_filter* filter_gen, hlt_exception** excpt,
+                                hlt_execution_context* ctx_)
 {
-    __binpac_filter_zlib* filter = (__binpac_filter_zlib *)filter_gen;
+    __binpac_filter_zlib* filter = (__binpac_filter_zlib*)filter_gen;
 
     if ( ! filter->zip )
         return;
@@ -24,21 +25,22 @@ void __binpac_filter_zlib_close(binpac_filter* filter_gen, hlt_exception** excpt
 
 binpac_filter* __binpac_filter_zlib_allocate(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __binpac_filter_zlib* filter = GC_NEW_CUSTOM_SIZE(binpac_filter, sizeof(__binpac_filter_zlib), ctx);
+    __binpac_filter_zlib* filter =
+        GC_NEW_CUSTOM_SIZE(binpac_filter, sizeof(__binpac_filter_zlib), ctx);
     filter->zip = hlt_malloc(sizeof(z_stream));
-	filter->zip->zalloc = 0;
-	filter->zip->zfree = 0;
-	filter->zip->opaque = 0;
-	filter->zip->next_out = 0;
-	filter->zip->avail_out = 0;
-	filter->zip->next_in = 0;
-	filter->zip->avail_in = 0;
+    filter->zip->zalloc = 0;
+    filter->zip->zfree = 0;
+    filter->zip->opaque = 0;
+    filter->zip->next_out = 0;
+    filter->zip->avail_out = 0;
+    filter->zip->next_in = 0;
+    filter->zip->avail_in = 0;
 
-	// "15" here means maximum compression.  "32" is a gross overload hack
-	// that means "check it for whether it's a gzip file". Sheesh.
-	int zip_status = inflateInit2(filter->zip, 15 + 32);
+    // "15" here means maximum compression.  "32" is a gross overload hack
+    // that means "check it for whether it's a gzip file". Sheesh.
+    int zip_status = inflateInit2(filter->zip, 15 + 32);
 
-	if ( zip_status != Z_OK ) {
+    if ( zip_status != Z_OK ) {
         __binpac_filter_zlib_close((binpac_filter*)filter, excpt, ctx);
         hlt_string fname = hlt_string_from_asciiz("inflateInit2 failed", excpt, ctx);
         hlt_set_exception(excpt, &binpac_exception_filtererror, fname, ctx);
@@ -53,9 +55,10 @@ void __binpac_filter_zlib_dtor(hlt_type_info* ti, binpac_filter* filter, hlt_exe
     __binpac_filter_zlib_close(filter, 0, 0);
 }
 
-hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* data,
+                                       hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __binpac_filter_zlib* filter = (__binpac_filter_zlib *)filter_gen;
+    __binpac_filter_zlib* filter = (__binpac_filter_zlib*)filter_gen;
 
     if ( ! filter->zip ) {
         // hlt_string fname = hlt_string_from_asciiz("more inflate data after close", excpt, ctx);
@@ -90,9 +93,7 @@ hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* dat
 
             int zip_status = inflate(filter->zip, Z_SYNC_FLUSH);
 
-            if ( zip_status != Z_STREAM_END &&
-                 zip_status != Z_OK &&
-                 zip_status != Z_BUF_ERROR ) {
+            if ( zip_status != Z_STREAM_END && zip_status != Z_OK && zip_status != Z_BUF_ERROR ) {
                 __binpac_filter_zlib_close((binpac_filter*)filter, excpt, ctx);
                 hlt_string fname = hlt_string_from_asciiz("inflate failed", excpt, ctx);
                 hlt_set_exception(excpt, &binpac_exception_filtererror, fname, ctx);
@@ -111,9 +112,9 @@ hlt_bytes* __binpac_filter_zlib_decode(binpac_filter* filter_gen, hlt_bytes* dat
             if ( zip_status == Z_STREAM_END ) {
                 __binpac_filter_zlib_close((binpac_filter*)filter, excpt, ctx);
                 break;
-			}
+            }
 
-		} while ( filter->zip->avail_out == 0 );
+        } while ( filter->zip->avail_out == 0 );
 
     } while ( cookie );
 

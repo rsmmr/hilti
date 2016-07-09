@@ -1,11 +1,12 @@
 
 #include "define-instruction.h"
 
-#include "profiler.h"
 #include "../module.h"
+#include "profiler.h"
 
 iBeginCC(profiler)
-    iValidateCC(Start) {
+    iValidateCC(Start)
+    {
         // FIXME: We need to check here that the enum is right, and that the
         // argument matches with what the profilter type expects.
 
@@ -16,35 +17,36 @@ iBeginCC(profiler)
             // Error, must be constant (but is reported already).
             return;
 
-        if ( ast::isA<type::Enum>(op2->type()) )
+        if ( ast::rtti::isA<type::Enum>(op2->type()) )
             // Ok.
             return;
 
-        auto ttype = ast::tryCast<type::Tuple>(op2->type());
+        auto ttype = ast::rtti::tryCast<type::Tuple>(op2->type());
 
         if ( ! ttype )
             goto error;
 
         if ( ttype->typeList().size() == 2 ) {
-
             auto types = ttype->typeList();
             auto a = types.begin();
             auto arg1 = *a++;
             auto arg2 = *a++;
 
-            if ( ! ast::isA<type::Enum>(arg1) )
+            if ( ! ast::rtti::isA<type::Enum>(arg1) )
                 goto error;
 
-            if ( ! (ast::isA<type::Integer>(arg2) || ast::isA<type::Interval>(arg2)) )
+            if ( ! (ast::rtti::isA<type::Integer>(arg2) || ast::rtti::isA<type::Interval>(arg2)) )
                 goto error;
 
             // Ok.
             return;
         }
 
-error:
+    error:
         // Error when arriving here.
-        error(op2, "profiler parameter must be Hilti::ProfileStyle or (Hilti::ProfileStyle, int64|interval)");
+        error(op2,
+              "profiler parameter must be Hilti::ProfileStyle or (Hilti::ProfileStyle, "
+              "int64|interval)");
     }
 
     iDocCC(Start, R"(
@@ -65,7 +67,8 @@ error:
 iEndCC
 
 iBeginCC(profiler)
-    iValidateCC(Stop) {
+    iValidateCC(Stop)
+    {
     }
 
     iDocCC(Stop, R"(
@@ -79,7 +82,8 @@ iBeginCC(profiler)
 iEndCC
 
 iBeginCC(profiler)
-    iValidateCC(Update) {
+    iValidateCC(Update)
+    {
     }
 
     iDocCC(Update, R"(
@@ -91,4 +95,3 @@ iBeginCC(profiler)
     )")
 
 iEndCC
-

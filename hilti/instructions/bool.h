@@ -11,11 +11,12 @@
 #include "define-instruction.h"
 
 iBegin(boolean, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::boolean, true);
     iOp2(optype::boolean, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -25,11 +26,12 @@ iBegin(boolean, Equal, "equal")
 iEnd
 
 iBegin(boolean, And, "bool.and")
-    iTarget(optype::boolean)
-    iOp1(optype::boolean, true)
-    iOp2(optype::boolean, true)
+    iTarget(optype::boolean);
+    iOp1(optype::boolean, true);
+    iOp2(optype::boolean, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -39,10 +41,11 @@ iBegin(boolean, And, "bool.and")
 iEnd
 
 iBegin(boolean, Not, "bool.not")
-    iTarget(optype::boolean)
-    iOp1(optype::boolean, true)
+    iTarget(optype::boolean);
+    iOp1(optype::boolean, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -52,11 +55,12 @@ iBegin(boolean, Not, "bool.not")
 iEnd
 
 iBegin(boolean, Or, "bool.or")
-    iTarget(optype::boolean)
-    iOp1(optype::boolean, true)
-    iOp2(optype::boolean, true)
+    iTarget(optype::boolean);
+    iOp1(optype::boolean, true);
+    iOp2(optype::boolean, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -64,4 +68,3 @@ iBegin(boolean, Or, "bool.or")
     )")
 
 iEnd
-

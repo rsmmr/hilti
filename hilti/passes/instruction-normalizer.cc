@@ -19,7 +19,9 @@ bool InstructionNormalizer::run(shared_ptr<hilti::Node> module)
     return processAllPostOrder(module);
 }
 
-shared_ptr<expression::Variable> InstructionNormalizer::_addLocal(shared_ptr<statement::Block> block, const string& hint, shared_ptr<Type> type, bool force_name, const Location& l)
+shared_ptr<expression::Variable> InstructionNormalizer::_addLocal(
+    shared_ptr<statement::Block> block, const string& hint, shared_ptr<Type> type, bool force_name,
+    const Location& l)
 {
     auto cnt = 0;
     string name;
@@ -45,7 +47,8 @@ shared_ptr<expression::Variable> InstructionNormalizer::_addLocal(shared_ptr<sta
     return std::make_shared<expression::Variable>(var, l);
 }
 
-std::pair<shared_ptr<statement::Block>, shared_ptr<Expression>> InstructionNormalizer::_addBlock(shared_ptr<statement::Block> parent, const string& hint, bool dont_add_yet, const Location& l)
+std::pair<shared_ptr<statement::Block>, shared_ptr<Expression>> InstructionNormalizer::_addBlock(
+    shared_ptr<statement::Block> parent, const string& hint, bool dont_add_yet, const Location& l)
 {
     auto cnt = 0;
 
@@ -73,14 +76,12 @@ std::pair<shared_ptr<statement::Block>, shared_ptr<Expression>> InstructionNorma
 }
 
 void InstructionNormalizer::_addInstruction(shared_ptr<statement::Block> block,
-                            shared_ptr<Expression> target,
-                            shared_ptr<Instruction> ins,
-                            shared_ptr<Expression> op1,
-                            shared_ptr<Expression> op2,
-                            shared_ptr<Expression> op3,
-                            const Location& l)
+                                            shared_ptr<Expression> target,
+                                            shared_ptr<Instruction> ins, shared_ptr<Expression> op1,
+                                            shared_ptr<Expression> op2, shared_ptr<Expression> op3,
+                                            const Location& l)
 {
-    hilti::instruction::Operands ops = { target, op1, op2, op3 };
+    hilti::instruction::Operands ops = {target, op1, op2, op3};
     auto instr = std::make_shared<statement::instruction::Unresolved>(ins, ops, l);
     block->addStatement(instr);
 }
@@ -96,12 +97,9 @@ void InstructionNormalizer::visit(declaration::Function* f)
 
 void InstructionNormalizer::visit(statement::ForEach* s)
 {
-    shared_ptr<type::Reference> r = ast::as<type::Reference>(s->sequence()->type());
+    shared_ptr<type::Reference> r = ast::rtti::tryCast<type::Reference>(s->sequence()->type());
     shared_ptr<Type> t = r ? r->argType() : s->sequence()->type();
-    auto iterable = ast::as<type::trait::Iterable>(t);
-
-    if ( ! iterable )
-        internalError(s, ::util::fmt("InstructionNormalizer/ForEach: %s is not iterable", t->render()));
+    auto iterable = ast::type::checkedTrait<type::trait::Iterable>(t);
 
     auto parent = current<statement::Block>();
     assert(parent);
@@ -110,7 +108,7 @@ void InstructionNormalizer::visit(statement::ForEach* s)
     nblock->scope()->setParent(parent->scope());
 
     auto var = _addLocal(nblock, s->id()->name(), iterable->elementType());
-    auto end = _addLocal(nblock, "end",  iterable->iterType());
+    auto end = _addLocal(nblock, "end", iterable->iterType());
     auto iter = _addLocal(nblock, "iter", iterable->iterType());
     auto cmp = _addLocal(nblock, "cmp", std::make_shared<type::Bool>());
     auto container = _addLocal(nblock, "iterable", s->sequence()->type());
@@ -123,13 +121,14 @@ void InstructionNormalizer::visit(statement::ForEach* s)
     auto cont = _addBlock(nblock, "loop_end");
 
     IDReplacer replacer;
-    replacer.run(s->body(), std::make_shared<ID>(statement::foreach::IDLoopBreak), cont.first->id());
+    replacer.run(s->body(), std::make_shared<ID>(statement::foreach::IDLoopBreak),
+                 cont.first->id());
     replacer.run(s->body(), std::make_shared<ID>(statement::foreach::IDLoopNext), next.first->id());
     replacer.run(s->body(), s->id(), var->variable()->id());
 
     _addInstruction(entry.first, container, instruction::operator_::Assign, s->sequence());
     _addInstruction(entry.first, iter, instruction::operator_::Begin, container);
-    _addInstruction(entry.first, end,  instruction::operator_::End, container);
+    _addInstruction(entry.first, end, instruction::operator_::End, container);
     _addInstruction(entry.first, nullptr, instruction::flow::Jump, cond.second);
 
     _addInstruction(cond.first, cmp, instruction::operator_::Equal, iter, end);
@@ -184,7 +183,7 @@ void InstructionNormalizer::visit(statement::Try* s)
         shared_ptr<Expression> type = nullptr;
 
         if ( c->type() ) {
-            auto rtype = ast::tryCast<type::Reference>(c->type());
+            auto rtype = ast::rtti::tryCast<type::Reference>(c->type());
 
             if ( ! rtype ) {
                 error(c->type(), "catch value must be of ref<exception> type");
@@ -194,7 +193,8 @@ void InstructionNormalizer::visit(statement::Try* s)
             type = builder::type::create(rtype->argType());
         }
 
-        _addInstruction(nblock, nullptr, instruction::exception::__BeginHandler, cblock.second, type);
+        _addInstruction(nblock, nullptr, instruction::exception::__BeginHandler, cblock.second,
+                        type);
         cblocks->addStatement(cblock.first);
     }
 
@@ -211,4 +211,3 @@ void InstructionNormalizer::visit(statement::Try* s)
 
     s->replace(nblock);
 }
-

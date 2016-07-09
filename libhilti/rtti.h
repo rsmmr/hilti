@@ -10,44 +10,44 @@
 #include "types.h"
 
 // Unique id values to identify a type.
-#define HLT_TYPE_ERROR     0
-#define HLT_TYPE_INTEGER   1
-#define HLT_TYPE_DOUBLE    2
-#define HLT_TYPE_BOOL      3
-#define HLT_TYPE_STRING    4
-#define HLT_TYPE_TUPLE     5
-#define HLT_TYPE_REF       6
-#define HLT_TYPE_STRUCT    7
-#define HLT_TYPE_CHANNEL   8
-#define HLT_TYPE_BYTES     9
-#define HLT_TYPE_ENUM     10
+#define HLT_TYPE_ERROR 0
+#define HLT_TYPE_INTEGER 1
+#define HLT_TYPE_DOUBLE 2
+#define HLT_TYPE_BOOL 3
+#define HLT_TYPE_STRING 4
+#define HLT_TYPE_TUPLE 5
+#define HLT_TYPE_REF 6
+#define HLT_TYPE_STRUCT 7
+#define HLT_TYPE_CHANNEL 8
+#define HLT_TYPE_BYTES 9
+#define HLT_TYPE_ENUM 10
 #define HLT_TYPE_ENUM_LABEL 11
-#define HLT_TYPE_ADDR     12
-#define HLT_TYPE_PORT     13
-#define HLT_TYPE_OVERLAY  14
-#define HLT_TYPE_VECTOR   15
-#define HLT_TYPE_LIST     16
-#define HLT_TYPE_NET      17
-#define HLT_TYPE_REGEXP   18
-#define HLT_TYPE_BITSET   19
+#define HLT_TYPE_ADDR 12
+#define HLT_TYPE_PORT 13
+#define HLT_TYPE_OVERLAY 14
+#define HLT_TYPE_VECTOR 15
+#define HLT_TYPE_LIST 16
+#define HLT_TYPE_NET 17
+#define HLT_TYPE_REGEXP 18
+#define HLT_TYPE_BITSET 19
 #define HLT_TYPE_EXCEPTION 20
 #define HLT_TYPE_CONTINUATION 21
-#define HLT_TYPE_CADDR    22
-#define HLT_TYPE_LABEL    23
-#define HLT_TYPE_ANY      24
-#define HLT_TYPE_TIMER    25
+#define HLT_TYPE_CADDR 22
+#define HLT_TYPE_LABEL 23
+#define HLT_TYPE_ANY 24
+#define HLT_TYPE_TIMER 25
 #define HLT_TYPE_TIMER_MGR 26
-#define HLT_TYPE_PKTSRC   27
-#define HLT_TYPE_HOOK     28
+#define HLT_TYPE_PKTSRC 27
+#define HLT_TYPE_HOOK 28
 #define HLT_TYPE_CAPTURED_HOOK 29
-#define HLT_TYPE_FILE     30
+#define HLT_TYPE_FILE 30
 #define HLT_TYPE_CALLABLE 31
-#define HLT_TYPE_TIME     32
+#define HLT_TYPE_TIME 32
 #define HLT_TYPE_INTERVAL 33
-#define HLT_TYPE_CONTEXT  34
-#define HLT_TYPE_SCOPE    35
+#define HLT_TYPE_CONTEXT 34
+#define HLT_TYPE_SCOPE 35
 #define HLT_TYPE_MATCH_TOKEN_STATE 36
-#define HLT_TYPE_VOID     37
+#define HLT_TYPE_VOID 37
 #define HLT_TYPE_BYTES_DATA 38
 #define HLT_TYPE_BYTES_CHUNK 39
 #define HLT_TYPE_CLASSIFIER 40
@@ -61,21 +61,21 @@
 #define HLT_TYPE_FUNCTION 49
 #define HLT_TYPE_UNION 50
 
-#define HLT_TYPE_ITERATOR_BYTES  100
+#define HLT_TYPE_ITERATOR_BYTES 100
 #define HLT_TYPE_ITERATOR_VECTOR 101
-#define HLT_TYPE_ITERATOR_LIST   102
-#define HLT_TYPE_ITERATOR_SET    103
-#define HLT_TYPE_ITERATOR_MAP    104
-#define HLT_TYPE_ITERATOR_IOSRC  105
+#define HLT_TYPE_ITERATOR_LIST 102
+#define HLT_TYPE_ITERATOR_SET 103
+#define HLT_TYPE_ITERATOR_MAP 104
+#define HLT_TYPE_ITERATOR_IOSRC 105
 
-#define HLT_TYPE_EXTERN_BINPAC   10000 // Space for BinPAC++'s types. FIXME: Better way to do this?
+#define HLT_TYPE_EXTERN_BINPAC 10000 // Space for BinPAC++'s types. FIXME: Better way to do this?
 
 // Default context for numeric operations.
-#define HLT_CONVERT_NONE     0x00  // Not given, implies doing signed operations.
-#define HLT_CONVERT_UNSIGNED 0x01  // Numeric operations assume an unsigned context.
+#define HLT_CONVERT_NONE 0x00     // Not given, implies doing signed operations.
+#define HLT_CONVERT_UNSIGNED 0x01 // Numeric operations assume an unsigned context.
 
 // End marker for a pointer map.
-#define HLT_PTR_MAP_END      0xffff
+#define HLT_PTR_MAP_END 0xffff
 
 struct __hlt_type_info {
     /// The type's HLT_TYPE_* id.
@@ -122,24 +122,31 @@ struct __hlt_type_info {
     // value stored with the C type as HILTI uses normally for values of that
     // type. 'options' is a bitmask of HLT_CONVERT_* options. 'expt' can be
     // set to raise an exception.
-    struct __hlt_string* (*to_string)(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** expt, hlt_execution_context* ctx);
-    int64_t (*to_int64)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
-    double (*to_double)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
+    struct __hlt_string* (*to_string)(const hlt_type_info* type, const void* obj, int32_t options,
+                                      __hlt_pointer_stack* seen, hlt_exception** expt,
+                                      hlt_execution_context* ctx);
+    int64_t (*to_int64)(const hlt_type_info* type, const void* obj, int32_t options,
+                        hlt_exception** expt, hlt_execution_context* ctx);
+    double (*to_double)(const hlt_type_info* type, const void* obj, int32_t options,
+                        hlt_exception** expt, hlt_execution_context* ctx);
 
     // Calculates a hash of the value. If not given, the default is hash as
     // many bytes as size specifies. Note that the excpt and ctx arguments
     // will not be used and will always be null.
-    hlt_hash (*hash)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
+    hlt_hash (*hash)(const hlt_type_info* type, const void* obj, hlt_exception** expt,
+                     hlt_execution_context* ctx);
 
     /// Compares to values for equality. If not given, the default is to
     /// compare as many bytes as size specified.  Note that the excpt and ctx
     /// argument will not be used and will always be null.
-    int8_t (*equal)(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** expt, hlt_execution_context* ctx);
+    int8_t (*equal)(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2,
+                    const void* obj2, hlt_exception** expt, hlt_execution_context* ctx);
 
     /// If this is a type that a "yield" can block for until a resource
     /// becomes available, a function returning hlt_thread_mgr_blockable
     /// object for an instance.
-    __hlt_thread_mgr_blockable* (*blockable)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
+    __hlt_thread_mgr_blockable* (*blockable)(const hlt_type_info* type, const void* obj,
+                                             hlt_exception** expt, hlt_execution_context* ctx);
 
     /// If this is a garbage collected type, a function that will be called
     /// if an objects reference count went down to zero and its about to be
@@ -165,7 +172,9 @@ struct __hlt_type_info {
     ///
     /// This will be ignored for atomic types and should be set to null in
     /// that case.
-    void (*clone_init)(void* dstp, const hlt_type_info* ti, const void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
+    void (*clone_init)(void* dstp, const hlt_type_info* ti, const void* srcp,
+                       __hlt_clone_state* cstate, hlt_exception** excpt,
+                       hlt_execution_context* ctx);
 
     /// If this is a garbage collected type, a function that allocates a new
     /// instance of a type in preparation for deep-copying it, yet without
@@ -178,11 +187,12 @@ struct __hlt_type_info {
     ///
     /// This will be ignored for non gc types and should be set to null in
     /// that case.
-    void* (*clone_alloc)(const hlt_type_info* ti, const void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx);
+    void* (*clone_alloc)(const hlt_type_info* ti, const void* srcp, __hlt_clone_state* cstate,
+                         hlt_exception** excpt, hlt_execution_context* ctx);
 
     /// A host application may associate further custom data with a type. If
     /// so, this will point to the start of that data; it's null otherwise.
-    void *hostapp_value;
+    void* hostapp_value;
 
     /// If hostapp_expr is set, the type information for the value.
     const hlt_type_info* hostapp_type;
@@ -194,26 +204,18 @@ struct __hlt_type_info {
 };
 
 /// Macro to define type information for an internal garbage collected type.
-#define __HLT_RTTI_GC_TYPE(id, type) \
-   void id##_dtor(hlt_type_info*, id*, hlt_execution_context*); \
-   const hlt_type_info hlt_type_info_##id = { \
-       type, \
-       sizeof(id), \
-       0, \
-       #id, \
-       0, \
-       1, \
-       0, \
-       0, \
-       (int16_t*)-1, \
-       0, 0, 0, 0, 0, 0, \
-       (void (*)(const struct __hlt_type_info*, void *, hlt_execution_context* ctx))__hlt_object_unref, \
-       (void (*)(const struct __hlt_type_info*, void *, hlt_execution_context* ctx))id##_dtor, \
-       (void (*)(const struct __hlt_type_info*, void *, hlt_execution_context* ctx))__hlt_object_ref, \
-   }; \
+#define __HLT_RTTI_GC_TYPE(id, type)                                                               \
+    void id##_dtor(hlt_type_info*, id*, hlt_execution_context*);                                   \
+    const hlt_type_info hlt_type_info_##id = {                                                     \
+        type, sizeof(id), 0, #id, 0, 1, 0, 0, (int16_t*)-1, 0, 0, 0, 0, 0, 0,                      \
+        (void (*)(const struct __hlt_type_info*, void*,                                            \
+                  hlt_execution_context* ctx))__hlt_object_unref,                                  \
+        (void (*)(const struct __hlt_type_info*, void*, hlt_execution_context* ctx))id##_dtor,     \
+        (void (*)(const struct __hlt_type_info*, void*,                                            \
+                  hlt_execution_context* ctx))__hlt_object_ref,                                    \
+    };
 
-#define __HLT_DECLARE_RTTI_GC_TYPE(id) \
-   extern const hlt_type_info hlt_type_info_##id; \
+#define __HLT_DECLARE_RTTI_GC_TYPE(id) extern const hlt_type_info hlt_type_info_##id;
 
 /// Returns true if the two type informations refer to equivalent types.
 int8_t __hlt_type_equal(const hlt_type_info* ti1, const hlt_type_info* ti2);

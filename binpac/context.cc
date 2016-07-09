@@ -4,17 +4,17 @@
 #include <util/util.h>
 
 #include "context.h"
+#include "expression.h"
 #include "operator.h"
 #include "options.h"
-#include "expression.h"
 
 #include "parser/driver.h"
 
 #include "passes/grammar-builder.h"
 #include "passes/id-resolver.h"
-#include "passes/overload-resolver.h"
 #include "passes/normalizer.h"
 #include "passes/operator-resolver.h"
+#include "passes/overload-resolver.h"
 #include "passes/printer.h"
 #include "passes/scope-builder.h"
 #include "passes/scope-printer.h"
@@ -77,7 +77,8 @@ shared_ptr<binpac::Module> binpac::CompilerContext::load(string path, bool final
 }
 
 
-shared_ptr<binpac::Module> binpac::CompilerContext::parse(std::istream& in, const std::string& sname)
+shared_ptr<binpac::Module> binpac::CompilerContext::parse(std::istream& in,
+                                                          const std::string& sname)
 {
     binpac_parser::Driver driver;
     driver.forwardLoggingTo(this);
@@ -107,24 +108,27 @@ shared_ptr<binpac::Expression> binpac::CompilerContext::parseExpression(const st
     return nullptr;
 }
 
-static void _debugAST(binpac::CompilerContext* ctx, shared_ptr<binpac::Module> module, const ast::Logger& before)
+static void _debugAST(binpac::CompilerContext* ctx, shared_ptr<binpac::Module> module,
+                      const ast::Logger& before)
 {
     if ( ctx->options().cgDebugging("dump-ast") ) {
         std::cerr << std::endl
-            << "===" << std::endl
-            << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
-            << "===" << std::endl
-            << std::endl;
+                  << "===" << std::endl
+                  << "=== AST for " << module->id()->pathAsString() << " before "
+                  << before.loggerName() << std::endl
+                  << "===" << std::endl
+                  << std::endl;
 
         ctx->dump(module, std::cerr);
     }
 
     if ( ctx->options().cgDebugging("print-ast") ) {
         std::cerr << std::endl
-            << "===" << std::endl
-            << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
-            << "===" << std::endl
-            << std::endl;
+                  << "===" << std::endl
+                  << "=== AST for " << module->id()->pathAsString() << " before "
+                  << before.loggerName() << std::endl
+                  << "===" << std::endl
+                  << std::endl;
 
         ctx->print(module, std::cerr);
     }
@@ -168,8 +172,9 @@ void binpac::CompilerContext::_endPass()
         auto indent = string(_hilti_context->passes().size(), ' ');
 
         if ( cgpasses || delta >= 0.1 )
-            std::cerr << util::fmt("(%2.2fs) %sbinpac::%s [module \"%s\"]",
-                                   delta, indent, pass.name, pass.module) << std::endl;
+            std::cerr << util::fmt("(%2.2fs) %sbinpac::%s [module \"%s\"]", delta, indent,
+                                   pass.name, pass.module)
+                      << std::endl;
     }
 
     _hilti_context->passes().pop_back();
@@ -192,15 +197,15 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> module)
 
 bool binpac::CompilerContext::finalize(shared_ptr<Module> node, bool verify)
 {
-    passes::GrammarBuilder   grammar_builder(std::cerr);
-    passes::IDResolver       id_resolver;
+    passes::GrammarBuilder grammar_builder(std::cerr);
+    passes::IDResolver id_resolver;
     passes::OverloadResolver overload_resolver(node);
-    passes::Normalizer       normalizer;
+    passes::Normalizer normalizer;
     passes::OperatorResolver op_resolver(node);
-    passes::ScopeBuilder     scope_builder(this);
-    passes::ScopePrinter     scope_printer(std::cerr);
+    passes::ScopeBuilder scope_builder(this);
+    passes::ScopePrinter scope_printer(std::cerr);
     passes::UnitScopeBuilder unit_scope_builder;
-    passes::Validator        validator;
+    passes::Validator validator;
 
     // TODO: This needs a reorg. Currently the op_resolver iterates until it
     // hasn't changed anything anymore but that leaves the other passes out
@@ -330,7 +335,9 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> node, bool verify)
     return true;
 }
 
-llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module, shared_ptr<hilti::Module>* hilti_module_out, bool hilti_only)
+llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module,
+                                               shared_ptr<hilti::Module>* hilti_module_out,
+                                               bool hilti_only)
 {
     CodeGen codegen(this);
 
@@ -357,7 +364,8 @@ llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module, shared
     return llvm_module;
 }
 
-llvm::Module* binpac::CompilerContext::compile(const string& path, shared_ptr<hilti::Module>* hilti_module_out)
+llvm::Module* binpac::CompilerContext::compile(const string& path,
+                                               shared_ptr<hilti::Module>* hilti_module_out)
 {
     auto module = load(path);
 
@@ -400,13 +408,15 @@ shared_ptr<hilti::CompilerContext> binpac::CompilerContext::hiltiContext() const
     return _hilti_context;
 }
 
-shared_ptr<hilti::Type> binpac::CompilerContext::hiltiType(shared_ptr<binpac::Type> type, id_list* deps)
+shared_ptr<hilti::Type> binpac::CompilerContext::hiltiType(shared_ptr<binpac::Type> type,
+                                                           id_list* deps)
 {
     codegen::TypeBuilder tb(nullptr);
     return tb.hiltiType(type, deps);
 }
 
-void binpac::CompilerContext::toCacheKey(shared_ptr<Module> module, ::util::cache::FileCache::Key* key)
+void binpac::CompilerContext::toCacheKey(shared_ptr<Module> module,
+                                         ::util::cache::FileCache::Key* key)
 {
     if ( module->path() != "-" )
         key->files.insert(module->path());
@@ -427,4 +437,3 @@ std::list<string> binpac::CompilerContext::dependencies(shared_ptr<Module> modul
     // TODO: Not implementated.
     return std::list<string>();
 }
-

@@ -2,14 +2,14 @@
 /// libhilti's debugging output infrastructure.
 ///
 
-#include <string.h>
-#include <stdarg.h>
 #include <inttypes.h>
+#include <stdarg.h>
+#include <string.h>
 
-#include "types.h"
 #include "config.h"
-#include "string_.h"
 #include "module/module.h"
+#include "string_.h"
+#include "types.h"
 
 static FILE* _debug_out()
 {
@@ -22,9 +22,10 @@ static FILE* _debug_out()
     globals->debug_out = fopen(hlt_config_get()->debug_out, "w");
 
     if ( ! globals->debug_out ) {
-        fprintf(stderr, "hilti: cannot open %s for writing. Aborting.\n", hlt_config_get()->debug_out);
+        fprintf(stderr, "hilti: cannot open %s for writing. Aborting.\n",
+                hlt_config_get()->debug_out);
         exit(1);
-        }
+    }
 
     setvbuf(globals->debug_out, 0, _IOLBF, 0);
 
@@ -65,7 +66,8 @@ static int _want_stream(const char* s, hlt_exception** excpt, hlt_execution_cont
     return 0;
 }
 
-static void _make_prefix(const char* s, char* dst, int len, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _make_prefix(const char* s, char* dst, int len, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
 #ifdef DEBUG
     __hlt_global_state* globals = __hlt_globals();
@@ -91,19 +93,22 @@ void __hlt_debug_init()
 {
 #ifdef DEBUG
     // This is easy to forget so let's print a reminder.
-     __hlt_debug_printf_internal("hilti-trace", "Reminder: hilti-trace requires compiling with debugging level > 1.");
-     __hlt_debug_printf_internal("hilti-flow",  "Reminder: hilti-flow requires compiling with debugging level > 1.");
+    __hlt_debug_printf_internal(
+        "hilti-trace", "Reminder: hilti-trace requires compiling with debugging level > 1.");
+    __hlt_debug_printf_internal(
+        "hilti-flow", "Reminder: hilti-flow requires compiling with debugging level > 1.");
 #endif
 }
 
 void __hlt_debug_done()
 {
 #ifdef DEBUG
-    // Nothing to do right now.
+// Nothing to do right now.
 #endif
 }
 
-void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, char* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, char* tuple,
+                      hlt_exception** excpt, hlt_execution_context* ctx)
 {
     char* s = hlt_string_to_native(stream, excpt, ctx);
     int want = _want_stream(s, excpt, ctx);
@@ -208,7 +213,8 @@ void __hlt_debug_print_ptr(const char* s, void* ptr, hlt_execution_context* ctx)
     fprintf(stderr, "%s %p (ctx: %p globals: %p)\n", s, ptr, ctx, glb);
 }
 
-void __hlt_debug_print_object(const char* s, void* ptr, hlt_type_info* t, hlt_execution_context* ctx)
+void __hlt_debug_print_object(const char* s, void* ptr, hlt_type_info* t,
+                              hlt_execution_context* ctx)
 {
     fprintf(stderr, "debug: %3" PRId64 " ", ctx->debug_indent);
 

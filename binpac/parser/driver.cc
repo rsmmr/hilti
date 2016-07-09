@@ -1,16 +1,17 @@
 
 #include <iostream>
 
+#include "../module.h"
+#include "../statement.h"
 #include "driver.h"
 #include "scanner.h"
-#include "../statement.h"
-#include "../module.h"
 #include <binpac/autogen/parser.h>
 
 using namespace binpac;
 using namespace binpac_parser;
 
-shared_ptr<binpac::Module> Driver::parse(CompilerContext* ctx, std::istream& in, const std::string& sname)
+shared_ptr<binpac::Module> Driver::parse(CompilerContext* ctx, std::istream& in,
+                                         const std::string& sname)
 {
     _sname = sname;
     _context = ctx;
@@ -34,7 +35,8 @@ shared_ptr<binpac::Module> Driver::parse(CompilerContext* ctx, std::istream& in,
     return module();
 }
 
-shared_ptr<binpac::Expression> Driver::parseExpression(binpac::CompilerContext* ctx, const std::string& expr)
+shared_ptr<binpac::Expression> Driver::parseExpression(binpac::CompilerContext* ctx,
+                                                       const std::string& expr)
 {
     _sname = util::fmt("<%s>", expr);
     _context = ctx;

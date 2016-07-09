@@ -12,7 +12,9 @@ typedef struct {
     const char* name;
 } Label;
 
-hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                                __hlt_pointer_stack* seen, hlt_exception** excpt,
+                                hlt_execution_context* ctx)
 {
     hlt_string sep = hlt_string_from_asciiz("|", excpt, ctx);
 
@@ -20,7 +22,7 @@ hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int3
     int64_t i = *((int64_t*)obj);
 
     hlt_string str = 0;
-    Label *labels = (Label*) type->aux;
+    Label* labels = (Label*)type->aux;
 
     while ( labels->name ) {
         if ( ! (i & (1 << labels->bit)) ) {
@@ -46,10 +48,9 @@ hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int3
         return hlt_string_from_asciiz("<empty>", excpt, ctx);
 }
 
-int64_t hlt_bitset_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
+int64_t hlt_bitset_to_int64(const hlt_type_info* type, const void* obj, int32_t options,
+                            hlt_exception** expt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_BITSET);
     return *((int64_t*)obj);
 }
-
-

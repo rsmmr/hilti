@@ -1,11 +1,12 @@
 
 #include "define-instruction.h"
 
-#include "iosrc.h"
 #include "../module.h"
+#include "iosrc.h"
 
 iBeginCC(iterIOSource)
-    iValidateCC(Begin) {
+    iValidateCC(Begin)
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -17,7 +18,8 @@ iBeginCC(iterIOSource)
 iEndCC
 
 iBeginCC(iterIOSource)
-    iValidateCC(End) {
+    iValidateCC(End)
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -27,7 +29,8 @@ iBeginCC(iterIOSource)
 iEndCC
 
 iBeginCC(iterIOSource)
-    iValidateCC(Incr) {
+    iValidateCC(Incr)
+    {
         equalTypes(target, op1);
     }
 
@@ -39,7 +42,8 @@ iBeginCC(iterIOSource)
 iEndCC
 
 iBeginCC(iterIOSource)
-    iValidateCC(Equal) {
+    iValidateCC(Equal)
+    {
         equalTypes(op1, op2);
     }
 
@@ -50,7 +54,8 @@ iBeginCC(iterIOSource)
 iEndCC
 
 iBeginCC(iterIOSource)
-    iValidateCC(Deref) {
+    iValidateCC(Deref)
+    {
         // TODO:  Check tuple.
     }
 
@@ -63,7 +68,8 @@ iEndCC
 
 
 iBeginCC(ioSource)
-    iValidateCC(New) {
+    iValidateCC(New)
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -80,7 +86,8 @@ iEndCC
 
 
 iBeginCC(ioSource)
-    iValidateCC(Close) {
+    iValidateCC(Close)
+    {
     }
 
     iDocCC(Close, R"(    
@@ -91,7 +98,8 @@ iBeginCC(ioSource)
 iEndCC
 
 iBeginCC(ioSource)
-    iValidateCC(Read) {
+    iValidateCC(Read)
+    {
         // TODO:  Check tuple.
     }
 

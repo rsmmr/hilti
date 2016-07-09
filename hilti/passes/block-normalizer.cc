@@ -1,16 +1,17 @@
 
-#include "../statement.h"
-#include "../module.h"
 #include "../builder/nodes.h"
+#include "../module.h"
+#include "../statement.h"
 
 #include "block-normalizer.h"
-#include "printer.h"
 #include "hilti/autogen/instructions.h"
+#include "printer.h"
 
 using namespace hilti;
 using namespace passes;
 
-BlockNormalizer::BlockNormalizer(bool instructions_normalized) : Pass<>("hilti::codegen::BlockNormalizer", true)
+BlockNormalizer::BlockNormalizer(bool instructions_normalized)
+    : Pass<>("hilti::codegen::BlockNormalizer", true)
 {
     _instructions_normalized = instructions_normalized;
 }
@@ -38,15 +39,14 @@ void BlockNormalizer::visit(statement::Block* b)
     std::set<shared_ptr<statement::Block>> now_terminated;
 
     for ( auto cur = ostmts.begin(); cur != ostmts.end(); cur++ ) {
-
         if ( pred == ostmts.end() ) {
             nstmts.push_back(*cur);
             pred = cur;
             continue;
         }
 
-        auto pred_block = ast::tryCast<statement::Block>(*pred);
-        auto cur_block = ast::tryCast<statement::Block>(*cur);
+        auto pred_block = ast::rtti::tryCast<statement::Block>(*pred);
+        auto cur_block = ast::rtti::tryCast<statement::Block>(*cur);
 
         if ( ! (pred_block && cur_block) ) {
             nstmts.push_back(*cur);
@@ -56,8 +56,10 @@ void BlockNormalizer::visit(statement::Block* b)
         cur_block->scope()->setParent(b->scope());
 
         if ( cur_block->id() && ! pred_block->terminated() ) {
-            hilti::instruction::Operands ops = { nullptr, builder::label::create(cur_block->id()->name()) };
-            auto jump = std::make_shared<statement::instruction::Unresolved>(instruction::flow::Jump, ops);
+            hilti::instruction::Operands ops = {nullptr,
+                                                builder::label::create(cur_block->id()->name())};
+            auto jump =
+                std::make_shared<statement::instruction::Unresolved>(instruction::flow::Jump, ops);
             pred_block->addStatement(jump);
             now_terminated.insert(pred_block);
         }
@@ -81,7 +83,6 @@ void BlockNormalizer::visit(statement::Block* b)
         }
 
         pred_block->scope()->mergeFrom(cur_block->scope());
-
     }
 
     b->setStatements(nstmts);
@@ -89,11 +90,13 @@ void BlockNormalizer::visit(statement::Block* b)
     if ( _instructions_normalized ) {
         // Add a block.end at the end of still unterminated blocks.
         for ( auto s : b->statements() ) {
-            auto block = ast::tryCast<statement::Block>(s);
+            auto block = ast::rtti::tryCast<statement::Block>(s);
 
-            if ( block && ! block->terminated() && now_terminated.find(block) == now_terminated.end() ) {
+            if ( block && ! block->terminated() &&
+                 now_terminated.find(block) == now_terminated.end() ) {
                 hilti::instruction::Operands no_ops;
-                auto end = std::make_shared<statement::instruction::Unresolved>(instruction::flow::BlockEnd, no_ops);
+                auto end = std::make_shared<
+                    statement::instruction::Unresolved>(instruction::flow::BlockEnd, no_ops);
                 block->addStatement(end);
             }
 
@@ -101,4 +104,3 @@ void BlockNormalizer::visit(statement::Block* b)
         }
     }
 }
-

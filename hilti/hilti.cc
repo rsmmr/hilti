@@ -1,12 +1,15 @@
 
 #include "hilti-intern.h"
 #include "hilti/autogen/hilti-config.h"
+#include "instructions/optypes.h"
 
 // Auto-generated in ${autogen}/instructions-register.cc
 extern void __registerAllInstructions();
 
 void hilti::init()
 {
+    ast::rtti::RTTI::init();
+    hilti::optype::__init();
     __registerAllInstructions();
 }
 

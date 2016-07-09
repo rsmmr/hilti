@@ -1,7 +1,7 @@
 
 #include "filter.h"
-#include "sink.h"
 #include "exceptions.h"
+#include "sink.h"
 
 #include <autogen/binpachilti-hlt.h>
 
@@ -12,10 +12,25 @@ __HLT_RTTI_GC_TYPE(binpac_filter, HLT_TYPE_BINPAC_FILTER);
 
 // FIXME: Can't use the enums here directly; better way?
 static struct __binpac_filter_definition filters[] = {
-    { {0, 1}, "BASE64", __binpac_filter_base64_allocate, __binpac_filter_base64_dtor, __binpac_filter_base64_decode, __binpac_filter_base64_close },
-    { {0, 2}, "GZIP", __binpac_filter_zlib_allocate, __binpac_filter_zlib_dtor, __binpac_filter_zlib_decode, __binpac_filter_zlib_close },
-    { {0, 3}, "ZLIB", __binpac_filter_zlib_allocate, __binpac_filter_zlib_dtor, __binpac_filter_zlib_decode, __binpac_filter_zlib_close },
-    { {0, 0}, 0, 0, 0, 0 },
+    {{0, 1},
+     "BASE64",
+     __binpac_filter_base64_allocate,
+     __binpac_filter_base64_dtor,
+     __binpac_filter_base64_decode,
+     __binpac_filter_base64_close},
+    {{0, 2},
+     "GZIP",
+     __binpac_filter_zlib_allocate,
+     __binpac_filter_zlib_dtor,
+     __binpac_filter_zlib_decode,
+     __binpac_filter_zlib_close},
+    {{0, 3},
+     "ZLIB",
+     __binpac_filter_zlib_allocate,
+     __binpac_filter_zlib_dtor,
+     __binpac_filter_zlib_decode,
+     __binpac_filter_zlib_close},
+    {{0, 0}, 0, 0, 0, 0},
 };
 
 void binpac_filter_dtor(hlt_type_info* ti, binpac_filter* filter, hlt_execution_context* ctx)
@@ -25,7 +40,8 @@ void binpac_filter_dtor(hlt_type_info* ti, binpac_filter* filter, hlt_execution_
     // it's not clear how .. For now, we can't rely on this running.
 }
 
-binpac_filter* binpachilti_filter_add(binpac_filter* head, hlt_enum ftype, hlt_exception** excpt, hlt_execution_context* ctx)
+binpac_filter* binpachilti_filter_add(binpac_filter* head, hlt_enum ftype, hlt_exception** excpt,
+                                      hlt_execution_context* ctx)
 {
     binpac_filter* filter = 0;
 
@@ -48,7 +64,8 @@ binpac_filter* binpachilti_filter_add(binpac_filter* head, hlt_enum ftype, hlt_e
     return head;
 }
 
-binpac_filter* __binpachilti_filter_add(binpac_filter* head, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx)
+binpac_filter* __binpachilti_filter_add(binpac_filter* head, binpac_filter* filter,
+                                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! head )
         return filter;
@@ -62,7 +79,8 @@ binpac_filter* __binpachilti_filter_add(binpac_filter* head, binpac_filter* filt
     return head;
 }
 
-void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     if ( ! head )
         return;
@@ -82,9 +100,11 @@ void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt, hlt_ex
 }
 
 // We borrow this from sink.c
-extern void binpac_dbg_deliver(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpac_dbg_deliver(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter,
+                               hlt_exception** excpt, hlt_execution_context* ctx);
 
-hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx) // &ref(!)
+hlt_bytes* binpachilti_filter_decode(binpac_filter* head, hlt_bytes* data, hlt_exception** excpt,
+                                     hlt_execution_context* ctx) // &ref(!)
 {
     binpac_filter* filter = head;
 

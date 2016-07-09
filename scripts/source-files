@@ -1,0 +1,14 @@
+#! /usr/bin/env bash
+#
+# Outputs a list of all our C/C++ source files part of code base, excluding
+# 3rd party code. This is for running external code analysis tools on
+# them. Must be started from top-level directory.
+
+dirs="hilti binpac ast util libhilti libbinpac"
+
+exclude_dirs="/(3rdparty|libffi)($|/)"
+exclude_files="/(khash.h|utf8proc.c|utf8proc.h|utf8proc_data.c)$"
+extensions="\.(h|cc|c)$"
+
+find ${dirs} -type f | egrep "${extensions}" | egrep -v "${exclude_dirs}" | egrep -v "${exclude_files}" | sort
+

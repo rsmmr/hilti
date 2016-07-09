@@ -11,15 +11,15 @@
 #ifndef HLT_THREADING_H
 #define HLT_THREADING_H
 
+#include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <pthread.h>
 
 #include "config.h"
 #include "context.h"
 #include "tqueue.h"
 
-#define DBG_STREAM       "hilti-threads"
+#define DBG_STREAM "hilti-threads"
 #define DBG_STREAM_STATS "hilti-threads-stats"
 
 struct hlt_exception;
@@ -59,7 +59,7 @@ typedef enum {
 } hlt_thread_mgr_state;
 
 typedef struct hlt_thread_mgr_blockable {
-    uint64_t num_blocked;	// Number of jobs waiting for this resource.
+    uint64_t num_blocked; // Number of jobs waiting for this resource.
 } hlt_thread_mgr_blockable;
 
 // A job queued for execution.
@@ -69,11 +69,11 @@ typedef struct hlt_job {
     void* tcontext;         // The jobs thread context to use when executing.
 
 #ifdef DEBUG
-    uint64_t id;            // For debugging, we assign numerical IDs for easier identification.
+    uint64_t id; // For debugging, we assign numerical IDs for easier identification.
 #endif
 
-    struct hlt_job* prev;   // The prev job in the *blocked* queue if linked in there.
-    struct hlt_job* next;   // The next job in the *blocked* queue if linked in there.
+    struct hlt_job* prev; // The prev job in the *blocked* queue if linked in there.
+    struct hlt_job* next; // The next job in the *blocked* queue if linked in there.
 } hlt_job;
 
 struct hlt_thread_mgr;
@@ -86,17 +86,17 @@ typedef struct hlt_worker_thread {
     hlt_vthread_id max_vid;       // Largest vid allocated space for in ctxs.
 
     // This can be *read* from different threads without further locking.
-    int id;                       // ID of this worker thread in the range 1..*num_workers*.
-    const char* name;             // A string identifying the worker.
-    int idle;                     // When in state FINISH, the worker will set this when idle.
-    pthread_t handle;             // The pthread handle for this thread.
+    int id;           // ID of this worker thread in the range 1..*num_workers*.
+    const char* name; // A string identifying the worker.
+    int idle;         // When in state FINISH, the worker will set this when idle.
+    pthread_t handle; // The pthread handle for this thread.
 
     // Write accesses to the main jobs queue can be made from all worker
     // threads and the main thread, while read accesses come only from the
     // worker thread itself. If another thread needs to schedule a job
     // already blocked, it can write here and it will be moved over to the
     // blocked queue by the worker later.
-    hlt_thread_queue* jobs;  // Jobs queued for this worker and ready to run.
+    hlt_thread_queue* jobs; // Jobs queued for this worker and ready to run.
 
     // Write accesses to the blocked queue may be done only from the writer.
     // This is in fact a hash table indexed by the corresponding
@@ -223,14 +223,16 @@ extern hlt_thread_mgr_state hlt_thread_mgr_get_state(const hlt_thread_mgr* mgr);
 /// ctx: The caller's execution context.
 ///
 /// excpt: &
-extern void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, struct hlt_continuation* func, struct hlt_exception** excpt, struct hlt_execution_context* ctx);
+extern void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid,
+                                      struct hlt_continuation* func, struct hlt_exception** excpt,
+                                      struct hlt_execution_context* ctx);
 
 /// Schedules a job to a virtual thread determined by an object's hash.
 ///
 /// This function determined the target virtual thread by hashing *obj* into
 /// the range determined by ``config.vid_schedule_max -
 /// config.vid_schedule_min``.
-/// 
+///
 /// This function is safe to call from all threads.
 ///
 /// mgr: The thread manager to use.
@@ -244,7 +246,11 @@ extern void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, s
 /// ctx: The caller's execution context.
 ///
 /// excpt: &
-extern void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, const struct __hlt_type_info* type, void* tcontext, struct hlt_continuation* func, struct hlt_exception** excpt, struct hlt_execution_context* ctx);
+extern void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr,
+                                               const struct __hlt_type_info* type, void* tcontext,
+                                               struct hlt_continuation* func,
+                                               struct hlt_exception** excpt,
+                                               struct hlt_execution_context* ctx);
 
 /// Checks whether any worker thread has raised an uncaught exception. In
 /// that case, all worker threads will have been terminated, and this
@@ -253,7 +259,8 @@ extern void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, const struct
 /// mgr: The thread manager to use.
 ///
 /// excpt: &
-extern void hlt_thread_mgr_check_exceptions(hlt_thread_mgr* mgr, struct hlt_exception** excpt, struct hlt_execution_context* ctx);
+extern void hlt_thread_mgr_check_exceptions(hlt_thread_mgr* mgr, struct hlt_exception** excpt,
+                                            struct hlt_execution_context* ctx);
 
 /// Returns a string identifying the currently running native thread.
 ///
@@ -278,16 +285,19 @@ extern const char* hlt_thread_mgr_current_native_thread(hlt_thread_mgr* mgr);
 /// default_affinity: A core to pin the thread to if the HILTI is configured
 /// to use its default affinity scheme (see config.h). Can be -1 to set no
 /// affinity by default for this thread.
-extern void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, int default_affinity);
+extern void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name,
+                                                int default_affinity);
 
 inline static void hlt_thread_mgr_blockable_init(hlt_thread_mgr_blockable* resource)
 {
     resource->num_blocked = 0;
 }
 
-extern void __hlt_thread_mgr_unblock(hlt_thread_mgr_blockable *resource, hlt_execution_context* ctx);
+extern void __hlt_thread_mgr_unblock(hlt_thread_mgr_blockable* resource,
+                                     hlt_execution_context* ctx);
 
-inline static void hlt_thread_mgr_unblock(hlt_thread_mgr_blockable *resource, hlt_execution_context* ctx)
+inline static void hlt_thread_mgr_unblock(hlt_thread_mgr_blockable* resource,
+                                          hlt_execution_context* ctx)
 {
     if ( ! resource->num_blocked )
         return;

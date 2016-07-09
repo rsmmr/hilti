@@ -16,7 +16,8 @@ iBegin(address, Equal, "equal")
     iOp1(optype::address, true);
     iOp2(optype::address, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -26,11 +27,12 @@ iBegin(address, Equal, "equal")
 iEnd
 
 iBegin(address, Family, "addr.family")
-    iTarget(optype::enum_)
-    iOp1(optype::address, true)
+    iTarget(optype::enum_);
+    iOp1(optype::address, true);
 
-    iValidate {
-        auto ty_target = as<type::Enum>(target->type());
+    iValidate
+    {
+        auto ty_target = ast::rtti::checkedCast<type::Enum>(target->type());
 
         if ( ty_target->id()->pathAsString() != "Hilti::AddrFamily" )
             error(target, "target must be of type Hilti::AddrFamily");
@@ -43,4 +45,3 @@ iBegin(address, Family, "addr.family")
     )")
 
 iEnd
-

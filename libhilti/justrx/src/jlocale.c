@@ -1,7 +1,7 @@
 // $Id$
 
-#include "jrx-intern.h"
 #include "jlocale.h"
+#include "jrx-intern.h"
 
 static inline jrx_ccl* _add_range(jrx_ccl* ccl, jrx_char min, jrx_char max)
 {

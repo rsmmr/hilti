@@ -4,14 +4,14 @@
 #ifndef JRX_MEMMGT_H
 #define JRX_MEMMGT_H
 
-#ifdef USE_HILTI
+#ifdef JRX_USE_HILTI
 
 #include "memory_.h"
 
-#define malloc  hlt_malloc
-#define calloc  hlt_calloc
+#define malloc hlt_malloc
+#define calloc hlt_calloc
 #define realloc hlt_realloc_no_init
-#define free    hlt_free
+#define free hlt_free
 
 #endif
 

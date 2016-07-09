@@ -1,21 +1,23 @@
 
 #include "define-instruction.h"
 
-#include "bytes.h"
 #include "../module.h"
+#include "bytes.h"
 
 iBeginCC(bytes)
-    iValidateCC(New) {
+    iValidateCC(New)
+    {
     }
 
-    iDocCC(New ,R"(
+    iDocCC(New, R"(
         Instantiates a new empty bytes object.
     )")
 
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Append) {
+    iValidateCC(Append)
+    {
     }
 
     iDocCC(Append, R"(
@@ -27,7 +29,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Concat) {
+    iValidateCC(Concat)
+    {
     }
 
     iDocCC(Concat, R"(
@@ -37,10 +40,11 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Cmp) {
+    iValidateCC(Cmp)
+    {
     }
 
-    iDocCC(Cmp,R"(
+    iDocCC(Cmp, R"(
         Compares *op1* with *op2* lexicographically. If *op1* is larger,
         returns -1. If both are equal, returns 0. If *op2* is larger, returns
         1.
@@ -49,29 +53,29 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Equal) {
+    iValidateCC(Equal)
+    {
     }
 
-    iDocCC(Equal ,R"(
+    iDocCC(Equal, R"(
         Returns true if *op1* is equal to *op2*.
     )")
 
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Copy) {
-        auto ty_target = as<type::Bytes>(target->type());
-        auto ty_op1 = as<type::Bytes>(op1->type());
-
+    iValidateCC(Copy)
+    {
     }
 
-    iDocCC(Copy ,R"(
+    iDocCC(Copy, R"(
         Copy the contents of *op1* into a new byte instance.
     )")
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Diff) {
+    iValidateCC(Diff)
+    {
     }
 
     iDocCC(Diff, R"(
@@ -81,7 +85,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Empty) {
+    iValidateCC(Empty)
+    {
     }
 
     iDocCC(Empty, R"(
@@ -92,7 +97,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Freeze) {
+    iValidateCC(Freeze)
+    {
     }
 
     iDocCC(Freeze, R"(
@@ -104,7 +110,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(IsFrozenBytes) {
+    iValidateCC(IsFrozenBytes)
+    {
     }
 
     iDocCC(IsFrozenBytes, R"(
@@ -114,7 +121,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(IsFrozenIterBytes) {
+    iValidateCC(IsFrozenIterBytes)
+    {
     }
 
     iDocCC(IsFrozenIterBytes, R"(
@@ -125,7 +133,8 @@ iEndCC
 
 
 iBeginCC(bytes)
-    iValidateCC(Length) {
+    iValidateCC(Length)
+    {
     }
 
     iDocCC(Length, R"(
@@ -135,7 +144,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Contains) {
+    iValidateCC(Contains)
+    {
     }
 
     iDocCC(Contains, R"(
@@ -145,7 +155,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Find) {
+    iValidateCC(Find)
+    {
     }
 
     iDocCC(Find, R"(
@@ -155,7 +166,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(FindAtIter) {
+    iValidateCC(FindAtIter)
+    {
         // TODO: Validate type of target tuple.
     }
 
@@ -171,7 +183,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Offset) {
+    iValidateCC(Offset)
+    {
     }
 
     iDocCC(Offset, R"(
@@ -181,7 +194,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Sub) {
+    iValidateCC(Sub)
+    {
     }
 
     iDocCC(Sub, R"(
@@ -193,7 +207,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Trim) {
+    iValidateCC(Trim)
+    {
     }
 
     iDocCC(Trim, R"(
@@ -207,7 +222,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Unfreeze) {
+    iValidateCC(Unfreeze)
+    {
     }
 
     iDocCC(Unfreeze, R"(
@@ -218,7 +234,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(ToIntFromAscii) {
+    iValidateCC(ToIntFromAscii)
+    {
     }
 
     iDocCC(ToIntFromAscii, R"(
@@ -227,7 +244,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(ToUIntFromBinary) {
+    iValidateCC(ToUIntFromBinary)
+    {
     }
 
     iDocCC(ToUIntFromBinary, R"(
@@ -236,7 +254,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(ToIntFromBinary) {
+    iValidateCC(ToIntFromBinary)
+    {
     }
 
     iDocCC(ToIntFromBinary, R"(
@@ -245,7 +264,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Lower) {
+    iValidateCC(Lower)
+    {
     }
 
     iDocCC(Lower, R"(
@@ -254,7 +274,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Upper) {
+    iValidateCC(Upper)
+    {
     }
 
     iDocCC(Upper, R"(
@@ -263,7 +284,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Strip) {
+    iValidateCC(Strip)
+    {
     }
 
     iDocCC(Strip, R"(
@@ -272,7 +294,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(StartsWith) {
+    iValidateCC(StartsWith)
+    {
     }
 
     iDocCC(StartsWith, R"(
@@ -281,7 +304,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Split1) {
+    iValidateCC(Split1)
+    {
         // TODO: Check tuple type.
     }
 
@@ -291,7 +315,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Split) {
+    iValidateCC(Split)
+    {
         // TODO: Check vector type.
     }
 
@@ -301,7 +326,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Join) {
+    iValidateCC(Join)
+    {
     }
 
     iDocCC(Join, R"(
@@ -310,63 +336,85 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(AppendObject) {
+    iValidateCC(AppendObject)
+    {
     }
 
-    iDocCC(AppendObject, R"(Inserts a separator object *op2* to the end of the bytes object *op1*. When iterating over a bytes object, reaching the object will generally be treated as if the end has been reached. However, the  instructions ``retrieve_object``/``at_object``/``skip_object`` may be used to operate on the inserted objects.
+    iDocCC(
+        AppendObject,
+        R"(Inserts a separator object *op2* to the end of the bytes object *op1*. When iterating over a bytes object, reaching the object will generally be treated as if the end has been reached. However, the  instructions ``retrieve_object``/``at_object``/``skip_object`` may be used to operate on the inserted objects.
     )")
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(RetrieveObject) {
+    iValidateCC(RetrieveObject)
+    {
     }
 
-    iDocCC(RetrieveObject, R"(Retrieves a separator object at a iterator position *op1*. The object's type must match the target type, otherwise will throw a ``TypeError``. If no separator object at the position, throws a \c ValuesError.
+    iDocCC(
+        RetrieveObject,
+        R"(Retrieves a separator object at a iterator position *op1*. The object's type must match the target type, otherwise will throw a ``TypeError``. If no separator object at the position, throws a \c ValuesError.
     )")
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(AtObject) {
+    iValidateCC(AtObject)
+    {
     }
 
-    iDocCC(AtObject, R"(Checks if there's a separator object located at the iterator position *op1*. If *op2* is given, confirms that the object is of the corresponding type as well.
+    iDocCC(
+        AtObject,
+        R"(Checks if there's a separator object located at the iterator position *op1*. If *op2* is given, confirms that the object is of the corresponding type as well.
     )")
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(SkipObject) {
+    iValidateCC(SkipObject)
+    {
     }
 
-    iDocCC(SkipObject, R"(Advances iterator *op1* past an object, returning the new iterator. Throws ``ValueError`` if there's no object at the location.
+    iDocCC(
+        SkipObject,
+        R"(Advances iterator *op1* past an object, returning the new iterator. Throws ``ValueError`` if there's no object at the location.
     )")
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(NextObject) {
+    iValidateCC(NextObject)
+    {
     }
 
-    iDocCC(NextObject, R"(Advances iterator *op1* up to the next embedded object, returning the new iterator or the end position of none.
+    iDocCC(
+        NextObject,
+        R"(Advances iterator *op1* up to the next embedded object, returning the new iterator or the end position of none.
     )")
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(AppendMark) {
+    iValidateCC(AppendMark)
+    {
     }
 
-    iDocCC(AppendMark, R"(Inserts a mark right after the current end of bytes object *op1*. When later more bytes get added, the mark will be pointing to the first of them.
+    iDocCC(
+        AppendMark,
+        R"(Inserts a mark right after the current end of bytes object *op1*. When later more bytes get added, the mark will be pointing to the first of them.
     )")
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(NextMark) {
+    iValidateCC(NextMark)
+    {
     }
 
-    iDocCC(NextMark, R"(Moves the iterator *op1* to the position of the next mark, or to then end if there's no further mark. Returns the current position if that's pointing to a mark already.
+    iDocCC(
+        NextMark,
+        R"(Moves the iterator *op1* to the position of the next mark, or to then end if there's no further mark. Returns the current position if that's pointing to a mark already.
     )")
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(AtMark) {
+    iValidateCC(AtMark)
+    {
     }
 
     iDocCC(AtMark, R"(Checks if there's a mark located at the iterator position *op1*.
@@ -374,7 +422,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(bytes)
-    iValidateCC(Index) {
+    iValidateCC(Index)
+    {
     }
 
     iDocCC(Index, R"(
@@ -384,7 +433,8 @@ iBeginCC(bytes)
 iEndCC
 
 iBeginCC(iterBytes)
-    iValidateCC(Begin) {
+    iValidateCC(Begin)
+    {
     }
 
     iDocCC(Begin, R"(
@@ -393,7 +443,8 @@ iBeginCC(iterBytes)
 iEndCC
 
 iBeginCC(iterBytes)
-    iValidateCC(End) {
+    iValidateCC(End)
+    {
     }
 
     iDocCC(End, R"(
@@ -402,7 +453,8 @@ iBeginCC(iterBytes)
 iEndCC
 
 iBeginCC(iterBytes)
-    iValidateCC(Incr) {
+    iValidateCC(Incr)
+    {
     }
 
     iDocCC(Incr, R"(
@@ -411,7 +463,8 @@ iBeginCC(iterBytes)
 iEndCC
 
 iBeginCC(iterBytes)
-    iValidateCC(IncrBy) {
+    iValidateCC(IncrBy)
+    {
     }
 
     iDocCC(IncrBy, R"(
@@ -421,7 +474,8 @@ iBeginCC(iterBytes)
 iEndCC
 
 iBeginCC(iterBytes)
-    iValidateCC(Equal) {
+    iValidateCC(Equal)
+    {
     }
 
     iDocCC(Equal, R"(
@@ -431,7 +485,8 @@ iBeginCC(iterBytes)
 iEndCC
 
 iBeginCC(iterBytes)
-    iValidateCC(Deref) {
+    iValidateCC(Deref)
+    {
     }
 
     iDocCC(Deref, R"(

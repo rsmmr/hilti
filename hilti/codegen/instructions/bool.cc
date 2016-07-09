@@ -48,4 +48,3 @@ void StatementBuilder::visit(statement::instruction::boolean::Or* i)
 
     cg()->llvmStore(i, result);
 }
-

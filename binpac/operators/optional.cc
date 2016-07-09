@@ -1,11 +1,13 @@
 
 opBegin(optional::CoerceOptional : Coerce)
-    opOp1(std::make_shared<type::Optional>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Optional>()))
+    opOp1(std::make_shared<type::Optional>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Optional>()));
 
-    opDoc("Coerces an optional value into another optional, using the wrapped types coercion rules.")
+    opDoc(
+        "Coerces an optional value into another optional, using the wrapped types coercion rules.");
 
-    opMatch() {
+    opMatch()
+    {
         auto t1 = ast::checkedCast<type::Optional>(op1()->type());
         auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
         auto t2 = ast::checkedCast<type::Optional>(ttype);
@@ -15,21 +17,24 @@ opBegin(optional::CoerceOptional : Coerce)
         return true;
     }
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(optional::CoerceUnwrap : Coerce)
-    opOp1(std::make_shared<type::Optional>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Any>()))
+    opOp1(std::make_shared<type::Optional>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Any>()));
 
-    opDoc("Coerces an optional value into a value of the wrapped type.")
+    opDoc("Coerces an optional value into a value of the wrapped type.");
 
-    opMatch() {
+    opMatch()
+    {
         auto t1 = ast::checkedCast<type::Optional>(op1()->type());
         auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
         auto t2 = ast::checkedCast<Type>(ttype);
@@ -42,10 +47,12 @@ opBegin(optional::CoerceUnwrap : Coerce)
         return true;
     }
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         auto t1 = ast::checkedCast<type::Optional>(op1()->type());
         return t1->argType();
     }
@@ -53,12 +60,13 @@ opBegin(optional::CoerceUnwrap : Coerce)
 opEnd
 
 opBegin(optional::CoerceWrap : Coerce)
-    opOp1(std::make_shared<type::Any>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Optional>()))
+    opOp1(std::make_shared<type::Any>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Optional>()));
 
-    opDoc("Coerces an value into an optional wrapping its type.")
+    opDoc("Coerces an value into an optional wrapping its type.");
 
-    opMatch() {
+    opMatch()
+    {
         return false;
         auto t1 = ast::tryCast<type::Optional>(op1()->type());
 
@@ -73,12 +81,13 @@ opBegin(optional::CoerceWrap : Coerce)
         return sameType(t1, t2->argType());
     }
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Optional>(op1()->type());
     }
 
 opEnd
-

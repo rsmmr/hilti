@@ -1,6 +1,6 @@
 
 static const string _doc_connect =
-   R"(
+    R"(
     Connects a parsing unit to a sink. All subsequent write() calls will
     pass their data to this parsing unit. Each unit can only be connected to a
     single sink. If the unit is already connected, a ~~UnitAlreadyConnected
@@ -8,36 +8,40 @@ static const string _doc_connect =
    )";
 
 opBegin(sink::New)
-    opOp1(std::make_shared<type::TypeType>(std::make_shared<type::Sink>()))
+    opOp1(std::make_shared<type::TypeType>(std::make_shared<type::Sink>()));
 
-    opDoc("Instantiates a new sink.")
+    opDoc("Instantiates a new sink.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Sink>();
     }
 opEnd
 
 opBegin(sink::Connect : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect")))
-    opCallArg1("u", std::make_shared<type::Unit>())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect")));
+    opCallArg1("u", std::make_shared<type::Unit>());
 
-    opDoc(_doc_connect)
+    opDoc(_doc_connect);
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 
 static const string _doc_connect_mime_type =
-   R"(
+    R"(
     Connects a parsing units to a sink based on their MIME type, given as
     the argument. It works similar to ~~connect, but it instantiates and connects all
     parsers they specify the given MIME type via their ``%mimetype`` property.
@@ -45,81 +49,89 @@ static const string _doc_connect_mime_type =
    )";
 
 opBegin(sink::ConnectMimeTypeBytes : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect_mime_type")))
-    opCallArg1("b", std::make_shared<type::Bytes>())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect_mime_type")));
+    opCallArg1("b", std::make_shared<type::Bytes>());
 
-    opDoc(_doc_connect)
+    opDoc(_doc_connect);
 
-    opValidate() {
-        type_list args = { std::make_shared<type::Bytes>() };
+    opValidate()
+    {
+        type_list args = {std::make_shared<type::Bytes>()};
         checkCallArgs(op3(), args);
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 opBegin(sink::ConnectMimeTypeString : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect_mime_type")))
-    opCallArg1("b", std::make_shared<type::String>())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect_mime_type")));
+    opCallArg1("b", std::make_shared<type::String>());
 
-    opDoc(_doc_connect)
+    opDoc(_doc_connect);
 
-    opValidate() {
-        type_list args = { std::make_shared<type::String>() };
+    opValidate()
+    {
+        type_list args = {std::make_shared<type::String>()};
         checkCallArgs(op3(), args);
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_connect_mime_type_try =
-   R"(
+    R"(
     Similar to ~~connect_mime_type, but connects parsers in "dynamic format detection" mode,
     in which they disable themselves gracefully if they decide they cannot parse the input.
    )";
 
 opBegin(sink::TryConnectMimeTypeBytes : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("try_connect_mime_type")))
-    opCallArg1("b", std::make_shared<type::Bytes>())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("try_connect_mime_type")));
+    opCallArg1("b", std::make_shared<type::Bytes>());
 
-    opDoc(_doc_connect)
+    opDoc(_doc_connect);
 
-    opValidate() {
-        type_list args = { std::make_shared<type::Bytes>() };
+    opValidate()
+    {
+        type_list args = {std::make_shared<type::Bytes>()};
         checkCallArgs(op3(), args);
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 opBegin(sink::TryConnectMimeTypeString : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("try_connect_mime_type")))
-    opCallArg1("b", std::make_shared<type::String>())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("try_connect_mime_type")));
+    opCallArg1("b", std::make_shared<type::String>());
 
-    opDoc(_doc_connect)
+    opDoc(_doc_connect);
 
-    opValidate() {
-        type_list args = { std::make_shared<type::String>() };
+    opValidate()
+    {
+        type_list args = {std::make_shared<type::String>()};
         checkCallArgs(op3(), args);
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_write =
-   R"(
+    R"(
     Passes data on to all connected parsing units. Multiple write() calls
     act like passing incremental input in, the units parse them as if it were
     a single stream of data. If data is passed in out of order, it will be reassembled
@@ -145,24 +157,26 @@ static shared_ptr<binpac::Type> _makeUInt64()
 }
 
 opBegin(sink::Write : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("write")))
-    opCallArg1("b", std::make_shared<type::Bytes>())
-    opCallArg2("seq", std::make_shared<type::OptionalArgument>(_makeUInt64()))
-    opCallArg3("len", std::make_shared<type::OptionalArgument>(_makeUInt64()))
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("write")));
+    opCallArg1("b", std::make_shared<type::Bytes>());
+    opCallArg2("seq", std::make_shared<type::OptionalArgument>(_makeUInt64()));
+    opCallArg3("len", std::make_shared<type::OptionalArgument>(_makeUInt64()));
 
-    opDoc(_doc_write)
+    opDoc(_doc_write);
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_close =
-   R"(
+    R"(
     Closes a sink by disconnecting all parsing units. Afterwards, the
     sink's state is as if it had just been created (so new units can be
     connected). Note that a sink it automatically closed when the unit it is
@@ -172,21 +186,23 @@ static const string _doc_close =
    )";
 
 opBegin(sink::Close : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("close")))
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("close")));
 
-    opDoc(_doc_close)
+    opDoc(_doc_close);
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_add_filter =
-   R"(
+    R"(
     Adds an input filter as specificed by *t* (of type ~~BinPAC::Filter) to the
     sink. The filter will receive all input written into the sink first,
     transform it according to its semantics, and then parser attached to the
@@ -209,36 +225,42 @@ static const string _doc_add_filter =
    )";
 
 opBegin(sink::AddFilter : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("add_filter")))
-    opCallArg1("t", std::make_shared<type::Enum>())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("add_filter")));
+    opCallArg1("t", std::make_shared<type::Enum>());
 
-    opDoc(_doc_add_filter)
+    opDoc(_doc_add_filter);
 
-    opValidate() {
+    opValidate()
+    {
         // TODO: Check enum for actual type.
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 opBegin(sink::Size)
-    opOp1(std::make_shared<type::Sink>())
+    opOp1(std::make_shared<type::Sink>());
 
-    opDoc("Returns the number of bytes written into the sink so far. If the sink has filters attached, this returns the value after filtering.")
+    opDoc(
+        "Returns the number of bytes written into the sink so far. If the sink has filters "
+        "attached, this returns the value after filtering.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Integer>(64, false);
     }
 opEnd
 
 static const string _doc_sequence =
-   R"(
+    R"(
    Returns the current sequence number of the sink's input stream, which is
    one beyond all data that has been put in order and delivered so far.
 
@@ -247,22 +269,24 @@ static const string _doc_sequence =
    )";
 
 opBegin(sink::Sequence : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("sequence")))
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("sequence")));
 
-    opDoc(_doc_sequence)
+    opDoc(_doc_sequence);
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Integer>(64, false);
     }
 opEnd
 
 
 static const string _doc_gap =
-   R"(
+    R"(
    Reports a gap in the input stream. *seq* is the sequence number of the
    first byte missing, *len* is the length of the gap.
    *seq* is relative to the sink's initial sequence number,
@@ -270,23 +294,25 @@ static const string _doc_gap =
    )";
 
 opBegin(sink::Gap : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("gap")))
-    opCallArg1("seq", _makeUInt64())
-    opCallArg2("len", _makeUInt64())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("gap")));
+    opCallArg1("seq", _makeUInt64());
+    opCallArg2("len", _makeUInt64());
 
-    opDoc(_doc_gap)
+    opDoc(_doc_gap);
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_skip =
-   R"(
+    R"(
    Skips ahead in the input stream. *seq* is
    is the sequence number where to continue parsing, 
    relative to the sink's initial sequence number.
@@ -299,22 +325,24 @@ static const string _doc_skip =
    )";
 
 opBegin(sink::Skip : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("skip")))
-    opCallArg1("seq", _makeUInt64())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("skip")));
+    opCallArg1("seq", _makeUInt64());
 
-    opDoc(_doc_skip)
+    opDoc(_doc_skip);
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_trim =
-   R"(
+    R"(
    Deletes all data that's still buffered internally up to *seq*.
    *seq* is relative to the sink's initial sequence number,
    which defaults to zero.
@@ -329,44 +357,49 @@ static const string _doc_trim =
    )";
 
 opBegin(sink::Trim : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("trim")))
-    opCallArg1("seq", _makeUInt64())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("trim")));
+    opCallArg1("seq", _makeUInt64());
 
-    opDoc(_doc_trim)
+    opDoc(_doc_trim);
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_set_initial_sequence_number =
-   R"(
+    R"(
    Sets the sink's initial sequence number. All sequence numbers given to
    other methods are interpreted relative to this one. By default, a sink's
    initial sequence number is zero.
    )";
 
 opBegin(sink::SetInitialSequenceNumber : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_initial_sequence_number")))
-    opCallArg1("seq", _makeUInt64())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(
+        std::make_shared<ID>("set_initial_sequence_number")));
+    opCallArg1("seq", _makeUInt64());
 
-    opDoc(_doc_set_initial_sequence_number)
+    opDoc(_doc_set_initial_sequence_number);
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_set_auto_trim =
-   R"(
+    R"(
    Enables or disables auto-trimming. If enabled (which is the default)
    sink input data is trimmed automatically once in-order and procssed. See
    \a trim()  for more information about trimming.
@@ -375,22 +408,24 @@ static const string _doc_set_auto_trim =
    )";
 
 opBegin(sink::SetAutoTrim : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_auto_trim")))
-    opCallArg1("enabled", std::make_shared<type::Bool>())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_auto_trim")));
+    opCallArg1("enabled", std::make_shared<type::Bool>());
 
-    opDoc(_doc_set_auto_trim)
+    opDoc(_doc_set_auto_trim);
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
 
 static const string _doc_set_policy =
-   R"(
+    R"(
    Sets a sink's reassembly policy for ambigious input. As long as data hasn't been trimmed,
    a sink detects overlapping chunks. The policy decides how to handle ambigious overlaps.
    The default policy is \a BinPAC::ReassemblyPolicy::First, which resolved ambigiuities by taking
@@ -400,18 +435,19 @@ static const string _doc_set_policy =
    )";
 
 opBegin(sink::SetPolicy : MethodCall)
-    opOp1(std::make_shared<type::Sink>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_policy")))
-    opCallArg1("policy", std::make_shared<type::Enum>())
+    opOp1(std::make_shared<type::Sink>());
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_policy")));
+    opCallArg1("policy", std::make_shared<type::Enum>());
 
-    opDoc(_doc_set_policy)
+    opDoc(_doc_set_policy);
 
-    opValidate() {
+    opValidate()
+    {
         // TODO: Check enum for actual type.
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Void>();
     }
 opEnd
-

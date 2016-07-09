@@ -1,7 +1,7 @@
 
-#include "../module.h"
-#include "../id.h"
 #include "../expression.h"
+#include "../id.h"
+#include "../module.h"
 
 #include "id-replacer.h"
 
@@ -34,13 +34,14 @@ void IDReplacer::visit(expression::ID* id)
 
 void IDReplacer::visit(expression::Constant* c)
 {
-    auto label = ast::tryCast<constant::Label>(c->constant());
+    auto label = ast::rtti::tryCast<constant::Label>(c->constant());
 
     if ( ! label )
         return;
 
     if ( label->value() == _old_id->pathAsString() ) {
-        auto nlabel = std::make_shared<constant::Label>(_new_id->pathAsString(), _old_id->location());
+        auto nlabel =
+            std::make_shared<constant::Label>(_new_id->pathAsString(), _old_id->location());
         c->constant()->replace(nlabel);
     }
 }

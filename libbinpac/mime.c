@@ -18,7 +18,8 @@ void __mime_parser_dtor(hlt_type_info* ti, __mime_parser* mime_parser, hlt_execu
     GC_CLEAR(mime_parser->next, __mime_parser, ctx);
 }
 
-static void __add_parser(hlt_bytes* mt, binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __add_parser(hlt_bytes* mt, binpac_parser* parser, hlt_exception** excpt,
+                         hlt_execution_context* ctx)
 {
     __mime_parser* mp = GC_NEW_REF(__mime_parser, ctx);
     GC_INIT(mp->parser, parser, hlt_BinPACHilti_Parser, ctx);
@@ -27,18 +28,21 @@ static void __add_parser(hlt_bytes* mt, binpac_parser* parser, hlt_exception** e
     // Deep-copy the pointers, the map needs that.
 
     __mime_parser** cmp = hlt_malloc(sizeof(__mime_parser*));
-    hlt_bytes**     cmt = hlt_malloc(sizeof(hlt_bytes*));
+    hlt_bytes** cmt = hlt_malloc(sizeof(hlt_bytes*));
     *cmt = mt;
     *cmp = mp;
 
-    __mime_parser** current = hlt_map_get_default(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, cmt, &hlt_type_info___mime_parser, 0, excpt, ctx);
+    __mime_parser** current =
+        hlt_map_get_default(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, cmt,
+                            &hlt_type_info___mime_parser, 0, excpt, ctx);
 
     if ( current ) {
         mp->next = *current;
         GC_CCTOR(mp->next, __mime_parser, ctx);
     }
 
-    hlt_map_insert(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, cmt, &hlt_type_info___mime_parser, cmp, excpt, ctx);
+    hlt_map_insert(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, cmt,
+                   &hlt_type_info___mime_parser, cmp, excpt, ctx);
 
     GC_DTOR(mp, __mime_parser, ctx);
 
@@ -74,12 +78,16 @@ static hlt_bytes* __main_type(hlt_bytes* mtype, hlt_exception** excpt, hlt_execu
     return result;
 }
 
-static void __connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_full, int8_t try_mode, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+static void __connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_full,
+                          int8_t try_mode, void* cookie, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     if ( ! __binpac_globals_get()->mime_types )
         return;
 
-    __mime_parser** current = hlt_map_get_default(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, &mtype, &hlt_type_info___mime_parser, 0, excpt, ctx);
+    __mime_parser** current =
+        hlt_map_get_default(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, &mtype,
+                            &hlt_type_info___mime_parser, 0, excpt, ctx);
 
     if ( ! current )
         return;
@@ -108,20 +116,22 @@ static void __connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_
         ctx->fiber = saved_fiber;
         ctx->blockable = saved_blockable;
 
-        _binpachilti_sink_connect_intern(sink, mp->parser->type_info, &pobj, mp->parser, mtype_full, excpt, ctx);
+        _binpachilti_sink_connect_intern(sink, mp->parser->type_info, &pobj, mp->parser, mtype_full,
+                                         excpt, ctx);
     }
 }
 
-void binpachilti_mime_register_parser(binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_mime_register_parser(binpac_parser* parser, hlt_exception** excpt,
+                                      hlt_execution_context* ctx)
 {
     if ( ! (parser->mime_types && parser->new_func) )
-         return;
+        return;
 
     hlt_iterator_list i = hlt_list_begin(parser->mime_types, excpt, ctx);
     hlt_iterator_list end = hlt_list_end(parser->mime_types, excpt, ctx);
 
     while ( ! (hlt_iterator_list_eq(i, end, excpt, ctx) || *excpt) ) {
-        hlt_string mt = *(hlt_string*) hlt_iterator_list_deref(i, excpt, ctx);
+        hlt_string mt = *(hlt_string*)hlt_iterator_list_deref(i, excpt, ctx);
         hlt_bytes* b = hlt_string_encode(mt, Hilti_Charset_ASCII, excpt, ctx);
 
         hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
@@ -130,7 +140,7 @@ void binpachilti_mime_register_parser(binpac_parser* parser, hlt_exception** exc
         assert(raw);
 
         // If it ends in '/*', register with just the main type.
-        if ( len > 2 && raw[len-1] == '*' && raw[len-2] == '/' ) {
+        if ( len > 2 && raw[len - 1] == '*' && raw[len - 2] == '/' ) {
             hlt_bytes* main = __main_type(b, excpt, ctx);
             assert(main);
             b = main;
@@ -147,13 +157,17 @@ void binpachilti_mime_register_parser(binpac_parser* parser, hlt_exception** exc
     }
 }
 
-void binpachilti_sink_connect_mimetype_string(binpac_sink* sink, hlt_string mtype, int8_t try_mode, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_connect_mimetype_string(binpac_sink* sink, hlt_string mtype, int8_t try_mode,
+                                              void* cookie, hlt_exception** excpt,
+                                              hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_string_encode(mtype, Hilti_Charset_ASCII, excpt, ctx);
     binpachilti_sink_connect_mimetype_bytes(sink, b, 0, cookie, excpt, ctx);
 }
 
-void binpachilti_sink_connect_mimetype_bytes(binpac_sink* sink, hlt_bytes* mtype, int8_t try_mode, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_sink_connect_mimetype_bytes(binpac_sink* sink, hlt_bytes* mtype, int8_t try_mode,
+                                             void* cookie, hlt_exception** excpt,
+                                             hlt_execution_context* ctx)
 {
     __connect_one(sink, mtype, mtype, try_mode, cookie, excpt, ctx);
 

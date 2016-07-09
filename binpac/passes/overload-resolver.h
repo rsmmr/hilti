@@ -4,16 +4,15 @@
 
 #include <ast/pass.h>
 
-#include "../common.h"
 #include "../ast-info.h"
+#include "../common.h"
 
 namespace binpac {
 namespace passes {
 
 /// Resolves overloaded function calls. It replaces nodes of type ID with the
 /// function that it's referencing.
-class OverloadResolver : public ast::Pass<AstInfo>
-{
+class OverloadResolver : public ast::Pass<AstInfo> {
 public:
     OverloadResolver(shared_ptr<Module> module);
 
@@ -32,7 +31,6 @@ protected:
 private:
     shared_ptr<Module> _module;
 };
-
 }
 }
 

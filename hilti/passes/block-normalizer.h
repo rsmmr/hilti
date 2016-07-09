@@ -8,24 +8,22 @@ namespace hilti {
 namespace passes {
 
 /// Normalizes blocks by inserting terminator instructions where missing.
-class BlockNormalizer : public Pass<>
-{
+class BlockNormalizer : public Pass<> {
 public:
-   /// Constructor.
-   BlockNormalizer(bool instructions_normalized);
+    /// Constructor.
+    BlockNormalizer(bool instructions_normalized);
 
-   /// Collects information about an AST.
-   bool run(shared_ptr<hilti::Node> module);
+    /// Collects information about an AST.
+    bool run(shared_ptr<hilti::Node> module);
 
 protected:
-   virtual void visit(statement::Block* b);
-   virtual void visit(declaration::Function* f);
+    virtual void visit(statement::Block* b);
+    virtual void visit(declaration::Function* f);
 
 private:
-   bool _instructions_normalized = false;
-   uint64_t _anon_cnt = 0;
+    bool _instructions_normalized = false;
+    uint64_t _anon_cnt = 0;
 };
-
 }
 }
 

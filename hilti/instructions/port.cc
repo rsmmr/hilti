@@ -1,11 +1,12 @@
 
 #include "define-instruction.h"
 
-#include "port.h"
 #include "../module.h"
+#include "port.h"
 
 iBeginCC(port)
-    iValidateCC(Equal) {
+    iValidateCC(Equal)
+    {
     }
 
     iDocCC(Equal, R"(
@@ -14,8 +15,9 @@ iBeginCC(port)
 iEndCC
 
 iBeginCC(port)
-    iValidateCC(Protocol) {
-        auto ty_target = as<type::Enum>(target->type());
+    iValidateCC(Protocol)
+    {
+        auto ty_target = ast::rtti::checkedCast<type::Enum>(target->type());
 
         if ( util::strtolower(ty_target->id()->pathAsString()) != "hilti::protocol" )
             error(target, "target must be of type hilti::Protocol");
@@ -24,6 +26,6 @@ iBeginCC(port)
     iDocCC(Protocol, R"(
         Returns the protocol of *op1*, which can currently be either
         ``Port::TCP`` or ``Port::UDP``.
-    
+
     )")
 iEndCC

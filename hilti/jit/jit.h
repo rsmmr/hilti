@@ -4,72 +4,60 @@
 
 #include <ast/logger.h>
 
-#include "../context.h"
-
-namespace llvm {
-    class ExecutionEngine;
-    class SectionMemoryManager;
-}
+#include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
+#include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
+#include "llvm/IR/DataLayout.h"
+#include "llvm/Target/TargetMachine.h"
 
 namespace hilti {
 
-namespace jit {
-
-class MemoryManager;
-class ObjectCache;
+class CompilerContext;
 
 // Central JIT engine.
-class JIT : public ast::Logger
-{
+class JIT : public ast::Logger {
 public:
-    typedef CompilerContext::FunctionMapping FunctionMapping;
-
+    /// Constructor that JITs an LLVM module retuned by linkModules().
+    ///
+    /// ctx: The HILTI compiler context.
     JIT(CompilerContext* ctx);
     ~JIT();
 
-    /// JITs an LLVM module retuned by linkModules().
+    /// JITs an LLVM module retuned by linkModules(), and then initializes
+    /// the runtime library. Afterwards nativeFunction() can be used to
+    /// retrieve the address of compiled functions.
+    ///
+    /// To set runtime options, the host application can use
+    /// hlt_config_get/set() before calling this method.
     ///
     /// module: The module. The function takes ownership.
     ///
-    /// Returns: The execution engine to use with nativeFunction(). Null on
-    /// error; an error message will have been reported.
-    llvm::ExecutionEngine* jitModule(llvm::Module* module);
+    /// Returns: True if JITing succeeded. If *main_run* is true, it will
+    /// have finished by the time the function returns.
+    bool jit(std::unique_ptr<llvm::Module> module);
 
-    /// Returns a pointer to a compiled, native function after a module has beed JITed.
-    ///
-    /// ee: The engine returned by jitModule().
-    ///
-    /// module: The module that defines the target function.
+    /// Returns a pointer to a compiled, native function after a module has
+    /// beed JITed. Must only be called after jit() signaled success.
     ///
     /// function: The name of the function.
     ///
+    /// must_exist: If true, the method aborts the process with a fatal error
+    /// if the function does not exist in the compiled code.
+    ///
     /// Returns: A pointer to the function (which must be suitably casted),
-    /// or null if that function doesn't exist.
-    void* nativeFunction(llvm::ExecutionEngine* ee, llvm::Module* module, const string& function);
-
-    /// Installs a table to resolve functions that are located statically
-    /// inside the main process.
-    ///
-    /// mappings: An array of name-to-address mappings. The last entry must
-    /// be null pointers to mark the end of the array.
-    void installFunctionTable(const FunctionMapping* ftable);
-
-    /// Looks up a function installed in the function table.
-    ///
-    /// name: The name of the function.
-    ///
-    /// Returns: A pointer to the function, or null if there's no function
-    /// under that name.
-    void* lookupFunctionInTable(const std::string& name);
+    /// or null if that function doesn't exist and *must_exist* is false.
+    void* nativeFunction(const string& function, bool must_exist = true);
 
 private:
     CompilerContext* _ctx;
-    MemoryManager* _mm;
-    ObjectCache* _cache;
+
+    typedef llvm::orc::ObjectLinkingLayer<> ObjectLayer;
+    typedef llvm::orc::IRCompileLayer<ObjectLayer> CompileLayer;
+
+    std::unique_ptr<llvm::DataLayout> _data_layout;
+    std::unique_ptr<llvm::TargetMachine> _target_machine;
+    std::unique_ptr<ObjectLayer> _object_layer;
+    std::unique_ptr<CompileLayer> _compile_layer;
 };
-
-}
-
 }
 
 #endif

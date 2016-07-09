@@ -13,8 +13,7 @@
 namespace binpac {
 
 /// Base class for ctor nodes. A ctor instantiates a HeapType.
-class Ctor : public ast::Ctor<AstInfo>
-{
+class Ctor : public ast::Ctor<AstInfo> {
 public:
     typedef std::string pattern;
 
@@ -24,7 +23,7 @@ public:
     /// Constructor.
     ///
     /// l: An associated location.
-    Ctor(const Location& l=Location::None);
+    Ctor(const Location& l = Location::None);
 
     /// Returns a set of regular expressions corresponding to the ctor. This
     /// for using the ctor as a literal when parsing. The default
@@ -41,15 +40,14 @@ public:
 namespace ctor {
 
 /// AST node for a bytes constructor.
-class Bytes : public Ctor
-{
+class Bytes : public Ctor {
 public:
     /// Constructor.
     ///
     /// b: The value to initialize the bytes object with.
     ///
     /// l: An associated location.
-    Bytes(const string& b, const Location& l=Location::None);
+    Bytes(const string& b, const Location& l = Location::None);
 
     /// Returns the initialization value.
     const string& value() const;
@@ -67,8 +65,7 @@ private:
 };
 
 /// AST node for a list constructor.
-class List : public Ctor
-{
+class List : public Ctor {
 public:
     /// Constructor.
     ///
@@ -78,7 +75,7 @@ public:
     /// elems: The elements for the instance being constructed.
     ///
     /// l: An associated location.
-    List(shared_ptr<Type> etype, const expression_list& elems, const Location& l=Location::None);
+    List(shared_ptr<Type> etype, const expression_list& elems, const Location& l = Location::None);
 
     /// Returns the initialization value.
     expression_list elements() const;
@@ -96,8 +93,7 @@ private:
 };
 
 /// AST node for a vector constructor.
-class Vector : public Ctor
-{
+class Vector : public Ctor {
 public:
     /// Constructor.
     ///
@@ -107,7 +103,8 @@ public:
     /// elems: The elements for the instance being constructed.
     ///
     /// l: An associated location.
-    Vector(shared_ptr<Type> etype, const expression_list& elems, const Location& l=Location::None);
+    Vector(shared_ptr<Type> etype, const expression_list& elems,
+           const Location& l = Location::None);
 
     /// Returns the initialization value.
     expression_list elements() const;
@@ -125,8 +122,7 @@ private:
 };
 
 /// AST node for a set constructor.
-class Set : public Ctor
-{
+class Set : public Ctor {
 public:
     /// Constructor.
     ///
@@ -136,7 +132,7 @@ public:
     /// elems: The elements for the instance being constructed.
     ///
     /// l: An associated location.
-    Set(shared_ptr<Type> etype, const expression_list& elems, const Location& l=Location::None);
+    Set(shared_ptr<Type> etype, const expression_list& elems, const Location& l = Location::None);
 
     /// Returns the initialization value.
     expression_list elements() const;
@@ -154,10 +150,9 @@ private:
 };
 
 /// AST node for a list constructor.
-class Map : public Ctor
-{
+class Map : public Ctor {
 public:
-    typedef std::pair<node_ptr<Expression>,node_ptr<Expression>> element;
+    typedef std::pair<node_ptr<Expression>, node_ptr<Expression>> element;
     typedef std::list<element> element_list;
 
     /// Constructor.
@@ -171,7 +166,8 @@ public:
     /// elems: The elements for the instance being constructed.
     ///
     /// l: An associated location.
-    Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l=Location::None);
+    Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems,
+        const Location& l = Location::None);
 
     /// Returns the initialization value.
     element_list elements() const;
@@ -185,12 +181,11 @@ public:
 
 private:
     node_ptr<Type> _type;
-    std::list<std::pair<node_ptr<Expression>,node_ptr<Expression>>> _elems;
+    std::list<std::pair<node_ptr<Expression>, node_ptr<Expression>>> _elems;
 };
 
 /// AST node for a regexp constructor.
-class RegExp : public Ctor
-{
+class RegExp : public Ctor {
 public:
     /// Constructor.
     ///
@@ -201,7 +196,8 @@ public:
     /// attrs: Optional attributes.
     ///
     /// l: An associated location.
-    RegExp(const string& regexp, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
+    RegExp(const string& regexp, const attribute_list& attrs = attribute_list(),
+           const Location& l = Location::None);
 
     /// Constructor.
     ///
@@ -210,7 +206,8 @@ public:
     /// attrs: Optional attributes.
     ///
     /// l: An associated location.
-    RegExp(const pattern_list& patterns, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
+    RegExp(const pattern_list& patterns, const attribute_list& attrs = attribute_list(),
+           const Location& l = Location::None);
 
     /// Returns the pattern.
     pattern_list patterns() const override;
@@ -232,8 +229,7 @@ private:
 };
 
 /// AST node for a unit constructor.
-class Unit : public Ctor
-{
+class Unit : public Ctor {
 public:
     typedef std::pair<shared_ptr<ID>, shared_ptr<Expression>> item;
     typedef std::list<item> item_list;
@@ -247,7 +243,7 @@ public:
     /// though!).
     ///
     /// l: An associated location.
-    Unit(const item_list& items, const Location& l=Location::None);
+    Unit(const item_list& items, const Location& l = Location::None);
 
     /// Returns the initialization value.
     item_list items() const;
@@ -260,11 +256,9 @@ public:
 
 private:
     node_ptr<Type> _type;
-    std::list<std::pair<node_ptr<ID>,node_ptr<Expression>>> _items;
+    std::list<std::pair<node_ptr<ID>, node_ptr<Expression>>> _items;
 };
-
 }
-
 }
 
 #endif

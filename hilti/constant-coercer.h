@@ -14,19 +14,16 @@ namespace hilti {
 /// Visitor implementating the check whether a constant of one type can be
 /// coerced into that of another. This class should not be used directly. The
 /// frontend is expression::Constant::coerceTo.
-class ConstantCoercer : public ast::ConstantCoercer<AstInfo>
-{
+class ConstantCoercer : public ast::ConstantCoercer<AstInfo> {
 public:
-   void visit(constant::Address* i) override;
-   void visit(constant::Integer* i) override;
-   void visit(constant::Reference* r) override;
-   void visit(constant::Tuple* t) override;
-   void visit(constant::CAddr* t) override;
-   void visit(constant::Unset* t) override;
-   void visit(constant::Union* t) override;
+    void visit(constant::Address* i) override;
+    void visit(constant::Integer* i) override;
+    void visit(constant::Reference* r) override;
+    void visit(constant::Tuple* t) override;
+    void visit(constant::CAddr* t) override;
+    void visit(constant::Unset* t) override;
+    void visit(constant::Union* t) override;
 };
-
-
 }
 
 #endif

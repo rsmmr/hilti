@@ -7,8 +7,8 @@
 #ifndef JRX_DFA_MIN_MATCHER_H
 #define JRX_DFA_MIN_MATCHER_H
 
-#include "jrx-intern.h"
 #include "dfa.h"
+#include "jrx-intern.h"
 
 // >0: Match with the return accept ID (if multiple match, undefined which).
 //  0: Failure to match, not recoverable.

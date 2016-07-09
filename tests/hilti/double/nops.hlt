@@ -36,8 +36,10 @@ void run() {
     i = double.as_uint 15.123
     call Hilti::print(i)
 
-    i = double.as_uint -15.123
-    call Hilti::print(i)
+#   This one is not well-defined.
+#
+#   i = double.as_uint -15.123
+#   call Hilti::print(i)
 
     d = double.pow 2.0 10.0
     call Hilti::print(d)

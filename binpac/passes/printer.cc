@@ -44,17 +44,17 @@ static void _printUnitFieldCommon(Printer& p, type::unit::item::Field* i)
 
 static string _linkage(Declaration::Linkage linkage)
 {
-    switch( linkage ) {
-     case Declaration::PRIVATE:
+    switch ( linkage ) {
+    case Declaration::PRIVATE:
         return "";
 
-     case Declaration::EXPORTED:
+    case Declaration::EXPORTED:
         return "export ";
 
-     case Declaration::IMPORTED:
+    case Declaration::IMPORTED:
         return "import ";
 
-     default:
+    default:
         fprintf(stderr, "unknown linkage %d in Printer::_linkage()", (int)linkage);
         abort();
     }
@@ -66,26 +66,26 @@ static string _linkage(Declaration::Linkage linkage)
 
 static string _callingConvention(type::function::CallingConvention cc)
 {
-    switch( cc ) {
-     case type::function::BINPAC:
+    switch ( cc ) {
+    case type::function::BINPAC:
         return ""; // Default.
 
-     case type::function::BINPAC_HILTI:
+    case type::function::BINPAC_HILTI:
         return "\"BINPAC-HILTI\"";
 
-     case type::function::HILTI:
+    case type::function::HILTI:
         return "\"HILTI\"";
 
-     case type::function::BINPAC_HILTI_C:
+    case type::function::BINPAC_HILTI_C:
         return "\"BINPAC-HILTI-C\"";
 
-     case type::function::HILTI_C:
+    case type::function::HILTI_C:
         return "\"HILTI-C\"";
 
-     case type::function::C:
+    case type::function::C:
         return "\"C\"";
 
-     default:
+    default:
         fprintf(stderr, "unknown calling convention %d in Printer::_callingConvention()", (int)cc);
         abort();
     }
@@ -129,7 +129,6 @@ void Printer::visit(Function* f)
 
     bool first = true;
     for ( auto param : f->type()->parameters() ) {
-
         if ( ! first )
             p << ", ";
 
@@ -163,7 +162,7 @@ void Printer::visit(binpac::Hook* h)
     if ( h->debug() )
         p << "debug ";
 
-    if ( h->foreach() )
+    if ( h->foreach () )
         p << "foreach ";
 
     pushIndent();
@@ -213,7 +212,7 @@ void Printer::visit(constant::Bitset* b)
     auto expr = b->firstParent<Expression>(); // may fail
 
     printList<shared_ptr<ID>>(b->value(), " | ", "", "",
-              [&] (shared_ptr<ID> id) -> string { return scopedID(&p, expr, id); });
+                              [&](shared_ptr<ID> id) -> string { return scopedID(&p, expr, id); });
 }
 
 void Printer::visit(constant::Bool* b)
@@ -342,7 +341,7 @@ void Printer::visit(ctor::RegExp* r)
 
     bool first = true;
 
-    for( auto pat : r->patterns() ) {
+    for ( auto pat : r->patterns() ) {
         if ( ! first )
             p << " | ";
 
@@ -502,19 +501,19 @@ void Printer::visit(expression::ParserState* s)
     Printer& p = *this;
 
     switch ( s->kind() ) {
-     case expression::ParserState::SELF:
+    case expression::ParserState::SELF:
         p << "self";
         break;
 
-     case expression::ParserState::DOLLARDOLLAR:
+    case expression::ParserState::DOLLARDOLLAR:
         p << "$$";
         break;
 
-     case expression::ParserState::PARAMETER:
+    case expression::ParserState::PARAMETER:
         p << s->id();
         break;
 
-     default:
+    default:
         internalError("unknown ParserState kind");
     }
 }
@@ -550,67 +549,67 @@ void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
     }
 
     switch ( op.kind ) {
-     case operator_::Add:
+    case operator_::Add:
         p << "add " << op1 << "[" << op2 << "]";
         break;
 
-     case operator_::Attribute:
+    case operator_::Attribute:
         p << op1 << "." << op2;
         break;
 
-     case operator_::AttributeAssign:
+    case operator_::AttributeAssign:
         p << op1 << "." << op2 << " = " << op3;
         break;
 
-     case operator_::Call:
+    case operator_::Call:
         p << op1 << "(" << op2 << ")";
         break;
 
-     case operator_::Cast:
-        p << "cast<" << op2 <<  ">(" << op1 << ")";
+    case operator_::Cast:
+        p << "cast<" << op2 << ">(" << op1 << ")";
         break;
 
-     case operator_::Coerce:
-        p << "coerce<" << op2 <<  ">(" << op1 << ")";
+    case operator_::Coerce:
+        p << "coerce<" << op2 << ">(" << op1 << ")";
         break;
 
-     case operator_::DecrPostfix:
+    case operator_::DecrPostfix:
         p << op1 << "--";
         break;
 
-     case operator_::Delete:
+    case operator_::Delete:
         p << "delete " << op1 << "[" << op2 << "]";
         break;
 
-     case operator_::HasAttribute:
+    case operator_::HasAttribute:
         p << op1 << "?." << op2;
         break;
 
-     case operator_::IncrPostfix:
+    case operator_::IncrPostfix:
         p << op1 << "++";
         break;
 
-     case operator_::Index:
+    case operator_::Index:
         p << op1 << "[" << op2 << "]";
         break;
 
-     case operator_::IndexAssign:
+    case operator_::IndexAssign:
         p << op1 << "[" << op2 << "] = " << op3;
         break;
 
-     case operator_::MethodCall:
+    case operator_::MethodCall:
         p << op1 << "." << op2 << op3;
         break;
 
-     case operator_::Size:
+    case operator_::Size:
         p << "|" << op1 << "|";
         break;
 
-     case operator_::TryAttribute:
+    case operator_::TryAttribute:
         p << op1 << ".?" << op2;
         break;
 
-     default:
+    default:
         internalError(util::fmt("unknown operator %d in Printer::visit", kind));
     }
 }
@@ -790,14 +789,13 @@ void Printer::visit(type::Bitset* c)
     bool first = false;
 
     for ( auto l : c->labels() ) {
-
         if ( ! first )
             p << ", ";
 
         p << l.first->pathAsString();
 
         if ( l.second >= 0 )
-                p << " = " << l.second;
+            p << " = " << l.second;
 
         first = false;
     }
@@ -854,14 +852,13 @@ void Printer::visit(type::Enum* c)
     bool first = false;
 
     for ( auto l : c->labels() ) {
-
         if ( ! first )
             p << ", ";
 
         p << l.first->pathAsString();
 
         if ( l.second >= 0 )
-                p << " = " << l.second;
+            p << " = " << l.second;
 
         first = false;
     }
@@ -1262,7 +1259,7 @@ void Printer::visit(type::unit::item::field::Switch* s)
     p << "switch";
 
     if ( s->expression() )
-        p << ( " << s->expression() << " );
+        p << (" << s->expression() << ");
 
     p << " {" << endl;
 
@@ -1357,6 +1354,3 @@ void Printer::visit(variable::Local* l)
 
     p << ";" << endl;
 }
-
-
-

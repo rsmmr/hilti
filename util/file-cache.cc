@@ -1,8 +1,8 @@
 
-#include <iostream>
 #include <fstream>
-#include <utime.h>
+#include <iostream>
 #include <sys/stat.h>
+#include <utime.h>
 
 #include "file-cache.h"
 #include "util.h"
@@ -85,7 +85,7 @@ bool FileCache::Key::operator!=(const FileCache::Key& other) const
     return ! (*this == other);
 }
 
-std::ostream& operator<<(std::ostream &out, const FileCache::Key& key)
+std::ostream& operator<<(std::ostream& out, const FileCache::Key& key)
 {
     out << "v1" << std::endl;
     out << key.scope << std::endl;
@@ -105,7 +105,7 @@ std::ostream& operator<<(std::ostream &out, const FileCache::Key& key)
     return out;
 }
 
-std::istream& operator>>(std::istream &in, FileCache::Key& key)
+std::istream& operator>>(std::istream& in, FileCache::Key& key)
 {
     string version;
     std::getline(in, version);
@@ -244,8 +244,8 @@ std::list<string> FileCache::lookup(const Key& key)
 
         if ( pathIsFile(path) ) {
             std::ifstream f(path);
-            outputs.push_back(std::string((std::istreambuf_iterator<char>(f)),
-                                          std::istreambuf_iterator<char>()));
+            outputs.push_back(
+                std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>()));
         }
     }
 

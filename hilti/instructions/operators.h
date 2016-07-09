@@ -9,66 +9,80 @@
 // resolver will replace them with the correct overloaded version.
 
 iBegin(operator_, Begin, ".op.begin")
-    iTarget(optype::any)
-    iOp1(optype::any, true)
-    iValidate {}
+    iTarget(optype::any);
+    iOp1(optype::any, true);
+    iValidate
+    {
+    }
     iDoc(R"(
         Returns an iterator pointing to the first element of an iterable sequence.
     )")
 iEnd
 
 iBegin(operator_, End, ".op.end")
-    iTarget(optype::any)
-    iOp1(optype::any, true)
-    iValidate {}
+    iTarget(optype::any);
+    iOp1(optype::any, true);
+    iValidate
+    {
+    }
     iDoc(R"(
         Returns an iterator pointing one beyond the last element of an iterable sequence.
     )")
 iEnd
 
 iBegin(operator_, Incr, ".op.incr")
-    iTarget(optype::any)
-    iOp1(optype::any, true)
-    iValidate {}
+    iTarget(optype::any);
+    iOp1(optype::any, true);
+    iValidate
+    {
+    }
     iDoc(R"(
         Increments an iterator by one element.
     )")
 iEnd
 
 iBegin(operator_, IncrBy, ".op.incr_by")
-    iTarget(optype::any)
-    iOp1(optype::any, true)
-    iOp2(optype::int64, true)
-    iValidate {}
+    iTarget(optype::any);
+    iOp1(optype::any, true);
+    iOp2(optype::int64, true);
+    iValidate
+    {
+    }
     iDoc(R"(
         Increments an iterator by a given number of elements.
     )")
 iEnd
 
 iBegin(operator_, Deref, ".op.deref")
-    iTarget(optype::any)
-    iOp1(optype::any, true)
-    iValidate {}
+    iTarget(optype::any);
+    iOp1(optype::any, true);
+    iValidate
+    {
+    }
     iDoc(R"(
         Dereferences an interator.
     )")
 iEnd
 
 iBegin(operator_, Equal, ".op.equal")
-    iTarget(optype::any)
-    iOp1(optype::any, true)
-    iOp2(optype::any, true)
-    iValidate {}
+    iTarget(optype::any);
+    iOp1(optype::any, true);
+    iOp2(optype::any, true);
+    iValidate
+    {
+    }
     iDoc(R"(
         Compares two values of the same type, assuming the type supports comparision.
     )")
 iEnd
 
 iBegin(operator_, Unequal, "unequal")
-    iTarget(optype::boolean)
-    iOp1(optype::any, true)
-    iOp2(optype::any, true)
-    iValidate {}
+    iTarget(optype::boolean);
+    iOp1(optype::any, true);
+    iOp2(optype::any, true);
+    iValidate
+    {
+    }
     iDoc(R"(
         Compares two values of the same type, returning true if they don't match. This operator
         is defined for all types that offer an ``equal`` operator.
@@ -76,16 +90,17 @@ iBegin(operator_, Unequal, "unequal")
 iEnd
 
 iBegin(operator_, Assign, "assign")
-    iTarget(optype::any)
-    iOp1(optype::any, false)
+    iTarget(optype::any);
+    iOp1(optype::any, false);
 
-    iValidate {
-        if ( ! type::hasTrait<type::trait::ValueType>(target->type()) ) {
+    iValidate
+    {
+        if ( ! ast::type::hasTrait<type::trait::ValueType>(target->type()) ) {
             error(target, "target must be a value type");
             return;
         }
 
-        if ( ! type::hasTrait<type::trait::ValueType>(op1->type()) ) {
+        if ( ! ast::type::hasTrait<type::trait::ValueType>(op1->type()) ) {
             error(op1, "operand must be a value type");
             return;
         }
@@ -102,12 +117,13 @@ iBegin(operator_, Assign, "assign")
 iEnd
 
 iBegin(operator_, Unpack, "unpack")
-    iTarget(optype::tuple)
-    iOp1(optype::tuple, true)
-    iOp2(optype::enum_, true)
-    iOp3(optype::optional(optype::any), true)
+    iTarget(optype::tuple);
+    iOp1(optype::tuple, true);
+    iOp2(optype::enum_, true);
+    iOp3(optype::optional(optype::any), true);
 
-    iValidate {
+    iValidate
+    {
         // TODO
     }
 
@@ -132,12 +148,13 @@ iBegin(operator_, Unpack, "unpack")
 iEnd
 
 iBegin(operator_, Pack, "pack")
-    iTarget(optype::refBytes)
-    iOp1(optype::any, true)
-    iOp2(optype::enum_, true)
-    iOp3(optype::optional(optype::any), true)
+    iTarget(optype::refBytes);
+    iOp1(optype::any, true);
+    iOp2(optype::enum_, true);
+    iOp3(optype::optional(optype::any), true);
 
-    iValidate {
+    iValidate
+    {
         // TODO
     }
 
@@ -155,8 +172,10 @@ iBegin(operator_, Pack, "pack")
 iEnd
 
 iBegin(operator_, Clear, "clear")
-    iOp1(optype::any, false)
-    iValidate {}
+    iOp1(optype::any, false);
+    iValidate
+    {
+    }
     iDoc(R"(
         Resets *op1* to the default value a new variable would be set to.
 
@@ -165,9 +184,10 @@ iBegin(operator_, Clear, "clear")
 iEnd
 
 iBegin(operator_, Clone, "clone")
-    iTarget(optype::any)
-    iOp1(optype::any, true)
-    iValidate {
+    iTarget(optype::any);
+    iOp1(optype::any, true);
+    iValidate
+    {
         equalTypes(target, op1);
     }
     iDoc(R"(
@@ -177,8 +197,9 @@ iEnd
 
 iBegin(operator_, Hash, "hash")
     iTarget(optype::int64);
-    iOp1(optype::any, true)
-    iValidate {
+    iOp1(optype::any, true);
+    iValidate
+    {
     }
     iDoc(R"(
         Returns an integer hash of *op1*.

@@ -9,7 +9,7 @@
 /// insertions as long as the indices of inserted elements are not larger
 /// than the vector's last index. Inserting can be expensive however if an
 /// index beyond the vector's current end is given.
-/// 
+///
 /// Vectors are forward-iterable. An iterator always corresponds to a
 /// specific index and it is therefore safe to modify the vector even while
 /// iterating over it. After any change, the iterator will locate the element
@@ -35,7 +35,8 @@ iBegin(iterVector, Begin, "begin")
     iTarget(optype::iterVector);
     iOp1(optype::refVector, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -48,7 +49,8 @@ iBegin(iterVector, End, "end")
     iTarget(optype::iterVector);
     iOp1(optype::refVector, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -61,7 +63,8 @@ iBegin(iterVector, Incr, "incr")
     iTarget(optype::iterVector);
     iOp1(optype::iterVector, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(target, op1);
     }
 
@@ -71,11 +74,12 @@ iBegin(iterVector, Incr, "incr")
 iEnd
 
 iBegin(iterVector, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::iterVector, true);
     iOp2(optype::iterVector, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(op1, op2);
     }
 
@@ -86,10 +90,11 @@ iBegin(iterVector, Equal, "equal")
 iEnd
 
 iBegin(iterVector, Deref, "deref")
-    iTarget(optype::any)
+    iTarget(optype::any);
     iOp1(optype::iterVector, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(elementType(iteratedType(op1)), target);
     }
 
@@ -100,11 +105,12 @@ iBegin(iterVector, Deref, "deref")
 iEnd
 
 iBegin(vector, New, "new")
-    iTarget(optype::refVector)
+    iTarget(optype::refVector);
     iOp1(optype::typeVector, true);
     iOp2(optype::optional(optype::refTimerMgr), false);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -115,11 +121,12 @@ iBegin(vector, New, "new")
 iEnd
 
 iBegin(vector, Get, "vector.get")
-    iTarget(optype::any)
-    iOp1(optype::refVector, true)
-    iOp2(optype::int64, true)
+    iTarget(optype::any);
+    iOp1(optype::refVector, true);
+    iOp2(optype::int64, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(elementType(referencedType(op1)), target);
     }
 
@@ -130,11 +137,12 @@ iBegin(vector, Get, "vector.get")
 iEnd
 
 iBegin(vector, Exists, "vector.exists")
-    iTarget(optype::boolean)
-    iOp1(optype::refVector, true)
-    iOp2(optype::int64, true)
+    iTarget(optype::boolean);
+    iOp1(optype::refVector, true);
+    iOp2(optype::int64, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -144,10 +152,11 @@ iBegin(vector, Exists, "vector.exists")
 iEnd
 
 iBegin(vector, PushBack, "vector.push_back")
-    iOp1(optype::refVector, false)
-    iOp2(optype::any, false)
+    iOp1(optype::refVector, false);
+    iOp2(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
@@ -158,10 +167,11 @@ iBegin(vector, PushBack, "vector.push_back")
 iEnd
 
 iBegin(vector, Reserve, "vector.reserve")
-    iOp1(optype::refVector, false)
-    iOp2(optype::int64, true)
+    iOp1(optype::refVector, false);
+    iOp2(optype::int64, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -175,11 +185,12 @@ iBegin(vector, Reserve, "vector.reserve")
 iEnd
 
 iBegin(vector, Set, "vector.set")
-    iOp1(optype::refVector, false)
-    iOp2(optype::int64, true)
-    iOp3(optype::any, false)
+    iOp1(optype::refVector, false);
+    iOp2(optype::int64, true);
+    iOp3(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op3, elementType(referencedType(op1)));
     }
 
@@ -190,10 +201,11 @@ iBegin(vector, Set, "vector.set")
 iEnd
 
 iBegin(vector, Size, "vector.size")
-    iTarget(optype::int64)
-    iOp1(optype::refVector, true)
+    iTarget(optype::int64);
+    iOp1(optype::refVector, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(    
@@ -204,12 +216,13 @@ iBegin(vector, Size, "vector.size")
 iEnd
 
 iBegin(vector, Timeout, "vector.timeout")
-    iOp1(optype::refVector, true)
-    iOp2(optype::enum_, true)
-    iOp3(optype::interval, true)
+    iOp1(optype::refVector, true);
+    iOp2(optype::enum_, true);
+    iOp3(optype::interval, true);
 
-    iValidate {
-        auto ty_op2 = as<type::Enum>(op2->type());
+    iValidate
+    {
+        auto ty_op2 = ast::rtti::checkedCast<type::Enum>(op2->type());
 
         // TODO: Check enum.
     }
@@ -225,4 +238,3 @@ iBegin(vector, Timeout, "vector.timeout")
     )")
 
 iEnd
-

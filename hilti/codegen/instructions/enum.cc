@@ -20,13 +20,16 @@ static llvm::Value* _makeVal(CodeGen* cg, bool undef, bool have_value, uint64_t 
 }
 #endif
 
-static llvm::Value* _makeValLLVM(CodeGen* cg, llvm::Value* undef, llvm::Value* has_val, llvm::Value* val)
+static llvm::Value* _makeValLLVM(CodeGen* cg, llvm::Value* undef, llvm::Value* has_val,
+                                 llvm::Value* val)
 {
     auto undef_set = cg->builder()->CreateICmpNE(undef, cg->llvmConstInt(0, 1));
     auto has_val_set = cg->builder()->CreateICmpNE(has_val, cg->llvmConstInt(0, 1));
 
-    undef = cg->builder()->CreateSelect(undef_set, cg->llvmConstInt(HLT_ENUM_UNDEF, 64), cg->llvmConstInt(0, 64));
-    has_val = cg->builder()->CreateSelect(has_val_set, cg->llvmConstInt(HLT_ENUM_HAS_VAL, 64), cg->llvmConstInt(0, 64));
+    undef = cg->builder()->CreateSelect(undef_set, cg->llvmConstInt(HLT_ENUM_UNDEF, 64),
+                                        cg->llvmConstInt(0, 64));
+    has_val = cg->builder()->CreateSelect(has_val_set, cg->llvmConstInt(HLT_ENUM_HAS_VAL, 64),
+                                          cg->llvmConstInt(0, 64));
 
     auto flags = cg->builder()->CreateOr(undef, has_val);
 
@@ -96,7 +99,7 @@ void StatementBuilder::visit(statement::instruction::enum_::FromInt* i)
 
     std::set<int> have_vals;
 
-    for ( auto l : ast::as<type::Enum>(i->target()->type())->labels() ) {
+    for ( auto l : ast::rtti::tryCast<type::Enum>(i->target()->type())->labels() ) {
         auto label = l.first;
         auto value = l.second;
 
@@ -121,13 +124,14 @@ void StatementBuilder::visit(statement::instruction::enum_::FromInt* i)
 
 void StatementBuilder::visit(statement::instruction::enum_::ToInt* i)
 {
-    auto ty_target = as<type::Integer>(i->target()->type());
+    auto ty_target = ast::rtti::checkedCast<type::Integer>(i->target()->type());
 
     auto op1 = cg()->llvmValue(i->op1());
     auto undef = _getUndef(cg(), op1);
     auto val = _getVal(cg(), op1);
     val = builder()->CreateTrunc(val, cg()->llvmTypeInt(ty_target->width()));
-    auto result = cg()->builder()->CreateSelect(undef, cg()->llvmConstInt(-1, ty_target->width()), val);
+    auto result =
+        cg()->builder()->CreateSelect(undef, cg()->llvmConstInt(-1, ty_target->width()), val);
 
     cg()->llvmStore(i, result);
 }

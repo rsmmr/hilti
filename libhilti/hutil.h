@@ -2,17 +2,23 @@
 #ifndef HLT_UTIL_H
 #define HLT_UTIL_H
 
-#include <stdint.h>
 #include <pthread.h>
+#include <stdint.h>
 
 #include "types.h"
 
 // #include "threading.h"
 
+// Helper macro to mark variables that are intentionally unsed. This silences
+// the compiler warning.
+// From
+// http://stackoverflow.com/questions/777261/avoiding-unused-variables-warnings-when-using-assert-in-a-release-build
+#define _UNUSED(x) ((void)x);
+
 /// Sleeps for a given amount of nano-seconds.
 ///
 /// nsecs: The time to sleep.
-extern void   hlt_util_nanosleep(uint64_t nsecs);
+extern void hlt_util_nanosleep(uint64_t nsecs);
 
 /// Renders an unsigned integer as a string.
 ///
@@ -29,12 +35,12 @@ extern void   hlt_util_nanosleep(uint64_t nsecs);
 ///
 /// Returns: The numbers of bytes written into the buffer, counting zeros
 /// used for filling as well.
-extern int    hlt_util_uitoa_n(uint64_t value, char* buf, int n, int base, int zerofill);
+extern int hlt_util_uitoa_n(uint64_t value, char* buf, int n, int base, int zerofill);
 
 /// Returns the number of CPU core the host system has.
 ///
 /// \todo Only supported on Linux right now.
-extern int    hlt_util_number_of_cpus();
+extern int hlt_util_number_of_cpus();
 
 /// Returns the memory usage of the current process. This is a wrapper around
 /// the \c getrusage currently.
@@ -45,7 +51,7 @@ extern size_t hlt_util_memory_usage();
 /// This is the only time when we need to ensure the state is indeed set
 /// right.
 ///
-extern void hlt_pthread_setcancelstate(int state, int *oldstate);
+extern void hlt_pthread_setcancelstate(int state, int* oldstate);
 
 /// Aborts execution immediately with a core dump. This also flags our memory
 /// checking that finding leaks is futile because we don't clean up.
@@ -105,7 +111,8 @@ extern uint64_t hlt_flip64(uint64_t v);
 /// \hlt_c
 ///
 /// Returns: The hash value.
-extern hlt_hash hlt_hash_object(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_hash hlt_hash_object(const hlt_type_info* type, const void* obj, int32_t options,
+                                hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Calculates a hash value for a sequence of bytes.
 ///
@@ -117,13 +124,16 @@ extern hlt_hash hlt_hash_object(const hlt_type_info* type, const void* obj, int3
 /// pass the previous value here. Set to zero on initial call.
 ///
 /// Returns: The hash value.
-extern hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len, hlt_hash prev_hash);
+extern hlt_hash hlt_hash_bytes(const int8_t* s, int16_t len, hlt_hash prev_hash);
 
 /// Default hash function hashing a value by value.
-extern hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt,
+                                 hlt_execution_context* ctx);
 
 /// Default comparision function comparing a value by value.
-extern int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1,
+                                const hlt_type_info* type2, const void* obj2, hlt_exception** excpt,
+                                hlt_execution_context* ctx);
 
 /// Wrapper around the standard \a write(2) that restarts on \c EINTR.
 extern int8_t __hlt_safe_write(int fd, const char* data, int len);
@@ -137,11 +147,11 @@ struct __hlt_pointer_stack {
     size_t capacity;
 };
 
-void   __hlt_pointer_stack_init(__hlt_pointer_stack* set);
-void   __hlt_pointer_stack_push_back(__hlt_pointer_stack* set, const void *ptr);
-void   __hlt_pointer_stack_pop_back(__hlt_pointer_stack* set);
-int8_t __hlt_pointer_stack_lookup(__hlt_pointer_stack* set, const void *ptr);
-void   __hlt_pointer_stack_destroy(__hlt_pointer_stack* set);
+void __hlt_pointer_stack_init(__hlt_pointer_stack* set);
+void __hlt_pointer_stack_push_back(__hlt_pointer_stack* set, const void* ptr);
+void __hlt_pointer_stack_pop_back(__hlt_pointer_stack* set);
+int8_t __hlt_pointer_stack_lookup(__hlt_pointer_stack* set, const void* ptr);
+void __hlt_pointer_stack_destroy(__hlt_pointer_stack* set);
 
 struct __hlt_pointer_map {
     const void** ptrs;
@@ -149,10 +159,9 @@ struct __hlt_pointer_map {
     size_t capacity;
 };
 
-void        __hlt_pointer_map_init(__hlt_pointer_map* map);
-void        __hlt_pointer_map_insert(__hlt_pointer_map* map, const void *key, const void* value);
-const void* __hlt_pointer_map_lookup(__hlt_pointer_map* map, const void *key);
-void        __hlt_pointer_map_destroy(__hlt_pointer_map* map);
+void __hlt_pointer_map_init(__hlt_pointer_map* map);
+void __hlt_pointer_map_insert(__hlt_pointer_map* map, const void* key, const void* value);
+const void* __hlt_pointer_map_lookup(__hlt_pointer_map* map, const void* key);
+void __hlt_pointer_map_destroy(__hlt_pointer_map* map);
 
 #endif
-

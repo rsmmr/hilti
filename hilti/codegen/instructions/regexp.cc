@@ -20,7 +20,7 @@ void StatementBuilder::visit(statement::instruction::regexp::New* i)
     if ( t->attributes().has(attribute::FIRSTMATCH) )
         flags |= HLT_REGEXP_FIRST_MATCH;
 
-    CodeGen::expr_list args = { builder::integer::create(flags) };
+    CodeGen::expr_list args = {builder::integer::create(flags)};
     auto result = cg()->llvmCall("hlt::regexp_new", args);
     cg()->llvmStore(i, result);
 }
@@ -62,7 +62,8 @@ void StatementBuilder::visit(statement::instruction::regexp::FindBytes* i)
     if ( i->op3() )
         args.push_back(i->op3());
     else {
-        auto end = builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
+        auto end =
+            builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
         args.push_back(end);
     }
 
@@ -91,7 +92,8 @@ void StatementBuilder::visit(statement::instruction::regexp::GroupsBytes* i)
     if ( i->op3() )
         args.push_back(i->op3());
     else {
-        auto end = builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
+        auto end =
+            builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
         args.push_back(end);
     }
 
@@ -120,7 +122,8 @@ void StatementBuilder::visit(statement::instruction::regexp::MatchTokenBytes* i)
     if ( i->op3() )
         args.push_back(i->op3());
     else {
-        auto end = builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
+        auto end =
+            builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
         args.push_back(end);
     }
 
@@ -149,7 +152,8 @@ void StatementBuilder::visit(statement::instruction::regexp::MatchTokenAdvanceBy
     if ( i->op3() )
         args.push_back(i->op3());
     else {
-        auto end = builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
+        auto end =
+            builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
         args.push_back(end);
     }
 
@@ -189,7 +193,8 @@ void StatementBuilder::visit(statement::instruction::regexp::SpanBytes* i)
     if ( i->op3() )
         args.push_back(i->op3());
     else {
-        auto end = builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
+        auto end =
+            builder::codegen::create(builder::iterator::typeBytes(), cg()->llvmIterBytesEnd());
         args.push_back(end);
     }
 

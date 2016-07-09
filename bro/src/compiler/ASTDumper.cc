@@ -45,7 +45,7 @@ TraversalCode ASTDumper::DoPre(const char* tag, const ::BroObj* obj)
 	string desc = ::util::strreplace(d.Description(), "\n", " / ");
 
 	int status;
-	char* cls = ::abi::__cxa_demangle(typeid(*obj).name(), 0, 0, &status);
+	char* cls = ::abi::__cxa_demangle(typeName(*obj), 0, 0, &status);
 
 	std::cerr << ::util::fmt("%15s | ", std::string(cls).substr(0, 15));
 

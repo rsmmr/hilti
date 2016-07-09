@@ -4,15 +4,14 @@
 
 #include <ast/pass.h>
 
-#include "../common.h"
 #include "../ast-info.h"
+#include "../common.h"
 
 namespace binpac {
 namespace passes {
 
 /// Verifies the semantic of an AST.
-class Validator : public ast::Pass<AstInfo>
-{
+class Validator : public ast::Pass<AstInfo> {
 public:
     Validator();
     virtual ~Validator();
@@ -31,7 +30,8 @@ public:
     /// have: The wrong type that was given to us.
     ///
     /// want: The type we expected instead.
-    void wrongType(ast::NodeBase* node, const string& msg, shared_ptr<Type> have, shared_ptr<Type> want);
+    void wrongType(ast::NodeBase* node, const string& msg, shared_ptr<Type> have,
+                   shared_ptr<Type> want);
 
     /// Helper to report a type mismatch error. This calls error().
     ///
@@ -42,7 +42,8 @@ public:
     /// have: The wrong type that was given to us.
     ///
     /// want: The type we expected instead.
-    void wrongType(shared_ptr<Node> node, const string& msg, shared_ptr<Type> have, shared_ptr<Type> want);
+    void wrongType(shared_ptr<Node> node, const string& msg, shared_ptr<Type> have,
+                   shared_ptr<Type> want);
 
     /// Reports an error if type is not valid as a function return type.
     ///
@@ -197,7 +198,6 @@ protected:
     void visit(variable::Global* g) override;
     void visit(variable::Local* l) override;
 };
-
 }
 }
 

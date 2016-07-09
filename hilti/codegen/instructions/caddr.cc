@@ -8,8 +8,8 @@ using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::caddr::Function* i)
 {
-    auto op1 = ast::as<expression::Function>(i->op1());
-    assert(op1);
+    auto op1 = ast::rtti::checkedCast<expression::Function>(i->op1());
+    ;
 
     auto func = op1->function();
     assert(func);
@@ -20,25 +20,25 @@ void StatementBuilder::visit(statement::instruction::caddr::Function* i)
     llvm::Value* v2 = 0;
 
     switch ( ftype->callingConvention() ) {
-     case type::function::HILTI: {
-         auto pair = cg()->llvmBuildCWrapper(func);
-         v1 = cg()->builder()->CreateBitCast(pair.first, cg()->llvmTypePtr());
-         v2 = cg()->builder()->CreateBitCast(pair.second, cg()->llvmTypePtr());
-         break;
-     }
+    case type::function::HILTI: {
+        auto pair = cg()->llvmBuildCWrapper(func);
+        v1 = cg()->builder()->CreateBitCast(pair.first, cg()->llvmTypePtr());
+        v2 = cg()->builder()->CreateBitCast(pair.second, cg()->llvmTypePtr());
+        break;
+    }
 
-     case type::function::HILTI_C: {
-         auto f = cg()->llvmValue(op1);
-         v1 = cg()->builder()->CreateBitCast(f, cg()->llvmTypePtr());
-         v2 = cg()->llvmConstNull(cg()->llvmTypePtr());
-         break;
-     }
+    case type::function::HILTI_C: {
+        auto f = cg()->llvmValue(op1);
+        v1 = cg()->builder()->CreateBitCast(f, cg()->llvmTypePtr());
+        v2 = cg()->llvmConstNull(cg()->llvmTypePtr());
+        break;
+    }
 
-     default:
+    default:
         internalError("caddr.function does not yet support non HILTI/HILTI-C functions");
     }
 
-    CodeGen::value_list vals = { v1, v2 };
+    CodeGen::value_list vals = {v1, v2};
     auto result = cg()->llvmValueStruct(vals);
 
     cg()->llvmStore(i, result);
@@ -53,4 +53,3 @@ void StatementBuilder::visit(statement::instruction::caddr::Equal* i)
 
     cg()->llvmStore(i, result);
 }
-

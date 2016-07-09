@@ -1,12 +1,13 @@
 
 #include "define-instruction.h"
 
-#include "misc.h"
-#include "../module.h"
 #include "../builder/nodes.h"
+#include "../module.h"
+#include "misc.h"
 
 iBeginCC(Misc)
-    iValidateCC(Select) {
+    iValidateCC(Select)
+    {
         canCoerceTo(op2, target->type());
         canCoerceTo(op3, target->type());
     }
@@ -17,20 +18,21 @@ iBeginCC(Misc)
 iEndCC
 
 iBeginCC(Misc)
-    iValidateCC(SelectValue) {
+    iValidateCC(SelectValue)
+    {
         auto ty_op1 = op1->type();
-        auto ty_op2 = as<type::Tuple>(op2->type());
+        auto ty_op2 = ast::rtti::checkedCast<type::Tuple>(op2->type());
 
-        if ( ! type::hasTrait<type::trait::ValueType>(ty_op1) ) {
-                error(ty_op1, "operand 1 must a value type");
-                return;
+        if ( ! ast::type::hasTrait<type::trait::ValueType>(ty_op1) ) {
+            error(ty_op1, "operand 1 must a value type");
+            return;
         }
 
         if ( op3 )
             canCoerceTo(op3, target->type());
 
         for ( auto t : ty_op2->typeList() ) {
-            auto tt = ast::tryCast<type::Tuple>(t);
+            auto tt = ast::rtti::tryCast<type::Tuple>(t);
             if ( ! tt || tt->typeList().size() != 2 ) {
                 error(ty_op2, "operand 2 must a tuple of 2-tuples");
                 return;
@@ -55,7 +57,8 @@ iBeginCC(Misc)
 iEndCC
 
 iBeginCC(Misc)
-    iValidateCC(Nop) {
+    iValidateCC(Nop)
+    {
     }
 
     iDocCC(Nop, R"(

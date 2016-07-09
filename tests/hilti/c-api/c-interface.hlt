@@ -1,4 +1,5 @@
 #
+# @TEST-EXEC:  which hilti-build >&2
 # @TEST-EXEC:  hilti-build -P %INPUT
 # @TEST-EXEC:  hilti-build -d %DIR/c-interface-host.c %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output

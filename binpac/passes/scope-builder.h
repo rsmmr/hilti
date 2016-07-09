@@ -4,8 +4,8 @@
 
 #include <ast/pass.h>
 
-#include "../common.h"
 #include "../ast-info.h"
+#include "../common.h"
 
 namespace binpac {
 
@@ -14,8 +14,7 @@ class CompilerContext;
 namespace passes {
 
 /// Populates the scopes in the AST from its declarations.
-class ScopeBuilder : public ast::Pass<AstInfo>
-{
+class ScopeBuilder : public ast::Pass<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -30,7 +29,7 @@ public:
     /// Returns: True if no error were encountered.
     bool run(shared_ptr<ast::NodeBase> ast) override;
 
- protected:
+protected:
     void visit(declaration::Variable* v) override;
     void visit(declaration::Type* t) override;
     void visit(declaration::Constant* t) override;
@@ -43,9 +42,7 @@ private:
     shared_ptr<Module> _module;
     shared_ptr<Scope> _checkDecl(Declaration* decl);
 };
-
 }
-
 }
 
 #endif

@@ -1,4 +1,4 @@
-/// 
+///
 /// C-level support for HILTI execptions. Exception objects are garbage
 /// collected.
 ///
@@ -10,26 +10,27 @@
 
 // #include "continuation.h"
 // #include "threading.h"
-#include "memory_.h"
 #include "context.h"
+#include "memory_.h"
 
 struct __hlt_type_info;
 
 /// The type of an exception. Note that this must align with hlt.exception.type in libhilti.ll
 typedef struct hlt_exception_type {
-    const char* name;                       //< Name of the exception.
-    struct hlt_exception_type* parent;      //< The type this one derives from.
-    const struct __hlt_type_info* argtype; //< The type of the exception's argument, or 0 if no argument.
+    const char* name;                  //< Name of the exception.
+    struct hlt_exception_type* parent; //< The type this one derives from.
+    const struct __hlt_type_info*
+        argtype; //< The type of the exception's argument, or 0 if no argument.
 } hlt_exception_type;
 
 /// A HILTI exception instance.
 struct __hlt_exception {
     __hlt_gchdr __gchdr;
-    hlt_exception_type* type;        //< The type of the exeception.
-    hlt_fiber* fiber;                //< If the exeption is resumable, the fiber for doing so.
-    void *arg;                       //< The argument of type ``type->argtype``, or 0 if none.
-    const char* location;            //< A string describing the location where the exception was raised.
-    hlt_vthread_id vid;              //< If a virtual thread raised the exception, it's ID.
+    hlt_exception_type* type; //< The type of the exeception.
+    hlt_fiber* fiber;         //< If the exeption is resumable, the fiber for doing so.
+    void* arg;                //< The argument of type ``type->argtype``, or 0 if none.
+    const char* location;     //< A string describing the location where the exception was raised.
+    hlt_vthread_id vid;       //< If a virtual thread raised the exception, it's ID.
 };
 
 /// Instantiates a new exception.
@@ -43,7 +44,8 @@ struct __hlt_exception {
 ///
 /// Returns: The new exception. Note that this is a garbage collected value
 /// that must be released with hlt_exception_unref().
-extern hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location, hlt_execution_context* ctx);
+extern hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location,
+                                        hlt_execution_context* ctx);
 
 /// Instantiates a new yield exception.
 ///
@@ -54,7 +56,8 @@ extern hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, con
 ///
 /// Returns: The new exception. Note that this is a garbage collected value
 /// that must be released with hlt_exception_unref().
-extern hlt_exception* hlt_exception_new_yield(hlt_fiber* fiber, const char* location, hlt_execution_context* ctx);
+extern hlt_exception* hlt_exception_new_yield(hlt_fiber* fiber, const char* location,
+                                              hlt_execution_context* ctx);
 
 /// Returns the exception's argument.
 extern void* hlt_exception_arg(hlt_exception* excpt);
@@ -65,7 +68,8 @@ extern hlt_fiber* __hlt_exception_fiber(hlt_exception* excpt);
 /// Clears the exception's fiber field. Note that it doesn't destroy the fiber.
 extern void __hlt_exception_clear_fiber(hlt_exception* excpt);
 
-// extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location);
+// extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char*
+// location);
 
 /// Internal function that checks whether an exception instance matches a
 /// given exception type or any of its base types. This function is used to
@@ -85,7 +89,8 @@ extern int8_t hlt_exception_is_termination(hlt_exception* excpt);
 /// exception: The exception to print.
 ///
 /// ctx: The current execution context.
-extern void hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx);
+extern void hlt_exception_print_uncaught_abort(hlt_exception* exception,
+                                               hlt_execution_context* ctx);
 
 /// Internal function that generates the output shown to the user when an
 /// exception is not caught.  This function is intended for use outside of
@@ -103,7 +108,8 @@ extern void hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution
 /// exception: The exception to print.
 ///
 /// ctx: The current execution context.
-extern void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_execution_context* ctx);
+extern void hlt_exception_print_uncaught_in_thread(hlt_exception* exception,
+                                                   hlt_execution_context* ctx);
 
 /// Prints out an exception objcect to stderr.
 ///
@@ -115,7 +121,9 @@ extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context*
 /// Converts an exception into a string.
 ///
 /// Include: include-to-string-sig.txt
-hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx);
+hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                                   __hlt_pointer_stack* seen, hlt_exception** excpt,
+                                   hlt_execution_context* ctx);
 
 /// Converts an exception into a null-terminated C string.
 ///
@@ -145,11 +153,13 @@ char* hlt_exception_to_asciiz(hlt_exception* e, hlt_exception** excpt, hlt_execu
 /// type: The type of the exception.
 ///
 /// arg: The exception's argument if the type takes any, or null if not.
-#define hlt_set_exception(dst, type, arg, ctx) __hlt_set_exception(dst, type, arg, __FILE__ ":" __hlt_stringify(__LINE__), ctx)
+#define hlt_set_exception(dst, type, arg, ctx)                                                     \
+    __hlt_set_exception(dst, type, arg, __FILE__ ":" __hlt_stringify(__LINE__), ctx)
 
 /// Internal function that raises a HILTI exception from C code. This should
 /// not be used directly, but only via the hlt_set_exception() macro.
-extern void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg, const char* location, hlt_execution_context* ctx);
+extern void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg,
+                                const char* location, hlt_execution_context* ctx);
 
 /// XXX
 #define hlt_check_exception(excpt) (excpt && *excpt)
@@ -243,7 +253,7 @@ extern hlt_exception_type hlt_exception_iosrc_exhausted;
 /// Raised when an I/O operation failed.
 extern hlt_exception_type hlt_exception_io_error;
 
-/// An incompatible profiler has been specified. 
+/// An incompatible profiler has been specified.
 extern hlt_exception_type hlt_exception_profiler_mismatch;
 
 /// An unknown profiler has been specified.

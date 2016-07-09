@@ -3,12 +3,13 @@
 
 #include <util/util.h>
 
-#include "grammar.h"
 #include "expression.h"
+#include "grammar.h"
 
 using namespace binpac;
 
-Grammar::Grammar(const string& name, shared_ptr<Production> root, const parameter_list& params, const parameter_list& attrs, const Location& l)
+Grammar::Grammar(const string& name, shared_ptr<Production> root, const parameter_list& params,
+                 const parameter_list& attrs, const Location& l)
 {
     _name = name;
     _root = root;
@@ -68,10 +69,11 @@ string Grammar::check() const
     string msg;
 
     for ( auto p : _lah_errors )
-        msg += util::fmt("%s: look-ahead cannot depend on non-terminal\n", _productionLocation(p).c_str());
+        msg += util::fmt("%s: look-ahead cannot depend on non-terminal\n",
+                         _productionLocation(p).c_str());
 
     for ( auto p : _nterms ) {
-        auto lap = std::dynamic_pointer_cast<production::LookAhead>(p);
+        auto lap = dynamicPointerCast(p, production::LookAhead);
 
         if ( ! lap )
             continue;
@@ -89,24 +91,28 @@ string Grammar::check() const
         auto defaults = lap->defaultAlternatives();
 
         if ( defaults.first && defaults.second ) {
-            msg += util::fmt("%s: no look-ahead token for either alternative\n", _productionLocation(p).c_str());
+            msg += util::fmt("%s: no look-ahead token for either alternative\n",
+                             _productionLocation(p).c_str());
             break;
         }
 
         if ( syms1.size() == 0 && syms2.size() == 0 ) {
-            msg += util::fmt("no look-ahead symbol for either alternative in %s\n", _productionLocation(lap));
+            msg += util::fmt("no look-ahead symbol for either alternative in %s\n",
+                             _productionLocation(lap));
             break;
         }
 
         auto isect = util::set_intersection(syms1, syms2);
 
         if ( isect.size() )
-            msg += util::fmt("%s is ambigious for look-ahead symbol(s) { %s }\n", _productionLocation(lap).c_str(), util::strjoin(isect, ", ").c_str());
+            msg += util::fmt("%s is ambigious for look-ahead symbol(s) { %s }\n",
+                             _productionLocation(lap).c_str(), util::strjoin(isect, ", ").c_str());
 
         for ( auto q : util::set_union(laheads.first, laheads.second) ) {
-            if ( ! std::dynamic_pointer_cast<production::Terminal>(q) )
-                msg += util::fmt("%s: look-ahead cannot depend on non-terminal\n", _productionLocation(p).c_str());
-                break;
+            if ( ! dynamicPointerCast(q), production::Terminal )
+                msg += util::fmt("%s: look-ahead cannot depend on non-terminal\n",
+                                 _productionLocation(p).c_str());
+            break;
         }
     }
 
@@ -155,20 +161,22 @@ void Grammar::printTables(std::ostream& out, bool verbose)
     out << "  -- First_1:" << std::endl;
 
     for ( auto i : _first )
-        out << "     " << i.first.c_str() << " = { " << _fmtProds(i.second).c_str() << " }" << std::endl;
+        out << "     " << i.first.c_str() << " = { " << _fmtProds(i.second).c_str() << " }"
+            << std::endl;
 
     out << std::endl;
     out << "  -- Follow:" << std::endl;
 
     for ( auto i : _follow )
-        out << "     " << i.first.c_str() << " = { " << _fmtProds(i.second).c_str() << " }" << std::endl;
+        out << "     " << i.first.c_str() << " = { " << _fmtProds(i.second).c_str() << " }"
+            << std::endl;
 
     out << std::endl;
 }
 
 void Grammar::_addProduction(shared_ptr<Production> p)
 {
-    auto epsilon = std::dynamic_pointer_cast<production::Epsilon>(p);
+    auto epsilon = dynamicPointerCast(p, production::Epsilon);
 
     if ( epsilon ) {
         // We use our own internal instance for all epsilon productions.
@@ -191,7 +199,7 @@ void Grammar::_addProduction(shared_ptr<Production> p)
     _prods.insert(std::make_pair(sym, p));
     _prods_set.insert(p);
 
-    auto nterm = std::dynamic_pointer_cast<production::NonTerminal>(p);
+    auto nterm = dynamicPointerCast(p, production::NonTerminal);
 
     if ( nterm ) {
         _nterms.push_back(nterm);
@@ -201,10 +209,10 @@ void Grammar::_addProduction(shared_ptr<Production> p)
                 _addProduction(rhs);
     }
 
-    if ( std::dynamic_pointer_cast<production::LookAhead>(p) )
+    if ( dynamicPointerCast(p), production::LookAhead )
         _needs_look_ahead = true;
 
-    if ( std::dynamic_pointer_cast<production::Literal>(p) )
+    if ( dynamicPointerCast(p), production::Literal )
         _needs_look_ahead = true;
 }
 
@@ -217,7 +225,7 @@ void Grammar::_computeClosure(shared_ptr<Production> root, std::set<string>* use
 
     used->insert(sym);
 
-    auto nterm = std::dynamic_pointer_cast<production::NonTerminal>(root);
+    auto nterm = dynamicPointerCast(root, production::NonTerminal);
 
     if ( ! nterm )
         return;
@@ -252,7 +260,8 @@ void Grammar::_simplify()
         p.second->simplify();
 }
 
-bool Grammar::_add(std::map<string, symbol_set>* tbl, shared_ptr<Production> dst, const symbol_set& src, bool changed)
+bool Grammar::_add(std::map<string, symbol_set>* tbl, shared_ptr<Production> dst,
+                   const symbol_set& src, bool changed)
 {
     auto idx = dst->symbol();
     auto t = tbl->find(idx);
@@ -275,10 +284,10 @@ bool Grammar::_isNullable(production_list::iterator i, production_list::iterator
     while ( i != j ) {
         auto rhs = *i++;
 
-        if ( std::dynamic_pointer_cast<production::Epsilon>(rhs) )
+        if ( dynamicPointerCast(rhs), production::Epsilon )
             continue;
 
-        if ( std::dynamic_pointer_cast<production::Terminal>(rhs) )
+        if ( dynamicPointerCast(rhs), production::Terminal )
             return false;
 
         if ( ! _nullable[rhs->symbol()] )
@@ -290,11 +299,11 @@ bool Grammar::_isNullable(production_list::iterator i, production_list::iterator
 
 Grammar::symbol_set Grammar::_getFirst(shared_ptr<Production> p)
 {
-    if ( std::dynamic_pointer_cast<production::Epsilon>(p) )
+    if ( dynamicPointerCast(p), production::Epsilon )
         return symbol_set();
 
-    if ( std::dynamic_pointer_cast<production::Terminal>(p) )
-        return { p->symbol() };
+    if ( dynamicPointerCast(p), production::Terminal )
+        return {p->symbol()};
 
     return _first[p->symbol()];
 }
@@ -304,11 +313,11 @@ Grammar::symbol_set Grammar::_getFirstOfRhs(production_list rhs)
     auto first = symbol_set();
 
     for ( auto p : rhs ) {
-        if ( std::dynamic_pointer_cast<production::Epsilon>(p) )
+        if ( dynamicPointerCast(p), production::Epsilon )
             continue;
 
-        if ( std::dynamic_pointer_cast<production::Terminal>(p) )
-            return { p->symbol() };
+        if ( dynamicPointerCast(p), production::Terminal )
+            return {p->symbol()};
 
         first = util::set_union(first, _first[p->symbol()]);
 
@@ -355,7 +364,7 @@ void Grammar::_computeTables()
                     if ( _isNullable(first, i) )
                         changed = _add(&_first, p, _getFirst(rhs), changed);
 
-                    if ( ! std::dynamic_pointer_cast<production::NonTerminal>(rhs) )
+                    if ( ! dynamicPointerCast(rhs), production::NonTerminal )
                         continue;
 
                     auto next = i;
@@ -381,7 +390,7 @@ void Grammar::_computeTables()
 
     for ( auto p : _nterms ) {
         auto sym = p->symbol();
-        auto lap = std::dynamic_pointer_cast<production::LookAhead>(p);
+        auto lap = dynamicPointerCast(p, production::LookAhead);
 
         if ( ! lap )
             continue;
@@ -391,19 +400,18 @@ void Grammar::_computeTables()
         assert(rhss.size() == 2);
         auto r = rhss.begin();
 
-        std::vector<symbol_set> laheads = { symbol_set(), symbol_set() };
+        std::vector<symbol_set> laheads = {symbol_set(), symbol_set()};
 
         for ( auto i = 0; i < 2; ++i ) {
             auto rhs = *r++;
 
             for ( auto term : _getFirstOfRhs(rhs) )
-                laheads[i] = util::set_union(laheads[i], { term });
+                laheads[i] = util::set_union(laheads[i], {term});
 
             if ( _isNullable(rhs.begin(), rhs.end()) ) {
                 for ( auto term : _follow[sym] )
-                    laheads[i] = util::set_union(laheads[i], { term });
+                    laheads[i] = util::set_union(laheads[i], {term});
             }
-
         }
 
         production::LookAhead::look_aheads v0;
@@ -415,7 +423,7 @@ void Grammar::_computeTables()
             for ( auto s : laheads[i] ) {
                 auto p = _prods.find(s);
                 assert(p != _prods.end());
-                auto t = std::dynamic_pointer_cast<production::Terminal>(p->second);
+                auto t = dynamicPointerCast(p->second, production::Terminal);
 
                 if ( ! t ) {
                     _lah_errors.push_back(p->second);

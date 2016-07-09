@@ -112,4 +112,3 @@ void CodeBuilder::visit(expression::operator_::time::MinusInterval* i)
     cg()->builder()->addInstruction(result, hilti::instruction::time::SubInterval, op1, op2);
     setResult(result);
 }
-

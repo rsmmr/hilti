@@ -98,7 +98,7 @@ void StatementBuilder::visit(statement::instruction::network::Equal* i)
 
 void StatementBuilder::visit(statement::instruction::network::EqualAddr* i)
 {
-	_createContains(cg(), i);
+    _createContains(cg(), i);
 }
 
 void StatementBuilder::visit(statement::instruction::network::Family* i)
@@ -142,7 +142,5 @@ void StatementBuilder::visit(statement::instruction::network::Prefix* i)
 
 void StatementBuilder::visit(statement::instruction::network::Contains* i)
 {
-	_createContains(cg(), i);
+    _createContains(cg(), i);
 }
-
-

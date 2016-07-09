@@ -10,7 +10,6 @@ void CodeBuilder::visit(constant::Tuple* t)
     hilti::builder::tuple::element_list elems;
 
     for ( auto e : t->value() ) {
-
         if ( ! e->usesTryAttribute() ) {
             elems.push_back(cg()->hiltiExpression(e));
             continue;
@@ -26,7 +25,8 @@ void CodeBuilder::visit(constant::Tuple* t)
         auto he = cg()->hiltiConstantOptional(e);
         cg()->builder()->addInstruction(tmp, ::hilti::instruction::operator_::Assign, he);
 
-        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::AttributeNotSet")),
+        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName(
+                                       "BinPACHilti::AttributeNotSet")),
                                    hilti::builder::id::node("e"));
 
         // Nothing to do, default of tmp is right.

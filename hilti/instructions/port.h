@@ -11,13 +11,12 @@
 #include "define-instruction.h"
 
 iBeginH(port, Equal, "equal")
-    iTarget(optype::boolean)
+    iTarget(optype::boolean);
     iOp1(optype::port, true);
     iOp2(optype::port, true);
 iEndH
 
 iBeginH(port, Protocol, "port.protocol")
-    iTarget(optype::enum_)
-    iOp1(optype::port, true)
+    iTarget(optype::enum_);
+    iOp1(optype::port, true);
 iEndH
-

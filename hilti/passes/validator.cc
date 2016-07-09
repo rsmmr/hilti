@@ -1,13 +1,14 @@
 
-#include "hilti/hilti-intern.h"
 #include "hilti/autogen/instructions.h"
+#include "hilti/hilti-intern.h"
 
 using namespace hilti::passes;
 
-static void _checkReturn(Validator* v, Statement* stmt, shared_ptr<Function> func, shared_ptr<Expression> result)
+static void _checkReturn(Validator* v, Statement* stmt, shared_ptr<Function> func,
+                         shared_ptr<Expression> result)
 {
-    auto rtype = as<type::Function>(func->type())->result()->type();
-    auto is_void = ast::isA<type::Void>(rtype);
+    auto rtype = ast::rtti::checkedCast<type::Function>(func->type())->result()->type();
+    auto is_void = ast::rtti::isA<type::Void>(rtype);
 
     if ( result && is_void ) {
         v->error(stmt, "function does not return a value");
@@ -30,12 +31,14 @@ Validator::~Validator()
 {
 }
 
-void Validator::wrongType(shared_ptr<Node> node, const string& msg, shared_ptr<Type> have, shared_ptr<Type> want)
+void Validator::wrongType(shared_ptr<Node> node, const string& msg, shared_ptr<Type> have,
+                          shared_ptr<Type> want)
 {
     return wrongType(node.get(), msg, have, want);
 }
 
-void Validator::wrongType(ast::NodeBase* node, const string& msg, shared_ptr<Type> have, shared_ptr<Type> want)
+void Validator::wrongType(ast::NodeBase* node, const string& msg, shared_ptr<Type> have,
+                          shared_ptr<Type> want)
 {
     string m = msg;
 
@@ -48,45 +51,49 @@ void Validator::wrongType(ast::NodeBase* node, const string& msg, shared_ptr<Typ
     return error(node, m);
 }
 
-bool Validator::validReturnType(ast::NodeBase* node, shared_ptr<Type> type, type::function::CallingConvention cc)
+bool Validator::validReturnType(ast::NodeBase* node, shared_ptr<Type> type,
+                                type::function::CallingConvention cc)
 {
-    if ( ast::isA<type::Void>(type) )
+    if ( ast::rtti::isA<type::Void>(type) )
         return true;
 
-    if ( cc != type::function::HILTI && ast::isA<type::Any>(type) )
+    if ( cc != type::function::HILTI && ast::rtti::isA<type::Any>(type) )
         return true;
 
-    if ( type::hasTrait<type::trait::ValueType>(type) )
+    if ( ast::type::hasTrait<type::trait::ValueType>(type) )
         return true;
 
-    error(node, ::util::fmt("function result must be a value type, but is %s", type->render().c_str()));
+    error(node,
+          ::util::fmt("function result must be a value type, but is %s", type->render().c_str()));
     return false;
 }
 
 
-bool Validator::validParameterType(ast::NodeBase* node, shared_ptr<Type> type, type::function::CallingConvention cc)
+bool Validator::validParameterType(ast::NodeBase* node, shared_ptr<Type> type,
+                                   type::function::CallingConvention cc)
 {
-    if ( ast::isA<type::OptionalArgument>(type) )
-        type = ast::as<type::OptionalArgument>(type)->argType();
+    if ( ast::rtti::isA<type::OptionalArgument>(type) )
+        type = ast::rtti::tryCast<type::OptionalArgument>(type)->argType();
 
     if ( cc == type::function::HILTI ) {
-        auto tuple = ast::as<type::Tuple>(type);
+        auto tuple = ast::rtti::tryCast<type::Tuple>(type);
         if ( tuple && tuple->wildcard() ) {
             error(tuple, "HILTI functions cannot have parameter of type tuple<*>");
             return false;
         }
     }
 
-    if ( cc != type::function::HILTI && ast::isA<type::Any>(type) )
+    if ( cc != type::function::HILTI && ast::rtti::isA<type::Any>(type) )
         return true;
 
-    if ( type::hasTrait<type::trait::ValueType>(type) )
+    if ( ast::type::hasTrait<type::trait::ValueType>(type) )
         return true;
 
-    if ( ast::isA<type::TypeType>(type) )
+    if ( ast::rtti::isA<type::TypeType>(type) )
         return true;
 
-    error(node, ::util::fmt("function parameter must be a value type, but is %s", type->render().c_str()));
+    error(node, ::util::fmt("function parameter must be a value type, but is %s",
+                            type->render().c_str()));
     return false;
 }
 
@@ -97,10 +104,11 @@ bool Validator::validVariableType(ast::NodeBase* node, shared_ptr<Type> type)
         return false;
     }
 
-    if ( type::hasTrait<type::trait::ValueType>(type) )
+    if ( ast::type::hasTrait<type::trait::ValueType>(type) )
         return true;
 
-    error(node, ::util::fmt("variable type must be a value type, but is %s", type->render().c_str()));
+    error(node,
+          ::util::fmt("variable type must be a value type, but is %s", type->render().c_str()));
     return false;
 }
 
@@ -108,7 +116,6 @@ void Validator::visit(Module* m)
 {
     // Make sure we have a Main::run function.
     if ( util::strtolower(m->id()->name()) == "main" ) {
-
         auto runs = m->body()->scope()->lookup(std::make_shared<ID>("run"));
 
         if ( ! runs.size() )
@@ -120,7 +127,7 @@ void Validator::visit(Module* m)
         else {
             auto run = runs.front();
 
-            if ( ! ast::isA<expression::Function>(run) )
+            if ( ! ast::rtti::isA<expression::Function>(run) )
                 error(m, "in module Main, ID 'run' must be a function");
         }
     }
@@ -138,9 +145,9 @@ void Validator::visit(statement::Block* s)
         if ( exprs->size() > 1 ) {
             // This is ok for hooks.
             for ( auto e : *exprs ) {
-                auto func = ast::tryCast<expression::Function>(e);
+                auto func = ast::rtti::tryCast<expression::Function>(e);
 
-                if ( func && ast::isA<Hook>(func->function()) )
+                if ( func && ast::rtti::isA<Hook>(func->function()) )
                     continue;
 
                 if ( i.first.find("::") != string::npos )
@@ -159,10 +166,10 @@ void Validator::visit(statement::Try* s)
 
 void Validator::visit(statement::ForEach* s)
 {
-    shared_ptr<type::Reference> r = ast::as<type::Reference>(s->sequence()->type());
+    shared_ptr<type::Reference> r = ast::rtti::tryCast<type::Reference>(s->sequence()->type());
     shared_ptr<Type> t = r ? r->argType() : s->sequence()->type();
 
-    if ( ! type::hasTrait<type::trait::Iterable>(t) )
+    if ( ! ast::type::hasTrait<type::trait::Iterable>(t) )
         error(s, "expression not iterable");
 }
 
@@ -182,7 +189,7 @@ void Validator::visit(statement::instruction::flow::ReturnResult* s)
 {
     auto decl = current<Declaration>();
 
-    if ( decl && ast::tryCast<declaration::Hook>(decl) ) {
+    if ( decl && ast::rtti::isA<declaration::Hook>(decl) ) {
         error(s, "cannot use return.result in a hook; use hook.stop instead");
         return;
     }
@@ -235,15 +242,15 @@ void Validator::visit(statement::instruction::thread::SetContext* s)
     // TODO: If we get a dynamic struct/context, should we check at runtime
     // that all fields needed by the scope are set?
 
-    auto ttype = ast::as<type::Tuple>(s->op1()->type());
+    auto ttype = ast::rtti::tryCast<type::Tuple>(s->op1()->type());
 
     if ( ttype ) {
-        auto c = ast::as<expression::Constant>(s->op1());
+        auto c = ast::rtti::tryCast<expression::Constant>(s->op1());
 
         if ( c ) {
             // Make sure we set all fields that our scope requires.
             for ( auto p : util::zip2(ttype->typeList(), ctx->fields()) ) {
-                if ( ast::isA<type::Unset>(p.first) && scope->hasField(p.second->id()) ) {
+                if ( ast::rtti::isA<type::Unset>(p.first) && scope->hasField(p.second->id()) ) {
                     error(s, "set of scope fields does not match current function's scope");
                     return;
                 }
@@ -253,7 +260,7 @@ void Validator::visit(statement::instruction::thread::SetContext* s)
         else
             // Can't happen I believe.
             internalError("run-time scope type check for dynamic tuples not implemented");
-        }
+    }
 
     else {
         // TODO: If we get a dynamic struct/context, should we check at runtime
@@ -268,11 +275,11 @@ static void _checkCallScope(Validator* v, statement::Instruction* s)
     if ( ! func )
         return;
 
-    auto op1 = ast::as<expression::Function>(s->op1());
+    auto op1 = ast::rtti::tryCast<expression::Function>(s->op1());
 
     if ( ! op1 ) {
-        if ( ! ast::isA<type::Function>(s->op1()->type()) )
-             v->error(s, "1st operand must reference a function");
+        if ( ! ast::rtti::isA<type::Function>(s->op1()->type()) )
+            v->error(s, "1st operand must reference a function");
 
         // A non-constant function value. The function that this evaluates to
         // must not have a scope, which we check where we take the value.
@@ -313,9 +320,9 @@ void Validator::visit(statement::instruction::thread::Schedule* s)
         // Check whether scope promotion is valid.
 
         auto func = current<Function>();
-        auto module  = current<Module>();
+        auto module = current<Module>();
 
-        auto op1 = ast::as<expression::Function>(s->op1());
+        auto op1 = ast::rtti::tryCast<expression::Function>(s->op1());
 
         if ( ! op1 ) {
             error(s, "1st operand must reference a function");
@@ -356,7 +363,6 @@ void Validator::visit(statement::instruction::thread::Schedule* s)
         // type).
 
         for ( auto dst_field : dst_context->fields() ) {
-
             if ( ! dst_scope->hasField(dst_field->id()) )
                 // Don't need this field.
                 continue;
@@ -373,7 +379,6 @@ void Validator::visit(statement::instruction::thread::Schedule* s)
             if ( ! dst_field->type()->equal(src_field->type()) )
                 // Type mismatch.
                 goto mismatch;
-
         }
     }
 
@@ -394,7 +399,8 @@ void Validator::visit(statement::instruction::flow::ReturnVoid* s)
 
 void Validator::visit(statement::try_::Catch* s)
 {
-    static shared_ptr<Type> refException(new type::Reference(shared_ptr<Type>(new type::Exception())));
+    static shared_ptr<Type> refException(
+        new type::Reference(shared_ptr<Type>(new type::Exception())));
 
     if ( s->type() && ! s->type()->equal(refException) )
         error(s, "exception argument must be of type ref<exception>");
@@ -410,7 +416,7 @@ void Validator::visit(declaration::Function* f)
     auto func = f->function();
 
     if ( func->initFunction() ) {
-        if ( ! ast::isA<type::Void>(func->type()->result()->type()) )
+        if ( ! ast::rtti::isA<type::Void>(func->type()->result()->type()) )
             error(f, "init function cannot return a value");
 
         if ( func->type()->parameters().size() )
@@ -420,10 +426,10 @@ void Validator::visit(declaration::Function* f)
 
 void Validator::visit(declaration::Type* t)
 {
-    if ( t->id()->name() == "Context" && ! ast::isA<type::Context>(t->type()) )
+    if ( t->id()->name() == "Context" && ! ast::rtti::isA<type::Context>(t->type()) )
         error(t, "ID 'Context' is reserved for the module's execution context");
 
-    auto scope = ast::as<type::Scope>(t->type());
+    auto scope = ast::rtti::tryCast<type::Scope>(t->type());
 
     if ( scope ) {
         auto context = current<Module>()->executionContext();
@@ -455,7 +461,8 @@ void Validator::visit(declaration::Hook* f)
 #endif
 
     if ( other.size() && ! f->hook()->type()->equal(other.front()->type()) )
-        error(f, util::fmt("inconsistent definitions for hook %s", f->id()->pathAsString().c_str()));
+        error(f,
+              util::fmt("inconsistent definitions for hook %s", f->id()->pathAsString().c_str()));
 }
 
 void Validator::visit(type::function::Parameter* p)
@@ -498,7 +505,7 @@ void Validator::visit(type::Channel* t)
     if ( ! t->argType() )
         error(t, "no type for channel elements given");
 
-    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
+    if ( t->argType() && ! ast::type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "channel elements must be of value type");
 }
 
@@ -514,15 +521,15 @@ void Validator::visit(type::Classifier* t)
         error(t, "no type for classifier values given");
 
     if ( t->ruleType() ) {
-        if ( ! ast::isA<type::Struct>(t->ruleType()) )
+        if ( ! ast::rtti::isA<type::Struct>(t->ruleType()) )
             error(t, "rule type must be a struct");
 
         else {
-            for ( auto l : ast::as<type::Struct>(t->ruleType())->typeList() ) {
-                auto r = ast::as<type::Reference>(l);
+            for ( auto l : ast::rtti::tryCast<type::Struct>(t->ruleType())->typeList() ) {
+                auto r = ast::rtti::tryCast<type::Reference>(l);
                 auto t = r ? r->argType() : l;
 
-                if ( ! type::hasTrait<type::trait::Classifiable>(t) )
+                if ( ! ast::type::hasTrait<type::trait::Classifiable>(t) )
                     error(l, "type cannot be used in a classifier");
             }
         }
@@ -539,10 +546,10 @@ void Validator::visit(type::Enum* t)
 
 void Validator::visit(type::Exception* t)
 {
-    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
+    if ( t->argType() && ! ast::type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "exception argument type must be of value type");
 
-    auto btype = ast::as<type::Exception>(t->baseType());
+    auto btype = ast::rtti::tryCast<type::Exception>(t->baseType());
 
     if ( t->baseType() && ! btype ) {
         error(t, "exception base type must be another exception type");
@@ -550,26 +557,34 @@ void Validator::visit(type::Exception* t)
     }
 
     if ( t->baseType() && btype->argType() && ! t->argType() ) {
-        error(t, ::util::fmt("exception type must have same argument type as its parent, which has %s", btype->argType()->render().c_str()));
+        error(t,
+              ::util::fmt("exception type must have same argument type as its parent, which has %s",
+                          btype->argType()->render().c_str()));
         return;
     }
 
     if ( t->argType() && t->baseType() && ! btype->argType() ) {
-        error(t, "exception type must not have an argument type because its parent type does not either");
+        error(t,
+              "exception type must not have an argument type because its parent type does not "
+              "either");
         return;
     }
 
-    if ( t->argType() && t->baseType() && btype->argType() && ! t->argType()->equal(btype->argType()) ) {
-        error(t, ::util::fmt("exception type must have same argument type as its parent type, which has %s", btype->argType()->render().c_str()));
+    if ( t->argType() && t->baseType() && btype->argType() &&
+         ! t->argType()->equal(btype->argType()) ) {
+        error(t, ::util::fmt(
+                     "exception type must have same argument type as its parent type, which has %s",
+                     btype->argType()->render().c_str()));
         return;
     }
 
     // Check for cycles in inheritance chain.
     std::set<shared_ptr<hilti::Type>> seen;
 
-    for ( shared_ptr<hilti::Type> c = t->sharedPtr<hilti::Type>(); c; c = ast::as<type::Exception>(c)->baseType() ) {
+    for ( shared_ptr<hilti::Type> c = t->sharedPtr<hilti::Type>(); c;
+          c = ast::rtti::tryCast<type::Exception>(c)->baseType() ) {
         for ( auto o : seen ) {
-            if ( c == o  ) { // Really a pointer comparision here, no structural equivalence.
+            if ( c == o ) { // Really a pointer comparision here, no structural equivalence.
                 // Break the cycle here so that printing works. Then abort
                 // AST visiting right here.
                 t->setBaseType(nullptr);
@@ -610,8 +625,9 @@ void Validator::visit(type::IOSource* t)
         return;
     }
 
-    if ( ! util::startsWith(t->kind()->pathAsString(), "Hilti::IOSrc::" ) )
-        error(t, util::fmt("iosrc must be of type Hilti::IOSrc::*, but is %s", t->kind()->pathAsString().c_str()));
+    if ( ! util::startsWith(t->kind()->pathAsString(), "Hilti::IOSrc::") )
+        error(t, util::fmt("iosrc must be of type Hilti::IOSrc::*, but is %s",
+                           t->kind()->pathAsString().c_str()));
 }
 
 void Validator::visit(type::Integer* t)
@@ -631,7 +647,7 @@ void Validator::visit(type::Iterator* t)
     if ( ! t->argType() )
         error(t, "no type to iterate over given");
 
-    if ( t->argType() && ! type::hasTrait<type::trait::Iterable>(t->argType()) )
+    if ( t->argType() && ! ast::type::hasTrait<type::trait::Iterable>(t->argType()) )
         error(t, "iterator over non-iterable type");
 }
 
@@ -640,7 +656,7 @@ void Validator::visit(type::List* t)
     if ( ! t->argType() && ! in<type::HiltiFunction>() )
         error(t, "no type for list elements given");
 
-    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
+    if ( t->argType() && ! ast::type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "list elements must be of value type");
 }
 
@@ -652,13 +668,13 @@ void Validator::visit(type::Map* t)
     if ( ! t->keyType() && ! in<type::HiltiFunction>() )
         error(t, "no type for map index given");
 
-    if ( t->valueType() && ! type::hasTrait<type::trait::ValueType>(t->valueType()) )
+    if ( t->valueType() && ! ast::type::hasTrait<type::trait::ValueType>(t->valueType()) )
         error(t, "map elements must be of value type");
 
-    if ( t->keyType() && ! type::hasTrait<type::trait::ValueType>(t->keyType()) )
+    if ( t->keyType() && ! ast::type::hasTrait<type::trait::ValueType>(t->keyType()) )
         error(t, "map index must be of value type");
 
-    if ( t->valueType() && ! type::hasTrait<type::trait::Hashable>(t->valueType()) )
+    if ( t->valueType() && ! ast::type::hasTrait<type::trait::Hashable>(t->valueType()) )
         error(t, "map elements must be of hashable type");
 }
 
@@ -678,7 +694,7 @@ void Validator::visit(type::overlay::Field* f)
     if ( ! (f->startOffset() >= 0 || f->startField()) )
         error(f, "field must specify either offset pr preceeding field");
 
-    if ( ! type::hasTrait<type::trait::Unpackable>(f->type()) )
+    if ( ! ast::type::hasTrait<type::trait::Unpackable>(f->type()) )
         error(f, "field type does not support unpacking");
 }
 
@@ -704,7 +720,7 @@ void Validator::visit(type::Reference* t)
     if ( ! t->argType() )
         error(t, "no referenced type given");
 
-    if ( t->argType() && ! type::hasTrait<type::trait::HeapType>(t->argType()) )
+    if ( t->argType() && ! ast::type::hasTrait<type::trait::HeapType>(t->argType()) )
         error(t, "referenced type must be of heap type");
 }
 
@@ -713,7 +729,7 @@ void Validator::visit(type::RegExp* t)
     string msg;
 
     if ( ! t->attributes().validate(attribute::REGEXP, &msg) )
-         error(t, msg);
+        error(t, msg);
 }
 
 void Validator::visit(type::Set* t)
@@ -721,10 +737,10 @@ void Validator::visit(type::Set* t)
     if ( ! t->argType() && ! in<type::HiltiFunction>() )
         error(t, "no type for set elements given");
 
-    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
+    if ( t->argType() && ! ast::type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "set elements must be of value type");
 
-    if ( t->argType() && ! type::hasTrait<type::trait::Hashable>(t->argType()) )
+    if ( t->argType() && ! ast::type::hasTrait<type::trait::Hashable>(t->argType()) )
         error(t, "set elements must be of hashable type");
 }
 
@@ -737,7 +753,6 @@ void Validator::visit(type::Struct* t)
     std::set<string> names;
 
     for ( auto f : t->fields() ) {
-
         if ( names.find(f->id()->name()) != names.end() ) {
             error(f, "duplicate field name in struct");
             return;
@@ -755,11 +770,12 @@ void Validator::visit(type::Struct* t)
             continue;
         }
 
-        if ( ! type::hasTrait<type::trait::ValueType>(f->type()) )
+        if ( ! ast::type::hasTrait<type::trait::ValueType>(f->type()) )
             error(f, "struct fields must be of value type");
 
         if ( f->default_() && ! f->default_()->canCoerceTo(f->type()) ) {
-            wrongType(f->id(), "type of default not compatible with field", f->default_()->type(), f->type());
+            wrongType(f->id(), "type of default not compatible with field", f->default_()->type(),
+                      f->type());
         }
     }
 }
@@ -784,7 +800,7 @@ void Validator::visit(type::Tuple* t)
             continue;
         }
 
-        if ( ! type::hasTrait<type::trait::ValueType>(e) )
+        if ( ! ast::type::hasTrait<type::trait::ValueType>(e) )
             error(t, "tuple elements must be of value type");
     }
 }
@@ -819,20 +835,20 @@ void Validator::visit(type::Union* t)
                 return;
             }
 
-        names.insert(f->id()->name());
+            names.insert(f->id()->name());
 
-        if ( ! f->type() ) {
-            error(f, "union has field without type");
-            continue;
-        }
+            if ( ! f->type() ) {
+                error(f, "union has field without type");
+                continue;
+            }
 
-        if ( ! f->id() ) {
-            error(f, "union has field without ID");
-            continue;
-        }
+            if ( ! f->id() ) {
+                error(f, "union has field without ID");
+                continue;
+            }
 
-        if ( ! type::hasTrait<type::trait::ValueType>(f->type()) )
-            error(f, "union fields must be of value type");
+            if ( ! ast::type::hasTrait<type::trait::ValueType>(f->type()) )
+                error(f, "union fields must be of value type");
         }
     }
 }
@@ -847,7 +863,7 @@ void Validator::visit(type::Vector* t)
     if ( ! t->argType() && ! in<type::HiltiFunction>() )
         error(t, "no type for vector elements given");
 
-    if ( t->argType() && ! type::hasTrait<type::trait::ValueType>(t->argType()) )
+    if ( t->argType() && ! ast::type::hasTrait<type::trait::ValueType>(t->argType()) )
         error(t, "vector elements must be of value type");
 }
 
@@ -866,22 +882,22 @@ void Validator::visit(expression::CodeGen* e)
 
 void Validator::visit(expression::Constant* e)
 {
-    if ( ast::isA<type::Label>(e->type()) )
+    if ( ast::rtti::isA<type::Label>(e->type()) )
         return;
 
-    if ( ! type::hasTrait<type::trait::ValueType>(e->type()) )
+    if ( ! ast::type::hasTrait<type::trait::ValueType>(e->type()) )
         internalError(e, "constant expression's type needs to be of value type");
 }
 
 void Validator::visit(expression::Ctor* e)
 {
-    if ( ! type::hasTrait<type::trait::ValueType>(e->type()) )
+    if ( ! ast::type::hasTrait<type::trait::ValueType>(e->type()) )
         internalError(e, "ctor expression's type needs to be of value type");
 }
 
 void Validator::visit(expression::Default* e)
 {
-    if ( ! type::hasTrait<type::trait::ValueType>(e->type()) )
+    if ( ! ast::type::hasTrait<type::trait::ValueType>(e->type()) )
         error(e, "constructor's type needs to be of value type");
 }
 

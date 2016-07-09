@@ -6,31 +6,35 @@
 using namespace hilti;
 using namespace codegen;
 
-static shared_ptr<type::union_::Field> _opToField(shared_ptr<Type> type, shared_ptr<Expression> field)
+static shared_ptr<type::union_::Field> _opToField(shared_ptr<Type> type,
+                                                  shared_ptr<Expression> field)
 {
     // The validator makes sure that we can't get expression here which is in
     // fact not a string constant.
-    auto cexpr = ast::as<expression::Constant>(field);
-    assert(cexpr);
-    auto cval = ast::as<constant::String>(cexpr->constant());
-    assert(cval);
+    auto cexpr = ast::rtti::checkedCast<expression::Constant>(field);
+    ;
+    auto cval = ast::rtti::checkedCast<constant::String>(cexpr->constant());
+    ;
 
-    return ast::checkedCast<type::Union>(type)->lookup(cval->value());
+    return ast::rtti::checkedCast<type::Union>(type)->lookup(cval->value());
 }
 
-static shared_ptr<type::union_::Field> _opToField(shared_ptr<Expression> op, shared_ptr<Expression> field)
+static shared_ptr<type::union_::Field> _opToField(shared_ptr<Expression> op,
+                                                  shared_ptr<Expression> field)
 {
     return _opToField(op->type(), field);
 }
 
-static shared_ptr<type::union_::Field> _typeToField(shared_ptr<Type> type, shared_ptr<Type> field_type)
+static shared_ptr<type::union_::Field> _typeToField(shared_ptr<Type> type,
+                                                    shared_ptr<Type> field_type)
 {
-    auto fields = ast::checkedCast<type::Union>(type)->fields(field_type);
+    auto fields = ast::rtti::checkedCast<type::Union>(type)->fields(field_type);
     assert(fields.size() == 1);
     return fields.front();
 }
 
-static shared_ptr<type::union_::Field> _typeToField(shared_ptr<Expression> op, shared_ptr<Type> field_type)
+static shared_ptr<type::union_::Field> _typeToField(shared_ptr<Expression> op,
+                                                    shared_ptr<Type> field_type)
 {
     return _typeToField(op->type(), field_type);
 }
@@ -51,9 +55,9 @@ static int _fieldIndex(shared_ptr<type::Union> utype, shared_ptr<type::union_::F
 
 static void _get(CodeGen* cg, statement::Instruction* i, bool by_type)
 {
-    auto utype = ast::as<type::Union>(i->op1()->type());
-    auto field = by_type ? _typeToField(i->op1(), i->target()->type())
-                         : _opToField(i->op1(), i->op2());
+    auto utype = ast::rtti::tryCast<type::Union>(i->op1()->type());
+    auto field =
+        by_type ? _typeToField(i->op1(), i->target()->type()) : _opToField(i->op1(), i->op2());
     auto fidx = _fieldIndex(utype, field);
     auto op1 = cg->llvmValue(i->op1());
 
@@ -80,10 +84,9 @@ static void _get(CodeGen* cg, statement::Instruction* i, bool by_type)
 
 static void _set(CodeGen* cg, statement::Instruction* i, bool by_type)
 {
-    auto tt = ast::checkedCast<type::TypeType>(i->op1()->type())->typeType();
-    auto utype = ast::as<type::Union>(tt);
-    auto field = by_type ? _typeToField(utype, i->op2()->type())
-                         : _opToField(utype, i->op2());
+    auto tt = ast::rtti::checkedCast<type::TypeType>(i->op1()->type())->typeType();
+    auto utype = ast::rtti::tryCast<type::Union>(tt);
+    auto field = by_type ? _typeToField(utype, i->op2()->type()) : _opToField(utype, i->op2());
     auto fidx = _fieldIndex(utype, field);
     auto op = cg->llvmValue(by_type ? i->op2() : i->op3());
 
@@ -92,16 +95,19 @@ static void _set(CodeGen* cg, statement::Instruction* i, bool by_type)
 
     auto idx = cg->llvmConstInt(fidx, 32);
 
-    CodeGen::value_list elems = { idx, val };
+    CodeGen::value_list elems = {idx, val};
     auto result = cg->llvmValueStruct(elems);
     cg->llvmStore(i, result);
 }
 
 static void _is_set(CodeGen* cg, statement::Instruction* i, bool by_type)
 {
-    auto utype = ast::as<type::Union>(i->op1()->type());
-    auto field = by_type ? _typeToField(i->op1(), ast::checkedCast<type::TypeType>(i->op2()->type())->typeType())
-                         : _opToField(i->op1(), i->op2());
+    auto utype = ast::rtti::tryCast<type::Union>(i->op1()->type());
+    auto field =
+        by_type ?
+            _typeToField(i->op1(),
+                         ast::rtti::checkedCast<type::TypeType>(i->op2()->type())->typeType()) :
+            _opToField(i->op1(), i->op2());
     auto fidx = _fieldIndex(utype, field);
     auto op1 = cg->llvmValue(i->op1());
 

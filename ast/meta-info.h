@@ -4,8 +4,8 @@
 #ifndef AST_META_INFO_H
 #define AST_META_INFO_H
 
-#include <map>
 #include <list>
+#include <map>
 
 #include <util/util.h>
 
@@ -14,8 +14,7 @@
 namespace ast {
 
 // A meta-information node that comes with no further value.
-class MetaNode
-{
+class MetaNode {
 public:
     /// Constructor.
     ///
@@ -33,33 +32,36 @@ private:
 };
 
 // A templated meta node that stores a value of a given type.
-template<typename T>
-class MetaValueNode : public MetaNode
-{
+template <typename T>
+class MetaValueNode : public MetaNode {
 public:
     /// Constructor.
     ///
     /// name: The name of the node.
     ///
     /// value: The associated value.
-    MetaValueNode(const string& name, const T value) : _value(value) {}
+    MetaValueNode(const string& name, const T value) : _value(value)
+    {
+    }
 
     /// Returns the node's value.
-    const T& value() const { return _value; }
+    const T& value() const
+    {
+        return _value;
+    }
 
-    string render() const override {
+    string render() const override
+    {
         return util::fmt("%%%s=%s", name(), string(_value));
     }
 
 private:
     T _value;
-
 };
 
 // A collection of meta-information nodes. The collection can store multiple
 // nodes with the same key.
-class MetaInfo
-{
+class MetaInfo {
 public:
     MetaInfo();
     ~MetaInfo();
@@ -99,8 +101,6 @@ private:
     typedef std::multimap<string, shared_ptr<MetaNode>> node_map;
     node_map _nodes;
 };
-
 }
 
 #endif
-

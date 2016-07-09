@@ -3,7 +3,8 @@
 
 using namespace ast;
 
-const char* Exception::what() const throw() {
+const char* Exception::what() const throw()
+{
     string what = _what + " [";
 
     if ( _node )

@@ -4,16 +4,15 @@
 
 #include <ast/pass.h>
 
-#include "../common.h"
 #include "../ast-info.h"
+#include "../common.h"
 
 namespace binpac {
 namespace passes {
 
 /// Dumps out the contents of all scopes in an AST. This is mainly for
 /// debugging.
-class ScopePrinter : public ast::Pass<AstInfo>
-{
+class ScopePrinter : public ast::Pass<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -31,14 +30,12 @@ public:
 
 protected:
     void visit(statement::Block* b) override;
-    void visit(type::unit::Item * i) override;
+    void visit(type::unit::Item* i) override;
 
 private:
     std::ostream& _out;
 };
-
 }
-
 }
 
 #endif

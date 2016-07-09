@@ -7,22 +7,19 @@
 #include "../common.h"
 #include "../visitor.h"
 
-#include "common.h"
 #include "codegen.h"
+#include "common.h"
 
 namespace hilti {
 namespace codegen {
 
-class DebugInfoBuilder : public CGVisitor<llvm::MDNode *>
-{
+class DebugInfoBuilder : public CGVisitor<llvm::MDNode*> {
 public:
-   DebugInfoBuilder(CodeGen* cg);
-   virtual ~DebugInfoBuilder();
+    DebugInfoBuilder(CodeGen* cg);
+    virtual ~DebugInfoBuilder();
 
 protected:
 };
-
-
 }
 }
 

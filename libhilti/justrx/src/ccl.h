@@ -32,12 +32,11 @@ typedef struct {
 
 static inline int _jrx_cmp_char_ranges(jrx_char_range r1, jrx_char_range r2)
 {
-    return r1.begin != r2.begin ? SET_STD_EQUAL(r1.begin, r2.begin)
-                                : SET_STD_EQUAL(r1.end, r2.end);
-};
+    return r1.begin != r2.begin ? SET_STD_EQUAL(r1.begin, r2.begin) : SET_STD_EQUAL(r1.end, r2.end);
+}
 
 // A set of character ranges.
-DECLARE_SET(char_range, jrx_char_range, uint32_t, _jrx_cmp_char_ranges);
+DECLARE_SET(char_range, jrx_char_range, uint32_t, _jrx_cmp_char_ranges)
 
 // A character class.
 typedef struct jrx_ccl {

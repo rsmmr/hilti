@@ -11,7 +11,7 @@ struct AstInfo;
 /// A shared pointer to an AST node. Note that with two pointers pointing to
 /// the same node, both will get updated if we change one to point somewhere
 /// else.
-template<typename T>
+template <typename T>
 using node_ptr = typename ast::node_ptr<T>;
 
 /// Base class for all BinPAC++ AST nodes.
@@ -60,7 +60,6 @@ struct AstInfo {
     typedef binpac::type::function::Parameter parameter;
     typedef binpac::type::function::Result result;
 };
-
 }
 
 #endif

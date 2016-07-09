@@ -19,7 +19,7 @@ void StatementBuilder::visit(statement::instruction::integer::Equal* i)
 
 void StatementBuilder::visit(statement::instruction::integer::Incr* i)
 {
-    auto width = as<type::Integer>(i->target()->type())->width();
+    auto width = ast::rtti::checkedCast<type::Integer>(i->target()->type())->width();
     auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
 
     auto result = builder()->CreateAdd(op1, cg()->llvmConstInt(1, width));
@@ -39,7 +39,7 @@ void StatementBuilder::visit(statement::instruction::integer::IncrBy* i)
 
 void StatementBuilder::visit(statement::instruction::integer::Decr* i)
 {
-    auto width = as<type::Integer>(i->target()->type())->width();
+    auto width = ast::rtti::checkedCast<type::Integer>(i->target()->type())->width();
     auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
 
     auto result = builder()->CreateSub(op1, cg()->llvmConstInt(1, width));
@@ -131,7 +131,7 @@ void StatementBuilder::visit(statement::instruction::integer::Div* i)
     auto ok = cg()->newBuilder("ok");
     auto excpt = cg()->newBuilder("div_by_zero");
 
-    auto width = as<type::Integer>(i->target()->type())->width();
+    auto width = ast::rtti::checkedCast<type::Integer>(i->target()->type())->width();
     auto is_zero = builder()->CreateICmpNE(op2, cg()->llvmConstInt(0, width));
     cg()->llvmCreateCondBr(is_zero, ok, excpt);
 
@@ -178,7 +178,7 @@ void StatementBuilder::visit(statement::instruction::integer::Mod* i)
     auto ok = cg()->newBuilder("ok");
     auto excpt = cg()->newBuilder("div_by_zero");
 
-    auto width = as<type::Integer>(i->op1()->type())->width();
+    auto width = ast::rtti::checkedCast<type::Integer>(i->op1()->type())->width();
     auto is_zero = builder()->CreateICmpNE(op2, cg()->llvmConstInt(0, width));
     cg()->llvmCreateCondBr(is_zero, ok, excpt);
 
@@ -227,7 +227,7 @@ void StatementBuilder::visit(statement::instruction::integer::Pow* i)
 
     auto pow = cg()->llvmCall("hlt::int_pow", args);
 
-    auto width = as<type::Integer>(i->target()->type())->width();
+    auto width = ast::rtti::checkedCast<type::Integer>(i->target()->type())->width();
     auto result = builder()->CreateTrunc(pow, cg()->llvmTypeInt(width));
 
     cg()->llvmStore(i, result);
@@ -235,8 +235,8 @@ void StatementBuilder::visit(statement::instruction::integer::Pow* i)
 
 void StatementBuilder::visit(statement::instruction::integer::SExt* i)
 {
-    auto ty_target = as<type::Integer>(i->target()->type());
-    auto ty_op1 = as<type::Integer>(i->op1()->type());
+    auto ty_target = ast::rtti::checkedCast<type::Integer>(i->target()->type());
+    auto ty_op1 = ast::rtti::checkedCast<type::Integer>(i->op1()->type());
 
     auto op1 = cg()->llvmValue(i->op1());
 
@@ -339,8 +339,8 @@ void StatementBuilder::visit(statement::instruction::integer::Sub* i)
 
 void StatementBuilder::visit(statement::instruction::integer::Trunc* i)
 {
-    auto ty_target = as<type::Integer>(i->target()->type());
-    auto ty_op1 = as<type::Integer>(i->op1()->type());
+    auto ty_target = ast::rtti::checkedCast<type::Integer>(i->target()->type());
+    auto ty_op1 = ast::rtti::checkedCast<type::Integer>(i->op1()->type());
 
     auto op1 = cg()->llvmValue(i->op1());
 
@@ -401,8 +401,8 @@ void StatementBuilder::visit(statement::instruction::integer::Xor* i)
 
 void StatementBuilder::visit(statement::instruction::integer::ZExt* i)
 {
-    auto ty_target = as<type::Integer>(i->target()->type());
-    auto ty_op1 = as<type::Integer>(i->op1()->type());
+    auto ty_target = ast::rtti::checkedCast<type::Integer>(i->target()->type());
+    auto ty_op1 = ast::rtti::checkedCast<type::Integer>(i->op1()->type());
 
     auto op1 = cg()->llvmValue(i->op1());
 
@@ -420,8 +420,8 @@ void StatementBuilder::visit(statement::instruction::integer::ZExt* i)
 
 void StatementBuilder::visit(statement::instruction::integer::ToHost* i)
 {
-    auto width = ast::checkedCast<type::Integer>(i->op1()->type())->width();
-    auto twidth = ast::checkedCast<type::Integer>(i->target()->type())->width();
+    auto width = ast::rtti::checkedCast<type::Integer>(i->op1()->type())->width();
+    auto twidth = ast::rtti::checkedCast<type::Integer>(i->target()->type())->width();
 
     auto op1 = cg()->llvmValue(i->op1());
     op1 = builder()->CreateZExt(op1, cg()->llvmTypeInt(64));
@@ -439,8 +439,8 @@ void StatementBuilder::visit(statement::instruction::integer::ToHost* i)
 
 void StatementBuilder::visit(statement::instruction::integer::FromHost* i)
 {
-    auto width = ast::checkedCast<type::Integer>(i->op1()->type())->width();
-    auto twidth = ast::checkedCast<type::Integer>(i->target()->type())->width();
+    auto width = ast::rtti::checkedCast<type::Integer>(i->op1()->type())->width();
+    auto twidth = ast::rtti::checkedCast<type::Integer>(i->target()->type())->width();
 
     auto op1 = cg()->llvmValue(i->op1());
     op1 = builder()->CreateZExt(op1, cg()->llvmTypeInt(64));
@@ -458,8 +458,8 @@ void StatementBuilder::visit(statement::instruction::integer::FromHost* i)
 
 void StatementBuilder::visit(statement::instruction::integer::Flip* i)
 {
-    auto width = ast::checkedCast<type::Integer>(i->op1()->type())->width();
-    auto twidth = ast::checkedCast<type::Integer>(i->target()->type())->width();
+    auto width = ast::rtti::checkedCast<type::Integer>(i->op1()->type())->width();
+    auto twidth = ast::rtti::checkedCast<type::Integer>(i->target()->type())->width();
 
     auto op1 = cg()->llvmValue(i->op1());
     op1 = builder()->CreateZExt(op1, cg()->llvmTypeInt(64));

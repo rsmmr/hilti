@@ -1,28 +1,30 @@
 
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include "addr.h"
-#include "string_.h"
 #include "hutil.h"
+#include "string_.h"
 
 static inline int is_v4(const hlt_addr addr)
 {
     return addr.a1 == 0 && (addr.a2 & 0xffffffff00000000) == 0;
 }
 
-hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                              __hlt_pointer_stack* seen, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_ADDR);
 
-    hlt_addr addr = *((hlt_addr *)obj);
+    hlt_addr addr = *((hlt_addr*)obj);
 
     if ( is_v4(addr) ) {
         unsigned long a = (unsigned long)addr.a2;
-        struct in_addr sa = { hlt_hton32(a) };
+        struct in_addr sa = {hlt_hton32(a)};
 
         char buffer[INET_ADDRSTRLEN];
 
@@ -63,12 +65,12 @@ struct in_addr hlt_addr_to_in4(hlt_addr addr, hlt_exception** excpt, hlt_executi
 {
     if ( ! is_v4(addr) ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0, ctx);
-        struct in_addr sa;
+        struct in_addr sa = {0};
         return sa;
     }
 
     unsigned long a = (unsigned long)addr.a2;
-    struct in_addr sa = { hlt_hton32(a) };
+    struct in_addr sa = {hlt_hton32(a)};
     return sa;
 }
 
@@ -86,27 +88,27 @@ struct in6_addr hlt_addr_to_in6(hlt_addr addr, hlt_exception** excpt, hlt_execut
 }
 
 hlt_addr hlt_addr_from_in4(struct in_addr in, hlt_exception** excpt, hlt_execution_context* ctx)
-    {
-    hlt_addr addr = { 0, 0 };
+{
+    hlt_addr addr = {0, 0};
     addr.a2 = hlt_ntoh32(in.s_addr);
     return addr;
-    }
+}
 
 hlt_addr hlt_addr_from_in6(struct in6_addr in, hlt_exception** excpt, hlt_execution_context* ctx)
-    {
+{
     uint64_t a1;
     memcpy(&a1, &in, 8);
 
     uint64_t a2;
     memcpy(&a2, ((char*)&in) + 8, 8);
 
-    hlt_addr a = { hlt_ntoh64(a1), hlt_ntoh64(a2) };
+    hlt_addr a = {hlt_ntoh64(a1), hlt_ntoh64(a2)};
     return a;
-    }
+}
 
 hlt_addr hlt_addr_from_asciiz(const char* s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_addr a;
+    hlt_addr a = {0, 0};
     struct in_addr in;
     struct in6_addr in6;
 
@@ -137,4 +139,3 @@ error:
     hlt_set_exception(excpt, &hlt_exception_conversion_error, 0, ctx);
     return a;
 }
-

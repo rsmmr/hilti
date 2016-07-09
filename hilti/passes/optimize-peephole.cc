@@ -1,11 +1,11 @@
 
-#include "../statement.h"
-#include "../module.h"
 #include "../builder/nodes.h"
+#include "../module.h"
+#include "../statement.h"
 
+#include "hilti/autogen/instructions.h"
 #include "optimize-peephole.h"
 #include "printer.h"
-#include "hilti/autogen/instructions.h"
 
 using namespace hilti;
 using namespace passes;

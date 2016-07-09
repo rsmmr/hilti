@@ -6,24 +6,31 @@
 #include "../statement.h"
 #include "../variable.h"
 
-#include "scope-builder.h"
 #include "../context.h"
+#include "scope-builder.h"
 
 namespace binpac {
 
-class ScopeClearer : public ast::Pass<AstInfo>
-{
+class ScopeClearer : public ast::Pass<AstInfo> {
 public:
-    ScopeClearer() : Pass<AstInfo>("binpac::ScopeClearer", false) {}
-    virtual ~ScopeClearer() {}
+    ScopeClearer() : Pass<AstInfo>("binpac::ScopeClearer", false)
+    {
+    }
+    virtual ~ScopeClearer()
+    {
+    }
 
-    bool run(shared_ptr<ast::NodeBase> module) override { return processAllPreOrder(module); }
+    bool run(shared_ptr<ast::NodeBase> module) override
+    {
+        return processAllPreOrder(module);
+    }
 
 protected:
-    void visit(statement::Block* b) override { b->scope()->clear(); }
-
+    void visit(statement::Block* b) override
+    {
+        b->scope()->clear();
+    }
 };
-
 }
 
 using namespace binpac;
@@ -51,7 +58,6 @@ bool ScopeBuilder::run(shared_ptr<ast::NodeBase> module)
     auto m = ast::checkedCast<Module>(module);
 
     for ( auto i : m->importedIDs() ) {
-
         auto m1 = util::strtolower(i->pathAsString());
         auto m2 = util::strtolower(m->id()->pathAsString());
 
@@ -73,7 +79,7 @@ bool ScopeBuilder::run(shared_ptr<ast::NodeBase> module)
 shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
 {
     auto id = decl->id();
-    auto is_hook = dynamic_cast<declaration::Hook*>(decl);
+    auto is_hook = dynamicCast(decl, declaration::Hook*);
 
     if ( ! id ) {
         error(decl, "declaration without an ID");
@@ -88,7 +94,8 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
     auto block = current<statement::Block>();
 
     if ( ! block ) {
-        error(decl, util::fmt("declaration of %s is not part of a block", decl->id()->name().c_str()));
+        error(decl,
+              util::fmt("declaration of %s is not part of a block", decl->id()->name().c_str()));
         return 0;
     }
 
@@ -150,7 +157,7 @@ void ScopeBuilder::visit(declaration::Function* f)
     auto func = f->function()->sharedPtr<Function>();
     auto expr = shared_ptr<expression::Function>(new expression::Function(func, func->location()));
 
-    auto is_hook = dynamic_cast<declaration::Hook*>(f);
+    auto is_hook = dynamicCast(f, declaration::Hook*);
 
     if ( ! is_hook )
         scope->insert(f->id(), expr, true);
@@ -188,7 +195,8 @@ void ScopeBuilder::visit(type::unit::item::GlobalHook* g)
         auto scope = ast::checkedCast<statement::Block>(hook->body())->scope();
 
         for ( auto p : hook->parameters() ) {
-            auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
+            auto pexpr =
+                shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
             scope->insert(p->id(), pexpr, true);
         }
     }

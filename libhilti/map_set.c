@@ -1,9 +1,9 @@
 
-#include "autogen/hilti-hlt.h"
 #include "map_set.h"
-#include "timer.h"
-#include "interval.h"
+#include "autogen/hilti-hlt.h"
 #include "enum.h"
+#include "interval.h"
+#include "timer.h"
 
 #include <string.h>
 
@@ -11,55 +11,52 @@ typedef hlt_hash khint_t;
 typedef void* __val_t;
 
 typedef struct {
-    __val_t val;       // The value stored in the map.
-    hlt_timer* timer;  // The entry's timer, or null if none is set. Not memory-managed to avoid cycles.
+    __val_t val; // The value stored in the map.
+    hlt_timer*
+        timer; // The entry's timer, or null if none is set. Not memory-managed to avoid cycles.
 } __khval_map_t;
 
 typedef hlt_timer* __khval_set_t; // The value stored for sets. Not memory-managed to avoid cycles.
 
 #include "3rdparty/khash/khash.h"
 
-enum MapDefaultType {
-    HLT_MAP_DEFAULT_NONE,
-    HLT_MAP_DEFAULT_VALUE,
-    HLT_MAP_DEFAULT_FUNCTION
-};
+enum MapDefaultType { HLT_MAP_DEFAULT_NONE, HLT_MAP_DEFAULT_VALUE, HLT_MAP_DEFAULT_FUNCTION };
 
 typedef struct __hlt_map {
-    __hlt_gchdr __gchdr;    // Header for memory management.
-    const hlt_type_info* tkey;   // Key type.
-    const hlt_type_info* tvalue; // Value type.
-    hlt_timer_mgr* tmgr;         // The timer manager, or null if not used.
-    hlt_interval timeout;        // The timeout value, or 0 if disabled
-    hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
+    __hlt_gchdr __gchdr;              // Header for memory management.
+    const hlt_type_info* tkey;        // Key type.
+    const hlt_type_info* tvalue;      // Value type.
+    hlt_timer_mgr* tmgr;              // The timer manager, or null if not used.
+    hlt_interval timeout;             // The timeout value, or 0 if disabled
+    hlt_enum strategy;                // Expiration strategy if set; zero otherwise.
     enum MapDefaultType default_type; // Type of the map's default.
     union {
-        __val_t value;           // Default value for HLT_MAP_DEFAULT_VALUE
-        hlt_callable* function;  // Default function for HLT_MAP_DEFAULT_FUNCTION
+        __val_t value;          // Default value for HLT_MAP_DEFAULT_VALUE
+        hlt_callable* function; // Default function for HLT_MAP_DEFAULT_FUNCTION
     } default_;
 
-    void *cache_result;                // Cache for deref's result tuple.
-    void *cache_default;               // Cache for DEFAULT_FUNCTION's result value.
+    void* cache_result;  // Cache for deref's result tuple.
+    void* cache_default; // Cache for DEFAULT_FUNCTION's result value.
 
     // These are used by khash and copied from there (see README.HILTI).
     khint_t n_buckets, size, n_occupied, upper_bound;
-    uint32_t *flags;
-    __khkey_t *keys;
-    __khval_map_t *vals;
+    uint32_t* flags;
+    __khkey_t* keys;
+    __khval_map_t* vals;
 } kh_map_t;
 
 typedef struct __hlt_set {
-    __hlt_gchdr __gchdr;    // Header for memory management.
-    const hlt_type_info* tkey;   // Key type.
-    hlt_timer_mgr* tmgr;         // The timer manager, or null if not used.
-    hlt_interval timeout;        // The timeout value, or 0 if disabled
-    hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
+    __hlt_gchdr __gchdr;       // Header for memory management.
+    const hlt_type_info* tkey; // Key type.
+    hlt_timer_mgr* tmgr;       // The timer manager, or null if not used.
+    hlt_interval timeout;      // The timeout value, or 0 if disabled
+    hlt_enum strategy;         // Expiration strategy if set; zero otherwise.
 
     // These are used by khash and copied from there (see README.HILTI).
     khint_t n_buckets, size, n_occupied, upper_bound;
-    uint32_t *flags;
-    __khkey_t *keys;
-    __khval_set_t *vals;
+    uint32_t* flags;
+    __khkey_t* keys;
+    __khval_set_t* vals;
 } kh_set_t;
 
 static inline hlt_hash _kh_hash_func(const void* obj, const hlt_type_info* type)
@@ -78,15 +75,15 @@ KHASH_INIT(set, __khkey_t, __khval_set_t, 1, _kh_hash_func, _kh_hash_equal)
 static inline void _map_clear_default(hlt_map* m, hlt_execution_context* ctx)
 {
     switch ( m->default_type ) {
-     case HLT_MAP_DEFAULT_NONE:
+    case HLT_MAP_DEFAULT_NONE:
         break;
 
-     case HLT_MAP_DEFAULT_VALUE:
+    case HLT_MAP_DEFAULT_VALUE:
         GC_DTOR_GENERIC(m->default_.value, m->tvalue, ctx);
         hlt_free(m->default_.value);
         break;
 
-     case HLT_MAP_DEFAULT_FUNCTION:
+    case HLT_MAP_DEFAULT_FUNCTION:
         GC_DTOR(m->default_.function, hlt_callable, ctx);
         break;
     }
@@ -99,7 +96,6 @@ void hlt_map_dtor(hlt_type_info* ti, hlt_map* m, hlt_execution_context* ctx)
 {
     for ( khiter_t i = kh_begin(m); i != kh_end(m); i++ ) {
         if ( kh_exist(m, i) ) {
-
             if ( kh_value(m, i).timer ) {
                 hlt_exception* excpt = 0;
                 hlt_timer_cancel(kh_value(m, i).timer, &excpt, ctx);
@@ -131,26 +127,28 @@ void hlt_iterator_map_dtor(hlt_type_info* ti, hlt_iterator_map* i, hlt_execution
     GC_DTOR(i->map, hlt_map, ctx);
 }
 
-void __hlt_map_timer_cookie_dtor(hlt_type_info* ti, __hlt_map_timer_cookie* c, hlt_execution_context* ctx)
+void __hlt_map_timer_cookie_dtor(hlt_type_info* ti, __hlt_map_timer_cookie* c,
+                                 hlt_execution_context* ctx)
 {
     GC_DTOR(c->map, hlt_map, ctx);
 }
 
-const hlt_type_info* hlt_map_key_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+const hlt_type_info* hlt_map_key_type(const hlt_type_info* type, hlt_exception** excpt,
+                                      hlt_execution_context* ctx)
 {
-    return ((hlt_type_info**) &type->type_params)[0];
+    return ((hlt_type_info**)&type->type_params)[0];
 }
 
-const hlt_type_info* hlt_map_value_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+const hlt_type_info* hlt_map_value_type(const hlt_type_info* type, hlt_exception** excpt,
+                                        hlt_execution_context* ctx)
 {
-    return ((hlt_type_info**) &type->type_params)[1];
+    return ((hlt_type_info**)&type->type_params)[1];
 }
 
 void hlt_set_dtor(hlt_type_info* ti, hlt_set* s, hlt_execution_context* ctx)
 {
     for ( khiter_t i = kh_begin(s); i != kh_end(s); i++ ) {
         if ( kh_exist(s, i) ) {
-
             if ( kh_value(s, i) ) {
                 hlt_exception* excpt = 0;
                 hlt_timer_cancel(kh_value(s, i), &excpt, ctx);
@@ -183,9 +181,11 @@ static inline void* _to_voidp(const hlt_type_info* type, void* data)
     return z;
 }
 
-static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt,
+                               hlt_execution_context* ctx)
 {
-    if ( ! m->tmgr || ! hlt_enum_equal(m->strategy, Hilti_ExpireStrategy_Access, excpt, ctx) || m->timeout == 0 )
+    if ( ! m->tmgr || ! hlt_enum_equal(m->strategy, Hilti_ExpireStrategy_Access, excpt, ctx) ||
+         m->timeout == 0 )
         return;
 
     if ( ! kh_value(m, i).timer )
@@ -195,9 +195,11 @@ static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt, hl
     hlt_timer_update(kh_value(m, i).timer, t, excpt, ctx);
 }
 
-static inline void _access_set(hlt_set* m, khiter_t i, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _access_set(hlt_set* m, khiter_t i, hlt_exception** excpt,
+                               hlt_execution_context* ctx)
 {
-    if ( ! m->tmgr || ! hlt_enum_equal(m->strategy, Hilti_ExpireStrategy_Access, excpt, ctx) || m->timeout == 0 )
+    if ( ! m->tmgr || ! hlt_enum_equal(m->strategy, Hilti_ExpireStrategy_Access, excpt, ctx) ||
+         m->timeout == 0 )
         return;
 
     if ( ! kh_value(m, i) )
@@ -209,7 +211,9 @@ static inline void _access_set(hlt_set* m, khiter_t i, hlt_exception** excpt, hl
 
 //////////// Maps.
 
-static inline void _hlt_map_init(hlt_map* m, const hlt_type_info* key, const hlt_type_info* value, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_map_init(hlt_map* m, const hlt_type_info* key, const hlt_type_info* value,
+                                 hlt_timer_mgr* tmgr, hlt_exception** excpt,
+                                 hlt_execution_context* ctx)
 {
     GC_INIT(m->tmgr, tmgr, hlt_timer_mgr, ctx);
     m->tkey = key;
@@ -222,14 +226,18 @@ static inline void _hlt_map_init(hlt_map* m, const hlt_type_info* key, const hlt
     _map_clear_default(m, ctx);
 }
 
-hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_timer_mgr* tmgr,
+                     hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_map* m = GC_NEW(hlt_map, ctx);  // This would normally be kh_init(map); however we need to init the gc header.
+    hlt_map* m =
+        GC_NEW(hlt_map,
+               ctx); // This would normally be kh_init(map); however we need to init the gc header.
     _hlt_map_init(m, key, value, tmgr, excpt, ctx);
     return m;
 }
 
-static void _clone_init_in_thread_map(const hlt_type_info* ti, void* dstp, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _clone_init_in_thread_map(const hlt_type_info* ti, void* dstp, hlt_exception** excpt,
+                                      hlt_execution_context* ctx)
 {
     hlt_map* dst = *(hlt_map**)dstp;
 
@@ -252,18 +260,21 @@ static void _clone_init_in_thread_map(const hlt_type_info* ti, void* dstp, hlt_e
     }
 }
 
-void* hlt_map_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_map_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate,
+                          hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return GC_NEW_REF(hlt_map, ctx);
 }
 
-void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate,
+                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_map* src = *(hlt_map**)srcp;
     hlt_map* dst = *(hlt_map**)dstp;
 
     if ( src->tmgr && src->tmgr != ctx->tmgr ) {
-        hlt_string msg = hlt_string_from_asciiz("map with non-standard timer mgr cannot be cloned", excpt, ctx);
+        hlt_string msg =
+            hlt_string_from_asciiz("map with non-standard timer mgr cannot be cloned", excpt, ctx);
         hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg, ctx);
         return;
     }
@@ -278,17 +289,18 @@ void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
     dst->cache_default = 0;
 
     switch ( src->default_type ) {
-     case HLT_MAP_DEFAULT_NONE:
+    case HLT_MAP_DEFAULT_NONE:
         break;
 
-     case HLT_MAP_DEFAULT_VALUE:
+    case HLT_MAP_DEFAULT_VALUE:
         dst->default_.value = hlt_malloc(dst->tvalue->size);
         __hlt_clone(dst->default_.value, src->tvalue, src->default_.value, cstate, excpt, ctx);
         break;
 
-     case HLT_MAP_DEFAULT_FUNCTION:
+    case HLT_MAP_DEFAULT_FUNCTION:
         dst->default_.function = hlt_malloc(dst->tvalue->size);
-        __hlt_clone(dst->default_.function, &hlt_type_info_hlt_callable, src->default_.function, cstate, excpt, ctx);
+        __hlt_clone(dst->default_.function, &hlt_type_info_hlt_callable, src->default_.function,
+                    cstate, excpt, ctx);
         break;
     }
 
@@ -308,7 +320,7 @@ void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
 
         if ( src->tmgr && src->timeout ) {
             GC_CCTOR(dst, hlt_map, ctx);
-            __hlt_map_timer_cookie cookie = { dst, key };
+            __hlt_map_timer_cookie cookie = {dst, key};
             hlt_timer* t = __hlt_timer_new_map(cookie, excpt, ctx);
             t->time = kh_value(src, i).timer->time;
             kh_value(dst, i).timer = t;
@@ -324,7 +336,8 @@ void hlt_map_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
         __hlt_clone_init_in_thread(_clone_init_in_thread_map, ti, dstp, cstate, excpt, ctx);
 }
 
-void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt,
+                  hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -334,27 +347,26 @@ void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exceptio
     khiter_t i = kh_get_map(m, key, type);
 
     if ( i == kh_end(m) ) {
-
         switch ( m->default_type ) {
-         case HLT_MAP_DEFAULT_NONE:
+        case HLT_MAP_DEFAULT_NONE:
             break;
 
-         case HLT_MAP_DEFAULT_VALUE:
+        case HLT_MAP_DEFAULT_VALUE:
             if ( ! m->cache_default )
                 m->cache_default = hlt_malloc(m->tvalue->size);
 
             hlt_clone_deep(m->cache_default, m->tvalue, m->default_.value, excpt, ctx);
             return m->cache_default;
 
-         case HLT_MAP_DEFAULT_FUNCTION: {
+        case HLT_MAP_DEFAULT_FUNCTION: {
             if ( ! m->cache_default )
                 m->cache_default = hlt_malloc(m->tvalue->size);
 
-            void **k = (void **)key;
-            HLT_CALLABLE_RUN(m->default_.function, m->cache_default, Hilti_MapDefaultFunction, k, excpt, ctx);
+            void** k = (void**)key;
+            HLT_CALLABLE_RUN(m->default_.function, m->cache_default, Hilti_MapDefaultFunction, k,
+                             excpt, ctx);
             return m->cache_default;
-         }
-
+        }
         }
 
         hlt_set_exception(excpt, &hlt_exception_index_error, 0, ctx);
@@ -366,7 +378,9 @@ void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exceptio
     return kh_value(m, i).val;
 }
 
-void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* key,
+                          const hlt_type_info* tdef, void* def, hlt_exception** excpt,
+                          hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -383,7 +397,8 @@ void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* key, cons
     return kh_value(m, i).val;
 }
 
-void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tval, void* value, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tval,
+                    void* value, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -415,7 +430,7 @@ void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_
         // New entry.
         if ( m->tmgr && m->timeout ) {
             // Create timer.
-            __hlt_map_timer_cookie cookie = { m, keytmp };
+            __hlt_map_timer_cookie cookie = {m, keytmp};
             kh_value(m, i).timer = __hlt_timer_new_map(cookie, excpt, ctx);
             hlt_time t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
             hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i).timer, excpt, ctx);
@@ -431,7 +446,8 @@ void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_
     GC_CCTOR_GENERIC(valtmp, m->tvalue, ctx);
 }
 
-int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt,
+                      hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -446,7 +462,8 @@ int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exce
     return 1;
 }
 
-void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt,
+                    hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -473,7 +490,8 @@ void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_except
     }
 }
 
-void hlt_map_expire(__hlt_map_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_map_expire(__hlt_map_timer_cookie cookie, hlt_exception** excpt,
+                    hlt_execution_context* ctx)
 {
     khiter_t i = kh_get_map(cookie.map, cookie.key, cookie.map->tkey);
 
@@ -528,11 +546,12 @@ void hlt_map_clear(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx
     kh_clear_map(m);
 }
 
-void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt,
+                     hlt_execution_context* ctx)
 {
     _map_clear_default(m, ctx);
 
-    if ( tdef->type != HLT_TYPE_CALLABLE )  {
+    if ( tdef->type != HLT_TYPE_CALLABLE ) {
         m->default_type = HLT_MAP_DEFAULT_VALUE;
         m->default_.value = hlt_malloc(m->tvalue->size);
         hlt_clone_deep(m->default_.value, m->tvalue, def, excpt, ctx);
@@ -540,12 +559,13 @@ void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_excep
 
     else {
         m->default_type = HLT_MAP_DEFAULT_FUNCTION;
-        m->default_.function = *(hlt_callable **)def;
+        m->default_.function = *(hlt_callable**)def;
         GC_CCTOR(m->default_.function, hlt_callable, ctx);
     }
 }
 
-void hlt_map_default_callable(hlt_map* m, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_map_default_callable(hlt_map* m, hlt_callable* func, hlt_exception** excpt,
+                              hlt_execution_context* ctx)
 {
     _map_clear_default(m, ctx);
 
@@ -554,7 +574,8 @@ void hlt_map_default_callable(hlt_map* m, hlt_callable* func, hlt_exception** ex
     GC_CCTOR(m->default_.function, hlt_callable, ctx);
 }
 
-void hlt_map_timeout(hlt_map* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_map_timeout(hlt_map* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt,
+                     hlt_execution_context* ctx)
 {
     m->timeout = timeout;
     m->strategy = strategy;
@@ -584,11 +605,12 @@ hlt_iterator_map hlt_map_begin(hlt_map* m, hlt_exception** excpt, hlt_execution_
 
 hlt_iterator_map hlt_map_end(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_iterator_map i = { 0, 0 };
+    hlt_iterator_map i = {0, 0};
     return i;
 }
 
-hlt_iterator_map hlt_iterator_map_incr(hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_map hlt_iterator_map_incr(hlt_iterator_map i, hlt_exception** excpt,
+                                       hlt_execution_context* ctx)
 {
     if ( ! i.map )
         // End already reached.
@@ -603,7 +625,8 @@ hlt_iterator_map hlt_iterator_map_incr(hlt_iterator_map i, hlt_exception** excpt
     return hlt_map_end(excpt, ctx);
 }
 
-void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map i, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     if ( ! i.map ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
@@ -620,7 +643,7 @@ void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map i, hlt
     hlt_tuple_element e0 = hlt_tuple_get_type(tuple, 0, excpt, ctx);
     hlt_tuple_element e1 = hlt_tuple_get_type(tuple, 1, excpt, ctx);
 
-    void *result = i.map->cache_result;
+    void* result = i.map->cache_result;
 
     void* v0 = hlt_tuple_get(tuple, result, 0, excpt, ctx);
     void* v1 = hlt_tuple_get(tuple, result, 1, excpt, ctx);
@@ -631,7 +654,8 @@ void* hlt_iterator_map_deref(const hlt_type_info* tuple, hlt_iterator_map i, hlt
     return result;
 }
 
-void* hlt_iterator_map_deref_key(hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_iterator_map_deref_key(hlt_iterator_map i, hlt_exception** excpt,
+                                 hlt_execution_context* ctx)
 {
     if ( ! i.map ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
@@ -642,7 +666,8 @@ void* hlt_iterator_map_deref_key(hlt_iterator_map i, hlt_exception** excpt, hlt_
     return kh_key(i.map, i.iter);
 }
 
-void* hlt_iterator_map_deref_value(hlt_iterator_map i, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_iterator_map_deref_value(hlt_iterator_map i, hlt_exception** excpt,
+                                   hlt_execution_context* ctx)
 {
     if ( ! i.map ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0, ctx);
@@ -653,12 +678,15 @@ void* hlt_iterator_map_deref_value(hlt_iterator_map i, hlt_exception** excpt, hl
     return kh_value(i.map, i.iter).val;
 }
 
-int8_t hlt_iterator_map_eq(hlt_iterator_map i1, hlt_iterator_map i2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_iterator_map_eq(hlt_iterator_map i1, hlt_iterator_map i2, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     return i1.map == i2.map && i1.iter == i2.iter;
 }
 
-hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                             __hlt_pointer_stack* seen, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     const hlt_map* m = *((const hlt_map**)obj);
 
@@ -680,7 +708,8 @@ hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t
             s = hlt_string_concat(s, separator, excpt, ctx);
 
         hlt_string key = __hlt_object_to_string(m->tkey, kh_key(m, i), options, seen, excpt, ctx);
-        hlt_string value = __hlt_object_to_string(m->tvalue, kh_value(m, i).val, options, seen, excpt, ctx);
+        hlt_string value =
+            __hlt_object_to_string(m->tvalue, kh_value(m, i).val, options, seen, excpt, ctx);
 
         s = hlt_string_concat(s, key, excpt, ctx);
         s = hlt_string_concat(s, colon, excpt, ctx);
@@ -699,7 +728,8 @@ hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t
 
 //////////// Sets.
 
-static inline void _hlt_set_init(hlt_set* m, const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _hlt_set_init(hlt_set* m, const hlt_type_info* key, hlt_timer_mgr* tmgr,
+                                 hlt_exception** excpt, hlt_execution_context* ctx)
 {
     GC_INIT(m->tmgr, tmgr, hlt_timer_mgr, ctx);
     m->tkey = key;
@@ -707,14 +737,18 @@ static inline void _hlt_set_init(hlt_set* m, const hlt_type_info* key, hlt_timer
     m->strategy = hlt_enum_unset(excpt, ctx);
 }
 
-hlt_set* hlt_set_new(const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_set* hlt_set_new(const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exception** excpt,
+                     hlt_execution_context* ctx)
 {
-    hlt_set* m = GC_NEW(hlt_set, ctx);  // This would normally be kh_init(set); however we need to init the gc header.
+    hlt_set* m =
+        GC_NEW(hlt_set,
+               ctx); // This would normally be kh_init(set); however we need to init the gc header.
     _hlt_set_init(m, key, tmgr, excpt, ctx);
     return m;
 }
 
-static void _clone_init_in_thread_set(const hlt_type_info* ti, void* dstp, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _clone_init_in_thread_set(const hlt_type_info* ti, void* dstp, hlt_exception** excpt,
+                                      hlt_execution_context* ctx)
 {
     hlt_set* dst = *(hlt_set**)dstp;
 
@@ -737,18 +771,21 @@ static void _clone_init_in_thread_set(const hlt_type_info* ti, void* dstp, hlt_e
     }
 }
 
-void* hlt_set_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_set_clone_alloc(const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate,
+                          hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return GC_NEW(hlt_set, ctx);
 }
 
-void hlt_set_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_set_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_clone_state* cstate,
+                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_set* src = *(hlt_set**)srcp;
     hlt_set* dst = *(hlt_set**)dstp;
 
     if ( src->tmgr && src->tmgr != ctx->tmgr ) {
-        hlt_string msg = hlt_string_from_asciiz("set with non-standard timer mgr cannot be cloned", excpt, ctx);
+        hlt_string msg =
+            hlt_string_from_asciiz("set with non-standard timer mgr cannot be cloned", excpt, ctx);
         hlt_set_exception(excpt, &hlt_exception_cloning_not_supported, msg, ctx);
         return;
     }
@@ -771,7 +808,7 @@ void hlt_set_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
         assert(ret); // Cannot exist yet.
 
         if ( src->tmgr && src->timeout ) {
-            __hlt_set_timer_cookie cookie = { dst, key };
+            __hlt_set_timer_cookie cookie = {dst, key};
             hlt_timer* t = __hlt_timer_new_set(cookie, excpt, ctx);
             t->time = kh_value(src, i)->time;
             kh_value(dst, i) = t;
@@ -785,7 +822,8 @@ void hlt_set_clone_init(void* dstp, const hlt_type_info* ti, void* srcp, __hlt_c
         __hlt_clone_init_in_thread(_clone_init_in_thread_set, ti, dstp, cstate, excpt, ctx);
 }
 
-void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_exception** excpt,
+                    hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -794,8 +832,8 @@ void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_except
 
     void* keytmp = _to_voidp(tkey, key);
 
-	int ret;
-	khiter_t i = kh_put_set(m, keytmp, &ret, tkey);
+    int ret;
+    khiter_t i = kh_put_set(m, keytmp, &ret, tkey);
     if ( ! ret ) {
         // The hash table keeps the old key, so we don't need the new one.
         hlt_free(keytmp);
@@ -808,7 +846,7 @@ void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_except
         // New entry.
         if ( m->tmgr && m->timeout ) {
             // Create timer.
-            __hlt_set_timer_cookie cookie = { m, keytmp };
+            __hlt_set_timer_cookie cookie = {m, keytmp};
             kh_value(m, i) = __hlt_timer_new_set(cookie, excpt, ctx);
             hlt_interval t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
             hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i), excpt, ctx);
@@ -821,7 +859,8 @@ void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_except
     }
 }
 
-int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt,
+                      hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -836,7 +875,8 @@ int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exce
     return 1;
 }
 
-void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt,
+                    hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0, ctx);
@@ -859,7 +899,8 @@ void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_except
     }
 }
 
-void hlt_set_expire(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_set_expire(__hlt_set_timer_cookie cookie, hlt_exception** excpt,
+                    hlt_execution_context* ctx)
 {
     khiter_t i = kh_get_set(cookie.set, cookie.key, cookie.set->tkey);
 
@@ -908,7 +949,8 @@ void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx
     kh_clear_set(m);
 }
 
-void hlt_set_timeout(hlt_set* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_set_timeout(hlt_set* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt,
+                     hlt_execution_context* ctx)
 {
     m->timeout = timeout;
     m->strategy = strategy;
@@ -938,11 +980,12 @@ hlt_iterator_set hlt_set_begin(hlt_set* m, hlt_exception** excpt, hlt_execution_
 
 hlt_iterator_set hlt_set_end(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_iterator_set i = { 0, 0 };
+    hlt_iterator_set i = {0, 0};
     return i;
 }
 
-hlt_iterator_set hlt_iterator_set_incr(hlt_iterator_set i, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_set hlt_iterator_set_incr(hlt_iterator_set i, hlt_exception** excpt,
+                                       hlt_execution_context* ctx)
 {
     if ( ! i.set )
         // End already reached.
@@ -967,12 +1010,15 @@ void* hlt_iterator_set_deref(hlt_iterator_set i, hlt_exception** excpt, hlt_exec
     return kh_key(i.set, i.iter);
 }
 
-int8_t hlt_iterator_set_eq(hlt_iterator_set i1, hlt_iterator_set i2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_iterator_set_eq(hlt_iterator_set i1, hlt_iterator_set i2, hlt_exception** excpt,
+                           hlt_execution_context* ctx)
 {
     return i1.set == i2.set && i1.iter == i2.iter;
 }
 
-hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t options, __hlt_pointer_stack* seen, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t options,
+                             __hlt_pointer_stack* seen, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     const hlt_set* m = *((const hlt_set**)obj);
 
@@ -1007,7 +1053,8 @@ hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t
     return s;
 }
 
-const hlt_type_info* hlt_set_element_type(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
+const hlt_type_info* hlt_set_element_type(const hlt_type_info* type, hlt_exception** excpt,
+                                          hlt_execution_context* ctx)
 {
-    return ((hlt_type_info**) &type->type_params)[0];
+    return ((hlt_type_info**)&type->type_params)[0];
 }

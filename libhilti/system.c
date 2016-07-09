@@ -1,8 +1,8 @@
 
-#include <pthread.h>
-#include <getopt.h>
-#include <sys/resource.h>
 #include <autogen/cmake-config.h>
+#include <getopt.h>
+#include <pthread.h>
+#include <sys/resource.h>
 
 #ifdef __linux__
 #include <sys/prctl.h>
@@ -13,15 +13,15 @@
 void hlt_set_thread_name(const char* s)
 {
 #ifdef __linux__
-	prctl(PR_SET_NAME, s, 0, 0, 0);
+    prctl(PR_SET_NAME, s, 0, 0, 0);
 #endif
 
 #ifdef DARWIN
-	pthread_setname_np(s);
+    pthread_setname_np(s);
 #endif
 
 #ifdef FREEBSD
-	pthread_set_name_np(pthread_self(), s, s);
+    pthread_set_name_np(pthread_self(), s, s);
 #endif
 }
 
@@ -34,7 +34,8 @@ void hlt_set_thread_affinity(int core)
 
     // Set affinity.
     if ( pthread_setaffinity_np(self, sizeof(cpu_set_t), &cpuset) != 0 ) {
-        fprintf(stderr, "cannot set affinity for thread %s to core %d: %s\n", name, core, strerror(errno));
+        fprintf(stderr, "cannot set affinity for thread %s to core %d: %s\n", name, core,
+                strerror(errno));
         _fatal_error("affinity error");
     }
 
@@ -53,7 +54,7 @@ void hlt_set_thread_affinity(int core)
 
 void hlt_reset_getopt()
 {
-    // Methods differ here, see man pages.
+// Methods differ here, see man pages.
 #ifdef __linux__
     optind = 0;
 #else

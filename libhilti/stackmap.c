@@ -1,9 +1,8 @@
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <inttypes.h>
 
-#include "linker.h"
 #include "stackmap.h"
 
 void __hlt_stackmap_init()
@@ -18,16 +17,18 @@ void __hlt_stackmap_init()
 
 #ifdef DEBUG
     fprintf(stderr, "version %d\n", sm->version);
-    fprintf(stderr, "%u functions, %u constants, %u records\n",
-            sm->num_functions, sm->num_constants, sm->num_records);
+    fprintf(stderr, "%u functions, %u constants, %u records\n", sm->num_functions,
+            sm->num_constants, sm->num_records);
 
     __llvm_stackmap_function* functions = &sm->functions;
 
     __llvm_stackmap_constant* constants =
-        (__llvm_stackmap_constant*) ((char*)functions + sm->num_functions * sizeof(__llvm_stackmap_function));
+        (__llvm_stackmap_constant*)((char*)functions +
+                                    sm->num_functions * sizeof(__llvm_stackmap_function));
 
     __llvm_stackmap_record* records =
-        (__llvm_stackmap_record*) ((char*)constants + sm->num_constants * sizeof(__llvm_stackmap_constant));
+        (__llvm_stackmap_record*)((char*)constants +
+                                  sm->num_constants * sizeof(__llvm_stackmap_constant));
 
     for ( int i = 0; i < sm->num_records; i++ ) {
         __llvm_stackmap_record* r = &records[i];

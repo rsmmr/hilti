@@ -1,11 +1,12 @@
 
 opBegin(tuple::CoerceTuple : Coerce)
-    opOp1(std::make_shared<type::Tuple>())
-    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Tuple>()))
+    opOp1(std::make_shared<type::Tuple>());
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Tuple>()));
 
-    opDoc("Tuples coerce to other tupes if all their elements coerce individually.")
+    opDoc("Tuples coerce to other tupes if all their elements coerce individually.");
 
-    opValidate() {
+    opValidate()
+    {
         auto types1 = ast::checkedCast<type::Tuple>(op1()->type())->typeList();
         auto types2 = ast::checkedCast<type::Tuple>(op2()->type())->typeList();
 
@@ -28,33 +29,37 @@ opBegin(tuple::CoerceTuple : Coerce)
         }
     }
 
-    opResult() {
+    opResult()
+    {
         auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
         return ast::checkedCast<type::Tuple>(ttype);
     }
 opEnd
 
 opBegin(tuple::Equal)
-    opOp1(std::make_shared<type::Tuple>())
-    opOp2(std::make_shared<type::Tuple>())
+    opOp1(std::make_shared<type::Tuple>());
+    opOp2(std::make_shared<type::Tuple>());
 
-    opDoc("Compares two tuples for equality.")
+    opDoc("Compares two tuples for equality.");
 
-    opValidate() {
+    opValidate()
+    {
     }
 
-    opResult() {
+    opResult()
+    {
         return std::make_shared<type::Bool>();
     }
 opEnd
 
 opBegin(tuple::Index)
-    opOp1(std::make_shared<type::Tuple>())
-    opOp2(std::make_shared<type::Integer>())
+    opOp1(std::make_shared<type::Tuple>());
+    opOp2(std::make_shared<type::Integer>());
 
-    opDoc("Returns the tuple element at a given index.")
+    opDoc("Returns the tuple element at a given index.");
 
-    opValidate() {
+    opValidate()
+    {
         auto tuple = ast::checkedCast<type::Tuple>(op1()->type());
         auto idx = ast::tryCast<expression::Constant>(op2());
 
@@ -63,7 +68,8 @@ opBegin(tuple::Index)
         }
     }
 
-    opResult() {
+    opResult()
+    {
         auto tuple = ast::checkedCast<type::Tuple>(op1()->type());
         auto types = tuple->typeList();
 

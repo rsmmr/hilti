@@ -10,27 +10,31 @@
 namespace hilti {
 
 /// AST node for a source-level identifier.
-class ID : public ast::ID<AstInfo>
-{
+class ID : public ast::ID<AstInfo> {
+    AST_RTTI
 public:
-   /// Constructor.
-   ///
-   /// path: The name of the identifier, either scoped or unscoped.
-   ///
-   /// l: Associated location.
-   ID(string path, const Location & l=Location::None) : ast::ID<AstInfo>(path, l) {}
+    /// Constructor.
+    ///
+    /// path: The name of the identifier, either scoped or unscoped.
+    ///
+    /// l: Associated location.
+    ID(string path, const Location& l = Location::None) : ast::ID<AstInfo>(path, l)
+    {
+    }
 
-   /// Constructor.
-   ///
-   /// path: Scope components.
-   ///
-   /// l: Associated location.
-   ID(component_list path, const Location& l=Location::None) : ast::ID<AstInfo>(path, l) {}
+    /// Constructor.
+    ///
+    /// path: Scope components.
+    ///
+    /// l: Associated location.
+    ID(component_list path, const Location& l = Location::None) : ast::ID<AstInfo>(path, l)
+    {
+    }
 
-   ACCEPT_VISITOR_ROOT();
+    ACCEPT_VISITOR_ROOT();
+
 private:
 };
-
 }
 
 #endif

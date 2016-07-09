@@ -7,8 +7,8 @@
 
 #include <ast/scope.h>
 
-#include "scope.h"
 #include "id.h"
+#include "scope.h"
 
 namespace binpac {
 
@@ -21,7 +21,6 @@ public:
     /// lookup() will forward recursively to parent scopes.
     Scope(shared_ptr<Scope> parent = nullptr);
 };
-
 }
 
 #endif

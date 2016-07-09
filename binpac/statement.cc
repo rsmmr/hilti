@@ -1,8 +1,8 @@
 
+#include "statement.h"
 #include "declaration.h"
 #include "expression.h"
 #include "scope.h"
-#include "statement.h"
 #include "type.h"
 #include "variable.h"
 
@@ -101,7 +101,8 @@ shared_ptr<Scope> Block::scope() const
     return _scope;
 }
 
-try_::Catch::Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> block, const Location& l)
+try_::Catch::Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> block,
+                   const Location& l)
     : Node(l)
 {
     _id = id;
@@ -124,8 +125,7 @@ try_::Catch::Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> b
     }
 }
 
-try_::Catch::Catch(shared_ptr<Block> block, const Location& l)
-    : Node(l)
+try_::Catch::Catch(shared_ptr<Block> block, const Location& l) : Node(l)
 {
     _block = block;
     addChild(_block);
@@ -160,8 +160,7 @@ shared_ptr<Block> try_::Catch::block() const
     return _block;
 }
 
-Try::Try(shared_ptr<Block> try_, const catch_list& catches, const Location& l)
-    : Statement(l)
+Try::Try(shared_ptr<Block> try_, const catch_list& catches, const Location& l) : Statement(l)
 {
     _try = try_;
     _catches = catches;
@@ -183,7 +182,8 @@ shared_ptr<Block> Try::block() const
 }
 
 
-ForEach::ForEach(shared_ptr<ID> id, shared_ptr<binpac::Expression> seq, shared_ptr<Block> body, const Location& l)
+ForEach::ForEach(shared_ptr<ID> id, shared_ptr<binpac::Expression> seq, shared_ptr<Block> body,
+                 const Location& l)
     : Statement(l)
 {
     _id = id;
@@ -232,7 +232,8 @@ expression_list Print::expressions() const
     return exprs;
 }
 
-statement::Expression::Expression(shared_ptr<binpac::Expression> expr, const Location& l) : Statement(l)
+statement::Expression::Expression(shared_ptr<binpac::Expression> expr, const Location& l)
+    : Statement(l)
 {
     _expr = expr;
     addChild(_expr);
@@ -243,7 +244,9 @@ shared_ptr<binpac::Expression> statement::Expression::expression() const
     return _expr;
 }
 
-IfElse::IfElse(shared_ptr<binpac::Expression> cond, shared_ptr<Statement> true_, shared_ptr<Statement> false_, const Location& l) : Statement(l)
+IfElse::IfElse(shared_ptr<binpac::Expression> cond, shared_ptr<Statement> true_,
+               shared_ptr<Statement> false_, const Location& l)
+    : Statement(l)
 {
     _cond = cond;
     _true = true_;

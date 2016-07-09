@@ -1,17 +1,16 @@
 
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "constant.h"
-#include "id.h"
 #include "expression.h"
+#include "id.h"
 #include "type.h"
 
 using namespace binpac;
 using namespace binpac::constant;
 
-Constant::Constant(const Location& l)
-    : ast::Constant<AstInfo>(l)
+Constant::Constant(const Location& l) : ast::Constant<AstInfo>(l)
 {
 }
 
@@ -22,8 +21,7 @@ string Constant::render()
     return s.str();
 }
 
-ConstantParseError::ConstantParseError(Constant* c, const string& msg)
-    : ast::RuntimeError(msg, c)
+ConstantParseError::ConstantParseError(Constant* c, const string& msg) : ast::RuntimeError(msg, c)
 {
 }
 
@@ -55,12 +53,15 @@ shared_ptr<Type> constant::Expression::type() const
 #endif
 
 String::String(const string& value, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, string>(value, shared_ptr<Type>(new type::String()), l)
+    : ast::SpecificConstant<AstInfo, Constant, string>(value, shared_ptr<Type>(new type::String()),
+                                                       l)
 {
 }
 
 Integer::Integer(int64_t value, int width, bool sign, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, int64_t>(value, shared_ptr<Type>(new type::Integer(width, sign)), l)
+    : ast::SpecificConstant<AstInfo, Constant, int64_t>(value, shared_ptr<Type>(
+                                                                   new type::Integer(width, sign)),
+                                                        l)
 {
 }
 
@@ -70,17 +71,20 @@ Bool::Bool(bool value, const Location& l)
 }
 
 Address::Address(const string& addr, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, string>(addr, shared_ptr<Type>(new type::Address()), l)
+    : ast::SpecificConstant<AstInfo, Constant, string>(addr, shared_ptr<Type>(new type::Address()),
+                                                       l)
 {
 }
 
 Network::Network(const string& net, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, string>(net, shared_ptr<Type>(new type::Address()), l)
+    : ast::SpecificConstant<AstInfo, Constant, string>(net, shared_ptr<Type>(new type::Address()),
+                                                       l)
 {
 }
 
 Network::Network(const string& net, int width, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, string>(::util::fmt("%s/%d", net.c_str(), width), shared_ptr<Type>(new type::Address()), l)
+    : ast::SpecificConstant<AstInfo, Constant, string>(::util::fmt("%s/%d", net.c_str(), width),
+                                                       shared_ptr<Type>(new type::Address()), l)
 {
 }
 
@@ -90,32 +94,34 @@ Port::Port(const string& port, const Location& l)
 }
 
 Double::Double(double value, const Location& l)
-    : ast::SpecificConstant<AstInfo, Constant, double>(value, shared_ptr<Type>(new type::Double()), l)
+    : ast::SpecificConstant<AstInfo, Constant, double>(value, shared_ptr<Type>(new type::Double()),
+                                                       l)
 {
 }
 
 Time::Time(double time, const Location& l) : Constant(l)
 {
-    _nsecs = (uint64_t) (time * 1e9);
+    _nsecs = (uint64_t)(time * 1e9);
 }
 
 Time::Time(uint64_t time, const Location& l) : Constant(l)
 {
-    _nsecs = (uint64_t) (time * 1e9);
+    _nsecs = (uint64_t)(time * 1e9);
 }
 
-shared_ptr<Type> Time::type() const {
+shared_ptr<Type> Time::type() const
+{
     return shared_ptr<Type>(new type::Time());
 }
 
 Interval::Interval(uint64_t interv, const Location& l) : Constant(l)
 {
-    _nsecs = (uint64_t) (interv * 1e9);
+    _nsecs = (uint64_t)(interv * 1e9);
 }
 
 Interval::Interval(double interv, const Location& l) : Constant(l)
 {
-    _nsecs = (uint64_t) (interv * 1e9);
+    _nsecs = (uint64_t)(interv * 1e9);
 }
 
 shared_ptr<Type> Interval::type() const
@@ -151,7 +157,8 @@ Bitset::Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Location& l)
         }
 
         if ( ! found )
-            throw ConstantParseError(this, util::fmt("unknown bitset label '%s'", b->pathAsString().c_str()));
+            throw ConstantParseError(this, util::fmt("unknown bitset label '%s'",
+                                                     b->pathAsString().c_str()));
     }
 }
 
@@ -176,7 +183,8 @@ Enum::Enum(shared_ptr<ID> value, shared_ptr<Type> etype, const Location& l) : Co
             return;
     }
 
-    throw ConstantParseError(this, util::fmt("unknown enum label '%s'", value->pathAsString().c_str()));
+    throw ConstantParseError(this,
+                             util::fmt("unknown enum label '%s'", value->pathAsString().c_str()));
 }
 
 shared_ptr<Type> Enum::type() const
@@ -250,6 +258,6 @@ shared_ptr<Expression> Optional::value() const
 
 shared_ptr<Type> Optional::type() const
 {
-    return _expr ? std::make_shared<type::Optional>(_expr->type(), location())
-                 : std::make_shared<type::Optional>(location());
+    return _expr ? std::make_shared<type::Optional>(_expr->type(), location()) :
+                   std::make_shared<type::Optional>(location());
 }

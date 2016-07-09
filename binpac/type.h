@@ -9,7 +9,9 @@
 
 namespace binpac {
 
-namespace passes { class GrammarBuilder; }
+namespace passes {
+class GrammarBuilder;
+}
 
 namespace type {
 
@@ -20,10 +22,10 @@ typedef ast::type::Trait Trait;
 // Generic trait borrowed from AST.
 
 namespace parameter {
-    typedef ast::type::trait::parameter::Type<AstInfo> Type;
-    typedef ast::type::trait::parameter::Integer Integer;
-    typedef ast::type::trait::parameter::Enum<AstInfo> Enum;
-    typedef ast::type::trait::parameter::Attribute Attribute;
+typedef ast::type::trait::parameter::Type<AstInfo> Type;
+typedef ast::type::trait::parameter::Integer Integer;
+typedef ast::type::trait::parameter::Enum<AstInfo> Enum;
+typedef ast::type::trait::parameter::Attribute Attribute;
 }
 
 typedef ast::type::trait::Parameterized<AstInfo> Parameterized;
@@ -36,8 +38,7 @@ typedef ast::type::trait::Container<AstInfo> Container;
 
 /// Trait class marking a type that can be parsed from an input stream. Only
 /// these types can be used inside a ~~Unit.
-class Parseable : public virtual trait::Trait
-{
+class Parseable : public virtual trait::Trait {
 public:
     virtual ~Parseable();
 
@@ -55,11 +56,13 @@ public:
     /// A description of a custom type attribute, as returned by
     /// parseAttributes*().
     struct ParseAttribute {
-        string key;                      /// The attribute name.
-        shared_ptr<Type> type;           /// The attribute's expression type, or null for no argument.
-        shared_ptr<Expression> default_; /// A default value for the expression if none is given, or null for no default.
-        bool implicit_;                  /// If true and *default* is given, the attribute is implicitly assumed to be present even if not given.
-     };
+        string key;            /// The attribute name.
+        shared_ptr<Type> type; /// The attribute's expression type, or null for no argument.
+        shared_ptr<Expression> default_; /// A default value for the expression if none is given, or
+                                         /// null for no default.
+        bool implicit_; /// If true and *default* is given, the attribute is implicitly assumed to
+                        /// be present even if not given.
+    };
 
     /// Returns the custom attributes the type supports for parsing. Note
     /// that these are added on top of any attributes supported generally by
@@ -71,22 +74,18 @@ public:
 
 
 /// Trait class marking a type to which a Sink can directly be attached.
-class Sinkable : public virtual trait::Trait
-{
+class Sinkable : public virtual trait::Trait {
 };
-
 }
-
 }
 
 /// Base class for all AST nodes representing a type.
-class Type : public ast::Type<AstInfo>
-{
+class Type : public ast::Type<AstInfo> {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Type(const Location& l=Location::None);
+    Type(const Location& l = Location::None);
 
     /// Returns a readable one-line representation of the type.
     string render() override;
@@ -109,8 +108,7 @@ namespace type {
 
 /// An interal Type-derived class that allows us to specify optional
 /// parameters in operator signatures.
-class OptionalArgument : public binpac::Type
-{
+class OptionalArgument : public binpac::Type {
 public:
     OptionalArgument(shared_ptr<Type> arg);
 
@@ -127,20 +125,19 @@ private:
 };
 
 /// Base class for instantiable BinPAC++ types.
-class PacType : public binpac::Type
-{
+class PacType : public binpac::Type {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    PacType(const Location& l=Location::None);
+    PacType(const Location& l = Location::None);
 
     /// Constructor.
     ///
     /// attrs: Attributes associated with the type.
     ///
     /// l: Associated location.
-    PacType(const attribute_list& attrs,  const Location& l=Location::None);
+    PacType(const attribute_list& attrs, const Location& l = Location::None);
 
     /// Returns the attributes associated with the type.
     shared_ptr<AttributeSet> attributes() const;
@@ -152,20 +149,19 @@ protected:
 };
 
 /// Base class for instatiable types parameterized with a single type parameter.
-class TypedPacType : public PacType, public trait::Parameterized
-{
+class TypedPacType : public PacType, public trait::Parameterized {
 public:
     /// Constructor.
     ///
     /// argtype: The type parameter.
     ///
     /// l: Associated location.
-    TypedPacType(shared_ptr<Type> argtype, const Location& l=Location::None);
+    TypedPacType(shared_ptr<Type> argtype, const Location& l = Location::None);
 
     /// Constructor for a wildcard type.
     ///
     /// l: Associated location.
-    TypedPacType(const Location& l=Location::None);
+    TypedPacType(const Location& l = Location::None);
 
     /// Returns the type's parameter.
     shared_ptr<Type> argType() const;
@@ -180,20 +176,19 @@ private:
 };
 
 /// Base type for iterators.
-class Iterator : public TypedPacType
-{
+class Iterator : public TypedPacType {
 public:
     /// Constructor for a wildcard iterator type.
     ///
     /// l: Associated location.
-    Iterator(const Location& l=Location::None);
+    Iterator(const Location& l = Location::None);
 
     /// Constructor for an iterator over a given target tyoe.
     ///
     /// ttype: The target type. This must be a trait::Iterable.
     ///
     /// l: Associated location.
-    Iterator(shared_ptr<Type> ttype, const Location& l=Location::None);
+    Iterator(shared_ptr<Type> ttype, const Location& l = Location::None);
 
     bool equal(shared_ptr<Type> other) const override;
 
@@ -204,30 +199,28 @@ private:
 };
 
 /// A tupe matching any other type.
-class Any : public binpac::Type
-{
+class Any : public binpac::Type {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Any(const Location& l=Location::None);
+    Any(const Location& l = Location::None);
 
     ACCEPT_VISITOR(Type);
 };
 
 /// A place holder type representing a type that has not been resolved yet.
-class Unknown : public binpac::Type
-{
+class Unknown : public binpac::Type {
 public:
     /// Constructor for a type not further specified. This must be resolved by
     /// some external means.
     ///
     /// l: Associated location.
-    Unknown(const Location& l=Location::None);
+    Unknown(const Location& l = Location::None);
 
     /// Constructor referencing a type by its name. This will be resolved
     /// automatically by resolver.
-    Unknown(shared_ptr<ID> id, const Location& l=Location::None);
+    Unknown(shared_ptr<ID> id, const Location& l = Location::None);
 
     /// If an ID is associated with the type, returns it; null otherwise.
     shared_ptr<ID> id() const;
@@ -240,15 +233,14 @@ private:
 
 /// A place-holder for the element type of a iterable that we may not have
 /// resolved yet. It will later be replaced with the actual element type.
-class UnknownElementType : public binpac::Type
-{
+class UnknownElementType : public binpac::Type {
 public:
     /// Constructor referencing an expression that evaluate to a iterable.
     /// The iterable's element type will eventually substitute for this
     /// type.
     ///
     /// Note that we take a node_ptr here to track any changes.
-    UnknownElementType(node_ptr<Expression> expr, const Location& l=Location::None);
+    UnknownElementType(node_ptr<Expression> expr, const Location& l = Location::None);
 
     /// Returns the iterable expression associated with the type.
     shared_ptr<Expression> expression() const;
@@ -263,22 +255,21 @@ private:
 /// resolved later. This should be used only in situations where's its
 /// guaranteed that the resolving will be done manually, there's no automatic
 /// handling.
-class TypeByName : public binpac::Type
-{
+class TypeByName : public binpac::Type {
 public:
     /// Constructor.
     ///
     /// id: The type name.
     ///
     /// l: Associated location.
-    TypeByName(shared_ptr<ID> id, const Location& l=Location::None);
+    TypeByName(shared_ptr<ID> id, const Location& l = Location::None);
 
     /// Constructor.
     ///
     /// id: The type name.
     ///
     /// l: Associated location.
-    TypeByName(const string& id, const Location& l=Location::None);
+    TypeByName(const string& id, const Location& l = Location::None);
 
     /// Returns the referenced type's name.
     const shared_ptr<ID> id() const;
@@ -292,29 +283,27 @@ private:
 };
 
 /// A type representing an unset value.
-class Unset : public PacType
-{
+class Unset : public PacType {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Unset(const Location& l=Location::None);
+    Unset(const Location& l = Location::None);
 
     ACCEPT_VISITOR(Type);
 };
 
 /// A type representing a member attribute of a composite type. The type can
 /// be narrows to match only a specific attribute value.
-class MemberAttribute : public binpac::Type
-{
+class MemberAttribute : public binpac::Type {
 public:
     /// Constructor for a type that matches only a specific attribute.
     ///
     /// attr: The attribute value to match.
-    MemberAttribute(shared_ptr<ID> attr, const Location& l=Location::None);
+    MemberAttribute(shared_ptr<ID> attr, const Location& l = Location::None);
 
     /// Constructor for a wildcard map type.
-    MemberAttribute(const Location& l=Location::None);
+    MemberAttribute(const Location& l = Location::None);
 
     /// Returns the specific member attribute the type matches, or null if
     /// any.
@@ -331,37 +320,34 @@ private:
 
 
 /// A type representing a Module.
-class Module : public binpac::Type
-{
+class Module : public binpac::Type {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Module(const Location& l=Location::None);
+    Module(const Location& l = Location::None);
 
     ACCEPT_VISITOR(Type);
 };
 
 /// A type representing a non-existing return value.
-class Void : public binpac::Type, public trait::Parseable
-{
+class Void : public binpac::Type, public trait::Parseable {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Void(const Location& l=Location::None);
+    Void(const Location& l = Location::None);
 
     ACCEPT_VISITOR(Type);
 };
 
 /// Type for strings.
-class String : public PacType
-{
+class String : public PacType {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    String(const Location& l=Location::None);
+    String(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
@@ -372,7 +358,7 @@ public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Address(const Location& l=Location::None);
+    Address(const Location& l = Location::None);
 
     std::list<ParseAttribute> parseAttributes() const override;
 
@@ -385,7 +371,7 @@ public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Network(const Location& l=Location::None);
+    Network(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
@@ -396,7 +382,7 @@ public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Port(const Location& l=Location::None);
+    Port(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
@@ -413,10 +399,10 @@ public:
     /// -1, it will be chosen automaticallty.
     ///
     /// l: Associated location.
-    Bitset(const label_list& labels, const Location& l=Location::None);
+    Bitset(const label_list& labels, const Location& l = Location::None);
 
     /// Constructor creating a bitset type matching any other bitset type.
-    Bitset(const Location& l=Location::None);
+    Bitset(const Location& l = Location::None);
 
     // Returns the labels with their bit numbers.
     const label_list& labels() const;
@@ -437,8 +423,7 @@ private:
 namespace bitfield {
 
 /// Class describing one element of an integer's bitfield.
-class Bits : public Node
-{
+class Bits : public Node {
 public:
     /// Constructor.
     ///
@@ -451,7 +436,8 @@ public:
     /// attrs: Optional type attributes associated with the bits.
     ///
     /// l: Associated location.
-    Bits(shared_ptr<ID> id, int lower, int upper, int parent_width, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
+    Bits(shared_ptr<ID> id, int lower, int upper, int parent_width,
+         const attribute_list& attrs = attribute_list(), const Location& l = Location::None);
 
     /// Returns the name associated with the bits.
     shared_ptr<ID> id() const;
@@ -478,14 +464,15 @@ private:
     int _upper;
     int _parent_width;
 };
-
 }
 
 /// Type for bitfields. Bitfields have an underlying integer value of a given
 /// size and extract a set of bitranges from it, identified by an ID for each name,
 /// Type for integer values.
-class Bitfield : public PacType, public trait::Parameterized, public trait::Parseable, public trait::Hashable
-{
+class Bitfield : public PacType,
+                 public trait::Parameterized,
+                 public trait::Parseable,
+                 public trait::Hashable {
 public:
     typedef std::list<shared_ptr<bitfield::Bits>> bits_list;
 
@@ -494,10 +481,10 @@ public:
     /// width: The bit width for the underlying integer.
     ///
     /// l: Associated location.
-    Bitfield(int width, const bits_list& bits, const Location& l=Location::None);
+    Bitfield(int width, const bits_list& bits, const Location& l = Location::None);
 
     /// Constructore creating an integer type matching any other integer type.
-    Bitfield(const Location& l=Location::None);
+    Bitfield(const Location& l = Location::None);
 
     /// Returns the types bit width.
     int width() const;
@@ -544,10 +531,10 @@ public:
     /// it will be chosen automaticallty.
     ///
     /// l: Associated location.
-    Enum(const label_list& labels, const Location& l=Location::None);
+    Enum(const label_list& labels, const Location& l = Location::None);
 
     /// Constructor creating an enum type matching any other enum type.
-    Enum(const Location& l=Location::None);
+    Enum(const Location& l = Location::None);
 
     // Returns the labels with their bit numbers.
     const label_list& labels() const;
@@ -572,19 +559,18 @@ public:
     /// Constructor.
     ///
     /// l: Associated location.
-    CAddr(const Location& l=Location::None);
+    CAddr(const Location& l = Location::None);
 
     ACCEPT_VISITOR(Type);
 };
 
 /// Type for doubles.
-class Double : public PacType, public trait::Parseable, public trait::Hashable
-{
+class Double : public PacType, public trait::Parseable, public trait::Hashable {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Double(const Location& l=Location::None);
+    Double(const Location& l = Location::None);
 
     std::list<ParseAttribute> parseAttributes() const override;
 
@@ -592,44 +578,43 @@ public:
 };
 
 /// Type for booleans.
-class Bool : public PacType, public trait::Parseable, public trait::Hashable
-{
+class Bool : public PacType, public trait::Parseable, public trait::Hashable {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Bool(const Location& l=Location::None);
+    Bool(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
 
 /// Type for interval values.
-class Interval : public PacType, public trait::Parseable, public trait::Hashable
-{
+class Interval : public PacType, public trait::Parseable, public trait::Hashable {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Interval(const Location& l=Location::None);
+    Interval(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
 
 /// Type for time values.
-class Time : public PacType, public trait::Parseable, public trait::Hashable
-{
+class Time : public PacType, public trait::Parseable, public trait::Hashable {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Time(const Location& l=Location::None);
+    Time(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
 
 /// Type for integer values.
-class Integer : public PacType, public trait::Parameterized, public trait::Parseable, public trait::Hashable
-{
+class Integer : public PacType,
+                public trait::Parameterized,
+                public trait::Parseable,
+                public trait::Hashable {
 public:
     /// Constructor.
     ///
@@ -638,10 +623,10 @@ public:
     /// signed: True if it's a signed integer.
     ///
     /// l: Associated location.
-    Integer(int width, bool signed_, const Location& l=Location::None);
+    Integer(int width, bool signed_, const Location& l = Location::None);
 
     /// Constructore creating an integer type matching any other integer type.
-    Integer(const Location& l=Location::None);
+    Integer(const Location& l = Location::None);
 
     /// Returns the types bit width.
     int width() const;
@@ -654,10 +639,10 @@ public:
     std::list<ParseAttribute> parseAttributes() const override;
 
     /// XXX
-    static shared_ptr<Integer> signedInteger(int width, const Location& l=Location::None);
+    static shared_ptr<Integer> signedInteger(int width, const Location& l = Location::None);
 
     /// XXX
-    static shared_ptr<Integer> unsignedInteger(int width, const Location& l=Location::None);
+    static shared_ptr<Integer> unsignedInteger(int width, const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 
@@ -674,12 +659,12 @@ public:
     /// types: The types of the tuple's fields.
     ///
     /// l: Associated location.
-    Tuple(const type_list& types, const Location& l=Location::None);
+    Tuple(const type_list& types, const Location& l = Location::None);
 
     /// Constructor for a wildcard tuple type matching any other.
     ///
     /// l: Associated location.
-    Tuple(const Location& l=Location::None);
+    Tuple(const Location& l = Location::None);
 
     const trait::TypeList::type_list typeList() const override;
     type_parameter_list parameters() const override;
@@ -693,20 +678,19 @@ private:
 };
 
 /// Type for types.
-class TypeType : public binpac::Type
-{
+class TypeType : public binpac::Type {
 public:
     /// Constructor.
     ///
     /// type; The represented type.
     ///
     /// l: Associated location.
-    TypeType(shared_ptr<binpac::Type> type, const Location& l=Location::None);
+    TypeType(shared_ptr<binpac::Type> type, const Location& l = Location::None);
 
     /// Constructor for wildcard type.
     ///
     /// l: Associated location.
-    TypeType(const Location& l=Location::None);
+    TypeType(const Location& l = Location::None);
 
     shared_ptr<binpac::Type> typeType() const;
 
@@ -719,8 +703,7 @@ private:
 };
 
 /// Type for exceptions.
-class Exception : public TypedPacType
-{
+class Exception : public TypedPacType {
 public:
     /// Constructor.
     ///
@@ -730,10 +713,10 @@ public:
     /// arg: The type of the exceptions argument, or null if none.
     ///
     /// l: Location associated with the type.
-    Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l=Location::None);
+    Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l = Location::None);
 
     /// Constructor. This creates a wildcard type matching any other exception type.
-    Exception(const Location& l=Location::None);
+    Exception(const Location& l = Location::None);
 
     /// Returns the base exception type this one is derived from. Returns null
     /// for the top-level base exception.
@@ -763,8 +746,7 @@ private:
 namespace function {
 
 /// Helper type to define a function parameter or return value.
-class Parameter : public ast::type::mixin::function::Parameter<AstInfo>
-{
+class Parameter : public ast::type::mixin::function::Parameter<AstInfo> {
 public:
     /// Constructor for function parameters.
     ///
@@ -780,7 +762,8 @@ public:
     /// default_value: An optional default value for the parameters, or null if none.
     ///
     /// l: A location associated with the expression.
-    Parameter(shared_ptr<binpac::ID> id, shared_ptr<Type> type, bool constant, bool clear, shared_ptr<Expression> default_value, Location l=Location::None);
+    Parameter(shared_ptr<binpac::ID> id, shared_ptr<Type> type, bool constant, bool clear,
+              shared_ptr<Expression> default_value, Location l = Location::None);
 
     /// Constructor for a return value.
     ///
@@ -790,7 +773,7 @@ public:
     /// (i.e., a caller may not change its value.)
     ///
     /// l: A location associated with the expression.
-    Parameter(shared_ptr<Type> type, bool constant, Location l=Location::None);
+    Parameter(shared_ptr<Type> type, bool constant, Location l = Location::None);
 
     /// Returns true if the parameter has the \c clear attribute set.
     bool clear() const;
@@ -799,12 +782,10 @@ public:
 
 private:
     bool _clear;
-
 };
 
 /// Helper type to define a function parameter or return value.
-class Result : public ast::type::mixin::function::Result<AstInfo>
-{
+class Result : public ast::type::mixin::function::Result<AstInfo> {
 public:
     /// Constructor for a return value.
     ///
@@ -814,7 +795,7 @@ public:
     /// (i.e., a caller may not change its value.)
     ///
     /// l: A location associated with the expression.
-    Result(shared_ptr<Type> type, bool constant, Location l=Location::None);
+    Result(shared_ptr<Type> type, bool constant, Location l = Location::None);
 
     ACCEPT_VISITOR_ROOT();
 };
@@ -824,15 +805,15 @@ enum CallingConvention {
     BINPAC,         /// Default calling convention for BinPAC++ functions.
     BINPAC_HILTI,   /// A HILTI function with additional implicit BinPAC++ parameters.
     HILTI,          /// A HILTI function.
-    BINPAC_HILTI_C, /// A function with HILTI-C calling convention and additional implicit BinPAC++ parameters.
+    BINPAC_HILTI_C, /// A function with HILTI-C calling convention and additional implicit BinPAC++
+                    /// parameters.
     HILTI_C,        /// A function with HILTI-C calling convention.
     C               /// A function with standard C calling convention.
 };
-
 }
 
 /// Type for functions.
-class Function : public binpac::Type, public ast::type::mixin::Function<AstInfo>  {
+class Function : public binpac::Type, public ast::type::mixin::Function<AstInfo> {
 public:
     /// Constructor.
     ///
@@ -843,10 +824,12 @@ public:
     /// cc: The function's calling convention.
     ///
     /// l: Associated location.
-    Function(shared_ptr<binpac::type::function::Result> result, const parameter_list& args, function::CallingConvention cc = function::BINPAC, const Location& l=Location::None);
+    Function(shared_ptr<binpac::type::function::Result> result, const parameter_list& args,
+             function::CallingConvention cc = function::BINPAC, const Location& l = Location::None);
 
-    /// Constructor for a function type that matches any other function type (i.e., a wildcard type).
-    Function(const Location& l=Location::None);
+    /// Constructor for a function type that matches any other function type (i.e., a wildcard
+    /// type).
+    Function(const Location& l = Location::None);
 
     /// Returns the function's calling convention.
     function::CallingConvention callingConvention() const;
@@ -863,8 +846,7 @@ private:
 };
 
 /// Type for hooks.
-class Hook : public Function
-{
+class Hook : public Function {
 public:
     /// Constructor.
     ///
@@ -873,23 +855,27 @@ public:
     /// params: The hooks's parameters.
     ///
     /// l: Associated location.
-    Hook(shared_ptr<binpac::type::function::Result> result, const parameter_list& args, const Location& l=Location::None);
+    Hook(shared_ptr<binpac::type::function::Result> result, const parameter_list& args,
+         const Location& l = Location::None);
 
     /// Constructor for a hook type that matches any other hook type (i.e., a
     /// wildcard type).
-    Hook(const Location& l=Location::None);
+    Hook(const Location& l = Location::None);
 
     ACCEPT_VISITOR(Function);
 };
 
 /// Type for bytes instances.
-class Bytes : public PacType, public trait::Parseable, public trait::Hashable, public trait::Iterable, public trait::Sinkable
-{
+class Bytes : public PacType,
+              public trait::Parseable,
+              public trait::Hashable,
+              public trait::Iterable,
+              public trait::Sinkable {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Bytes(const Location& l=Location::None);
+    Bytes(const Location& l = Location::None);
 
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
@@ -900,36 +886,32 @@ public:
 
 namespace iterator {
 
-class Bytes : public Iterator
-{
+class Bytes : public Iterator {
 public:
     /// Constructor for an iterator over a bytes object.
     ///
     /// l: Associated location.
     ///
-    Bytes(const Location& l=Location::None);
+    Bytes(const Location& l = Location::None);
 
     ACCEPT_VISITOR(Iterator);
 };
-
 }
 /// Type for file instances.
 ///
-class File : public PacType
-{
+class File : public PacType {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    File(const Location& l=Location::None);
+    File(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
 
 namespace iterator {
 
-class ContainerIterator : public Iterator
-{
+class ContainerIterator : public Iterator {
 protected:
     /// Constructor for an iterator over a container type.
     ///
@@ -937,56 +919,50 @@ protected:
     ///
     /// l: Associated location.
     ///
-    ContainerIterator(shared_ptr<Type> ctype, const Location& l=Location::None);
+    ContainerIterator(shared_ptr<Type> ctype, const Location& l = Location::None);
 };
 
-class Map : public ContainerIterator
-{
+class Map : public ContainerIterator {
 public:
-    Map(shared_ptr<Type> ctype, const Location& l=Location::None);
+    Map(shared_ptr<Type> ctype, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Iterator);
 };
 
-class Set : public ContainerIterator
-{
+class Set : public ContainerIterator {
 public:
-    Set(shared_ptr<Type> ctype, const Location& l=Location::None);
+    Set(shared_ptr<Type> ctype, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Iterator);
 };
 
-class Vector : public ContainerIterator
-{
+class Vector : public ContainerIterator {
 public:
-    Vector(shared_ptr<Type> ctype, const Location& l=Location::None);
+    Vector(shared_ptr<Type> ctype, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Iterator);
 };
 
-class List : public ContainerIterator
-{
+class List : public ContainerIterator {
 public:
-    List(shared_ptr<Type> ctype, const Location& l=Location::None);
+    List(shared_ptr<Type> ctype, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Iterator);
 };
-
 }
 
 /// Type for list objects.
-class List : public TypedPacType, public trait::Parseable, public trait::Container
-{
+class List : public TypedPacType, public trait::Parseable, public trait::Container {
 public:
     /// Constructor.
     ///
     /// etype: The type of the container's fields.
     ///
     /// l: Associated location.
-    List(shared_ptr<Type> etype, const Location& l=Location::None);
+    List(shared_ptr<Type> etype, const Location& l = Location::None);
 
     /// Constructor for a wildcard container type.
-    List(const Location& l=Location::None);
+    List(const Location& l = Location::None);
 
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
@@ -996,18 +972,17 @@ public:
 };
 
 // Type for vector objects.
-class Vector : public TypedPacType, public trait::Container, public trait::Parseable
-{
+class Vector : public TypedPacType, public trait::Container, public trait::Parseable {
 public:
     /// Constructor.
     ///
     /// etype: The type of the container's fields.
     ///
     /// l: Associated location.
-    Vector(shared_ptr<Type> etype, const Location& l=Location::None);
+    Vector(shared_ptr<Type> etype, const Location& l = Location::None);
 
     /// Constructor for a wildcard container type.
-    Vector(const Location& l=Location::None);
+    Vector(const Location& l = Location::None);
 
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
@@ -1016,18 +991,17 @@ public:
 };
 
 /// Type for vector objects.
-class Set : public TypedPacType, public trait::Container, public trait::Parseable
-{
+class Set : public TypedPacType, public trait::Container, public trait::Parseable {
 public:
     /// Constructor.
     ///
     /// etype: The type of the container's fields.
     ///
     /// l: Associated location.
-    Set(shared_ptr<Type> etype, const Location& l=Location::None);
+    Set(shared_ptr<Type> etype, const Location& l = Location::None);
 
     /// Constructor for a wildcard container type.
-    Set(const Location& l=Location::None);
+    Set(const Location& l = Location::None);
 
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
@@ -1036,8 +1010,7 @@ public:
 };
 
 /// Type for map objects.
-class Map : public PacType, public trait::Parameterized, public trait::Container
-{
+class Map : public PacType, public trait::Parameterized, public trait::Container {
 public:
     /// Constructor.
     ///
@@ -1046,13 +1019,23 @@ public:
     /// value: The type of the container's values.
     ///
     /// l: Associated location.
-    Map(shared_ptr<binpac::Type> key, shared_ptr<binpac::Type> value, const Location& l=Location::None);
+    Map(shared_ptr<binpac::Type> key, shared_ptr<binpac::Type> value,
+        const Location& l = Location::None);
 
     /// Constructor for a wildcard map type.
-    Map(const Location& l=Location::None) : PacType(l) { setWildcard(true); }
+    Map(const Location& l = Location::None) : PacType(l)
+    {
+        setWildcard(true);
+    }
 
-    shared_ptr<binpac::Type> keyType() const { return _key; }
-    shared_ptr<binpac::Type> valueType() const { return _value; }
+    shared_ptr<binpac::Type> keyType() const
+    {
+        return _key;
+    }
+    shared_ptr<binpac::Type> valueType() const
+    {
+        return _value;
+    }
 
     type_parameter_list parameters() const override;
     shared_ptr<binpac::Type> iterType() override;
@@ -1067,8 +1050,7 @@ private:
 };
 
 /// Type for regexp instances.
-class RegExp : public PacType, public trait::Parameterized, public trait::Parseable
-{
+class RegExp : public PacType, public trait::Parameterized, public trait::Parseable {
 public:
     /// Constructor.
     ///
@@ -1076,10 +1058,10 @@ public:
     /// regular expression. These must include the ampersand, e.g., \c &nosub.
     ///
     /// l: Associated location.
-    RegExp(const attribute_list& attrs, const Location& l=Location::None);
+    RegExp(const attribute_list& attrs, const Location& l = Location::None);
 
     /// Constructore creating an IOSrc type matching any other (i.e., \c regexp<*>).
-    RegExp(const Location& l=Location::None);
+    RegExp(const Location& l = Location::None);
 
     bool _equal(shared_ptr<binpac::Type> other) const override;
     type_parameter_list parameters() const override;
@@ -1093,26 +1075,24 @@ private:
 
 /// Type for a timer_mgr object.
 ///
-class TimerMgr : public PacType
-{
+class TimerMgr : public PacType {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    TimerMgr(const Location& l=Location::None);
+    TimerMgr(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
 
 /// Type for a timer object.
 ///
-class Timer : public PacType
-{
+class Timer : public PacType {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Timer(const Location& l=Location::None);
+    Timer(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
@@ -1120,8 +1100,7 @@ public:
 namespace unit {
 
 /// Base type for a unit items.
-class Item : public Node
-{
+class Item : public Node {
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
@@ -1132,11 +1111,9 @@ public:
     /// attrs: Attributes associated with the item.
     ///
     /// l: Location associated with the item.
-    Item(shared_ptr<ID> id,
-         const shared_ptr<Type> type = nullptr,
-         const hook_list& hooks = hook_list(),
-         const attribute_list& attrs = attribute_list(),
-         const Location& l=Location::None);
+    Item(shared_ptr<ID> id, const shared_ptr<Type> type = nullptr,
+         const hook_list& hooks = hook_list(), const attribute_list& attrs = attribute_list(),
+         const Location& l = Location::None);
 
     /// Returns the item's identifier. Even for anymous items, this will
     /// return an (internally generated) ID. Use anonymous() to check if no
@@ -1249,8 +1226,7 @@ private:
 namespace item {
 
 /// Base class for unit fields parsed from the input.
-class Field : public Item
-{
+class Field : public Item {
 public:
     /// The kind of a field defines whether it's to trigger during parsing or
     /// composing, or both.
@@ -1293,15 +1269,13 @@ public:
 
     /// Create a field for parsing a type. This internally knows which field
     /// class to use for each type, and will create a corresponding instance.
-    static shared_ptr<Field> createByType(shared_ptr<Type> type,
-                                          shared_ptr<ID> id,
-                                          Kind kind,
+    static shared_ptr<Field> createByType(shared_ptr<Type> type, shared_ptr<ID> id, Kind kind,
                                           shared_ptr<Expression> cond = nullptr,
                                           const hook_list& hooks = hook_list(),
                                           const attribute_list& attrs = attribute_list(),
                                           const expression_list& params = expression_list(),
                                           const expression_list& sinks = expression_list(),
-                                          const Location& l=Location::None);
+                                          const Location& l = Location::None);
 
 
     /// Returns a parent field associated with this field, if any.
@@ -1332,15 +1306,11 @@ protected:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    Field(shared_ptr<ID> id,
-          shared_ptr<binpac::Type> type,
-          Kind kind,
-          shared_ptr<Expression> cond = nullptr,
-          const hook_list& hooks = hook_list(),
+    Field(shared_ptr<ID> id, shared_ptr<binpac::Type> type, Kind kind,
+          shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
           const attribute_list& attrs = attribute_list(),
           const expression_list& params = expression_list(),
-          const expression_list& sinks = expression_list(),
-          const Location& l=Location::None);
+          const expression_list& sinks = expression_list(), const Location& l = Location::None);
 
 private:
     node_ptr<Expression> _cond;
@@ -1353,8 +1323,7 @@ private:
 namespace field {
 
 /// A unit field that's type we don't know yet: we need to look up an ID later.
-class Unknown : public Field
-{
+class Unknown : public Field {
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
@@ -1372,15 +1341,11 @@ public:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    Unknown(shared_ptr<ID> id,
-         shared_ptr<binpac::ID> scope_id,
-         Kind kind,
-         shared_ptr<Expression> cond = nullptr,
-         const hook_list& hooks = hook_list(),
-         const attribute_list& attrs = attribute_list(),
-         const expression_list& params = expression_list(),
-         const expression_list& sinks = expression_list(),
-         const Location& l=Location::None);
+    Unknown(shared_ptr<ID> id, shared_ptr<binpac::ID> scope_id, Kind kind,
+            shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
+            const attribute_list& attrs = attribute_list(),
+            const expression_list& params = expression_list(),
+            const expression_list& sinks = expression_list(), const Location& l = Location::None);
 
     /// Returns the ID to resolve the field.
     shared_ptr<binpac::ID> scopeID() const;
@@ -1392,8 +1357,7 @@ private:
 };
 
 /// A unit field based on an atomic type.
-class AtomicType : public Field
-{
+class AtomicType : public Field {
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
@@ -1409,21 +1373,17 @@ public:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    AtomicType(shared_ptr<ID> id,
-               shared_ptr<binpac::Type> type,
-               Kind kind,
-               shared_ptr<Expression> cond = nullptr,
-               const hook_list& hooks = hook_list(),
+    AtomicType(shared_ptr<ID> id, shared_ptr<binpac::Type> type, Kind kind,
+               shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
                const attribute_list& attrs = attribute_list(),
                const expression_list& sinks = expression_list(),
-               const Location& l=Location::None);
+               const Location& l = Location::None);
 
     ACCEPT_VISITOR(Field);
 };
 
 /// A unit field based on a sub-unit type.
-class Unit : public Field
-{
+class Unit : public Field {
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
@@ -1439,22 +1399,17 @@ public:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    Unit(shared_ptr<ID> id,
-         shared_ptr<binpac::Type> type,
-         Kind kind,
-         shared_ptr<Expression> cond = nullptr,
-         const hook_list& hooks = hook_list(),
+    Unit(shared_ptr<ID> id, shared_ptr<binpac::Type> type, Kind kind,
+         shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
          const expression_list& params = expression_list(),
-         const expression_list& sinks = expression_list(),
-         const Location& l=Location::None);
+         const expression_list& sinks = expression_list(), const Location& l = Location::None);
 
     ACCEPT_VISITOR(Field);
 };
 
 /// A constant unit field.
-class Constant : public Field
-{
+class Constant : public Field {
 public:
     /// Constructor.
     ///
@@ -1467,14 +1422,10 @@ public:
     /// hooks: Hooks associated with this item.
     ///
     /// l: Location associated with the item.
-    Constant(shared_ptr<ID> id,
-             shared_ptr<binpac::Constant> const_,
-             Kind kind,
-             shared_ptr<Expression> cond = nullptr,
-             const hook_list& hooks = hook_list(),
+    Constant(shared_ptr<ID> id, shared_ptr<binpac::Constant> const_, Kind kind,
+             shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
              const attribute_list& attrs = attribute_list(),
-             const expression_list& sinks = expression_list(),
-             const Location& l=Location::None);
+             const expression_list& sinks = expression_list(), const Location& l = Location::None);
 
     /// Returns the constant.
     shared_ptr<binpac::Constant> constant() const;
@@ -1486,8 +1437,7 @@ private:
 };
 
 /// A unit field defined by a ctor expression.
-class Ctor : public Field
-{
+class Ctor : public Field {
 public:
     /// Constructor.
     ///
@@ -1504,14 +1454,10 @@ public:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    Ctor(shared_ptr<ID> id,
-         shared_ptr<binpac::Ctor> ctor,
-         Kind kind,
-         shared_ptr<Expression> cond = nullptr,
-         const hook_list& hooks = hook_list(),
+    Ctor(shared_ptr<ID> id, shared_ptr<binpac::Ctor> ctor, Kind kind,
+         shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
-         const expression_list& sinks = expression_list(),
-         const Location& l=Location::None);
+         const expression_list& sinks = expression_list(), const Location& l = Location::None);
 
     /// Returns the regular expression.
     shared_ptr<binpac::Ctor> ctor() const;
@@ -1523,8 +1469,7 @@ private:
 };
 
 /// Base class for container types that parse other fields recursively.
-class Container : public Field
-{
+class Container : public Field {
 public:
     /// Constructor.
     ///
@@ -1541,14 +1486,10 @@ public:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    Container(shared_ptr<ID> id,
-         shared_ptr<Field> field,
-         Kind kind,
-         shared_ptr<Expression> cond = nullptr,
-         const hook_list& hooks = hook_list(),
-         const attribute_list& attrs = attribute_list(),
-         const expression_list& sinks = expression_list(),
-         const Location& l=Location::None);
+    Container(shared_ptr<ID> id, shared_ptr<Field> field, Kind kind,
+              shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
+              const attribute_list& attrs = attribute_list(),
+              const expression_list& sinks = expression_list(), const Location& l = Location::None);
 
     /// Returns the contained field.
     shared_ptr<Field> field() const;
@@ -1562,8 +1503,7 @@ private:
 namespace container {
 
 /// A list field
-class List : public Container
-{
+class List : public Container {
 public:
     /// Constructor.
     ///
@@ -1580,14 +1520,10 @@ public:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    List(shared_ptr<ID> id,
-         shared_ptr<Field> field,
-         Kind kind,
-         shared_ptr<Expression> cond = nullptr,
-         const hook_list& hooks = hook_list(),
+    List(shared_ptr<ID> id, shared_ptr<Field> field, Kind kind,
+         shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
-         const expression_list& sinks = expression_list(),
-         const Location& l=Location::None);
+         const expression_list& sinks = expression_list(), const Location& l = Location::None);
 
     shared_ptr<binpac::Type> type() override;
 
@@ -1595,8 +1531,7 @@ public:
 };
 
 // A vector field.
-class Vector : public Container
-{
+class Vector : public Container {
 public:
     /// Constructor.
     ///
@@ -1615,15 +1550,10 @@ public:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    Vector(shared_ptr<ID> id,
-         shared_ptr<Field> field,
-         shared_ptr<Expression> length,
-         Kind kind,
-         shared_ptr<Expression> cond = nullptr,
-         const hook_list& hooks = hook_list(),
-         const attribute_list& attrs = attribute_list(),
-         const expression_list& sinks = expression_list(),
-         const Location& l=Location::None);
+    Vector(shared_ptr<ID> id, shared_ptr<Field> field, shared_ptr<Expression> length, Kind kind,
+           shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
+           const attribute_list& attrs = attribute_list(),
+           const expression_list& sinks = expression_list(), const Location& l = Location::None);
 
     /// Returns the expression indicating the length of the parsed vector.
     shared_ptr<Expression> length() const;
@@ -1635,13 +1565,11 @@ public:
 private:
     node_ptr<Expression> _length;
 };
-
 }
 
 namespace switch_ {
 
-class Case : public Node
-{
+class Case : public Node {
 public:
     /// Constructor.
     ///
@@ -1650,7 +1578,8 @@ public:
     /// item: The item implementing the case.
     ///
     /// l: Location associated with the case.
-    Case(const expression_list& exprs, shared_ptr<type::unit::item::Field> item, const Location& l=Location::None);
+    Case(const expression_list& exprs, shared_ptr<type::unit::item::Field> item,
+         const Location& l = Location::None);
 
     /// Constructor.
     ///
@@ -1659,21 +1588,22 @@ public:
     /// item: A set of items implementing the case.
     ///
     /// l: Location associated with the case.
-    Case(const expression_list& exprs, const unit_field_list& items, const Location& l=Location::None);
+    Case(const expression_list& exprs, const unit_field_list& items,
+         const Location& l = Location::None);
 
     /// Constructor for a default case.
     ///
     /// item: The item implementing the case.
     ///
     /// l: Location associated with the case.
-    Case(shared_ptr<type::unit::item::Field> item, const Location& l=Location::None);
+    Case(shared_ptr<type::unit::item::Field> item, const Location& l = Location::None);
 
     /// Constructor for a default case.
     ///
     /// item: The item implementing the case.
     ///
     /// l: Location associated with the case.
-    Case(const unit_field_list& items, const Location& l=Location::None);
+    Case(const unit_field_list& items, const Location& l = Location::None);
 
     /// Returns the case's expression.
     expression_list expressions() const;
@@ -1694,12 +1624,10 @@ private:
     std::list<node_ptr<Expression>> _exprs;
     std::list<node_ptr<type::unit::item::Field>> _items;
 };
-
 }
 
 /// Type for a unit switch item
-class Switch : public Field
-{
+class Switch : public Field {
 public:
     typedef std::list<shared_ptr<switch_::Case>> case_list;
 
@@ -1714,12 +1642,9 @@ public:
     /// hooks: Hooks associated with this item.
     ///
     /// l: Location associated with the item.
-    Switch(shared_ptr<Expression> expr,
-           const case_list& cases,
-           Kind kind,
-           shared_ptr<Expression> cond = nullptr,
-           const hook_list& hooks = hook_list(),
-           const Location& l=Location::None);
+    Switch(shared_ptr<Expression> expr, const case_list& cases, Kind kind,
+           shared_ptr<Expression> cond = nullptr, const hook_list& hooks = hook_list(),
+           const Location& l = Location::None);
 
     /// Returns the switch's expression.
     shared_ptr<Expression> expression() const;
@@ -1744,12 +1669,10 @@ private:
     node_ptr<Expression> _expr;
     std::list<node_ptr<switch_::Case>> _cases;
 };
-
 }
 
 /// A user-defined unit variable.
-class Variable : public Item
-{
+class Variable : public Item {
 public:
     /// Constructor.
     ///
@@ -1763,12 +1686,9 @@ public:
     /// hooks: Hooks associated with this item.
     ///
     /// l: An associated location.
-    Variable(shared_ptr<binpac::ID> id,
-             shared_ptr<binpac::Type> type,
-             shared_ptr<Expression> default_,
-             const hook_list& hooks = hook_list(),
-             const attribute_list& attrs = attribute_list(),
-             const Location& l=Location::None);
+    Variable(shared_ptr<binpac::ID> id, shared_ptr<binpac::Type> type,
+             shared_ptr<Expression> default_, const hook_list& hooks = hook_list(),
+             const attribute_list& attrs = attribute_list(), const Location& l = Location::None);
 
     /// Returns the variable's default, or null if none. This is just a
     /// convinience method that returns the value of the items \c &default
@@ -1779,15 +1699,14 @@ public:
 };
 
 /// A unit property.
-class Property : public Item
-{
+class Property : public Item {
 public:
     /// Constructor.
     ///
     /// prop: The property being declared.
     ///
     /// l: An associated location.
-    Property(shared_ptr<Attribute> prop, const Location& l=Location::None);
+    Property(shared_ptr<Attribute> prop, const Location& l = Location::None);
 
     /// Returns the property.
     shared_ptr<Attribute> property() const;
@@ -1799,8 +1718,7 @@ private:
 };
 
 /// A unit-wide hook.
-class GlobalHook : public Item
-{
+class GlobalHook : public Item {
 public:
     /// Constructor.
     ///
@@ -1809,18 +1727,15 @@ public:
     /// hooks: The hooks.
     ///
     /// l: An associated location.
-    GlobalHook(shared_ptr<ID> id, hook_list& hooks, const Location& l=Location::None);
+    GlobalHook(shared_ptr<ID> id, hook_list& hooks, const Location& l = Location::None);
 
     ACCEPT_VISITOR(Item);
 };
-
 }
-
 }
 
 /// Type for units.
-class Unit : public PacType, public trait::Parseable
-{
+class Unit : public PacType, public trait::Parseable {
 public:
     typedef std::list<shared_ptr<unit::item::Field>> field_list;
 
@@ -1829,12 +1744,13 @@ public:
     /// items: The unit's items.
     ///
     /// l: Associated location.
-    Unit(const parameter_list& params, const unit_item_list& items, const Location& l=Location::None);
+    Unit(const parameter_list& params, const unit_item_list& items,
+         const Location& l = Location::None);
 
     /// Constructor for a wildcard unit type matching any other.
     ///
     /// l: Associated location.
-    Unit(const Location& l=Location::None);
+    Unit(const Location& l = Location::None);
 
     /// Returns the type's parameters.
     parameter_list parameters() const;
@@ -1947,7 +1863,8 @@ public:
     // expression is the most-specific one, i.e., the item is checked first,
     // then the unit, then the module. Returns null if none of them defines
     // the property/attribute.
-    shared_ptr<binpac::Expression> inheritedProperty(const string& property, shared_ptr<type::unit::Item> item = nullptr);
+    shared_ptr<binpac::Expression> inheritedProperty(const string& property,
+                                                     shared_ptr<type::unit::Item> item = nullptr);
 
     /// XXX Compare to production::supportsSynchronize.
     bool supportsSynchronize();
@@ -1977,11 +1894,10 @@ private:
 };
 
 /// A sink for parsing data with another parser.
-class Sink : public PacType
-{
+class Sink : public PacType {
 public:
     /// Constructor.
-    Sink(const Location& l=Location::None);
+    Sink(const Location& l = Location::None);
     ~Sink();
 
     ACCEPT_VISITOR(PacType);
@@ -1990,53 +1906,48 @@ public:
 ////
 
 /// Type representing an object embedded into a data stream.
-class EmbeddedObject : public TypedPacType, public trait::Parseable
-{
+class EmbeddedObject : public TypedPacType, public trait::Parseable {
 public:
     /// Constructor.
     ///
     /// etype: The type of the embedded object.
     ///
     /// l: Associated location.
-    EmbeddedObject(shared_ptr<Type> etype, const Location& l=Location::None);
+    EmbeddedObject(shared_ptr<Type> etype, const Location& l = Location::None);
 
     /// Constructor for a wildcard type.
-    EmbeddedObject(const Location& l=Location::None);
+    EmbeddedObject(const Location& l = Location::None);
 
     ACCEPT_VISITOR(TypedPacType);
 };
 
 /// Type representing a mark inside a bytes object.
-class Mark : public PacType
-{
+class Mark : public PacType {
 public:
     /// Constructor.
     ///
     /// l: Associated location.
-    Mark(const Location& l=Location::None);
+    Mark(const Location& l = Location::None);
 
     ACCEPT_VISITOR(PacType);
 };
 
 /// Type representing an optional instance of another type.
-class Optional : public TypedPacType
-{
+class Optional : public TypedPacType {
 public:
     /// Constructor.
     ///
     /// type: The type of the wrappend instance.
     ///
     /// l: Associated location.
-    Optional(shared_ptr<Type> type, const Location& l=Location::None);
+    Optional(shared_ptr<Type> type, const Location& l = Location::None);
 
     /// Constructor for a wildcard type.
-    Optional(const Location& l=Location::None);
+    Optional(const Location& l = Location::None);
 
     ACCEPT_VISITOR(TypedPacType);
 };
-
 }
-
 }
 
 #endif

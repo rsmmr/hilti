@@ -1,12 +1,12 @@
 
-#include <stdlib.h>
 #include <cxxabi.h>
+#include <stdlib.h>
 
 #include <util/util.h>
 
+#include "attribute.h"
 #include "expression.h"
 #include "production.h"
-#include "attribute.h"
 
 using namespace binpac;
 using namespace binpac::production;
@@ -65,7 +65,7 @@ string Production::render()
     string location = "";
 
     int status;
-    char *name = abi::__cxa_demangle(typeid(*this).name(), 0, 0, &status);
+    char* name = abi::__cxa_demangle(typeName(*this), 0, 0, &status);
     name = strrchr(name, ':');
     assert(name);
 
@@ -79,10 +79,8 @@ string Production::render()
     bool have_sync = pgMeta()->field && pgMeta()->field->attributes()->lookup("synchronize");
 
     if ( maySynchronize() || supportsSynchronize() || have_sync )
-        can_sync = util::fmt(" (sync %c/%c/%c)",
-                             maySynchronize() ? '+' : '-',
-                             supportsSynchronize() ? '+' : '-',
-                             have_sync ? '+' : '-');
+        can_sync = util::fmt(" (sync %c/%c/%c)", maySynchronize() ? '+' : '-',
+                             supportsSynchronize() ? '+' : '-', have_sync ? '+' : '-');
 
     if ( pgMeta()->field ) {
         if ( pgMeta()->field->forParsing() )
@@ -101,8 +99,8 @@ string Production::render()
     else
         kind = "-";
 
-    return util::fmt("%10s: %-3s -> %s%s%s (%s)", ++name, _symbol.c_str(), renderProduction().c_str(),
-                     location.c_str(), can_sync, kind);
+    return util::fmt("%10s: %-3s -> %s%s%s (%s)", ++name, _symbol.c_str(),
+                     renderProduction().c_str(), location.c_str(), can_sync, kind);
 }
 
 const Location& Production::location() const
@@ -145,7 +143,8 @@ bool Epsilon::atomic() const
 
 std::map<string, int> Terminal::_token_ids;
 
-Terminal::Terminal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+Terminal::Terminal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr,
+                   filter_func filter, const Location& l)
     : Production(symbol, type, l)
 {
     _expr = expr;
@@ -201,7 +200,8 @@ int Terminal::tokenID() const
     return _id;
 }
 
-Literal::Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+Literal::Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr,
+                 filter_func filter, const Location& l)
     : Terminal(symbol, expr ? expr->type() : type, expr, filter, l)
 {
 }
@@ -219,8 +219,11 @@ string Literal::renderTerminal() const
     return literal()->render();
 }
 
-production::Constant::Constant(const string& symbol, shared_ptr<binpac::Constant> constant, shared_ptr<Expression> expr, filter_func filter, const Location& l)
-    : Literal(symbol, ast::type::checkedTrait<type::trait::Parseable>(constant->type())->fieldType(), expr, filter, l)
+production::Constant::Constant(const string& symbol, shared_ptr<binpac::Constant> constant,
+                               shared_ptr<Expression> expr, filter_func filter, const Location& l)
+    : Literal(symbol,
+              ast::type::checkedTrait<type::trait::Parseable>(constant->type())->fieldType(), expr,
+              filter, l)
 {
     _const = constant;
     addChild(_const);
@@ -246,7 +249,8 @@ Literal::pattern_list production::Constant::patterns() const
     return {};
 }
 
-production::Ctor::Ctor(const string& symbol, shared_ptr<binpac::Ctor> ctor, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+production::Ctor::Ctor(const string& symbol, shared_ptr<binpac::Ctor> ctor,
+                       shared_ptr<Expression> expr, filter_func filter, const Location& l)
     : Literal(symbol, ctor->type(), expr, filter, l)
 {
     _ctor = ctor;
@@ -273,7 +277,9 @@ Literal::pattern_list production::Ctor::patterns() const
     return _ctor->patterns();
 }
 
-production::TypeLiteral::TypeLiteral(const string& symbol, shared_ptr<binpac::Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+production::TypeLiteral::TypeLiteral(const string& symbol, shared_ptr<binpac::Type> type,
+                                     shared_ptr<Expression> expr, filter_func filter,
+                                     const Location& l)
     : Literal(symbol, type, expr, filter, l)
 {
     _type = type;
@@ -300,7 +306,8 @@ Literal::pattern_list production::TypeLiteral::patterns() const
     return Literal::pattern_list();
 }
 
-production::Variable::Variable(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+production::Variable::Variable(const string& symbol, shared_ptr<Type> type,
+                               shared_ptr<Expression> expr, filter_func filter, const Location& l)
     : Terminal(symbol, type, expr, filter, l)
 {
 }
@@ -336,14 +343,15 @@ bool NonTerminal::nullable() const
                 goto next;
         }
         return true;
-next:
+    next:
         continue;
     }
 
     return false;
 }
 
-ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<Production> child, shared_ptr<type::Unit> type, const Location& l)
+ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<Production> child,
+                           shared_ptr<type::Unit> type, const Location& l)
     : NonTerminal(symbol, type, l)
 {
     _child = child;
@@ -381,7 +389,7 @@ string ChildGrammar::renderProduction() const
 NonTerminal::alternative_list ChildGrammar::rhss() const
 {
     assert(ast::isA<Production>(_child));
-    alternative_list rhss = { { _child } };
+    alternative_list rhss = {{_child}};
     return rhss;
 }
 
@@ -415,7 +423,7 @@ shared_ptr<Production> Enclosure::child() const
 
 NonTerminal::alternative_list Enclosure::rhss() const
 {
-    alternative_list rhss = { { _child } };
+    alternative_list rhss = {{_child}};
     return rhss;
 }
 
@@ -432,7 +440,8 @@ string Enclosure::renderProduction() const
     return _child->symbol();
 }
 
-Sequence::Sequence(const string& symbol, const production_list& seq, shared_ptr<Type> type, const Location& l)
+Sequence::Sequence(const string& symbol, const production_list& seq, shared_ptr<Type> type,
+                   const Location& l)
     : NonTerminal(symbol, type, l)
 {
     for ( auto a : seq )
@@ -475,7 +484,7 @@ string Sequence::renderProduction() const
 
 NonTerminal::alternative_list Sequence::rhss() const
 {
-    alternative_list l = { sequence() };
+    alternative_list l = {sequence()};
     return l;
 }
 
@@ -487,7 +496,8 @@ bool Sequence::supportsSynchronize()
     return _seq.size() ? _seq.front()->supportsSynchronize() : false;
 }
 
-LookAhead::LookAhead(const string& symbol, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l)
+LookAhead::LookAhead(const string& symbol, shared_ptr<Production> alt1, shared_ptr<Production> alt2,
+                     const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
     _alt1 = alt1;
@@ -570,7 +580,7 @@ static string _fmtAlt(const production::LookAhead* p, int i)
         if ( ! first )
             lahs += ", ";
 
-        auto term = std::dynamic_pointer_cast<production::Terminal>(l);
+        auto term = dynamicPointerCast(l, production::Terminal);
         lahs += term->renderTerminal();
         lahs += util::fmt(" (id %d)", term ? term->tokenID() : -1);
 
@@ -588,7 +598,7 @@ string LookAhead::renderProduction() const
 
 NonTerminal::alternative_list LookAhead::rhss() const
 {
-    return { { _alt1 }, { _alt2 } };
+    return {{_alt1}, {_alt2}};
 }
 
 bool LookAhead::supportsSynchronize()
@@ -609,7 +619,8 @@ bool LookAhead::supportsSynchronize()
     return true;
 }
 
-Boolean::Boolean(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l)
+Boolean::Boolean(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> alt1,
+                 shared_ptr<Production> alt2, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
     _expr = expr;
@@ -636,7 +647,7 @@ string Boolean::renderProduction() const
 
 NonTerminal::alternative_list Boolean::rhss() const
 {
-    return { { _alt1 }, { _alt2 } };
+    return {{_alt1}, {_alt2}};
 }
 
 bool Boolean::eodOk() const
@@ -646,7 +657,8 @@ bool Boolean::eodOk() const
     return false;
 }
 
-Counter::Counter(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l)
+Counter::Counter(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body,
+                 const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
     _expr = expr;
@@ -675,10 +687,11 @@ string Counter::renderProduction() const
 
 NonTerminal::alternative_list Counter::rhss() const
 {
-    return { { _body } };
+    return {{_body}};
 }
 
-ByteBlock::ByteBlock(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l)
+ByteBlock::ByteBlock(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body,
+                     const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
     _expr = expr;
@@ -703,10 +716,11 @@ string ByteBlock::renderProduction() const
 
 NonTerminal::alternative_list ByteBlock::rhss() const
 {
-    return { { _body } };
+    return {{_body}};
 }
 
-While::While(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l)
+While::While(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body,
+             const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
     _expr = expr;
@@ -731,7 +745,7 @@ string While::renderProduction() const
 
 NonTerminal::alternative_list While::rhss() const
 {
-    return { { _body } };
+    return {{_body}};
 }
 
 bool While::supportsSynchronize()
@@ -762,7 +776,7 @@ string Loop::renderProduction() const
 
 NonTerminal::alternative_list Loop::rhss() const
 {
-    return { { _body } };
+    return {{_body}};
 }
 
 bool Loop::eodOk() const
@@ -778,14 +792,15 @@ bool Loop::supportsSynchronize()
     return _body->supportsSynchronize();
 }
 
-Switch::Switch(const string& symbol, shared_ptr<Expression> expr, const case_list& cases, shared_ptr<Production> default_, const Location& l)
+Switch::Switch(const string& symbol, shared_ptr<Expression> expr, const case_list& cases,
+               shared_ptr<Production> default_, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
     _expr = expr;
     _default = default_;
     addChild(_default);
 
-    for ( auto c: cases ) {
+    for ( auto c : cases ) {
         _cases.push_back(std::make_pair(c.first, c.second));
         addChild(_cases.back().second);
     }
@@ -819,7 +834,6 @@ string Switch::renderProduction() const
         r += util::fmt("* -> %s", _default->symbol().c_str());
 
     for ( auto c : _cases ) {
-
         std::list<string> exprs;
 
         for ( auto e : c.first )
@@ -836,7 +850,7 @@ NonTerminal::alternative_list Switch::rhss() const
     alternative_list alts;
 
     for ( auto c : _cases )
-        alts.push_back({ c.second });
+        alts.push_back({c.second});
 
     return alts;
 }

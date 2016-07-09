@@ -1,47 +1,33 @@
 
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-project(libhilti C)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/justrx/src)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=unused-function -Werror -fno-color-diagnostics -fPIC")
-
-IF( APPLE )
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDARWIN")
-    # On Mac force the triple, as OS and custom clang sometimes disagree.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -triple -Xclang ${LLVM_TRIPLE}")
-ENDIF(APPLE)
-
-# These are used below in set_target_properties.
-set(c_debug_flags                "-DDEBUG -O0")
-set(c_release_flags              "-O3")
-
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
-
-include(FindRequiredPackage)
+include(DefaultCompilerSettings)
 include(EnableLLVMBitcode)
-include(EnableClangDebugging)
-include(CheckFunctionExists)
-include(HiltiConfig)
 
-FindRequiredPackage(FLEX)
-FindRequiredPackage(BISON)
-find_package(PAPI)
-
-if ( PAPI_FOUND )
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_PAPI")
-endif ()
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=unused-function -Werror -fno-color-diagnostics -fPIC")
+#
+# IF( APPLE )
+#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDARWIN")
+#    # On Mac force the triple, as OS and custom clang sometimes disagree.
+#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -triple -Xclang ${LLVM_TRIPLE}")
+# ENDIF(APPLE)
 
 set(scripts "${CMAKE_SOURCE_DIR}/scripts")
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
+set(hiltip  "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltip")
+
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
-set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic-nojit")
+# Used below for mode-specific libraries.
+set(c_debug_flags                "-DDEBUG -O0")
+set(c_release_flags              "-O0") # Do not optimize. We optimize during linking, and doing it twice can lead to LLVM trouble.
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -std=gnu89 -D_GNU_SOURCE")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DJRX_USE_HILTI -I${CMAKE_SOURCE_DIR}/justrx/src")
 
+# include(EnableClangDebugging)
+# include(HiltiConfig)
+
+include(CheckFunctionExists)
 check_function_exists(mallinfo HAVE_MALLINFO)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/autogen/cmake-config.h)
@@ -50,23 +36,28 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake-config.h.in ${CMAKE_CURRENT_BIN
 
 add_custom_command(
     OUTPUT   ${autogen}/hilti-hlt.h
-    COMMAND  ${hiltic} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/hilti.hlt -o ${autogen}/hilti-hlt.h
-    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/hilti.hlt ${hiltic}
+    COMMAND  ${hiltip} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/hilti.hlt -o ${autogen}/hilti-hlt.h
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/hilti.hlt ${hiltip}
 )
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/hilti-hlt.h PROPERTIES GENERATED 1)
+
+set_property(SOURCE ${autogen}/re-parse.c APPEND PROPERTY COMPILE_FLAGS "-Wno-unneeded-internal-declaration")
 
 ### Generate type-info for the library.
 
 add_custom_command(
     OUTPUT   ${autogen}/type-info.o
-    COMMAND  ${hiltic} -b -C -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/type-info.hlt -o ${autogen}/type-info.o
-    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/type-info.hlt ${hiltic}
+    COMMAND  ${hiltip} -T -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/type-info.hlt -o ${autogen}/type-info.o
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/type-info.hlt ${hiltip}
 )
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/type-info.bc PROPERTIES GENERATED 1)
 
 ### Generate the justrx parser.
+
+find_package(BISON)
+find_package(FLEX)
 
 bison_target(JRXParser justrx/src/re-parse.y
              ${autogen}/re-parse.c
@@ -94,8 +85,8 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory_.c int.c
     bool.c addr.c bitset.c caddr.c double.c enum.c interval.c
     net.c port.c time.c hook.c timer.c threading.c list.c fiber.c
     vector.c map_set.c struct.c regexp.c tqueue.c file.c cmdqueue.c
-    system.c classifier.c iosrc.c profiler.c channel.c main.c rtti.c
-    linker.c clone.c stackmap.c union.c
+    system.c classifier.c iosrc.c profiler.c channel.c rtti.c
+    clone.c stackmap.c union.c linker.c main.c
 
     module/fmt.c
     module/misc.c
@@ -122,7 +113,7 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory_.c int.c
 # bitcode.
 add_custom_command(
     OUTPUT   ${CMAKE_CURRENT_BINARY_DIR}/asm.o
-    COMMAND  ${LLVM_CLANG_EXEC} -c ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libtask/asm.S -o ${CMAKE_CURRENT_BINARY_DIR}/asm.o
+    COMMAND  ${CMAKE_C_COMPILER} -c ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libtask/asm.S -o ${CMAKE_CURRENT_BINARY_DIR}/asm.o
     DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libtask/asm.S
 )
 
@@ -135,11 +126,11 @@ add_custom_command(
 add_custom_target(build_asm
                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libhilti-rt-native.a)
 
-add_library(hilti-rt-dbg       STATIC ${SRCS} ${autogen}/type-info.o ${OPTLIBS})
-add_library(hilti-rt           STATIC ${SRCS} ${autogen}/type-info.o ${OPTLIBS})
+add_library(hilti-rt-dbg           STATIC ${SRCS} ${autogen}/type-info.o ${OPTLIBS})
+add_library(hilti-rt               STATIC ${SRCS} ${autogen}/type-info.o ${OPTLIBS})
 
-add_dependencies(hilti-rt-dbg      generate_jrx_parser build_asm hiltic-nojit)
-add_dependencies(hilti-rt          generate_jrx_parser build_asm hiltic-nojit)
+add_dependencies(hilti-rt-dbg      generate_jrx_parser build_asm hiltip)
+add_dependencies(hilti-rt          generate_jrx_parser build_asm hiltip)
 
 set_target_properties(hilti-rt-dbg PROPERTIES COMPILE_FLAGS ${c_debug_flags})
 set_target_properties(hilti-rt     PROPERTIES COMPILE_FLAGS ${c_release_flags})

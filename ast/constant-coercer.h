@@ -9,15 +9,16 @@
 namespace ast {
 
 /// Class for coercing constants of one type into constants of another.
-template<typename AstInfo>
-class ConstantCoercer : public Visitor<AstInfo, shared_ptr<typename AstInfo::constant>, shared_ptr<typename AstInfo::type>> {
+template <typename AstInfo>
+class ConstantCoercer : public Visitor<AstInfo, shared_ptr<typename AstInfo::constant>,
+                                       shared_ptr<typename AstInfo::type>> {
 public:
     typedef typename AstInfo::type Type;
     typedef typename AstInfo::constant Constant;
     typedef typename AstInfo::optional_type OptionalType;
 
-    ConstantCoercer() {};
-    virtual ~ConstantCoercer() {};
+    ConstantCoercer(){};
+    virtual ~ConstantCoercer(){};
 
     // Checks whether a Constant of one type can be coerced into a Constant of
     // another. The method calls the appropiate visit method for the source
@@ -32,8 +33,9 @@ public:
     // dst: The destination type.
     //
     // Returns: True of #src coerces into type #dst.
-    bool canCoerceTo(shared_ptr<Constant> constant, shared_ptr<Type> dst) {
-       return static_cast<bool>(coerceTo(constant, dst));
+    bool canCoerceTo(shared_ptr<Constant> constant, shared_ptr<Type> dst)
+    {
+        return static_cast<bool>(coerceTo(constant, dst));
     }
 
     // Coerce a Constant of one type into a Constant of another. The method
@@ -52,8 +54,9 @@ public:
     shared_ptr<Constant> coerceTo(shared_ptr<Constant> constant, shared_ptr<Type> dst);
 };
 
-template<typename AstInfo>
-inline shared_ptr<typename AstInfo::constant> ConstantCoercer<AstInfo>::coerceTo(shared_ptr<Constant> constant, shared_ptr<Type> dst)
+template <typename AstInfo>
+inline shared_ptr<typename AstInfo::constant> ConstantCoercer<AstInfo>::coerceTo(
+    shared_ptr<Constant> constant, shared_ptr<Type> dst)
 {
     if ( constant->type()->equal(dst) )
         return constant;
@@ -61,18 +64,16 @@ inline shared_ptr<typename AstInfo::constant> ConstantCoercer<AstInfo>::coerceTo
     if ( dst->matchesAny() )
         return constant;
 
-    auto t = tryCast<OptionalType>(dst);
-
-    if ( t )
+    if ( auto t = ast::rtti::tryCast<OptionalType>(dst) )
         return coerceTo(constant, t->argType());
 
     this->setDefaultResult(nullptr);
     shared_ptr<typename AstInfo::constant> result;
     bool success = this->processOne(constant, &result, dst);
     assert(success);
+    _UNUSED(success);
     return result;
 }
-
 }
 
 #endif

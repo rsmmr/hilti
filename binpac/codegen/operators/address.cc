@@ -23,8 +23,8 @@ void CodeBuilder::visit(expression::operator_::address::Equal* i)
 void CodeBuilder::visit(binpac::expression::operator_::address::Family* i)
 {
     auto addr = cg()->hiltiExpression(i->op1());
-    auto family = cg()->builder()->addTmp("family", hilti::builder::type::byName("Hilti::AddrFamily"));
+    auto family =
+        cg()->builder()->addTmp("family", hilti::builder::type::byName("Hilti::AddrFamily"));
     cg()->builder()->addInstruction(family, hilti::instruction::address::Family, addr);
     setResult(family);
 }
-
