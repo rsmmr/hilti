@@ -1,0 +1,39 @@
+#! /usr/bin/env bash
+#
+# Output the LLVM triple and data layout that clang is using
+#
+
+function usage
+{
+    echo "usage: $(basename $0) [option]"
+    echo
+    echo "    --triple         Print clang's LLVM platform triple."
+    echo "    --data-layout    Print clang's default LLVM bitcode data layout"
+    echo
+    exit 1
+}
+
+if [ $# = 0 ]; then
+    usage
+fi
+
+while [ $# -ne 0 ]; do
+    case $1 in
+        --triple)
+            clang --version | grep ^Target | awk '{print $2}'
+            ;;
+
+        --data-layout)
+            trap "rm -f ${tmp}" EXIT
+            tmp=/tmp/$(basename $0).$$.tmp.c
+            echo '#include <stdio.h>' >${tmp}
+            clang -c -emit-llvm -o /dev/stdout ${tmp} | llvm-dis | grep datalayout | sed 's/"//g' | awk '{print $4}'
+            ;;
+
+        *)
+            usage
+            ;;
+    esac
+    shift
+done
+

@@ -17,6 +17,9 @@ struct Configuration {
     string path_clang    = "${LLVM_CLANG_EXEC}";
     string path_clangxx  = "${LLVM_CLANGXX_EXEC}";
     string path_llvm_config = "${LLVM_CONFIG_EXEC}";
+    string llvm_triple   = "${LLVM_TRIPLE}";
+    string clang_triple  = "${LLVM_TRIPLE_CLANG}";
+    string clang_data_layout  = "${LLVM_DATA_LAYOUT_CLANG}";
 
     string shared_library_prefix = "${CMAKE_SHARED_LIBRARY_PREFIX}";
     string shared_library_suffix = "${CMAKE_SHARED_LIBRARY_SUFFIX}";

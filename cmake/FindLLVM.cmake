@@ -29,6 +29,8 @@
 # LLVM_CLANGXX_EXEC Path of the clang++ executable.
 #
 # LLVM_TRIPLE       Triple used to configure LLVM.
+# LLVM_TRIPLE_CLANG Triple that clang reports to use by default (not necessarily the same as LLVM_TRIPLE).
+# LLVM_DATA_LAYOUT_CLANG Data layout that clang uses by default.
 #
 # COMPILER_RT_LIB_DIR Directory where the compiler-rt runtime
 #                     libraries are installed; empty if not found.
@@ -36,6 +38,8 @@
 #
 # [Disabled for now. -Robin] LLVM_LIBS_JIT : ldflags needed to link against a LLVM JIT
 # [Disabled for now. -Robin] LLVM_LIBS_JIT_OBJECTS : objects you need to add to your source when using LLVM JIT
+
+  set(CLANG_PLATFORM_SPECS ${CMAKE_SOURCE_DIR}/scripts/clang-platform-specs)
 
   find_program(LLVM_CONFIG_EXEC
       NAMES llvm-config
@@ -92,6 +96,9 @@
 
   exec_program(${LLVM_CONFIG_EXEC} ARGS --host-target OUTPUT_VARIABLE LLVM_TRIPLE)
   exec_program(${LLVM_CONFIG_EXEC} ARGS --prefix      OUTPUT_VARIABLE LLVM_PREFIX)
+
+  exec_program(${CLANG_PLATFORM_SPECS} ARGS --triple      OUTPUT_VARIABLE LLVM_TRIPLE_CLANG)
+  exec_program(${CLANG_PLATFORM_SPECS} ARGS --data-layout OUTPUT_VARIABLE LLVM_DATA_LAYOUT_CLANG)
 
   # llvm-config includes stuff we don't want.
   set(cflags_to_remove "-fno-exceptions" "-O." "-fomit-frame-pointer" "-stdlib=libc\\+\\+" "-D_DEBUG")

@@ -13,14 +13,18 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(common_c_flags "")
-set(common_c_flags  "${common_c_flags} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR}")
-set(common_c_flags  "${common_c_flags} -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-set(common_c_flags  "${common_c_flags} -Wall -pedantic -Wno-potentially-evaluated-expression -Wno-unused-function")
-set(common_c_flags  "${common_c_flags} -Wno-c99-extensions -Wno-flexible-array-extensions -Wno-gnu-variable-sized-type-not-at-end -Wno-format-pedantic")
+set(cflags_common "")
+set(cflags_common  "${cflags_common} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR}")
+set(cflags_common  "${cflags_common} -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+set(cflags_common  "${cflags_common} -Wall -pedantic -Wno-potentially-evaluated-expression -Wno-unused-function")
+set(cflags_common  "${cflags_common} -Wno-c99-extensions -Wno-flexible-array-extensions -Wno-gnu-variable-sized-type-not-at-end -Wno-format-pedantic")
 
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${common_c_flags} -std=c99")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${common_c_flags} -std=c++11 -fno-rtti")
+set(cflags_Darwin  "-DDARWIN")
+    # On Mac force the triple, as OS and custom clang sometimes disagree.
+set(cflags_Darwin  "${cflags_Darwin} -Xclang -triple -Xclang ${LLVM_TRIPLE}")
+
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   ${cflags_common} ${cflags_${CMAKE_SYSTEM_NAME}} -std=c99")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${cflags_common} ${cflags_${CMAKE_SYSTEM_NAME}} -std=c++11 -fno-rtti")
 
 include(FindRequiredPackage)
 
