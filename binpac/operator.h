@@ -131,7 +131,8 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
 class OperatorRegistry;
 
 /// Base class for all operators.
-class Operator {
+class Operator : virtual public ast::rtti::Base {
+    AST_RTTI
 public:
     typedef shared_ptr<expression::ResolvedOperator> (*expression_factory)(
         shared_ptr<Operator> op, const expression_list& ops, shared_ptr<Module> module,

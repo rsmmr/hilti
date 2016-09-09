@@ -1,13 +1,13 @@
-//
+// clang-format off
 // @TEST-EXEC: eval ${CXX} -g -O0 -o a.out %INPUT $(${HILTI_CONFIG} --compiler --runtime --cxxflags --ldflags --libs)
 // @TEST-EXEC: ./a.out >output
 // @TEST-EXEC: btest-diff output
-//
+// clang-format on
 
 #include <memory>
 
 #include <hilti/hilti.h>
-#include <hilti/jit/jit.h>
+#include <hilti/jit.h>
 
 extern "C" {
 #include <libhilti/libhilti.h>
@@ -19,14 +19,15 @@ int main(int argc, char** argv)
 
     auto options = std::make_shared<hilti::Options>();
     options->jit = true;
-    shared_ptr<hilti::CompilerContext> ctx = std::make_shared<hilti::CompilerContext>(options);
+    shared_ptr<hilti::CompilerContextJIT<>> ctx = std::make_shared<hilti::CompilerContextJIT<>>(options);
     auto m = std::make_shared<hilti::builder::ModuleBuilder>(ctx, "Main");
 
     m->importModule("Hilti");
 
     m->pushFunction("run");
-    auto args = hilti::builder::tuple::create( { hilti::builder::string::create("Hello, world!") } );
-    m->builder()->addInstruction(hilti::instruction::flow::CallVoid, hilti::builder::id::create("Hilti::print"), args);
+    auto args = hilti::builder::tuple::create({hilti::builder::string::create("Hello, world!")});
+    m->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                 hilti::builder::id::create("Hilti::print"), args);
     m->popFunction();
 
     m->finalize();
@@ -61,7 +62,8 @@ int main(int argc, char** argv)
 
     // Execute.
 
-    auto main_run = (void (*)(hlt_exception**, hlt_execution_context*)) jit->nativeFunction("main_run");
+    auto main_run =
+        (void (*)(hlt_exception**, hlt_execution_context*))jit->nativeFunction("main_run");
 
     if ( ! main_run ) {
         fprintf(stderr, "nativeFunction failed\n");

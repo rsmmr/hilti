@@ -1,25 +1,36 @@
 
+include(DefaultCompilerSettings)
+
 file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" BINPAC_VERSION LIMIT_COUNT 1)
 
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
+
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
+## Create config file.
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/binpac-config.h.in ${autogen}/binpac-config.h)
+
+### Generate visitor interface and RTTI information.
 
 add_custom_command(
    OUTPUT   ${autogen}/visitor-types.h
             ${autogen}/visitor-interface.h
+            ${autogen}/visitor-rtti.cc
    COMMAND  ${scripts}/make-visitor-interface binpac ${CMAKE_CURRENT_SOURCE_DIR}/nodes.decl ${autogen}
    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/nodes.decl ${scripts}/make-visitor-interface
 )
 
-SET_SOURCE_FILES_PROPERTIES(${autogen}/visitor-interface.h PROPERTIES GENERATED 1)
-SET_SOURCE_FILES_PROPERTIES(${autogen}/visitor-types.h     PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/visitor-interface.h PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/visitor-types.h     PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/visitor-rtti.cc     PROPERTIES GENERATED 1)
 
 ### Generate the Bison/Flex parser.
+
+FindRequiredPackage(FLEX)
+FindRequiredPackage(BISON)
+
+include_directories(${FLEX_INCLUDE_DIR})
 
 bison_target(Parser parser/parser.yy
              ${autogen}/parser.cc
@@ -29,13 +40,15 @@ bison_target(Parser parser/parser.yy
 
 flex_target(Scanner parser/scanner.ll ${autogen}/scanner.cc)
 
-ADD_CUSTOM_TARGET(generate_parser_binpac
+add_custom_target(generate_parser_binpac
                   DEPENDS ${autogen}/parser.cc ${autogen}/scanner.cc)
 
-SET_SOURCE_FILES_PROPERTIES(${autogen}/scanner.cc PROPERTIES GENERATED 1)
-SET_SOURCE_FILES_PROPERTIES(${autogen}/parser.cc  PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/scanner.cc PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/parser.cc  PROPERTIES GENERATED 1)
 
-### Auto-generate all the boiler-plate stuff for operators.
+set_property(SOURCE ${autogen}/scanner.cc APPEND PROPERTY COMPILE_FLAGS "-Wno-null-conversion")
+
+### Generate the operator implementations.
 
 set(operators
     operators/address.cc
@@ -65,13 +78,13 @@ add_custom_command(
             ${autogen}/operators/operators-expression-builder.h
             ${autogen}/operators/operators-register.cc
    COMMAND  ${scripts}/make-operators -h ${CMAKE_CURRENT_SOURCE_DIR} ${autogen}/operators ${operators}
-   DEPENDS  ${operators} operators/define-operator.h ${scripts}/make-operators
+   DEPENDS  ${scripts}/make-operators
 )
 
-SET_SOURCE_FILES_PROPERTIES(${autogen}/operators-declare.h PROPERTIES GENERATED 1)
-SET_SOURCE_FILES_PROPERTIES(${autogen}/operators-visits.h PROPERTIES GENERATED 1)
-SET_SOURCE_FILES_PROPERTIES(${autogen}/operators-expression-builder.h PROPERTIES GENERATED 1)
-SET_SOURCE_FILES_PROPERTIES(${autogen}/operators-register.cc  PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/operators-declare.h PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/operators-visits.h PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/operators-expression-builder.h PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/operators-register.cc  PROPERTIES GENERATED 1)
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen}/operators)
 
@@ -86,14 +99,14 @@ foreach(in ${operators})
    add_custom_command(
        OUTPUT   ${h} ${cc}
        COMMAND  ${scripts}/expand-macros ${CMAKE_CURRENT_SOURCE_DIR}/operators/macros.dat ${CMAKE_CURRENT_SOURCE_DIR}/${in} ${autogen}/operators
-       DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/${in} operators/define-operator.h ${scripts}/expand-macros ${CMAKE_CURRENT_SOURCE_DIR}/operators/macros.dat
+       DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/${in} ${scripts}/expand-macros ${CMAKE_CURRENT_SOURCE_DIR}/operators/macros.dat
    )
 
-   SET_SOURCE_FILES_PROPERTIES(${cc} PROPERTIES GENERATED 1)
+   set_source_files_properties(${cc} PROPERTIES GENERATED 1)
 
 endforeach ()
 
-### Build libpac.
+### Build libbinpacxx.
 
 add_library (binpacxx STATIC
     attribute.cc
@@ -101,23 +114,24 @@ add_library (binpacxx STATIC
     coercer.cc
     constant-coercer.cc
     constant.cc
-    context.cc
     context-ctor.cc
+    context.cc
     ctor.cc
     declaration.cc
     expression.cc
     function.cc
     grammar.cc
     id.cc
+    jit.cc
     module.cc
     operator.cc
+    options.cc
     production.cc
     scope.cc
     statement.cc
     type.cc
     variable.cc
     visitor-interface.cc
-    options.cc
 
     ${operators_cc}
 
@@ -167,18 +181,17 @@ add_library (binpacxx STATIC
     passes/unit-scope-builder.cc
     passes/validator.cc
 
-    ${autogen}/operators/operators-register.cc
-
-    ${autogen}/scanner.cc
-    ${autogen}/parser.cc
-
-    ${autogen}/visitor-interface.h
-    ${autogen}/visitor-types.h
     ${autogen}/binpac-config.h
+    ${autogen}/operators/operators-register.cc
+    ${autogen}/parser.cc
+    ${autogen}/scanner.cc
+    ${autogen}/visitor-interface.h
+    ${autogen}/visitor-rtti.cc
+    ${autogen}/visitor-types.h
 
     $<TARGET_OBJECTS:ast>
     $<TARGET_OBJECTS:util>
     )
 
-ADD_DEPENDENCIES(binpacxx hilti generate_parser_binpac)
+add_dependencies(binpacxx hilti generate_parser_binpac)
 target_link_libraries(binpacxx hilti)

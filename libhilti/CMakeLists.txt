@@ -4,14 +4,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/justrx/src)
 include(DefaultCompilerSettings)
 include(EnableLLVMBitcode)
 
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=unused-function -Werror -fno-color-diagnostics -fPIC")
-#
-# IF( APPLE )
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDARWIN")
-#    # On Mac force the triple, as OS and custom clang sometimes disagree.
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -triple -Xclang ${LLVM_TRIPLE}")
-# ENDIF(APPLE)
-
 set(scripts "${CMAKE_SOURCE_DIR}/scripts")
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
 set(hiltip  "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltip")
@@ -133,7 +125,10 @@ add_dependencies(hilti-rt-dbg      generate_jrx_parser build_asm hiltip)
 add_dependencies(hilti-rt          generate_jrx_parser build_asm hiltip)
 
 set_target_properties(hilti-rt-dbg PROPERTIES COMPILE_FLAGS ${c_debug_flags})
+target_link_libraries(hilti-rt-dbg pcap)
+
 set_target_properties(hilti-rt     PROPERTIES COMPILE_FLAGS ${c_release_flags})
+target_link_libraries(hilti-rt     pcap)
 
 include(ShowCompilerSettings)
 

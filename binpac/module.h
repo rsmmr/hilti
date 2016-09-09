@@ -16,6 +16,7 @@ class CompilerContext;
 
 /// AST node for a top-level module.
 class Module : public ast::Module<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///

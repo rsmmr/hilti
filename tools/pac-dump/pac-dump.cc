@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <getopt.h>
 #include <errno.h>
+#include <getopt.h>
+#include <stdio.h>
 #include <sys/resource.h>
 
 #ifndef __STDC_FORMAT_MACROS
@@ -11,16 +11,19 @@
 
 #undef DEBUG
 
-#include <hilti.h>
 #include <binpac++.h>
-#include <jit/libhilti-jit.h>
+#include <binpac/jit.h>
+#include <hilti.h>
+#include <hilti/jit.h>
 
 extern "C" {
-    #include <libbinpac++.h>
+#include <libbinpac++.h>
 }
 
-extern void ascii_dump_object(const hlt_type_info* type, void* obj, int indent, hlt_exception** excpt, hlt_execution_context* ctx);
-extern void json_dump_object(const hlt_type_info* type, void* obj, int indent, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void ascii_dump_object(const hlt_type_info* type, void* obj, int indent,
+                              hlt_exception** excpt, hlt_execution_context* ctx);
+extern void json_dump_object(const hlt_type_info* type, void* obj, int indent,
+                             hlt_exception** excpt, hlt_execution_context* ctx);
 
 int json = 0;
 
@@ -29,6 +32,7 @@ binpac_parser* request = 0;
 std::set<string> cgdbg;
 typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
 binpac_parsers_func JitParsers = nullptr;
+std::unique_ptr<hilti::JIT> Jit;
 binpac::CompilerContext* PacContext = nullptr;
 
 static void check_exception(hlt_exception* excpt)
@@ -54,6 +58,7 @@ static void usage(const char* prog)
 
     fprintf(stderr, "%s *.pac2 [options]\n\n", prog);
     fprintf(stderr, "  Options:\n\n");
+    fprintf(stderr, "    -d            Enable debug mode for JITed code\n");
     fprintf(stderr, "    -p <parser>   Use given parser.\n");
     fprintf(stderr, "    -j            Output JSON.\n");
     fprintf(stderr, "    -I            Add directory to import path.\n");
@@ -86,7 +91,7 @@ static binpac_parser* findParser(const char* name)
     binpac_parser* result = 0;
 
     while ( ! (hlt_iterator_list_eq(i, end, &excpt, ctx) || excpt) ) {
-        binpac_parser* p = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
+        binpac_parser* p = *(binpac_parser**)hlt_iterator_list_deref(i, &excpt, ctx);
 
         if ( hlt_string_cmp(hname, p->name, &excpt, ctx) == 0 ) {
             result = p;
@@ -116,7 +121,7 @@ hlt_bytes* readAllInput()
         size_t n = fread(buffer, 1, sizeof(buffer), stdin);
         offset += n;
 
-        int8_t* copy = (int8_t*) hlt_malloc(n);
+        int8_t* copy = (int8_t*)hlt_malloc(n);
         memcpy(copy, buffer, n);
         hlt_bytes_append_raw(input, copy, n, &excpt, ctx);
 
@@ -132,7 +137,6 @@ hlt_bytes* readAllInput()
     check_exception(excpt);
 
     return input;
-
 }
 
 void parseSingleInput(binpac_parser* p)
@@ -147,7 +151,7 @@ void parseSingleInput(binpac_parser* p)
 
     hlt_bytes_freeze(input, 1, &excpt, ctx);
 
-    void *pobj = (*p->parse_func)(input, 0, &excpt, ctx);
+    void* pobj = (*p->parse_func)(input, 0, &excpt, ctx);
 
     if ( json )
         json_dump_object(p->type_info, &pobj, 0, &excpt, ctx);
@@ -167,7 +171,7 @@ bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> opt
 
     PacContext = new binpac::CompilerContext(options);
 
-    std::list<llvm::Module* > llvm_modules;
+    std::list<std::unique_ptr<llvm::Module>> llvm_modules;
 
     for ( auto p : pac2 ) {
         auto llvm_module = PacContext->compile(p);
@@ -177,37 +181,29 @@ bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> opt
             return false;
         }
 
-        llvm_modules.push_back(llvm_module);
+        llvm_modules.push_back(std::move(llvm_module));
     }
 
-    auto linked_module = PacContext->linkModules("<jit analyzers>", llvm_modules);
+    auto linked_module = PacContext->linkModules("<jit analyzers>", std::move(llvm_modules));
 
     if ( ! linked_module ) {
         fprintf(stderr, "linking failed\n");
         return false;
     }
 
-    auto ee = PacContext->hiltiContext()->jitModule(linked_module);
+    Jit = PacContext->hiltiContext()->jit(std::move(linked_module));
 
-    if ( ! ee ) {
+    if ( ! Jit ) {
         fprintf(stderr, "jit failed");
         return false;
     }
 
-    // TODO: This should be done by jitModule, which however then needs to
-    // move into hilti-jit.
-    hlt_init_jit(PacContext->hiltiContext(), linked_module, ee);
-    binpac_init();
-    binpac_init_jit(PacContext->hiltiContext(), linked_module, ee);
+    JitParsers = (binpac_parsers_func)Jit->nativeFunction("binpac_parsers");
 
-    auto func = PacContext->hiltiContext()->nativeFunction(linked_module, ee, "binpac_parsers");
-
-    if ( ! func ) {
+    if ( ! JitParsers ) {
         fprintf(stderr, "jitBinpacParser error: no function 'binpac_parsers'");
         return false;
     }
-
-    JitParsers = (binpac_parsers_func)func;
 
     return true;
 }
@@ -221,29 +217,31 @@ int main(int argc, char** argv)
     options->generate_composers = false;
 
     char ch;
-    while ((ch = getopt(argc, argv, "Ojp:I:")) != -1) {
-
-        switch (ch) {
-
-          case 'p':
+    while ( (ch = getopt(argc, argv, "Odjp:I:")) != -1 ) {
+        switch ( ch ) {
+        case 'p':
             parser = optarg;
             break;
 
-          case 'j':
+        case 'j':
             json = 1;
             break;
 
-         case 'I':
+        case 'I':
             options->libdirs_pac2.push_back(optarg);
             break;
 
-         case 'O':
+        case 'O':
             options->optimize = true;
             break;
 
-          case 'h':
-            // Fall-through.
-          default:
+        case 'd':
+            options->debug = true;
+            break;
+
+        case 'h':
+        // Fall-through.
+        default:
             usage(progname);
         }
     }
@@ -277,7 +275,7 @@ int main(int argc, char** argv)
         // If we have exactly one parser, that's the one we'll use.
         if ( hlt_list_size(parsers, &excpt, ctx) == 1 ) {
             hlt_iterator_list i = hlt_list_begin(parsers, &excpt, ctx);
-            request = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
+            request = *(binpac_parser**)hlt_iterator_list_deref(i, &excpt, ctx);
             assert(request);
         }
 

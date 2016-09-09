@@ -133,7 +133,7 @@ try_::Catch::Catch(shared_ptr<Block> block, const Location& l) : Node(l)
 
 shared_ptr<variable::Local> try_::Catch::Catch::variable() const
 {
-    return _decl ? ast::checkedCast<variable::Local>(_decl->variable()) : nullptr;
+    return _decl ? ast::rtti::checkedCast<variable::Local>(_decl->variable()) : nullptr;
 }
 
 shared_ptr<Type> try_::Catch::type() const

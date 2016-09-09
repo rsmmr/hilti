@@ -9,8 +9,8 @@ opBegin(bitfield::Attribute)
 
     opValidate()
     {
-        auto btype = ast::checkedCast<type::Bitfield>(op1()->type());
-        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+        auto btype = ast::rtti::checkedCast<type::Bitfield>(op1()->type());
+        auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(op2());
 
         if ( ! btype->bits(attr->id()) )
             error(op2(), "unknown bitfield element");
@@ -18,7 +18,7 @@ opBegin(bitfield::Attribute)
 
     opResult()
     {
-        auto btype = ast::checkedCast<type::Bitfield>(op1()->type());
+        auto btype = ast::rtti::checkedCast<type::Bitfield>(op1()->type());
         return std::make_shared<type::Integer>(btype->width(), false);
     }
 opEnd

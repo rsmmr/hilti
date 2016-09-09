@@ -1,9 +1,4 @@
 
-// Note: This file is compiled with -fno-rtti so that we can derive from LLVM classes.
-#ifndef HILTI_NO_RTTI
-#error File must be compiled with HILTI_NO_RTTI
-#endif
-
 #include <arpa/inet.h>
 
 #include <util/util.h>

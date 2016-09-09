@@ -213,9 +213,9 @@ struct __hlt_type_info {
         (void (*)(const struct __hlt_type_info*, void*, hlt_execution_context* ctx))id##_dtor,     \
         (void (*)(const struct __hlt_type_info*, void*,                                            \
                   hlt_execution_context* ctx))__hlt_object_ref,                                    \
-    };
+    }
 
-#define __HLT_DECLARE_RTTI_GC_TYPE(id) extern const hlt_type_info hlt_type_info_##id;
+#define __HLT_DECLARE_RTTI_GC_TYPE(id) extern const hlt_type_info hlt_type_info_##id
 
 /// Returns true if the two type informations refer to equivalent types.
 int8_t __hlt_type_equal(const hlt_type_info* ti1, const hlt_type_info* ti2);

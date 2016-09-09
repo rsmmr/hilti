@@ -1,7 +1,21 @@
 
 #include <fstream>
+#include <limits.h>
 
 #include <util/util.h>
+
+// LLVM redefines the DEBUG macro. Sigh.
+#ifdef DEBUG
+#define __SAVE_DEBUG DEBUG
+#undef DEBUG
+#endif
+
+#include <llvm/IR/Module.h>
+
+#undef DEBUG
+#ifdef __SAVE_DEBUG
+#define DEBUG __SAVE_DEBUG
+#endif
 
 #include "context.h"
 #include "expression.h"
@@ -28,6 +42,10 @@
 
 using namespace binpac;
 using namespace binpac::passes;
+
+binpac::CompilerContext::~CompilerContext()
+{
+}
 
 const binpac::Options& binpac::CompilerContext::options() const
 {
@@ -335,9 +353,8 @@ bool binpac::CompilerContext::finalize(shared_ptr<Module> node, bool verify)
     return true;
 }
 
-llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module,
-                                               shared_ptr<hilti::Module>* hilti_module_out,
-                                               bool hilti_only)
+std::unique_ptr<llvm::Module> binpac::CompilerContext::compile(
+    shared_ptr<Module> module, shared_ptr<hilti::Module>* hilti_module_out, bool hilti_only)
 {
     CodeGen codegen(this);
 
@@ -353,7 +370,7 @@ llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module,
 
     _endPass();
 
-    if ( hilti_only || ! compiled )
+    if ( hilti_only )
         return nullptr;
 
     auto llvm_module = _hilti_context->compile(compiled);
@@ -364,8 +381,8 @@ llvm::Module* binpac::CompilerContext::compile(shared_ptr<Module> module,
     return llvm_module;
 }
 
-llvm::Module* binpac::CompilerContext::compile(const string& path,
-                                               shared_ptr<hilti::Module>* hilti_module_out)
+std::unique_ptr<llvm::Module> binpac::CompilerContext::compile(
+    const string& path, shared_ptr<hilti::Module>* hilti_module_out)
 {
     auto module = load(path);
 
@@ -403,7 +420,7 @@ bool binpac::CompilerContext::dump(shared_ptr<Node> ast, std::ostream& out)
     return true;
 }
 
-shared_ptr<hilti::CompilerContext> binpac::CompilerContext::hiltiContext() const
+shared_ptr<hilti::CompilerContextJIT<binpac::JIT>> binpac::CompilerContext::hiltiContext() const
 {
     return _hilti_context;
 }

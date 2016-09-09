@@ -7,7 +7,7 @@ using namespace binpac::codegen;
 
 void CodeBuilder::visit(ctor::Vector* v)
 {
-    auto vtype = ast::checkedCast<type::Vector>(v->type());
+    auto vtype = ast::rtti::checkedCast<type::Vector>(v->type());
     auto etype = cg()->hiltiType(vtype->elementType());
 
     hilti::builder::list::element_list elems;

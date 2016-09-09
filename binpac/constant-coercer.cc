@@ -10,7 +10,7 @@ void ConstantCoercer::visit(constant::Integer* i)
 {
     setResult(nullptr);
 
-    auto dst_i = ast::tryCast<type::Integer>(arg1());
+    auto dst_i = ast::rtti::tryCast<type::Integer>(arg1());
 
     if ( dst_i ) {
         if ( dst_i->width() == 64 ||
@@ -22,14 +22,14 @@ void ConstantCoercer::visit(constant::Integer* i)
         return;
     }
 
-    auto dst_b = ast::tryCast<type::Bool>(arg1());
+    auto dst_b = ast::rtti::tryCast<type::Bool>(arg1());
 
     if ( dst_b ) {
         auto c = new constant::Bool(i->value() != 0, i->location());
         setResult(shared_ptr<Constant>(c));
     }
 
-    auto dst_d = ast::tryCast<type::Double>(arg1());
+    auto dst_d = ast::rtti::tryCast<type::Double>(arg1());
 
     if ( dst_d ) {
         auto c = new constant::Double(i->value(), i->location());
@@ -41,7 +41,7 @@ void ConstantCoercer::visit(constant::Tuple* t)
 {
     setResult(nullptr);
 
-    auto dst = ast::tryCast<type::Tuple>(arg1());
+    auto dst = ast::rtti::tryCast<type::Tuple>(arg1());
 
     if ( ! dst )
         return;
@@ -72,7 +72,7 @@ void ConstantCoercer::visit(constant::Tuple* t)
 
 void ConstantCoercer::visit(constant::Optional* t)
 {
-    auto dst = ast::tryCast<type::Optional>(arg1());
+    auto dst = ast::rtti::tryCast<type::Optional>(arg1());
 
     if ( dst ) {
         auto coerced = t->value()->coerceTo(dst->argType());

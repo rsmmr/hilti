@@ -517,7 +517,6 @@ void binpachilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt
 
     fflush(stdout);
 
-unlock:
     funlockfile(stdout);
     pthread_setcancelstate(old_state, NULL);
 }

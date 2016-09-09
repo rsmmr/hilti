@@ -8,6 +8,7 @@ bool Coercer::canCoerceTo(shared_ptr<Type> src, shared_ptr<Type> dst, string* er
 {
     return _coerceTo(nullptr, src, dst, nullptr, error);
 }
+
 shared_ptr<Expression> Coercer::coerceTo(shared_ptr<Expression> expr, shared_ptr<Type> dst)
 {
     shared_ptr<Expression> result;
@@ -25,7 +26,7 @@ bool Coercer::_coerceTo(shared_ptr<Expression> expr, shared_ptr<Type> src, share
     std::cerr << "_coerceTo " << (expr ? expr->render() : string("(no expr)")) << ": " << src->render() << " -> " << dst->render() << std::endl;
 #endif
 
-    if ( ast::tryCast<type::Any>(dst) ) {
+    if ( ast::rtti::tryCast<type::Any>(dst) ) {
         if ( result )
             *result = expr;
 
@@ -55,7 +56,7 @@ bool Coercer::_coerceTo(shared_ptr<Expression> expr, shared_ptr<Type> src, share
         return true;
     }
 
-    auto t = ast::tryCast<type::OptionalArgument>(dst);
+    auto t = ast::rtti::tryCast<type::OptionalArgument>(dst);
 
     if ( t )
         return _coerceTo(expr, src, t->argType(), result, error);

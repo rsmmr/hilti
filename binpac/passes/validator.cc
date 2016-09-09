@@ -188,7 +188,7 @@ void Validator::visit(ctor::Unit* u)
 {
     int cnt = 0;
 
-    auto utype = ast::checkedCast<type::Unit>(u->type());
+    auto utype = ast::rtti::checkedCast<type::Unit>(u->type());
 
     for ( auto i : utype->items() ) {
         if ( i->ctorNoName() )
@@ -217,7 +217,7 @@ void Validator::visit(declaration::Hook* h)
 
 void Validator::visit(declaration::Type* t)
 {
-    auto unit = ast::tryCast<type::Unit>(t->type());
+    auto unit = ast::rtti::tryCast<type::Unit>(t->type());
 
     if ( unit ) {
 // TODO: It's ok to have the same field name multiple times under
@@ -296,7 +296,7 @@ void Validator::visit(expression::List* l)
 
 void Validator::visit(expression::ListComprehension* c)
 {
-    if ( ! ast::type::trait::hasTrait<type::trait::Iterable>(c->input()->type()) )
+    if ( ! ast::type::hasTrait<type::trait::Iterable>(c->input()->type()) )
         error(c->input(), "non-iterable gives as input set for list comprehension");
 }
 
@@ -341,7 +341,7 @@ void Validator::visit(statement::Block* b)
 
         for ( auto e : *exprs ) {
             // Only functions can be overloaded.
-            if ( ! ast::isA<expression::Function>(e) ) {
+            if ( ! ast::rtti::isA<expression::Function>(e) ) {
                 error(b, util::fmt("ID %s defined more than once", i.first));
                 break;
             }
@@ -409,10 +409,6 @@ void Validator::visit(type::Bitfield* bm)
 }
 
 void Validator::visit(type::Bitset* b)
-{
-}
-
-void Validator::visit(type::Block* b)
 {
 }
 
@@ -556,7 +552,7 @@ void Validator::visit(type::iterator::List* l)
 {
 }
 
-void Validator::visit(type::iterator::Regexp* r)
+void Validator::visit(type::iterator::Map* r)
 {
 }
 
@@ -647,7 +643,7 @@ void Validator::visit(type::unit::item::Field* f)
             return;
         }
 
-        if ( ! ast::isA<type::PacType>(attr->value()->type()) ) {
+        if ( ! ast::rtti::isA<type::PacType>(attr->value()->type()) ) {
             error(attr, "invalid type for &convert's expression");
             return;
         }
@@ -680,14 +676,14 @@ void Validator::visit(type::unit::item::Field* f)
         auto ptype = pattr.type;
 
         // Resolve TypeByName's manually here.
-        auto tbn = ast::tryCast<type::TypeByName>(ptype);
+        auto tbn = ast::rtti::tryCast<type::TypeByName>(ptype);
 
         if ( tbn ) {
             auto module = current<Module>();
             assert(module);
             auto t = module->body()->scope()->lookupUnique(tbn->id());
             assert(t);
-            ptype = ast::checkedCast<expression::Type>(t)->typeValue();
+            ptype = ast::rtti::checkedCast<expression::Type>(t)->typeValue();
         }
 
         if ( attr->value() && ! attr->value()->canCoerceTo(ptype) ) {
@@ -707,8 +703,7 @@ void Validator::visit(type::unit::item::Property* p)
     auto prop = p->property();
 
     if ( ::util::startsWith(prop->key(), "skip-") ) {
-        if ( prop->value() &&
-             ! ast::type::trait::hasTrait<type::trait::Parseable>(prop->value()->type()) )
+        if ( prop->value() && ! ast::type::hasTrait<type::trait::Parseable>(prop->value()->type()) )
             error(p, "skip expression is not of parseable type");
     }
 }

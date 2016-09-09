@@ -11,7 +11,7 @@
 #       operators-register.cc
 #
 
-scripts=`pwd`/`dirname $0`
+scripts=`dirname $0`
 
 function getoperators
 {

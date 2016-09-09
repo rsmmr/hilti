@@ -21,6 +21,12 @@ if [ ! -e $LOG ]; then
     exit 0
 fi
 
+if [ $($(dirname $0)/../../build/tools/hilti-config --build) == "release" ]; then
+    # Cannot use leak checking in release mode, as many of the tests
+    # still pull in the debug library, leading to mismatches.
+    export NO_LEAK_CHECK=1
+fi
+
 if [ "$NO_LEAK_CHECK" == "" ]; then
     cat $LOG | `dirname $0`/../../scripts/mem-check -v >&2
 fi

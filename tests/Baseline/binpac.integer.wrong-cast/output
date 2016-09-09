@@ -3,9 +3,9 @@
 wrong-cast.pac2:10-10: error, operator use is ambigious
 got operands: (int<32>, (type type))
 candidate operators:
+    cast<(type type)>(int<*>)
+    cast<(type type)>(int<*>)
+    cast<(type type)>(int<*>)
     cast<(type type)>(double)
-    cast<(type type)>(int<*>)
-    cast<(type type)>(int<*>)
-    cast<(type type)>(int<*>)
  [pass::binpac::OperatorResolver]
 wrong-cast.pac2: Aborting due to input error.

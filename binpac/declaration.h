@@ -11,6 +11,7 @@ namespace binpac {
 
 /// Base class for AST declaration nodes.
 class Declaration : public ast::Declaration<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -31,6 +32,7 @@ namespace declaration {
 
 /// AST node for declaring a variable.
 class Variable : public binpac::Declaration, public ast::declaration::mixin::Variable<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -49,6 +51,7 @@ public:
 
 /// AST node for declaring a constant value.
 class Constant : public binpac::Declaration, public ast::declaration::mixin::Constant<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -67,6 +70,7 @@ public:
 
 /// AST node for declaring a type.
 class Type : public binpac::Declaration, public ast::declaration::mixin::Type<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -85,6 +89,7 @@ public:
 
 /// AST node for declaring a function.
 class Function : public binpac::Declaration, public ast::declaration::mixin::Function<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -101,6 +106,7 @@ public:
 
 /// AST node for declaring a hook.
 class Hook : public Declaration {
+    AST_RTTI
 public:
     /// Constructor.
     ///

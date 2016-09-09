@@ -7,7 +7,7 @@ using namespace binpac::codegen;
 
 void CodeBuilder::visit(ctor::Set* s)
 {
-    auto stype = ast::checkedCast<type::Set>(s->type());
+    auto stype = ast::rtti::checkedCast<type::Set>(s->type());
     auto etype = cg()->hiltiType(stype->elementType());
 
     hilti::builder::set::element_list elems;

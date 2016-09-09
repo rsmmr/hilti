@@ -36,7 +36,7 @@ struct __hlt_list {
     hlt_enum strategy;         // Expiration strategy if set; zero otherwise.
 };
 
-__HLT_RTTI_GC_TYPE(__hlt_list_node, HLT_TYPE_LIST_NODE)
+__HLT_RTTI_GC_TYPE(__hlt_list_node, HLT_TYPE_LIST_NODE);
 
 void __hlt_list_node_dtor(hlt_type_info* ti, __hlt_list_node* n, hlt_execution_context* ctx)
 {

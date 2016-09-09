@@ -66,11 +66,11 @@ void CodeBuilder::visit(expression::operator_::tuple::Equal* i)
 
 void CodeBuilder::visit(expression::operator_::tuple::Index* i)
 {
-    auto tuple = ast::checkedCast<type::Tuple>(i->op1()->type());
+    auto tuple = ast::rtti::checkedCast<type::Tuple>(i->op1()->type());
     auto types = tuple->typeList();
 
-    auto idx = ast::checkedCast<expression::Constant>(i->op2());
-    auto const_ = ast::checkedCast<constant::Integer>(idx->constant());
+    auto idx = ast::rtti::checkedCast<expression::Constant>(i->op2());
+    auto const_ = ast::rtti::checkedCast<constant::Integer>(idx->constant());
 
     auto t = types.begin();
     std::advance(t, const_->value());

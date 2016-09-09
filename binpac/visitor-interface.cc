@@ -6,5 +6,5 @@ using namespace binpac;
 
 void VisitorInterface::callAccept(shared_ptr<ast::NodeBase> node)
 {
-    dynamicPointerCast(node)->accept(this, binpac::Node);
+    ast::rtti::tryCast<binpac::Node>(node)->accept(this);
 }

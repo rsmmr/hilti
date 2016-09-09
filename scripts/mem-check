@@ -39,6 +39,11 @@ for line in sorted:
             print >>sys.stderr, "Cannot parse |%s|" % line
             sys.exit(1)
 
+    if location == "-":
+        # Filter out objects without location, they are coming from release code
+        # and we can't track them.
+        continue
+
     if op == "free" or op == "destroy":
         try:
             del objs[addr]

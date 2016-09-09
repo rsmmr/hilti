@@ -75,7 +75,7 @@ bool Operator::match(const expression_list& ops, bool coerce, expression_list* n
 
     // All remaining operands must be options.
     while ( t != types.end() ) {
-        if ( *t && ! ast::isA<type::OptionalArgument>(*t) )
+        if ( *t && ! ast::rtti::isA<type::OptionalArgument>(*t) )
             return false;
 
         ++t;
@@ -132,7 +132,7 @@ shared_ptr<Type> Operator::type(shared_ptr<Module> module, const expression_list
     auto result = __typeResult();
     popOperands();
 
-    auto name = ast::tryCast<type::TypeByName>(result);
+    auto name = ast::rtti::tryCast<type::TypeByName>(result);
 
     if ( name ) {
         auto id = name->id();
@@ -145,7 +145,7 @@ shared_ptr<Type> Operator::type(shared_ptr<Module> module, const expression_list
 
         if ( types.size() == 1 ) {
             auto t = types.front();
-            auto nt = ast::tryCast<expression::Type>(t);
+            auto nt = ast::rtti::tryCast<expression::Type>(t);
 
             if ( ! nt ) {
                 error(t, util::fmt("ID %s does not reference a type", id->pathAsString()));
@@ -276,8 +276,8 @@ std::pair<shared_ptr<Node>, string> Operator::matchArgsInternal(shared_ptr<Expre
         tuple = std::make_shared<expression::Constant>(c);
     }
 
-    auto const_ = ast::checkedCast<expression::Constant>(tuple);
-    auto elems = ast::checkedCast<constant::Tuple>(const_->constant())->value();
+    auto const_ = ast::rtti::checkedCast<expression::Constant>(tuple);
+    auto elems = ast::rtti::checkedCast<constant::Tuple>(const_->constant())->value();
 
     if ( elems.size() > types.size() )
         return std::make_pair(tuple, "too many arguments");
@@ -295,7 +295,7 @@ std::pair<shared_ptr<Node>, string> Operator::matchArgsInternal(shared_ptr<Expre
 
     // All remaining operands must be options.
     while ( t != types.end() ) {
-        if ( *t && ! ast::isA<type::OptionalArgument>(*t) )
+        if ( *t && ! ast::rtti::isA<type::OptionalArgument>(*t) )
             return std::make_pair(tuple, "too many arguments");
 
         ++t;
@@ -309,8 +309,7 @@ string _clsName(shared_ptr<Type> t)
     if ( ! t )
         return "";
 
-    int status;
-    return abi::__cxa_demangle(typeName(*t), 0, 0, &status);
+    return typeName(*t);
 }
 
 Operator::Info Operator::info() const

@@ -33,7 +33,7 @@ static void __add_parser(hlt_bytes* mt, binpac_parser* parser, hlt_exception** e
     *cmp = mp;
 
     __mime_parser** current =
-        hlt_map_get_default(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, cmt,
+        hlt_map_get_default(__binpac_globals()->mime_types, &hlt_type_info_hlt_bytes, cmt,
                             &hlt_type_info___mime_parser, 0, excpt, ctx);
 
     if ( current ) {
@@ -41,7 +41,7 @@ static void __add_parser(hlt_bytes* mt, binpac_parser* parser, hlt_exception** e
         GC_CCTOR(mp->next, __mime_parser, ctx);
     }
 
-    hlt_map_insert(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, cmt,
+    hlt_map_insert(__binpac_globals()->mime_types, &hlt_type_info_hlt_bytes, cmt,
                    &hlt_type_info___mime_parser, cmp, excpt, ctx);
 
     GC_DTOR(mp, __mime_parser, ctx);
@@ -82,11 +82,11 @@ static void __connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_
                           int8_t try_mode, void* cookie, hlt_exception** excpt,
                           hlt_execution_context* ctx)
 {
-    if ( ! __binpac_globals_get()->mime_types )
+    if ( ! __binpac_globals()->mime_types )
         return;
 
     __mime_parser** current =
-        hlt_map_get_default(__binpac_globals_get()->mime_types, &hlt_type_info_hlt_bytes, &mtype,
+        hlt_map_get_default(__binpac_globals()->mime_types, &hlt_type_info_hlt_bytes, &mtype,
                             &hlt_type_info___mime_parser, 0, excpt, ctx);
 
     if ( ! current )

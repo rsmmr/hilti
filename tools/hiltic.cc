@@ -1,12 +1,12 @@
 
+#include <fstream>
 #include <getopt.h>
 #include <iostream>
-#include <fstream>
 
 #include <llvm/IR/Module.h>
 
 #include <hilti.h>
-#include <hilti/jit/jit.h>
+#include <hilti/jit.h>
 
 extern "C" {
 #include <libhilti/libhilti.h>
@@ -16,8 +16,8 @@ using namespace std;
 
 const char* Name = "hiltic";
 
-int  num_output_types = 0;
-int  num_input_files = 0;
+int num_output_types = 0;
+int num_input_files = 0;
 bool output_hilti = false;
 bool output_llvm = false;
 bool output_llvm_individually = false;
@@ -29,63 +29,68 @@ bool disable_linker = false;
 bool cfg = false;
 string output;
 
-static struct option long_options[] = {
-    { "ast",     no_argument, 0, 'A' },
-    { "bitcode", no_argument, 0, 'b' },
-    { "debug",   no_argument, 0, 'd' },
-    { "cgdebug", required_argument, 0, 'D' },
-    { "help",    no_argument, 0, 'h' },
-    { "print",   no_argument, 0, 'p' },
-    { "print-always",   no_argument, 0, 'W' },
-    { "cfg",   no_argument, 0, 'c' },
-    { "output",  required_argument, 0, 'o' },
-    { "version", no_argument, 0, 'v' },
-    { "profile", no_argument, 0, 'F' },
-    { "jit", no_argument, 0, 'j' },
-    { "opt", required_argument, 0, 'O' },
-    { "add-stdlibs", no_argument, 0, 's' },
-    { "disable-linker", no_argument, 0, 'C' },
-    { 0, 0, 0, 0 }
-};
+static struct option long_options[] = {{"ast", no_argument, 0, 'A'},
+                                       {"bitcode", no_argument, 0, 'b'},
+                                       {"debug", no_argument, 0, 'd'},
+                                       {"cgdebug", required_argument, 0, 'D'},
+                                       {"help", no_argument, 0, 'h'},
+                                       {"print", no_argument, 0, 'p'},
+                                       {"print-always", no_argument, 0, 'W'},
+                                       {"cfg", no_argument, 0, 'c'},
+                                       {"output", required_argument, 0, 'o'},
+                                       {"version", no_argument, 0, 'v'},
+                                       {"profile", no_argument, 0, 'F'},
+                                       {"jit", no_argument, 0, 'j'},
+                                       {"opt", required_argument, 0, 'O'},
+                                       {"add-stdlibs", no_argument, 0, 's'},
+                                       {"disable-linker", no_argument, 0, 'C'},
+                                       {0, 0, 0, 0}};
 
 void usage()
 {
     auto dbglist = hilti::Options().cgDebugLabels();
     auto dbgstr = util::strjoin(dbglist.begin(), dbglist.end(), "/");
 
-    cerr << "Usage: " << Name << " [options] <inputs> [ - <options for JIT main()> ]\n"
-            "\n"
-            "Input files can be *.hlt, *.ll, *.bc, *.bca, *.so. and *.dylib\n"
-            "\n"
-            "Options controlling code generation:\n"
-            "\n"
-            "  -A | --ast            Dump intermediary HILTI ASTs to stderr.\n"
-            "  -C | --disable-linker Don't run code through the custom HILTI linker; can only be used with one module.\n"
-            "  -D | --cgdebug <type> Debug output during code generation; type can be " << dbgstr << ".\n"
-            "  -F | --profile        Profile level. Each time increases level. [Default: 0]\n"
-            "  -I | --import <dir>   Search library files in <dir>. Can be given multiple times.\n"
-            "  -L | --llvm-always    Like -l, but don't verify correctness first.\n"
-            "  -O | --opt            Optimize generated code.                [Default: off].\n"
-            "  -V | --llvm-first     Like -L, but print each file individually to stdout and don't link.\n"
-            "  -W | --print-always   Like -p, but don't verify correctness first.\n"
-            "  -b | --bitcode        Output LLVM bitcode.\n"
-            "  -c | --cfg            Add control/data flow information to output of -p.\n"
-            "  -d | --debug          Debug level. Each time increases level. [Default: 0]\n"
-            "  -h | --help           Print usage information.\n"
-            "  -j | --jit            JIT the final LLVM bitcode to native code and execute main().\n"
-            "  -l | --llvm           Output the final LLVM assembly.\n"
-            "  -o | --output <file>  Specify output file.                    [Default: stdout].\n"
-            "  -p | --print          Just output all parsed HILTI code again.\n"
-            "  -s | --add-stdlibs    Add standard HILTI runtime libraries (implied with -j).\n"
-            "  -v | --version        Print version information.\n"
-            "\n"
-            "Options controlling JIT (-j) runtime behavior:\n"
-            "\n"
-            "  -P | --enable-profile Activate profiling support..\n"
-            "  -Z | --dump-libhilti-state With -j, dump global libhilti state to stderr for debugging. Use twice to print for host app, too.\n"
-            "  -t | --threads        Number of worker threads; zero disables. [Default: 2.].\n"
-            "\n"
-            "\n";
+    cerr
+        << "Usage: " << Name
+        << " [options] <inputs> [ - <options for JIT main()> ]\n"
+           "\n"
+           "Input files can be *.hlt, *.ll, *.bc, *.bca, *.so. and *.dylib\n"
+           "\n"
+           "Options controlling code generation:\n"
+           "\n"
+           "  -A | --ast            Dump intermediary HILTI ASTs to stderr.\n"
+           "  -C | --disable-linker Don't run code through the custom HILTI linker; can only be "
+           "used with one module.\n"
+           "  -D | --cgdebug <type> Debug output during code generation; type can be "
+        << dbgstr
+        << ".\n"
+           "  -F | --profile        Profile level. Each time increases level. [Default: 0]\n"
+           "  -I | --import <dir>   Search library files in <dir>. Can be given multiple times.\n"
+           "  -L | --llvm-always    Like -l, but don't verify correctness first.\n"
+           "  -O | --opt            Optimize generated code.                [Default: off].\n"
+           "  -V | --llvm-first     Like -L, but print each file individually to stdout and don't "
+           "link.\n"
+           "  -W | --print-always   Like -p, but don't verify correctness first.\n"
+           "  -b | --bitcode        Output LLVM bitcode.\n"
+           "  -c | --cfg            Add control/data flow information to output of -p.\n"
+           "  -d | --debug          Debug level. Each time increases level. [Default: 0]\n"
+           "  -h | --help           Print usage information.\n"
+           "  -j | --jit            JIT the final LLVM bitcode to native code and execute main().\n"
+           "  -l | --llvm           Output the final LLVM assembly.\n"
+           "  -o | --output <file>  Specify output file.                    [Default: stdout].\n"
+           "  -p | --print          Just output all parsed HILTI code again.\n"
+           "  -s | --add-stdlibs    Add standard HILTI runtime libraries (implied with -j).\n"
+           "  -v | --version        Print version information.\n"
+           "\n"
+           "Options controlling JIT (-j) runtime behavior:\n"
+           "\n"
+           "  -P | --enable-profile Activate profiling support..\n"
+           "  -Z | --dump-libhilti-state With -j, dump global libhilti state to stderr for "
+           "debugging. Use twice to print for host app, too.\n"
+           "  -t | --threads        Number of worker threads; zero disables. [Default: 2.].\n"
+           "\n"
+           "\n";
 }
 
 void version()
@@ -110,7 +115,8 @@ void openOutputStream(ofstream& out, const string& path)
         error(path, "cannot open file for output");
 }
 
-std::unique_ptr<llvm::Module> loadLLVM(std::shared_ptr<hilti::CompilerContext> ctx, const string& path)
+std::unique_ptr<llvm::Module> loadLLVM(std::shared_ptr<hilti::CompilerContext> ctx,
+                                       const string& path)
 {
     // This works for both LLVM bitcode and assembly files.
     llvm::SMDiagnostic diag;
@@ -128,7 +134,7 @@ std::unique_ptr<llvm::Module> loadLLVM(std::shared_ptr<hilti::CompilerContext> c
             error(path, diag.getMessage().str());
     }
 
-      return module;
+    return module;
 }
 
 std::unique_ptr<llvm::Module> compileHILTI(std::shared_ptr<hilti::CompilerContext> ctx, string path)
@@ -172,13 +178,13 @@ std::unique_ptr<llvm::Module> compileHILTI(std::shared_ptr<hilti::CompilerContex
 
         if ( num_input_files > 1 )
             cout << ">>> End " << path << endl;
-
     }
 
     return llvm_module;
 }
 
-bool runJIT(shared_ptr<hilti::CompilerContext> ctx, std::unique_ptr<llvm::Module> module, std::list<string> jitargs)
+bool runJIT(shared_ptr<hilti::CompilerContextJIT<hilti::JIT>> ctx,
+            std::unique_ptr<llvm::Module> module, std::list<string> jitargs)
 {
     auto jit = ctx->jit(std::move(module));
 
@@ -195,7 +201,8 @@ bool runJIT(shared_ptr<hilti::CompilerContext> ctx, std::unique_ptr<llvm::Module
         }
     }
 
-    auto main_run = (void (*)(hlt_exception** excpt, hlt_execution_context* ctx))jit->nativeFunction("main_run");
+    auto main_run = (void (*)(hlt_exception * *excpt,
+                              hlt_execution_context * ctx))jit->nativeFunction("main_run");
 
     hlt_execution_context* libctx = hlt_global_execution_context();
     hlt_exception* libexcpt = 0;
@@ -224,111 +231,110 @@ int main(int argc, char** argv)
         if ( c < 0 )
             break;
 
-        switch (c) {
-         case 'A':
+        switch ( c ) {
+        case 'A':
             dump_ast = true;
             break;
 
-         case 'b':
+        case 'b':
             output_bitcode = true;
             ++num_output_types;
             break;
 
-         case 'd':
+        case 'd':
             options->debug = true;
             break;
 
-         case 'D':
+        case 'D':
             options->cg_debug.insert(optarg);
             break;
 
-         case 'o':
+        case 'o':
             output = optarg;
             break;
 
-         case 'O':
+        case 'O':
             options->optimize = true;
             break;
 
-         case 'p':
+        case 'p':
             output_hilti = true;
             ++num_output_types;
             break;
 
-         case 'c':
+        case 'c':
             cfg = true;
             break;
 
-         case 'W':
+        case 'W':
             output_hilti = true;
             options->verify = false;
             ++num_output_types;
             break;
 
-         case 'l':
+        case 'l':
             output_llvm = true;
             ++num_output_types;
             break;
 
-         case 'L':
+        case 'L':
             output_llvm = true;
             options->verify = false;
             ++num_output_types;
             break;
 
-         case 'V':
+        case 'V':
             output_llvm_individually = true;
             options->verify = false;
             ++num_output_types;
             break;
 
-         case 'I':
+        case 'I':
             options->libdirs_hlt.push_back(optarg);
             break;
 
-         case 'F':
+        case 'F':
             ++options->profile;
             break;
 
-         case 'j':
+        case 'j':
             options->jit = true;
             add_stdlibs = true;
             ++num_output_types;
             break;
 
-         case 's':
+        case 's':
             add_stdlibs = true;
             break;
 
-         case 'C':
+        case 'C':
             disable_linker = true;
             break;
 
-         case 'Z':
+        case 'Z':
             ++dump_libhilti_state;
             break;
 
-         case 't':
+        case 't':
             libhilti_config.num_workers = atoi(optarg);
             break;
 
-         case 'P':
+        case 'P':
             libhilti_config.profiling = 1;
             break;
 
-         case 'v':
+        case 'v':
             ::version();
             return 0;
 
-         case 'h':
+        case 'h':
             usage();
             return 0;
 
-         default:
+        default:
             usage();
             return 1;
         }
-
     }
 
     std::list<string> inputs;
@@ -374,25 +380,22 @@ int main(int argc, char** argv)
     path_list bcas;
     path_list dylds;
 
-    auto ctx = std::make_shared<hilti::CompilerContext>(options);
+    auto ctx = std::make_shared<hilti::CompilerContextJIT<hilti::JIT>>(options);
 
     // Go through input files and prepare LLVM modules.
     for ( auto input : inputs ) {
-
         std::unique_ptr<llvm::Module> module = 0;
 
         if ( util::endsWith(input, ".hlt") )
             module = compileHILTI(ctx, input);
 
-        else if ( util::endsWith(input, ".ll") ||
-                  util::endsWith(input, ".bc") )
+        else if ( util::endsWith(input, ".ll") || util::endsWith(input, ".bc") )
             module = loadLLVM(ctx, input);
 
         else if ( util::endsWith(input, ".bca") )
             bcas.push_back(input);
 
-        else if ( util::endsWith(input, ".so") ||
-                  util::endsWith(input, ".dylib") )
+        else if ( util::endsWith(input, ".so") || util::endsWith(input, ".dylib") )
             dylds.push_back(input);
 
         else

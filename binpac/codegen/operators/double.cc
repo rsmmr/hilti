@@ -16,7 +16,7 @@ void CodeBuilder::visit(expression::operator_::double_::CastInteger* i)
     auto result = builder()->addTmp("i", cg()->hiltiType(i->type()));
     auto op1 = cg()->hiltiExpression(i->op1());
 
-    if ( ast::checkedCast<type::Integer>(i->type())->signed_() )
+    if ( ast::rtti::checkedCast<type::Integer>(i->type())->signed_() )
         cg()->builder()->addInstruction(result, hilti::instruction::double_::AsSInt, op1);
     else
         cg()->builder()->addInstruction(result, hilti::instruction::double_::AsUInt, op1);

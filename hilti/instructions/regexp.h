@@ -145,9 +145,6 @@ iBegin(regexp, GroupsString, "regexp.groups")
 
     iValidate
     {
-        // auto ty_target = ast::rtti::checkedCast<type::ref\ <vector\
-        // <(iterator<bytes>,iterator<bytes>)>>>(target->type());
-
         // TODO: Check target vector.
     }
 
@@ -181,9 +178,6 @@ iBegin(regexp, GroupsBytes, "regexp.groups")
         auto rv = builder::reference::type(builder::vector::type(builder::tuple::type(tt)));
         canCoerceTo(rv, target);
 
-        // auto ty_target = ast::rtti::checkedCast<type::ref\ <vector\
-        // <(iterator<bytes>,iterator<bytes>)>>>(target->type());
-        //
         // TODO: Check target vector.
     }
 
@@ -211,9 +205,6 @@ iBegin(regexp, MatchTokenString, "regexp.match_token")
 
     iValidate
     {
-        // auto ty_target = ast::rtti::checkedCast<type::(int\
-        // <32>,iterator<bytes>)>(target->type());
-
         // TODO: Check target tuple.
     }
 

@@ -13,32 +13,161 @@ namespace passes {
 class GrammarBuilder;
 }
 
+class AttributeSet;
+class Grammar;
+
 namespace type {
 
 namespace trait {
 
-typedef ast::type::Trait Trait;
-
-// Generic trait borrowed from AST.
+// Base class for type trait. We use trait to mark types that have certain properties.
+//
+// Note that Traits aren't (and can't) be derived from Node and thus aren't AST nodes.
+class Trait : virtual public ast::rtti::Base {
+    AST_RTTI
+public:
+    Trait();
+    virtual ~Trait();
+};
 
 namespace parameter {
-typedef ast::type::trait::parameter::Type<AstInfo> Type;
-typedef ast::type::trait::parameter::Integer Integer;
-typedef ast::type::trait::parameter::Enum<AstInfo> Enum;
-typedef ast::type::trait::parameter::Attribute Attribute;
+
+/// Base class for a type parameter. This is used with trait::Parameterized.
+class Base : virtual public ast::rtti::Base {
+    AST_RTTI
+public:
+    virtual ~Base();
+
+    /// Will be called to compare this node against another of the *same*
+    /// type.
+    virtual bool _equal(shared_ptr<Base> other) const = 0;
+};
+
+/// A type parameter representing a Type.
+class Type : public Base {
+    AST_RTTI
+public:
+    /// Constructor.
+    ///
+    /// type: The type the parameter specifies.
+    Type(shared_ptr<binpac::Type> type);
+
+    /// Returns the type the parameter specifies.
+    shared_ptr<binpac::Type> type() const;
+
+    bool _equal(shared_ptr<Base> other) const override;
+
+private:
+    node_ptr<binpac::Type> _type;
+};
+
+/// A type parameter representing an integer value.
+class Integer : public Base {
+    AST_RTTI
+public:
+    /// Constructor.
+    ///
+    /// value: The parameter's integer value.
+    Integer(int64_t value);
+
+    /// Returns the parameters integer value.
+    int64_t value() const;
+
+    bool _equal(shared_ptr<Base> other) const override;
+
+private:
+    int64_t _value;
+};
+
+/// A type parameter representing an enum value. This must include the scope
+/// for a module-level lookup.
+class Enum : public Base {
+    AST_RTTI
+public:
+    /// Constructor.
+    ///
+    /// label: The parameter's enum identifier.
+    Enum(shared_ptr<ID> label);
+
+    /// Returns the parameters enum identifier.
+    shared_ptr<ID> label() const;
+
+    bool _equal(shared_ptr<Base> other) const override;
+
+private:
+    shared_ptr<ID> _label;
+};
+
+class Attribute : public Base {
+    AST_RTTI
+public:
+    /// Constructor.
+    ///
+    /// value: The parameter's attribute, including the ampersand.
+    Attribute(const string& attr);
+
+    /// Returns the attribute.
+    const string& value() const;
+
+    bool _equal(shared_ptr<Base> other) const override;
+
+private:
+    string _attr;
+};
 }
 
-typedef ast::type::trait::Parameterized<AstInfo> Parameterized;
-typedef ast::type::trait::TypeList<AstInfo> TypeList;
-typedef ast::type::trait::Iterable<AstInfo> Iterable;
-typedef ast::type::trait::Hashable Hashable;
-typedef ast::type::trait::Container<AstInfo> Container;
+/// Trait class marking a type with parameters.
+class Parameterized : public virtual Trait {
+    AST_RTTI
+public:
+    typedef std::list<shared_ptr<parameter::Base>> parameter_list;
 
-// BinPAC++ specific traits.
+    /// Compares the type with another for equivalence, which must be an
+    /// instance of the same type class.
+    bool equal(shared_ptr<binpac::Type> other) const;
+
+    /// Returns the type's parameters. Note we return this by value as the
+    /// derived classes need to build the list on the fly each time so that
+    /// potential updates to the members (in particular type resolving) get
+    /// reflected.
+    virtual parameter_list parameters() const = 0;
+};
+
+/// Trait class marking a composite type that has a series of subtypes.
+class TypeList : public virtual Trait {
+    AST_RTTI
+public:
+    typedef std::list<shared_ptr<binpac::Type>> type_list;
+
+    /// Returns the ordered list of subtypes.
+    virtual const type_list typeList() const = 0;
+};
+
+/// Trait class marking a type that provides iterators.
+class Iterable : public virtual Trait {
+    AST_RTTI
+public:
+    /// Returns the type for an iterator over this type.
+    virtual shared_ptr<binpac::Type> iterType() = 0;
+
+    /// Returns the type of elements when iterating over this type.
+    virtual shared_ptr<binpac::Type> elementType() = 0;
+};
+
+/// Trait class marking a container type.
+class Container : public Iterable {
+    AST_RTTI
+};
+
+/// Trait class marking a type that can be hashed for storing in containers.
+class Hashable : public virtual trait::Trait {
+    AST_RTTI
+};
 
 /// Trait class marking a type that can be parsed from an input stream. Only
 /// these types can be used inside a ~~Unit.
 class Parseable : public virtual trait::Trait {
+    AST_RTTI
 public:
     virtual ~Parseable();
 
@@ -75,12 +204,14 @@ public:
 
 /// Trait class marking a type to which a Sink can directly be attached.
 class Sinkable : public virtual trait::Trait {
+    AST_RTTI
 };
 }
 }
 
 /// Base class for all AST nodes representing a type.
 class Type : public ast::Type<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -109,6 +240,7 @@ namespace type {
 /// An interal Type-derived class that allows us to specify optional
 /// parameters in operator signatures.
 class OptionalArgument : public binpac::Type {
+    AST_RTTI
 public:
     OptionalArgument(shared_ptr<Type> arg);
 
@@ -126,6 +258,7 @@ private:
 
 /// Base class for instantiable BinPAC++ types.
 class PacType : public binpac::Type {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -150,6 +283,7 @@ protected:
 
 /// Base class for instatiable types parameterized with a single type parameter.
 class TypedPacType : public PacType, public trait::Parameterized {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -166,7 +300,7 @@ public:
     /// Returns the type's parameter.
     shared_ptr<Type> argType() const;
 
-    type_parameter_list parameters() const override;
+    parameter_list parameters() const override;
     bool _equal(shared_ptr<binpac::Type> other) const override;
 
     ACCEPT_VISITOR(PacType);
@@ -177,6 +311,7 @@ private:
 
 /// Base type for iterators.
 class Iterator : public TypedPacType {
+    AST_RTTI
 public:
     /// Constructor for a wildcard iterator type.
     ///
@@ -200,6 +335,7 @@ private:
 
 /// A tupe matching any other type.
 class Any : public binpac::Type {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -211,6 +347,7 @@ public:
 
 /// A place holder type representing a type that has not been resolved yet.
 class Unknown : public binpac::Type {
+    AST_RTTI
 public:
     /// Constructor for a type not further specified. This must be resolved by
     /// some external means.
@@ -234,6 +371,7 @@ private:
 /// A place-holder for the element type of a iterable that we may not have
 /// resolved yet. It will later be replaced with the actual element type.
 class UnknownElementType : public binpac::Type {
+    AST_RTTI
 public:
     /// Constructor referencing an expression that evaluate to a iterable.
     /// The iterable's element type will eventually substitute for this
@@ -256,6 +394,7 @@ private:
 /// guaranteed that the resolving will be done manually, there's no automatic
 /// handling.
 class TypeByName : public binpac::Type {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -284,6 +423,7 @@ private:
 
 /// A type representing an unset value.
 class Unset : public PacType {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -296,6 +436,7 @@ public:
 /// A type representing a member attribute of a composite type. The type can
 /// be narrows to match only a specific attribute value.
 class MemberAttribute : public binpac::Type {
+    AST_RTTI
 public:
     /// Constructor for a type that matches only a specific attribute.
     ///
@@ -321,6 +462,7 @@ private:
 
 /// A type representing a Module.
 class Module : public binpac::Type {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -332,6 +474,7 @@ public:
 
 /// A type representing a non-existing return value.
 class Void : public binpac::Type, public trait::Parseable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -343,6 +486,7 @@ public:
 
 /// Type for strings.
 class String : public PacType {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -354,6 +498,7 @@ public:
 
 /// Type for IP addresses.
 class Address : public PacType, public trait::Parseable, public trait::Hashable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -367,6 +512,7 @@ public:
 
 /// Type for IP subnets.
 class Network : public PacType, public trait::Parseable, public trait::Hashable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -378,6 +524,7 @@ public:
 
 /// Type for ports.
 class Port : public PacType, public trait::Parseable, public trait::Hashable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -389,6 +536,7 @@ public:
 
 /// Type for bitsets.
 class Bitset : public PacType {
+    AST_RTTI
 public:
     typedef std::pair<shared_ptr<ID>, int> Label;
     typedef std::list<Label> label_list;
@@ -424,6 +572,7 @@ namespace bitfield {
 
 /// Class describing one element of an integer's bitfield.
 class Bits : public Node {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -473,6 +622,7 @@ class Bitfield : public PacType,
                  public trait::Parameterized,
                  public trait::Parseable,
                  public trait::Hashable {
+    AST_RTTI
 public:
     typedef std::list<shared_ptr<bitfield::Bits>> bits_list;
 
@@ -508,7 +658,7 @@ public:
     /// Returns the bits associated with a given name, or null if no such name.
     shared_ptr<bitfield::Bits> bits(shared_ptr<ID> id) const;
 
-    type_parameter_list parameters() const override;
+    parameter_list parameters() const override;
     std::list<ParseAttribute> parseAttributes() const override;
 
     ACCEPT_VISITOR(PacType);
@@ -521,6 +671,7 @@ private:
 
 /// Type for enums.
 class Enum : public PacType {
+    AST_RTTI
 public:
     typedef std::pair<shared_ptr<ID>, int> Label;
     typedef std::list<Label> label_list;
@@ -555,6 +706,7 @@ private:
 
 /// Type for caddr values.
 class CAddr : public PacType {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -566,6 +718,7 @@ public:
 
 /// Type for doubles.
 class Double : public PacType, public trait::Parseable, public trait::Hashable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -579,6 +732,7 @@ public:
 
 /// Type for booleans.
 class Bool : public PacType, public trait::Parseable, public trait::Hashable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -590,6 +744,7 @@ public:
 
 /// Type for interval values.
 class Interval : public PacType, public trait::Parseable, public trait::Hashable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -601,6 +756,7 @@ public:
 
 /// Type for time values.
 class Time : public PacType, public trait::Parseable, public trait::Hashable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -615,6 +771,7 @@ class Integer : public PacType,
                 public trait::Parameterized,
                 public trait::Parseable,
                 public trait::Hashable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -635,7 +792,7 @@ public:
     bool signed_() const;
 
     bool _equal(shared_ptr<binpac::Type> other) const override;
-    type_parameter_list parameters() const override;
+    parameter_list parameters() const override;
     std::list<ParseAttribute> parseAttributes() const override;
 
     /// XXX
@@ -653,6 +810,7 @@ private:
 
 /// Type for tuples.
 class Tuple : public PacType, public trait::Parameterized, public trait::TypeList {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -667,7 +825,7 @@ public:
     Tuple(const Location& l = Location::None);
 
     const trait::TypeList::type_list typeList() const override;
-    type_parameter_list parameters() const override;
+    parameter_list parameters() const override;
 
     bool _equal(shared_ptr<binpac::Type> other) const override;
 
@@ -679,6 +837,7 @@ private:
 
 /// Type for types.
 class TypeType : public binpac::Type {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -704,6 +863,7 @@ private:
 
 /// Type for exceptions.
 class Exception : public TypedPacType {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -747,6 +907,7 @@ namespace function {
 
 /// Helper type to define a function parameter or return value.
 class Parameter : public ast::type::mixin::function::Parameter<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor for function parameters.
     ///
@@ -786,6 +947,7 @@ private:
 
 /// Helper type to define a function parameter or return value.
 class Result : public ast::type::mixin::function::Result<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor for a return value.
     ///
@@ -814,6 +976,7 @@ enum CallingConvention {
 
 /// Type for functions.
 class Function : public binpac::Type, public ast::type::mixin::Function<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -847,6 +1010,7 @@ private:
 
 /// Type for hooks.
 class Hook : public Function {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -871,6 +1035,7 @@ class Bytes : public PacType,
               public trait::Hashable,
               public trait::Iterable,
               public trait::Sinkable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -887,6 +1052,7 @@ public:
 namespace iterator {
 
 class Bytes : public Iterator {
+    AST_RTTI
 public:
     /// Constructor for an iterator over a bytes object.
     ///
@@ -900,6 +1066,7 @@ public:
 /// Type for file instances.
 ///
 class File : public PacType {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -923,6 +1090,7 @@ protected:
 };
 
 class Map : public ContainerIterator {
+    AST_RTTI
 public:
     Map(shared_ptr<Type> ctype, const Location& l = Location::None);
 
@@ -930,6 +1098,7 @@ public:
 };
 
 class Set : public ContainerIterator {
+    AST_RTTI
 public:
     Set(shared_ptr<Type> ctype, const Location& l = Location::None);
 
@@ -937,6 +1106,7 @@ public:
 };
 
 class Vector : public ContainerIterator {
+    AST_RTTI
 public:
     Vector(shared_ptr<Type> ctype, const Location& l = Location::None);
 
@@ -944,6 +1114,7 @@ public:
 };
 
 class List : public ContainerIterator {
+    AST_RTTI
 public:
     List(shared_ptr<Type> ctype, const Location& l = Location::None);
 
@@ -953,6 +1124,7 @@ public:
 
 /// Type for list objects.
 class List : public TypedPacType, public trait::Parseable, public trait::Container {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -973,6 +1145,7 @@ public:
 
 // Type for vector objects.
 class Vector : public TypedPacType, public trait::Container, public trait::Parseable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -992,6 +1165,7 @@ public:
 
 /// Type for vector objects.
 class Set : public TypedPacType, public trait::Container, public trait::Parseable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1011,6 +1185,7 @@ public:
 
 /// Type for map objects.
 class Map : public PacType, public trait::Parameterized, public trait::Container {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1037,7 +1212,7 @@ public:
         return _value;
     }
 
-    type_parameter_list parameters() const override;
+    parameter_list parameters() const override;
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
     bool _equal(shared_ptr<binpac::Type> other) const override;
@@ -1051,6 +1226,7 @@ private:
 
 /// Type for regexp instances.
 class RegExp : public PacType, public trait::Parameterized, public trait::Parseable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1064,7 +1240,7 @@ public:
     RegExp(const Location& l = Location::None);
 
     bool _equal(shared_ptr<binpac::Type> other) const override;
-    type_parameter_list parameters() const override;
+    parameter_list parameters() const override;
     shared_ptr<binpac::Type> fieldType() override;
 
     ACCEPT_VISITOR(Type);
@@ -1076,6 +1252,7 @@ private:
 /// Type for a timer_mgr object.
 ///
 class TimerMgr : public PacType {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1088,6 +1265,7 @@ public:
 /// Type for a timer object.
 ///
 class Timer : public PacType {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1101,6 +1279,7 @@ namespace unit {
 
 /// Base type for a unit items.
 class Item : public Node {
+    AST_RTTI
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
@@ -1212,7 +1391,7 @@ private:
     node_ptr<ID> _id;
     node_ptr<binpac::Type> _type;
     node_ptr<AttributeSet> _attrs;
-    std::list<node_ptr<Hook>> _hooks;
+    std::list<node_ptr<binpac::Hook>> _hooks;
 
     shared_ptr<Scope> _scope;
 
@@ -1227,6 +1406,7 @@ namespace item {
 
 /// Base class for unit fields parsed from the input.
 class Field : public Item {
+    AST_RTTI
 public:
     /// The kind of a field defines whether it's to trigger during parsing or
     /// composing, or both.
@@ -1324,6 +1504,7 @@ namespace field {
 
 /// A unit field that's type we don't know yet: we need to look up an ID later.
 class Unknown : public Field {
+    AST_RTTI
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
@@ -1358,6 +1539,7 @@ private:
 
 /// A unit field based on an atomic type.
 class AtomicType : public Field {
+    AST_RTTI
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
@@ -1384,6 +1566,7 @@ public:
 
 /// A unit field based on a sub-unit type.
 class Unit : public Field {
+    AST_RTTI
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
@@ -1410,6 +1593,7 @@ public:
 
 /// A constant unit field.
 class Constant : public Field {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1438,6 +1622,7 @@ private:
 
 /// A unit field defined by a ctor expression.
 class Ctor : public Field {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1470,6 +1655,7 @@ private:
 
 /// Base class for container types that parse other fields recursively.
 class Container : public Field {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1504,6 +1690,7 @@ namespace container {
 
 /// A list field
 class List : public Container {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1532,6 +1719,7 @@ public:
 
 // A vector field.
 class Vector : public Container {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1570,6 +1758,7 @@ private:
 namespace switch_ {
 
 class Case : public Node {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1628,6 +1817,7 @@ private:
 
 /// Type for a unit switch item
 class Switch : public Field {
+    AST_RTTI
 public:
     typedef std::list<shared_ptr<switch_::Case>> case_list;
 
@@ -1673,6 +1863,7 @@ private:
 
 /// A user-defined unit variable.
 class Variable : public Item {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1700,6 +1891,7 @@ public:
 
 /// A unit property.
 class Property : public Item {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1719,6 +1911,7 @@ private:
 
 /// A unit-wide hook.
 class GlobalHook : public Item {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1736,6 +1929,7 @@ public:
 
 /// Type for units.
 class Unit : public PacType, public trait::Parseable {
+    AST_RTTI
 public:
     typedef std::list<shared_ptr<unit::item::Field>> field_list;
 
@@ -1895,6 +2089,7 @@ private:
 
 /// A sink for parsing data with another parser.
 class Sink : public PacType {
+    AST_RTTI
 public:
     /// Constructor.
     Sink(const Location& l = Location::None);
@@ -1907,6 +2102,7 @@ public:
 
 /// Type representing an object embedded into a data stream.
 class EmbeddedObject : public TypedPacType, public trait::Parseable {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1923,6 +2119,7 @@ public:
 
 /// Type representing a mark inside a bytes object.
 class Mark : public PacType {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1934,6 +2131,7 @@ public:
 
 /// Type representing an optional instance of another type.
 class Optional : public TypedPacType {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -1949,5 +2147,6 @@ public:
 };
 }
 }
+
 
 #endif

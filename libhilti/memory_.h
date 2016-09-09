@@ -13,7 +13,7 @@
 #ifdef DEBUG
 extern const char* __hlt_make_location(const char* file, int line);
 #else
-#define __hlt_make_location(file, line) 0
+#define __hlt_make_location(file, line) ((const char*)0)
 #endif
 
 /// Common header of all managed memory objects.

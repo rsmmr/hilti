@@ -7,7 +7,7 @@ using namespace binpac::codegen;
 
 void CodeBuilder::visit(expression::operator_::function::Call* i)
 {
-    auto func = ast::checkedCast<expression::Function>(i->op1());
+    auto func = ast::rtti::checkedCast<expression::Function>(i->op1());
     auto args = callParameters(i->op2());
 
     shared_ptr<hilti::Expression> cookie = nullptr;

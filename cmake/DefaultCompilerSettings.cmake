@@ -15,7 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(cflags_common "")
 set(cflags_common  "${cflags_common} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR}")
-set(cflags_common  "${cflags_common} -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+set(cflags_common  "${cflags_common} -fPIC -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 set(cflags_common  "${cflags_common} -Wall -pedantic -Wno-potentially-evaluated-expression -Wno-unused-function")
 set(cflags_common  "${cflags_common} -Wno-c99-extensions -Wno-flexible-array-extensions -Wno-gnu-variable-sized-type-not-at-end -Wno-format-pedantic")
 

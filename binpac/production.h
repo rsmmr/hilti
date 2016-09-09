@@ -16,6 +16,7 @@ class Grammar;
 
 /// Base class for all grammar productions.
 class Production : public Node {
+    AST_RTTI
 public:
     typedef std::list<shared_ptr<Production>> production_list;
 
@@ -130,6 +131,7 @@ namespace production {
 
 /// An empty production.
 class Epsilon : public Production {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -146,6 +148,7 @@ protected:
 
 /// Base class for terminals.
 class Terminal : public Production {
+    AST_RTTI
 public:
     typedef void (*filter_func)(); // TODO
 
@@ -211,6 +214,7 @@ private:
 /// Base class for a literal. A literal is anythig which can be directly
 /// scanned for as a sequence of bytes.
 class Literal : public Terminal {
+    AST_RTTI
 public:
     typedef ctor::RegExp::pattern_list pattern_list;
 
@@ -249,6 +253,7 @@ public:
 
 /// A literal represented by a constant.
 class Constant : public Literal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -276,6 +281,7 @@ private:
 
 /// A literal represented by a ctor.
 class Ctor : public Literal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -305,6 +311,7 @@ private:
 /// the type is coming up, i.e., supports look-ahead (as, e.g., in the case
 /// of embedded objects).
 class TypeLiteral : public Literal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -335,6 +342,7 @@ private:
 /// by just looking at the available bytes. If we start parsing, we assume it
 /// will match (and if not, generate a parse error).
 class Variable : public Terminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -368,6 +376,7 @@ protected:
 
 /// Base class for non-terminals.
 class NonTerminal : public Production {
+    AST_RTTI
 public:
     typedef std::list<production_list> alternative_list;
 
@@ -394,6 +403,7 @@ protected:
 
 /// A type described by another grammar from an independent type::Unit type.
 class ChildGrammar : public NonTerminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -440,6 +450,7 @@ private:
 /// type). This can be used to hook into starting/finishing parsing that
 /// other grammar.
 class Enclosure : public NonTerminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -467,6 +478,7 @@ private:
 
 /// A sequence of other productions.
 class Sequence : public NonTerminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -505,6 +517,7 @@ private:
 /// A pair of alternatives between which we can decide with one token of
 /// look-ahead.
 class LookAhead : public NonTerminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -577,6 +590,7 @@ private:
 /// A pair of alternatives between which we decide based on a boolean
 /// expression.
 class Boolean : public NonTerminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -616,6 +630,7 @@ private:
 
 /// A production executing a given number of times.
 class Counter : public NonTerminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -653,6 +668,7 @@ private:
 
 /// A production that parses a byte block of a given length with another production.
 class ByteBlock : public NonTerminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -687,6 +703,7 @@ private:
 
 /// A production executing as long as condition is true.
 class While : public NonTerminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -721,6 +738,7 @@ private:
 
 /// A production executing until interrupted by a foreach hook.
 class Loop : public NonTerminal {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -756,6 +774,7 @@ private:
 /// Alternatives between which we decide based on which value out of a set of
 /// options is matched; plus a default if none.
 class Switch : public NonTerminal {
+    AST_RTTI
 public:
     typedef std::list<std::pair<std::list<shared_ptr<Expression>>, shared_ptr<Production>>>
         case_list;
@@ -805,6 +824,7 @@ private:
 /// An internal class representing a production to be resolved later. This is
 /// for supporting recursive grammars.
 class Unknown : public Production {
+    AST_RTTI
 public:
     /// Constructor.
     ///

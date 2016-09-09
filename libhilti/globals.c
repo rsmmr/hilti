@@ -39,9 +39,10 @@ int __hlt_global_state_init()
     if ( __globals->initialized )
         return 0;
 
+    __globals->initialized = 1;
+
     __hlt_global_create_config();
 
-    __globals->initialized = 1;
     __globals->globals_size = __hlt_globals_size();
     __globals->context = __hlt_execution_context_new_ref(HLT_VID_MAIN, 1);
     __globals->multi_threaded = (__globals->config->num_workers != 0);
@@ -64,8 +65,6 @@ int __hlt_global_state_done()
 
     if ( __globals->finished )
         return 0;
-
-    __globals->finished = 1;
 
     hlt_exception* excpt = 0;
 
@@ -90,12 +89,25 @@ int __hlt_global_state_done()
 
     free(__globals->config);
 
+    __globals->finished = 1;
+
     return 1;
 }
 
 __hlt_global_state* __hlt_globals()
 {
-    assert(__globals->initialized);
+#ifdef DEBUG
+    if ( __globals->finished ) {
+        fprintf(stderr, "internal error: libhilti globals accessed after done\n");
+        abort();
+    }
+
+    if ( ! __globals->initialized ) {
+        fprintf(stderr, "internal error: libhilti globals accessed before intialization\n");
+        abort();
+    }
+#endif
+
     return __globals;
 }
 

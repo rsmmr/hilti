@@ -3,8 +3,8 @@ using namespace binpac;
 
 static bool _checkOperands(Operator* op, shared_ptr<Expression> op1, shared_ptr<Expression> op2)
 {
-    auto t1 = ast::checkedCast<type::Integer>(op1->type());
-    auto t2 = ast::checkedCast<type::Integer>(op2->type());
+    auto t1 = ast::rtti::checkedCast<type::Integer>(op1->type());
+    auto t2 = ast::rtti::checkedCast<type::Integer>(op2->type());
 
     // Check if one can be coerced into the other.
     if ( ! (op1->canCoerceTo(t2) || op2->canCoerceTo(t1)) ) {
@@ -19,8 +19,8 @@ static shared_ptr<Type> _resultType(shared_ptr<Expression> op1, shared_ptr<Expre
 {
     assert(op1->type());
     assert(op2->type());
-    auto t1 = ast::checkedCast<type::Integer>(op1->type());
-    auto t2 = ast::checkedCast<type::Integer>(op2->type());
+    auto t1 = ast::rtti::checkedCast<type::Integer>(op1->type());
+    auto t2 = ast::rtti::checkedCast<type::Integer>(op2->type());
 
     shared_ptr<Type> result = nullptr;
 
@@ -197,9 +197,9 @@ opBegin(integer::Div)
     {
         _checkOperands(this, op1(), op2());
 
-        auto c = ast::tryCast<expression::Constant>(op2());
+        auto c = ast::rtti::tryCast<expression::Constant>(op2());
         if ( c ) {
-            auto i = ast::tryCast<constant::Integer>(c->constant());
+            auto i = ast::rtti::tryCast<constant::Integer>(c->constant());
             if ( i && i->value() == 0 )
                 error(op1(), "division by zero");
         }
@@ -238,9 +238,9 @@ opBegin(integer::Mod)
     {
         _checkOperands(this, op1(), op2());
 
-        auto c = ast::tryCast<expression::Constant>(op2());
+        auto c = ast::rtti::tryCast<expression::Constant>(op2());
         if ( c ) {
-            auto i = ast::tryCast<constant::Integer>(c->constant());
+            auto i = ast::rtti::tryCast<constant::Integer>(c->constant());
             if ( i && i->value() == 0 )
                 error(op1(), "division by zero");
         }
@@ -377,9 +377,9 @@ opBegin(integer::CoerceInteger : Coerce)
 
     opMatch()
     {
-        auto t1 = ast::checkedCast<type::Integer>(op1()->type());
-        auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
-        auto t2 = ast::checkedCast<type::Integer>(ttype);
+        auto t1 = ast::rtti::checkedCast<type::Integer>(op1()->type());
+        auto ttype = ast::rtti::checkedCast<type::TypeType>(op2()->type())->typeType();
+        auto t2 = ast::rtti::checkedCast<type::Integer>(ttype);
 
         if ( (t1->signed_() && ! t2->signed_()) || (! t1->signed_() && t2->signed_()) )
             return false;
@@ -396,8 +396,8 @@ opBegin(integer::CoerceInteger : Coerce)
 
     opResult()
     {
-        auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
-        return ast::checkedCast<type::Integer>(ttype);
+        auto ttype = ast::rtti::checkedCast<type::TypeType>(op2()->type())->typeType();
+        return ast::rtti::checkedCast<type::Integer>(ttype);
     }
 opEnd
 
@@ -409,7 +409,7 @@ opBegin(integer::CoerceInterval : Coerce)
 
     opMatch()
     {
-        auto t1 = ast::checkedCast<type::Integer>(op1()->type());
+        auto t1 = ast::rtti::checkedCast<type::Integer>(op1()->type());
         return ! t1->signed_();
     }
 
@@ -452,7 +452,7 @@ opBegin(integer::CastInteger : Cast)
 
     opResult()
     {
-        auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
-        return ast::checkedCast<type::Integer>(ttype);
+        auto ttype = ast::rtti::checkedCast<type::TypeType>(op2()->type())->typeType();
+        return ast::rtti::checkedCast<type::Integer>(ttype);
     }
 opEnd

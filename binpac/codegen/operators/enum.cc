@@ -40,8 +40,8 @@ void CodeBuilder::visit(constant::Enum* e)
 
 void CodeBuilder::visit(expression::operator_::enum_::Call* i)
 {
-    auto type = ast::checkedCast<type::TypeType>(i->op1()->type())->typeType();
-    auto etype = ast::checkedCast<type::Enum>(type);
+    auto type = ast::rtti::checkedCast<type::TypeType>(i->op1()->type())->typeType();
+    auto etype = ast::rtti::checkedCast<type::Enum>(type);
     auto value = cg()->hiltiExpression(callParameter(i->op2(), 0));
 
     auto result = cg()->builder()->addTmp("enum", cg()->hiltiType(etype));
@@ -52,7 +52,7 @@ void CodeBuilder::visit(expression::operator_::enum_::Call* i)
 
 void CodeBuilder::visit(expression::operator_::enum_::CastInteger* i)
 {
-    auto itype = ast::checkedCast<type::TypeType>(i->op2()->type())->typeType();
+    auto itype = ast::rtti::checkedCast<type::TypeType>(i->op2()->type())->typeType();
     auto result = builder()->addTmp("i", cg()->hiltiType(itype));
     auto op1 = cg()->hiltiExpression(i->op1());
     cg()->builder()->addInstruction(result, hilti::instruction::enum_::ToInt, op1);

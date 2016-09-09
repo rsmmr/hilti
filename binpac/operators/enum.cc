@@ -24,13 +24,13 @@ opBegin(enum_::Call)
 
     opMatch()
     {
-        auto type = ast::tryCast<type::TypeType>(op1()->type());
-        return type && ast::isA<type::Enum>(type->typeType());
+        auto type = ast::rtti::tryCast<type::TypeType>(op1()->type());
+        return type && ast::rtti::isA<type::Enum>(type->typeType());
     }
 
     opResult()
     {
-        return ast::checkedCast<type::TypeType>(op1()->type())->typeType();
+        return ast::rtti::checkedCast<type::TypeType>(op1()->type())->typeType();
     }
 opEnd
 

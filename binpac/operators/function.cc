@@ -7,14 +7,14 @@ opBegin(function::Call)
 
     opValidate()
     {
-        auto ftype = ast::checkedCast<type::Function>(op1()->type());
+        auto ftype = ast::rtti::checkedCast<type::Function>(op1()->type());
 
         // TODO: Check signature.
     }
 
     opResult()
     {
-        auto ftype = ast::checkedCast<type::Function>(op1()->type());
+        auto ftype = ast::rtti::checkedCast<type::Function>(op1()->type());
         return ftype->result() ? ftype->result()->type() : std::make_shared<type::Void>();
     }
 opEnd

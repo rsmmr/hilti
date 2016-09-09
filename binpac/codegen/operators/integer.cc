@@ -7,8 +7,8 @@ using namespace binpac::codegen;
 
 static shared_ptr<binpac::type::Integer> _intResultType(binpac::expression::ResolvedOperator* op)
 {
-    auto t1 = ast::checkedCast<binpac::type::Integer>(op->op1()->type());
-    auto t2 = ast::checkedCast<binpac::type::Integer>(op->op2()->type());
+    auto t1 = ast::rtti::checkedCast<binpac::type::Integer>(op->op1()->type());
+    auto t2 = ast::rtti::checkedCast<binpac::type::Integer>(op->op2()->type());
 
     int width = std::max(t1->width(), t2->width());
     bool sign = t1->signed_();
@@ -32,7 +32,7 @@ static shared_ptr<binpac::type::Integer> _intResultType(binpac::expression::Reso
 
 void CodeBuilder::visit(constant::Integer* i)
 {
-    auto itype = ast::checkedCast<type::Integer>(i->type());
+    auto itype = ast::rtti::checkedCast<type::Integer>(i->type());
     auto result = cg()->hiltiConstantInteger(i->value(), itype->signed_());
     setResult(result);
 }
@@ -64,8 +64,8 @@ void CodeBuilder::visit(expression::operator_::integer::CoerceBool* i)
 
 void CodeBuilder::visit(expression::operator_::integer::CoerceInteger* i)
 {
-    auto itype = ast::checkedCast<type::Integer>(i->type());
-    auto optype = ast::checkedCast<type::Integer>(i->op1()->type());
+    auto itype = ast::rtti::checkedCast<type::Integer>(i->type());
+    auto optype = ast::rtti::checkedCast<type::Integer>(i->op1()->type());
 
     auto op1 = cg()->hiltiExpression(i->op1());
 
@@ -99,7 +99,7 @@ void CodeBuilder::visit(expression::operator_::integer::CoerceDouble* i)
     auto result = builder()->addTmp("d", hilti::builder::double_::type());
     auto op1 = cg()->hiltiExpression(i->op1());
 
-    if ( ast::checkedCast<type::Integer>(i->op1()->type())->signed_() )
+    if ( ast::rtti::checkedCast<type::Integer>(i->op1()->type())->signed_() )
         cg()->builder()->addInstruction(result, hilti::instruction::integer::AsSDouble, op1);
     else
         cg()->builder()->addInstruction(result, hilti::instruction::integer::AsUDouble, op1);
@@ -109,8 +109,8 @@ void CodeBuilder::visit(expression::operator_::integer::CoerceDouble* i)
 
 void CodeBuilder::visit(expression::operator_::integer::CastInteger* i)
 {
-    auto itype = ast::checkedCast<type::Integer>(i->type());
-    auto optype = ast::checkedCast<type::Integer>(i->op1()->type());
+    auto itype = ast::rtti::checkedCast<type::Integer>(i->type());
+    auto optype = ast::rtti::checkedCast<type::Integer>(i->op1()->type());
 
     auto op1 = cg()->hiltiExpression(i->op1());
 
@@ -146,7 +146,7 @@ void CodeBuilder::visit(expression::operator_::integer::Equal* i)
 
 void CodeBuilder::visit(expression::operator_::integer::Lower* i)
 {
-    auto t = ast::checkedCast<type::Integer>(i->op1()->type());
+    auto t = ast::rtti::checkedCast<type::Integer>(i->op1()->type());
 
     auto result = builder()->addTmp("lt", hilti::builder::boolean::type());
     auto itype = _intResultType(i);
@@ -163,7 +163,7 @@ void CodeBuilder::visit(expression::operator_::integer::Lower* i)
 
 void CodeBuilder::visit(expression::operator_::integer::Greater* i)
 {
-    auto t = ast::checkedCast<type::Integer>(i->op1()->type());
+    auto t = ast::rtti::checkedCast<type::Integer>(i->op1()->type());
 
     auto result = builder()->addTmp("gt", hilti::builder::boolean::type());
     auto itype = _intResultType(i);

@@ -6,15 +6,27 @@
     __tmp_func = call LibBro::bro_lookup_id_as_val ("foo2")
     f = assign __tmp_func
 --
-    __tmp_val = call LibBro::h2b_bytes (__opt_ctor_3)
+    __tmp_val = call LibBro::h2b_bytes (__opt_ctor_2)
     __tmp_rval = call LibBro::call_legacy_result (f, (__tmp_val))
     __tmp_i = call LibBro::bro_internal_int (__tmp_rval)
 --
     __tmp_func = call LibBro::bro_lookup_id_as_val ("Analyzer::__disable_all_analyzers")
     call LibBro::call_legacy_void (__tmp_func, ())
     jump @if_cont
-global ref<bytes> __opt_ctor_2 = b"samba-unknown-%d"
-global ref<bytes> __opt_ctor_3 = b"indirect call"
+--
+    __tmp_func_3 = call LibBro::bro_lookup_id_as_val ("current_time")
+    __tmp_rval = call LibBro::call_legacy_result (__tmp_func_3, ())
+    __tmp_d = call LibBro::bro_internal_double (__tmp_rval)
+--
+    __tmp_val_2 = call LibBro::h2b_time (__tmp_b2h)
+    __tmp_rval_2 = call LibBro::call_legacy_result (__tmp_func_2, (__tmp_val, __tmp_val_2))
+    __tmp_b2h_2 = call LibBro::b2h_string (__tmp_rval_2)
+--
+    __tmp_val_3 = call LibBro::h2b_bytes (__tmp_b2h_2)
+    __tmp_rval_3 = call LibBro::call_legacy_result (__tmp_func, (__tmp_val_3))
+    __tmp_i = call LibBro::bro_internal_int (__tmp_rval_3)
+global ref<bytes> __opt_ctor_2 = b"indirect call"
+global ref<bytes> __opt_ctor_3 = b"%Y"
 global ref<set<net>> __opt_ctor_4 = set<net>()
 global ref<bytes> __opt_ctor_5 = b"BRO_LOG_SUFFIX"
 global ref<bytes> __opt_ctor_6 = b""

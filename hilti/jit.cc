@@ -1,4 +1,10 @@
 
+// LLVM redefines the DEBUG macro. Sigh.
+#ifdef DEBUG
+#define __SAVE_DEBUG DEBUG
+#undef DEBUG
+#endif
+
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
@@ -9,9 +15,14 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 
-#include "../codegen/common.h"
-#include "../options.h"
+#undef DEBUG
+#ifdef __SAVE_DEBUG
+#define DEBUG __SAVE_DEBUG
+#endif
+
+#include "codegen/common.h"
 #include "jit.h"
+#include "options.h"
 
 #include <dlfcn.h>
 
@@ -111,6 +122,8 @@ bool JIT::jit(std::unique_ptr<llvm::Module> module)
     auto jit_hlt_init = (void (*)())nativeFunction("__hlt_init");
     (*jit_hlt_init)();
 
+    _jit_init();
+
     return true;
 }
 
@@ -133,4 +146,8 @@ void* JIT::nativeFunction(const string& function, bool must_exist)
         return nullptr;
 
     fatalError(::util::fmt("no function %s() in compiled module", function));
+}
+
+void JIT::_jit_init()
+{
 }

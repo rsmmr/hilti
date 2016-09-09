@@ -4,10 +4,11 @@
 #include "binpac/autogen/binpac-config.h"
 
 #include "context.h"
+#include "jit.h"
 #include "options.h"
 
 #include <hilti/context.h>
-#include <hilti/jit/libhilti-jit.h>
+#include <hilti/jit.h>
 
 binpac::CompilerContext::CompilerContext(std::shared_ptr<Options> options)
 {
@@ -17,7 +18,7 @@ binpac::CompilerContext::CompilerContext(std::shared_ptr<Options> options)
 void binpac::CompilerContext::setOptions(std::shared_ptr<Options> options)
 {
     _options = options;
-    _hilti_context = std::make_shared<hilti::CompilerContext>(options);
+    _hilti_context = std::make_shared<hilti::CompilerContextJIT<binpac::JIT>>(options);
 
     if ( options->cgDebugging("visitors") )
         ast::enableDebuggingForAllVisitors(true);
@@ -25,10 +26,9 @@ void binpac::CompilerContext::setOptions(std::shared_ptr<Options> options)
         ast::enableDebuggingForAllVisitors(false);
 }
 
-llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm::Module*> modules,
-                                                   std::list<string> libs, path_list bcas,
-                                                   path_list dylds, bool add_stdlibs,
-                                                   bool add_sharedlibs)
+std::unique_ptr<llvm::Module> binpac::CompilerContext::linkModules(
+    string output, std::list<std::unique_ptr<llvm::Module>> modules, std::list<string> libs,
+    path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)
 {
     if ( add_stdlibs ) {
         if ( options().debug )
@@ -41,7 +41,8 @@ llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm
                                        add_sharedlibs);
 }
 
-llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<llvm::Module*> modules)
+std::unique_ptr<llvm::Module> binpac::CompilerContext::linkModules(
+    string output, std::list<std::unique_ptr<llvm::Module>> modules)
 {
-    return linkModules(output, modules, std::list<string>(), path_list(), path_list());
+    return linkModules(output, std::move(modules), std::list<string>(), path_list(), path_list());
 }

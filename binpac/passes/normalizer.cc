@@ -29,7 +29,7 @@ bool Normalizer::run(shared_ptr<ast::NodeBase> ast)
 
 void Normalizer::visit(declaration::Type* t)
 {
-    auto unit = ast::tryCast<type::Unit>(t->type());
+    auto unit = ast::rtti::tryCast<type::Unit>(t->type());
 
     if ( unit ) {
         if ( t->linkage() == Declaration::EXPORTED )
@@ -57,7 +57,7 @@ void Normalizer::visit(declaration::Variable* t)
     // The init expression could have had a type that wasn't resolvable
     // initially, potentially leaving the variable with an unknown type. At
     // this point that should be fixed.
-    if ( var->init() && ast::isA<type::Unknown>(var->type()) )
+    if ( var->init() && ast::rtti::isA<type::Unknown>(var->type()) )
         var->setType(var->init()->type());
 }
 
@@ -103,7 +103,7 @@ void Normalizer::visit(type::unit::item::Field* f)
     }
 
     // Set type's bit order for bitmask fields.
-    auto btype = ast::tryCast<type::Bitfield>(f->type());
+    auto btype = ast::rtti::tryCast<type::Bitfield>(f->type());
 
     if ( btype ) {
         auto border = f->attributes()->lookup("bitorder");
@@ -120,11 +120,12 @@ void Normalizer::visit(type::unit::item::Field* f)
     // enum($$), add a &convert_back automatically for composing.
     if ( auto convert = attributes->lookup("convert") ) {
         if ( ! attributes->has("convert_back") ) {
-            if ( auto call = ast::tryCast<expression::operator_::enum_::Call>(convert->value()) ) {
-                auto o = ast::checkedCast<expression::ResolvedOperator>(convert->value());
-                auto c = ast::checkedCast<expression::Constant>(o->op2());
-                auto elems = ast::checkedCast<constant::Tuple>(c->constant())->value();
-                auto pstate = ast::tryCast<expression::ParserState>(elems.front());
+            if ( auto call =
+                     ast::rtti::tryCast<expression::operator_::enum_::Call>(convert->value()) ) {
+                auto o = ast::rtti::checkedCast<expression::ResolvedOperator>(convert->value());
+                auto c = ast::rtti::checkedCast<expression::Constant>(o->op2());
+                auto elems = ast::rtti::checkedCast<constant::Tuple>(c->constant())->value();
+                auto pstate = ast::rtti::tryCast<expression::ParserState>(elems.front());
                 if ( pstate && pstate->kind() == expression::ParserState::DOLLARDOLLAR ) {
                     // Yes, found it.
                     expression_list ops = {};
@@ -159,19 +160,19 @@ void Normalizer::visit(type::unit::item::field::Container* c)
 
 void Normalizer::visit(binpac::expression::operator_::unit::SetPosition* i)
 {
-    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    auto unit = ast::rtti::checkedCast<type::Unit>(i->op1()->type());
     unit->enableBuffering();
 }
 
 void Normalizer::visit(binpac::expression::operator_::unit::Offset* i)
 {
-    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    auto unit = ast::rtti::checkedCast<type::Unit>(i->op1()->type());
     unit->enableBuffering();
 }
 
 void Normalizer::visit(binpac::expression::operator_::unit::Input* i)
 {
-    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    auto unit = ast::rtti::checkedCast<type::Unit>(i->op1()->type());
     unit->enableBuffering();
 }
 
@@ -186,7 +187,7 @@ void Normalizer::visit(statement::Return* r)
 
     auto rtype = func->type()->result()->type();
 
-    if ( ast::isA<type::Unknown>(rtype) )
+    if ( ast::rtti::isA<type::Unknown>(rtype) )
         rtype->replace(r->expression()->type());
 }
 
@@ -198,7 +199,7 @@ void Normalizer::visit(binpac::expression::operator_::unit::TryAttribute* i)
 void Normalizer::visit(binpac::Expression* i)
 {
     for ( auto n : i->childs(false) ) {
-        if ( auto e = ast::tryCast<Expression>(n) ) {
+        if ( auto e = ast::rtti::tryCast<Expression>(n) ) {
             if ( e->usesTryAttribute() )
                 i->setUsesTryAttribute(true);
         }

@@ -21,6 +21,7 @@ namespace = sys.argv[1]
 decls     = sys.argv[2]
 dst       = sys.argv[3]
 
+includes = []
 classes = []
 parents = {}
 
@@ -29,9 +30,13 @@ current = None
 lnr = 0
 
 for line in open(decls):
-    lnr +=1
+    lnr += 1
 
     line = line.strip()
+
+    if line.startswith("#include "):
+        includes.append(line)
+        continue
 
     if not line or line.startswith("#"):
         continue
@@ -63,7 +68,10 @@ print >>types, "namespace %s" % namespace, "{"
 print >>types, ""
 
 print >>rtti_cc, "#include <ast/rtti.h>"
-print >>rtti_cc, "#include <hilti/hilti-intern.h>"
+
+for include in includes:
+    print >>rtti_cc, include
+
 print >>rtti_cc, ""
 #print >>rtti_cc, "#define __RTTI_NAMESPACE %s" % namespace
 #print >>rtti_cc, "namespace %s" % namespace, "{"
@@ -72,21 +80,25 @@ print >>rtti_cc, ""
 for (visitor, cls, line, file) in classes:
     m = cls.split("::")
 
-    print >>rtti_cc, "#line %d \"%s\"\n" % (line, file)
-
     id = ("%s_%s" % (namespace, cls)).replace("::", "_")
+    print >>rtti_cc, "#line %d \"%s\"" % (line, file)
     print >>rtti_cc, "AST_RTTI_BEGIN(%s::%s, %s)" % (namespace, cls, id)
 
     for p in parents.get(cls, set()):
+        print >>rtti_cc, "#line %d \"%s\"" % (line, file)
         print >>rtti_cc, "  AST_RTTI_PARENT(%s::%s)" %  (namespace, p)
 
+    print >>rtti_cc, "#line %d \"%s\"" % (line, file)
     print >>rtti_cc, "AST_RTTI_END(%s)\n" % id
 
+    print >>rtti_cc, "#line %d \"%s\"" % (line, file)
     print >>rtti_cc, "AST_RTTI_CAST_BEGIN(%s::%s)" % (namespace, cls)
 
     for p in parents.get(cls, set()):
+        print >>rtti_cc, "#line %d \"%s\"" % (line, file)
         print >>rtti_cc, "  AST_RTTI_CAST_PARENT(%s::%s)" % (namespace, p)
 
+    print >>rtti_cc, "#line %d \"%s\"" % (line, file)
     print >>rtti_cc, "AST_RTTI_CAST_END()\n"
 
     if not visitor:

@@ -1,4 +1,6 @@
 
+#include <ctype.h>
+
 #include <autogen/binpac-hlt.h>
 
 #include "exceptions.h"
@@ -632,7 +634,6 @@ static __chunk* __add_and_check(binpac_sink* sink, __chunk* b, uint64_t rseq, ui
         new_b = b;
 
     uint64_t overlap_start = rseq;
-    int64_t overlap_offset = overlap_start - b->rseq;
     int64_t new_b_len = rupper - rseq;
     int64_t b_len = (b->rupper - overlap_start);
     int64_t overlap_len = (new_b_len < b_len ? new_b_len : b_len);
@@ -937,14 +938,6 @@ void binpac_dbg_reassembler_buffer(binpac_sink* sink, const char* msg, hlt_excep
 
     char buffer[128];
     int i = 0;
-
-    uint64_t initial_seq;       // Initial sequence number.
-    uint64_t cur_rseq;          // Sequence of last delivered byte + 1 (i.e., seq of next)
-    uint64_t last_reassem_rseq; // Sequence of last byte reassembled and delivered + 1.
-    uint64_t trim_rseq;         // Sequence of last byte trimmed so far + 1.
-    __chunk* first_chunk;       // First not yet reassembled chunk. Has ownership.
-    __chunk* last_chunk;        // Last not yet reassembled chunk.
-
 
     DBG_LOG("binpac-sinks",
             "reassembler/%p: %s ("

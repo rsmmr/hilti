@@ -1,8 +1,8 @@
 
 #include <autogen/hilti-config.h>
 
-#include "abi.h"
 #include "../module.h"
+#include "abi.h"
 #include "codegen.h"
 
 #include "libffi/src/x86/ffi64.h"

@@ -51,7 +51,6 @@ struct AstInfo {
 
     typedef binpac::type::Any any_type;
     typedef binpac::type::Void void_type;
-    typedef binpac::type::Block block_type;
     typedef binpac::type::Function function_type;
     typedef binpac::type::Module module_type;
     typedef binpac::type::OptionalArgument optional_type;

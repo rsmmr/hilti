@@ -6,7 +6,17 @@
 #define LIBHILTI_GLOBALS_H
 
 #include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
+
+#ifdef __cplusplus
+extern "C++" {
+#include <atomic>
+typedef std::atomic_uint_fast64_t atomic_uint_fast64_t;
+}
+#else
+#include <stdatomic.h>
+#endif
 
 #include "hook.h"
 #include "types.h"
@@ -66,7 +76,7 @@ struct __hlt_global_state {
     int papi_set;
 
     // timer.c
-    _Atomic(uint_fast64_t) global_time;
+    atomic_uint_fast64_t global_time;
 
     // fiber.c
     __hlt_fiber_pool* synced_fiber_pool;    // Global fiber pool.
@@ -79,15 +89,15 @@ struct __hlt_global_state {
     // could work, but don't want to rely on that.)
     uint64_t job_counter;
     FILE* debug_out;
-    _Atomic(uint_fast64_t) debug_counter;
-    _Atomic(uint_fast64_t) num_allocs;
-    _Atomic(uint_fast64_t) num_deallocs;
-    _Atomic(uint_fast64_t) num_refs;
-    _Atomic(uint_fast64_t) num_unrefs;
-    _Atomic(uint_fast64_t) num_stacks;
-    _Atomic(uint_fast64_t) size_stacks;
-    _Atomic(uint_fast64_t) num_nullbuffer;
-    _Atomic(uint_fast64_t) max_nullbuffer;
+    atomic_uint_fast64_t debug_counter;
+    atomic_uint_fast64_t num_allocs;
+    atomic_uint_fast64_t num_deallocs;
+    atomic_uint_fast64_t num_refs;
+    atomic_uint_fast64_t num_unrefs;
+    atomic_uint_fast64_t num_stacks;
+    atomic_uint_fast64_t size_stacks;
+    atomic_uint_fast64_t num_nullbuffer;
+    atomic_uint_fast64_t max_nullbuffer;
 };
 
 // A type holding all of libhilti's global state.

@@ -7,8 +7,8 @@ opBegin(tuple::CoerceTuple : Coerce)
 
     opValidate()
     {
-        auto types1 = ast::checkedCast<type::Tuple>(op1()->type())->typeList();
-        auto types2 = ast::checkedCast<type::Tuple>(op2()->type())->typeList();
+        auto types1 = ast::rtti::checkedCast<type::Tuple>(op1()->type())->typeList();
+        auto types2 = ast::rtti::checkedCast<type::Tuple>(op2()->type())->typeList();
 
         if ( types1.size() != types2.size() ) {
             error(op1(), "incompatible tuple types");
@@ -31,8 +31,8 @@ opBegin(tuple::CoerceTuple : Coerce)
 
     opResult()
     {
-        auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
-        return ast::checkedCast<type::Tuple>(ttype);
+        auto ttype = ast::rtti::checkedCast<type::TypeType>(op2()->type())->typeType();
+        return ast::rtti::checkedCast<type::Tuple>(ttype);
     }
 opEnd
 
@@ -60,8 +60,8 @@ opBegin(tuple::Index)
 
     opValidate()
     {
-        auto tuple = ast::checkedCast<type::Tuple>(op1()->type());
-        auto idx = ast::tryCast<expression::Constant>(op2());
+        auto tuple = ast::rtti::checkedCast<type::Tuple>(op1()->type());
+        auto idx = ast::rtti::tryCast<expression::Constant>(op2());
 
         if ( ! idx ) {
             error(op2(), "tuple index must a be a constant");
@@ -70,11 +70,11 @@ opBegin(tuple::Index)
 
     opResult()
     {
-        auto tuple = ast::checkedCast<type::Tuple>(op1()->type());
+        auto tuple = ast::rtti::checkedCast<type::Tuple>(op1()->type());
         auto types = tuple->typeList();
 
-        auto idx = ast::checkedCast<expression::Constant>(op2());
-        auto const_ = ast::checkedCast<constant::Integer>(idx->constant());
+        auto idx = ast::rtti::checkedCast<expression::Constant>(op2());
+        auto const_ = ast::rtti::checkedCast<constant::Integer>(idx->constant());
 
         auto i = types.begin();
         std::advance(i, const_->value());

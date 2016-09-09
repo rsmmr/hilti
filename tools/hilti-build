@@ -13,9 +13,9 @@ Version = 0.2
 
 Target = "<unknown>"
 
-Cc           = "clang -gfull"                    # Note, we really need clang.
-CcOptSpec    = "-O2"                             # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
-OptOptSpec   = "-O2 -std-link-opts"
+Cc = "clang -gfull"               # Note, we really need clang.
+CcOptSpec = "-O2"                 # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
+OptOptSpec = "-O2 -std-link-opts"
 
 # Search file in shell PATH. Returns None if not found.
 def findInPATH(file):
@@ -64,9 +64,6 @@ def runConfig(path, option):
         if Options and Options.debug > 0:
             options = ["--debug"] + options
 
-        if not Options.binpac:
-            options = ["--disable-binpac++"] + options
-
         return subprocess.Popen([path] + options, stdout=subprocess.PIPE).communicate()[0].strip()
     except:
         return ""
@@ -78,7 +75,7 @@ def verbose(msg):
 
 def error(msg):
     print >>sys.stderr, msg
-    removeTmps();
+    removeTmps()
     sys.exit(1)
 
 # Start timer to measure duration of a tool execution. In verbose mode, it also
@@ -138,7 +135,7 @@ def makeOutput(input, dstext):
         cntext = "-%d" % cnt if cnt > 1 else ""
         output = "%s.hb%s%s.tmp.%s" % (os.path.basename(root), os.getpid(), cntext, dstext)
 
-        if not output in Used:
+        if output not in Used:
             break
 
     registerTmp(output)
@@ -168,7 +165,7 @@ def compilePac(input, output):
 
     flags = uniqueArgs(flags)
 
-    path = runConfig(HiltiConfig, "--binpac++-binary")
+    path = runConfig(BinpacConfig, "--binpac++-binary")
 
     binpac = "%s %s %s -o %s" % (path, flags, input, output)
 
@@ -186,7 +183,12 @@ def compileC(input, output, cxx):
         flags = []
 
     flags += ["-c", "-emit-llvm", "-g", "-fno-color-diagnostics", "-O0", "-I ."]
+    flags += runConfig(HiltiConfig, "--compiler --%sflags" % tag).split()
     flags += runConfig(HiltiConfig, "--runtime --%sflags" % tag).split()
+
+    if Options.binpac:
+        flags += runConfig(BinpacConfig, "--compiler --%sflags" % tag).split()
+        flags += runConfig(BinpacConfig, "--runtime --%sflags" % tag).split()
 
     flags = uniqueArgs(flags)
 
@@ -216,7 +218,10 @@ def runHiltic(inputs, output, proto=False):
         # Will add below.
         flags = [f for f in flags if f != "-F"]
 
-    includes = runConfig(HiltiConfig, "--binpac++-libdirs")
+    includes = runConfig(HiltiConfig, "--hilti-libdirs")
+
+    if Options.binpac:
+        includes = runConfig(BinpacConfig, "--binpac++-libdirs")
 
     flags += ["-I%s" % i for i in includes.split()]
 
@@ -260,8 +265,9 @@ def nativeLink(input, output):
     flags += runConfig(HiltiConfig, "--runtime --ldflags").split()
     flags += runConfig(HiltiConfig, "--runtime --libs").split()
 
-    # if Options.binpac:
-    #    flags += runConfig(HiltiConfig, "--binpac++-runtime-libs").split()
+    if Options.binpac:
+        flags += runConfig(BinpacConfig, "--runtime --ldflags").split()
+        flags += runConfig(BinpacConfig, "--runtime --libs").split()
 
     if Options.optimize:
         flags += [CcOptSpec]
@@ -347,6 +353,7 @@ Input files may be end in one of the following extensions:
 ### Main.
 
 HiltiConfig = findConfigTool("hilti-config")
+BinpacConfig = findConfigTool("binpac-config")
 ImportPaths = []
 
 inputs = parseOptions()

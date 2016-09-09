@@ -14,6 +14,7 @@ namespace binpac {
 
 /// Base class for ctor nodes. A ctor instantiates a HeapType.
 class Ctor : public ast::Ctor<AstInfo> {
+    AST_RTTI
 public:
     typedef std::string pattern;
 
@@ -41,6 +42,7 @@ namespace ctor {
 
 /// AST node for a bytes constructor.
 class Bytes : public Ctor {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -66,6 +68,7 @@ private:
 
 /// AST node for a list constructor.
 class List : public Ctor {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -94,6 +97,7 @@ private:
 
 /// AST node for a vector constructor.
 class Vector : public Ctor {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -123,6 +127,7 @@ private:
 
 /// AST node for a set constructor.
 class Set : public Ctor {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -151,6 +156,7 @@ private:
 
 /// AST node for a list constructor.
 class Map : public Ctor {
+    AST_RTTI
 public:
     typedef std::pair<node_ptr<Expression>, node_ptr<Expression>> element;
     typedef std::list<element> element_list;
@@ -186,6 +192,7 @@ private:
 
 /// AST node for a regexp constructor.
 class RegExp : public Ctor {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -230,6 +237,7 @@ private:
 
 /// AST node for a unit constructor.
 class Unit : public Ctor {
+    AST_RTTI
 public:
     typedef std::pair<shared_ptr<ID>, shared_ptr<Expression>> item;
     typedef std::list<item> item_list;

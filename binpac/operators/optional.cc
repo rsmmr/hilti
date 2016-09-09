@@ -8,9 +8,9 @@ opBegin(optional::CoerceOptional : Coerce)
 
     opMatch()
     {
-        auto t1 = ast::checkedCast<type::Optional>(op1()->type());
-        auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
-        auto t2 = ast::checkedCast<type::Optional>(ttype);
+        auto t1 = ast::rtti::checkedCast<type::Optional>(op1()->type());
+        auto ttype = ast::rtti::checkedCast<type::TypeType>(op2()->type())->typeType();
+        auto t2 = ast::rtti::checkedCast<type::Optional>(ttype);
 
         // TODO: Don't have access to canCoerceTo() here right now.
         // return canCoerceTo(t1->argType(), t2->argType());
@@ -35,9 +35,9 @@ opBegin(optional::CoerceUnwrap : Coerce)
 
     opMatch()
     {
-        auto t1 = ast::checkedCast<type::Optional>(op1()->type());
-        auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
-        auto t2 = ast::checkedCast<Type>(ttype);
+        auto t1 = ast::rtti::checkedCast<type::Optional>(op1()->type());
+        auto ttype = ast::rtti::checkedCast<type::TypeType>(op2()->type())->typeType();
+        auto t2 = ast::rtti::checkedCast<Type>(ttype);
 
         if ( ! t1->argType() )
             return false;
@@ -53,7 +53,7 @@ opBegin(optional::CoerceUnwrap : Coerce)
 
     opResult()
     {
-        auto t1 = ast::checkedCast<type::Optional>(op1()->type());
+        auto t1 = ast::rtti::checkedCast<type::Optional>(op1()->type());
         return t1->argType();
     }
 
@@ -68,14 +68,14 @@ opBegin(optional::CoerceWrap : Coerce)
     opMatch()
     {
         return false;
-        auto t1 = ast::tryCast<type::Optional>(op1()->type());
+        auto t1 = ast::rtti::tryCast<type::Optional>(op1()->type());
 
         if ( t1 )
             // All, except optional, which we handle separately.
             return false;
 
-        auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
-        auto t2 = ast::checkedCast<type::Optional>(ttype);
+        auto ttype = ast::rtti::checkedCast<type::TypeType>(op2()->type())->typeType();
+        auto t2 = ast::rtti::checkedCast<type::Optional>(ttype);
 
         // TODO: Don't have access to canCoerceTo() here right now.
         return sameType(t1, t2->argType());

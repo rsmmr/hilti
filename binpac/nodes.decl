@@ -2,169 +2,434 @@
 # Classes derived from ast::Node.
 #
 # These are automatically turned into corresponding methods for
-# visitors.
+# visitors and RTTI information.
+
+#include <binpac/attribute.h>
+#include <binpac/coercer.h>
+#include <binpac/common.h>
+#include <binpac/constant-coercer.h>
+#include <binpac/constant.h>
+#include <binpac/context.h>
+#include <binpac/ctor.h>
+#include <binpac/declaration.h>
+#include <binpac/expression.h>
+#include <binpac/function.h>
+#include <binpac/grammar.h>
+#include <binpac/id.h>
+#include <binpac/module.h>
+#include <binpac/operator.h>
+#include <binpac/options.h>
+#include <binpac/production.h>
+#include <binpac/scope.h>
+#include <binpac/statement.h>
+#include <binpac/type.h>
+#include <binpac/variable.h>
 
 Attribute
+  : Node
+
 AttributeSet
+  : Node
+
 Function
+  : Node
+
 Hook
+  : Node
+
 ID
+  : Node
+
 Module
-Grammar
+  : Node
+
+Operator
 
 Constant
-# constant::Expression
-constant::String
-constant::Bool
-constant::Integer
-constant::Tuple
+  : Node
 constant::Address
-constant::Network
-constant::Optional
-constant::Port
+  : Constant
 constant::Bitset
-constant::Enum
+  : Constant
+constant::Bool
+  : Constant
 constant::Double
-constant::Time
+  : Constant
+constant::Enum
+  : Constant
+constant::Integer
+  : Constant
 constant::Interval
+  : Constant
+constant::Network
+  : Constant
+constant::Optional
+  : Constant
+constant::Port
+  : Constant
+constant::String
+  : Constant
+constant::Time
+  : Constant
+constant::Tuple
+  : Constant
 
 Ctor
+  : Node
 ctor::Bytes
+  : Ctor
 ctor::List
+  : Ctor
 ctor::Map
+  : Ctor
 ctor::RegExp
+  : Ctor
 ctor::Set
-ctor::Vector
+  : Ctor
 ctor::Unit
+  : Ctor
+ctor::Vector
+  : Ctor
 
 Declaration
-declaration::Variable
+  : Node
 declaration::Constant
-declaration::Type
+  : Declaration
 declaration::Function
+  : Declaration
 declaration::Hook
+  : Declaration
+declaration::Type
+  : Declaration
+declaration::Variable
+  : Declaration
 
 Expression
+  : Node
 expression::Assign
+  : expression::CustomExpression
 expression::CodeGen
+  : expression::CustomExpression
 expression::Coerced
+  : Expression
 expression::Conditional
+  : expression::CustomExpression
 expression::Constant
+  : Expression
 expression::Ctor
+  : Expression
+expression::CustomExpression
+  : Expression
 expression::Default
+  : Expression
 expression::Function
+  : Expression
 expression::ID
+  : Expression
 expression::List
+  : Expression
 expression::ListComprehension
+  : expression::CustomExpression
 expression::MemberAttribute
+  : expression::CustomExpression
 expression::Module
+  : Expression
 expression::Parameter
+  : Expression
 expression::ParserState
+  : expression::CustomExpression
 expression::PlaceHolder
+  : expression::CustomExpression
 expression::ResolvedOperator
+  : expression::CustomExpression
 expression::Type
+  : Expression
 expression::UnresolvedOperator
+  : expression::CustomExpression
 expression::Variable
+  : Expression
 
 Production
+  : Node
 production::Boolean
+  : production::NonTerminal
 production::ByteBlock
+  : production::NonTerminal
 production::ChildGrammar
-production::Counter
-production::Epsilon
-production::Enclosure
-production::Literal
-production::TypeLiteral
-production::LookAhead
-production::NonTerminal
-production::Sequence
-production::Switch
-production::Terminal
+  : production::NonTerminal
 production::Constant
+  : production::Literal
+production::Counter
+  : production::NonTerminal
 production::Ctor
-production::Variable
-production::While
+  : production::Literal
+production::Enclosure
+  : production::NonTerminal
+production::Epsilon
+  : Production
+production::Literal
+  : production::Terminal
+production::LookAhead
+  : production::NonTerminal
 production::Loop
+  : production::NonTerminal
+production::NonTerminal
+  : Production
+production::Sequence
+  : production::NonTerminal
+production::Switch
+  : production::NonTerminal
+production::Terminal
+  : Production
+production::TypeLiteral
+  : production::Literal
+production::Variable
+  : production::Terminal
+production::While
+  : production::NonTerminal
+production::Unknown
+  : Production
 
 Statement
+  : Node
 statement::Block
+  : Statement
 statement::Expression
+  : Statement
 statement::ForEach
+  : Statement
 statement::IfElse
+  : Statement
 statement::NoOp
+  : Statement
 statement::Print
+  : Statement
 statement::Return
+  : Statement
 statement::Stop
+  : Statement
 statement::Try
+  : Statement
 statement::try_::Catch
+  : Node
 
 Type
+  : Node
 type::Address
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
 type::Any
+  : Type
 type::Bitfield
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
+  : type::trait::Parameterized
 type::Bitset
+  : type::PacType
 type::Bool
-type::Block
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
 type::Bytes
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
+  : type::trait::Iterable
+  : type::trait::Sinkable
 type::CAddr
+  : type::PacType
 type::Double
-type::Enum
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
 type::EmbeddedObject
+  : type::TypedPacType
+  : type::trait::Parseable
+type::Enum
+  : type::PacType
 type::Exception
+  : type::TypedPacType
 type::File
+  : type::PacType
 type::Function
+  : Type
 type::Hook
+  : type::Function
 type::Integer
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
+  : type::trait::Parameterized
 type::Interval
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
 type::Iterator
+  : type::TypedPacType
 type::List
+  : type::TypedPacType
+  : type::trait::Parseable
+  : type::trait::Container
 type::Map
+  : type::PacType
+  : type::trait::Parameterized
+  : type::trait::Container
 type::Mark
+  : type::PacType
+type::MemberAttribute
+  : Type
 type::Module
+  : Type
 type::Network
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
 type::OptionalArgument
+  : Type
+type::PacType
+  : Type
 type::Optional
+  : type::TypedPacType
 type::Port
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
 type::RegExp
+  : type::PacType
+  : type::trait::Parameterized
+  : type::trait::Parseable
 type::Set
+  : type::TypedPacType
+  : type::trait::Parseable
+  : type::trait::Container
 type::Sink
+  : type::PacType
 type::String
+  : type::PacType
 type::Time
+  : type::PacType
+  : type::trait::Parseable
+  : type::trait::Hashable
+type::Timer
+  : type::PacType
+type::TimerMgr
+  : type::PacType
 type::Tuple
+  : type::PacType
+  : type::trait::Parameterized
+  : type::trait::TypeList
 type::TypeByName
+  : Type
+type::TypedPacType
+  : type::PacType
+  : type::trait::Parameterized
 type::TypeType
+  : Type
 type::Unit
+  : type::PacType
+  : type::trait::Parseable
 type::Unknown
+  : Type
 type::UnknownElementType
+  : Type
 type::Unset
+  : type::PacType
 type::Vector
+  : type::TypedPacType
+  : type::trait::Parseable
+  : type::trait::Container
 type::Void
+  : Type
+  : type::trait::Parseable
+
 type::bitfield::Bits
-type::iterator::Bytes
-type::iterator::List
-type::iterator::Regexp
-type::iterator::Set
-type::iterator::Vector
+  : Node
+
 type::function::Parameter
+  : Node
 type::function::Result
+  # sic. Not paremeter, because this inherits through the AST template class.
+  : Node
+
+type::iterator::Bytes
+  : type::Iterator
+type::iterator::List
+  : type::Iterator
+type::iterator::Map
+  : type::Iterator
+type::iterator::Set
+  : type::Iterator
+type::iterator::Vector
+  : type::Iterator
+
+type::trait::Trait
+
+type::trait::Parameterized
+  : type::trait::Trait
+type::trait::TypeList
+  : type::trait::Trait
+type::trait::Iterable
+  : type::trait::Trait
+type::trait::Container
+  : type::trait::Iterable
+type::trait::Hashable
+  : type::trait::Trait
+type::trait::Parseable
+  : type::trait::Trait
+type::trait::Sinkable
+  : type::trait::Trait
+
+type::trait::parameter::Base
+
+type::trait::parameter::Attribute
+  : type::trait::parameter::Base
+type::trait::parameter::Enum
+  : type::trait::parameter::Base
+type::trait::parameter::Integer
+  : type::trait::parameter::Base
+type::trait::parameter::Type
+  : type::trait::parameter::Base
+
 type::unit::Item
+    : Node
 type::unit::item::Field
+    : type::unit::Item
 type::unit::item::GlobalHook
+    : type::unit::Item
 type::unit::item::Property
+    : type::unit::Item
 type::unit::item::Variable
-type::unit::item::field::Constant
-type::unit::item::field::Container
-type::unit::item::field::container::List
-type::unit::item::field::container::Vector
-type::unit::item::field::Ctor
-type::unit::item::field::Switch
+    : type::unit::Item
 type::unit::item::field::AtomicType
+    : type::unit::item::Field
+type::unit::item::field::Constant
+    : type::unit::item::Field
+type::unit::item::field::Container
+    : type::unit::item::Field
+type::unit::item::field::Ctor
+    : type::unit::item::Field
+type::unit::item::field::Switch
+    : type::unit::item::Field
 type::unit::item::field::Unit
+    : type::unit::item::Field
 type::unit::item::field::Unknown
+    : type::unit::item::Field
+
+type::unit::item::field::container::List
+    : type::unit::item::field::Container
+type::unit::item::field::container::Vector
+    : type::unit::item::field::Container
+
 type::unit::item::field::switch_::Case
+    : Node
 
 Variable
+  : Node
 variable::Local
+  : Variable
 variable::Global
+  : Variable
 
 

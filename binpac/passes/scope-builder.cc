@@ -47,7 +47,7 @@ ScopeBuilder::~ScopeBuilder()
 
 bool ScopeBuilder::run(shared_ptr<ast::NodeBase> module)
 {
-    _module = ast::checkedCast<Module>(module);
+    _module = ast::rtti::checkedCast<Module>(module);
 
     ScopeClearer clearer;
     clearer.run(module);
@@ -55,7 +55,7 @@ bool ScopeBuilder::run(shared_ptr<ast::NodeBase> module)
     if ( ! processAllPreOrder(module) )
         return false;
 
-    auto m = ast::checkedCast<Module>(module);
+    auto m = ast::rtti::checkedCast<Module>(module);
 
     for ( auto i : m->importedIDs() ) {
         auto m1 = util::strtolower(i->pathAsString());
@@ -79,7 +79,7 @@ bool ScopeBuilder::run(shared_ptr<ast::NodeBase> module)
 shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
 {
     auto id = decl->id();
-    auto is_hook = dynamicCast(decl, declaration::Hook*);
+    auto is_hook = ast::rtti::tryCast<declaration::Hook>(decl);
 
     if ( ! id ) {
         error(decl, "declaration without an ID");
@@ -157,7 +157,7 @@ void ScopeBuilder::visit(declaration::Function* f)
     auto func = f->function()->sharedPtr<Function>();
     auto expr = shared_ptr<expression::Function>(new expression::Function(func, func->location()));
 
-    auto is_hook = dynamicCast(f, declaration::Hook*);
+    auto is_hook = ast::rtti::tryCast<declaration::Hook>(f);
 
     if ( ! is_hook )
         scope->insert(f->id(), expr, true);
@@ -167,7 +167,7 @@ void ScopeBuilder::visit(declaration::Function* f)
         return;
 
     // Add parameters to body's scope.
-    scope = ast::checkedCast<statement::Block>(func->body())->scope();
+    scope = ast::rtti::checkedCast<statement::Block>(func->body())->scope();
 
     for ( auto p : func->type()->parameters() ) {
         auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
@@ -180,7 +180,7 @@ void ScopeBuilder::visit(declaration::Hook* h)
     auto hook = h->hook();
 
     // Add parameters to body's scope.
-    auto scope = ast::checkedCast<statement::Block>(hook->body())->scope();
+    auto scope = ast::rtti::checkedCast<statement::Block>(hook->body())->scope();
 
     for ( auto p : hook->parameters() ) {
         auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
@@ -192,7 +192,7 @@ void ScopeBuilder::visit(type::unit::item::GlobalHook* g)
 {
     for ( auto hook : g->hooks() ) {
         // Add parameters to body's scope.
-        auto scope = ast::checkedCast<statement::Block>(hook->body())->scope();
+        auto scope = ast::rtti::checkedCast<statement::Block>(hook->body())->scope();
 
         for ( auto p : hook->parameters() ) {
             auto pexpr =

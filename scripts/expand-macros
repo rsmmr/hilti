@@ -4,9 +4,65 @@ import sys
 import re
 import os.path
 
+def inParensOrMultiline(line):
+    """Returns True if `line` contains doesn't close all parenthesis yet."""
+    parens = 0
+    in_quotes_1 = 0
+    in_quotes_2 = 0
+    skip = False
+    in_multiline = 0
+
+    for i in accumulator:
+        if skip:
+            skip = False
+            continue
+
+        if i == 'R' and in_multiline == 0:
+            in_multiline = 1
+            continue
+
+        if i == '"' and in_multiline == 1:
+            in_multiline = 2
+            continue
+
+        if i == '(' and in_multiline == 2:
+            in_multiline = 3
+            continue
+
+        if in_multiline >= 3:
+            if i == ')' and in_multiline == 3:
+                in_multiline = 4
+                continue
+
+            if i == '"' and in_multiline == 4:
+                in_multiline = 0
+                continue
+
+            in_multiline = 3
+            continue
+
+        in_multiline = 0
+
+        if i == '\\':
+            skip = True
+
+        if i == '"' and not in_quotes_2:
+            in_quotes_1 = (1 - in_quotes_1)
+
+        if i == '\'' and not in_quotes_1:
+            in_quotes_2 = (1 - in_quotes_2)
+
+        if i == '(' and not (in_quotes_1 or in_quotes_2):
+            parens += 1
+
+        if i == ')' and not (in_quotes_1 or in_quotes_2):
+            parens -= 1
+
+    return parens > 0 or in_multiline >= 3
+
 if len(sys.argv) != 4:
-	print >>sys.stderr, "usage: expand-macros <control file> <input> <output-dir>"
-	sys.exit(1)
+    print >>sys.stderr, "usage: expand-macros <control file> <input> <output-dir>"
+    sys.exit(1)
 
 macros = {}
 files = {}
@@ -23,163 +79,189 @@ state = "macro"
 
 for line in open(sys.argv[1]):
 
-	if state == "macro":
-		line = line.strip()
-		if not line:
-			continue
+    if state == "macro":
+        line = line.strip()
+        if not line:
+            continue
 
-		if not line.startswith(">"):
-			print >>sys.stderr, "error: expected '>'"
-			sys.exit(1)
+        if not line.startswith(">"):
+            print >>sys.stderr, "error: expected '>'"
+            sys.exit(1)
 
-		m = line.split()
-		name = m[1]
-		file = m[2]
+        m = line.split()
+        name = m[1]
+        file = m[2]
 
-		if m[0] == ">>":
-			cls_macro = name
+        if m[0] == ">>":
+            cls_macro = name
 
-		state = "content"
-		content = ""
-		continue
+        state = "content"
+        content = ""
+        continue
 
-	if state == "content":
+    if state == "content":
 
-		if line.strip() != "===":
-			content += line
-			continue
+        if line.strip() != "===":
+            content += line
+            continue
 
-		if not name in macros:
-			macros[name] = []
+        if name.endswith("*"):
+            name = name[:-1]
+            postfix = "[a-zA-Z0-9_]+"
+        else:
+            postfix = ""
 
-		if not file in files:
-			out = os.path.join(sys.argv[3], basename + "." + file)
-			outtmp = out + ".tmp"
-			files[file] = open(outtmp, "w")
-			outputs += [(outtmp, out, files[file])]
+        if name not in macros:
+            macros[name] = []
 
-		if file == "h":
-			regexp = re.compile("^[\t ]*%s\\b(\((.*)\))?.*" % name)
-		else:
-			regexp = re.compile("^[\t ]*%s\\b(\((.*)\))?" % name)
+        if file not in files:
+            out = os.path.join(sys.argv[3], basename + "." + file)
+            outtmp = out + ".tmp"
+            files[file] = open(outtmp, "w")
+            outputs += [(outtmp, out, files[file])]
 
-		macros[name] += [(regexp, file, files[file], content)]
+        if file == "h":
+            regexp = re.compile("^[\t ]*%s(%s)\\b(\((.*)\))?.*" % (name, postfix))
+        else:
+            regexp = re.compile("^[\t ]*%s(%s)\\b(\((.*)\))?" % (name, postfix))
 
-		state = "macro"
+        macros[name] += [(regexp, file, files[file], content)]
+
+        state = "macro"
 
 noreplace = False
 
 for (name, items) in macros.items():
-	for val in items:
-		(regexp, fname, file, content) = val
+    for val in items:
+        (regexp, fname, file, content) = val
 
-		content = content.replace("$STDIFDEF", stdifdef)
-		content = content.replace("$BASENAME", basename)
-		if name == "<<HEADER>>":
-			print >>file, content
+        content = content.replace("$STDIFDEF", stdifdef)
+        content = content.replace("$BASENAME", basename)
+        if name == "<<HEADER>>":
+            print >>file, content
 
-nr = 0
+nr = 1
 last_nrs = {}
 
 #split_re = re.compile(r'([,]|, *"[^"]+"))')
 
-split_re = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''')
+split_re = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''', re.MULTILINE | re.DOTALL)
+# "
 
-for line in open(sys.argv[2]):
-	found = False
+accumulator = ""
 
-	if line.strip().startswith("//"):
-		continue
+for input in open(sys.argv[2]):
+    found = False
 
-	for (name, items) in macros.items():
-		for val in items:
-			(regexp, fname, file, content) = val
+    if input.strip().startswith("//"):
+        continue
 
-			m = regexp.match(line)
+    accumulator += input
 
-			if m:
-				# Split at commands, but only if outside of quotation marks.
-				args = split_re.split(str(m.group(2)).strip())
-				args = [arg.strip() for arg in args[1:-1] if arg != ","]
+    if inParensOrMultiline(accumulator):
+        continue
 
-				try:
-					arg = args[0]
-				except IndexError:
-					arg = ""
+    line = accumulator.replace("\n", " ").strip() + "\n"
+    accumulator = ""
 
-				if name == cls_macro:
+    for (name, items) in macros.items():
+        for val in items:
+            (regexp, fname, file, content) = val
 
-					# We parse name of the following format here:
-					# [NAMESPACE::]CLASS [: CLASSARG]
-					#
-					# The pieces are assigned to the corresponding variables.
-					# NAMESPACE defaults to empty; CLASSARG defaults to CLASS.
+            m = regexp.match(line)
 
-					args = [arg.replace("::", "!!!") for arg in args] # Hack for easier parsing.
+            if m:
+                postfix = m.group(1)
 
-					try:
-						arg = args[0]
-					except IndexError:
-						arg = ""
+                # Split at commas, but only if outside of quotation marks.
+                args = split_re.split(str(m.group(3)).strip())
+                args = [arg.strip() for arg in args[1:-1] if arg != ","]
 
-					try:
-						(c, cls_value_arg) = arg.split(":")
-					except ValueError:
-						c = arg
-						cls_value_arg = None
+                try:
+                    arg = args[0]
+                except IndexError:
+                    arg = ""
 
-					c = c.strip()
+                if name == cls_macro:
 
-					try:
-						(cls_ns, cls_value) = c.split("!!!")
-					except ValueError:
-						cls_ns = ""
-						cls_value = c
+                    # We parse name of the following format here:
+                    # [NAMESPACE::]CLASS [: CLASSARG]
+                    #
+                    # The pieces are assigned to the corresponding variables.
+                    # NAMESPACE defaults to empty; CLASSARG defaults to CLASS.
 
-					if not cls_value_arg:
-						cls_value_arg = cls_value
+                    args = [arg.replace("::", "!!!") for arg in args] # Hack for easier parsing.
 
-				cls_value = cls_value.strip()
-				cls_value_arg = cls_value_arg.strip()
-				cls_ns = cls_ns.strip()
+                    try:
+                        arg = args[0]
+                    except IndexError:
+                        arg = ""
 
-				out = regexp.sub(content, line)
+                    try:
+                        (c, cls_value_arg) = arg.split(":")
+                    except ValueError:
+                        c = arg
+                        cls_value_arg = None
 
-				for i in range(1, 10):
-					if i <= len(args):
-						out = out.replace("$%d" % i, args[i-1])
-					else:
-						out = out.replace("$%d" % i, "")
+                    c = c.strip()
 
-				out = out.replace("$CLASSARG", cls_value_arg)
-				out = out.replace("$CLASS", cls_value)
-				out = out.replace("$NAMESPACE", cls_ns)
-				out = out.replace("$STDIFDEF", stdifdef)
+                    try:
+                        (cls_ns, cls_value) = c.split("!!!")
+                    except ValueError:
+                        cls_ns = ""
+                        cls_value = c
 
-				if nr != last_nrs.get(fname, -1):
-					print >>file, "#line %d \"%s\"" % (nr, os.path.abspath(sys.argv[2]))
+                    if not cls_value_arg:
+                        cls_value_arg = cls_value
 
-				last_nrs[fname] = nr
-				print >>file, out,
-				found = True
+                cls_value = cls_value.strip()
+                cls_value_arg = cls_value_arg.strip() if cls_value_arg else ""
+                cls_ns = cls_ns.strip()
+                cls_id = cls_value.replace("::", "_").lower()
+                cls_ns_id = cls_ns.replace("::", "_").lower()
 
-	if not found and "cc" in files:
-		if nr != last_nrs.get("cc", -2) + 1:
-			print >>files["cc"], "#line %d \"%s\"" % (nr, os.path.abspath(sys.argv[2]))
+                out = regexp.sub(content, line)
 
-		last_nrs["cc"] = nr
-		print >>files["cc"], line,
+                for i in range(1, 10):
+                    if i <= len(args):
+                        out = out.replace("$%d" % i, args[i-1])
+                    else:
+                        out = out.replace("$%d" % i, "")
 
-	nr += 1
+                out = out.replace("$CLASS_ID", cls_id)
+                out = out.replace("$CLASSARG", cls_value_arg)
+                out = out.replace("$CLASS", cls_value)
+                out = out.replace("$NAMESPACE_ID", cls_ns_id)
+                out = out.replace("$NAMESPACE", cls_ns)
+                out = out.replace("$STDIFDEF", stdifdef)
+
+                if postfix:
+                    out = out.replace("$POSTFIX", postfix)
+
+                if nr != last_nrs.get(fname, -1):
+                    print >>file, "#line %d \"%s\"" % (nr, os.path.abspath(sys.argv[2]))
+
+                last_nrs[fname] = nr
+                print >>file, out,
+                found = True
+
+    if not found and "cc" in files:
+        if nr != last_nrs.get("cc", -2) + 1:
+            print >>files["cc"], "#line %d \"%s\"" % (nr, os.path.abspath(sys.argv[2]))
+
+        last_nrs["cc"] = nr
+        print >>files["cc"], line,
+
+    nr += 1
 
 for (name, items) in macros.items():
-	for val in items:
-		(regexp, fname, file, content) = val
-		if name == "<<FOOTER>>":
-			print >>file, content
+    for val in items:
+        (regexp, fname, file, content) = val
+        if name == "<<FOOTER>>":
+            print >>file, content
 
 scripts = os.path.dirname(sys.argv[0])
 
 for (new, old, file) in outputs:
-	file.close()
-	os.system("%s/install-if-changed %s %s" % (scripts, new, old))
+    file.close()
+    os.system("%s/install-if-changed %s %s" % (scripts, new, old))

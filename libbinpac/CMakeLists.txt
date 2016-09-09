@@ -1,51 +1,35 @@
 
-cmake_minimum_required(VERSION 2.6)
+include_directories(${CMAKE_SOURCE_DIR}/libhilti)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-project(libbinpac C)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libhilti ${CMAKE_CURRENT_BINARY_DIR}/../libhilti)
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=unused-function -Werror -fno-color-diagnostics -fPIC")
-
-IF( APPLE )
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDARWIN")
-    # On Mac force the triple, as OS and custom clang sometimes disagree.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -triple -Xclang ${LLVM_TRIPLE}")
-ENDIF(APPLE)
-
-# These are used below in set_target_properties.
-set(c_debug_flags   "-DDEBUG -O0")
-set(c_release_flags "-O3")
-
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
-
-include(FindRequiredPackage)
+include(DefaultCompilerSettings)
 include(EnableLLVMBitcode)
-include(EnableClangDebugging)
 
+set(scripts "${CMAKE_SOURCE_DIR}/scripts")
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
+set(hiltip  "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltip")
+set(hiltic  "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic")
+set(binpac  "${CMAKE_CURRENT_BINARY_DIR}/../tools/binpac++")
+
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
-set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic")
-set(binpac "${CMAKE_CURRENT_BINARY_DIR}/../tools/binpac++")
+# Used below for mode-specific libraries.
+set(c_debug_flags                "-DDEBUG -O0")
+set(c_release_flags              "-O0") # Do not optimize. We optimize during linking, and doing it twice can lead to LLVM trouble.
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -std=gnu89 -D_GNU_SOURCE")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DJRX_USE_HILTI -I${CMAKE_SOURCE_DIR}/justrx/src")
 
 ### Generate the C prototypes.
 
 add_custom_command(
     OUTPUT   ${autogen}/binpachilti-hlt.h
-    COMMAND  ${hiltic} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt -o ${autogen}/binpachilti-hlt.h
-    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt ${hiltic}
+    COMMAND  ${hiltip} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt -o ${autogen}/binpachilti-hlt.h
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt ${hiltip}
 )
 
 add_custom_command(
     OUTPUT   ${autogen}/binpac-hlt.h
-    COMMAND  ${hiltic} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${autogen}/binpac.hlt -o ${autogen}/binpac-hlt.h
-    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt ${autogen}/binpac.hlt ${hiltic}
+    COMMAND  ${hiltip} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${autogen}/binpac.hlt -o ${autogen}/binpac-hlt.h
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt ${autogen}/binpac.hlt ${hiltip}
 )
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/binpac-hlt.h PROPERTIES GENERATED 1)
@@ -83,16 +67,17 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/binpachilti.hlt PROPERTIES GENERATED 1)
 #### Build the library.
 
 set(SRCS
+    base64.c
     exceptions.c
     filter.c
+    globals.c
+    init.c
     libbinpac++.c
     mime.c
-    sink.c
-    base64.c
-    globals.c
     misc.c
-    rtti.c
     render.c
+    rtti.c
+    sink.c
 
     3rdparty/libb64-1.2/src/cdecode.c
     3rdparty/libb64-1.2/src/cencode.c

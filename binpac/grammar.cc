@@ -73,7 +73,7 @@ string Grammar::check() const
                          _productionLocation(p).c_str());
 
     for ( auto p : _nterms ) {
-        auto lap = dynamicPointerCast(p, production::LookAhead);
+        auto lap = ast::rtti::tryCast<production::LookAhead>(p);
 
         if ( ! lap )
             continue;
@@ -109,7 +109,7 @@ string Grammar::check() const
                              _productionLocation(lap).c_str(), util::strjoin(isect, ", ").c_str());
 
         for ( auto q : util::set_union(laheads.first, laheads.second) ) {
-            if ( ! dynamicPointerCast(q), production::Terminal )
+            if ( ! ast::rtti::tryCast<production::Terminal>(q) )
                 msg += util::fmt("%s: look-ahead cannot depend on non-terminal\n",
                                  _productionLocation(p).c_str());
             break;
@@ -176,7 +176,7 @@ void Grammar::printTables(std::ostream& out, bool verbose)
 
 void Grammar::_addProduction(shared_ptr<Production> p)
 {
-    auto epsilon = dynamicPointerCast(p, production::Epsilon);
+    auto epsilon = ast::rtti::tryCast<production::Epsilon>(p);
 
     if ( epsilon ) {
         // We use our own internal instance for all epsilon productions.
@@ -199,7 +199,7 @@ void Grammar::_addProduction(shared_ptr<Production> p)
     _prods.insert(std::make_pair(sym, p));
     _prods_set.insert(p);
 
-    auto nterm = dynamicPointerCast(p, production::NonTerminal);
+    auto nterm = ast::rtti::tryCast<production::NonTerminal>(p);
 
     if ( nterm ) {
         _nterms.push_back(nterm);
@@ -209,10 +209,10 @@ void Grammar::_addProduction(shared_ptr<Production> p)
                 _addProduction(rhs);
     }
 
-    if ( dynamicPointerCast(p), production::LookAhead )
+    if ( ast::rtti::tryCast<production::LookAhead>(p) )
         _needs_look_ahead = true;
 
-    if ( dynamicPointerCast(p), production::Literal )
+    if ( ast::rtti::tryCast<production::Literal>(p) )
         _needs_look_ahead = true;
 }
 
@@ -225,7 +225,7 @@ void Grammar::_computeClosure(shared_ptr<Production> root, std::set<string>* use
 
     used->insert(sym);
 
-    auto nterm = dynamicPointerCast(root, production::NonTerminal);
+    auto nterm = ast::rtti::tryCast<production::NonTerminal>(root);
 
     if ( ! nterm )
         return;
@@ -284,10 +284,10 @@ bool Grammar::_isNullable(production_list::iterator i, production_list::iterator
     while ( i != j ) {
         auto rhs = *i++;
 
-        if ( dynamicPointerCast(rhs), production::Epsilon )
+        if ( ast::rtti::tryCast<production::Epsilon>(rhs) )
             continue;
 
-        if ( dynamicPointerCast(rhs), production::Terminal )
+        if ( ast::rtti::tryCast<production::Terminal>(rhs) )
             return false;
 
         if ( ! _nullable[rhs->symbol()] )
@@ -299,10 +299,10 @@ bool Grammar::_isNullable(production_list::iterator i, production_list::iterator
 
 Grammar::symbol_set Grammar::_getFirst(shared_ptr<Production> p)
 {
-    if ( dynamicPointerCast(p), production::Epsilon )
+    if ( ast::rtti::tryCast<production::Epsilon>(p) )
         return symbol_set();
 
-    if ( dynamicPointerCast(p), production::Terminal )
+    if ( ast::rtti::tryCast<production::Terminal>(p) )
         return {p->symbol()};
 
     return _first[p->symbol()];
@@ -313,10 +313,10 @@ Grammar::symbol_set Grammar::_getFirstOfRhs(production_list rhs)
     auto first = symbol_set();
 
     for ( auto p : rhs ) {
-        if ( dynamicPointerCast(p), production::Epsilon )
+        if ( ast::rtti::tryCast<production::Epsilon>(p) )
             continue;
 
-        if ( dynamicPointerCast(p), production::Terminal )
+        if ( ast::rtti::tryCast<production::Terminal>(p) )
             return {p->symbol()};
 
         first = util::set_union(first, _first[p->symbol()]);
@@ -364,7 +364,7 @@ void Grammar::_computeTables()
                     if ( _isNullable(first, i) )
                         changed = _add(&_first, p, _getFirst(rhs), changed);
 
-                    if ( ! dynamicPointerCast(rhs), production::NonTerminal )
+                    if ( ! ast::rtti::tryCast<production::NonTerminal>(rhs) )
                         continue;
 
                     auto next = i;
@@ -390,7 +390,7 @@ void Grammar::_computeTables()
 
     for ( auto p : _nterms ) {
         auto sym = p->symbol();
-        auto lap = dynamicPointerCast(p, production::LookAhead);
+        auto lap = ast::rtti::tryCast<production::LookAhead>(p);
 
         if ( ! lap )
             continue;
@@ -423,7 +423,7 @@ void Grammar::_computeTables()
             for ( auto s : laheads[i] ) {
                 auto p = _prods.find(s);
                 assert(p != _prods.end());
-                auto t = dynamicPointerCast(p->second, production::Terminal);
+                auto t = ast::rtti::tryCast<production::Terminal>(p->second);
 
                 if ( ! t ) {
                     _lah_errors.push_back(p->second);

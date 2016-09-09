@@ -425,7 +425,7 @@ inline T* checkedTrait(NodeBase* t)
 template <typename T>
 inline T* checkedTrait(shared_ptr<NodeBase> t)
 {
-    return ast::rtti::tryCast<T>(t.get());
+    return ast::rtti::checkedCast<T>(t.get());
 }
 
 namespace trait {

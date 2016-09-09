@@ -8,7 +8,7 @@ using namespace binpac::codegen;
 
 void CodeBuilder::visit(ctor::Unit* m)
 {
-    auto unit = ast::checkedCast<type::Unit>(m->type());
+    auto unit = ast::rtti::checkedCast<type::Unit>(m->type());
     auto func = cg()->hiltiFunctionNew(unit);
     auto hunit = cg()->hiltiTypeParseObject(unit);
 
@@ -23,7 +23,7 @@ void CodeBuilder::visit(ctor::Unit* m)
     cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, func,
                                     hilti::builder::tuple::create(hparams));
 
-    auto hfields = ast::checkedCast<hilti::type::Struct>(hunit)->fields();
+    auto hfields = ast::rtti::checkedCast<hilti::type::Struct>(hunit)->fields();
     auto vars = unit->variables();
     auto hfield = hfields.begin();
     auto var = vars.begin();
@@ -56,8 +56,8 @@ void CodeBuilder::visit(ctor::Unit* m)
 
 void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
 {
-    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
-    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+    auto unit = ast::rtti::checkedCast<type::Unit>(i->op1()->type());
+    auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(i->op2());
 
     auto item = unit->item(attr->id());
     assert(item && item->type());
@@ -68,8 +68,8 @@ void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
 
 void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
 {
-    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
-    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+    auto unit = ast::rtti::checkedCast<type::Unit>(i->op1()->type());
+    auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(i->op2());
     auto item = unit->item(attr->id());
     assert(item && item->type());
 
@@ -86,8 +86,8 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
 
 void CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
 {
-    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
-    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+    auto unit = ast::rtti::checkedCast<type::Unit>(i->op1()->type());
+    auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(i->op2());
 
     auto item = unit->item(attr->id());
     assert(item && item->type());
@@ -98,8 +98,8 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
 
 void CodeBuilder::visit(binpac::expression::operator_::unit::TryAttribute* i)
 {
-    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
-    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+    auto unit = ast::rtti::checkedCast<type::Unit>(i->op1()->type());
+    auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(i->op2());
 
     auto item = unit->item(attr->id());
     assert(item && item->type());
@@ -137,8 +137,8 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::TryAttribute* i)
 
 void CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
 {
-    auto ttype = ast::checkedCast<type::TypeType>(i->op1()->type());
-    auto unit = ast::checkedCast<type::Unit>(ttype->typeType());
+    auto ttype = ast::rtti::checkedCast<type::TypeType>(i->op1()->type());
+    auto unit = ast::rtti::checkedCast<type::Unit>(ttype->typeType());
     auto params = i->op2() ? callParameters(i->op2()) : expression_list();
 
     auto func = cg()->hiltiFunctionNew(unit);
@@ -183,8 +183,8 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::SetPosition* i)
     auto self = cg()->hiltiExpression(i->op1());
     auto op1 = cg()->hiltiExpression(i->op1());
 
-    auto tuple = ast::checkedCast<expression::Constant>(i->op3())->constant();
-    auto params = ast::checkedCast<constant::Tuple>(tuple)->value();
+    auto tuple = ast::rtti::checkedCast<expression::Constant>(i->op3())->constant();
+    auto params = ast::rtti::checkedCast<constant::Tuple>(tuple)->value();
 
     auto param1 = cg()->hiltiExpression(*params.begin());
 
@@ -248,7 +248,7 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::Backtrack* i)
 void CodeBuilder::visit(binpac::expression::operator_::unit::Confirm* i)
 {
     auto self = cg()->hiltiExpression(i->op1());
-    auto unit = ast::checkedCast<binpac::type::Unit>(i->op1()->type());
+    auto unit = ast::rtti::checkedCast<binpac::type::Unit>(i->op1()->type());
 
     auto try_mode = cg()->hiltiItemGet(self, "__try_mode", hilti::builder::boolean::type());
     cg()->hiltiConfirm(self, unit, try_mode, hilti::builder::id::create("__cookie"));
@@ -260,7 +260,7 @@ void CodeBuilder::visit(binpac::expression::operator_::unit::Confirm* i)
 void CodeBuilder::visit(binpac::expression::operator_::unit::Disable* i)
 {
     auto self = cg()->hiltiExpression(i->op1());
-    auto unit = ast::checkedCast<binpac::type::Unit>(i->op1()->type());
+    auto unit = ast::rtti::checkedCast<binpac::type::Unit>(i->op1()->type());
     auto msg = cg()->hiltiExpression(callParameter(i->op3(), 0));
     cg()->hiltiDisable(self, unit, msg);
     setResult(std::make_shared<hilti::expression::Void>());

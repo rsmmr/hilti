@@ -8,6 +8,7 @@ extern void __registerAllOperators();
 
 void binpac::init()
 {
+    ast::rtti::RTTI::init();
     binpac::init_pac2();
 }
 

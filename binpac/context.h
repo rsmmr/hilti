@@ -10,10 +10,11 @@ namespace hilti {
 class Module;
 class Type;
 class ID;
+
+template <class JIT>
+class CompilerContextJIT;
 }
-namespace hilti {
-class CompilerContext;
-}
+
 namespace llvm {
 class Module;
 }
@@ -22,6 +23,7 @@ class Module;
 
 namespace binpac {
 
+class JIT;
 class Options;
 
 /// A module context that groups a set of modules compiled jointly. This
@@ -36,6 +38,9 @@ public:
     /// libdirs: List of directories to search for relative paths. The current
     /// directly will be tried first.
     CompilerContext(std::shared_ptr<Options> options);
+
+    /// Destructor.
+    ~CompilerContext();
 
     /// Returns the set of options in effect.
     const Options& options() const;
@@ -109,9 +114,9 @@ public:
     ///
     /// Returns: The LLVM module, or null if errors are encountered. Passes
     /// ownership to the caller. Also returns null if *hilti_only* is true.
-    llvm::Module* compile(shared_ptr<Module> module,
-                          shared_ptr<hilti::Module>* hilti_module = nullptr,
-                          bool hilti_only = false);
+    std::unique_ptr<llvm::Module> compile(shared_ptr<Module> module,
+                                          shared_ptr<hilti::Module>* hilti_module = nullptr,
+                                          bool hilti_only = false);
 
     /// Compiles a BinPAC++ source file into an LLVM module. Internally, this
     /// is a combination of load() and compile(), with additional caching if
@@ -125,7 +130,8 @@ public:
     ///
     /// Returns: The HILTI module, or null if errors are encountered. Passes
     /// ownership to the caller.
-    llvm::Module* compile(const string& path, shared_ptr<hilti::Module>* hilti_module = nullptr);
+    std::unique_ptr<llvm::Module> compile(const string& path,
+                                          shared_ptr<hilti::Module>* hilti_module = nullptr);
 
     /// Links a set of compiled BinPAC++ modules into a single LLVM module.
     /// All modules produced by compileModule() must be linked (and all
@@ -157,10 +163,11 @@ public:
     ///
     /// Returns: The composite LLVM module, or null if errors are
     /// encountered. Passes ownership to caller.
-    llvm::Module* linkModules(string output, std::list<llvm::Module*> modules,
-                              std::list<string> libs, path_list bcas = path_list(),
-                              path_list dylds = path_list(), bool add_stdlibs = true,
-                              bool add_sharedlibs = false);
+    std::unique_ptr<llvm::Module> linkModules(string output,
+                                              std::list<std::unique_ptr<llvm::Module>> modules,
+                                              std::list<string> libs, path_list bcas = path_list(),
+                                              path_list dylds = path_list(),
+                                              bool add_stdlibs = true, bool add_sharedlibs = false);
 
     /// Links a set of compiled BinPAC++ modules into a single LLVM module.
     /// All modules produced by compileModule() must be linked (and all
@@ -177,7 +184,8 @@ public:
     ///
     /// Returns: The composite LLVM module, or null if errors are
     /// encountered. Passes ownership to caller.
-    llvm::Module* linkModules(string output, std::list<llvm::Module*> modules);
+    std::unique_ptr<llvm::Module> linkModules(string output,
+                                              std::list<std::unique_ptr<llvm::Module>> modules);
 
     /// Returns the HILTI type that the code generator will use for a given
     /// BinPAC++ type.
@@ -210,7 +218,7 @@ public:
     bool dump(shared_ptr<Node> ast, std::ostream& out);
 
     /// Returns the HILTI context for building the HILTI modules.
-    shared_ptr<hilti::CompilerContext> hiltiContext() const;
+    shared_ptr<hilti::CompilerContextJIT<JIT>> hiltiContext() const;
 
     /// Augments the cache key with values suitable to check if a module (or
     /// any of its dependencies) has changed.
@@ -230,7 +238,7 @@ public:
 
 private:
     shared_ptr<Options> _options;
-    shared_ptr<hilti::CompilerContext> _hilti_context;
+    shared_ptr<hilti::CompilerContextJIT<JIT>> _hilti_context;
 
     // Backend for both finalize() and partialFinalize().
     bool finalize(shared_ptr<Module> module, bool verify);

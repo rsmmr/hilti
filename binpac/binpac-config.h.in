@@ -13,7 +13,7 @@ namespace binpac {
 struct Configuration {
     string version       = "${BINPAC_VERSION}";
     string prefix        = "${PROJECT_SOURCE_DIR}";
-    string distdir       = "${PROJECT_SOURCE_DIR}";
+    string distbase      = "${PROJECT_SOURCE_DIR}";
     string path_binpacxx = "${PROJECT_BINARY_DIR}/tools/binpac++";
 
     ////

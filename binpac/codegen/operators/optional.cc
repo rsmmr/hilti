@@ -13,7 +13,7 @@ void CodeBuilder::visit(constant::Optional* o)
 
 void CodeBuilder::visit(expression::operator_::optional::CoerceOptional* i)
 {
-    auto otype = ast::checkedCast<type::Optional>(i->op1()->type());
+    auto otype = ast::rtti::checkedCast<type::Optional>(i->op1()->type());
     auto htype = cg()->hiltiType(otype->argType());
 
     auto result = builder()->addTmp("uval", htype);
@@ -25,7 +25,7 @@ void CodeBuilder::visit(expression::operator_::optional::CoerceOptional* i)
 
 void CodeBuilder::visit(expression::operator_::optional::CoerceUnwrap* i)
 {
-    auto otype = ast::checkedCast<type::Optional>(i->op1()->type());
+    auto otype = ast::rtti::checkedCast<type::Optional>(i->op1()->type());
 
     assert(i->type());
 

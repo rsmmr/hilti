@@ -7,7 +7,7 @@ opBegin(map::In)
 
     opValidate()
     {
-        auto mtype = ast::checkedCast<type::Map>(op2()->type());
+        auto mtype = ast::rtti::checkedCast<type::Map>(op2()->type());
         canCoerceTo(op1(), mtype->keyType());
     }
 
@@ -25,7 +25,7 @@ opBegin(map::Delete)
 
     opValidate()
     {
-        auto mtype = ast::checkedCast<type::Map>(op1()->type());
+        auto mtype = ast::rtti::checkedCast<type::Map>(op1()->type());
         canCoerceTo(op2(), mtype->keyType());
     }
 
@@ -43,13 +43,13 @@ opBegin(map::Index)
 
     opValidate()
     {
-        auto mtype = ast::checkedCast<type::Map>(op1()->type());
+        auto mtype = ast::rtti::checkedCast<type::Map>(op1()->type());
         canCoerceTo(op2(), mtype->keyType());
     }
 
     opResult()
     {
-        auto mtype = ast::checkedCast<type::Map>(op1()->type());
+        auto mtype = ast::rtti::checkedCast<type::Map>(op1()->type());
         return mtype->valueType();
     }
 opEnd
@@ -65,14 +65,14 @@ opBegin(map::IndexAssign)
 
     opValidate()
     {
-        auto mtype = ast::checkedCast<type::Map>(op1()->type());
+        auto mtype = ast::rtti::checkedCast<type::Map>(op1()->type());
         canCoerceTo(op2(), mtype->keyType());
         canCoerceTo(op3(), mtype->valueType());
     }
 
     opResult()
     {
-        auto v = ast::checkedCast<type::Map>(op1()->type());
+        auto v = ast::rtti::checkedCast<type::Map>(op1()->type());
         return std::make_shared<type::Void>();
     }
 opEnd
@@ -104,7 +104,7 @@ opBegin(map::Get : MethodCall)
 
     opValidate()
     {
-        auto mtype = ast::checkedCast<type::Map>(op1()->type());
+        auto mtype = ast::rtti::checkedCast<type::Map>(op1()->type());
         type_list args = {mtype->keyType(),
                           std::make_shared<type::OptionalArgument>(mtype->valueType())};
         checkCallArgs(op3(), args);
@@ -112,7 +112,7 @@ opBegin(map::Get : MethodCall)
 
     opResult()
     {
-        auto mtype = ast::checkedCast<type::Map>(op1()->type());
+        auto mtype = ast::rtti::checkedCast<type::Map>(op1()->type());
         return mtype->valueType();
     }
 opEnd

@@ -4,14 +4,19 @@
 // @TEST-EXEC: btest-diff out
 //
 
-#include <grammar.h>
+#include <binpac++.h>
+#include <hilti/hilti-intern.h>
+
 #include <constant.h>
 #include <expression.h>
+#include <grammar.h>
 
 #include "production-helpers.cc"
 
 int main(int argc, char** argv)
 {
+    binpac::init();
+
     //  Anohther simple example grammar mimicing HTTP headers. Error
     //  expected.
 

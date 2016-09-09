@@ -12,6 +12,7 @@ namespace binpac {
 
 /// AST node for a function.
 class Function : public ast::Function<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -43,6 +44,7 @@ private:
 /// AST node for a hook. Note that we don't derive this from a function as in
 /// BinPAC++ hooks are actually quite differnt.
 class Hook : public Node {
+    AST_RTTI
 public:
     /// The kind of a hook defines whether it's to trigger during parsing or
     /// composing, or both.

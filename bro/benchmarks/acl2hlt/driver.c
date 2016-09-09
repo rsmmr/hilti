@@ -14,8 +14,7 @@ void read_packets()
     int count_yes = 0;
     int count_no = 0;
 
-    while( fgets(buffer, sizeof(buffer), stdin) ) {
-
+    while ( fgets(buffer, sizeof(buffer), stdin) ) {
         if ( buffer[0] == '!' )
             continue;
 
@@ -29,7 +28,7 @@ void read_packets()
 
         *addr1++ = '\0';
 
-        while( *addr1 && isspace(*addr1) )
+        while ( *addr1 && isspace(*addr1) )
             ++addr1;
 
         char* addr2 = strchr(addr1, ' ');
@@ -38,21 +37,21 @@ void read_packets()
 
         *addr2++ = '\0';
 
-        while( *addr2 && isspace(*addr2) )
+        while ( *addr2 && isspace(*addr2) )
             ++addr2;
 
         if ( strcmp(addr1, "-") == 0 || strcmp(addr2, "-") == 0 )
             continue;
 
-/*
-        char* flags = strchr(addr2, ' ');
-        if ( ! flags )
-            flags = addr2 + strlen(addr2);
+        /*
+                char* flags = strchr(addr2, ' ');
+                if ( ! flags )
+                    flags = addr2 + strlen(addr2);
 
-        *flags++ = '\0';
+                *flags++ = '\0';
 
-        int8_t syn = (strchr(flags, 'S') != 0);
-*/
+                int8_t syn = (strchr(flags, 'S') != 0);
+        */
 
         double ts = strtod(t, 0);
         hlt_time ht = hlt_time_from_timestamp(ts);
@@ -61,7 +60,7 @@ void read_packets()
 
         int8_t m = acl2hlt_match_packet(ht, ha1, ha2, &excpt, ctx);
 
-        if ( m == 1)
+        if ( m == 1 )
             count_yes++;
         else if ( m == 0 )
             count_no++;
@@ -97,4 +96,3 @@ int main(int argc, const char** argv)
 
     read_packets();
 }
-

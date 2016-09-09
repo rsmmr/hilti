@@ -11,6 +11,7 @@ namespace binpac {
 
 /// AST node for a source-level identifier.
 class ID : public ast::ID<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -25,6 +26,9 @@ public:
     ///
     /// l: Associated location.
     ID(component_list path, const Location& l = Location::None);
+
+    /// Destructor.
+    virtual ~ID();
 
     ACCEPT_VISITOR_ROOT();
 

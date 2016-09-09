@@ -42,9 +42,9 @@ void OverloadResolver::visit(expression::UnresolvedOperator* o)
     assert(operands.size() == 2);
 
     auto i = operands.begin();
-    auto id = ast::tryCast<expression::ID>(*i++);
-    auto tuple = ast::checkedCast<expression::Constant>(*i)->constant();
-    auto args = ast::checkedCast<constant::Tuple>(tuple)->value();
+    auto id = ast::rtti::tryCast<expression::ID>(*i++);
+    auto tuple = ast::rtti::checkedCast<expression::Constant>(*i)->constant();
+    auto args = ast::rtti::checkedCast<constant::Tuple>(tuple)->value();
 
     if ( ! id )
         return;
@@ -57,9 +57,9 @@ void OverloadResolver::visit(expression::UnresolvedOperator* o)
     for ( auto i = nodes.rbegin(); i != nodes.rend(); i++ ) {
         auto n = *i;
 
-        auto unit = ast::tryCast<type::Unit>(n);
-        auto item = ast::tryCast<type::unit::Item>(n);
-        auto block = ast::tryCast<statement::Block>(n);
+        auto unit = ast::rtti::tryCast<type::Unit>(n);
+        auto item = ast::rtti::tryCast<type::unit::Item>(n);
+        auto block = ast::rtti::tryCast<statement::Block>(n);
 
         if ( block ) {
             scope = block->scope();
@@ -93,7 +93,7 @@ void OverloadResolver::visit(expression::UnresolvedOperator* o)
 
     // Resolve overloaded function calls.
     for ( auto v : vals ) {
-        auto func = ast::tryCast<expression::Function>(v);
+        auto func = ast::rtti::tryCast<expression::Function>(v);
 
         if ( ! func )
             // Something else than a function, the validator will catch that.

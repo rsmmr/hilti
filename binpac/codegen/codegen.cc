@@ -94,7 +94,7 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
 
                 auto id = std::make_shared<ID>(t.first);
                 auto type = t.second;
-                auto unit = ast::tryCast<type::Unit>(type);
+                auto unit = ast::rtti::tryCast<type::Unit>(type);
                 auto hlttype = unit ? hiltiTypeParseObject(unit) : hiltiType(type);
 
                 hiltiAddType(id, hlttype, type);
@@ -268,7 +268,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiParseFunction(shared_ptr<type::Unit>
     assert(grammar);
 
     auto func =
-        ast::tryCast<hilti::Expression>(_mbuilder->lookupNode("parse-func", grammar->name()));
+        ast::rtti::tryCast<hilti::Expression>(_mbuilder->lookupNode("parse-func", grammar->name()));
 
     if ( func )
         return func;
@@ -287,8 +287,8 @@ shared_ptr<hilti::Expression> CodeGen::hiltiComposeFunction(shared_ptr<type::Uni
     auto grammar = u->grammar();
     assert(grammar);
 
-    auto func =
-        ast::tryCast<hilti::Expression>(_mbuilder->lookupNode("compose-func", grammar->name()));
+    auto func = ast::rtti::tryCast<hilti::Expression>(
+        _mbuilder->lookupNode("compose-func", grammar->name()));
 
     if ( func )
         return func;
@@ -304,7 +304,8 @@ shared_ptr<hilti::Expression> CodeGen::hiltiComposeFunction(shared_ptr<type::Uni
 
 shared_ptr<hilti::Type> CodeGen::hiltiTypeParseObject(shared_ptr<type::Unit> unit)
 {
-    auto t = ast::tryCast<hilti::Type>(_mbuilder->lookupNode("parse-obj", unit->id()->name()));
+    auto t =
+        ast::rtti::tryCast<hilti::Type>(_mbuilder->lookupNode("parse-obj", unit->id()->name()));
 
     if ( t )
         return t;
@@ -325,7 +326,7 @@ shared_ptr<hilti::Type> CodeGen::hiltiTypeParseObjectRef(shared_ptr<type::Unit> 
 
 shared_ptr<hilti::Expression> CodeGen::hiltiAddParseObjectTypeInfo(shared_ptr<Type> unit)
 {
-    auto e = ast::tryCast<hilti::Expression>(
+    auto e = ast::rtti::tryCast<hilti::Expression>(
         _mbuilder->lookupNode("parse-obj-typeinfo", unit->id()->name()));
 
     if ( e )
@@ -347,7 +348,7 @@ void CodeGen::hiltiAddType(shared_ptr<ID> id, shared_ptr<hilti::Type> htype, sha
 
     moduleBuilder()->addType(hid, htype, false, htype->location());
 
-    if ( auto unit = ast::tryCast<type::Unit>(btype) ) {
+    if ( auto unit = ast::rtti::tryCast<type::Unit>(btype) ) {
         auto hostapp_type = hiltiAddParseObjectTypeInfo(unit);
         auto i = ::hilti::builder::integer::create(BINPAC_TYPE_UNIT);
         ::hilti::builder::tuple::element_list elems = {i, hostapp_type};
@@ -862,7 +863,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCall(shared_ptr<expression::Function
 
     shared_ptr<hilti::Expression> result = nullptr;
 
-    if ( ftype->result() && ! ast::isA<type::Void>(ftype->result()->type()) ) {
+    if ( ftype->result() && ! ast::rtti::isA<type::Void>(ftype->result()->type()) ) {
         result = builder()->addTmp("result", hiltiType(ftype->result()->type()));
         builder()->addInstruction(result, hilti::instruction::flow::CallResult, hilti_func,
                                   hilti_args);
@@ -1067,7 +1068,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(
     shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<Expression> border,
     shared_ptr<hilti::Expression> lower_in, shared_ptr<hilti::Expression> upper_in)
 {
-    auto itype = ast::checkedCast<type::Integer>(type);
+    auto itype = ast::rtti::checkedCast<type::Integer>(type);
     auto hitype = hiltiTypeInteger(itype->width(), false);
     auto lower = builder()->addTmp("lower", hitype);
     auto upper = builder()->addTmp("upper", hitype);
@@ -1118,7 +1119,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(
     if ( ! etype_expr )
         fatalError("type BinPAC::BitOrder missing");
 
-    auto etype = ast::checkedCast<expression::Type>(etype_expr)->typeValue();
+    auto etype = ast::rtti::checkedCast<expression::Type>(etype_expr)->typeValue();
     auto eval = hiltiExpression(border, etype);
 
     builder()->addSwitch(eval, bdefault, cases);
@@ -1136,7 +1137,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiInsertBitsIntoInteger(
     shared_ptr<hilti::Expression> value, shared_ptr<Type> type, shared_ptr<Expression> border,
     shared_ptr<hilti::Expression> lower_in, shared_ptr<hilti::Expression> upper_in)
 {
-    auto itype = ast::checkedCast<type::Integer>(type);
+    auto itype = ast::rtti::checkedCast<type::Integer>(type);
     auto hitype = hiltiTypeInteger(itype->width(), false);
     auto lower = builder()->addTmp("lower", hitype);
     auto upper = builder()->addTmp("upper", hitype);
@@ -1189,7 +1190,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiInsertBitsIntoInteger(
     if ( ! etype_expr )
         fatalError("type BinPAC::BitOrder missing");
 
-    auto etype = ast::checkedCast<expression::Type>(etype_expr)->typeValue();
+    auto etype = ast::rtti::checkedCast<expression::Type>(etype_expr)->typeValue();
     auto eval = hiltiExpression(border, etype);
 
     builder()->addSwitch(eval, bdefault, cases);
@@ -1232,12 +1233,12 @@ shared_ptr<hilti::Expression> CodeGen::hiltiSynchronize(shared_ptr<type::Unit> u
 
 static binpac::type::unit::item::field::Switch* _switch(shared_ptr<binpac::type::unit::Item> item)
 {
-    auto f = ast::tryCast<binpac::type::unit::item::Field>(item);
+    auto f = ast::rtti::tryCast<binpac::type::unit::item::Field>(item);
 
     if ( ! (f && f->parent()) )
         return nullptr;
 
-    return dynamicCast(f->parent(), binpac::type::unit::item::field::Switch*);
+    return ast::rtti::tryCast<binpac::type::unit::item::field::Switch>(f->parent());
 }
 
 static bool _usingStructForItems(shared_ptr<binpac::type::unit::Item> f)
@@ -1599,12 +1600,12 @@ static void _computeFieldPathInStruct(CodeGen* cg, shared_ptr<hilti::Type> s,
                                       shared_ptr<binpac::ID> fn,
                                       ::hilti::builder::tuple::element_list* path)
 {
-    if ( auto rt = ast::tryCast<::hilti::type::Reference>(s) )
+    if ( auto rt = ast::rtti::tryCast<::hilti::type::Reference>(s) )
         s = rt->argType();
 
     s = cg->moduleBuilder()->resolveType(s);
 
-    auto stype = ast::checkedCast<::hilti::type::Struct>(s);
+    auto stype = ast::rtti::checkedCast<::hilti::type::Struct>(s);
 
     if ( auto sw = _switch(f) ) {
         auto ufn = _unionFieldNameAsString(sw->uniqueName());
@@ -1623,7 +1624,7 @@ static void _computeFieldPathInUnion(CodeGen* cg, shared_ptr<hilti::Type> u,
                                      ::hilti::builder::tuple::element_list* path)
 {
     u = cg->moduleBuilder()->resolveType(u);
-    auto utype = ast::checkedCast<::hilti::type::Union>(u);
+    auto utype = ast::rtti::checkedCast<::hilti::type::Union>(u);
 
     if ( _usingStructForItems(f) ) {
         auto sw = _switch(f);
@@ -1648,7 +1649,7 @@ shared_ptr<hilti::Expression> CodeGen::_hiltiItemOp(HiltiItemOp i,
 {
     bool transient = false;
 
-    if ( auto f = ast::tryCast<type::unit::item::Field>(field) )
+    if ( auto f = ast::rtti::tryCast<type::unit::item::Field>(field) )
         transient = f->transient();
 
     if ( field && field->aliased() )
@@ -1880,13 +1881,13 @@ shared_ptr<hilti::Expression> CodeGen::hiltiIntPackFormat(int width, bool signed
 
     // FIXME: Manual constanst folding here for now ...
 
-    if ( auto cbo = ast::tryCast<hilti::expression::Constant>(hltbo) ) {
-        auto e = ast::tryCast<hilti::constant::Enum>(cbo->constant());
+    if ( auto cbo = ast::rtti::tryCast<hilti::expression::Constant>(hltbo) ) {
+        auto e = ast::rtti::tryCast<hilti::constant::Enum>(cbo->constant());
         if ( e )
             id = e->value();
     }
 
-    else if ( auto eid = ast::tryCast<hilti::expression::ID>(hltbo) ) {
+    else if ( auto eid = ast::rtti::tryCast<hilti::expression::ID>(hltbo) ) {
         id = eid->id();
     }
 
@@ -2148,8 +2149,8 @@ shared_ptr<hilti::Expression> CodeGen::hiltiParserDefinition(shared_ptr<type::Un
                       util::fmt("%s::__binpac_parser_%s", scope, unit->id()->name().c_str()) :
                       util::fmt("__binpac_parser_%s", unit->id()->pathAsString().c_str());
 
-    auto parser =
-        ast::tryCast<hilti::Expression>(moduleBuilder()->lookupNode("parser-definition", name));
+    auto parser = ast::rtti::tryCast<hilti::Expression>(
+        moduleBuilder()->lookupNode("parser-definition", name));
 
     if ( parser )
         return parser;

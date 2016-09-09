@@ -4,6 +4,8 @@
 # These are automatically turned into corresponding methods for
 # visitors and RTTI information.
 
+#include <hilti/hilti-intern.h>
+
 AttributeSet
   : Node
 

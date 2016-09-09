@@ -29,11 +29,12 @@ CodeBuilder::~CodeBuilder()
 
 void CodeBuilder::hiltiStatement(shared_ptr<Statement> stmt)
 {
-    if ( ! ast::tryCast<statement::Block>(stmt) )
+    if ( ! ast::rtti::tryCast<statement::Block>(stmt) )
         cg()->builder()->addComment(util::fmt("Statement: %s", stmt->render()));
 
     bool success = processOne(stmt);
     assert(success || errors());
+    _UNUSED(success);
 }
 
 shared_ptr<hilti::Expression> CodeBuilder::hiltiExpression(shared_ptr<Expression> expr,
@@ -45,9 +46,10 @@ shared_ptr<hilti::Expression> CodeBuilder::hiltiExpression(shared_ptr<Expression
     shared_ptr<hilti::Node> result;
     bool success = processOne(expr, &result, coerce_to);
     assert(success || errors());
+    _UNUSED(success);
 
     assert(result);
-    return ast::checkedCast<hilti::Expression>(result);
+    return ast::rtti::checkedCast<hilti::Expression>(result);
 }
 
 void CodeBuilder::hiltiBindDollarDollar(shared_ptr<hilti::Expression> val)
@@ -57,8 +59,8 @@ void CodeBuilder::hiltiBindDollarDollar(shared_ptr<hilti::Expression> val)
 
 expression_list CodeBuilder::callParameters(shared_ptr<Expression> tupleop)
 {
-    auto tuple = ast::checkedCast<expression::Constant>(tupleop)->constant();
-    return ast::checkedCast<constant::Tuple>(tuple)->value();
+    auto tuple = ast::rtti::checkedCast<expression::Constant>(tupleop)->constant();
+    return ast::rtti::checkedCast<constant::Tuple>(tuple)->value();
 }
 
 shared_ptr<binpac::Expression> CodeBuilder::callParameter(shared_ptr<Expression> tupleop, int i)
@@ -99,7 +101,7 @@ void CodeBuilder::visit(declaration::Hook* h)
 
 void CodeBuilder::visit(declaration::Type* t)
 {
-    auto unit = ast::tryCast<type::Unit>(t->type());
+    auto unit = ast::rtti::tryCast<type::Unit>(t->type());
     auto type = unit ? cg()->hiltiTypeParseObject(unit) : cg()->hiltiType(t->type());
 
     cg()->hiltiAddType(t->id(), type, unit);
@@ -120,8 +122,8 @@ void CodeBuilder::visit(declaration::Variable* v)
     auto id = cg()->hiltiID(v->id());
     auto type = cg()->hiltiType(var->type());
 
-    auto local = ast::as<variable::Local>(var);
-    auto global = ast::as<variable::Global>(var);
+    auto local = ast::rtti::tryCast<variable::Local>(var);
+    auto global = ast::rtti::tryCast<variable::Global>(var);
 
     if ( local ) {
         auto local = cg()->moduleBuilder()->addLocal(id, type, nullptr, ::hilti::AttributeSet(),
@@ -208,6 +210,7 @@ void CodeBuilder::visit(expression::Constant* c)
     shared_ptr<hilti::Node> result = nullptr;
     bool success = processOne(c->constant(), &result);
     assert(success);
+    _UNUSED(success);
     assert(result);
     setResult(result);
 }
@@ -217,6 +220,7 @@ void CodeBuilder::visit(expression::Ctor* c)
     shared_ptr<hilti::Node> result = nullptr;
     bool success = processOne(c->ctor(), &result);
     assert(success);
+    _UNUSED(success);
     assert(result);
     setResult(result);
 }
@@ -279,7 +283,7 @@ void CodeBuilder::visit(expression::ListComprehension* c)
     mbuilder->popBuilder();
 
     auto body = mbuilder->popBody();
-    auto body_stmt = ::ast::checkedCast<hilti::statement::Block>(body->block());
+    auto body_stmt = ::ast::rtti::checkedCast<hilti::statement::Block>(body->block());
 
     auto id = cg()->hiltiID(c->variable());
     auto input = cg()->hiltiExpression(c->input());

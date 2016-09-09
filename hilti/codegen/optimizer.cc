@@ -3,6 +3,7 @@
 #include "../context.h"
 #include "../options.h"
 #include "codegen.h"
+#include "llvm-common.h"
 #include "util.h"
 
 using namespace hilti;
@@ -27,13 +28,14 @@ const Options& Optimizer::options() const
 std::unique_ptr<llvm::Module> Optimizer::optimize(std::unique_ptr<llvm::Module> module,
                                                   bool is_linked)
 {
-#if 1
+#if 0
     std::error_code lerr;
     llvm::raw_fd_ostream out(std::string("optmodule.bc"), lerr, llvm::sys::fs::F_None);
     llvm::WriteBitcodeToFile(module.get(), out);
     out.close();
 #endif
-#if 1
+
+#if 0
     llvm::LLVMContext nctx;
 
     auto b = llvm::MemoryBuffer::getFile("optmodule.bc");

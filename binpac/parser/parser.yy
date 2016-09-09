@@ -11,8 +11,8 @@ namespace binpac_parser { class Parser; }
 
 %locations
 
-%name-prefix="binpac_parser"
-%define "parser_class_name" "Parser"
+%name-prefix "binpac_parser"
+%define parser_class_name { Parser }
 
 %initial-action
 {
@@ -316,11 +316,11 @@ opt_linkage   : EXPORT                           { $$ = Declaration::EXPORTED; }
               | /* empty */ %prec PREC_HIGH      { $$ = Declaration::PRIVATE; }
 
 
-type_or_init  : ':' base_type init_expr          { $$ = std::make_tuple($2, $3); }
-              | init_expr                        { $$ = std::make_tuple($1->type(), $1); }
+type_or_init  : ':' base_type init_expr          { $$ = std::make_pair($2, $3); }
+              | init_expr                        { $$ = std::make_pair($1->type(), $1); }
 
-type_or_opt_init  : ':' type opt_init_expr       { $$ = std::make_tuple($2, $3); }
-              | init_expr                        { $$ = std::make_tuple($1->type(), $1); }
+type_or_opt_init  : ':' type opt_init_expr       { $$ = std::make_pair($2, $3); }
+              | init_expr                        { $$ = std::make_pair($1->type(), $1); }
 
 opt_init_expr : init_expr                        { $$ = $1; }
               | /* empty */                      { $$ = nullptr; }

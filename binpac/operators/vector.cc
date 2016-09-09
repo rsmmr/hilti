@@ -11,7 +11,7 @@ opBegin(vector::Index)
 
     opResult()
     {
-        auto v = ast::checkedCast<type::Vector>(op1()->type());
+        auto v = ast::rtti::checkedCast<type::Vector>(op1()->type());
         return v->argType();
     }
 opEnd
@@ -25,13 +25,13 @@ opBegin(vector::IndexAssign)
 
     opValidate()
     {
-        auto v = ast::checkedCast<type::Vector>(op1()->type());
+        auto v = ast::rtti::checkedCast<type::Vector>(op1()->type());
         canCoerceTo(op3(), v->argType());
     }
 
     opResult()
     {
-        auto v = ast::checkedCast<type::Vector>(op1()->type());
+        auto v = ast::rtti::checkedCast<type::Vector>(op1()->type());
         return std::make_shared<type::Void>();
     }
 opEnd

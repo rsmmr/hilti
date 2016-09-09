@@ -25,7 +25,7 @@ bool UnitScopeBuilder::run(shared_ptr<ast::NodeBase> module)
 void UnitScopeBuilder::visit(declaration::Type* t)
 {
     // If this is a unit, populate it's scope.
-    auto unit = ast::tryCast<type::Unit>(t->type());
+    auto unit = ast::rtti::tryCast<type::Unit>(t->type());
 
     if ( ! unit )
         return;

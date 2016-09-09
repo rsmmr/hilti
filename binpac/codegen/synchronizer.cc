@@ -142,12 +142,12 @@ void Synchronizer::_hiltiSynchronizeOnRegexp(
 
     // match_token_init
     auto op = hilti::builder::regexp::create(patterns);
-    auto re = ast::checkedCast<hilti::ctor::RegExp>(op->ctor());
+    auto re = ast::rtti::checkedCast<hilti::ctor::RegExp>(op->ctor());
     re->attributes().add(attribute::NOSUB);
     re->attributes().add(attribute::FIRSTMATCH);
     auto glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node("__sync"), op->type(), op,
                                                  hilti::AttributeSet(), true);
-    auto pattern = ast::checkedCast<hilti::Expression>(glob);
+    auto pattern = ast::rtti::checkedCast<hilti::Expression>(glob);
 
     cg()->builder()->addInstruction(mstate, hilti::instruction::regexp::MatchTokenInit, pattern);
     cg()->builder()->addInstruction(i, hilti::instruction::operator_::Assign, state()->cur);
@@ -460,7 +460,7 @@ void Synchronizer::visit(production::Sequence* l)
 
 void Synchronizer::visit(production::ChildGrammar* l)
 {
-    auto utype = ast::checkedCast<type::Unit>(l->type());
+    auto utype = ast::rtti::checkedCast<type::Unit>(l->type());
     _hiltiSynchronizeOne(utype);
 }
 

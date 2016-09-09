@@ -24,6 +24,7 @@ namespace binpac {
 
 /// Base class for expression nodes.
 class Expression : public ast::Expression<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -66,6 +67,7 @@ namespace expression {
 /// This redefines the expression's virtual methods (which otherwise the
 /// mix-ins provide).
 class CustomExpression : public Expression {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -83,6 +85,7 @@ public:
 
 /// AST node for a list expressions.
 class List : public binpac::Expression, public ast::expression::mixin::List<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -96,6 +99,7 @@ public:
 
 /// AST node for a constructor expression.
 class Ctor : public binpac::Expression, public ast::expression::mixin::Ctor<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -111,6 +115,7 @@ public:
 
 /// AST node for an expression referencing a constant
 class Constant : public binpac::Expression, public ast::expression::mixin::Constant<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -124,6 +129,7 @@ public:
 
 /// AST node for an expression referencing a variable.
 class Variable : public binpac::Expression, public ast::expression::mixin::Variable<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -137,6 +143,7 @@ public:
 
 /// AST node for an expression referencing a type.
 class Type : public binpac::Expression, public ast::expression::mixin::Type<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -150,6 +157,7 @@ public:
 
 /// AST node for an expression constructing a type's default value.
 class Default : public binpac::Expression, public ast::expression::mixin::Default<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -166,6 +174,7 @@ public:
 
 /// AST node for an expression referencing a module.
 class Module : public binpac::Expression, public ast::expression::mixin::Module<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -179,6 +188,7 @@ public:
 
 /// AST node for an expression referencing a function.
 class Function : public binpac::Expression, public ast::expression::mixin::Function<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -192,6 +202,7 @@ public:
 
 /// AST node for an expression referencing a function parameter.
 class Parameter : public binpac::Expression, public ast::expression::mixin::Parameter<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -206,6 +217,7 @@ public:
 
 /// AST node for an expression referencing an ID.
 class ID : public binpac::Expression, public ast::expression::mixin::ID<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -220,6 +232,7 @@ public:
 /// AST node for an expression that represents another expression coerced to
 /// a different type.
 class Coerced : public binpac::Expression, public ast::expression::mixin::Coerced<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -238,6 +251,7 @@ public:
 /// AST node for an expression encapsulating an already computed HILTI value
 /// during code generation.
 class CodeGen : public CustomExpression {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -264,6 +278,7 @@ private:
 /// AST node for an expression referencing a member attribute of a another
 /// type.
 class MemberAttribute : public CustomExpression {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -287,6 +302,7 @@ private:
 /// AST node for an expression that references internal parser state. This is
 /// used for reserved IDs like \a $$ and \a self.
 class ParserState : public CustomExpression {
+    AST_RTTI
 public:
     enum Kind {
         SELF,         /// A \a self expression.
@@ -340,6 +356,7 @@ private:
 
 /// AST node for an assigment,
 class Assign : public CustomExpression {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -368,6 +385,7 @@ private:
 
 /// AST node for a conditional (ternary) expression.
 class Conditional : public CustomExpression {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -405,6 +423,7 @@ private:
 /// derived from Resolved by passes::OperandResolver.
 ///
 class UnresolvedOperator : public CustomExpression {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -433,6 +452,7 @@ private:
 
 /// Base class for uniquenly resolved operators.
 class ResolvedOperator : public CustomExpression {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -483,6 +503,7 @@ private:
 /// AST node for an expression that's just a temporary place-holder for a not
 /// known value.
 class PlaceHolder : public CustomExpression {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -502,6 +523,7 @@ private:
 
 /// AST node for a list comprehension expression.
 class ListComprehension : public CustomExpression {
+    AST_RTTI
 public:
     /// Constructor.
     ///

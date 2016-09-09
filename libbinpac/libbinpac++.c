@@ -7,30 +7,27 @@
 
 #include "globals.h"
 #include "libbinpac++.h"
+#include "mime.h"
 
 struct _tmp_parser_def {
     binpac_parser* parser;
     hlt_type_info* pobj;
 };
 
-int _initialized = 0;
-static int _done = 0;
 static struct _tmp_parser_def* _tmp_parsers = 0;
 static int _tmp_parsers_size = 0;
-
-extern __binpac_globals* _globals;
 
 static void _register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exception** excpt,
                              hlt_execution_context* ctx)
 {
     parser->type_info = pobj;
-    hlt_list_push_back(__binpac_globals_get()->parsers, &hlt_type_info_hlt_BinPACHilti_Parser,
-                       &parser, excpt, ctx);
+    hlt_list_push_back(__binpac_globals()->parsers, &hlt_type_info_hlt_BinPACHilti_Parser, &parser,
+                       excpt, ctx);
     binpachilti_mime_register_parser(parser, excpt, ctx);
     GC_DTOR(parser, hlt_BinPACHilti_Parser, ctx);
 }
 
-static void _move_tmp_parsers()
+void __binpac_register_pending_parsers()
 {
     if ( ! _tmp_parsers )
         return;
@@ -44,58 +41,20 @@ static void _move_tmp_parsers()
     free(_tmp_parsers);
 }
 
-void __binpac_done()
-{
-    if ( _done )
-        return;
-
-    _done = 1;
-
-    hlt_exception* excpt = 0;
-    hlt_execution_context* ctx = hlt_global_execution_context();
-
-    if ( excpt )
-        hlt_exception_print_uncaught(excpt, ctx);
-
-    __binpac_globals_done();
-}
-
-void binpac_init()
-{
-    if ( _initialized )
-        return;
-
-    _initialized = 1;
-
-    __binpac_globals_init();
-
-    atexit(__binpac_done);
-
-    _move_tmp_parsers();
-}
-
-void __binpac_init_from_state(__binpac_globals* state)
-{
-    _done = 1; // Don't clean up.
-
-    __binpac_globals_set(state);
-    _move_tmp_parsers();
-}
-
 hlt_list* binpac_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return __binpac_globals_get()->parsers;
+    return __binpac_globals()->parsers;
 }
 
 void binpac_enable_debugging(int8_t enabled)
 {
     // Should be (sufficiently) thread-safe.
-    __binpac_globals_get()->debugging = enabled;
+    __binpac_globals()->debugging = enabled;
 }
 
 int8_t binpac_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return __binpac_globals_get()->debugging;
+    return __binpac_globals()->debugging;
 }
 
 int8_t binpachilti_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ctx)
@@ -114,7 +73,7 @@ void binpachilti_register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt
 {
     GC_CCTOR(parser, hlt_BinPACHilti_Parser, ctx);
 
-    if ( _initialized )
+    if ( __binpac_globals_initialized() )
         _register_parser(parser, pobj, excpt, ctx);
 
     else {

@@ -73,9 +73,9 @@ void IDResolver::visit(expression::ID* i)
     for ( auto i = nodes.rbegin(); i != nodes.rend(); i++ ) {
         auto n = *i;
 
-        auto unit = ast::tryCast<type::Unit>(n);
-        auto block = ast::tryCast<statement::Block>(n);
-        auto item = ast::tryCast<type::unit::Item>(n);
+        auto unit = ast::rtti::tryCast<type::Unit>(n);
+        auto block = ast::rtti::tryCast<statement::Block>(n);
+        auto item = ast::rtti::tryCast<type::unit::Item>(n);
 
         // std::cerr << "  block: " << block.get() << std::endl;
         // std::cerr << "  item: "  << item.get() << std::endl;
@@ -145,7 +145,7 @@ void IDResolver::visit(expression::ID* i)
     if ( vals.size() > 1 ) {
         // Only functions can be overloaded.
         for ( auto v : vals ) {
-            if ( ! ast::tryCast<expression::Function>(v) ) {
+            if ( ! ast::rtti::tryCast<expression::Function>(v) ) {
                 error(i,
                       util::fmt("ID %s defined more than once", id->id()->pathAsString().c_str()));
                 return;
@@ -229,7 +229,7 @@ void IDResolver::visit(type::Unknown* t)
     auto val = vals.front();
 
 
-    auto nt = ast::tryCast<expression::Type>(val);
+    auto nt = ast::rtti::tryCast<expression::Type>(val);
 
     if ( ! nt ) {
         error(t, util::fmt("ID %s does not reference a type", id->pathAsString().c_str()));
@@ -278,14 +278,14 @@ void IDResolver::visit(declaration::Hook* h)
 
     auto expr = exprs.front();
 
-    auto texpr = ast::tryCast<expression::Type>(expr);
+    auto texpr = ast::rtti::tryCast<expression::Type>(expr);
 
     if ( ! texpr ) {
         error(h, "id does not reference a type");
         return;
     }
 
-    auto unit = ast::tryCast<type::Unit>(texpr->typeValue());
+    auto unit = ast::rtti::tryCast<type::Unit>(texpr->typeValue());
 
     if ( ! unit ) {
         error(h, "id does not lead to a unit type");
@@ -344,9 +344,9 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
 
     shared_ptr<type::unit::item::Field> nfield = nullptr;
 
-    auto ctor = ast::tryCast<expression::Ctor>(expr);
-    auto constant = ast::tryCast<expression::Constant>(expr);
-    auto type = ast::tryCast<expression::Type>(expr);
+    auto ctor = ast::rtti::tryCast<expression::Ctor>(expr);
+    auto constant = ast::rtti::tryCast<expression::Constant>(expr);
+    auto type = ast::rtti::tryCast<expression::Type>(expr);
 
     if ( ctor )
         nfield =

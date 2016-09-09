@@ -1,13 +1,13 @@
-
 #ifndef HILTI_CONTEXT_H
 #define HILTI_CONTEXT_H
 
 #include <ast/logger.h>
 #include <util/file-cache.h>
 
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Module.h>
+namespace llvm {
+class Module;
+class LLVMContext;
+}
 
 #include "common.h"
 #include "module.h"
@@ -31,7 +31,7 @@ public:
     CompilerContext(std::shared_ptr<Options> options);
 
     /// Destructor.
-    ~CompilerContext();
+    virtual ~CompilerContext();
 
     /// Returns the set of options in effect.
     const Options& options() const;
@@ -205,41 +205,17 @@ public:
                                               path_list dylds = {}, bool add_stdlibs = true,
                                               bool add_sharedlibs = false);
 
-    /// JITs an LLVM module retuned by linkModules(). This also optimizes the
-    /// code according to the current set of options.
-    ///
-    /// module: The module. The function takes ownership.
-    ///
-    /// Returns: A JIT instance, or null if there was an error.
-    std::unique_ptr<JIT> jit(std::unique_ptr<llvm::Module> module);
-
     /// Returns the LLVM context to use with all LLVM calls.
-    llvm::LLVMContext& llvmContext()
-    {
-        return _llvm_context;
-    }
+    llvm::LLVMContext& llvmContext();
+
+    /// Sets an external LLVM context to use for all LLVM operations. This
+    /// context does not take ownership.
+    void setLLVMContext(llvm::LLVMContext* ctx);
 
     struct FunctionMapping {
         const char* name; /// Name of the function.
         void* func;       /// Address of the function.
     };
-
-#if 0
-    /// Installs a table to resolve functions at JIT time that are located
-    /// statically inside the main process.
-    ///
-    /// mappings: An array of name-to-address mappings. The last entry must
-    /// be null pointers to mark the end of the array.
-    void installJITFunctionTable(const FunctionMapping* ftable);
-
-    /// Looks up a function installed in the JIT function table.
-    ///
-    /// name: The function name to look up.
-    ///
-    /// Returns: A pointer to the function, or null if there's no function
-    /// under that name.
-    void* lookupJITFunctionInTable(const std::string& name);
-#endif
 
     /// Returns the file cache the context is using, or null if none.
     shared_ptr<util::cache::FileCache> fileCache() const;
@@ -312,6 +288,11 @@ public:
     /// a module's name.
     static std::string llvmGetModuleIdentifier(llvm::Module* module);
 
+protected:
+    /// Internal version of CompilerJITContext<JIT>::jit() that operates on the
+    /// already instantiated JIT object. Returns true on success.
+    bool _jit(std::unique_ptr<llvm::Module> module, JIT* jit);
+
 private:
     /// Optimizes an LLVM module according to the CompilerContext's options
     /// (including not at all if the options don't request optimization).
@@ -354,7 +335,8 @@ private:
     void _endPass();
 
     shared_ptr<Options> _options;
-    llvm::LLVMContext _llvm_context;
+    llvm::LLVMContext* _llvm_context;
+    bool _llvm_context_owner;
 
     shared_ptr<util::cache::FileCache> _cache;
 
@@ -381,6 +363,30 @@ public:
     pass_list& passes()
     {
         return _passes;
+    }
+};
+
+template <class JIT = hilti::JIT>
+class CompilerContextJIT : public CompilerContext {
+public:
+    /// Constructor.
+    CompilerContextJIT(std::shared_ptr<Options> options) : CompilerContext(options)
+    {
+    }
+
+    /// JITs an LLVM module retuned by linkModules(). This also optimizes the
+    /// code according to the current set of options.
+    ///
+    /// module: The module. The function takes ownership.
+    ///
+    /// Returns: A JIT instance, or null if there was an error.
+    std::unique_ptr<JIT> jit(std::unique_ptr<llvm::Module> module)
+    {
+        auto jit = std::make_unique<JIT>(this);
+        if ( _jit(std::move(module), jit.get()) )
+            return jit;
+        else
+            return nullptr;
     }
 };
 }

@@ -13,13 +13,118 @@
 using namespace binpac;
 using namespace type;
 
+trait::Trait::Trait()
+{
+}
+
+trait::Trait::~Trait()
+{
+}
+
+trait::parameter::Base::~Base()
+{
+}
+
+trait::parameter::Type::Type(shared_ptr<binpac::Type> type)
+{
+    _type = type;
+}
+
+shared_ptr<binpac::Type> trait::parameter::Type::type() const
+{
+    return _type;
+}
+
+bool trait::parameter::Type::_equal(shared_ptr<Base> other) const
+{
+    auto o = ast::rtti::checkedCast<Type>(other.get());
+    return _type->equal(o->_type);
+}
+
+trait::parameter::Integer::Integer(int64_t value)
+{
+    _value = value;
+}
+
+int64_t trait::parameter::Integer::value() const
+{
+    return _value;
+}
+
+bool trait::parameter::Integer::_equal(shared_ptr<Base> other) const
+{
+    auto o = ast::rtti::checkedCast<Integer>(other.get());
+    return _value == o->_value;
+}
+
+trait::parameter::Enum::Enum(shared_ptr<ID> label)
+{
+    _label = label;
+}
+
+shared_ptr<ID> trait::parameter::Enum::label() const
+{
+    return _label;
+}
+
+bool trait::parameter::Enum::_equal(shared_ptr<Base> other) const
+{
+    auto o = ast::rtti::checkedCast<Enum>(other.get());
+    return _label->pathAsString() == o->_label->pathAsString();
+}
+
+trait::parameter::Attribute::Attribute(const string& attr)
+{
+    _attr = attr;
+}
+
+const string& trait::parameter::Attribute::value() const
+{
+    return _attr;
+}
+
+bool trait::parameter::Attribute::_equal(shared_ptr<Base> other) const
+{
+    auto o = ast::rtti::checkedCast<Attribute>(other.get());
+    return _attr == o->_attr;
+}
+
+bool trait::Parameterized::equal(shared_ptr<Type> other) const
+{
+    auto pother = ast::type::checkedTrait<type::trait::Parameterized>(other);
+    auto params = parameters();
+    auto oparams = pother->parameters();
+
+    if ( params.size() != oparams.size() )
+        return false;
+
+    auto i1 = params.begin();
+    auto i2 = oparams.begin();
+
+    for ( ; i1 != params.end(); ++i1, ++i2 ) {
+        if ( ! (*i1 && *i2) )
+            return false;
+
+        auto t1 = *i1;
+        auto t2 = *i2;
+
+        if ( typeId(*t1) != typeId(*t2) )
+            return false;
+
+        if ( ! (*i1)->_equal(*i2) )
+            return false;
+    }
+
+    return true;
+}
+
 trait::Parseable::~Parseable()
 {
 }
 
 shared_ptr<binpac::Type> trait::Parseable::fieldType()
 {
-    auto t = dynamicCast(this, binpac::Type*);
+    auto t = ast::rtti::tryCast<binpac::Type>(this);
     assert(t);
     return t->sharedPtr<binpac::Type>();
 }
@@ -108,9 +213,9 @@ bool TypedPacType::_equal(shared_ptr<binpac::Type> other) const
     return trait::Parameterized::equal(other);
 }
 
-trait::Parameterized::type_parameter_list TypedPacType::parameters() const
+trait::Parameterized::parameter_list TypedPacType::parameters() const
 {
-    type_parameter_list params;
+    parameter_list params;
 
     if ( ! _argtype )
         return params;
@@ -130,8 +235,11 @@ Iterator::Iterator(shared_ptr<Type> ttype, const Location& l) : TypedPacType(tty
 
 bool Iterator::equal(shared_ptr<Type> other) const
 {
+    if ( ! ast::rtti::tryCast<Iterator>(other) )
+        return false;
+
     // Allow matching of derived classes against an iterator wildcard.
-    if ( ast::tryCast<Iterator>(other) && (wildcard() || other->wildcard()) )
+    if ( wildcard() || other->wildcard() )
         return true;
 
     return trait::Parameterized::equal(other);
@@ -187,7 +295,7 @@ const shared_ptr<ID> TypeByName::id() const
 
 bool TypeByName::_equal(shared_ptr<binpac::Type> other) const
 {
-    return dynamicPointerCast(other)->_id->name() == _id->name(, TypeByName);
+    return ast::rtti::tryCast<TypeByName>(other)->_id->name() == _id->name();
 }
 
 Unset::Unset(const Location& l) : PacType(l)
@@ -217,7 +325,7 @@ string MemberAttribute::render()
 
 bool MemberAttribute::_equal(shared_ptr<binpac::Type> other) const
 {
-    auto mother = dynamicPointerCast(other, MemberAttribute);
+    auto mother = ast::rtti::tryCast<MemberAttribute>(other);
     assert(mother);
 
     return _attribute && mother->_attribute ? (*_attribute == *mother->_attribute) : true;
@@ -307,7 +415,7 @@ shared_ptr<Scope> Bitset::typeScope()
 
     for ( auto label : _labels ) {
         auto p = shared_from_this();
-        auto p2 = dynamicPointerCast(p, binpac::Type);
+        auto p2 = ast::rtti::tryCast<binpac::Type>(p);
         constant::Bitset::bit_list bl;
         bl.push_back(label.first);
         auto val = shared_ptr<Constant>(new constant::Bitset(bl, p2, location()));
@@ -320,7 +428,7 @@ shared_ptr<Scope> Bitset::typeScope()
 
 bool Bitset::_equal(shared_ptr<Type> other) const
 {
-    auto bother = dynamicPointerCast(other, Bitset);
+    auto bother = ast::rtti::tryCast<Bitset>(other);
     assert(bother);
 
     if ( _labels.size() != bother->_labels.size() )
@@ -457,9 +565,9 @@ std::list<trait::Parseable::ParseAttribute> Bitfield::parseAttributes() const
     };
 }
 
-trait::Parameterized::type_parameter_list Bitfield::parameters() const
+trait::Parameterized::parameter_list Bitfield::parameters() const
 {
-    type_parameter_list params;
+    parameter_list params;
     auto p = std::make_shared<trait::parameter::Integer>(_width);
     params.push_back(p);
     return params;
@@ -502,7 +610,7 @@ shared_ptr<Scope> Enum::typeScope()
 
     for ( auto label : _labels ) {
         auto p = shared_from_this();
-        auto p2 = dynamicPointerCast(p, binpac::Type);
+        auto p2 = ast::rtti::tryCast<binpac::Type>(p);
         auto val = shared_ptr<Constant>(new constant::Enum(label.first, p2, location()));
         auto expr = shared_ptr<expression::Constant>(new expression::Constant(val, location()));
         _scope->insert(label.first, expr);
@@ -525,7 +633,7 @@ int Enum::labelValue(shared_ptr<ID> label) const
 
 bool Enum::_equal(shared_ptr<Type> other) const
 {
-    auto eother = dynamicPointerCast(other, Enum);
+    auto eother = ast::rtti::tryCast<Enum>(other);
     assert(eother);
 
     if ( _labels.size() != eother->_labels.size() )
@@ -602,7 +710,7 @@ bool Integer::signed_() const
 
 bool Integer::_equal(shared_ptr<binpac::Type> other) const
 {
-    auto iother = ast::checkedCast<type::Integer>(other);
+    auto iother = ast::rtti::checkedCast<type::Integer>(other);
 
     if ( signed_() != iother->signed_() )
         return false;
@@ -628,9 +736,9 @@ shared_ptr<Integer> Integer::signedInteger(int width, const Location& l)
     return std::make_shared<Integer>(width, true, l);
 }
 
-trait::Parameterized::type_parameter_list Integer::parameters() const
+trait::Parameterized::parameter_list Integer::parameters() const
 {
-    type_parameter_list params;
+    parameter_list params;
     auto p = std::make_shared<trait::parameter::Integer>(_width);
     params.push_back(p);
     return params;
@@ -650,9 +758,9 @@ Tuple::Tuple(const type_list& types, const Location& l) : PacType(l)
         addChild(t);
 }
 
-trait::Parameterized::type_parameter_list Tuple::parameters() const
+trait::Parameterized::parameter_list Tuple::parameters() const
 {
-    type_parameter_list params;
+    parameter_list params;
 
     for ( auto t : _types ) {
         auto p = std::make_shared<trait::parameter::Type>(t);
@@ -695,7 +803,7 @@ shared_ptr<binpac::Type> TypeType::typeType() const
 
 bool TypeType::_equal(shared_ptr<binpac::Type> other) const
 {
-    return _rtype->equal(dynamicPointerCast(other)->_rtype, TypeType);
+    return _rtype->equal(ast::rtti::tryCast<TypeType>(other)->_rtype);
 }
 
 Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l)
@@ -762,7 +870,7 @@ void type::Function::setCallingConvention(type::function::CallingConvention cc)
 
 bool type::Function::_equal(shared_ptr<binpac::Type> o) const
 {
-    auto other = ast::checkedCast<Function>(o);
+    auto other = ast::rtti::checkedCast<Function>(o);
 
     if ( ((*result()) != (*other->result())) )
         return false;
@@ -952,9 +1060,9 @@ bool Map::_equal(shared_ptr<binpac::Type> other) const
     return trait::Parameterized::equal(other);
 }
 
-trait::Parameterized::type_parameter_list Map::parameters() const
+trait::Parameterized::parameter_list Map::parameters() const
 {
-    type_parameter_list params;
+    parameter_list params;
 
     if ( wildcard() )
         return params;
@@ -983,14 +1091,14 @@ bool RegExp::_equal(shared_ptr<binpac::Type> other) const
     return trait::Parameterized::equal(other);
 }
 
-trait::Parameterized::type_parameter_list RegExp::parameters() const
+trait::Parameterized::parameter_list RegExp::parameters() const
 {
     uint64_t flags = 0;
 
     if ( _attrs->has("&nosub") )
         flags = 1;
 
-    type_parameter_list params = {std::make_shared<trait::parameter::Integer>(flags)};
+    parameter_list params = {std::make_shared<trait::parameter::Integer>(flags)};
     return params;
 }
 
@@ -1192,12 +1300,12 @@ shared_ptr<unit::item::Field> unit::item::Field::createByType(
     const hook_list& hooks, const attribute_list& attributes, const expression_list& parameters,
     const expression_list& sinks, const Location& location)
 {
-    if ( auto unit = ast::tryCast<type::Unit>(type) )
+    if ( auto unit = ast::rtti::tryCast<type::Unit>(type) )
         return std::make_shared<type::unit::item::field::Unit>(id, unit, kind, condition, hooks,
                                                                attributes, parameters, sinks,
                                                                location);
 
-    if ( auto list = ast::tryCast<type::List>(type) ) {
+    if ( auto list = ast::rtti::tryCast<type::List>(type) ) {
         auto field = createByType(list->argType(), nullptr, kind, nullptr, hook_list(),
                                   attribute_list(), expression_list(), expression_list(), location);
         return std::make_shared<type::unit::item::field::container::List>(id, field, kind,
@@ -1603,7 +1711,7 @@ bool unit::item::field::Switch::noFields() const
 {
     for ( auto c : _cases ) {
         for ( auto f : c->fields() ) {
-            if ( f->type() && ! ast::isA<type::Void>(f->type()) )
+            if ( f->type() && ! ast::rtti::isA<type::Void>(f->type()) )
                 return false;
         }
     }
@@ -1724,7 +1832,7 @@ unit_item_list Unit::items() const
 static void _flatten(shared_ptr<type::unit::Item> i, unit_item_list* dst)
 {
     // If it's a switch, descend.
-    auto switch_ = ast::tryCast<type::unit::item::field::Switch>(i);
+    auto switch_ = ast::rtti::tryCast<type::unit::item::field::Switch>(i);
 
     if ( switch_ ) {
         for ( auto c : switch_->cases() )
@@ -1752,7 +1860,7 @@ std::list<shared_ptr<unit::item::Field>> Unit::fields() const
     std::list<shared_ptr<unit::item::Field>> m;
 
     for ( auto i : _items ) {
-        auto f = ast::tryCast<unit::item::Field>(i);
+        auto f = ast::rtti::tryCast<unit::item::Field>(i);
 
         if ( f )
             m.push_back(f);
@@ -1766,7 +1874,7 @@ std::list<shared_ptr<unit::item::Field>> Unit::flattenedFields() const
     std::list<shared_ptr<unit::item::Field>> m;
 
     for ( auto i : flattenedItems() ) {
-        auto f = ast::tryCast<unit::item::Field>(i);
+        auto f = ast::rtti::tryCast<unit::item::Field>(i);
 
         if ( f )
             m.push_back(f);
@@ -1780,7 +1888,7 @@ std::list<shared_ptr<unit::item::Variable>> Unit::variables() const
     std::list<shared_ptr<unit::item::Variable>> m;
 
     for ( auto i : _items ) {
-        auto f = ast::tryCast<unit::item::Variable>(i);
+        auto f = ast::rtti::tryCast<unit::item::Variable>(i);
 
         if ( f )
             m.push_back(f);
@@ -1794,7 +1902,7 @@ std::list<shared_ptr<unit::item::GlobalHook>> Unit::globalHooks() const
     std::list<shared_ptr<unit::item::GlobalHook>> m;
 
     for ( auto i : _items ) {
-        auto f = ast::tryCast<unit::item::GlobalHook>(i);
+        auto f = ast::rtti::tryCast<unit::item::GlobalHook>(i);
 
         if ( f )
             m.push_back(f);
@@ -1808,7 +1916,7 @@ std::list<shared_ptr<unit::item::Property>> Unit::properties() const
     std::list<shared_ptr<unit::item::Property>> m;
 
     for ( auto i : _items ) {
-        auto f = ast::tryCast<unit::item::Property>(i);
+        auto f = ast::rtti::tryCast<unit::item::Property>(i);
 
         if ( f )
             m.push_back(f);
@@ -1824,7 +1932,7 @@ std::list<shared_ptr<unit::item::Property>> Unit::properties(const string& name)
     std::list<shared_ptr<unit::item::Property>> m;
 
     for ( auto i : _items ) {
-        auto f = ast::tryCast<unit::item::Property>(i);
+        auto f = ast::rtti::tryCast<unit::item::Property>(i);
 
         if ( ! f )
             continue;
@@ -1876,12 +1984,12 @@ std::pair<shared_ptr<unit::Item>, string> Unit::path(string_list p, shared_ptr<U
     if ( ! p.size() )
         return std::make_pair(next, "");
 
-    auto child = ast::tryCast<unit::item::Field>(next);
+    auto child = ast::rtti::tryCast<unit::item::Field>(next);
 
     if ( ! child )
         return std::make_pair(next, ::util::strjoin(p, "."));
 
-    auto unit = ast::tryCast<type::Unit>(child->type());
+    auto unit = ast::rtti::tryCast<type::Unit>(child->type());
 
     if ( ! unit )
         return std::make_pair(next, ::util::strjoin(p, "."));
@@ -1906,7 +2014,7 @@ void Unit::setGrammar(shared_ptr<Grammar> grammar)
 
 bool Unit::_equal(shared_ptr<binpac::Type> ty) const
 {
-    auto other = ast::checkedCast<Unit>(ty);
+    auto other = ast::rtti::checkedCast<Unit>(ty);
 
     if ( _items.size() != other->_items.size() )
         return false;

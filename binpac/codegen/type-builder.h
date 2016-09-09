@@ -95,7 +95,6 @@ protected:
     void visit(type::Any* a) override;
     void visit(type::Bitfield* b) override;
     void visit(type::Bitset* b) override;
-    void visit(type::Block* b) override;
     void visit(type::Bool* b) override;
     void visit(type::Bytes* b) override;
     void visit(type::CAddr* c) override;
@@ -133,7 +132,7 @@ protected:
     void visit(type::function::Result* r) override;
     void visit(type::iterator::Bytes* b) override;
     void visit(type::iterator::List* l) override;
-    void visit(type::iterator::Regexp* r) override;
+    void visit(type::iterator::Map* r) override;
     void visit(type::iterator::Set* s) override;
     void visit(type::iterator::Vector* v) override;
     void visit(type::unit::Item* i) override;

@@ -36,6 +36,11 @@ add_subdirectory(tools)
 message(STATUS "=== Setting up utils/")
 add_subdirectory(util)
 
-# add_subdirectory(libbinpac)
-# add_subdirectory(binpac)
-# add_subdirectory(bro)
+message(STATUS "=== Setting up libbinpac/")
+add_subdirectory(libbinpac)
+
+message(STATUS "=== Setting up binpac/")
+add_subdirectory(binpac)
+
+message(STATUS "=== Setting up bro/")
+add_subdirectory(bro)

@@ -71,7 +71,7 @@ namespace rtti {
 
 class RTTI {
 public:
-    static const int MAX_CLASSES = 1024;
+    static const int MAX_CLASSES = 2048;
     typedef unsigned int ID;
     typedef std::bitset<MAX_CLASSES> Mask;
 

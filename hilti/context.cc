@@ -2,12 +2,24 @@
 #include <fstream>
 #include <util/util.h>
 
+// LLVM redefines the DEBUG macro. Sigh.
+#ifdef DEBUG
+#define __SAVE_DEBUG DEBUG
+#undef DEBUG
+#endif
+
 #include <llvm/Support/DynamicLibrary.h>
 
+#undef DEBUG
+#ifdef __SAVE_DEBUG
+#define DEBUG __SAVE_DEBUG
+#endif
+
+#include "codegen/asm-annotater.h"
 #include "codegen/optimizer.h"
 #include "hilti-intern.h"
 #include "hilti/autogen/hilti-config.h"
-#include "jit/jit.h"
+#include "jit.h"
 #include "options.h"
 #include "parser/driver.h"
 
@@ -16,11 +28,29 @@ using namespace hilti::passes;
 
 CompilerContext::CompilerContext(std::shared_ptr<Options> options)
 {
+    _llvm_context = new llvm::LLVMContext();
+    _llvm_context_owner = true;
     setOptions(options);
 }
 
 CompilerContext::~CompilerContext()
 {
+    if ( _llvm_context_owner )
+        delete _llvm_context;
+}
+
+llvm::LLVMContext& CompilerContext::llvmContext()
+{
+    return *_llvm_context;
+}
+
+void CompilerContext::setLLVMContext(llvm::LLVMContext* ctx)
+{
+    if ( _llvm_context_owner )
+        delete _llvm_context;
+
+    _llvm_context = ctx;
+    _llvm_context_owner = false;
 }
 
 const Options& CompilerContext::options() const
@@ -815,11 +845,11 @@ std::unique_ptr<llvm::Module> CompilerContext::_optimize(std::unique_ptr<llvm::M
     return nmodule;
 }
 
-std::unique_ptr<JIT> CompilerContext::jit(std::unique_ptr<llvm::Module> module)
+bool CompilerContext::_jit(std::unique_ptr<llvm::Module> module, JIT* jit)
 {
     if ( ! options().jit ) {
         error("jitModule() called but options.jit not set\n");
-        return nullptr;
+        return false;
     }
 
     if ( options().cgDebugging("context") )
@@ -827,39 +857,15 @@ std::unique_ptr<JIT> CompilerContext::jit(std::unique_ptr<llvm::Module> module)
 
     _beginPass("<JIT>", "JIT-setup");
 
-    auto jit = std::make_unique<JIT>(this);
-
     if ( ! jit->jit(std::move(module)) ) {
         error("JITing module failed");
-        return nullptr;
+        return false;
     }
 
     _endPass();
 
-    return jit;
+    return true;
 }
-
-#if 0
-void CompilerContext::installJITFunctionTable(const FunctionMapping* ftable)
-{
-    if ( options().cgDebugging("context") )
-        std::cerr << util::fmt("Installing custom function table ...") << std::endl;
-
-    if ( ! _jit )
-        _jit = new JIT(this);
-
-    _jit->installFunctionTable(ftable);
-}
-
-void* CompilerContext::lookupJITFunctionInTable(const std::string& name)
-{
-    if ( ! _jit )
-        return nullptr;
-
-    return _jit->lookupFunctionInTable(name);
-}
-
-#endif
 
 shared_ptr<util::cache::FileCache> CompilerContext::fileCache() const
 {

@@ -1,9 +1,4 @@
 
-// Note: This file is compiled with -fno-rtti so that we can derive from LLVM classes.
-#ifndef HILTI_NO_RTTI
-#error File must be compiled with HILTI_NO_RTTI
-#endif
-
 #include "asm-annotater.h"
 #include "llvm-common.h"
 #include "symbols.h"

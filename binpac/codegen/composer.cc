@@ -133,7 +133,7 @@ void Composer::compose(shared_ptr<Node> node, shared_ptr<type::unit::item::Field
 void Composer::compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj,
                        shared_ptr<type::unit::item::Field> field)
 {
-    auto prod = ast::tryCast<Production>(node);
+    auto prod = ast::rtti::tryCast<Production>(node);
 
     if ( ! prod || prod->atomic() )
         return _hiltiCompose(node, obj, field);
@@ -142,7 +142,7 @@ void Composer::compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj,
     // correctly.
 
     // If we got an obj, and are parsing a unit, we need push a new state.
-    auto child = ast::tryCast<production::ChildGrammar>(node);
+    auto child = ast::rtti::tryCast<production::ChildGrammar>(node);
     if ( child && obj ) {
         auto pstate = std::make_shared<ComposerState>(child->childType(), obj);
         pushState(pstate);
@@ -168,7 +168,7 @@ void Composer::compose(shared_ptr<Node> node, shared_ptr<hilti::Expression> obj,
     }
 
     // Call the function.
-    auto efunc = ast::checkedCast<hilti::expression::Function>(func);
+    auto efunc = ast::rtti::checkedCast<hilti::expression::Function>(func);
     _hiltiCallComposeFunction(state()->unit, efunc);
 
     if ( child && obj ) {
@@ -228,7 +228,7 @@ shared_ptr<hilti::Expression> Composer::hiltiCreateComposeFunction(shared_ptr<ty
     auto n = cg()->moduleBuilder()->lookupNode("create-compose-function", name);
 
     if ( n )
-        return ast::checkedCast<hilti::Expression>(n);
+        return ast::rtti::checkedCast<hilti::Expression>(n);
 
     auto func = _newComposeFunction(name, unit);
     cg()->moduleBuilder()->cacheNode("create-compose-function", name, func);
@@ -277,10 +277,10 @@ void Composer::_hiltiCompose(shared_ptr<Node> node, shared_ptr<hilti::Expression
     shared_ptr<hilti::builder::BlockBuilder> true_;
     shared_ptr<hilti::builder::BlockBuilder> sync_cont;
 
-    auto prod = ast::tryCast<Production>(node);
+    auto prod = ast::rtti::tryCast<Production>(node);
 
     if ( prod )
-        field = ast::tryCast<type::unit::item::Field>(prod->pgMeta()->field);
+        field = ast::rtti::tryCast<type::unit::item::Field>(prod->pgMeta()->field);
 
     if ( field && ! field->forComposing() )
         // Skip
@@ -421,7 +421,7 @@ void Composer::_hiltiDataComposed(shared_ptr<hilti::Expression> data,
 {
     assert(field);
 
-    if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type()) )
+    if ( cg()->options().debug > 0 && ! ast::rtti::isA<type::Unit>(field->type()) )
         cg()->builder()->addDebugMsg("binpac-compose", util::fmt("%s = %%s", field->id()->name()),
                                      data);
 
@@ -488,7 +488,7 @@ void Composer::visit(expression::Type* t)
     auto field = arg1();
     assert(field);
 
-    auto type = ast::checkedCast<type::TypeType>(t->type())->typeType();
+    auto type = ast::rtti::checkedCast<type::TypeType>(t->type())->typeType();
 
     shared_ptr<hilti::Expression> value;
     processOne(type, &value, field);
@@ -499,7 +499,7 @@ void Composer::visit(constant::Integer* i)
     auto field = arg1();
     assert(field);
 
-    auto t = ast::checkedCast<type::Integer>(i->type());
+    auto t = ast::rtti::checkedCast<type::Integer>(i->type());
 
     cg()->builder()->addComment(util::fmt("Integer constant: %s", field->id()->name()));
 
@@ -597,7 +597,7 @@ void Composer::visit(production::Counter* c)
 
     _startingProduction(c->sharedPtr<Production>(), field);
 
-    if ( auto cont = ast::tryCast<type::unit::item::field::Container>(field) )
+    if ( auto cont = ast::rtti::tryCast<type::unit::item::field::Container>(field) )
         _hiltiComposeContainer(hiltiObject(field), c->body(), cont);
     else
         internalError(
@@ -725,7 +725,7 @@ void Composer::visit(production::Loop* l)
 
     _startingProduction(l->sharedPtr<Production>(), field);
 
-    if ( auto cont = ast::tryCast<type::unit::item::field::Container>(field) ) {
+    if ( auto cont = ast::rtti::tryCast<type::unit::item::field::Container>(field) ) {
         _hiltiComposeContainer(hiltiObject(field), l->body(), cont);
 
         if ( auto until = field->attributes()->lookup("until") ) {
@@ -771,6 +771,7 @@ void Composer::visit(type::Address* i)
     auto v4 = field->attributes()->has("ipv4");
     auto v6 = field->attributes()->has("ipv6");
     assert((v4 || v6) && ! (v4 && v6));
+    _UNUSED(v6);
 
     auto byteorder = field->inheritedProperty("byteorder");
     auto hltbo = byteorder ? cg()->hiltiExpression(byteorder) :

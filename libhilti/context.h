@@ -9,10 +9,6 @@
 #include "rtti.h"
 #include "types.h"
 
-#if 0
-#include "profiler.h"
-#endif
-
 struct __hlt_worker_thread;
 
 /// A per-thread execution context. This is however just the common header of

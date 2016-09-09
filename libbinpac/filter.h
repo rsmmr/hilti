@@ -46,7 +46,7 @@ struct binpac_filter {
 
 typedef struct binpac_filter binpac_filter;
 
-__HLT_DECLARE_RTTI_GC_TYPE(binpac_filter)
+__HLT_DECLARE_RTTI_GC_TYPE(binpac_filter);
 
 /// Instantiates and initializes a new filter and adds it to a filter chain.
 ///

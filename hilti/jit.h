@@ -4,10 +4,21 @@
 
 #include <ast/logger.h>
 
+// LLVM redefines the DEBUG macro. Sigh.
+#ifdef DEBUG
+#define __SAVE_DEBUG DEBUG
+#undef DEBUG
+#endif
+
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/Target/TargetMachine.h"
+
+#undef DEBUG
+#ifdef __SAVE_DEBUG
+#define DEBUG __SAVE_DEBUG
+#endif
 
 namespace hilti {
 
@@ -20,7 +31,7 @@ public:
     ///
     /// ctx: The HILTI compiler context.
     JIT(CompilerContext* ctx);
-    ~JIT();
+    virtual ~JIT();
 
     /// JITs an LLVM module retuned by linkModules(), and then initializes
     /// the runtime library. Afterwards nativeFunction() can be used to
@@ -46,6 +57,11 @@ public:
     /// Returns: A pointer to the function (which must be suitably casted),
     /// or null if that function doesn't exist and *must_exist* is false.
     void* nativeFunction(const string& function, bool must_exist = true);
+
+protected:
+    // For derived classes to override to add custom logic. Default
+    // implementations do nothing.
+    virtual void _jit_init();
 
 private:
     CompilerContext* _ctx;

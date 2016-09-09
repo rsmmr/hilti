@@ -11,6 +11,7 @@ namespace binpac {
 
 /// Base class for AST statement nodes.
 class Statement : public ast::Statement<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -26,6 +27,7 @@ namespace statement {
 
 /// A statement block.
 class Block : public Statement {
+    AST_RTTI
 public:
     typedef std::list<node_ptr<statement::Block>> block_list;
 
@@ -85,13 +87,14 @@ private:
     shared_ptr<Scope> _scope;
     string _next_comment = "";
     std::list<node_ptr<Declaration>> _decls;
-    std::list<node_ptr<Declaration>> _stmts;
+    std::list<node_ptr<Statement>> _stmts;
 };
 
 namespace try_ {
 
 /// A single catch clause for a Try statement.
 class Catch : public Node {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -139,6 +142,7 @@ private:
 
 /// A try-encapsulated block, with \a catch handlers.
 class Try : public Statement {
+    AST_RTTI
 public:
     typedef std::list<node_ptr<try_::Catch>> catch_list;
 
@@ -167,6 +171,7 @@ private:
 
 /// A for-each loop iterating over a sequence.
 class ForEach : public Statement {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -200,6 +205,7 @@ private:
 
 /// A no-op statement.
 class NoOp : public Statement {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -211,6 +217,7 @@ public:
 
 /// A ``print`` statement.
 class Print : public Statement {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -230,6 +237,7 @@ private:
 
 /// A statement evaluating an expression.
 class Expression : public Statement {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -250,6 +258,7 @@ private:
 /// A statement branching to one of two alternatives based on the value of an
 /// an expression.
 class IfElse : public Statement {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -285,6 +294,7 @@ private:
 
 /// A return statement.
 class Return : public Statement {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -304,6 +314,7 @@ private:
 
 /// A hook "stop" statement, as used in \c foreach hooks.
 class Stop : public Statement {
+    AST_RTTI
 public:
     /// Constructor.
     ///

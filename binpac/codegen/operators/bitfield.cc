@@ -8,8 +8,8 @@ using namespace binpac::codegen;
 void CodeBuilder::visit(expression::operator_::bitfield::Attribute* i)
 {
     auto op1 = cg()->hiltiExpression(i->op1());
-    auto btype = ast::checkedCast<type::Bitfield>(i->op1()->type());
-    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+    auto btype = ast::rtti::checkedCast<type::Bitfield>(i->op1()->type());
+    auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(i->op2());
 
     int idx = 0;
 

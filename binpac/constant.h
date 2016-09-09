@@ -21,6 +21,7 @@ class Enum;
 
 /// Base class for constant nodes.
 class Constant : public ast::Constant<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -48,6 +49,7 @@ public:
 /// have a constant value, not suprsingly.
 class Expression : public Constant
 {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -74,6 +76,7 @@ private:
 
 /// AST node for a constant of type String.
 class String : public ast::SpecificConstant<AstInfo, Constant, string> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -87,6 +90,7 @@ public:
 
 /// AST node for a constant of type Integer.
 class Integer : public ast::SpecificConstant<AstInfo, Constant, int64_t> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -104,6 +108,7 @@ public:
 
 /// AST node for a constant of type Bool.
 class Bool : public ast::SpecificConstant<AstInfo, Constant, bool> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -117,6 +122,7 @@ public:
 
 /// AST node for a constant of type Tuple.
 class Tuple : public Constant {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -139,6 +145,7 @@ private:
 
 /// AST node for a constant of type Address.
 class Address : public ast::SpecificConstant<AstInfo, Constant, string> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -155,6 +162,7 @@ public:
 
 /// AST node for a constant of type Network.
 class Network : public ast::SpecificConstant<AstInfo, Constant, string> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -181,6 +189,7 @@ public:
 
 /// AST node for a constant of type Port.
 class Port : public ast::SpecificConstant<AstInfo, Constant, string> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -196,6 +205,7 @@ public:
 
 /// AST node for a constant of type Bitset.
 class Bitset : public Constant {
+    AST_RTTI
 public:
     typedef std::list<shared_ptr<ID>> bit_list;
 
@@ -226,6 +236,7 @@ private:
 
 /// AST node for a constant of type Enum.
 class Enum : public Constant {
+    AST_RTTI
 public:
     typedef std::list<string> bit_list;
 
@@ -255,6 +266,7 @@ private:
 
 /// AST node for a constant of type Double.
 class Double : public ast::SpecificConstant<AstInfo, Constant, double> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -268,6 +280,7 @@ public:
 
 /// AST node for a constant of type Time.
 class Time : public Constant {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -301,6 +314,7 @@ private:
 
 /// AST node for a constant of type Interval.
 class Interval : public Constant {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -334,6 +348,7 @@ private:
 
 /// AST node for a constant of type Optional.
 class Optional : public Constant {
+    AST_RTTI
 public:
     /// Constructor for a set optional constant.
     ///

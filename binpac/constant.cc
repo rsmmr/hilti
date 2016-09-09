@@ -143,7 +143,7 @@ static shared_ptr<Type> _tuple_type(const expression_list& elems, const Location
 Bitset::Bitset(const bit_list& bits, shared_ptr<Type> bstype, const Location& l)
 {
     _bits = bits;
-    _bstype = ast::checkedCast<type::Bitset>(bstype);
+    _bstype = ast::rtti::checkedCast<type::Bitset>(bstype);
 
     // Check that we know all the labels.
     for ( auto b : bits ) {
@@ -175,7 +175,7 @@ const Bitset::bit_list& Bitset::value() const
 Enum::Enum(shared_ptr<ID> value, shared_ptr<Type> etype, const Location& l) : Constant(l)
 {
     _value = value;
-    _etype = ast::checkedCast<type::Enum>(etype);
+    _etype = ast::rtti::checkedCast<type::Enum>(etype);
 
     // Check that we know the label.
     for ( auto l : _etype->labels() ) {

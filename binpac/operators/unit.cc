@@ -7,8 +7,8 @@ opBegin(unit::Attribute)
 
     opValidate()
     {
-        auto unit = ast::checkedCast<type::Unit>(op1()->type());
-        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+        auto unit = ast::rtti::checkedCast<type::Unit>(op1()->type());
+        auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(op2());
 
         if ( ! unit->item(attr->id()) )
             error(op2(), "unknown unit item");
@@ -16,8 +16,8 @@ opBegin(unit::Attribute)
 
     opResult()
     {
-        auto unit = ast::checkedCast<type::Unit>(op1()->type());
-        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+        auto unit = ast::rtti::checkedCast<type::Unit>(op1()->type());
+        auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(op2());
 
         auto i = unit->item(attr->id());
         if ( ! i )
@@ -37,8 +37,8 @@ opBegin(unit::HasAttribute)
 
     opValidate()
     {
-        auto unit = ast::checkedCast<type::Unit>(op1()->type());
-        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+        auto unit = ast::rtti::checkedCast<type::Unit>(op1()->type());
+        auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(op2());
 
         if ( ! unit->item(attr->id()) )
             error(op2(), "unknown unit item");
@@ -60,8 +60,8 @@ opBegin(unit::TryAttribute)
 
     opValidate()
     {
-        auto unit = ast::checkedCast<type::Unit>(op1()->type());
-        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+        auto unit = ast::rtti::checkedCast<type::Unit>(op1()->type());
+        auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(op2());
 
         if ( ! unit->item(attr->id()) )
             error(op2(), "unknown unit item");
@@ -69,8 +69,8 @@ opBegin(unit::TryAttribute)
 
     opResult()
     {
-        auto unit = ast::checkedCast<type::Unit>(op1()->type());
-        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+        auto unit = ast::rtti::checkedCast<type::Unit>(op1()->type());
+        auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(op2());
 
         auto i = unit->item(attr->id());
         if ( ! i )
@@ -91,8 +91,8 @@ opBegin(unit::AttributeAssign)
 
     opValidate()
     {
-        auto unit = ast::checkedCast<type::Unit>(op1()->type());
-        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+        auto unit = ast::rtti::checkedCast<type::Unit>(op1()->type());
+        auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(op2());
 
         if ( ! unit->item(attr->id()) )
             error(op2(), "unknown unit item");
@@ -100,8 +100,8 @@ opBegin(unit::AttributeAssign)
 
     opResult()
     {
-        auto unit = ast::checkedCast<type::Unit>(op1()->type());
-        auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
+        auto unit = ast::rtti::checkedCast<type::Unit>(op1()->type());
+        auto attr = ast::rtti::checkedCast<expression::MemberAttribute>(op2());
 
         auto i = unit->item(attr->id());
 
@@ -123,14 +123,14 @@ opBegin(unit::New)
 
     opMatch()
     {
-        auto type = ast::checkedCast<type::TypeType>(op1()->type())->typeType();
-        return ast::isA<type::Unit>(type);
+        auto type = ast::rtti::checkedCast<type::TypeType>(op1()->type())->typeType();
+        return ast::rtti::isA<type::Unit>(type);
     }
 
     opValidate()
     {
-        auto ttype = ast::checkedCast<type::TypeType>(op1()->type());
-        auto unit = ast::checkedCast<type::Unit>(ttype->typeType());
+        auto ttype = ast::rtti::checkedCast<type::TypeType>(op1()->type());
+        auto unit = ast::rtti::checkedCast<type::Unit>(ttype->typeType());
 
         if ( hasOp(2) )
             checkCallArgs(op2(), unit->parameterTypes());
@@ -141,7 +141,7 @@ opBegin(unit::New)
 
     opResult()
     {
-        auto type = ast::checkedCast<type::TypeType>(op1()->type())->typeType();
+        auto type = ast::rtti::checkedCast<type::TypeType>(op1()->type())->typeType();
         return type;
     }
 opEnd

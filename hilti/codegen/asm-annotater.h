@@ -2,7 +2,7 @@
 #ifndef HILTI_CODEGEN_ASM_ANNOTATOR_H
 #define HILTI_CODEGEN_ASM_ANNOTATOR_H
 
-#include <llvm/IR/AssemblyAnnotationWriter.h>
+#include "llvm-common.h"
 
 namespace hilti {
 namespace codegen {

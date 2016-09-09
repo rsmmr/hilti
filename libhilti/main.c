@@ -38,7 +38,7 @@ static void usage(const char* prog)
 // implementation weak so the external implementation will override it.
 __attribute__((weak)) void main_run(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    fprintf(stderr, "<no Main::run() function in HILTI code>\n");
+    // fprintf(stderr, "<no Main::run() function in HILTI code>\n");
 }
 
 // Standalone main() driving command line processing and code execution. We

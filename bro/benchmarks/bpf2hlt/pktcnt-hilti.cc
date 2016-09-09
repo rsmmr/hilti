@@ -1,18 +1,18 @@
 // $Id$
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
 #include <getopt.h>
 #include <pcap.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 extern "C" {
 #include <libhilti.h>
 }
 
-const char *Trace;
+const char* Trace;
 int Profile = 0;
 
 unsigned long HdrSize = 14; // Ethernet
@@ -46,8 +46,8 @@ void error(const char* fmt, ...)
 }
 
 extern "C" {
-extern int8_t bpf2hlt_filter(hlt_bytes *, hlt_exception **, hlt_execution_context*);
-extern int8_t bpf2hlt_filter_noop(hlt_bytes *, hlt_exception **, hlt_execution_context*);
+extern int8_t bpf2hlt_filter(hlt_bytes*, hlt_exception**, hlt_execution_context*);
+extern int8_t bpf2hlt_filter_noop(hlt_bytes*, hlt_exception**, hlt_execution_context*);
 }
 
 hlt_execution_context* ctx = 0;
@@ -68,8 +68,8 @@ void pcapOpen()
 
 inline uint64_t rdtsc()
 {
-    unsigned int lo,hi;
-    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    unsigned int lo, hi;
+    __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
     return ((uint64_t)hi << 32) | lo;
 }
 
@@ -92,8 +92,8 @@ bool pcapNext()
 
     // Do an extra copy here to compare with HILTI, which does so as well.
     size_t len = hdr->caplen - HdrSize;
-    int8_t* buffer = (int8_t*) hlt_malloc_no_init(len);
-    memcpy((char *)buffer, data + HdrSize, len);
+    int8_t* buffer = (int8_t*)hlt_malloc_no_init(len);
+    memcpy((char*)buffer, data + HdrSize, len);
 
     hlt_exception* excpt = 0;
     hlt_execution_context* ctx = hlt_global_execution_context();
@@ -101,16 +101,16 @@ bool pcapNext()
 
     int8_t match = 0;
 
-    if ( Dummy != 2 )  {
+    if ( Dummy != 2 ) {
         if ( Dummy ) {
             uint64_t n = rdtsc();
             match = bpf2hlt_filter_noop(b, &excpt, ctx);
-            cycles += (rdtsc() - n );
+            cycles += (rdtsc() - n);
         }
         else {
             uint64_t n = rdtsc();
             match = bpf2hlt_filter(b, &excpt, ctx);
-            cycles += (rdtsc() - n );
+            cycles += (rdtsc() - n);
         }
     }
 
@@ -129,45 +129,44 @@ void pcapClose()
 
 void usage()
 {
-    printf("pktcnt [Options] <input file>\n"
-           "\n"
-           "  -r| --readfile <trace>         Trace file to read\n"
-           "  -P| --profile                  Enable HILTI profiling\n"
-           "\n");
+    printf(
+        "pktcnt [Options] <input file>\n"
+        "\n"
+        "  -r| --readfile <trace>         Trace file to read\n"
+        "  -P| --profile                  Enable HILTI profiling\n"
+        "\n");
 
     exit(1);
 }
 
-static struct option long_options[] = {
-    {"readfile", required_argument, 0, 't'},
-    {"profile", required_argument, 0, 'P'},
-    {0, 0, 0, 0}
-};
+static struct option long_options[] = {{"readfile", required_argument, 0, 't'},
+                                       {"profile", required_argument, 0, 'P'},
+                                       {0, 0, 0, 0}};
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     hlt_init();
 
-    while (1) {
-        char c = getopt_long (argc, argv, "r:Pd", long_options, 0);
+    while ( 1 ) {
+        char c = getopt_long(argc, argv, "r:Pd", long_options, 0);
 
         if ( c == -1 )
             break;
 
         switch ( c ) {
-          case 'r':
+        case 'r':
             Trace = optarg;
             break;
 
-          case 'd':
+        case 'd':
             ++Dummy;
             break;
 
-          case 'P':
+        case 'P':
             Profile = 1;
             break;
 
-          default:
+        default:
             usage();
         }
     }
@@ -179,7 +178,8 @@ int main(int argc, char **argv)
         error("need -r");
 
     hlt_exception* excpt = 0;
-    hlt_string profiler_tag = hlt_string_from_asciiz("pktcnt-total", &excpt, hlt_global_execution_context());
+    hlt_string profiler_tag =
+        hlt_string_from_asciiz("pktcnt-total", &excpt, hlt_global_execution_context());
 
     if ( Profile ) {
         fprintf(stderr, "Enabling profiling ...\n");
@@ -192,7 +192,8 @@ int main(int argc, char **argv)
 
     if ( Profile ) {
         hlt_exception* excpt = 0;
-        hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt, hlt_global_execution_context());
+        hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt,
+                           hlt_global_execution_context());
     }
 
     PacketCounter = 0;
@@ -201,7 +202,8 @@ int main(int argc, char **argv)
 
     fprintf(stderr, "pcap loop ...\n");
 
-    while ( pcapNext() );
+    while ( pcapNext() )
+        ;
 
     if ( Profile ) {
         hlt_exception* excpt = 0;
@@ -223,7 +225,4 @@ int main(int argc, char **argv)
     fprintf(stderr, "%s cycles %lu\n", tag, cycles);
 
     return 0;
-    }
-
-
-
+}

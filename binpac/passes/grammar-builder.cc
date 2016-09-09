@@ -49,6 +49,7 @@ shared_ptr<Production> GrammarBuilder::compileOne(shared_ptr<Node> n)
     shared_ptr<Production> production = nullptr;
     bool success = processOne(n, &production);
     assert(success);
+    _UNUSED(success);
     assert(production);
 
     _compiled.erase(n);
@@ -75,18 +76,19 @@ shared_ptr<Production> GrammarBuilder::compileOne(shared_ptr<Node> n)
 
 void GrammarBuilder::_resolveUnknown(shared_ptr<Production> production)
 {
-    auto unknown = ast::tryCast<production::Unknown>(production);
+    auto unknown = ast::rtti::tryCast<production::Unknown>(production);
 
     if ( unknown ) {
         auto n = unknown->node();
         auto p = _compiled.find(n);
         assert(p != _compiled.end());
-        if ( ast::isA<Production>(n) )
+        _UNUSED(p);
+        if ( ast::rtti::isA<Production>(n) )
             production->replace(n);
     }
 
     for ( auto c : production->childs() ) {
-        if ( ast::isA<Production>(c) )
+        if ( ast::rtti::isA<Production>(c) )
             _resolveUnknown(c->sharedPtr<binpac::Production>());
     }
 }
@@ -109,7 +111,7 @@ string GrammarBuilder::counter(const string& key)
 void GrammarBuilder::visit(declaration::Type* d)
 {
     // We are only interested in unit declarations.
-    auto unit = ast::tryCast<type::Unit>(d->type());
+    auto unit = ast::rtti::tryCast<type::Unit>(d->type());
 
     if ( ! unit )
         return;
@@ -135,7 +137,7 @@ static shared_ptr<type::unit::Item> _makeSkip(type::Unit* u, const std::string& 
     if ( ! expr )
         return nullptr;
 
-    auto ctor = ast::checkedCast<expression::Ctor>(expr)->ctor();
+    auto ctor = ast::rtti::checkedCast<expression::Ctor>(expr)->ctor();
     auto skip =
         std::make_shared<type::unit::item::field::Ctor>(std::make_shared<ID>(
                                                             ::util::fmt("__%s", pname)),
@@ -265,7 +267,7 @@ void GrammarBuilder::visit(type::unit::item::field::AtomicType* t)
 
     shared_ptr<Production> prod;
 
-    if ( ast::isA<type::EmbeddedObject>(t->type()) ) {
+    if ( ast::rtti::isA<type::EmbeddedObject>(t->type()) ) {
         // Not quite clear if there's a nicer way to present these than
         // special-casing them here.
         auto sym = "type:" + t->id()->name();
@@ -297,10 +299,11 @@ void GrammarBuilder::visit(type::unit::item::field::Unit* u)
     else
         name = util::fmt("unit%d", _unit_counter++);
 
-    assert(ast::isA<Production>(chprod));
-    auto child = std::make_shared<production::ChildGrammar>(name, chprod,
-                                                            ast::checkedCast<type::Unit>(u->type()),
-                                                            u->location());
+    assert(ast::rtti::isA<Production>(chprod));
+    auto child =
+        std::make_shared<production::ChildGrammar>(name, chprod,
+                                                   ast::rtti::checkedCast<type::Unit>(u->type()),
+                                                   u->location());
     child->pgMeta()->field = u->sharedPtr<type::unit::item::field::Unit>();
     setResult(child);
 }

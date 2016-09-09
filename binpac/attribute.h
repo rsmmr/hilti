@@ -13,6 +13,7 @@ namespace binpac {
 
 /// An key/value attribute.
 class Attribute : public Node {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -54,6 +55,7 @@ private:
 
 /// A collection of attributes.
 class AttributeSet : public Node {
+    AST_RTTI
 public:
     /// Ctor.
     ///

@@ -14,9 +14,9 @@
 // put it back in we need to, but it makes the code quite a bit more complex
 // and not sure we still need it.
 
-#include <stdio.h>
-#include <getopt.h>
 #include <errno.h>
+#include <getopt.h>
+#include <stdio.h>
 #include <sys/resource.h>
 
 #ifndef __STDC_FORMAT_MACROS
@@ -28,19 +28,20 @@
 #undef DEBUG
 
 #ifdef PAC_DRIVER_JIT
-#include <hilti.h>
 #include <binpac++.h>
-#include <jit/libhilti-jit.h>
+#include <binpac/jit.h>
+#include <hilti.h>
+#include <hilti/jit.h>
 
 extern "C" {
-    #include <libbinpac++.h>
+#include <libbinpac++.h>
 }
 
 #else
 
 extern "C" {
-    #include <libhilti.h>
-    #include <libbinpac++.h>
+#include <libbinpac++.h>
+#include <libhilti.h>
 }
 
 struct Options {
@@ -48,7 +49,8 @@ struct Options {
     bool optimize;
     unsigned int profile;
 
-    Options() {
+    Options()
+    {
         debug = optimize = false;
         profile = 0;
     }
@@ -56,7 +58,7 @@ struct Options {
 
 #endif
 
-typedef struct  {
+typedef struct {
     int first;
     const char* second;
     int mark;
@@ -72,7 +74,8 @@ binpac_parser* reply = 0;
 std::set<string> cgdbg;
 typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
 binpac_parsers_func JitParsers = nullptr;
-binpac::CompilerContext* PacContext = nullptr;
+std::unique_ptr<hilti::JIT> Jit;
+std::shared_ptr<binpac::CompilerContext> PacContext;
 #endif
 
 static void check_exception(hlt_exception* excpt)
@@ -106,7 +109,8 @@ static void usage(const char* prog)
     fprintf(stderr, "    -g            Enable pac-driver's debug output\n");
     fprintf(stderr, "    -B            Enable BinPAC++ debugging hooks\n");
     fprintf(stderr, "    -i <n>        Feed input incrementally in chunks of size <n>\n");
-    fprintf(stderr, "    -e <off:str>  Embed string <str> at offset <off>; can be given multiple times\n");
+    fprintf(stderr,
+            "    -e <off:str>  Embed string <str> at offset <off>; can be given multiple times\n");
     fprintf(stderr, "    -l            Show available parsers\n");
     fprintf(stderr, "    -m <off>      Set mark at offset <off>; can be given multiple times\n");
     fprintf(stderr, "\n");
@@ -115,7 +119,8 @@ static void usage(const char* prog)
 #ifdef PAC_DRIVER_JIT
     fprintf(stderr, "    -I            Add directory to import path.\n");
     fprintf(stderr, "    -d            Enable debug mode for JIT compilation\n");
-    fprintf(stderr, "    -D <type>     Debug output during code generation; type can be %s\n", dbgstr.c_str());
+    fprintf(stderr, "    -D <type>     Debug output during code generation; type can be %s\n",
+            dbgstr.c_str());
     fprintf(stderr, "    -O            Optimize generated code.             [Default: off].\n");
     fprintf(stderr, "    -C            Use module cache.                    [Default: off].\n");
 #endif
@@ -159,7 +164,7 @@ void listParsers()
     while ( ! (hlt_iterator_list_eq(i, end, &excpt, ctx) || excpt) ) {
         ++count;
 
-        binpac_parser* p = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
+        binpac_parser* p = *(binpac_parser**)hlt_iterator_list_deref(i, &excpt, ctx);
 
         fputs("    ", stderr);
 
@@ -182,14 +187,13 @@ void listParsers()
                 else
                     fputs(", ", stderr);
 
-                hlt_port p = *(hlt_port*) hlt_iterator_list_deref(j, &excpt, ctx);
+                hlt_port p = *(hlt_port*)hlt_iterator_list_deref(j, &excpt, ctx);
                 hlt_string s = hlt_object_to_string(&hlt_type_info_hlt_port, &p, 0, &excpt, ctx);
                 hlt_string_print(stderr, s, 0, &excpt, ctx);
 
                 j = hlt_iterator_list_incr(j, &excpt, ctx);
                 first = 0;
             }
-
         }
 
         if ( p->mime_types ) {
@@ -202,13 +206,12 @@ void listParsers()
                 else
                     fputs(", ", stderr);
 
-                hlt_string s = *(hlt_string*) hlt_iterator_list_deref(j, &excpt, ctx);
+                hlt_string s = *(hlt_string*)hlt_iterator_list_deref(j, &excpt, ctx);
                 hlt_string_print(stderr, s, 0, &excpt, ctx);
 
                 j = hlt_iterator_list_incr(j, &excpt, ctx);
                 first = 0;
             }
-
         }
 
         if ( ! first )
@@ -242,7 +245,7 @@ static binpac_parser* findParser(const char* name)
     binpac_parser* result = 0;
 
     while ( ! (hlt_iterator_list_eq(i, end, &excpt, ctx) || excpt) ) {
-        binpac_parser* p = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
+        binpac_parser* p = *(binpac_parser**)hlt_iterator_list_deref(i, &excpt, ctx);
 
         if ( hlt_string_cmp(hname, p->name, &excpt, ctx) == 0 ) {
             result = p;
@@ -267,7 +270,6 @@ hlt_bytes* readAllInput(Embed* embeds)
     int8_t buffer[4096];
 
     if ( embeds->second && embeds->first == 0 ) {
-
         if ( embeds->mark )
             hlt_bytes_append_mark(input, &excpt, ctx);
 
@@ -286,12 +288,11 @@ hlt_bytes* readAllInput(Embed* embeds)
         size_t n = fread(buffer, 1, len, stdin);
         offset += n;
 
-        int8_t* copy = (int8_t*) hlt_malloc(n);
+        int8_t* copy = (int8_t*)hlt_malloc(n);
         memcpy(copy, buffer, n);
         hlt_bytes_append_raw(input, copy, n, &excpt, ctx);
 
         if ( embeds->second ) {
-
             if ( embeds->mark )
                 hlt_bytes_append_mark(input, &excpt, ctx);
 
@@ -318,7 +319,6 @@ hlt_bytes* readAllInput(Embed* embeds)
     // hlt_string_print(stderr, s, 1, &excpt, ctx);
 
     return input;
-
 }
 
 static void dump_memstats()
@@ -334,18 +334,26 @@ static void dump_memstats()
     uint64_t num_nullbuffer = stats.num_nullbuffer;
     uint64_t max_nullbuffer = stats.max_nullbuffer;
 
-    fprintf(stderr, "--- pac-driver stats: "
-                    "%" PRIu64 "M heap, "
-                    "%" PRIu64 "M alloced, "
-                    "%" PRIu64 " allocations, "
-                    "%" PRIu64 " totals refs "
-                    "%" PRIu64 " in nullbuffer "
-                    "%" PRIu64 " max nullbuffer"
-                    "\n",
+    fprintf(stderr,
+            "--- pac-driver stats: "
+            "%" PRIu64
+            "M heap, "
+            "%" PRIu64
+            "M alloced, "
+            "%" PRIu64
+            " allocations, "
+            "%" PRIu64
+            " totals refs "
+            "%" PRIu64
+            " in nullbuffer "
+            "%" PRIu64
+            " max nullbuffer"
+            "\n",
             heap, alloced, current_allocs, total_refs, num_nullbuffer, max_nullbuffer);
 }
 
-void composeOutput(hlt_bytes* data, void** obj, hlt_type_info* type, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
+void composeOutput(hlt_bytes* data, void** obj, hlt_type_info* type, void* user,
+                   hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes_block block;
     hlt_iterator_bytes start = hlt_bytes_begin(data, excpt, ctx);
@@ -393,7 +401,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
         if ( driver_debug )
             fprintf(stderr, "--- pac-driver: starting parsing single input chunk.\n");
 
-        void *pobj = (*p->parse_func)(input, 0, &excpt, ctx);
+        void* pobj = (*p->parse_func)(input, 0, &excpt, ctx);
 
         if ( driver_debug )
             fprintf(stderr, "--- pac-driver: done parsing single input chunk.\n");
@@ -422,7 +430,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
     while ( ! done ) {
         if ( hlt_bytes_at_object(cur, &hlt_type_info_hlt_string, &excpt, ctx) ) {
             done = 0;
-            void *o = hlt_bytes_retrieve_object(cur, &hlt_type_info_hlt_string, &excpt, ctx);
+            void* o = hlt_bytes_retrieve_object(cur, &hlt_type_info_hlt_string, &excpt, ctx);
             hlt_bytes_append_object(incr_input, &hlt_type_info_hlt_string, o, &excpt, ctx);
             cur_end = hlt_bytes_skip_object(cur, &excpt, ctx);
         }
@@ -430,9 +438,10 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
         else
             cur_end = hlt_iterator_bytes_incr_by(cur, chunk_size, &excpt, ctx);
 
-        done = (hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx) && ! hlt_bytes_at_object(cur_end, &hlt_type_info_hlt_string, &excpt, ctx));
+        done = (hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx) &&
+                ! hlt_bytes_at_object(cur_end, &hlt_type_info_hlt_string, &excpt, ctx));
 
-        //fprintf(stderr, "\n");
+        // fprintf(stderr, "\n");
         chunk1 = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
         hlt_bytes_append(incr_input, chunk1, &excpt, ctx);
 
@@ -450,15 +459,16 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
             if ( driver_debug )
                 fprintf(stderr, "--- pac-driver: starting parsing (eod=%d).\n", frozen);
 
-            void *pobj = (*p->parse_func)(incr_input, 0, &excpt, ctx);
+            void* pobj = (*p->parse_func)(incr_input, 0, &excpt, ctx);
             processParseObject(p, pobj);
         }
 
         else {
             if ( driver_debug )
-                fprintf(stderr, "--- pac-driver: resuming parsing (eod=%d, excpt=%p).\n", frozen, resume);
+                fprintf(stderr, "--- pac-driver: resuming parsing (eod=%d, excpt=%p).\n", frozen,
+                        static_cast<void *>(resume));
 
-            void *pobj = (*p->resume_func)(resume, &excpt, ctx);
+            void* pobj = (*p->resume_func)(resume, &excpt, ctx);
             processParseObject(p, pobj);
         }
 
@@ -482,7 +492,8 @@ void parseSingleInput(binpac_parser* p, int chunk_size, Embed* embeds)
 
         else if ( ! done ) {
             if ( driver_debug )
-                fprintf(stderr, "pac-driver: end of input reached even though more could be parsed.");
+                fprintf(stderr,
+                        "pac-driver: end of input reached even though more could be parsed.");
 
             break;
         }
@@ -503,9 +514,9 @@ bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> opt
     hilti::init();
     binpac::init();
 
-    PacContext = new binpac::CompilerContext(options);
+    PacContext = std::make_shared<binpac::CompilerContext>(options);
 
-    std::list<llvm::Module* > llvm_modules;
+    std::list<std::unique_ptr<llvm::Module>> llvm_modules;
 
     for ( auto p : pac2 ) {
         auto llvm_module = PacContext->compile(p);
@@ -515,37 +526,29 @@ bool jitPac2(const std::list<string>& pac2, std::shared_ptr<binpac::Options> opt
             return false;
         }
 
-        llvm_modules.push_back(llvm_module);
+        llvm_modules.push_back(std::move(llvm_module));
     }
 
-    auto linked_module = PacContext->linkModules("<jit analyzers>", llvm_modules);
+    auto linked_module = PacContext->linkModules("<jit analyzers>", std::move(llvm_modules));
 
     if ( ! linked_module ) {
         fprintf(stderr, "linking failed\n");
         return false;
     }
 
-    auto ee = PacContext->hiltiContext()->jitModule(linked_module);
+    Jit = PacContext->hiltiContext()->jit(std::move(linked_module));
 
-    if ( ! ee ) {
+    if ( ! Jit ) {
         fprintf(stderr, "jit failed");
         return false;
     }
 
-    // TODO: This should be done by jitModule, which however then needs to
-    // move into hilti-jit.
-    hlt_init_jit(PacContext->hiltiContext(), linked_module, ee);
-    binpac_init();
-    binpac_init_jit(PacContext->hiltiContext(), linked_module, ee);
+    JitParsers = (binpac_parsers_func)Jit->nativeFunction("binpac_parsers");
 
-    auto func = PacContext->hiltiContext()->nativeFunction(linked_module, ee, "binpac_parsers");
-
-    if ( ! func ) {
-        fprintf(stderr, "jitBinpacParser error: no function 'binpac_parsers'");
+    if ( ! JitParsers ) {
+        fprintf(stderr, "jit error: no function 'binpac_parsers'");
         return false;
     }
-
-    JitParsers = (binpac_parsers_func)func;
 
     return true;
 }
@@ -574,39 +577,37 @@ int main(int argc, char** argv)
 #endif
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:c")) != -1) {
-
-        switch (ch) {
-
-          case 'i':
+    while ( (ch = getopt(argc, argv, "i:p:t:v:s:dOBhD:UlTPgCI:e:m:c")) != -1 ) {
+        switch ( ch ) {
+        case 'i':
             chunk_size = atoi(optarg);
             break;
 
-          case 'p':
+        case 'p':
             parser = optarg;
             break;
 
-          case 'd':
+        case 'd':
             options->debug = true;
             break;
 
-          case 'g':
+        case 'g':
             ++driver_debug;
             break;
 
-          case 'B':
+        case 'B':
             debug_hooks = 1;
             break;
 
-          case 'P':
+        case 'P':
             ++options->profile;
             break;
 
-          case 'l':
+        case 'l':
             list_parsers = true;
             break;
 
-         case 'e': {
+        case 'e': {
             char* m = strchr(optarg, ':');
 
             if ( ! m ) {
@@ -617,7 +618,7 @@ int main(int argc, char** argv)
             *m = '\0';
             int offset = atoi(optarg);
 
-            if ( embeds_count < sizeof(embeds) - 1 ) {
+            if ( embeds_count < static_cast<int>(sizeof(embeds)) - 1 ) {
                 embeds[embeds_count].first = offset;
                 embeds[embeds_count].second = m + 1;
                 embeds[embeds_count].mark = 0;
@@ -625,12 +626,12 @@ int main(int argc, char** argv)
             }
 
             break;
-         }
+        }
 
-         case 'm': {
+        case 'm': {
             int offset = atoi(optarg);
 
-            if ( embeds_count < sizeof(embeds) - 1 ) {
+            if ( embeds_count < static_cast<int>(sizeof(embeds)) - 1 ) {
                 embeds[embeds_count].first = offset;
                 embeds[embeds_count].second = optarg; // Dummy, just != 0.
                 embeds[embeds_count].mark = 1;
@@ -638,33 +639,33 @@ int main(int argc, char** argv)
             }
 
             break;
-         }
+        }
 
 #ifdef PAC_DRIVER_JIT
-         case 'c':
+        case 'c':
             options->generate_composers = true;
             break;
 
-         case 'I':
+        case 'I':
             options->libdirs_pac2.push_back(optarg);
             break;
 
-         case 'D':
+        case 'D':
             options->cg_debug.insert(optarg);
             break;
 
-         case 'O':
+        case 'O':
             options->optimize = true;
             break;
 
-         case 'C':
+        case 'C':
             options->module_cache = ".cache";
             break;
 #endif
 
-          case 'h':
-            // Fall-through.
-          default:
+        case 'h':
+        // Fall-through.
+        default:
             usage(progname);
         }
     }
@@ -719,7 +720,7 @@ int main(int argc, char** argv)
         // If we have exactly one parser, that's the one we'll use.
         if ( hlt_list_size(parsers, &excpt, ctx) == 1 ) {
             hlt_iterator_list i = hlt_list_begin(parsers, &excpt, ctx);
-            request = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
+            request = *(binpac_parser**)hlt_iterator_list_deref(i, &excpt, ctx);
             assert(request);
             reply = request;
         }
@@ -779,15 +780,18 @@ int main(int argc, char** argv)
 
     if ( options->profile ) {
         hlt_exception* excpt = 0;
-        hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
-        hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt, hlt_global_execution_context());
+        hlt_string profiler_tag =
+            hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
+        hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt,
+                           hlt_global_execution_context());
     }
 
     parseSingleInput(request, chunk_size, embeds);
 
     if ( options->profile ) {
         hlt_exception* excpt = 0;
-        hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
+        hlt_string profiler_tag =
+            hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
         hlt_profiler_stop(profiler_tag, &excpt, hlt_global_execution_context());
     }
 

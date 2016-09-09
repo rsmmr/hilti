@@ -11,6 +11,7 @@ namespace binpac {
 
 /// Base class for AST variable nodes.
 class Variable : public ast::Variable<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -31,6 +32,7 @@ namespace variable {
 
 /// AST node representing a global variable.
 class Global : public binpac::Variable, public ast::variable::mixin::Global<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///
@@ -49,6 +51,7 @@ public:
 
 /// AST node representing a local variable.
 class Local : public binpac::Variable, public ast::variable::mixin::Local<AstInfo> {
+    AST_RTTI
 public:
     /// Constructor.
     ///

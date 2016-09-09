@@ -1,47 +1,81 @@
 
+
 #include "globals.h"
+#include "libbinpac++.h"
+#include "mime.h"
 
-extern int _initialized;
+static __binpac_global_state __our_globals;
+static __binpac_global_state* __globals = &__our_globals;
 
-static __binpac_globals _our_globals;
-__binpac_globals* _globals = 0;
-
-__binpac_globals* __binpac_globals_get()
+void* __binpac_runtime_state_get()
 {
-    assert(_globals);
-    return _globals;
+    return __globals;
+}
+
+void __binpac_runtime_state_set(void* state)
+{
+    __globals = (__binpac_global_state*)state;
 }
 
 extern const hlt_type_info hlt_type_info___mime_parser;
 
-void __binpac_globals_init()
+int __binpac_global_state_init()
 {
-    assert(! _globals);
+    if ( __globals->initialized )
+        return 0;
+
+    __globals->initialized = 1;
 
     hlt_exception* excpt = 0;
     hlt_execution_context* ctx = hlt_global_execution_context();
 
-    _globals = &_our_globals;
+    __globals->parsers = hlt_list_new(&hlt_type_info_hlt_BinPACHilti_Parser, 0, &excpt, ctx);
+    GC_CCTOR(__globals->parsers, hlt_list, ctx);
 
-    _globals->parsers = hlt_list_new(&hlt_type_info_hlt_BinPACHilti_Parser, 0, &excpt, ctx);
-    GC_CCTOR(_globals->parsers, hlt_list, ctx);
-
-    _globals->mime_types =
+    __globals->mime_types =
         hlt_map_new(&hlt_type_info_hlt_bytes, &hlt_type_info___mime_parser, 0, &excpt, ctx);
-    GC_CCTOR(_globals->mime_types, hlt_map, ctx);
+    GC_CCTOR(__globals->mime_types, hlt_map, ctx);
 
-    _globals->debugging = 0;
+    __globals->debugging = 0;
+
+    return 1;
 }
 
-void __binpac_globals_done()
+int __binpac_global_state_done()
 {
-    assert(_globals);
-    GC_DTOR(_globals->parsers, hlt_list, hlt_global_execution_context());
-    GC_DTOR(_globals->mime_types, hlt_map, hlt_global_execution_context());
+    if ( ! __globals->initialized )
+        return 0;
+
+    if ( __globals->finished )
+        return 0;
+
+    GC_DTOR(__globals->parsers, hlt_list, hlt_global_execution_context());
+    GC_DTOR(__globals->mime_types, hlt_map, hlt_global_execution_context());
+
+    __globals->finished = 1;
+
+    return 1;
 }
 
-void __binpac_globals_set(__binpac_globals* state)
+int __binpac_globals_initialized()
 {
-    assert(! _globals);
-    _globals = state;
+    return (__globals->initialized && ! __globals->finished);
+}
+
+__binpac_global_state* __binpac_globals()
+{
+#ifdef DEBUG
+    if ( __globals->finished ) {
+        fprintf(stderr, "internal error: libbinpac globals accessed after done\n");
+        abort();
+    }
+
+    if ( ! __globals->initialized ) {
+        fprintf(stderr, "internal error: libbinpac globals accessed before intialization\n");
+        abort();
+    }
+#endif
+
+    assert(__globals->initialized);
+    return __globals;
 }

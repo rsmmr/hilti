@@ -64,8 +64,7 @@ string Production::render()
 {
     string location = "";
 
-    int status;
-    char* name = abi::__cxa_demangle(typeName(*this), 0, 0, &status);
+    const char* name = ast::rtti::typeName(*this);
     name = strrchr(name, ':');
     assert(name);
 
@@ -356,7 +355,7 @@ ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<Production> child,
 {
     _child = child;
     addChild(_child);
-    assert(ast::isA<Production>(_child));
+    assert(ast::rtti::isA<Production>(_child));
 }
 
 shared_ptr<Production> ChildGrammar::child() const
@@ -366,7 +365,7 @@ shared_ptr<Production> ChildGrammar::child() const
 
 shared_ptr<type::Unit> ChildGrammar::childType() const
 {
-    return ast::checkedCast<type::Unit>(type());
+    return ast::rtti::checkedCast<type::Unit>(type());
 }
 
 #if 0
@@ -388,7 +387,7 @@ string ChildGrammar::renderProduction() const
 
 NonTerminal::alternative_list ChildGrammar::rhss() const
 {
-    assert(ast::isA<Production>(_child));
+    assert(ast::rtti::isA<Production>(_child));
     alternative_list rhss = {{_child}};
     return rhss;
 }
@@ -401,7 +400,7 @@ bool ChildGrammar::supportsSynchronize()
     if ( _child->supportsSynchronize() )
         return true;
 
-    auto utype = ast::checkedCast<type::Unit>(type());
+    auto utype = ast::rtti::checkedCast<type::Unit>(type());
 
     if ( utype->supportsSynchronize() )
         return true;
@@ -527,12 +526,12 @@ std::pair<bool, bool> LookAhead::defaultAlternatives()
     bool d2 = (_default == 2);
 
     for ( auto t : _lahs.first ) {
-        if ( ast::isA<production::Variable>(t) )
+        if ( ast::rtti::isA<production::Variable>(t) )
             d1 = true;
     }
 
     for ( auto t : _lahs.second ) {
-        if ( ast::isA<production::Variable>(t) )
+        if ( ast::rtti::isA<production::Variable>(t) )
             d2 = true;
     }
 
@@ -580,7 +579,7 @@ static string _fmtAlt(const production::LookAhead* p, int i)
         if ( ! first )
             lahs += ", ";
 
-        auto term = dynamicPointerCast(l, production::Terminal);
+        auto term = ast::rtti::tryCast<production::Terminal>(l);
         lahs += term->renderTerminal();
         lahs += util::fmt(" (id %d)", term ? term->tokenID() : -1);
 

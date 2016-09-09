@@ -8,18 +8,27 @@
 #error LLVM version >= 3.7 required.
 #endif
 
+// LLVM redefines the DEBUG macro. Sigh.
+#ifdef DEBUG
+#define __SAVE_DEBUG DEBUG
+#undef DEBUG
+#endif
+
 #include <llvm/ADT/Triple.h>
 #include <llvm/Analysis/TargetLibraryInfo.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/ObjectMemoryBuffer.h>
 #include <llvm/IR/AssemblyAnnotationWriter.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Metadata.h>
+#include <llvm/IR/Module.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/IRReader/IRReader.h>
@@ -40,5 +49,10 @@
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+#undef DEBUG
+#ifdef __SAVE_DEBUG
+#define DEBUG __SAVE_DEBUG
+#endif
 
 #endif

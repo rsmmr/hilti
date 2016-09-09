@@ -27,7 +27,7 @@ opBegin(iterator::Deref)
 
     opResult()
     {
-        auto atype = ast::checkedCast<type::Iterator>(op1()->type())->argType();
+        auto atype = ast::rtti::checkedCast<type::Iterator>(op1()->type())->argType();
         return ast::type::checkedTrait<type::trait::Iterable>(atype)->elementType();
     }
 opEnd
@@ -101,7 +101,7 @@ opEnd
 //     opDoc("Returns the iterator advanced by a given number of elements.");
 //
 //     opValidate() {
-//         if ( ast::checkedCast<type::Integer>(op2()->type())->signed_() )
+//         if ( ast::rtti::checkedCast<type::Integer>(op2()->type())->signed_() )
 //             error(op2(), "integer must be unsigned");
 //     }
 //
@@ -117,7 +117,7 @@ opEnd
 //     opDoc("Advances the iterator by a given number of elements.");
 //
 //     opValidate() {
-//         if ( ast::checkedCast<type::Integer>(op2()->type())->signed_() )
+//         if ( ast::rtti::checkedCast<type::Integer>(op2()->type())->signed_() )
 //             error(op2(), "integer must be unsigned");
 //     }
 //

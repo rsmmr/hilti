@@ -652,7 +652,7 @@ void Printer::visit(expression::Variable* v)
 void Printer::visit(statement::Block* b)
 {
     // We format the top-level block without enclosing braces.
-    auto top_level = (b->parents().size() && ast::tryCast<Module>(b->parents().front()));
+    auto top_level = (b->parents().size() && ast::rtti::tryCast<Module>(b->parents().front()));
 
     Printer& p = *this;
 

@@ -28,8 +28,8 @@ public:
 
 protected:
     void visit(expression::UnresolvedOperator* i) override;
-    void visit(Variable* i);
-    void visit(type::UnknownElementType* i);
+    void visit(Variable* i) override;
+    void visit(type::UnknownElementType* i) override;
 
 private:
     shared_ptr<Module> _module;

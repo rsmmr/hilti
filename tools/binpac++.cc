@@ -256,8 +256,10 @@ int main(int argc, char** argv)
             return 1;
         }
 
-        std::list<llvm::Module *> mods = { llvm_module };
-        auto linked_module = ctx->linkModules(input, mods,
+        std::list<std::unique_ptr<llvm::Module>> modules;
+        modules.push_back(std::move(llvm_module));
+
+        auto linked_module = ctx->linkModules(input, std::move(modules),
                                               std::list<string>(),
                                               path_list(), path_list(),
                                               add_stdlibs);
@@ -267,7 +269,7 @@ int main(int argc, char** argv)
             return 1;
         }
 
-        if ( ! ctx->hiltiContext()->printBitcode(linked_module, std::cout) ) {
+        if ( ! ctx->hiltiContext()->printBitcode(linked_module.get(), std::cout) ) {
             error(input, "Aborting due to LLVM problem.");
             return 1;
         }

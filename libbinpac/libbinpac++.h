@@ -10,6 +10,7 @@
 #include "libbinpac/autogen/binpac-hlt.h"
 #include "libbinpac/autogen/binpachilti-hlt.h"
 
+#include "init.h"
 #include "rtti.h"
 
 /// The main entry function to a BinPAC-generated parser.
@@ -78,16 +79,16 @@ typedef struct __binpac_parser {
 
 } binpac_parser;
 
-/// Must be called exactly once at program startup to initialize the BinPAC
-/// runtime.
-extern void binpac_init();
-
 /// Returns a list of all BinPAC generated parsers available.
 ///
 /// Returns: List of binpac_parser* instances - The available parsers.
 ///
 /// excpt: &
 extern hlt_list* binpac_parsers(hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Internal function called from binpac_init() to install parsers registered
+/// already at that time.
+void __binpac_register_pending_parsers();
 
 /// Enables debugging output compiled into the BinPAC++ parsers.
 ///

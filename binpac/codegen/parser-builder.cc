@@ -198,7 +198,7 @@ ParserBuilder::~ParserBuilder()
 bool ParserBuilder::parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result,
                           shared_ptr<type::unit::item::Field> f)
 {
-    auto prod = ast::tryCast<Production>(node);
+    auto prod = ast::rtti::tryCast<Production>(node);
 
     if ( ! prod || prod->atomic() )
         return _hiltiParse(node, result, f);
@@ -246,13 +246,13 @@ bool ParserBuilder::parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* 
     }
 
     // Call the function.
-    auto efunc = ast::checkedCast<hilti::expression::Function>(func);
+    auto efunc = ast::rtti::checkedCast<hilti::expression::Function>(func);
 
     shared_ptr<hilti::Type> vtype = nullptr;
 
     if ( result ) {
         auto rtype = efunc->function()->type()->result()->type();
-        auto ttype = ast::checkedCast<hilti::type::Tuple>(rtype);
+        auto ttype = ast::rtti::checkedCast<hilti::type::Tuple>(rtype);
         auto tlist = ttype->typeList();
         auto t = tlist.begin();
         std::advance(t, state()->unit->trackLookAhead() ? 4 : 2);
@@ -300,10 +300,10 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
     shared_ptr<ParserState> pstate_parse;
     shared_ptr<ParserState> pstate_length;
 
-    auto prod = ast::tryCast<Production>(node);
+    auto prod = ast::rtti::tryCast<Production>(node);
 
     if ( prod )
-        field = ast::tryCast<type::unit::item::Field>(prod->pgMeta()->field);
+        field = ast::rtti::tryCast<type::unit::item::Field>(prod->pgMeta()->field);
 
     if ( field && ! field->forParsing() )
         // Skip
@@ -335,7 +335,7 @@ bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Express
 
         shared_ptr<hilti::Expression> data = 0;
 
-        if ( ast::tryCast<hilti::type::Iterator>(input->type()) ) {
+        if ( ast::rtti::tryCast<hilti::type::Iterator>(input->type()) ) {
             cg()->builder()->addInstruction(cur, hilti::instruction::operator_::Assign, input);
             data = state()->data; // TODO: This only works if the iterator is part of the same bytes
                                   // object ...
@@ -475,8 +475,8 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiFunctionNew(shared_ptr<type::U
     // variables, we should simplify the layout of the struct and its
     // initialization.
 
-    auto func_expr =
-        ast::tryCast<hilti::Expression>(cg()->moduleBuilder()->lookupNode("parser-new-func", name));
+    auto func_expr = ast::rtti::tryCast<hilti::Expression>(
+        cg()->moduleBuilder()->lookupNode("parser-new-func", name));
 
     if ( func_expr )
         return func_expr;
@@ -543,8 +543,8 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiFunctionGlobalHook(shared_ptr<
     string name = util::fmt("__binpac_hook_%s_%s", unit->id()->name(), hook);
 
     auto cid = ::util::fmt("%s-%s", hook, name);
-    auto func_expr =
-        ast::tryCast<hilti::Expression>(cg()->moduleBuilder()->lookupNode("parser-hook-func", cid));
+    auto func_expr = ast::rtti::tryCast<hilti::Expression>(
+        cg()->moduleBuilder()->lookupNode("parser-hook-func", cid));
 
     if ( func_expr )
         return func_expr;
@@ -804,7 +804,7 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiCreateParseFunction(shared_ptr
     auto n = cg()->moduleBuilder()->lookupNode("create-parse-function", name);
 
     if ( n )
-        return ast::checkedCast<hilti::Expression>(n);
+        return ast::rtti::checkedCast<hilti::Expression>(n);
 
     auto func = _newParseFunction(name, unit);
     cg()->moduleBuilder()->cacheNode("create-parse-function", name, func);
@@ -817,6 +817,7 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiCreateParseFunction(shared_ptr
     bool success = _hiltiParse(grammar->root(), nullptr, nullptr);
 
     assert(success || errors());
+    _UNUSED(success);
 
     _finalizeParseObject(true);
 
@@ -889,7 +890,7 @@ shared_ptr<hilti::Expression> ParserBuilder::_newParseFunction(const string& nam
     auto var =
         std::make_shared<hilti::variable::Local>(eid, hilti::builder::reference::type(etype));
     auto decl = std::make_shared<hilti::declaration::Variable>(eid, var);
-    ast::checkedCast<hilti::statement::Block>(func->function()->body())->addDeclaration(decl);
+    ast::rtti::checkedCast<hilti::statement::Block>(func->function()->body())->addDeclaration(decl);
 
     pushState(std::make_shared<ParserState>(u));
 
@@ -920,7 +921,7 @@ static shared_ptr<hilti::type::struct_::Field> _convertField(
     if ( f->transient() )
         return nullptr;
 
-    if ( ast::isA<binpac::type::Void>(f->type()) )
+    if ( ast::rtti::isA<binpac::type::Void>(f->type()) )
         return nullptr;
 
     auto name = f->id()->name();
@@ -965,7 +966,7 @@ static void _convertFields(CodeGen* cg,
 {
     // One struct field per non-constant unit field.
     for ( auto f : in_fields ) {
-        auto sw = ast::tryCast<binpac::type::unit::item::field::Switch>(f);
+        auto sw = ast::rtti::tryCast<binpac::type::unit::item::field::Switch>(f);
 
         if ( ! sw ) {
             auto hf = _convertField(cg, f);
@@ -1216,7 +1217,7 @@ void ParserBuilder::_prepareParseObject(const hilti_expression_type_list& params
     // Sink variables get special treatment herel they are allocated here.
     // All other fields are left uninitialized.
     for ( auto v : u->variables() ) {
-        if ( ast::isA<type::Sink>(v->type()) ) {
+        if ( ast::rtti::isA<type::Sink>(v->type()) ) {
             auto vsink = cg()->builder()->addTmp("sink", cg()->hiltiType(v->type()));
             cg()->builder()->addInstruction(vsink, hilti::instruction::flow::CallResult,
                                             hilti::builder::id::create("BinPACHilti::sink_new"),
@@ -1250,7 +1251,7 @@ void ParserBuilder::_finalizeParseObject(bool success)
 
     // Close all sinks.
     for ( auto v : unit->variables() ) {
-        if ( ! ast::isA<type::Sink>(v->type()) )
+        if ( ! ast::rtti::isA<type::Sink>(v->type()) )
             continue;
 
         auto sink = cg()->hiltiItemGet(state()->self, v);
@@ -1296,7 +1297,7 @@ void ParserBuilder::_finalizeParseObject(bool success)
 
     // Delete all sinks.
     for ( auto v : unit->variables() ) {
-        if ( ! ast::isA<type::Sink>(v->type()) )
+        if ( ! ast::rtti::isA<type::Sink>(v->type()) )
             continue;
 
         auto sink = cg()->hiltiItemGet(state()->self, v);
@@ -1352,7 +1353,7 @@ void ParserBuilder::_startingProduction(shared_ptr<Production> p,
     if ( ! (field && storingValues()) )
         return;
 
-    if ( ast::isA<type::Void>(field->type()) )
+    if ( ast::rtti::isA<type::Void>(field->type()) )
         return;
 
     // Initalize the struct field with the HILTI default value if not already
@@ -1390,12 +1391,12 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p,
                                       shared_ptr<type::unit::item::Field> field,
                                       shared_ptr<hilti::Expression> value)
 {
-    if ( field && ! ast::isA<type::Void>(field->type()) ) {
+    if ( field && ! ast::rtti::isA<type::Void>(field->type()) ) {
         if ( value )
             value = cg()->hiltiApplyAttributesToValue(value, field->attributes());
 
         if ( value ) {
-            if ( ast::type::trait::hasTrait<type::trait::Sinkable>(field->fieldType()) )
+            if ( ast::type::hasTrait<type::trait::Sinkable>(field->fieldType()) )
                 cg()->hiltiWriteToSinks(field, value);
 
             if ( storingValues() && ! field->transient() )
@@ -1405,8 +1406,8 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p,
         else
             value = cg()->hiltiItemGet(state()->self, field);
 
-        if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type()) &&
-             ! ast::isA<type::Bitfield>(field->type()) ) {
+        if ( cg()->options().debug > 0 && ! ast::rtti::isA<type::Unit>(field->type()) &&
+             ! ast::rtti::isA<type::Bitfield>(field->type()) ) {
             cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", field->id()->name()),
                                          value);
         }
@@ -1549,7 +1550,7 @@ void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod,
     bool first = true;
 
     for ( auto l : terms ) {
-        if ( ast::isA<type::RegExp>(l->type()) )
+        if ( ast::rtti::isA<type::RegExp>(l->type()) )
             regexps.push_back(l);
         else
             other.push_back(l);
@@ -1626,7 +1627,7 @@ void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod,
     // Now iterate through the non-regexps.
 
     for ( auto t : other ) {
-        auto l = ast::tryCast<production::Literal>(t);
+        auto l = ast::rtti::tryCast<production::Literal>(t);
 
         if ( ! l )
             continue;
@@ -1750,20 +1751,20 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiMatchTokenInit(
         for ( auto t : terms ) {
             // FIXME: Really shouldn't have to do this cast here. Should we
             // pass in a list of Literals instead?
-            auto l = ast::checkedCast<production::Literal>(t);
+            auto l = ast::rtti::checkedCast<production::Literal>(t);
             for ( auto p : l->patterns() )
                 tokens.push_back(util::fmt("%s{#%d}", p, l->tokenID()));
         }
 
         auto op = hilti::builder::regexp::create(tokens);
-        auto re = ast::checkedCast<hilti::ctor::RegExp>(op->ctor());
+        auto re = ast::rtti::checkedCast<hilti::ctor::RegExp>(op->ctor());
         re->attributes().add(attribute::NOSUB);
         glob = cg()->moduleBuilder()->addGlobal(hilti::builder::id::node(name), op->type(), op);
 
         cg()->moduleBuilder()->cacheNode("match-token", name, glob);
     }
 
-    auto pattern = ast::checkedCast<hilti::Expression>(glob);
+    auto pattern = ast::rtti::checkedCast<hilti::Expression>(glob);
 
     cg()->builder()->addInstruction(mstate, hilti::instruction::regexp::MatchTokenInit, pattern);
 
@@ -2583,7 +2584,7 @@ void ParserBuilder::visit(expression::Type* t)
     auto field = arg1();
     assert(field);
 
-    auto type = ast::checkedCast<type::TypeType>(t->type())->typeType();
+    auto type = ast::rtti::checkedCast<type::TypeType>(t->type())->typeType();
 
     shared_ptr<hilti::Expression> value;
     processOne(type, &value, field);
@@ -2906,7 +2907,7 @@ void ParserBuilder::visit(production::Enclosure* c)
     assert(field);
 
     // We support enclosures only for containers currently.
-    assert(ast::isA<type::unit::item::field::Container>(field));
+    assert(ast::rtti::isA<type::unit::item::field::Container>(field));
 
     _startingProduction(c->sharedPtr<Production>(), field);
 
@@ -3171,10 +3172,12 @@ void ParserBuilder::visit(production::LookAhead* l)
     // eod is ok and we go there if we haven't found a look ahead symbol.
     shared_ptr<hilti::Expression> eod_ok = nullptr;
 
-    if ( l->lookAheads().first.empty() && ast::isA<production::Epsilon>(l->alternatives().first) )
+    if ( l->lookAheads().first.empty() &&
+         ast::rtti::isA<production::Epsilon>(l->alternatives().first) )
         eod_ok = found_alt1->block();
 
-    if ( l->lookAheads().second.empty() && ast::isA<production::Epsilon>(l->alternatives().second) )
+    if ( l->lookAheads().second.empty() &&
+         ast::rtti::isA<production::Epsilon>(l->alternatives().second) )
         eod_ok = found_alt2->block();
 
     if ( eod_ok ) {
@@ -3380,6 +3383,7 @@ void ParserBuilder::visit(type::Address* a)
     auto v4 = field->attributes()->has("ipv4");
     auto v6 = field->attributes()->has("ipv6");
     assert((v4 || v6) && ! (v4 && v6));
+    _UNUSED(v6);
 
     auto byteorder = field->inheritedProperty("byteorder");
     auto hltbo = byteorder ? cg()->hiltiExpression(byteorder) :

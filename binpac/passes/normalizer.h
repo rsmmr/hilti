@@ -22,18 +22,18 @@ public:
     bool run(shared_ptr<ast::NodeBase> ast) override;
 
 protected:
-    void visit(declaration::Type* t);
-    void visit(declaration::Variable* t);
-    void visit(type::unit::Item* i);
-    void visit(type::unit::item::Field* f);
-    void visit(type::unit::item::field::Container* c);
+    void visit(declaration::Type* t) override;
+    void visit(declaration::Variable* t) override;
+    void visit(type::unit::Item* i) override;
+    void visit(type::unit::item::Field* f) override;
+    void visit(type::unit::item::field::Container* c) override;
 
-    void visit(binpac::expression::operator_::unit::Input* i);
-    void visit(binpac::expression::operator_::unit::Offset* i);
-    void visit(binpac::expression::operator_::unit::SetPosition* i);
+    void visit(binpac::expression::operator_::unit::Input* i) override;
+    void visit(binpac::expression::operator_::unit::Offset* i) override;
+    void visit(binpac::expression::operator_::unit::SetPosition* i) override;
 
-    void visit(binpac::Expression* i);
-    void visit(binpac::expression::operator_::unit::TryAttribute* i);
+    void visit(binpac::Expression* i) override;
+    void visit(binpac::expression::operator_::unit::TryAttribute* i) override;
 
     void visit(statement::Return* r) override;
 };

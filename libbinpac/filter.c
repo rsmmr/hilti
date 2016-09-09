@@ -85,8 +85,6 @@ void binpachilti_filter_close(binpac_filter* head, hlt_exception** excpt,
     if ( ! head )
         return;
 
-    binpac_filter* prev = 0;
-
     binpac_filter* n = 0;
     for ( binpac_filter* f = head; f; f = n ) {
         n = f->next;

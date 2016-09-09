@@ -32,84 +32,83 @@ class ModuleBuilder;
 
 class StatementBuilder : public BuilderBase {
 public:
-	/**
-	 * Constructor.
-	 *
-	 * mbuilder: The module builder to use.
-	 */
-	StatementBuilder(class ModuleBuilder* mbuilder);
+    /**
+     * Constructor.
+     *
+     * mbuilder: The module builder to use.
+     */
+    StatementBuilder(class ModuleBuilder* mbuilder);
 
-	/**
-	 * Compiles a Bro statement into HILTI code, inserting the code at
-	 * the associated module builder's current location.
-	 */
-	void Compile(const Stmt* stmt);
+    /**
+     * Compiles a Bro statement into HILTI code, inserting the code at
+     * the associated module builder's current location.
+     */
+    void Compile(const Stmt* stmt);
 
-	enum FlowState { FLOW_STATE_BREAK, FLOW_STATE_NEXT, FLOW_STATE_FALLTHROUGH, FLOW_STATE_RETURN };
+    enum FlowState { FLOW_STATE_BREAK, FLOW_STATE_NEXT, FLOW_STATE_FALLTHROUGH, FLOW_STATE_RETURN };
 
-	/**
-	 * Record a block to branch to for an upcoming flow statement. This
-	 * pushes the given information onto an internal stack; when a flow
-	 * statement is encountered, the most recently pushed matching state
-	 * entry will be used.
-	 *
-	 * @param fstate The flow statement upon which to branch to *dst*.
-	 *
-	 * @param dst The block to branch to.
-	 */
-	void PushFlowState(FlowState fstate, shared_ptr<::hilti::Expression> dst);
+    /**
+     * Record a block to branch to for an upcoming flow statement. This
+     * pushes the given information onto an internal stack; when a flow
+     * statement is encountered, the most recently pushed matching state
+     * entry will be used.
+     *
+     * @param fstate The flow statement upon which to branch to *dst*.
+     *
+     * @param dst The block to branch to.
+     */
+    void PushFlowState(FlowState fstate, shared_ptr<::hilti::Expression> dst);
 
-	/**
-	 * Removes the most recently pushed flow state from the internal
-	 * stack.
-	 */
-	void PopFlowState();
+    /**
+     * Removes the most recently pushed flow state from the internal
+     * stack.
+     */
+    void PopFlowState();
 
 protected:
-	typedef std::list<std::pair<FlowState, shared_ptr<::hilti::Expression> > > flow_state_list;
+    typedef std::list<std::pair<FlowState, shared_ptr<::hilti::Expression>>> flow_state_list;
 
-	/**
-	 * Returns the target block associated with most recently pushed flow
-	 * state of the given type. It's an internal error if there is none.
-	 *
-	 * @param fstate The flow statement to search.
-	 *
-	 * @param optional If true, not having a state of type \a fstate
-	 * registered currently is ok. The method will return null in that
-	 * case.
-	 *
-	 * @return The corresponding block to branch to.
-	 */
-	shared_ptr<::hilti::Expression> CurrentFlowState(FlowState fstate, bool optional = false);
+    /**
+     * Returns the target block associated with most recently pushed flow
+     * state of the given type. It's an internal error if there is none.
+     *
+     * @param fstate The flow statement to search.
+     *
+     * @param optional If true, not having a state of type \a fstate
+     * registered currently is ok. The method will return null in that
+     * case.
+     *
+     * @return The corresponding block to branch to.
+     */
+    shared_ptr<::hilti::Expression> CurrentFlowState(FlowState fstate, bool optional = false);
 
-	void NotSupported(const ::BroType* type, const char* where);
-	void NotSupported(const ::Expr* expr, const char* where);
-	void NotSupported(const ::Stmt* stmt);
+    void NotSupported(const ::BroType* type, const char* where);
+    void NotSupported(const ::Expr* expr, const char* where);
+    void NotSupported(const ::Stmt* stmt);
 
-	void Compile(const ::AddStmt* stmt);
-	void Compile(const ::BreakStmt* stmt);
-	void Compile(const ::DelStmt* stmt);
-	void Compile(const ::EventStmt* stmt);
-	void Compile(const ::ExprStmt* stmt);
-	void Compile(const ::FallthroughStmt* stmt);
-	void Compile(const ::ForStmt* stmt);
-	void Compile(const ::IfStmt* stmt);
-	void Compile(const ::InitStmt* stmt);
-	void Compile(const ::NextStmt* stmt);
-	void Compile(const ::NullStmt* stmt);
-	void Compile(const ::PrintStmt* stmt);
-	void Compile(const ::ReturnStmt* stmt);
-	void Compile(const ::StmtList* stmt);
-	void Compile(const ::SwitchStmt* stmt);
-	void Compile(const ::WhenStmt* stmt);
+    void Compile(const ::AddStmt* stmt);
+    void Compile(const ::BreakStmt* stmt);
+    void Compile(const ::DelStmt* stmt);
+    void Compile(const ::EventStmt* stmt);
+    void Compile(const ::ExprStmt* stmt);
+    void Compile(const ::FallthroughStmt* stmt);
+    void Compile(const ::ForStmt* stmt);
+    void Compile(const ::IfStmt* stmt);
+    void Compile(const ::InitStmt* stmt);
+    void Compile(const ::NextStmt* stmt);
+    void Compile(const ::NullStmt* stmt);
+    void Compile(const ::PrintStmt* stmt);
+    void Compile(const ::ReturnStmt* stmt);
+    void Compile(const ::StmtList* stmt);
+    void Compile(const ::SwitchStmt* stmt);
+    void Compile(const ::WhenStmt* stmt);
 
-	void CompileForStmtTable(const ::ForStmt* stmt);
-	void CompileForStmtVector(const ::ForStmt* stmt);
+    void CompileForStmtTable(const ::ForStmt* stmt);
+    void CompileForStmtVector(const ::ForStmt* stmt);
 
 private:
-	flow_state_list flow_stack;
+    flow_state_list flow_stack;
 };
-
 }
 }
 }

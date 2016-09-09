@@ -1,8 +1,11 @@
 
-#include "variable.h"
+// TODO: Move this include to ast/mixin.h.
+#include <assert.h>
+
 #include "expression.h"
 #include "id.h"
 #include "type.h"
+#include "variable.h"
 
 using namespace binpac;
 using namespace binpac::variable;

@@ -208,7 +208,7 @@ Unit::Unit(const item_list& items, const Location& l) : Ctor(l)
 {
     for ( auto i : items ) {
         node_ptr<ID> id = i.first;
-        node_ptr<ID> init = i.second;
+        node_ptr<Expression> init = i.second;
         _items.push_back(std::make_pair(id, init));
         addChild(id);
         addChild(init);
@@ -256,7 +256,7 @@ ctor::Unit::item_list Unit::items() const
 
 shared_ptr<Type> Unit::type() const
 {
-    auto utype = ast::checkedCast<type::Unit>(_type);
+    auto utype = ast::rtti::checkedCast<type::Unit>(_type);
 
     // See if we have resolved some expression types in the meantime.
     for ( auto i : util::zip2(_items, utype->variables()) ) {

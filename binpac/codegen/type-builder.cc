@@ -49,7 +49,7 @@ shared_ptr<::hilti::Type> TypeBuilder::_buildType(shared_ptr<::hilti::Type> type
 
     if ( auto glob = mbuilder->lookupNode("type-builder", cidx) ) {
         // fprintf(stderr, "cidx1 %s\n", cidx.c_str());
-        return ast::checkedCast<hilti::Type>(glob);
+        return ast::rtti::checkedCast<hilti::Type>(glob);
     }
 #endif
 
@@ -73,6 +73,7 @@ shared_ptr<hilti::Type> TypeBuilder::hiltiType(shared_ptr<Type> type, id_list* d
     TypeInfo result;
     bool success = processOne(type, &result);
     assert(success);
+    _UNUSED(success);
 
     _deps = nullptr;
 
@@ -84,6 +85,7 @@ shared_ptr<hilti::ID> TypeBuilder::hiltiTypeID(shared_ptr<Type> type)
     TypeInfo result;
     bool success = processOne(type, &result);
     assert(success);
+    _UNUSED(success);
 
     return result.hilti_id;
 }
@@ -94,6 +96,7 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type, b
     TypeInfo result;
     bool success = processOne(type, &result);
     assert(success);
+    _UNUSED(success);
 
     auto val = result.hilti_default ?
                    result.hilti_default :
@@ -122,7 +125,7 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiAddParseObjectTypeInfo(shared_pt
     // Note that when changing anything here, libbinpac/rtti.c must be
     // adapted accordingly.
 
-    auto u = ast::checkedCast<type::Unit>(unit);
+    auto u = ast::rtti::checkedCast<type::Unit>(unit);
 
     ::hilti::builder::tuple::element_list items;
 
@@ -140,10 +143,10 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiAddParseObjectTypeInfo(shared_pt
 
         binpac_unit_item_kind kind = BINPAC_UNIT_ITEM_NONE;
 
-        if ( ast::isA<type::unit::item::Field>(i) )
+        if ( ast::rtti::isA<type::unit::item::Field>(i) )
             kind = BINPAC_UNIT_ITEM_FIELD;
 
-        else if ( ast::isA<type::unit::item::Variable>(i) )
+        else if ( ast::rtti::isA<type::unit::item::Variable>(i) )
             kind = BINPAC_UNIT_ITEM_VARIABLE;
 
         else
@@ -204,10 +207,6 @@ void TypeBuilder::visit(type::Bitfield* b)
 }
 
 void TypeBuilder::visit(type::Bitset* b)
-{
-}
-
-void TypeBuilder::visit(type::Block* b)
 {
 }
 
@@ -565,7 +564,7 @@ void TypeBuilder::visit(type::iterator::Bytes* b)
 
 void TypeBuilder::visit(type::iterator::List* l)
 {
-    auto ltype = ast::checkedCast<type::List>(l->argType());
+    auto ltype = ast::rtti::checkedCast<type::List>(l->argType());
     auto etype = hiltiType(ltype->elementType());
     auto ctype = hilti::builder::list::type(etype);
 
@@ -574,7 +573,7 @@ void TypeBuilder::visit(type::iterator::List* l)
     setResult(ti);
 }
 
-void TypeBuilder::visit(type::iterator::Regexp* r)
+void TypeBuilder::visit(type::iterator::Map* r)
 {
 }
 

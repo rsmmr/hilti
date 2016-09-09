@@ -7,7 +7,7 @@ using namespace binpac::codegen;
 
 void CodeBuilder::visit(ctor::Map* m)
 {
-    auto mtype = ast::checkedCast<type::Map>(m->type());
+    auto mtype = ast::rtti::checkedCast<type::Map>(m->type());
     auto ktype = cg()->hiltiType(mtype->keyType());
     auto vtype = cg()->hiltiType(mtype->valueType());
 

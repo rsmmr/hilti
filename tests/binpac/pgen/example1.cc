@@ -4,14 +4,19 @@
 // @TEST-EXEC: btest-diff out
 //
 
-#include <grammar.h>
+#include <binpac++.h>
+#include <hilti/hilti-intern.h>
+
 #include <constant.h>
 #include <expression.h>
+#include <grammar.h>
 
 #include "production-helpers.cc"
 
 int main(int argc, char** argv)
 {
+    binpac::init();
+
     // Simple example grammar from
     //
     // http://www.cs.uky.edu/~lewis/essays/compilers/td-parse.html

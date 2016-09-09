@@ -28,8 +28,6 @@ void lib_bro_object_mapping_unregister_bro(void* obj);
 
 // XXX Forward to libbro_object_mapping_invalidate_bro, which has HILTI-C calling convention.
 void lib_bro_object_mapping_invalidate_bro(void* obj);
-
-
 }
 
 #endif

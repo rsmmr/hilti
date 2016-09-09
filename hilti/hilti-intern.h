@@ -24,7 +24,6 @@
 #include "variable.h"
 
 #include "builder/builder.h"
-#include "codegen/asm-annotater.h"
 #include "codegen/codegen.h"
 #include "codegen/linker.h"
 #include "codegen/protogen.h"

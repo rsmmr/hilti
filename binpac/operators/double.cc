@@ -187,6 +187,6 @@ opBegin(double_::CastInteger : Cast)
 
     opResult()
     {
-        return ast::checkedCast<type::TypeType>(op2()->type())->typeType();
+        return ast::rtti::checkedCast<type::TypeType>(op2()->type())->typeType();
     }
 opEnd

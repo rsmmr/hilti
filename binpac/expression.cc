@@ -50,7 +50,7 @@ bool Expression::canCoerceTo(shared_ptr<Type> target) const
     // Coercer there (whihc however will break HILTI, which then should
     // implement data-type specific coercion in simialr way as we do here.)
     // And then this code should move there.
-    auto const_ = dynamicCast(this, const expression::Constant*);
+    auto const_ = ast::rtti::tryCast<const expression::Constant>(this);
 
     //    std::cerr << "    " << (const_ ? "is a constant" : "is not a constant") << std::endl;
 
@@ -79,10 +79,10 @@ shared_ptr<binpac::Expression> Expression::coerceTo(shared_ptr<Type> target)
 
     auto t = type();
 
-    if ( t->equal(target) || ast::isA<type::Any>(target) )
+    if ( t->equal(target) || ast::rtti::isA<type::Any>(target) )
         return sharedPtr<binpac::Expression>();
 
-    auto const_ = dynamicCast(this, const expression::Constant*);
+    auto const_ = ast::rtti::tryCast<const expression::Constant>(this);
     if ( const_ && ConstantCoercer().canCoerceTo(const_->constant(), target) )
         return std::make_shared<expression::Constant>(
             ConstantCoercer().coerceTo(const_->constant(), target));
@@ -247,7 +247,7 @@ shared_ptr<Type> expression::ParserState::type() const
 
     assert(_kind == PARAMETER);
 
-    auto utype = ast::tryCast<type::Unit>(_unit);
+    auto utype = ast::rtti::tryCast<type::Unit>(_unit);
 
     if ( ! utype )
         return std::make_shared<type::Unknown>(location());

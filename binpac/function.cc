@@ -45,7 +45,7 @@ Hook::Hook(shared_ptr<binpac::Statement> body, Kind kind, int prio, bool debug, 
 
 shared_ptr<statement::Block> Hook::body() const
 {
-    return ast::checkedCast<statement::Block>(_body);
+    return ast::rtti::checkedCast<statement::Block>(_body);
     ;
 }
 

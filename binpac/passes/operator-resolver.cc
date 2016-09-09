@@ -107,8 +107,8 @@ void OperatorResolver::visit(expression::UnresolvedOperator* o)
 
 void OperatorResolver::visit(Variable* i)
 {
-    if ( i->init() && ast::isA<type::Unknown>(i->type()) &&
-         ! ast::isA<type::Unknown>(i->init()->type()) )
+    if ( i->init() && ast::rtti::isA<type::Unknown>(i->type()) &&
+         ! ast::rtti::isA<type::Unknown>(i->init()->type()) )
         // We should have resolved the init expression by now.
         i->setType(i->init()->type());
 }
@@ -117,7 +117,7 @@ void OperatorResolver::visit(type::UnknownElementType* u)
 {
     auto t = u->expression()->type();
 
-    if ( ast::isA<type::Unknown>(t) )
+    if ( ast::rtti::isA<type::Unknown>(t) )
         return;
 
     auto iterable = ast::type::tryTrait<type::trait::Iterable>(t);
@@ -129,7 +129,7 @@ void OperatorResolver::visit(type::UnknownElementType* u)
 
     auto etype = iterable->elementType();
 
-    if ( ast::isA<type::Unknown>(etype) )
+    if ( ast::rtti::isA<type::Unknown>(etype) )
         return;
 
     u->replace(etype);

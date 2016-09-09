@@ -4,7 +4,7 @@
 # 3rd party code. This is for running external code analysis tools on
 # them. Must be started from top-level directory.
 
-dirs="hilti binpac ast util libhilti libbinpac"
+dirs="hilti binpac ast util libhilti libbinpac bro"
 
 exclude_dirs="/(3rdparty|libffi)($|/)"
 exclude_files="/(khash.h|utf8proc.c|utf8proc.h|utf8proc_data.c)$"

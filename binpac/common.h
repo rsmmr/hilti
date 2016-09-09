@@ -6,17 +6,17 @@
 #include <memory>
 #include <string>
 
-#include "binpac/autogen/binpac-config.h"
+#include <binpac/autogen/binpac-config.h>
 
 #include <ast/location.h>
 #include <ast/logger.h>
 
 // This forward-declares all our node types.
-#include "binpac/autogen/visitor-types.h"
+#include <binpac/autogen/visitor-types.h>
 
 // This forward-declares all the auto-generated expression::operator_::*
 // classes.
-#include "binpac/autogen/operators/operators-declare.h"
+#include <binpac/autogen/operators/operators-declare.h>
 
 #include "ast-info.h"
 
