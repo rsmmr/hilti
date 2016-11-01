@@ -126,9 +126,11 @@ add_dependencies(hilti-rt          generate_jrx_parser build_asm hiltip)
 
 set_target_properties(hilti-rt-dbg PROPERTIES COMPILE_FLAGS ${c_debug_flags})
 target_link_libraries(hilti-rt-dbg pcap)
+target_link_libraries(hilti-rt-dbg ${CMAKE_CURRENT_BINARY_DIR}/libhilti-rt-native.a)
 
 set_target_properties(hilti-rt     PROPERTIES COMPILE_FLAGS ${c_release_flags})
 target_link_libraries(hilti-rt     pcap)
+target_link_libraries(hilti-rt     ${CMAKE_CURRENT_BINARY_DIR}/libhilti-rt-native.a)
 
 include(ShowCompilerSettings)
 
