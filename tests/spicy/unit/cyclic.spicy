@@ -1,0 +1,29 @@
+#
+# @TEST-EXEC:  printf '\002\200\201\000\37712345\003\020\021\022\376\377ABCDE' | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+# DNS-like madness.
+
+module Test;
+
+export type Packet = unit() {
+    data: bytes &length=10;
+    name: Name(self);
+    data2: bytes &length=5;
+
+    on %done { print self; }
+};
+
+type Name = unit(p: Packet) {
+    labels: list<Label(p)> &until($$.len == 0 || $$.len == 255);
+};
+
+type Label = unit(p: Packet) {
+    len: uint8;
+
+    switch ( self.len ) {
+        254 -> n1: Name(p) &parse(p.input());
+        255 -> n2: Name(p) &parse(p.input());
+        *   -> l: bytes &length=self.len;
+    };
+};

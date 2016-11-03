@@ -1,0 +1,7 @@
+%synced
+%done: <l=[<x=b"12">, <x=b"34">, <x=b"78">]>
+%synced
+%done: <l=[<x=b"78">]>
+%synced
+%done: <l=[<x=b"12">, <x=b"34">]>
+hilti: uncaught exception, SpicyHilti::ParseError with argument 'synchronization error: end of input reached without finding bytes' (from <no location>:)

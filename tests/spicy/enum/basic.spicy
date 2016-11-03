@@ -1,0 +1,11 @@
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+type Foo = enum { AAA = 1, BBB, CCC, DDD = 3 };
+
+print Foo::AAA, Foo::BBB, Foo::CCC, Foo::DDD, Foo::Undef;
+

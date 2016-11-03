@@ -1,3 +1,0 @@
-<a=b"1234">
-Error <a=b"1234", b=b"567\x0a">
-hilti: uncaught exception, ParseError with argument '&length area not fully parsed' (from /home/robin/work/hilti/tests/.tmp/binpac.unit.error-hook/error-hook.hb41343.tmp.hlt:1059-1060)

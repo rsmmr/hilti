@@ -1,0 +1,20 @@
+#
+# First basic test - just output a little bit of information about udp packets
+#
+# @TEST-EXEC: cat ${DIST}/bro/tests/Traces/dns.trace | spicy-driver-test %INPUT ${PARSERS}/pcap.spicy 2>&1 >output
+# @TEST-EXEC: btest-diff output
+#
+# @TEST-KNOWN-FAILURE: Depends on list/eof.spicy being fixed.
+
+module Test;
+
+import Spicy;
+import parsers/pcap;
+
+on pcap::IPV4Packet::%done {
+	print "IP: From", self.source, "to", self.destination, "with protocol", self.protocol;
+}
+
+#on pcap::UDPPacket::%done {
+#  print "UDP: sourceport", self.source_port, "to", self.destination_port;
+#}

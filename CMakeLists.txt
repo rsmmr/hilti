@@ -36,11 +36,11 @@ add_subdirectory(tools)
 message(STATUS "=== Setting up utils/")
 add_subdirectory(util)
 
-message(STATUS "=== Setting up libbinpac/")
-add_subdirectory(libbinpac)
+message(STATUS "=== Setting up libspicy/")
+add_subdirectory(libspicy)
 
-message(STATUS "=== Setting up binpac/")
-add_subdirectory(binpac)
+message(STATUS "=== Setting up spicy/")
+add_subdirectory(spicy)
 
 message(STATUS "=== Setting up bro/")
 add_subdirectory(bro)

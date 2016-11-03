@@ -1,0 +1,24 @@
+#
+# @TEST-EXEC:  echo 1234567890abcde | spicy-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type Main = unit {
+    a: bytes &length=2;
+
+    b: bytes &length=5 {
+        self.data.write(self.b);
+    }
+
+    c: bytes &length=3;
+
+    d: bytes &length=5 -> self.data;
+
+    var data : sink;
+
+    on %done {
+        print "Size", |self.data|;
+    }
+};
+

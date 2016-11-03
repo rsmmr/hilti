@@ -1,0 +1,143 @@
+module x509;
+
+import parsers/asn1;
+
+global SubjectOids = map<bytes, bytes>(
+  b"2.5.4.3": b"CN",
+  b"2.5.4.5": b"SN",
+  b"2.5.4.6": b"C",
+  b"2.5.4.7": b"L",
+  b"2.5.4.8": b"S",
+  b"2.5.4.9": b"Addr",
+  b"2.5.4.10": b"O",
+  b"2.5.4.11": b"OU",
+  b"2.5.4.12": b"Title",
+  b"2.5.4.13": b"Description",
+  b"2.5.4.14": b"SearchGuide",
+  b"2.5.4.15": b"BC",
+  b"2.5.4.16": b"PostAddress",
+  b"2.5.4.17": b"ZIP",
+  b"2.5.4.18": b"PO Box",
+  b"2.5.4.19": b"Phusical Office",
+  b"2.5.4.20": b"Telephone",
+  b"2.5.4.21": b"Telex",
+  b"2.5.4.22": b"Teletex",
+  b"2.5.4.23": b"Fax",
+  b"2.5.4.24": b"x121",
+  b"1.2.840.113549.1.9.1": b"Email",
+  b"1.2.840.113549.1.9.2": b"Unstructured Name",
+  b"1.2.840.113549.1.9.8": b"Unstructured Address",
+  b"0.9.2342.19200300.100.1.25": b"DNS"
+);
+
+type algorithmidentifier = unit {
+  head: asn1::ASN1Header;
+  var algorithm: bytes;
+  algorithm_data: asn1::ASN1Message {
+    self.algorithm = self.algorithm_data.body.objectidentifier.oidstring;
+  }
+
+  # parameters
+  : bytes &length=(self.head.len.len - self.algorithm_data.head.total_length);
+};
+
+type cert_issuer_component = unit {
+  head: asn1::ASN1Header; # set-header
+  seq: asn1::ASN1Header; # sequence header
+
+  var tpe: bytes;
+  var value: string;
+
+  var formatted: string;
+
+  tpe_data: asn1::ASN1Message;
+  value_data: asn1::ASN1Message {
+    self.tpe = self.tpe_data.body.objectidentifier.oidstring;
+    self.value = self.value_data.body.asn1string.value;
+
+    self.tpe = Spicy::fmt(b"%s", (self.tpe, 1)); # bug workaround
+
+    self.formatted = Spicy::fmt("%s: %s", (SubjectOids.get(self.tpe, self.tpe).decode(Spicy::Charset::ASCII), self.value));
+  }
+};
+
+type cert_issuer = unit {
+  head: asn1::ASN1Header;
+  var read_length: uint64 = 0;
+  var value: string;
+
+  name_components: list<cert_issuer_component> &length=self.head.len.len
+  foreach {
+    if ( self.read_length == 0 ) {
+      self.value = $$.formatted;
+    } else {
+      self.value = Spicy::fmt("%s, %s", (self.value, $$.formatted));
+    }
+    self.read_length = self.read_length + $$.head.total_length;
+  }
+};
+
+type cert_validity = unit {
+  head: asn1::ASN1Header;
+
+  var not_before: string;
+  var not_after: string;
+
+  not_before_raw: asn1::ASN1Message;
+  not_after_raw: asn1::ASN1Message;
+
+  on %done {
+    self.not_before = self.not_before_raw.body.asn1string.value;
+    self.not_after = self.not_after_raw.body.asn1string.value;
+  }
+};
+
+type SubjectPublicKeyInfo = unit {
+  head: asn1::ASN1Header;
+  algorithm: algorithmidentifier;
+  subjectPublicKey: asn1::ASN1Message;
+};
+
+type tbscertificate = unit {
+  tbscertificate_head: asn1::ASN1Header;
+
+  var read_length: uint64 = 0;
+
+  var version: int64 = 1;
+  version_head: asn1::ASN1Header;
+  version_data: asn1::ASN1Message if (self.version_head.tag.class == asn1::ASN1Class::context-specific) {
+    self.version = self.version_data.body.num_value + 1;
+  }
+  serialnumber_head: asn1::ASN1Header if ( self.version_head.tag.class == asn1::ASN1Class::context-specific ); # otherwhise we have to use version_head
+  var serial: int64;
+  switch ( self.version_head.tag.data.class ) {
+    0 -> serialNumber_raw: asn1::ASN1Body(self.version_head);
+    2 -> serialNumber_raw: asn1::ASN1Body(self.serialnumber_head);
+  };
+  signature: algorithmidentifier;
+
+  issuer: cert_issuer;
+  validity: cert_validity;
+  subject: cert_issuer;
+  subjectPublicKeyInfo: SubjectPublicKeyInfo {
+    self.read_length = self.version_head.total_length;
+    if ( self.version_head.tag.class == asn1::ASN1Class::context-specific ) {
+        self.read_length = self.read_length + self.serialnumber_head.total_length;
+    }
+    self.read_length = self.read_length + self.signature.head.total_length + self.issuer.head.total_length + self.validity.head.total_length + self.subject.head.total_length + self.subjectPublicKeyInfo.head.total_length;
+    self.serial = self.serialNumber_raw.num_value;
+  }
+  # here there may be extension or other stuff if we have not exceeded the length.
+  : bytes &length=( self.tbscertificate_head.len.len - self.read_length); # for now - do not parse it.
+
+};
+
+export type certificate = unit {
+  certificate_head: asn1::ASN1Header;
+
+  certificate: tbscertificate;
+
+  signatureAlgorithm: algorithmidentifier;
+  signature: asn1::ASN1Message;
+};
+

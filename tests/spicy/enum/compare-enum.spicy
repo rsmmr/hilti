@@ -1,0 +1,31 @@
+# @TEST-EXEC: printf '\101\102' | spicy-driver-test %INPUT >output
+# @TEST-EXEC: btest-diff output
+#
+# @TEST-KNOWN-FAILURE: there's a problem with comparing enum labels.
+
+module Mini;
+
+type ObjectType = enum {
+  DataType = 0x41,
+  EndOfData = 0x43
+};
+
+if ( ObjectType::DataType == ObjectType::DataType ) {
+  print "equal";
+}
+
+if ( ObjectType::DataType != ObjectType::EndOfData ) {
+  print "not equal";
+}
+
+export type test = unit {
+  a : uint8 &convert=ObjectType($$);
+  b : uint8 &convert=ObjectType($$);
+
+  on %done {
+    if ( self.a == ObjectType::DataType )
+      print "equal";
+    if ( self.b != ObjectType::DataType )
+      print "not equal";
+  }
+};

@@ -1,0 +1,4 @@
+
+>>> new test 
+wrong-type.spicy:11-11: error, incompatible type for assigment [pass::spicy::Validator]
+wrong-type.spicy: Aborting due to input error.

@@ -1,8 +1,0 @@
-00000001 [binpac/main-thread]           test
-00000002 [binpac/main-thread]             a = 12
-00000003 [binpac/main-thread]             b1 = 13363
-00000004 [binpac/main-thread]             c = 56
-00000005 [binpac-compose/main-thread]   test
-00000006 [binpac-compose/main-thread]     a = 12
-00000007 [binpac-compose/main-thread]     b1 = 43
-00000008 [binpac-compose/main-thread]     c = 56

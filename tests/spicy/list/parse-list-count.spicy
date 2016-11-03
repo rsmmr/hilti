@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  printf "\001\002\003\004\005" | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+    a: int8;
+
+    ints: list< int<8> > &count=2
+      { print self; }
+
+    b: int8;
+
+    on %done { print self; }
+};

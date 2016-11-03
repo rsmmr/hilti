@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC:  echo 1234567890 | spicy-driver-test %INPUT -- -p Mini::Test >output    
+# @TEST-EXEC:  btest-diff output
+# 
+# @TEST-KNOWN-FAILURE: Test segfaults. Should probably either output a parse-time warning or just work with b being undefined
+
+module Mini;
+
+export type Test = unit {
+       a: uint8;
+       b: Test2;
+};
+
+export type Test2 = unit(b: uint64) {
+	a: uint8;
+};

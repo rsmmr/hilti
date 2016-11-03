@@ -1,0 +1,125 @@
+
+module LibBro
+
+type BroVal = caddr
+type BroObj = caddr
+type BroType = caddr
+type BroTypeDecl = caddr
+type BroEventHandler = caddr
+
+type SpicyCookie = caddr
+
+type BroAny = struct &libhilti_dtor="libbro_any_dtor" {
+    caddr ptr,
+    caddr type_info,
+    caddr bro_type,
+    caddr to_val_func
+}
+
+export BroAny
+
+declare "C-HILTI" BroVal cookie_to_conn_val(SpicyCookie cookie)
+declare "C-HILTI" BroVal cookie_to_file_val(SpicyCookie cookie)
+declare "C-HILTI" BroVal cookie_to_is_orig(SpicyCookie cookie)
+declare "C-HILTI" bool   cookie_to_is_orig_boolean(SpicyCookie cookie)
+declare "C-HILTI" BroVal h2b_bytes(const ref<bytes> val)
+declare "C-HILTI" BroVal h2b_integer_signed(int<64> val)
+declare "C-HILTI" BroVal h2b_integer_unsigned(int<64> val)
+declare "C-HILTI" BroVal h2b_double(double val)
+declare "C-HILTI" BroVal h2b_address(addr val)
+declare "C-HILTI" BroVal h2b_any(BroVal val)
+declare "C-HILTI" BroVal h2b_count(int<64> val)
+declare "C-HILTI" BroVal h2b_string(string val)
+declare "C-HILTI" BroVal h2b_bool(bool b)
+declare "C-HILTI" BroVal h2b_enum(any e, int<64> type_idx)
+declare "C-HILTI" BroVal h2b_enum_type(any e, BroType ty)
+declare "C-HILTI" BroVal h2b_time(time b)
+declare "C-HILTI" BroVal h2b_interval(interval i)
+declare "C-HILTI" BroVal h2b_type(BroVal t)
+declare "C-HILTI" BroVal h2b_function(BroVal t)
+declare "C-HILTI" BroVal h2b_void()
+
+declare "C-HILTI" ref<bytes> b2h_string(BroVal val)
+declare "C-HILTI" int<64>    b2h_count(BroVal val)
+declare "C-HILTI" bool       b2h_bool(BroVal val)
+
+declare "C-HILTI" BroEventHandler get_event_handler(const ref<bytes> name)
+declare "C-HILTI" void            raise_event(BroEventHandler hdl, tuple<*> vals)
+declare "C-HILTI" void            call_legacy_void(BroVal func, tuple<*> vals)
+declare "C-HILTI" BroVal          call_legacy_result(BroVal func, tuple<*> vals)
+declare "C-HILTI" void            profile_start(int<64> ty)
+declare "C-HILTI" void            profile_stop(int<64> ty)
+declare "C-HILTI" void            object_ref(BroObj obj)
+declare "C-HILTI" void            object_unref(BroObj obj)
+
+declare "C-HILTI" BroType                      bro_table_type_new(BroType key, BroType value)
+declare "C-HILTI" tuple<caddr, BroVal, BroVal> bro_table_iterate(BroVal tbl, caddr cookie)
+declare "C-HILTI" BroVal                       bro_table_new(BroType btype)
+declare "C-HILTI" void                         bro_table_insert(BroVal tbl, BroVal k, BroVal v)
+
+declare "C-HILTI" BroType  bro_list_type_new(BroType pure_type)
+declare "C-HILTI" void     bro_list_type_append(BroType t, BroType ntype)
+
+declare "C-HILTI" BroType  bro_base_type(int<64> tag)
+declare "C-HILTI" BroType  bro_lookup_type(string id)
+declare "C-HILTI" BroVal   bro_lookup_id_as_val(string id)
+declare "C-HILTI" BroVal   bro_lookup_type_as_val(string id)
+
+declare "C-HILTI" int<64> bro_internal_int(BroVal v)
+declare "C-HILTI" double  bro_internal_double(BroVal v)
+
+declare "C-HILTI" addr        b2h_address(BroVal val)
+declare "C-HILTI" BroVal      b2h_any(BroVal val)
+declare "C-HILTI" net         b2h_subnet(BroVal val)
+declare "C-HILTI" port        b2h_port(BroVal val)
+declare "C-HILTI" ref<regexp> b2h_pattern(BroVal val)
+declare "C-HILTI" ref<file>   b2h_file(BroVal val)
+declare "C-HILTI" BroVal      b2h_type(BroVal val)
+declare "C-HILTI" BroVal      b2h_function(BroVal val)
+
+declare "C-HILTI" BroVal      h2b_network(net val)
+declare "C-HILTI" BroVal      h2b_interval(interval b)
+declare "C-HILTI" BroVal      h2b_regexp(const ref<regexp> re)
+declare "C-HILTI" BroVal      h2b_port(port val)
+declare "C-HILTI" BroVal      h2b_file(ref<file> f)
+declare "C-HILTI" BroVal      h2b_file(const ref<file> f)
+declare "C-HILTI" BroVal      b2h_type(BroVal val)
+declare "C-HILTI" BroVal      b2h_function(BroVal val)
+
+declare "C-HILTI" BroVal  bro_record_new(BroType rtype)
+declare "C-HILTI" BroVal  bro_record_index(BroVal rval, int<64> idx)
+declare "C-HILTI" void    bro_record_assign(BroVal rval, int<64> idx, BroVal val)
+
+declare "C-HILTI" BroTypeDecl bro_record_typedecl_new(string fname, BroType ftype)
+declare "C-HILTI" BroType     bro_record_type_new(const ref<list<BroTypeDecl>> fields)
+
+declare "C-HILTI" BroVal               bro_vector_new(BroType vtype)
+declare "C-HILTI" void                 bro_vector_append(BroVal vval, BroVal val)
+declare "C-HILTI" tuple<caddr, BroVal> bro_vector_iterate(BroVal vval, caddr cookie)
+declare "C-HILTI" BroType              bro_vector_type_new(BroType ytype)
+declare "C-HILTI" BroType              bro_function_type_new(BroType args, BroType ytype, int<64> flavor)
+
+declare "C-HILTI" BroVal bro_list_new()
+declare "C-HILTI" void   bro_list_append(BroVal lval, BroVal val)
+declare "C-HILTI" BroVal bro_list_index(BroVal lval, int<64> idx)
+
+declare "C-HILTI" BroType bro_enum_type_new(string module_name, string name)
+declare "C-HILTI" void    bro_enum_type_add_name(BroType etype, string module_name, string name, int<64> val)
+
+declare "C-HILTI" BroType bro_subnet_type_new()
+
+declare "C-HILTI" void    object_mapping_register(BroVal bobj, any hobj)
+declare "C-HILTI" void    object_mapping_unregister_bro(BroVal obj)
+declare "C-HILTI" void    object_mapping_unregister_hilti(any obj)
+declare "C-HILTI" BroVal  object_mapping_lookup_bro(any obj)
+declare "C-HILTI" any     object_mapping_lookup_hilti(BroVal val)
+
+declare "C-HILTI" ref<BroAny> any_from_hilti_ref(const any obj, BroType btype, caddr to_val_func)
+declare "C-HILTI" any         any_to_hilti(const ref<BroAny> a)
+
+declare "C-HILTI" ref<BroAny> any_from_val(BroVal v)
+declare "C-HILTI" BroVal      any_to_val(const ref<BroAny> a)
+
+export cookie_to_conn_val
+export h2b_bytes
+export raise_event

@@ -1,0 +1,2 @@
+wrong-sync.spicy:9-9: error, cannot &synchronize on field
+wrong-sync.spicy: Aborting due to compilation error.

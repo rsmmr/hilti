@@ -1,0 +1,8 @@
+00000001 [spicy/main-thread]           test
+00000002 [spicy/main-thread]             a = 12
+00000003 [spicy/main-thread]             b1 = 13363
+00000004 [spicy/main-thread]             c = 56
+00000005 [spicy-compose/main-thread]   test
+00000006 [spicy-compose/main-thread]     a = 12
+00000007 [spicy-compose/main-thread]     b1 = 43
+00000008 [spicy-compose/main-thread]     c = 56

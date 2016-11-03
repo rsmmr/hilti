@@ -1,0 +1,4 @@
+Sub2 in progress <s1=b"34">
+Sub in progress <s1=b"34">
+Sub2  <s1=b"34", s2=b"567">
+hilti: uncaught exception, SpicyHilti::ParseError with argument '&length area not fully parsed' (from <no location>:)

@@ -1,0 +1,32 @@
+#
+# @TEST-EXEC:  printf '\000\001\002' | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  printf '\001\001\002' | spicy-driver-test %INPUT >>output    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+import Spicy;
+
+export type test = unit {
+	var byteorder : Spicy::ByteOrder;
+	
+	chosen_order : uint8;
+
+	switch (self.chosen_order) {
+		0 -> : void { self.byteorder = Spicy::ByteOrder::Little; }
+		1 -> : void { self.byteorder = Spicy::ByteOrder::Big; }
+	};
+
+	n : dyn_number(self.byteorder);
+
+	on %done {
+		print self;
+	}
+};
+
+type dyn_number = unit(order: Spicy::ByteOrder) {
+	%byteorder = order;
+
+	f: uint16;
+};

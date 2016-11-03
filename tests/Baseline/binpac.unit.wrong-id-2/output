@@ -1,4 +1,0 @@
-
->>> b
-wrong-id.pac2:6-6: error, unknown unit item [pass::binpac::Validator]
-wrong-id.pac2: Aborting due to input error.

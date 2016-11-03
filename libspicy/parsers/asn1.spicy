@@ -1,0 +1,181 @@
+module asn1;
+
+import Spicy;
+
+type ASN1Type = enum {
+    BOOLEAN = 1,
+    INTEGER = 2,
+    BITSTRING = 3,
+    OCTETSTRING = 4,
+    NULL = 5,
+    OBJECTIDENTIFIER = 6,
+    ObjectDescriptor = 7,
+    INSTANCEOF = 8,
+    REAL = 9,
+    ENUMERATED = 10,
+    EMBEDDEDPDV = 11,
+    UTF8String = 12,
+    RELATIVEOID = 13,
+    SEQUENCE = 16,
+    SET = 17,
+    NumericString = 18,
+    PrintableString = 19,
+    TeletextString = 20,
+    VideotextString = 21,
+    IA5String = 22,
+    UTCTime = 23,
+    GeneralizedTime = 24,
+    GraphicString = 25,
+    VisibleString = 26,
+    GeneralString = 27,
+    UniversalString = 28,
+    CHARACTERSTRING = 29,
+    BMPString = 30
+};
+
+type ASN1Class = enum {
+  UNIVERSAL = 0,
+  APPLICATION = 1,
+  context-specific = 2,
+  PRIVATE = 3
+};
+
+type LengthType = unit {
+
+  data : bitfield(8) {
+     num: 0..6;
+     islong: 7;
+  };
+
+  var len: uint64;
+
+  var tag_len: uint8;
+
+  switch ( self.data.islong ) {
+    0 -> : b"" { self.len = self.data.num; self.tag_len = 1; }
+    1 -> length_parse: bytes &length=self.data.num &convert=$$.to_uint(Spicy::ByteOrder::Network) { self.len = self.length_parse; self.tag_len = self.data.num + 1; }
+  };
+};
+
+type ASN1Tag = unit {
+  var tpe: ASN1Type;
+  var len: uint8 = 1;
+  var class: ASN1Class;
+
+  data : bitfield(8) {
+     num: 0..4;
+     constructed: 5;
+     class: 6..7;
+  };
+
+  on %done {
+    self.tpe = ASN1Type(self.data.num);
+    self.class = ASN1Class(self.data.class);
+  }
+};
+
+type ASN1BITSTRING = unit(len: uint64, constructed: uint8) {
+   unused_bits: uint8;
+   value_bits: bytes &length=(len - 1);
+
+   # we need >> and << for bytes before we can implement complex bitstrings. I don't think that is here yet.
+};
+
+type ASN1OCTETSTRING = unit(len: uint64, constructed: uint8) {
+  var len: uint64;
+  value: bytes &length = len;
+
+  # todo: constructed form...
+  on %done {
+    self.len = len;
+  }
+};
+
+type ASN1String = unit(tag: ASN1Tag, len: uint64) {
+    octetstring: ASN1OCTETSTRING(len, tag.data.constructed);
+
+    switch ( tag.tpe ) {
+      ASN1Type::PrintableString, ASN1Type::GeneralizedTime, ASN1Type::UTCTime -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(Spicy::Charset::ASCII);
+      ASN1Type::UTF8String -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(Spicy::Charset::UTF8);
+      ASN1Type::BMPString -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(Spicy::Charset::UTF16BE);
+      ASN1Type::UniversalString -> value: bytes &length=self.octetstring.len &parse(self.octetstring.value) &convert=$$.decode(Spicy::Charset::UTF32BE);
+    };
+
+#    on %done { print "String: ", self.value; }
+};
+
+type oidnibble = unit {
+  data : bitfield(8) {
+     num: 0..6;
+     more: 7;
+  };
+};
+
+type ASN1OBJECTIDENTIFIER = unit(len: uint64) {
+  var oid: list<uint64>;
+  var temp: uint64;
+  var oidstring: bytes;
+
+  first: uint8 if ( len >= 1) {
+    self.temp = self.first / 40;
+    self.oid.push_back( self.temp );
+    self.oidstring = Spicy::fmt (b"%d", (self.temp, 1));
+    self.temp = self.first mod 40;
+    self.oid.push_back( self.temp );
+    self.oidstring += Spicy::fmt(b".%d", (self.temp, 1));
+    self.temp = 0;
+  }
+
+  sublist: list<oidnibble> &length=(len - 1)
+    foreach {
+      if ( $$.data.more == 1 ) {
+        self.temp = ( self.temp<<7 ) | $$.data.num;
+      } else {
+        self.temp = ( self.temp<<7 ) | $$.data.num;
+        self.oid.push_back(self.temp);
+        self.oidstring += Spicy::fmt(b".%d", (self.temp, 1));
+	self.temp = 0;
+      }
+    }
+};
+
+type ASN1Body = unit(head: ASN1Header) {
+  var parse_length: uint64 = 0;
+
+  switch ( head.tag.tpe ) {
+    ASN1Type::BOOLEAN -> bool_value: uint8; # FIXME: bail out if length != 1
+    ASN1Type::INTEGER, ASN1Type::ENUMERATED -> num_value: bytes &length=head.len.len &convert=$$.to_int(Spicy::ByteOrder::Big);
+    ASN1Type::NULL -> : void; # todo - bail out if length != 0
+    ASN1Type::BITSTRING -> bitstring: ASN1BITSTRING(head.len.len, head.tag.data.constructed);
+    ASN1Type::OCTETSTRING -> octetstring: ASN1OCTETSTRING(head.len.len, head.tag.data.constructed);
+    ASN1Type::OBJECTIDENTIFIER -> objectidentifier: ASN1OBJECTIDENTIFIER(head.len.len);
+    ASN1Type::PrintableString, ASN1Type::GeneralizedTime, ASN1Type::UTCTime, ASN1Type::UTF8String, ASN1Type::BMPString, ASN1Type::UniversalString -> asn1string: ASN1String(head.tag, head.len.len);
+    ASN1Type::SEQUENCE, ASN1Type::SET -> submessages: list < ASN1Message > &length=head.len.len;
+    * -> : bytes &length=head.len.len {
+      print "Unknown type: ", head.tag.tpe, head.tag.data.constructed, head.tag.data.class;
+    }
+  };
+};
+
+type ASN1Header = unit {
+  tag: ASN1Tag;
+
+  var total_length: uint64;
+
+  len: LengthType {
+    self.total_length = self.len.len + self.tag.len + self.len.tag_len;
+  }
+};
+
+type ASN1Message = unit {
+  head: ASN1Header;
+
+  body: ASN1Body(self.head) if ( self.head.tag.class == ASN1Class::UNIVERSAL );
+  submessage: ASN1Message if ( self.head.tag.class != ASN1Class::UNIVERSAL ); # assume explicit tagging, otherwise this will go horribly wrong
+
+};
+
+type outer = unit {
+  message: ASN1Message;
+};
+

@@ -1,5 +1,5 @@
 //
-// Runtime functions supporting the generated HILTI/BinPAC++ code.
+// Runtime functions supporting the generated HILTI/Spicy code.
 //
 // These function all assume "HILTI-C" linkage. Note that they must all be
 // 'extern "C"' here.

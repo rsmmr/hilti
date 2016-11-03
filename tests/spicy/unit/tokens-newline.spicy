@@ -1,0 +1,11 @@
+#
+# @TEST-EXEC:  printf "FooBar\r\nFoo123BarBar\r\n" | HILTI_DEBUG=spicy spicy-driver-test %INPUT   
+# @TEST-EXEC:  btest-diff hlt-debug.log
+
+module Mini;
+
+export type test = unit {
+     line1: /[^\r\n]*/;
+     crlf : /[\r\n]*/;
+     line2: /[^\r\n]*/;
+};

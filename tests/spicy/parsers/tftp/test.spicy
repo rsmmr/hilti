@@ -1,0 +1,13 @@
+#
+# @TEST-EXEC:  cat %DIR/tftp-rrq.dat | spicy-driver-test %INPUT ${PARSERS}/tftp.spicy -- -p TFTP::Message >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import parsers/tftp;
+
+on TFTP::Message::%done {
+    print self;
+    }
+

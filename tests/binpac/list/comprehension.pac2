@@ -1,9 +1,0 @@
-#
-# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1
-# @TEST-EXEC:  btest-diff output
-#
-
-module Test;
-
-print [2 * i for i in list(1,2,3,4)];
-print [2 * i for i in list(1,2,3,4) if i != 3];

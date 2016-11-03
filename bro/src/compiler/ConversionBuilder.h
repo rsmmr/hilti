@@ -25,7 +25,7 @@ class Expression;
 class Type;
 }
 
-namespace binpac {
+namespace spicy {
 class Type;
 }
 
@@ -65,7 +65,7 @@ public:
      *
      * @param type The target Bro type to convert into.
      *
-     * @param pac_type An optional BinPAC++ type that the value
+     * @param spicy_type An optional Spicy type that the value
      * corresponds to. If given, this might change some specifics of the
      * conversion.
      *
@@ -74,7 +74,7 @@ public:
      */
     shared_ptr<::hilti::Expression> ConvertHiltiToBro(
         shared_ptr<::hilti::Expression> val, const ::BroType* type,
-        shared_ptr<::binpac::Type> pac_type = nullptr);
+        shared_ptr<::spicy::Type> spicy_type = nullptr);
 
     /**
      * XXX
@@ -228,7 +228,7 @@ private:
 
     bool _constant;
     type_builder_map postponed_types;
-    shared_ptr<::binpac::Type> _pac_type;
+    shared_ptr<::spicy::Type> _spicy_type;
 };
 }
 }

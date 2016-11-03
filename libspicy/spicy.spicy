@@ -1,0 +1,101 @@
+
+module Spicy;
+
+# %begin-ByteOrder
+# Byte-order.
+type ByteOrder = enum { Little = 1, Big = 2, Network = 2, Host = 3 };
+# %end-ByteOrder
+
+# %begin-BitOrder
+# Bit order.
+type BitOrder = enum { LSB0 = 1, MSB0 = 2 };
+# %end-BitOrder
+
+# These values must match Hilti::AddrFamily.
+# %begin-AddrFamily
+# IP address family.
+type AddrFamily = enum { IPv4 = 1, IPv6 = 2 };
+# %end-AddrFamily
+
+# These values must match Hilti::Charset.
+# %begin-Charset
+# Known character sets
+type Charset = enum { UTF8 = 1, UTF16LE = 2, UTF16BE = 3, UTF32LE = 4, UTF32BE = 5, ASCII = 6 };
+# %end-Charset
+
+# %begin-Side
+# Controls the side of an operation.
+type Side = enum { Left, Right, Both };
+# %end-Side
+
+# These values must match those in spicy.hlt. FIXME: We should have
+# just one definition.
+# # %begin-Filter
+# Filter type.
+type Filter = enum {
+    BASE64 = 1,  # MIME base64 decoding.
+    GZIP = 2,    # gzipd decompression.
+    ZLIB = 3     # zlib/deflate decompression.
+};
+# %end-Filter
+
+# %begin-ReassemblyPolicy
+# The policy for handling overlapping input chunks for a sink during
+# reassembly.
+#
+# TODO: Add more policies, we only support the trivial one for now.
+type ReassemblyPolicy = enum {
+    # Use the data passed in first. This is the default policy
+    # if not specified otherwise. It's also the only one available in
+    # auto-trim mode.
+    First = 1
+};
+
+# %begin-Precision
+# Byte-order.
+type Precision = enum { Double = 1, Single = 2 };
+# %end-Precision
+
+# %end-ReassemblyPolicy
+
+# %begin-base64_encode
+# Function for base64 encoding a bytes object.
+import "HILTI-C" bytes base64_encode(b: bytes);
+# %end-base64_encode
+
+# %begin-base64_decode
+# Function for base64 decoding a bytes object.
+import "HILTI-C" bytes base64_decode(b: bytes);
+# %end-base64_decode
+
+# %begin-fmt
+# Formatting function sprintf-style.
+import "HILTI-C" bytes fmt(format: bytes, args: tuple<*>)  &hilti_id=Spicy::fmt_bytes;
+# %end-fmt
+
+# %begin-fmt
+# Formatting function sprintf-style.
+import "HILTI-C" string fmt(format: string, args: tuple<*>) &hilti_id=Spicy::fmt_string;
+# %end-fmt
+
+# %begin-mktime
+# mktime(3) equivalent.
+import "HILTI-C" time mktime(y: uint<64>, m: uint<64>, d: uint<64>, H: uint<64>, M: uint<64>, S: uint<64>) &hilti_id=Spicy::mktime;
+# %end-mktime
+
+# %begin-sha256
+# Function for computing a sha256 hash of a bytes object. Takes an
+# seed (which can be emoty) and can limit result value to a given
+# length (or 0 for all).
+#
+# TODO: Should have default arguments.
+#
+import "HILTI-C" bytes sha256(b: bytes, seed: bytes, len: uint64);
+# %end-sha256
+
+# %begin-sha256
+# Function randomizing an IP address (consistently when given the same
+# key.)
+#
+import "HILTI-C" addr anonymize(a: addr, seed: uint64);
+# %end-sha256

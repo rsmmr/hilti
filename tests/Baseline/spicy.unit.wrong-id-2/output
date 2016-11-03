@@ -1,0 +1,4 @@
+
+>>> b
+wrong-id.spicy:6-6: error, unknown unit item [pass::spicy::Validator]
+wrong-id.spicy: Aborting due to input error.

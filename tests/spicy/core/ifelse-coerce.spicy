@@ -1,0 +1,17 @@
+# $Id$
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+global b = True;
+global i1: int64 = 64;
+global i2: int64 = 0;
+
+if ( i1 )
+    print "i1";
+
+if ( ! i2 )
+    print "!i2";
+

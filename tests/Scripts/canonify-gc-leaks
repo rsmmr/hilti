@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 #
 # This scripts extractes the number of current allocations from
-# pac-driver's "-g" output and counts how  many different values we
+# spicy-driver's "-g" output and counts how  many different values we
 # see. For input/grammars where memory should be released frequently,
 # there should only be a small number of values.
 

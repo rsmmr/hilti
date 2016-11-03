@@ -1,0 +1,20 @@
+#
+# @TEST-EXEC:  printf '\001\002\003\004\001\002\003\004\001\002\003\004\001\01\02' | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+import Spicy;
+
+export type test = unit {
+
+    f1: uint32;
+    f2: uint32 &byteorder = Spicy::ByteOrder::Little;
+    f3: uint32 &byteorder = Spicy::ByteOrder::Network;
+
+    a1: uint8;
+    a2: uint16;
+
+    on %done { print self; }
+};

@@ -1,0 +1,39 @@
+#
+# @TEST-EXEC:  cat %DIR/../parsers/dns/single.dat | spicy-driver-test -c %INPUT ${PARSERS}/dns.spicy >rewritten
+# @TEST-EXEC:  cat rewritten | spicy-driver-test print-dns.spicy ${PARSERS}/dns.spicy >output
+# @TEST-EXEC:  btest-diff output
+#
+# Anonymize labels and IP address on rewrite.
+
+module Test;
+
+import parsers/dns;
+
+on DNS::Label::label !> {
+       if ( |self.label| > 0 )
+           self.label = Spicy::sha256(self.label, b"seed", |self.label|);
+    }
+
+on DNS::ResourceRecord::a !> {
+       self.a = Spicy::anonymize(self.a, 42);
+    }
+
+@TEST-START-FILE print-dns.spicy
+
+module Test;
+
+import parsers/dns;
+
+on DNS::Message::%done {
+    print self.header;
+    print "";
+    print self.question;
+    print "";
+    print self.answer;
+    print "";
+    print self.authority;
+    print "";
+    print self.additional;
+    }
+
+@TEST-END-FILE

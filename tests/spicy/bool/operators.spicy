@@ -1,0 +1,44 @@
+# $Id$
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output 2>&1     
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+
+global b1: bool = True;
+global b2: bool = True;
+global b3: bool = False;
+global b4: bool = False;
+
+print !b1;
+print !b3;
+
+print b1 && b2;
+print b1 && b3;
+
+print b1 || b2;
+print b1 || b3;
+print b3 || b1;
+print b3 || b4;
+
+print !True;
+print !False;
+
+print True && True;
+print True && False;
+
+print False || True;
+print True || False;
+print True || True;
+print False || False;
+
+print b1 == b2;
+print b1 == b3;
+print b3 == b4;
+
+print b1 != b2;
+print b1 != b3;
+print b3 != b4;
+

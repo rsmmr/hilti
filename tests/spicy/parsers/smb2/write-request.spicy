@@ -1,0 +1,13 @@
+#
+# @TEST-EXEC:  cat %DIR/write-request.dat | spicy-driver-test %INPUT ${PARSERS}/smb2.spicy -- -p SMB2::PDU >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import parsers/smb2;
+
+on SMB2::PDU::%done {
+    print self;
+    }
+

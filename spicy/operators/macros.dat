@@ -1,0 +1,291 @@
+> <<HEADER>> h
+
+#ifndef $STDIFDEF
+#define $STDIFDEF
+
+#include <spicy/expression.h>
+#include <spicy/operator.h>
+
+===
+> <<FOOTER>> h
+
+#endif
+
+===
+>> opBegin h
+
+namespace spicy { namespace operator_ {
+namespace $NAMESPACE {
+
+class $CLASS : public spicy::Operator
+{
+    AST_RTTI
+public:
+   $CLASS();
+   virtual ~$CLASS();
+protected:
+   virtual string __namespace() const override { return "$NAMESPACE"; }
+===
+> opOp1 h
+   shared_ptr<Type> __typeOp1() const override;
+===
+> opOp2 h
+   shared_ptr<Type> __typeOp2() const override;
+===
+> opOp3 h
+   shared_ptr<Type> __typeOp3() const override;
+===
+> opCallArg1 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg1() const override;
+===
+> opCallArg2 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg2() const override;
+===
+> opCallArg3 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg3() const override;
+===
+> opCallArg4 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg4() const override;
+===
+> opCallArg5 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg5() const override;
+===
+> opDocOp1 h
+   shared_ptr<Type> __docTypeOp1() const override;
+===
+> opDocOp2 h
+   shared_ptr<Type> __docTypeOp2() const override;
+===
+> opDocOp3 h
+   shared_ptr<Type> __docTypeOp3() const override;
+===
+> opDocCallArg1 h
+   std::pair<string, shared_ptr<Type>> __docTypeCallArg1() const override;
+===
+> opDocCallArg2 h
+   std::pair<string, shared_ptr<Type>> __docTypeCallArg2() const override;
+===
+> opDocCallArg3 h
+   std::pair<string, shared_ptr<Type>> __docTypeCallArg3() const override;
+===
+> opDocCallArg4 h
+   std::pair<string, shared_ptr<Type>> __docTypeCallArg4() const override;
+===
+> opDocCallArg5 h
+   std::pair<string, shared_ptr<Type>> __docTypeCallArg5() const override;
+===
+> opValidate h
+   void __validate() override;
+===
+> opMatch h
+   bool __match() override;
+===
+> opDoc h
+   string __doc() const override;
+===
+> opResult h
+   shared_ptr<Type> __typeResult() const override;
+===
+> opDocResult h
+   shared_ptr<Type> __docTypeResult() const override;
+===
+> opSimplify h
+   shared_ptr<Expression> __simplify() const override;
+===
+> opEnd h
+private:
+    static shared_ptr<expression::ResolvedOperator> _factory(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<spicy::Module> module, const Location& l);
+};
+
+} // namespace $NAMESPACE
+} // namespace operator_
+
+namespace expression { namespace operator_ {
+namespace $NAMESPACE {
+
+class $CLASS : public ResolvedOperator
+{
+    AST_RTTI
+public:
+    $CLASS(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<spicy::Module> module, const Location& l);
+    ACCEPT_VISITOR(::spicy::expression::ResolvedOperator);
+};
+
+} // namespace $NAMESPACE
+} // namespace expression
+} // namespace operator_ {
+} // namespace spicy
+
+===
+> <<HEADER>> cc
+
+#include "$BASENAME.h"
+
+===
+>> opBegin cc
+
+AST_RTTI_BEGIN(spicy::operator_::$NAMESPACE::$CLASS, spicy_operator_$NAMESPACE_ID_$CLASS_ID)
+AST_RTTI_PARENT(spicy::Operator)
+AST_RTTI_END(spicy_operator_$NAMESPACE_ID_$CLASS_ID)
+AST_RTTI_CAST_BEGIN(spicy::operator_::$NAMESPACE::$CLASS)
+AST_RTTI_CAST_PARENT(spicy::Operator)
+AST_RTTI_CAST_END()
+
+namespace spicy {
+
+operator_::$NAMESPACE::$CLASS::$CLASS() : Operator(operator_::$CLASSARG, _factory)
+{
+}
+
+operator_::$NAMESPACE::$CLASS::~$CLASS()
+{
+}
+
+expression::operator_::$NAMESPACE::$CLASS::$CLASS(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<spicy::Module> module, const Location& l)
+    :  expression::ResolvedOperator(op, ops, module, l)
+{
+}
+===
+> opOp1 cc
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeOp1() const
+{
+    return $1;
+}
+===
+> opOp2 cc
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeOp2() const
+{
+    return $1;
+}
+===
+> opOp3 cc
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeOp3() const
+{
+    return $1;
+}
+===
+> opCallArg1 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg1() const
+{
+    return std::make_pair($1, $2);
+}
+===
+> opCallArg2 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg2() const
+{
+    return std::make_pair($1, $2);
+}
+===
+> opCallArg3 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg3() const
+{
+    return std::make_pair($1, $2);
+}
+===
+> opCallArg4 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg4() const
+{
+    return std::make_pair($1, $2);
+}
+===
+> opCallArg5 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg5() const
+{
+    return std::make_pair($1, $2);
+}
+===
+> opDocOp1 cc
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__docTypeOp1() const
+{
+    return $1;
+}
+===
+> opDocOp2 cc
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__docTypeOp2() const
+{
+    return $1;
+}
+===
+> opDocOp3 cc
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__docTypeOp3() const
+{
+    return $1;
+}
+===
+> opDocCallArg1 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__docTypeCallArg1() const
+{
+    return std::make_pair(__typeCallArg1().first, $1);
+}
+===
+> opDocCallArg2 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__docTypeCallArg2() const
+{
+    return std::make_pair(__typeCallArg1().first, $1);
+}
+===
+> opDocCallArg3 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__docTypeCallArg3() const
+{
+    return std::make_pair(__typeCallArg1().first, $1);
+}
+===
+> opDocCallArg4 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__docTypeCallArg4() const
+{
+    return std::make_pair(__typeCallArg1().first, $1);
+}
+===
+> opDocCallArg5 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__docTypeCallArg5() const
+{
+    return std::make_pair(__typeCallArg1().first, $1);
+}
+===
+> opValidate cc
+void operator_::$NAMESPACE::$CLASS::__validate()
+===
+> opMatch cc
+bool operator_::$NAMESPACE::$CLASS::__match()
+===
+> opDoc cc
+string operator_::$NAMESPACE::$CLASS::__doc() const
+{
+    return $1;
+}
+===
+> opResult cc
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeResult() const
+===
+> opDocResult cc
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__docTypeResult() const
+{
+    return $1;
+}
+===
+> opSimplify cc
+shared_ptr<Expression> operator_::$NAMESPACE::$CLASS::__simplify() const
+===
+> opEnd cc
+shared_ptr<expression::ResolvedOperator>
+operator_::$NAMESPACE::$CLASS::_factory(shared_ptr<Operator> op, const expression_list& ops, shared_ptr<spicy::Module> module, const Location& l)
+{
+    return shared_ptr<expression::ResolvedOperator>(new expression::operator_::$NAMESPACE::$CLASS(op, ops, module, l));
+}
+
+void __register_$NAMESPACE_$CLASS()
+{
+    shared_ptr<Operator> op(new operator_::$NAMESPACE::$CLASS);
+    OperatorRegistry::globalRegistry()->addOperator(op);
+}
+
+} // namespace spicy
+
+AST_RTTI_BEGIN(spicy::expression::operator_::$NAMESPACE::$CLASS, spicy_expression_operator_$NAMESPACE_ID_$CLASS_ID)
+AST_RTTI_PARENT(spicy::expression::ResolvedOperator)
+AST_RTTI_END(spicy_expression_operator_$NAMESPACE_ID_$CLASS_ID)
+AST_RTTI_CAST_BEGIN(spicy::expression::operator_::$NAMESPACE::$CLASS)
+AST_RTTI_CAST_PARENT(spicy::expression::ResolvedOperator)
+AST_RTTI_CAST_END()
+
+===

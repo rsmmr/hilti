@@ -1,0 +1,56 @@
+#
+# @TEST-EXEC:  echo 1234567890abcde | spicy-driver-test %INPUT -- -p Mini::Main >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type Main = unit {
+    a: bytes &length=2;
+    b: bytes &length=5 -> self.data;
+    c: bytes &length=3;
+     : bytes &length=5 -> self.data;
+
+    var data: sink;
+
+    on %init {
+        self.data.connect_mime_type(b"application/bar");
+    }
+
+    on %done {
+        print "Main", self;
+    }
+};
+
+export type Sub = unit {
+    %mimetype = "application/foo";
+    %mimetype = "application/bar";
+
+    s1: bytes &length=2;
+    s2: bytes &length=8;
+
+    on %done {
+        print "Sub ", self;
+    }
+};
+
+export type Sub2 = unit {
+    %mimetype = "application/bar";
+
+    s: bytes &eod;
+
+    on %done {
+        print "Sub2 ", self;
+        print "   MT", self.mime_type();
+    }
+};
+
+export type Sub3 = unit {
+    %mimetype = "application/*";
+
+    s: bytes &eod;
+
+    on %done {
+        print "Sub3 ", self;
+    }
+};
+

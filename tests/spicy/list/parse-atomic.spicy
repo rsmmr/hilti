@@ -1,0 +1,31 @@
+# $Id$
+#
+# @TEST-EXEC:  cat test.txt | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+
+module HTTP;
+
+const LINE = /[^\n]+\n/;
+const DASHES = /---\n/;
+
+export type Test = unit {
+    lines: list<LINE> &until($$ == b"---\n")
+         foreach { print $$; }
+
+    last: LINE;
+
+    on lines {
+       print self.lines;
+    }
+
+    };
+
+# @TEST-START-FILE test.txt
+AAA
+BBB
+CCC
+DDD
+EEE
+---
+FFF
+# # @TEST-END-FILE

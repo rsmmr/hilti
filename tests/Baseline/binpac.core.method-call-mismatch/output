@@ -1,6 +1,0 @@
-
->>> (Unresolved operator b .startswith(122345))
-method-call-mismatch.pac2:11-11: error, no matching operator found for types
-got operands: (bytes, startswith, (int<64>))
-candidate operators:
-method-call-mismatch.pac2: Aborting due to input error.

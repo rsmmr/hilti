@@ -1,8 +1,0 @@
-
-grammar gzip.pac2;
-
-file analyzer pac2::GZIP:
-    parse with gzip::File,
-    mime-type application/x-gzip;
-
-on gzip::Member -> event gzip::member($file, self.method, self.flags, self.mtime, self.xflags, self.os);

@@ -1,4 +1,0 @@
-
->>> xxx
-wrong-id.pac2:9-9: error, unknown ID xxx [pass::binpac::IDResolver]
-wrong-id.pac2: Aborting due to input error.

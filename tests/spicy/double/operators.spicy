@@ -1,0 +1,46 @@
+# $Id$
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output      
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+global f1: double = 15.5;
+global f2: double = 30.4;
+
+print f1 + f2;
+print 15.5 + 30.4;
+
+print f1 - f2;
+print 15.5 - 30.4;
+
+print f1 * f2;
+print 15.5 * 30.4;
+
+print f1 / f2;
+print 15.5 / 30.4;
+
+print f1 mod f2;
+print 15.5 mod 30.4;
+
+print f1 < f2;
+print f1 > f2;
+print f1 <= f2;
+print f1 >= f2;
+
+print f2 < f1;
+print f2 > f1;
+print f2 <= f1;
+print f2 >= f1;
+
+print f1 == f1;
+print f1 == f2;
+
+print cast<int32>(f1);
+print cast<uint32>(5.45343);
+
+print cast<int32>(-5.3434);
+print cast<uint32>(-5.3434);
+
+print f1 ** 2.5;
+

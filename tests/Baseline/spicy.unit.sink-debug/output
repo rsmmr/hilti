@@ -1,0 +1,18 @@
+00000477 [spicy-sinks/main-thread]     connected parser Sub [0x15d87d0] to sink 0x15d8170
+00000560 [spicy/main-thread]           Main
+00001164 [spicy/main-thread]             a = 12345
+00001206 [spicy-sinks/main-thread]     starting to write to sink 0x15d8170
+00001236 [spicy-sinks/main-thread]     writing to sink 0x15d8170: |12345|
+00001245 [spicy-sinks/main-thread]     - start writing to sink 0x15d8170 for parser 0x15d87d0
+00001350 [spicy/main-thread]             Sub
+00002017 [spicy-sinks/main-thread]     - writing to sink 0x15d8170 suspended for parser 0x15d87d0
+00002022 [spicy-sinks/main-thread]     done writing to sink 0x15d8170
+00002495 [spicy/main-thread]               b = 678901234567890123456789\x00123456789012345678901234567890
+00002546 [spicy-sinks/main-thread]     starting to write to sink 0x15d8170
+00002776 [spicy-sinks/main-thread]     writing to sink 0x15d8170: |678901234567890123456789\x00123456789012345678901 ...|
+00002785 [spicy-sinks/main-thread]     - resuming writing to sink 0x15d8170 for parser 0x15d87d0
+00002899 [spicy/main-thread]               s1 = 12345678901234567890123456789\x001234567890123456789012345
+00003476 [spicy-sinks/main-thread]     - writing to sink 0x15d8170 finished for parser 0x15d87d0
+00003515 [spicy-sinks/main-thread]     done writing to sink 0x15d8170
+00003909 [spicy-sinks/main-thread]     closing sink 0x15d8170
+00003910 [spicy-sinks/main-thread]     closed sink 0x15d8170, disconnected all parsers

@@ -1,2 +1,0 @@
-<a=b"1234">
-hilti: uncaught exception, ParseError with argument '&length area not fully parsed' (from /home/robin/work/hilti/tests/.tmp/binpac.unit.bytes-insufficient/bytes-insufficient.hb39951.tmp.hlt:1059-1060)

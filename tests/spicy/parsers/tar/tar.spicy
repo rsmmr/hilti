@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC: bzcat %DIR/data.tar.bz2 | HILTI_DEBUG= spicy-driver-test %INPUT ${PARSERS}/tar.spicy > output
+# @TEST-EXEC: btest-diff output
+
+module PrintTar;
+
+import Spicy;
+
+import parsers/tar;
+
+import "HILTI-C" void Hilti::terminate();
+
+on Tar::File::header
+{
+    print self.header;
+}

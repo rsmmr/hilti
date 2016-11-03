@@ -1,0 +1,5 @@
+
+>>> HTTP::Test
+<no location>:: error, grammar Test, production list:lines:l2 (/home/robin/work/hilti/tests/.tmp/spicy.list.ambigious/ambigious.spicy:15-15) is ambigious for look-ahead symbol(s) { /[^\n]+\n/ (regexp) }
+ [pass::spicy::Validator]
+ambigious.spicy: Aborting due to input error.

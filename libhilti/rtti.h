@@ -68,7 +68,7 @@
 #define HLT_TYPE_ITERATOR_MAP 104
 #define HLT_TYPE_ITERATOR_IOSRC 105
 
-#define HLT_TYPE_EXTERN_BINPAC 10000 // Space for BinPAC++'s types. FIXME: Better way to do this?
+#define HLT_TYPE_EXTERN_SPICY 10000 // Space for Spicy's types. FIXME: Better way to do this?
 
 // Default context for numeric operations.
 #define HLT_CONVERT_NONE 0x00     // Not given, implies doing signed operations.

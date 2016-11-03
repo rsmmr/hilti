@@ -1,0 +1,14 @@
+#
+# @TEST-EXEC:  echo 1234567890 | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type test = unit {
+       a: bytes &length=4;
+       b: bytes &length=6;
+
+       on %init {
+           print "CTOR";
+       }
+};

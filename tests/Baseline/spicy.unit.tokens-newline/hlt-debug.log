@@ -1,0 +1,4 @@
+00000001 [spicy/main-thread]            test
+00000002 [spicy/main-thread]              line1 = FooBar
+00000003 [spicy/main-thread]              crlf = \x0d\x0a
+00000004 [spicy/main-thread]              line2 = Foo123BarBar

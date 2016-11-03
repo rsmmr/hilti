@@ -1,0 +1,4 @@
+
+>>> 2
+switch-wrong-case.spicy:14-14: error, case value does not match switch expression [pass::spicy::Validator]
+switch-wrong-case.spicy: Aborting due to input error.

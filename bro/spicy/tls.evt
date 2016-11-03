@@ -1,0 +1,79 @@
+
+grammar ./tls.spicy;
+
+protocol analyzer spicy::TLS over TCP:
+  parse with TLS::Message,
+  port 443/tcp,
+  replaces SSL;
+
+# all functions were renamed to tls_ because of name_clashes in with bif :(
+# already raise event on compression_methods. Afterwards, extensions follow.
+on TLS::ClientHello::compression_methods -> event tls_client_hello($conn, self.client_version, self.random.gmt_unix_time, self.random.random_bytes, self.session_id, [ cast<uint64>(i) for i in self.cipher_suites ]);
+
+# Already raise event on compression_method. After that, extension parsing follows.
+on TLS::ServerHello::compression_method -> event tls_server_hello($conn, self.server_version, self.random.gmt_unix_time, self.random.random_bytes, self.session_id, cast<uint64>(self.cipher_suite), cast<uint64>(self.compression_method));
+
+# causes: libc++abi.dylib: terminating with uncaught exception of type std::bad_typeid: std::bad_typeid
+#on TLS::RecordFragment if ( self.content_type == TLS::ContentType::change_cipher_spec )
+#	-> event tls_change_cipher_spec($conn, $is_orig);
+
+#on TLS::Handshake_message::length -> event tls_handshake_message($conn, $is_orig, self.msg_type, self.length);
+
+# Fixme: we have neither chain_idx nor chain_len at the moment. We do not know the length when parsing and we do not keep track of the index.
+# Also - we do not parse the certificate yet and only pass the der certificate up.
+on TLS::certificate_message -> event tls_certificate($conn, $is_orig, self.cert);
+
+on TLS::NewSessionTicket -> event tls_session_ticket_handshake($conn, cast<uint64>(self.ticket_lifetime_hint), self.ticket);
+
+# TLS extensions. In the original parser, we only have one message for this
+# (that just returns the binary content of all extension). In this parser, we do
+# this a bit differently and have a number of different messages for all kinds of
+# extensions. And a catchall just in case nothing fits...
+
+# for all extensions, in case you do not feel like parsing all the messages. However,
+# this does not contain the actual extension information...
+on TLS::Extension -> event tls_extension($conn, $is_orig, self.extension_code, self.extension_type, self.extension_data);
+
+on TLS::UnknownExtension -> event tls_extension_unknown($conn, $is_orig, extension_code, extension_type, self.data);
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::next_protocol_negotiation )
+  -> event tls_extension_next_protocol_negotiation($conn, $is_orig);
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::ec_point_formats )
+  -> event tls_extension_ec_point_formats($conn, $is_orig, [ cast<uint64>(i) for i in self.ec_point_formats.ec_point_format_list ]);
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::elliptic_curves )
+  -> event tls_extension_elliptic_curves($conn, $is_orig, [ cast<uint64>(i) for i in self.elliptic_curves.elliptic_curve_list ]);
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::SessionTicket_TLS )
+  -> event tls_extension_sessionticket_tls($conn, $is_orig, self.ticket_data);
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::heartbeat )
+  -> event tls_extension_heartbeat($conn, $is_orig, self.heartbeat);
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::signature_algorithms )
+  -> event tls_extension_signature_algorithms($conn, $is_orig, [ TLS::bro_SignatureAndHashAlgorithm(i) for i in self.signature_algorithms.supported_signature_algorithms ]);
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::renegotiation_info )
+  -> event tls_extension_renegotiation_info($conn, $is_orig, self.renegotiation_info.renegotiated_connection);
+
+#FIXME: missing server_curve
+#FIXME: missing ssl_dh_server_params
+#FIXME: missing ssl_heartbeat
+#FIXME: missing ssl_encrypted_data
+#FIXME: ssl_stapled_ocsp
+
+# Fixme: return empty list if not present
+#on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::server_name )
+#  -> event tls_extension_server_name($conn, $is_orig, vector() );
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::server_name && self.extension_length > 0 )
+  -> event tls_extension_server_name($conn, $is_orig, [ i.host_name for i in self.server_name.server_name_list ] );
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::application_layer_protocol_negotiation )
+  -> event tls_extension_application_layer_protocol_negotiation($conn, $is_orig, [ i.name for i in self.application_layer_protocol_negotiation.protocol_name_list ]);
+
+on TLS::StatusRequest -> event tls_extension_status_request($conn, $is_orig, self.responder_id_list, self.request_extensions);
+
+on TLS::Extension_Parse if ( self.extension_type == TLS::Extensions::signed_certificate_timestamp )
+ -> event tls_extension_signed_certificate_timestamp($conn, $is_orig, self.signed_certificate_timestamp);

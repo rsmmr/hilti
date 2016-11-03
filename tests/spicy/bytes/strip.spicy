@@ -1,0 +1,24 @@
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import Spicy;
+
+print b"|" + b"  1212  ".strip() + b"|";
+print b"|" + b"abc".strip() + b"|";
+print b"|" + b" abc".strip() + b"|";
+print b"|" + b" abc ".strip() + b"|";
+print b"|" + b"   ".strip() + b"|";
+print b"|" + b"".strip() + b"|";
+
+print "";
+
+print b"|" + b"  ABC  ".strip(Spicy::Side::Both) + b"|";
+print b"|" + b"  ABC  ".strip(Spicy::Side::Left) + b"|";
+print b"|" + b"  ABC  ".strip(Spicy::Side::Right) + b"|";
+
+print b"|" + b"123ABC456".strip(Spicy::Side::Both, b"123456") + b"|";
+

@@ -13,7 +13,7 @@
 namespace bro {
 namespace hilti {
 
-struct Pac2AnalyzerInfo;
+struct SpicyAnalyzerInfo;
 class Manager;
 }
 }

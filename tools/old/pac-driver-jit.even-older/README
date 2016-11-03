@@ -1,9 +1,0 @@
-
-pac-driver is a standalone driver for BinPAC++ parsers. To use it, you
-must currently compile it along with the *.pac2 files you want to
-include. The easist way to to do that is to use hilti-build:
-
-    hilti-build -o a.out pac-driver.c http.pac2 smb2.pac2
-
-(In the future, we may add a dynamic libary interface so that
-pac-driver can just pick-up compiled *.pac2 files.)

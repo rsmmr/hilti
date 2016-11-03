@@ -1,0 +1,14 @@
+#
+# @TEST-EXEC:       hilti-build -d %INPUT ${SPICY_DRIVER} -o a.out
+# @TEST-EXEC-FAIL:  printf "\040\105\000" | ./a.out >output 2>&1
+# @TEST-EXEC:       btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+    a: int<8>(0x20);
+    b: int<16>(0x20) &byteorder=Spicy::ByteOrder::Little;
+
+    on %done { print self; }
+};

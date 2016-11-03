@@ -1,7 +1,0 @@
-#
-# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1
-# @TEST-EXEC:  btest-diff output
-
-module Test;
-
-print b".".join(list("www", "icsi", "berkeley", "edu"));

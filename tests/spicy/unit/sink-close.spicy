@@ -1,0 +1,54 @@
+#
+# @TEST-EXEC-FAIL: echo 1234567890abcde | spicy-driver-test %INPUT -- -p Mini::Main >output 2>&1
+# @TEST-EXEC: btest-diff output
+
+module Mini;
+
+export type Main = unit {
+    a: bytes &length=2;
+
+    b: bytes &length=5 {
+        self.data.write(self.b);
+        self.data.close();
+    }
+
+    c: bytes &length=3;
+
+    d: bytes &length=5{
+        self.data.write(self.d);
+    }
+
+    var data : sink;
+
+    on %init {
+        self.data.connect(new Sub);
+        self.data.connect(new Sub2);
+    }
+
+    on %done {
+        print "Main", self;
+    }
+};
+
+export type Sub = unit {
+    s1: bytes &length=2
+        { print "Sub in progress", self; }
+
+    s2: bytes &length=8;
+
+    on %done {
+        print "Sub ", self;
+    }
+};
+
+export type Sub2 = unit {
+    s1: bytes &length=2
+        { print "Sub2 in progress", self; }
+
+    s2: bytes &eod;
+
+    on %done {
+        print "Sub2 ", self;
+    }
+};
+

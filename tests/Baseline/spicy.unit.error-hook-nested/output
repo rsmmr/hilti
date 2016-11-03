@@ -1,0 +1,4 @@
+<a=b"1234">
+Error test2 <x=b"567\x0a", y=b"">
+Error test1 <a=b"1234", t=(Null)>
+hilti: uncaught exception, ParseError with argument '&length area not fully parsed' (from /home/robin/work/hilti/tests/.tmp/spicy.unit.error-hook-nested/error-hook-nested.hb41363.tmp.hlt:2050-2051)

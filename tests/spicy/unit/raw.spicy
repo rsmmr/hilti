@@ -1,0 +1,21 @@
+#
+# @TEST-EXEC:  printf "abcabc" | spicy-driver-test %INPUT -p Test::test_both >>output
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: Adds &raw attribute. Converts the parsed unit into a raw bytes object.
+
+module Test;
+
+export type ABC = unit {
+  a : /a/;
+  b : /b/;
+  c : /c/;
+};
+
+export type X = unit {
+  x: ABC &raw;
+
+  on %done {
+    print self;
+    }
+};

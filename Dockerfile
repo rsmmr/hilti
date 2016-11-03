@@ -11,7 +11,7 @@ RUN apt-get -y install gdb
 
 # Setup environment.
 ENV PATH $PATH:/usr/local/bro/bin:/opt/bro/aux/btest
-ENV PATH $PATH:/opt/hilti/tools:/opt/hilti/build/tools::/opt/hilti/build/tools/pac-driver
+ENV PATH $PATH:/opt/hilti/tools:/opt/hilti/build/tools::/opt/hilti/build/tools/spicy-driver
 ENV BRO_PLUGIN_PATH /opt/hilti/build/bro
 
 # Put a couple small examples in place.

@@ -1,0 +1,39 @@
+# $Id$
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output      
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+global a: int32 = 511;
+global b: uint32;
+global c: uint16;
+global d: uint8;
+global e: int8;
+
+b = cast<uint32>(a);
+print b;
+
+c = cast<uint16>(b);
+print c;
+
+c = cast<uint16>(a);
+print c;
+
+d = cast<uint8>(a);   # Will print -1 as HILTI doesn't differentiate between signedness.
+print d;
+
+b = cast<uint32>(d);
+print b;
+
+a = cast<int32>(b);
+print a;
+
+e = cast<int8>(d);
+print e;
+a = cast<int32>(e);
+print a;
+
+#cast<string>(e);
+
+

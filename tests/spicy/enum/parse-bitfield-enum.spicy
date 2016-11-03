@@ -1,0 +1,23 @@
+#
+# @TEST-EXEC:  printf '\000\012\000\077' | HILTI_DEBUG=spicy spicy-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+import Spicy;
+
+type Foo = enum { A = 15 };
+
+export type test = unit {
+    a: uint16;
+    b: bitfield(16) {
+        x1: 0..3 &convert=Foo($$);
+        x2: 4..7 &convert=Foo($$);
+    };
+
+    on %done {
+        print self.b.x1;
+        print self.b.x2;
+        }
+};

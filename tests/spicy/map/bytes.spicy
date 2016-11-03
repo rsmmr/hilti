@@ -1,0 +1,18 @@
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: Map lookup on concatenated byte strings does not work.
+
+module Test;
+
+global m1 = map<bytes, bytes>(b"AA": b"L-A", b"BB": b"L-B", b"CC": b"L-C");
+
+global test1 = b"AA";
+global test2 = b"A";
+test2 += b"A";
+
+print test1, test2;
+
+print m1.get(test1, b"1 failed");
+print m1.get(test2, b"2 failed");

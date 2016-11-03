@@ -4,7 +4,7 @@
 #include "Type.h"
 #undef List
 
-#include <binpac/type.h>
+#include <spicy/type.h>
 #include <hilti/builder/builder.h>
 
 #include "Converter.h"
@@ -22,7 +22,7 @@ TypeConverter::TypeConverter(compiler::Compiler* arg_compiler)
 }
 
 BroType* TypeConverter::Convert(std::shared_ptr<::hilti::Type> type,
-                                std::shared_ptr<::binpac::Type> btype)
+                                std::shared_ptr<::spicy::Type> btype)
 {
     setArg1(btype);
     BroType* rtype;
@@ -31,7 +31,7 @@ BroType* TypeConverter::Convert(std::shared_ptr<::hilti::Type> type,
 }
 
 string TypeConverter::CacheIndex(std::shared_ptr<::hilti::Type> type,
-                                 std::shared_ptr<::binpac::Type> btype)
+                                 std::shared_ptr<::spicy::Type> btype)
 {
     if ( btype->id() )
         return btype->id()->name();
@@ -42,14 +42,14 @@ string TypeConverter::CacheIndex(std::shared_ptr<::hilti::Type> type,
     return ::util::fmt("%p", s1, s2);
 }
 BroType* TypeConverter::LookupCachedType(std::shared_ptr<::hilti::Type> type,
-                                         std::shared_ptr<::binpac::Type> btype)
+                                         std::shared_ptr<::spicy::Type> btype)
 {
     auto i = type_cache.find(CacheIndex(type, btype));
     return i != type_cache.end() ? i->second.first : nullptr;
 }
 
 uint64_t TypeConverter::TypeIndex(std::shared_ptr<::hilti::Type> type,
-                                  std::shared_ptr<::binpac::Type> btype)
+                                  std::shared_ptr<::spicy::Type> btype)
 {
     Convert(type, btype); // Make sure we have the type cached.
     auto i = type_cache.find(CacheIndex(type, btype));
@@ -58,7 +58,7 @@ uint64_t TypeConverter::TypeIndex(std::shared_ptr<::hilti::Type> type,
 }
 
 void TypeConverter::CacheType(std::shared_ptr<::hilti::Type> type,
-                              std::shared_ptr<::binpac::Type> btype, BroType* bro_type)
+                              std::shared_ptr<::spicy::Type> btype, BroType* bro_type)
 {
     auto cache_idx = CacheIndex(type, btype);
     auto type_idx = lib_bro_add_indexed_type(bro_type);
@@ -74,7 +74,7 @@ ValueConverter::ValueConverter(compiler::ModuleBuilder* arg_mbuilder,
 
 bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value,
                              shared_ptr<::hilti::Expression> dst,
-                             std::shared_ptr<::binpac::Type> btype, BroType* hint)
+                             std::shared_ptr<::spicy::Type> btype, BroType* hint)
 {
     ::hilti::builder::tuple::element_list eight;
     eight.push_back(::hilti::builder::integer::create(8));
@@ -102,7 +102,7 @@ bool ValueConverter::Convert(shared_ptr<::hilti::Expression> value,
     return success;
 }
 
-shared_ptr<::binpac::Type> ValueConverter::arg3() const
+shared_ptr<::spicy::Type> ValueConverter::arg3() const
 {
     return _arg3;
 }
@@ -145,7 +145,7 @@ void TypeConverter::visit(::hilti::type::Double* d)
 
 void TypeConverter::visit(::hilti::type::Enum* e)
 {
-    auto etype = ast::rtti::checkedCast<binpac::type::Enum>(arg1());
+    auto etype = ast::rtti::checkedCast<spicy::type::Enum>(arg1());
 
     if ( auto result = LookupCachedType(e->sharedPtr<::hilti::type::Enum>(), etype) ) {
         setResult(result);
@@ -162,7 +162,7 @@ void TypeConverter::visit(::hilti::type::Enum* e)
     if ( c.size() == 1 ) {
         name = c.front();
 
-        if ( auto m = etype->id()->firstParent<binpac::Module>() )
+        if ( auto m = etype->id()->firstParent<spicy::Module>() )
             module = m->id()->pathAsString();
     }
 
@@ -204,7 +204,7 @@ void TypeConverter::visit(::hilti::type::Enum* e)
 
 void TypeConverter::visit(::hilti::type::Integer* i)
 {
-    auto itype = ast::rtti::checkedCast<binpac::type::Integer>(arg1());
+    auto itype = ast::rtti::checkedCast<spicy::type::Integer>(arg1());
 
     auto result = itype->signed_() ? base_type(TYPE_INT) : base_type(TYPE_COUNT);
     setResult(result);
@@ -232,7 +232,7 @@ void TypeConverter::visit(::hilti::type::Tuple* t)
 {
     auto tdecls = new ::type_decl_list;
 
-    if ( auto bmtype = ast::rtti::tryCast<binpac::type::Bitfield>(arg1()) ) {
+    if ( auto bmtype = ast::rtti::tryCast<spicy::type::Bitfield>(arg1()) ) {
         // A bitmap.
         for ( auto m : ::util::zip2(t->typeList(), bmtype->bits()) ) {
             auto name = m.second->id()->name();
@@ -244,7 +244,7 @@ void TypeConverter::visit(::hilti::type::Tuple* t)
 
     else {
         // An actual tuple
-        auto btype = ast::rtti::checkedCast<binpac::type::Tuple>(arg1());
+        auto btype = ast::rtti::checkedCast<spicy::type::Tuple>(arg1());
         auto names = t->names();
 
         auto i = 0;
@@ -266,7 +266,7 @@ void TypeConverter::visit(::hilti::type::Tuple* t)
 
 void TypeConverter::visit(::hilti::type::List* t)
 {
-    auto btype = ast::rtti::checkedCast<binpac::type::List>(arg1());
+    auto btype = ast::rtti::checkedCast<spicy::type::List>(arg1());
     auto itype = Convert(t->argType(), btype->argType());
     auto result = new ::VectorType(itype);
     setResult(result);
@@ -274,7 +274,7 @@ void TypeConverter::visit(::hilti::type::List* t)
 
 void TypeConverter::visit(::hilti::type::Vector* t)
 {
-    auto btype = ast::rtti::checkedCast<binpac::type::Vector>(arg1());
+    auto btype = ast::rtti::checkedCast<spicy::type::Vector>(arg1());
     auto itype = Convert(t->argType(), btype->argType());
     auto result = new ::VectorType(itype);
     setResult(result);
@@ -282,7 +282,7 @@ void TypeConverter::visit(::hilti::type::Vector* t)
 
 void TypeConverter::visit(::hilti::type::Set* t)
 {
-    auto btype = ast::rtti::checkedCast<binpac::type::Set>(arg1());
+    auto btype = ast::rtti::checkedCast<spicy::type::Set>(arg1());
     auto itype = Convert(t->argType(), btype->argType());
 
     auto types = new ::TypeList();
@@ -293,7 +293,7 @@ void TypeConverter::visit(::hilti::type::Set* t)
 
 void TypeConverter::visit(::hilti::type::Struct* u)
 {
-    auto btype = ast::rtti::checkedCast<binpac::type::Unit>(arg1());
+    auto btype = ast::rtti::checkedCast<spicy::type::Unit>(arg1());
 
     auto tdecls = new ::type_decl_list;
 
@@ -312,7 +312,7 @@ void TypeConverter::visit(::hilti::type::Union* u)
 {
     // The only way we can get a union is here is via the optional<T>
     // type.
-    auto btype = ast::rtti::checkedCast<binpac::type::Optional>(arg1());
+    auto btype = ast::rtti::checkedCast<spicy::type::Optional>(arg1());
 
     auto fields = u->fields();
     assert(fields.size() == 1);
@@ -333,7 +333,7 @@ void ValueConverter::visit(::hilti::type::Integer* i)
 {
     auto val = arg1();
     auto dst = arg2();
-    auto itype = ast::rtti::checkedCast<binpac::type::Integer>(arg3());
+    auto itype = ast::rtti::checkedCast<spicy::type::Integer>(arg3());
 
     const char* func = "";
     shared_ptr<::hilti::Instruction> ext = 0;
@@ -475,7 +475,7 @@ void ValueConverter::visit(::hilti::type::List* t)
 {
     auto val = arg1();
     auto dst = arg2();
-    auto ltype = ast::rtti::checkedCast<binpac::type::List>(arg3());
+    auto ltype = ast::rtti::checkedCast<spicy::type::List>(arg3());
 
     BroType* btype = nullptr;
 
@@ -495,7 +495,7 @@ void ValueConverter::visit(::hilti::type::Vector* t)
 {
     auto val = arg1();
     auto dst = arg2();
-    auto vtype = ast::rtti::checkedCast<binpac::type::Vector>(arg3());
+    auto vtype = ast::rtti::checkedCast<spicy::type::Vector>(arg3());
 
     BroType* btype = nullptr;
 
@@ -515,7 +515,7 @@ void ValueConverter::visit(::hilti::type::Set* t)
 {
     auto val = arg1();
     auto dst = arg2();
-    auto stype = ast::rtti::checkedCast<binpac::type::Set>(arg3());
+    auto stype = ast::rtti::checkedCast<spicy::type::Set>(arg3());
 
     BroType* btype = nullptr;
 
@@ -535,7 +535,7 @@ void ValueConverter::visit(::hilti::type::Struct* s)
 {
     auto val = arg1();
     auto dst = arg2();
-    auto ttype = ast::rtti::checkedCast<binpac::type::Unit>(arg3());
+    auto ttype = ast::rtti::checkedCast<spicy::type::Unit>(arg3());
 
     BroType* btype = nullptr;
 

@@ -1,4 +1,0 @@
-
->>> a 
-wrong-int-mix.pac2:6-8: error, incompatible integer operands [pass::binpac::Validator]
-wrong-int-mix.pac2: Aborting due to input error.

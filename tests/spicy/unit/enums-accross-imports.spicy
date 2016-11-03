@@ -1,0 +1,38 @@
+#
+# @TEST-EXEC:  printf '\001\002' | spicy-driver-test -p A::tA b.spicy %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module A;
+
+import b;
+
+export type tA = unit {
+       B: B::tB;
+
+       on %done {
+           print self;
+       }
+};
+
+### @TEST-START-FILE b.spicy
+module B;
+
+type BEnum = enum {
+ A = 1,
+ B = 2
+};
+
+export type tB = unit {
+       a: uint8 &convert=BEnum($$);
+       b: uint8 &convert=BEnum($$);
+
+       switch ( self.a ) {
+         BEnum::A -> : void { print "switch-A"; }
+         BEnum::B -> : void { print "switch-B"; }
+       };
+};
+
+### @TEST-END-FILE test.txt
+
+

@@ -2,7 +2,7 @@
 #include <Type.h>
 #undef List
 
-#include <binpac/binpac++.h>
+#include <spicy/spicy.h>
 #include <hilti/hilti.h>
 #include <util/util.h>
 
@@ -70,9 +70,9 @@ shared_ptr<::hilti::Expression> ConversionBuilder::ConvertBroToHilti(
 }
 
 shared_ptr<::hilti::Expression> ConversionBuilder::ConvertHiltiToBro(
-    shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::binpac::Type> pac_type)
+    shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::spicy::Type> spicy_type)
 {
-    _pac_type = pac_type;
+    _spicy_type = spicy_type;
 
     switch ( type->Tag() ) {
     case TYPE_ADDR:
@@ -1074,7 +1074,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromTuple(
 
         if ( auto u = ast::rtti::tryCast<::hilti::type::Union>(htype) ) {
             // We support unions of a single field here, as used by
-            // BinPAC++'s optional type. If the field is set, we just convert
+            // Spicy's optional type. If the field is set, we just convert
             // it; if not we leave the record field unset (which however must
             // be declared optional).
 
@@ -1164,7 +1164,7 @@ std::shared_ptr<::hilti::Expression> ConversionBuilder::HiltiToBroFromStruct(
     // Can be either ref<struct> or still unknown here.
     if ( auto rstype = ast::rtti::tryCast<::hilti::type::Reference>(val->type()) ) {
         auto sfields = ast::rtti::checkedCast<::hilti::type::Struct>(rstype->argType())->fields();
-        auto utype = ast::rtti::tryCast<::binpac::type::Unit>(_pac_type);
+        auto utype = ast::rtti::tryCast<::spicy::type::Unit>(_spicy_type);
         no_names = (utype && utype->ctorNoNames());
     }
 

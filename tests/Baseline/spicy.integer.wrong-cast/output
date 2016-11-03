@@ -1,0 +1,11 @@
+
+>>> (Unresolved operator cast<string >(a ))
+wrong-cast.spicy:10-10: error, operator use is ambigious
+got operands: (int<32>, (type type))
+candidate operators:
+    cast<(type type)>(int<*>)
+    cast<(type type)>(int<*>)
+    cast<(type type)>(int<*>)
+    cast<(type type)>(double)
+ [pass::spicy::OperatorResolver]
+wrong-cast.spicy: Aborting due to input error.

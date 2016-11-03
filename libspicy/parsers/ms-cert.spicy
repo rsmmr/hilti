@@ -1,0 +1,38 @@
+
+module MSCerts;
+
+%byteorder=Spicy::ByteOrder::Little;
+
+type SerializedPropertyEntry = unit {
+        id           : uint32;
+        encodingType : uint32;
+        len          : uint32;
+        value        : bytes &length=self.len;
+};
+
+type SerializedCertificateEntry = unit {
+        id           : uint32(0x00000020);
+        encodingType : uint32;
+        len          : uint32;
+        certificate  : bytes &length=self.len;
+};
+
+type CertStoreCertificateGroup = unit {
+        # This list is terminated by a look ahead to the SerializedCertificateEntry.id field.
+        elementList        : list<SerializedPropertyEntry>;
+        certificateElement : SerializedCertificateEntry;
+};
+
+type EndElementMarkerEntry = unit {
+        id     : uint32(0x00000000);
+        marker : bytes &length=8;
+};
+
+export type DocSigSerializedCertStore = unit {
+        version          : uint32;
+        fileType         : uint32;
+        # This list is terminated by a look ahead to the EndElementMarkerEntry.id field.
+        certificateList  : list<CertStoreCertificateGroup>;
+        endMarkerElement : EndElementMarkerEntry;
+};
+

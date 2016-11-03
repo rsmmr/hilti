@@ -383,56 +383,56 @@ datafile=${datadir}/benchmark.dat
 rm -f ${logfile}
 rm -f ${datafile}
 
-#### HTTP, Pac2
+#### HTTP, Spicy
 
 enabled=1
 scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2-variants
+    create_sandbox http-spicy-variants
 
     use_ramdisk=0; use_jemalloc=0; use_bro_q=1
     run_bro_with_trace std-default ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-default ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-default ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
 
     use_ramdisk=0; use_jemalloc=0; use_bro_q=2
     run_bro_with_trace std-default-qq ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-default-qq ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-default-qq ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
 
     use_ramdisk=0; use_jemalloc=1; use_bro_q=1
     run_bro_with_trace std-jemalloc ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
 
     use_ramdisk=1; use_jemalloc=0; use_bro_q=1
     run_bro_with_trace std-ramdisk ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-ramdisk ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-ramdisk ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
 
     finish_sandbox
 fi
 
-#### DNS, Pac2
+#### DNS, Spicy
 
 enabled=1
 scripts=base/protocols/dns
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2-variants
+    create_sandbox dns-spicy-variants
 
     use_ramdisk=0; use_jemalloc=0; use_bro_q=1
     run_bro_with_trace std-default ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-default ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-default ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
 
     use_ramdisk=0; use_jemalloc=0; use_bro_q=2
     run_bro_with_trace std-default-qq ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-default-qq ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-default-qq ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
 
     use_ramdisk=0; use_jemalloc=1; use_bro_q=1
     run_bro_with_trace std-jemalloc ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
 
     use_ramdisk=1; use_jemalloc=0; use_bro_q=1
     run_bro_with_trace std-ramdisk ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-ramdisk ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-ramdisk ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
 
     finish_sandbox
 fi
@@ -447,19 +447,19 @@ if [ ${enabled} == 1 ]; then
 
     use_ramdisk=0; use_jemalloc=0; use_bro_q=1
     run_bro_with_trace std-default ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-default ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-default ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
 
     use_ramdisk=0; use_jemalloc=0; use_bro_q=2
     run_bro_with_trace std-default-qq ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-default-qq ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-default-qq ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
 
     use_ramdisk=0; use_jemalloc=1; use_bro_q=1
     run_bro_with_trace std-jemalloc ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
 
     use_ramdisk=1; use_jemalloc=0; use_bro_q=1
     run_bro_with_trace std-ramdisk ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-ramdisk ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-ramdisk ${trace_http} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
 
     finish_sandbox
 fi
@@ -474,49 +474,49 @@ if [ ${enabled} == 1 ]; then
 
     use_ramdisk=0; use_jemalloc=0; use_bro_q=1
     run_bro_with_trace std-default ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-default ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-default ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
 
     use_ramdisk=0; use_jemalloc=0; use_bro_q=2
     run_bro_with_trace std-default-qq ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-default-qq ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-default-qq ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
 
     use_ramdisk=0; use_jemalloc=1; use_bro_q=1
     run_bro_with_trace std-jemalloc ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
 
     use_ramdisk=1; use_jemalloc=0; use_bro_q=1
     run_bro_with_trace std-ramdisk ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-ramdisk ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt-ramdisk ${trace_dns} ${scripts} ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
 
     finish_sandbox
 fi
 
-#### HTTP, BinPAC++ plus Compiler
+#### HTTP, Spicy plus Compiler
 
 enabled=1
 scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2-to-compiler-variants
+    create_sandbox http-spicy-to-compiler-variants
 
     use_ramdisk=0; use_jemalloc=1; use_bro_q=1
     run_bro_with_trace std-jemalloc ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+    run_bro_with_trace hlt-jemalloc ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=T
 
     finish_sandbox
 fi
 
-#### DNS, BinPAC++ plus Compiler
+#### DNS, Spicy plus Compiler
 
 enabled=1
 scripts=base/protocols/dns
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2-to-compiler-variants
+    create_sandbox dns-spicy-to-compiler-variants
 
     use_ramdisk=0; use_jemalloc=1; use_bro_q=1
     run_bro_with_trace std-jemalloc ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+    run_bro_with_trace hlt-jemalloc ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=T
 
     finish_sandbox
 fi

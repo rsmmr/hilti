@@ -1,0 +1,12 @@
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+print True  ? 10 : 20;
+print False ? 10 : 20;
+print 1.0   ? 10 : 20;
+print 0.0   ? 10 : 20;
+

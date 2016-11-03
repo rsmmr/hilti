@@ -1,0 +1,5 @@
+
+>>> HTTP::Test
+<no location>:: error, grammar Test, production list:a:l2 (/home/robin/work/hilti/tests/.tmp/spicy.list.parse-lahead-var-var/parse-lahead-var-var.spicy:14-14): no look-ahead token for either alternative
+ [pass::spicy::Validator]
+parse-lahead-var-var.spicy: Aborting due to input error.

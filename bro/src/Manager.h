@@ -1,13 +1,13 @@
 /**
- * JIT compiler for HILTI and BinPAC++ code.
+ * JIT compiler for HILTI and Spicy code.
  *
- * The compiler compiles all the *.pac2 and *.evt files it finds and hooks
+ * The compiler compiles all the *.spicy and *.evt files it finds and hooks
  * them into Bro's analyzer infrastructure. The process proceeds in several
  * stages:
  *
  * [TODO] I believe this needs updtating.
  *
- * 1. Once all Bro scripts have been read, we load and parse all *.pac2.
+ * 1. Once all Bro scripts have been read, we load and parse all *.spicy.
  *
  * 2. We load and parse all *.evt files. For each event in there that has a
  *    Bro script handler defined, we
@@ -15,18 +15,18 @@
  *    - create in-memory HILTI code that interface with Bro the raise the
  *      event
  *
- *    - create in-memory BinPAC++ code that adds a hook that at runtime will
+ *    - create in-memory Spicy code that adds a hook that at runtime will
  *      call that HILTI code to trigger the event.
  *
  *    - create a Bro-level event and ensure that if the user has any handlers
  *    defined, the types match.
  *
- * 3. We compile and link all *.hlt and *.pac2 files (including those from
+ * 3. We compile and link all *.hlt and *.spicy files (including those from
  *    step 2) into native code.
  *
  * \note: In the future the loader will also load further *.hlt files but we
  * don't support further HILTI-only functionality yet. So for now it just
- * compiles BinPAC++ analyzers along with their event specifications.
+ * compiles Spicy analyzers along with their event specifications.
  */
 
 #ifndef BRO_PLUGIN_HILTI_MANAGER_H
@@ -42,7 +42,7 @@
 class BroType;
 
 struct __hlt_list;
-struct __binpac_parser;
+struct __spicy_parser;
 
 namespace hilti {
 class CompilerContext;
@@ -60,7 +60,7 @@ class ModuleBuilder;
 }
 }
 
-namespace binpac {
+namespace spicy {
 class Type;
 
 namespace type {
@@ -81,11 +81,11 @@ class Module;
 namespace bro {
 namespace hilti {
 
-struct Pac2EventInfo;
-struct Pac2AnalyzerInfo;
-struct Pac2FileAnalyzerInfo;
-struct Pac2ModuleInfo;
-struct Pac2ExpressionAccessor;
+struct SpicyEventInfo;
+struct SpicyAnalyzerInfo;
+struct SpicyFileAnalyzerInfo;
+struct SpicyModuleInfo;
+struct SpicyExpressionAccessor;
 
 namespace compiler {
 class ModuleBuilder;
@@ -105,7 +105,7 @@ public:
     ~Manager();
 
     /**
-     * Adds one or more paths to find further *.pac2 and *.hlt library
+     * Adds one or more paths to find further *.spicy and *.hlt library
      * modules. The path will be passed to the compiler. Note that this
      * must be called only before InitPreScripts().
      *
@@ -141,7 +141,7 @@ public:
     bool FinishLoading();
 
     /**
-     * Marks an *.pac2, *.evt, or *.hlt file for loading. Note that it
+     * Marks an *.spicy, *.evt, or *.hlt file for loading. Note that it
      * won't necessarily load them all immediately, but may queue some
      * for later compilation via LoadAll().
      */
@@ -163,19 +163,19 @@ public:
      */
 
     /**
-     * Returns the BinPAC++ name for a given analyzer. Returns an error
-     * string if the tag doesn't correspond to a BinPAC++ analyzer.
+     * Returns the Spicy name for a given analyzer. Returns an error
+     * string if the tag doesn't correspond to a Spicy analyzer.
      */
     std::string AnalyzerName(const analyzer::Tag& tag);
 
     /**
-     * Returns the BinPAC++ name for a given file analyzer. Returns an
-     * error string if the tag doesn't correspond to a BinPAC++ analyzer.
+     * Returns the Spicy name for a given file analyzer. Returns an
+     * error string if the tag doesn't correspond to a Spicy analyzer.
      */
     std::string FileAnalyzerName(const file_analysis::Tag& tag);
 
     /**
-     * Returns the BinPAC++ parser object for an analyzer.
+     * Returns the Spicy parser object for an analyzer.
      *
      * analyer: The requested analyzer.
      *
@@ -186,10 +186,10 @@ public:
      * Note that this is a HILTI ref'cnted object. When storing the
      * pointer, make sure to cctor it.
      */
-    struct __binpac_parser* ParserForAnalyzer(const analyzer::Tag& tag, bool is_orig);
+    struct __spicy_parser* ParserForAnalyzer(const analyzer::Tag& tag, bool is_orig);
 
     /**
-     * Returns the BinPAC++ parser object for a file analyzer.
+     * Returns the Spicy parser object for a file analyzer.
      *
      * analyer: The requested file analyzer.
      *
@@ -197,7 +197,7 @@ public:
      * Note that this is a HILTI ref'cnted object. When storing the
      * pointer, make sure to cctor it.
      */
-    struct __binpac_parser* ParserForFileAnalyzer(const file_analysis::Tag& tag);
+    struct __spicy_parser* ParserForFileAnalyzer(const file_analysis::Tag& tag);
 
     /**
      * Returns the analyzer tag that should be passed to script-land when
@@ -249,16 +249,16 @@ public:
      * the given event, or we're otherwise told to generate the code for
      * it even if not
      */
-    bool WantEvent(std::shared_ptr<Pac2EventInfo> ev);
+    bool WantEvent(std::shared_ptr<SpicyEventInfo> ev);
 
     /**
      * Returns true if either there's at least one handler defined for
      * the given event, or we're otherwise told to generate the code for
      * it even if not
      */
-    bool WantEvent(Pac2EventInfo* ev);
+    bool WantEvent(SpicyEventInfo* ev);
 
-    /** Dumps a summary all BinPAC++/HILTI analyzers/events/code to standard error.
+    /** Dumps a summary all Spicy/HILTI analyzers/events/code to standard error.
      */
     void DumpDebug();
 
@@ -279,12 +279,12 @@ protected:
     // subsystem so that we can use C++11's shared_ptr.
     //
     /**
-     * Initialized the HILTI and BinPAC++ compiler subsystems.
+     * Initialized the HILTI and Spicy compiler subsystems.
      */
     void InitHILTI();
 
 #if 0
-	/** Implements the search logic for both LoadPac2Modules() and LoadPac2Events().
+	/** Implements the search logic for both LoadSpicyModules() and LoadSpicyEvents().
 	 *
 	 * @param ext The file extension to search.
 	 *
@@ -311,13 +311,13 @@ protected:
     std::string SearchFile(const std::string& file, const std::string& relative_to = "") const;
 
     /**
-     * Loads one *.pac2 file.
+     * Loads one *.spicy file.
      *
      * @param path The full path to load the file from.
      *
      * @return True if successfull.
      */
-    bool LoadPac2Module(const std::string& path);
+    bool LoadSpicyModule(const std::string& path);
 
     /**
      * Loads one *.evt file.
@@ -326,7 +326,7 @@ protected:
      *
      * @return True if successfull.
      */
-    bool LoadPac2Events(const std::string& path);
+    bool LoadSpicyEvents(const std::string& path);
 
     /**
      * Parses a single event specification.
@@ -336,7 +336,7 @@ protected:
      * @return Returns the new event instance if parsing was sucessful;
      * passes ownership. Null if there was an error.
      */
-    std::shared_ptr<Pac2EventInfo> ParsePac2EventSpec(const std::string& chunk);
+    std::shared_ptr<SpicyEventInfo> ParseSpicyEventSpec(const std::string& chunk);
 
     /**
      * Parses and registers a single analyzer specification.
@@ -346,7 +346,7 @@ protected:
      * @return Returns the analyzer info with parsed values filled, or
      * null if an error occurred.
      */
-    std::shared_ptr<Pac2AnalyzerInfo> ParsePac2AnalyzerSpec(const std::string& chunk);
+    std::shared_ptr<SpicyAnalyzerInfo> ParseSpicyAnalyzerSpec(const std::string& chunk);
 
     /**
      * Parses and registers a single file analyzer specification.
@@ -356,25 +356,25 @@ protected:
      * @return Returns the analyzer info with parsed values filled, or
      * null if an error occurred.
      */
-    std::shared_ptr<Pac2FileAnalyzerInfo> ParsePac2FileAnalyzerSpec(const std::string& chunk);
+    std::shared_ptr<SpicyFileAnalyzerInfo> ParseSpicyFileAnalyzerSpec(const std::string& chunk);
 
     /**
-     * Registers a Bro event for a BinPAC++ event.
+     * Registers a Bro event for a Spicy event.
      *
      * ev: The event to register. The corresponding Bro event must not
      * yet exist.
      */
-    void RegisterBroEvent(std::shared_ptr<Pac2EventInfo> ev);
+    void RegisterBroEvent(std::shared_ptr<SpicyEventInfo> ev);
 
     /**
      * XXXX
      */
-    void BuildBroEventSignature(std::shared_ptr<Pac2EventInfo> ev);
+    void BuildBroEventSignature(std::shared_ptr<SpicyEventInfo> ev);
 
     /**
      * XXX
      */
-    bool PopulateEvent(std::shared_ptr<Pac2EventInfo> ev);
+    bool PopulateEvent(std::shared_ptr<SpicyEventInfo> ev);
 
     /**
      * XXX
@@ -386,42 +386,42 @@ protected:
      *
      * a: The analyzer to register.
      */
-    void RegisterBroAnalyzer(std::shared_ptr<Pac2AnalyzerInfo> a);
+    void RegisterBroAnalyzer(std::shared_ptr<SpicyAnalyzerInfo> a);
 
     /**
      * Registers a Bro analyzer defined in an analyzer specification.
      *
      * a: The analyzer to register.
      */
-    void RegisterBroFileAnalyzer(std::shared_ptr<Pac2FileAnalyzerInfo> a);
+    void RegisterBroFileAnalyzer(std::shared_ptr<SpicyFileAnalyzerInfo> a);
 
     /**
-     * Creates the BinPAC++ hook for an event.
+     * Creates the Spicy hook for an event.
      *
      * @param event The event to create the code for.
      *
      * @return True if successful.
      */
-    bool CreatePac2Hook(Pac2EventInfo* ev);
+    bool CreateSpicyHook(SpicyEventInfo* ev);
 
     /**
      * XXX
      */
-    bool CreateExpressionAccessors(std::shared_ptr<Pac2EventInfo> ev);
+    bool CreateExpressionAccessors(std::shared_ptr<SpicyEventInfo> ev);
 
     /**
-     * Creates a BinPAC++ function for an event argument expression that
+     * Creates a Spicy function for an event argument expression that
      * extracts the corresponding value from the parse object.
      */
-    std::shared_ptr<::binpac::declaration::Function> CreatePac2ExpressionAccessor(
-        std::shared_ptr<Pac2EventInfo> ev, int nr, const std::string& expr);
+    std::shared_ptr<::spicy::declaration::Function> CreateSpicyExpressionAccessor(
+        std::shared_ptr<SpicyEventInfo> ev, int nr, const std::string& expr);
 
     /**
-     * Create a HILTI prototype for the BinPAC++ generated by
-     * CreatePac2ItemAccessor().
+     * Create a HILTI prototype for the Spicy generated by
+     * CreateSpicyItemAccessor().
      */
     std::shared_ptr<::hilti::declaration::Function> DeclareHiltiExpressionAccessor(
-        std::shared_ptr<Pac2EventInfo> ev, int nr, std::shared_ptr<::hilti::Type> rtype);
+        std::shared_ptr<SpicyEventInfo> ev, int nr, std::shared_ptr<::hilti::Type> rtype);
 
     /**
      * Creates the HILTI raise() for an event.
@@ -430,30 +430,30 @@ protected:
      *
      * @return True if successful.
      */
-    bool CreateHiltiEventFunction(Pac2EventInfo* ev);
+    bool CreateHiltiEventFunction(SpicyEventInfo* ev);
 
     /**
      * XXX
      */
-    bool CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev);
+    bool CreateHiltiEventFunctionBodyForBro(SpicyEventInfo* ev);
 
     /**
      * XXX
      */
-    bool CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev);
+    bool CreateHiltiEventFunctionBodyForHilti(SpicyEventInfo* ev);
 
     /**
      * XXX
      */
-    void AddHiltiTypesForEvent(std::shared_ptr<Pac2EventInfo> ev);
+    void AddHiltiTypesForEvent(std::shared_ptr<SpicyEventInfo> ev);
 
     /**
      * XXX
      */
-    void AddHiltiTypesForModule(std::shared_ptr<Pac2ModuleInfo> minfo);
+    void AddHiltiTypesForModule(std::shared_ptr<SpicyModuleInfo> minfo);
 
     /**
-     * Adds information from BinPAC+s binpac_parsers() list to our
+     * Adds information from Spicy+s spicy_parsers() list to our
      * analyzer data structures.
      */
     void ExtractParsers(__hlt_list* parsers);

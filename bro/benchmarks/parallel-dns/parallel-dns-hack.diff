@@ -1,7 +1,7 @@
-diff --git a/hilti2/bro/pac2/dns.pac2 b/hilti2/bro/pac2/dns.pac2
+diff --git a/hilti2/bro/spicy/dns.spicy b/hilti2/bro/spicy/dns.spicy
 index fab3a95..c8bc0d2 100644
---- a/hilti2/bro/pac2/dns.pac2
-+++ b/hilti2/bro/pac2/dns.pac2
+--- a/hilti2/bro/spicy/dns.spicy
++++ b/hilti2/bro/spicy/dns.spicy
 @@ -9,8 +9,11 @@ module DNS;
  
  import Bro;
@@ -32,7 +32,7 @@ index e7de979..0ed4fd7 100644
 --- a/hilti2/bro/scripts/bro/hilti/base/main.bro
 +++ b/hilti2/bro/scripts/bro/hilti/base/main.bro
 @@ -55,7 +55,7 @@ export {
- 	const pac2_to_compiler = T &redef;
+ 	const spicy_to_compiler = T &redef;
  
  	## Number of HILTI worker threads to spawn.
 -	const hilti_workers = 2 &redef;
@@ -46,13 +46,13 @@ index 1540413..f55d1b7 100644
 +++ b/hilti2/bro/src/Manager.cc
 @@ -201,7 +201,7 @@ struct Manager::PIMPL
  	bool save_llvm;		// Saves the final linked LLVM code into a file, set from BifConst::Hilti::save_llvm.
- 	bool pac2_to_compiler;  // If compiling scripts, raise event hooks from BinPAC++ code directly.
+ 	bool spicy_to_compiler;  // If compiling scripts, raise event hooks from Spicy code directly.
  	unsigned int profile;	// True to enable run-time profiling.
 -	unsigned int hilti_workers;	// Number of HILTI worker threads to spawn.
 +	int hilti_workers;	// Number of HILTI worker threads to spawn.
  
  	std::list<string> import_paths;
- 	Pac2AST* pac2_ast;
+ 	SpicyAST* spicy_ast;
 @@ -927,6 +927,12 @@ bool Manager::CompileHiltiModule(std::shared_ptr<::hilti::Module> m)
  	return true;
  	}
@@ -79,16 +79,16 @@ index 1540413..f55d1b7 100644
  
  	hlt_init_jit(hilti_context, llvm_module, ee);
 @@ -962,6 +968,9 @@ bool Manager::RunJIT(llvm::Module* llvm_module)
- 	typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
- 	auto binpac_parsers = (binpac_parsers_func)hilti_context->nativeFunction(llvm_module, ee, "binpac_parsers");
+ 	typedef hlt_list* (*spicy_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
+ 	auto spicy_parsers = (spicy_parsers_func)hilti_context->nativeFunction(llvm_module, ee, "spicy_parsers");
  
 +	paradns_schedule_packet = (paradns_schedule_packet_type)hilti_context->nativeFunction(llvm_module, ee, "paradns_schedule_packet");
 +	dns_parse_message = (dns_parse_message_type)hilti_context->nativeFunction(llvm_module, ee, "dns_parse_Message");
 +
  	profile_update(PROFILE_JIT_LAND, PROFILE_STOP);
  
- 	if ( ! binpac_parsers )
-@@ -2442,6 +2451,7 @@ bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
+ 	if ( ! spicy_parsers )
+@@ -2442,6 +2451,7 @@ bool Manager::CreateHiltiEventFunctionBodyForBro(SpicyEventInfo* ev)
  
  	::hilti::builder::tuple::element_list vals;
  
@@ -96,7 +96,7 @@ index 1540413..f55d1b7 100644
  	int i = 0;
  
  	for ( auto e : ev->expr_accessors )
-@@ -2501,6 +2511,7 @@ bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
+@@ -2501,6 +2511,7 @@ bool Manager::CreateHiltiEventFunctionBodyForBro(SpicyEventInfo* ev)
  		vals.push_back(val);
  		i++;
  		}
@@ -104,21 +104,21 @@ index 1540413..f55d1b7 100644
  
  	auto canon_name = ::util::strreplace(ev->name, "::", "_");
  	auto handler = mbuilder->addGlobal(util::fmt("__bro_handler_%s_%p", canon_name, ev),
-diff --git a/hilti2/bro/src/Pac2Analyzer.cc b/hilti2/bro/src/Pac2Analyzer.cc
+diff --git a/hilti2/bro/src/SpicyAnalyzer.cc b/hilti2/bro/src/SpicyAnalyzer.cc
 index 651d69c..28be41f 100644
---- a/hilti2/bro/src/Pac2Analyzer.cc
-+++ b/hilti2/bro/src/Pac2Analyzer.cc
+--- a/hilti2/bro/src/SpicyAnalyzer.cc
++++ b/hilti2/bro/src/SpicyAnalyzer.cc
 @@ -8,6 +8,8 @@ extern "C" {
- #include <libbinpac/libbinpac++.h>
+ #include <libspicy/libspicy.h>
  }
  
 +#include "consts.bif.h"
 +
  #undef DBG_LOG
  
- #include "Pac2Analyzer.h"
-@@ -371,13 +373,90 @@ void Pac2_UDP_Analyzer::Done()
- 	Pac2_Analyzer::Done();
+ #include "SpicyAnalyzer.h"
+@@ -371,13 +373,90 @@ void Spicy_UDP_Analyzer::Done()
+ 	Spicy_Analyzer::Done();
  	}
  
 +extern "C" {
@@ -126,13 +126,13 @@ index 651d69c..28be41f 100644
 +    extern void* (*dns_parse_message)(hlt_bytes* b, void* c, hlt_exception** excpt, hlt_execution_context* ctx);
 +}
 +
- void Pac2_UDP_Analyzer::DeliverPacket(int len, const u_char* data, bool is_orig,
+ void Spicy_UDP_Analyzer::DeliverPacket(int len, const u_char* data, bool is_orig,
  				    int seq, const IP_Hdr* ip, int caplen)
  	{
  	Analyzer::DeliverPacket(len, data, is_orig, seq, ip, caplen);
  
 -	FeedChunk(len, data, is_orig, true);
--	Pac2_Analyzer::Done();
+-	Spicy_Analyzer::Done();
 +	if ( is_orig )
 +		return;
 +
@@ -148,7 +148,7 @@ index 651d69c..28be41f 100644
 +			return;
 +			}
 +
-+		GC_CCTOR(endp->parser, hlt_BinPACHilti_Parser);
++		GC_CCTOR(endp->parser, hlt_SpicyHilti_Parser);
 +		}
 +
 +	hlt_exception* excpt = 0;
@@ -209,11 +209,11 @@ index 651d69c..28be41f 100644
 +	GC_DTOR(b, hlt_bytes);
  	}
  
- void Pac2_UDP_Analyzer::Undelivered(int seq, int len, bool is_orig)
-diff --git a/hilti2/bro/src/Pac2Analyzer.h b/hilti2/bro/src/Pac2Analyzer.h
+ void Spicy_UDP_Analyzer::Undelivered(int seq, int len, bool is_orig)
+diff --git a/hilti2/bro/src/SpicyAnalyzer.h b/hilti2/bro/src/SpicyAnalyzer.h
 index e817662..cc29048 100644
---- a/hilti2/bro/src/Pac2Analyzer.h
-+++ b/hilti2/bro/src/Pac2Analyzer.h
+--- a/hilti2/bro/src/SpicyAnalyzer.h
++++ b/hilti2/bro/src/SpicyAnalyzer.h
 @@ -35,7 +35,7 @@ public:
  protected:
  	virtual void ParseError(const string& msg, bool is_orig);
@@ -221,7 +221,7 @@ index e817662..cc29048 100644
 -private:
 +public:
  	struct Endpoint {
- 		__binpac_parser* parser;
+ 		__spicy_parser* parser;
  		__hlt_bytes* data;
 diff --git a/hilti2/bro/src/Plugin.cc b/hilti2/bro/src/Plugin.cc
 index 743f829..a4b17be 100644
@@ -240,7 +240,7 @@ index 743f829..a4b17be 100644
 +
 +#undef DBG_LOG
 +extern "C" {
-+#include <libbinpac/libbinpac++.h>
++#include <libspicy/libspicy.h>
 +}
 +
 +
@@ -375,7 +375,7 @@ index 7293e78..47610f9 100644
 --- a/hilti2/bro/src/consts.bif
 +++ b/hilti2/bro/src/consts.bif
 @@ -53,4 +53,4 @@ const compile_scripts: bool;
- const pac2_to_compiler: bool;
+ const spicy_to_compiler: bool;
  
  ## Number of HILTI worker threads to spawn.
 -const hilti_workers: count;

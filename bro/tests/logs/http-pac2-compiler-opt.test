@@ -1,8 +1,0 @@
-#
-# @TEST-EXEC: bro -b -r ${BROTRACES}/wikipedia.trace base/protocols/http && mv http.log http.baseline.log
-# @TEST-EXEC: bro -b -r ${BROTRACES}/wikipedia.trace base/protocols/http http.evt Hilti::compile_scripts=T Hilti::pac2_to_compiler=T Hilti::optimize=T >output 2>&1
-# @TEST-EXEC: ${SCRIPTS}/compare-logs http.baseline.log http.log >http.log.diff || true
-# @TEST-EXEC: btest-diff output
-# @TEST-EXEC: TEST_DIFF_CANONIFIER=${SCRIPTS}/bro-log-canonifier btest-diff http.log
-# @TEST-EXEC: TEST_DIFF_CANONIFIER=${SCRIPTS}/diff-canonifier    btest-diff http.log.diff
-

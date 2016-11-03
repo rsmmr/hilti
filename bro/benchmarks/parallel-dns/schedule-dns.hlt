@@ -5,10 +5,10 @@ import Hilti
 
 type DNS::Message = struct {}
 
-type BinPACHilti::UserCookie = caddr
-declare ref<DNS::Message> DNS::parse_Message(ref<bytes> __data, BinPACHilti::UserCookie __cookie)
+type SpicyHilti::UserCookie = caddr
+declare ref<DNS::Message> DNS::parse_Message(ref<bytes> __data, SpicyHilti::UserCookie __cookie)
 
-void parse_packet(ref<bytes> b, BinPACHilti::UserCookie c)
+void parse_packet(ref<bytes> b, SpicyHilti::UserCookie c)
 {
     local ref<DNS::Message> msg
 
@@ -25,7 +25,7 @@ void parse_packet2()
 {
 }
 
-void schedule_packet(ref<bytes> b, BinPACHilti::UserCookie c, int<64> h) &noyield
+void schedule_packet(ref<bytes> b, SpicyHilti::UserCookie c, int<64> h) &noyield
 {
     h = int.mod h 10
 	h = int.add h 1

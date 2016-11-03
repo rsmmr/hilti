@@ -1,5 +1,0 @@
-b1 b"2345"
-b2 b"<not set>"
-b1 b"<not set>"
-b2 b"2345"
-hilti: uncaught exception, BinPACHilti::ParseError with argument 'no matching switch case' (from <no location>:)

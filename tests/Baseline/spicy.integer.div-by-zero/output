@@ -1,0 +1,4 @@
+
+>>> a 
+div-by-zero.spicy:6-8: error, division by zero [pass::spicy::Validator]
+div-by-zero.spicy: Aborting due to input error.

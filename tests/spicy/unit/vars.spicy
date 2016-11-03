@@ -1,0 +1,21 @@
+#
+# @TEST-EXEC:  echo 1234567890abcdef | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+       a: bytes &length=4;
+       b: bytes &length=6 {
+        self.v1 = self.b;
+        self.v2 = 21;
+        print self;
+        }
+
+       var v1: bytes;
+       var v2: int<16>;
+       var v3: int<16> = 42;
+
+       on %done { print self.v1, self.v2, self.v3; }
+};

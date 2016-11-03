@@ -1,0 +1,23 @@
+# @TEST-EXEC:  spicy-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import Foo;
+
+global a: Foo::Bar = Foo::Bar::A;
+
+print a;
+
+### @TEST-START-FILE foo.spicy
+
+module Foo;
+
+type Bar = enum {
+    A = 10,
+    B,
+    C = 20
+    };
+
+### # @TEST-END-FILE
+

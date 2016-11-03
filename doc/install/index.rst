@@ -76,10 +76,9 @@ want to link to them from some directory that's in your ``PATH``, such
 as::
 
      > export PATH=$HOME/bin:$PATH
-     > ln -s
-     binpacpp/hilti2/build/tools/{hiltic,hiltip,hilti-config,hilti-prof,binpac-config,binpac++,pac-driver,pac-dump} $HOME/bin
-     > ln -s binpacpp/hilti2/build/tools/pac-driver/pac-driver $HOME/bin
-     > ln -s binpacpp/hilti2/tools/hilti-build $HOME/bin
+     > ln -s hilti/build/tools/{hiltic,hiltip,hilti-config,hilti-prof,spicy-config,spicyc,spicy-driver,spicy-dump} $HOME/bin
+     > ln -s hilti/build/tools/spicy-driver/spicy-driver $HOME/bin
+     > ln -s hilti/tools/hilti-build $HOME/bin
 
 In the remainder of this documentation, we assume that these tools are
 indeed found in the ``PATH``.
@@ -95,17 +94,17 @@ comes with all pieces preinstalled (HILTI/Spicy, Bro, LLVM/clang)::
 
     # docker run -i -t "rsmmr/hilti"
     HILTI 0.3-11
-    BinPAC++ 0.3-11
-    root@b18c7c5bc7e2:~# cat hello-world.pac2
+    Spicy 0.3-11
+    root@b18c7c5bc7e2:~# cat hello-world.spicy
     module Test;
 
     print "Hello, world!";
-    root@b18c7c5bc7e2:~# pac-driver hello-world.pac2
+    root@b18c7c5bc7e2:~# spicy-driver hello-world.spicy
     Hello, world!
     root@b18c7c5bc7e2:~# bro -NN Bro::Hilti
-    Bro::Hilti - Dynamically compiled HILTI/BinPAC++ functionality (*.pac2, *.evt, *.hlt) (dynamic, version 0.1)
+    Bro::Hilti - Dynamically compiled HILTI/Spicy functionality (*.spicy, *.evt, *.hlt) (dynamic, version 0.1)
     [...]
-    root@b18c7c5bc7e2:~# bro hello-world.pac2
+    root@b18c7c5bc7e2:~# bro hello-world.spicy
     Hello, world!
     root@b18c7c5bc7e2:~# bro -r ssh-single-conn.trace ./ssh-banner.bro ssh.evt
     SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp], F, 1.99, OpenSSH_3.9p1
@@ -119,7 +118,7 @@ can use the make target::
 Editors
 -------
 
-Syntax highlighting support for ``pac2`` files is available in
+Syntax highlighting support for ``spicy`` files is available in
 Vim and Emacs through the following plugins:
 
 * `vim-spicy <https://github.com/blipp/vim-spicy>`_ for Vim; and

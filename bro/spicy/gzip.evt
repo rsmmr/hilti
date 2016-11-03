@@ -1,0 +1,8 @@
+
+grammar gzip.spicy;
+
+file analyzer spicy::GZIP:
+    parse with gzip::File,
+    mime-type application/x-gzip;
+
+on gzip::Member -> event gzip::member($file, self.method, self.flags, self.mtime, self.xflags, self.os);
