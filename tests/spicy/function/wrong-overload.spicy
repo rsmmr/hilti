@@ -1,0 +1,18 @@
+#
+# @TEST-EXEC-FAIL: spicyc %INPUT >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+
+module Test;
+
+bytes bar(b: bytes)
+{
+   return b"bytes";
+}
+
+bytes bar(b: bytes)
+{
+   return b"int";
+}
+
+print bar(b"B");

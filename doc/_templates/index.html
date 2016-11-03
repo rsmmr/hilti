@@ -28,7 +28,7 @@
     inspection.
     </p>
     <p>
-    <b><strike>BinPAC++</strike> Spicy.</b> A next-generation parser generator for network
+    <b><strike>Spicy</strike> Spicy.</b> A next-generation parser generator for network
     protocols and file formats.
     </p>
     </div>
@@ -118,7 +118,7 @@ platforms are unlikely to work at the moment.
 <dt>Can I use Spicy with Bro?</dt>
 <dd>
 Yes, we have developed a
-<a href="{{ pathto("binpac/bro/index")}}">Bro plugin</a>
+<a href="{{ pathto("spicy/bro/index")}}">Bro plugin</a>
 that integrates Spicy transparently into
 <a href="http://www.bro.org">Bro</a>.
 </dd>
@@ -139,16 +139,16 @@ allows for pretty much unrestricted use as long as you leave the
 license header in place.
 </dd>
 
-<dt>I hear Spicy, I hear BinPAC++, that's confusing!?</dt>
+<dt>I hear Spicy, I hear Spicy, that's confusing!?</dt>
 <dd>
-BinPAC++ used to be the working title of the parser generator. We have
+Spicy used to be the working title of the parser generator. We have
 since renamed the project to Spicy, as it's not actually related to
-the original 2004 BinPAC system at all&mdash;it's aiming at the same
+the original 2004 Spicy system at all&mdash;it's aiming at the same
 problem space but taking a completely different approach. As the
 renaming remains work in progress, you'll still see lots of
 evidence of that former name, including in tools (e.g.,
-<tt>pac-driver</tt>)
-and file extensions (<tt>*.pac2</tt>).
+<tt>spicy-driver</tt>)
+and file extensions (<tt>*.spicy</tt>).
 </dd>
 
 <dt>Who's behind all this?</dt>
@@ -211,7 +211,7 @@ Hello, HILTI world!
 <h2>About Spicy</h2>
 
 <p>
-Spicy (formerly BinPAC++) is a next-generation parser generator that makes it easy to
+Spicy (formerly Spicy) is a next-generation parser generator that makes it easy to
 build parsers for network protocols, file formats, and more. Spicy
 is more than just a "yacc for protocols": it's an all-in-one system
 that enables developers to write attributed grammars defining both
@@ -231,7 +231,7 @@ startup.
 
 <div class="highlight">
 <pre>
-# cat http-request.pac2
+# cat http-request.spicy
 module HTTP;
 
 const Token      = /[^ \t\r\n]+/;
@@ -256,7 +256,7 @@ type Version = unit {
   number: /[0-9]+\.[0-9]+/;
 };
 
-# echo "GET /index.html HTTP/1.0" | pac-driver http-request.pac2
+# echo "GET /index.html HTTP/1.0" | spicy-driver http-request.spicy
 GET /index.html 1.0
 </pre>
 </div>

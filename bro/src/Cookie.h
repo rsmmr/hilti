@@ -8,7 +8,7 @@
 namespace bro {
 namespace hilti {
 
-namespace pac2_cookie {
+namespace spicy_cookie {
 
 struct Protocol {
     analyzer::Analyzer* analyzer;
@@ -22,10 +22,10 @@ struct File {
 };
 }
 
-struct Pac2Cookie {
+struct SpicyCookie {
     enum Type { PROTOCOL, FILE } type;
-    pac2_cookie::Protocol protocol_cookie;
-    pac2_cookie::File file_cookie;
+    spicy_cookie::Protocol protocol_cookie;
+    spicy_cookie::File file_cookie;
 };
 }
 }

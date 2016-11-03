@@ -1,0 +1,11 @@
+# @TEST-EXEC:  echo 1234567890 | HILTI_DEBUG=spicy:spicy-compose spicy-driver-test -c %INPUT >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type test = unit {
+       a  :  bytes &length=2;
+       b1 <  int<16> &byteorder=Spicy::ByteOrder::Little;
+       b1 >  int<16> &byteorder=Spicy::ByteOrder::Big;
+       c  :  bytes &length=2;
+};

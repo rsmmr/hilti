@@ -1,0 +1,4 @@
+
+>>> a 
+wrong-assign.spicy:6-8: error, incompatible type for assigment [pass::spicy::Validator]
+wrong-assign.spicy: Aborting due to input error.

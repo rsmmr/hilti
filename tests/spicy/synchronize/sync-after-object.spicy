@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:      echo abc12aXXXXXXc56ABCabc78abc90 | HILTI_DEBUG=spicy-verbose spicy-driver-test -d -e 18:x %INPUT >>output 2>&1
+# @TEST-EXEC:      echo abc12aXXXXXXc56ABCabc78abc90 | HILTI_DEBUG=spicy-verbose spicy-driver-test -i 1 -d -e 18:x %INPUT >>output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+
+module Mini;
+
+export type test1 = unit {
+    l: list<test2> &while($$.x != b"90") &synchronize;
+
+    on %done   { print "%done:", self; }
+    on %sync   { print "%synced"; }
+};
+
+type test2 = unit {
+       %synchronize-after = object<string>;
+
+       : b"abc";
+       x: bytes &length=2;
+
+};

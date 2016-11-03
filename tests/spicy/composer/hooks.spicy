@@ -1,0 +1,36 @@
+#
+# @TEST-EXEC:  printf '1234567890A' | spicy-driver-test -c %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+    a: bytes &length=4 !> {
+        print "compose-a";
+        }
+
+    foo: Foo !> {
+        print "compose-foo";
+        }
+
+    b: bytes &length=6 !> {
+        print "compose-b";
+        }
+
+
+    on %init !< { print "parse-init"; }
+    on %done !< { print "parse-done"; }
+
+    on %init !> { print "compose-init"; }
+    on %done !> { print "compose-done"; }
+};
+
+type Foo = unit {
+    i: int8 !> {
+        print "compose-Foo-i";
+        }
+
+    on %init !> { print "compose-Foo-init"; }
+    on %done !> { print "compose-Foo-done"; }
+};

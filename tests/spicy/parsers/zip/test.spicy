@@ -1,0 +1,13 @@
+#
+# @TEST-EXEC:  cat %DIR/archive.zip.dat | spicy-driver-test -I ${PARSERS} ${PARSERS}/mstime.spicy ${PARSERS}/zip.spicy %INPUT -- -p ZIP::Archive >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import parsers/zip;
+
+on ZIP::File::%done {
+    print self;
+    }
+

@@ -1,0 +1,20 @@
+#
+# @TEST-EXEC-FAIL: echo 1234567890 | spicy-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+       a: bytes &length=4;
+       b: X &length=4;
+       c: bytes &length=2;
+
+       on %sync { print "%sync", self; }
+       on %done { print "%done", self; }
+};
+
+type X = unit {
+    c1: b"AB";
+    c2: b"DE";
+};

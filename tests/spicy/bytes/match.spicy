@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+global b = b"12345ABBBBC67890";
+
+print b.match(/.*A(.*)C.*/);
+print b.match(/A(.*)C/, 0);
+print b.match(/.*A(.*)C.*/, 1);
+
+print b.match(/XXX/);
+print b.match(/XXX/, 0);
+print b.match(/.*A(.*)C.*/, 10);
+
+b = b"Content-Type: multipart/mixed; boundary=\x22frontier\x22";
+
+print b;
+
+print b.match(/boundary=("[^"]*"|[ ;]+)/, 1);

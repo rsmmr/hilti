@@ -1,5 +1,5 @@
 #
-# - Try to find HILTI and BinPAC++.
+# - Try to find HILTI and Spicy.
 #
 # Variables used by this module, they can change the default behaviour and need
 # to be set before calling find_package:
@@ -10,7 +10,7 @@
 #
 # Variables defined by this module:
 #
-#  HILTI_FOUND        HILTI/BinPAC++ found.
+#  HILTI_FOUND        HILTI/Spicy found.
 #  HILTI_CXX_FLAGS    CXX_FLAGS for compiling with HILTI integration.
 #  HILTI_LD_FLAGS     LD_FLAGS for compiling with HILTI integration.
 #  HILTI_LIBS         LIBS for compiling with HILTI integration.

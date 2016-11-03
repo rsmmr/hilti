@@ -1,0 +1,42 @@
+
+module TFTP;
+
+import Spicy;
+
+type Opcode = enum {
+    RRQ = 0x01,
+    WRQ = 0x02,
+    DATA = 0x03,
+    ACK = 0x04,
+    ERROR = 0x05
+};
+
+export type Message = unit {
+    op: uint<16> &convert=Opcode($$);
+    switch ( self.op ) {
+        Opcode::RRQ -> rrq: Request;
+        Opcode::WRQ -> wrq: Request;
+        Opcode::DATA -> data: Data;
+        Opcode::ACK -> ack: Ack;
+        Opcode::ERROR -> error: Error;
+        };
+};
+
+type Request = unit {
+    fname: bytes &until(b"\x00");
+    mode: bytes &until(b"\x00");
+};
+
+type Data = unit {
+    num: uint<16>;
+    data: bytes &eod;
+};
+
+type Ack = unit {
+    num: uint<16>;
+};
+
+type Error = unit {
+    code: uint<16>;
+    msg: bytes &until(b"\x00");
+};

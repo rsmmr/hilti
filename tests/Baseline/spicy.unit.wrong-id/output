@@ -1,0 +1,4 @@
+
+>>> xxx
+wrong-id.spicy:9-9: error, unknown ID xxx [pass::spicy::IDResolver]
+wrong-id.spicy: Aborting due to input error.

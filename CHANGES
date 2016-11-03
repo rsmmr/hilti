@@ -5,7 +5,7 @@
 
 0.4-28 | 2015-08-24 21:11:24 -0700
 
-  * Renaming BinPAC++ to Spicy across the documentation.
+  * Renaming Spicy to Spicy across the documentation.
 
   * Fix the type returned by iterator::deref. (Frozen Caribou)
 
@@ -13,7 +13,7 @@
 
   * Fix for BTest config's IgnoreFiles. (Benjamin Lipp)
 
-  * Splitting BinPAC's bytes' to_int() into two separate to_int() and
+  * Splitting Spicy's bytes' to_int() into two separate to_int() and
     to_uint(), with corresponding HILTI instructions. (Marco
     Caselli/Robin Sommer).
 
@@ -25,14 +25,14 @@
 
   * Baseline updates for Bro changes.
 
-  * BinPAC++ can now parse doubles and floats.
+  * Spicy can now parse doubles and floats.
 
      	f1: double; # Double precision in host byte order is the default.
 
-        f2: double &precision=BinPAC::Precision::Double;
-    	f3: double &precision=BinPAC::Precision::Single;
-    	f4: double &byteorder=BinPAC::ByteOrder::Little;
-    	f5: double &byteorder=BinPAC::ByteOrder::Big;
+        f2: double &precision=Spicy::Precision::Double;
+    	f3: double &precision=Spicy::Precision::Single;
+    	f4: double &byteorder=Spicy::ByteOrder::Little;
+    	f5: double &byteorder=Spicy::ByteOrder::Big;
 
   * Adding HILTI packing and unpacking for doubles.
 
@@ -42,13 +42,13 @@
 
 0.4-6 | 2015-04-20 08:55:47 -0700
 
-  * Building libhilti and libbinpac with -fPIC.
+  * Building libhilti and libspicy with -fPIC.
 
 0.4-5 | 2015-04-20 08:50:28 -0700
 
   * Fixing Dockerfile to use clang when compiling Bro.
 
-  * Precomputing the file ID when BinPAC++ protocol analyzers pass on
+  * Precomputing the file ID when Spicy protocol analyzers pass on
     data to file analysis.
 
 0.4-2 | 2015-03-04 13:08:24 -0800
@@ -102,7 +102,7 @@
             }
         }
 
-        # pac-driver test.pac2
+        # spicy-driver test.spicy
         0123456789
 
     These sequence numbers are optional; by default write() adds to the
@@ -157,7 +157,7 @@
 
   * Changing output to enclose bytes instanced in b"..." when printing.
 
-  * "Dynamic Format Detection" or BinPAC::
+  * "Dynamic Format Detection" or Spicy::
 
     There's a new sink method try_connect_mime_type() that works
     mostly like connect_mime_type() but attaches all matching subunits
@@ -198,7 +198,7 @@
           the previous commit (i.e., we follow the 2-stage process of
           Bro's DPD here).
 
-  * Adding two new BinPAC++ library functions.
+  * Adding two new Spicy library functions.
 
         bytes sha256(b: bytes, seed: bytes, out_len: int64);
         addr anonymize(a: addr, seed: int64);
@@ -206,7 +206,7 @@
   * Support for generating ("composing") binary data from a parsed
     instance.
 
-    To test, pac-driver got a new option -c that will let it turn a
+    To test, spicy-driver got a new option -c that will let it turn a
     just parsed representation back into binary.
 
         export type test = unit {
@@ -214,7 +214,7 @@
            b: bytes &length=6;
         };
 
-        # echo 1234567890 | pac-driver -c bytes.pac2
+        # echo 1234567890 | spicy-driver -c bytes.spicy
         1234567890
 
     This further includes:
@@ -233,8 +233,8 @@
 
             export type test = unit {
                 a  :  bytes &length=2;
-                b1 <  int<16> &byteorder=BinPAC::ByteOrder::Little;
-                b1 >  int<16> &byteorder=BinPAC::ByteOrder::Big;
+                b1 <  int<16> &byteorder=Spicy::ByteOrder::Little;
+                b1 >  int<16> &byteorder=Spicy::ByteOrder::Big;
                 c  :  bytes &length=2;
             }
 
@@ -277,17 +277,17 @@
         target = pack <value> <format>
 
   * Adding a &hide attribute that will be passed as meta information to
-    host applications. pac-dump respects the &hide attribute.
+    host applications. spicy-dump respects the &hide attribute.
 
   * Disabling some debug code output in non-debug builds.
 
-  * Add new tool pac-dump.
+  * Add new tool spicy-dump.
 
-    A variant pac-driver of pac-driver that simply prints all parsed
+    A variant spicy-driver of spicy-driver that simply prints all parsed
     fields in either ASCII oder JSON (and leaves out all the other ballast
-    of pac-driver).
+    of spicy-driver).
 
-  * New operators/methods for BinPAC++.
+  * New operators/methods for Spicy.
 
         bytes.to_time(base)
             Interprets the ``bytes`` as representing a number of seconds
@@ -304,21 +304,21 @@
            Enums coerce to boolean, returning true if the value
            corresponds to a known label.
 
-  * BinPAC++ now renders types itself when printing, plus corresponding
+  * Spicy now renders types itself when printing, plus corresponding
     introspection infrastructure.
 
-    Before, BinPAC++ just used standard HILTI rendering for printing out
-    values, which led to some not so nice effects, as BinPAC++'s types
+    Before, Spicy just used standard HILTI rendering for printing out
+    values, which led to some not so nice effects, as Spicy's types
     don't always correspond to a HILTI type directly.
 
     Along with this come a few more pieces/changes:
 
-        - When printing BinPAC++ objects, the output has changed somewhat.
+        - When printing Spicy objects, the output has changed somewhat.
           Apart from making it a bit prettier and simpler, the most
           obvious change is that units now omit printing out any optional
           fields that aren't set.
 
-        - BinPAC++ bitfields now have their own type, rather than just
+        - Spicy bitfields now have their own type, rather than just
           being treated as integers. When printing them, all the subfields
           are listed (not just the overall integer value anymore).
 
@@ -326,15 +326,15 @@
           internally the bitfields use).
 
         - A HILTI host application can associate custom run-time type
-          information with any HILTI type. We use that for BinPAC++ to
+          information with any HILTI type. We use that for Spicy to
           carry through its type information to the runtime.
 
         - Further HILTI-level functions for inspecting libhilti RTTI
           (e.g., for tuples and container types).
 
-  * A new libbinpac API for introspecting types, so that, e.g., a C
+  * A new libspicy API for introspecting types, so that, e.g., a C
     host application can iterate generically over all fields of a unit
-    without prior knowledge of what fields to expect. The BinPAC++
+    without prior knowledge of what fields to expect. The Spicy
     rendering code relies fully on this API as well, and not on any
     further knowledge about internals.
 
@@ -346,7 +346,7 @@
     This skips a given constant expression before/after any field inside a
     unit.
 
-        # cat skip.pac2
+        # cat skip.spicy
         export type test_pre = unit {
             %skip-pre = / */;
 
@@ -355,7 +355,7 @@
               c: bytes &length=3;
         };
 
-        # printf "   1 23   456"  | pac-driver skip.pac2
+        # printf "   1 23   456"  | spicy-driver skip.spicy
         <a=1,b=23,c=456>
 
     %skip-pre/post can also be listed globally at the module level, and
@@ -374,7 +374,7 @@
 
 0.3-72 | 2014-10-24 18:11:12 -0700
 
-  * Support for manual backtracking in a BinPAC++ grammar. If a field
+  * Support for manual backtracking in a Spicy grammar. If a field
     is marked with &try, a later call to self.backtrack() anywhere
     down in the parse tree, will return to that position and continue
     there.
@@ -409,7 +409,7 @@
 
 0.3-69 | 2014-10-24 16:37:04 -0700
 
-  * Optional tuple elements for BinPAC. If a tuple constructor uses
+  * Optional tuple elements for Spicy. If a tuple constructor uses
     the "try attribute" operator (.?) to set one of its elements, the
     type of that element will be become optional<T> (with T being the
     type of the element). The Bro plugin uses this to allow leaving
@@ -417,13 +417,13 @@
     construct a Bro record, an optional element will transfer over to
     the record accordingly.
 
-  * An "optional" type for BinPAC++.
+  * An "optional" type for Spicy.
 
         print optional(b"ABC");
 
   * A set of build system tweaks.
 
-  * Switching implementation of BinPAC++'s switch() statements to use
+  * Switching implementation of Spicy's switch() statements to use
     unions internally.
 
   * Adding unions to HILTI.
@@ -474,7 +474,7 @@
     currently be set internally on the AST node only, it's not exposed
     by the HILTI language.
 
-  * Support for BinPAC++ resynchronizing at marks.
+  * Support for Spicy resynchronizing at marks.
 
         type test2 = unit {
            %synchronize-at = mark;

@@ -1,0 +1,12 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+import Spicy;
+
+global t: time;
+t = Spicy::mktime(2000, 1, 2, 3, 4, 5);
+print t;

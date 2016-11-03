@@ -1,0 +1,167 @@
+#
+# Internal Spicy code supporting the code generator.
+#
+
+module SpicyHilti
+
+import Hilti
+
+type ParseSuccess = exception<string>
+type ParseError = exception<string>
+type ComposeError = exception<string>
+type ParserDisabled = exception<string> &libhilti="spicy_exception_parserdisabled"
+type UnitAlreadyConnected = exception
+type FilterError = exception<string>
+type FilterUnsupported = exception<string>
+type AttributeNotSet = exception<string>
+type UndefinedValue = exception<string>
+type Backtrack = exception<string>
+type ValueError = exception<string>
+type NotImplemented = exception<string>
+
+type Parser = struct {
+    string name,                  # Short descriptive name.
+    string description,           # Longer textual description.
+    ref<list<port>> ports,        # Well-known ports for this parser.
+    int<32> params,               # Number of additional (type) parameters that the parse functions receive.
+    ref<list<string>> mime_types, # MIME types handled by this parser.
+    caddr parse_func,             # The C function performing the parsing.
+    caddr resume_func,            # The C function resuming parsing after a yield.
+    caddr compose_func,           # The C function composing the object.
+    caddr type_info,              # Type info for the parser. Filled in at the C level.
+    caddr parse_func_sink,        # The C function performing the parsing for a sink.
+    caddr resume_func_sink,       # The C function resuming sink parsing after a yield.
+    caddr new_func,               # The C function to create a new instance (may be null).
+    caddr hook_gap,               # The C function to run a %gap hook.
+    caddr hook_skip,              # The C function to run a %skip hook.
+    caddr hook_overlap,           # The C function to run a %overlap hook.
+    caddr hook_undelivered        # The C function to run a %undelivered hook.
+}
+
+export Parser
+
+# Registers a parser with the HILTI runtime. Note that this function is not
+# thread-safe and must only be called during initialization before any threads
+# have been started.
+declare "C-HILTI" void register_parser(ref<Parser> parser, type pobj)
+
+# Runs a module's init function passed in with it's C stub.
+# (This is only needed because we can't call the stub (easily) from C.
+# declare "C" void call_init_func(caddr func)
+
+# Support functions for sinks.
+type Sink = struct {
+    # We leave this empty here as we access this struct only from C.
+    # See sink.c for it's definition.
+} &hostapp_type=(32) &libhilti_dtor="spicy_sink_dtor"
+
+# Type place-holder for the user-defined parser argument.
+type UserCookie = caddr
+
+declare "C-HILTI" ref<Sink> sink_new()
+declare "C-HILTI" void sink_set_initial_sequence_number(ref<Sink> sink, int<64> seq, UserCookie user)
+declare "C-HILTI" void sink_set_policy(ref<Sink> sink, int<64> policy, UserCookie user)
+declare "C-HILTI" void sink_set_auto_trim(ref<Sink> sink, bool enable, UserCookie user)
+declare "C-HILTI" void sink_connect(ref<Sink> sink, any pobj, ref<Parser> parser) &safepoint
+declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj) &safepoint
+declare "C-HILTI" void sink_append(ref<Sink> sink, ref<bytes> data, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, int<64> seq, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_write_custom_length(ref<Sink> sink, ref<bytes> data, int<64> seq, int<64> len, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_gap(ref<Sink> sink, int<64> seq, int<64> len, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_skip(ref<Sink> sink, int<64> seq, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_trim(ref<Sink> sink, int<64> seq, UserCookie user) &mayyield &safepoint
+declare "C-HILTI" void sink_close(ref<Sink> sink, UserCookie user) &safepoint
+declare "C-HILTI" void sink_add_filter(ref<Sink> sink, Filter ftype) &safepoint
+declare "C-HILTI" void sink_connect_mimetype_bytes(ref<Sink> sink, ref<bytes> mtype, bool try_mode, UserCookie user )&safepoint
+declare "C-HILTI" void sink_connect_mimetype_string(ref<Sink> sink, string mtype, bool try_mode, UserCookie user) &safepoint
+declare "C-HILTI" int<64> sink_size(ref<Sink> sink)
+declare "C-HILTI" int<64> sink_sequence(ref<Sink> sink)
+
+# Support functions for filters.
+type ParseFilter = struct {
+    # We leave this empty here as we access this struct only from C.
+    # See filter.c for it's definition.
+}
+
+# Available filter types.
+type Filter = enum {
+    NONE = 0,    # Place-holder.
+    BASE64 = 1,  # MIME base64 decoding.
+    GZIP = 2,    # gzip decompression.
+    ZLIB = 3     # zlib/deflate decompression.
+}
+
+declare "C-HILTI" ref<ParseFilter> filter_add(ref<ParseFilter> head, Filter ftype)
+declare "C-HILTI" void filter_close(ref<ParseFilter> head)
+declare "C-HILTI" ref<bytes> filter_decode(ref<ParseFilter> head, ref<bytes> data)
+
+# Printing.
+declare "C-HILTI" void print(any obj, bool newline = True)
+
+# Debugging.
+declare "C-HILTI" void enable_debugging(bool enabled)
+declare "C-HILTI" bool debugging_enabled()
+declare "C-HILTI" void debug_print_ptr(string tag, any ptr)
+
+# Matches a regexp against a bytes object and returns a given match group.
+# If not found, an empty bytes object is returned.
+ref<bytes> bytes_match(ref<bytes> b, ref<regexp> re, int<64> group = 0) {
+    local ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> results
+    local iterator<bytes> i1
+    local iterator<bytes> i2
+    local tuple<iterator<bytes>, iterator<bytes>> range
+    local tuple<int<32>, tuple<iterator<bytes>,iterator<bytes>>> span
+    local bool cond
+    local int<64> len
+
+    i1 = begin b
+    i2 = end b
+
+    cond = equal group 0
+    if.else cond @do_span @do_groups
+
+@do_span:
+    span = regexp.span re i1 i2
+    range = tuple.index span 1
+    jump @done
+
+@do_groups:
+    results = regexp.groups re i1 i2
+
+    len = vector.size results
+    cond = int.ult group len
+    if.else cond @found @notfound
+
+@notfound:
+    i1 = i2
+    jump @finish
+
+@found:
+    range = vector.get results group
+    jump @done
+
+@done:
+    i1 = tuple.index range 0
+    i2 = tuple.index range 1
+    jump @finish
+
+@finish:
+    b = bytes.sub i1 i2
+
+    return.result b
+}
+
+export bytes_match
+
+ref<bytes> next_bytes(iterator<bytes> cur, iterator<bytes> end, int<64> n) {
+    local iterator<bytes> i
+    local iterator<bytes> j
+    local ref<bytes> b
+    b = bytes.sub cur end
+    i = begin b
+    j = incr_by i n
+    b = bytes.sub i j
+    return.result b
+}
+
+export next_bytes

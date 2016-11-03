@@ -1,0 +1,55 @@
+#
+# @TEST-EXEC:  echo 123456666677777 | spicy-driver-test b.spicy %INPUT -- -p A::tA >output
+# @TEST-EXEC:  btest-diff output
+
+module A;
+
+import B;
+
+export type tA = unit {
+       a: bytes &length=5;
+       B: B::tB;
+
+       on %init {
+           print "tA";
+       }
+};
+
+on tA::a {
+    print "tA: a", self.a;
+    }
+
+on B::tB::x {
+    print "tA: x-1", self.x;
+    }
+
+on B::tB::x {
+    print "tA: x-2", self.x;
+    }
+
+### @TEST-START-FILE b.spicy
+module B;
+
+export type tB = unit {
+       x: bytes &length=5;
+       y: bytes &length=5;
+
+       on %init {
+           print "tB";
+       }
+};
+
+on tB::x {
+    print "tB: x-1 $", self.x;
+    }
+
+on tB::x {
+    print "tB: x-2 $", self.x;
+    }
+
+on tB::y {
+    print "tB: y $", self.y.to_int();
+    }
+### @TEST-END-FILE test.txt
+
+

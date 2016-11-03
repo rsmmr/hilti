@@ -1,0 +1,40 @@
+#
+# @TEST-EXEC:  printf '\000\012\000\012\377\377\000\002' | spicy-driver-test -c %INPUT | hexdump -b >output
+# @TEST-EXEC:  btest-diff output
+
+# @TEST-KNOWN-FAILURE: Can't use convert_back($$) because $$ binds to
+# the field type after persing, and does so within the scope of the
+# field, so we can't change that for just one attribute. I believe
+# the best fix is to internally introduce a second variant of $$, say
+# $$>, that binds to the final type (i.e., after convert); and then
+# have the normaler replace all uses of $$ inside composer attributes
+# with that. Maybe we could even expose $$> generally to the user as
+# well (and if so, then probably with a corresponding $$< for
+# symmetry, acting like the current $$.
+
+module Mini;
+
+import Spicy;
+
+type Foo = enum {
+    A = 10,
+    B,
+    C = 20
+    };
+
+type Bar = enum {
+    D = 0,
+    E = 1,
+    F = 2
+    };
+
+export type test = unit {
+    a: uint16;
+    b : uint16 &convert=Foo($$) &convert_back=cast<uint16>($$);
+    c : uint16 &convert=Foo($$) &convert_back=cast<uint16>($$);
+    d : uint16 &convert=Bar($$) &convert_back=cast<uint16>($$);
+
+    on %done {
+#        print self;
+        }
+};

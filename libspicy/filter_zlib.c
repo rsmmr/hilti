@@ -1,0 +1,122 @@
+
+// This handles both gzip and zlib/deflate decompresssion.
+
+#include <zlib.h>
+
+#include "filter.h"
+
+typedef struct {
+    spicy_filter base;
+    z_stream* zip;
+} __spicy_filter_zlib;
+
+void __spicy_filter_zlib_close(spicy_filter* filter_gen, hlt_exception** excpt,
+                                hlt_execution_context* ctx_)
+{
+    __spicy_filter_zlib* filter = (__spicy_filter_zlib*)filter_gen;
+
+    if ( ! filter->zip )
+        return;
+
+    inflateEnd(filter->zip);
+    hlt_free(filter->zip);
+    filter->zip = 0;
+}
+
+spicy_filter* __spicy_filter_zlib_allocate(hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __spicy_filter_zlib* filter =
+        GC_NEW_CUSTOM_SIZE(spicy_filter, sizeof(__spicy_filter_zlib), ctx);
+    filter->zip = hlt_malloc(sizeof(z_stream));
+    filter->zip->zalloc = 0;
+    filter->zip->zfree = 0;
+    filter->zip->opaque = 0;
+    filter->zip->next_out = 0;
+    filter->zip->avail_out = 0;
+    filter->zip->next_in = 0;
+    filter->zip->avail_in = 0;
+
+    // "15" here means maximum compression.  "32" is a gross overload hack
+    // that means "check it for whether it's a gzip file". Sheesh.
+    int zip_status = inflateInit2(filter->zip, 15 + 32);
+
+    if ( zip_status != Z_OK ) {
+        __spicy_filter_zlib_close((spicy_filter*)filter, excpt, ctx);
+        hlt_string fname = hlt_string_from_asciiz("inflateInit2 failed", excpt, ctx);
+        hlt_set_exception(excpt, &spicy_exception_filtererror, fname, ctx);
+        return 0;
+    }
+
+    return (spicy_filter*)filter;
+}
+
+void __spicy_filter_zlib_dtor(hlt_type_info* ti, spicy_filter* filter, hlt_execution_context* ctx)
+{
+    __spicy_filter_zlib_close(filter, 0, 0);
+}
+
+hlt_bytes* __spicy_filter_zlib_decode(spicy_filter* filter_gen, hlt_bytes* data,
+                                       hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __spicy_filter_zlib* filter = (__spicy_filter_zlib*)filter_gen;
+
+    if ( ! filter->zip ) {
+        // hlt_string fname = hlt_string_from_asciiz("more inflate data after close", excpt, ctx);
+        // hlt_set_exception(excpt, &spicy_exception_filtererror, fname, ctx);
+
+        // TODO: This can happen at least with our HTTP parser right now?
+        return hlt_bytes_new(excpt, ctx);
+    }
+
+    void* cookie = 0;
+    hlt_bytes_block block;
+    hlt_iterator_bytes begin = hlt_bytes_begin(data, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(data, excpt, ctx);
+
+    hlt_bytes* decoded = 0;
+
+    do {
+        cookie = hlt_bytes_iterate_raw(&block, cookie, begin, end, excpt, ctx);
+
+        int len = block.end - block.start;
+
+        if ( ! len )
+            continue;
+
+        filter->zip->next_in = (Bytef*)block.start;
+        filter->zip->avail_in = len;
+
+        do {
+            Bytef buf[4096];
+            filter->zip->next_out = buf;
+            filter->zip->avail_out = sizeof(buf);
+
+            int zip_status = inflate(filter->zip, Z_SYNC_FLUSH);
+
+            if ( zip_status != Z_STREAM_END && zip_status != Z_OK && zip_status != Z_BUF_ERROR ) {
+                __spicy_filter_zlib_close((spicy_filter*)filter, excpt, ctx);
+                hlt_string fname = hlt_string_from_asciiz("inflate failed", excpt, ctx);
+                hlt_set_exception(excpt, &spicy_exception_filtererror, fname, ctx);
+                return 0;
+            }
+
+            int have = sizeof(buf) - filter->zip->avail_out;
+
+            if ( have ) {
+                if ( ! decoded )
+                    decoded = hlt_bytes_new_from_data_copy((int8_t*)buf, have, excpt, ctx);
+                else
+                    hlt_bytes_append_raw_copy(decoded, (int8_t*)buf, have, excpt, ctx);
+            }
+
+            if ( zip_status == Z_STREAM_END ) {
+                __spicy_filter_zlib_close((spicy_filter*)filter, excpt, ctx);
+                break;
+            }
+
+        } while ( filter->zip->avail_out == 0 );
+
+    } while ( cookie );
+
+    return decoded ? decoded : hlt_bytes_new(excpt, ctx);
+}

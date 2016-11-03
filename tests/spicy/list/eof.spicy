@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  echo -n 1234 | spicy-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-KNOWN-FAILURE: This does not work :)
+
+module Test;
+
+export type test = unit {
+	: list<b> &transient;
+};
+
+type b = unit {
+	a: uint8 {
+		print self.a;
+	}
+};

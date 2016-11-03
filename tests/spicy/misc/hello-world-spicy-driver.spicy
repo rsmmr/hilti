@@ -1,0 +1,8 @@
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+print "Hello, world!";

@@ -1,0 +1,26 @@
+#
+# @TEST-EXEC:  cat test.txt | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+module HTTP;
+
+export type Message = unit {
+    headers:    list<Header>;
+    multipart:  list<BodyLine>;
+    : /\n/
+        { print self.headers; print self.multipart; }
+};
+
+type Header = unit() {
+    a: /A/;
+};
+
+type BodyLine = unit {
+    b: /B/;
+};
+
+### @TEST-START-FILE test.txt
+AAAABBBB
+### # @TEST-END-FILE
+
+

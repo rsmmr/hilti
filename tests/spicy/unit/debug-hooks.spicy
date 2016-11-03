@@ -1,0 +1,29 @@
+#
+# @TEST-EXEC:       ( spicyc -d %INPUT | grep -q FOO )
+# @TEST-EXEC-FAIL:  ( spicyc    %INPUT | grep -q FOO )
+# @TEST-EXEC:       hilti-build -d %INPUT ${SPICY_DRIVER} -o a.out
+# @TEST-EXEC:       echo 1234567890 | ./a.out >output 2>&1
+# @TEST-EXEC:       echo -- >>output
+# @TEST-EXEC:       echo 1234567890 | ./a.out -B >>output 2>&1
+# @TEST-EXEC:       btest-diff output
+
+module Mini;
+
+export type test = unit {
+
+       a: bytes &length=4 %debug {
+           print "FOO A.inline";
+           }
+
+       b: bytes &length=6 {
+           self.foo = b"foo";
+           }
+
+       var foo: bytes %debug {
+           print "FOO foo.inline";
+           }
+
+       on a %debug { print "FOO A", self.a; }
+       on b %debug { print "FOO B", self.b; }
+       on foo %debug { print "FOO foo", self.foo; }
+};

@@ -40,34 +40,34 @@ Log diffs
                    in some cases (even after merging in the
                    soon-to-be-2.3 DNS script). See ticket BIT-1153.)
 
-- dns-pac-logs:
+- dns-spicy-logs:
 
     * dns.log:
 
-        - BinPAC++ logs some unmatched queries more than once because
+        - Spicy logs some unmatched queries more than once because
           it doesn't install an dns_timeout timer; which in turn skips
           some connection_state_remove events that would otherwise
           flush the state so that it doesn't get logged again.
 
-          Potential fix: let BinPAC++ analyzer install a similar
+          Potential fix: let Spicy analyzer install a similar
           timer. But doesn't seem crucial.
 
         - A small number of requests are marked as rejected by the
-          standard anayzers, but not by BinPAC. These are actually NTP
+          standard anayzers, but not by Spicy. These are actually NTP
           sessions that seem to trigger a difference somewhere.
           Doesn't matter. (This is traffic between UDP ports 53 and
           123. Confirmed NTP in tshark).
 
-        - BinPAC++ logs things like "qclass-1479" and "query-50217"
+        - Spicy logs things like "qclass-1479" and "query-50217"
           when it doesn't recognize something, legacy doesn't.
 
         - Tiny nit: One response address gets logged a IPv6 in Bro but
-          IPv4 with BinPAC. But it's same address (0.0.0.1 vs ::::1)
+          IPv4 with Spicy. But it's same address (0.0.0.1 vs ::::1)
 
         - Bro's DNS analyzer extracts only the first CharacterString
-          out of a TXT record; BinPAC++ all.
+          out of a TXT record; Spicy all.
 
-- http-pac2-logs:
+- http-spicy-logs:
 
     Changes to http/main.bro:
         - Use script-level URI deciding function.

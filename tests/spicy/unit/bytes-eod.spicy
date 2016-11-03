@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC:  printf 1234567890 | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  echo ======== >>output
+# @TEST-EXEC:  printf 12345      | spicy-driver-test %INPUT >>output
+# @TEST-EXEC:  echo ======== >>output
+# @TEST-EXEC:  printf 1234       | spicy-driver-test %INPUT >>output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type test = unit {
+       a: bytes &length=4;
+       b: bytes &eod;
+
+       on %done { print self; }
+};

@@ -1,0 +1,4 @@
+
+>>> (Unresolved operator bar((b"B")))
+wrong-overload.spicy:18-18: error, Ambigious call of overloaded function [pass::spicy::OverloadResolver]
+wrong-overload.spicy: Aborting due to input error.

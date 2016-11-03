@@ -1,0 +1,37 @@
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT >output      
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+global i1: interval = interval(12.5);
+global i2: interval = interval(7.5);
+global i3: interval = interval(12.5);
+
+print i1;
+print i2;
+
+print i1 + i2;
+print i1 - i2;
+
+print i1 * 2;
+print 2 * i1;
+
+print i1 < i2;
+print i1 > i2;
+
+print i1 == i2;
+print i1 == i3;
+
+print cast<double>(i1);
+print cast<uint64>(i2);
+
+print i1.nsecs();
+
+
+
+
+
+
+

@@ -31,7 +31,7 @@ if ( BRO_DIST )
     set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
     execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
-    set(binpac "${CMAKE_BINARY_DIR}/tools/binpac++")
+    set(spicyc "${CMAKE_BINARY_DIR}/tools/spicyc")
     set(hiltic "${CMAKE_BINARY_DIR}/tools/hiltic")
     set(hiltip "${CMAKE_BINARY_DIR}/tools/hiltip")
 
@@ -41,9 +41,9 @@ if ( BRO_DIST )
     bro_plugin_cc(src/Converter.cc)
     bro_plugin_cc(src/LocalReporter.cc)
     bro_plugin_cc(src/Manager.cc)
-    bro_plugin_cc(src/Pac2AST.cc)
-    bro_plugin_cc(src/Pac2Analyzer.cc)
-    bro_plugin_cc(src/Pac2FileAnalyzer.cc)
+    bro_plugin_cc(src/SpicyAST.cc)
+    bro_plugin_cc(src/SpicyAnalyzer.cc)
+    bro_plugin_cc(src/SpicyFileAnalyzer.cc)
     bro_plugin_cc(src/Plugin.cc)
     bro_plugin_cc(src/Runtime.cc)
     bro_plugin_cc(src/RuntimeInterface.cc)
@@ -60,58 +60,58 @@ if ( BRO_DIST )
     bro_plugin_bif(src/consts.bif)
     bro_plugin_bif(src/events.bif)
     bro_plugin_bif(src/functions.bif)
-    bro_plugin_obj(${autogen}/bro.pac2.h)
+    bro_plugin_obj(${autogen}/bro.spicy.h)
     bro_plugin_obj(${autogen}/libbro.hlt.h)
     bro_plugin_obj(${autogen}/libbro.hlt.o)
     bro_plugin_end()
 
-    # Autogenerate bro.pac2 C prototypes.
+    # Autogenerate bro.spicy C prototypes.
     add_custom_command(
-        OUTPUT   ${autogen}/bro.pac2.h
-        COMMAND  ${binpac} -P ${CMAKE_CURRENT_SOURCE_DIR}/pac2/bro.pac2 -o ${autogen}/bro.pac2.h
-        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/bro.pac2 binpac.hlt ${binpac}
+        OUTPUT   ${autogen}/bro.spicy.h
+        COMMAND  ${spicyc} -P ${CMAKE_CURRENT_SOURCE_DIR}/spicy/bro.spicy -o ${autogen}/bro.spicy.h
+        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/spicy/bro.spicy spicy.hlt ${spicyc}
         )
 
     # Autogenerate libbro.hlt C prototypes.
     add_custom_command(
         OUTPUT   ${autogen}/libbro.hlt.h
-        COMMAND  ${hiltip} -P ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt -o ${autogen}/libbro.hlt.h
-        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt ${hiltip}
+        COMMAND  ${hiltip} -P ${CMAKE_CURRENT_SOURCE_DIR}/spicy/libbro.hlt -o ${autogen}/libbro.hlt.h
+        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/spicy/libbro.hlt ${hiltip}
         )
 
     # Autogenerate the type information for libbro.hlt.
     add_custom_command(
         OUTPUT   ${autogen}/libbro.hlt.o
-        COMMAND  ${hiltic} -b ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt -C -o ${autogen}/libbro.hlt.bc && llc -relocation-model=pic -filetype=obj -o ${autogen}/libbro.hlt.o ${autogen}/libbro.hlt.bc
-        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/pac2/libbro.hlt ${hiltic}
+        COMMAND  ${hiltic} -b ${CMAKE_CURRENT_SOURCE_DIR}/spicy/libbro.hlt -C -o ${autogen}/libbro.hlt.bc && llc -relocation-model=pic -filetype=obj -o ${autogen}/libbro.hlt.o ${autogen}/libbro.hlt.bc
+        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/spicy/libbro.hlt ${hiltic}
         )
 
-    add_custom_target(generate_libbro DEPENDS ${autogen}/bro.pac2.h ${autogen}/libbro.hlt.h ${autogen}/libbro.hlt.o) 
+    add_custom_target(generate_libbro DEPENDS ${autogen}/bro.spicy.h ${autogen}/libbro.hlt.h ${autogen}/libbro.hlt.o) 
 
-    set_source_files_properties(${autogen}/bro.pac2.h   PROPERTIES GENERATED 1)
+    set_source_files_properties(${autogen}/bro.spicy.h   PROPERTIES GENERATED 1)
     set_source_files_properties(${autogen}/libbro.hlt.h PROPERTIES GENERATED 1)
     set_source_files_properties(${autogen}/libbro.hlt.o PROPERTIES GENERATED 1)
 
     if ( "${CMAKE_BUILD_TYPE}" MATCHES "Debug" )
         set(hilti_runtime  hilti-rt-dbg)
-        set(binpac_runtime binpac-rt-dbg)
+        set(spicy_runtime spicy-rt-dbg)
     else ()
         set(hilti_runtime  hilti-rt)
-        set(binpac_runtime binpac-rt)
+        set(spicy_runtime spicy-rt)
     endif ()
 
     add_dependencies(${_plugin_lib} generate_libbro)
     target_link_libraries(${_plugin_lib} hilti ${hilti_runtime})
-    target_link_libraries(${_plugin_lib} binpacxx ${binpac_runtime})
+    target_link_libraries(${_plugin_lib} spicy ${spicy_runtime})
 
     add_custom_command(TARGET ${_plugin_lib} POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/pac2 ${CMAKE_CURRENT_BINARY_DIR}/pac2)
+                       COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/spicy ${CMAKE_CURRENT_BINARY_DIR}/spicy)
 
-                       # If we copy, changes to {scripts,pac2} won't reflected until the plugin gets relinked.
+                       # If we copy, changes to {scripts,spicy} won't reflected until the plugin gets relinked.
 					   # COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/scripts && mkdir ${CMAKE_CURRENT_BINARY_DIR}/scripts
-					   # COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/pac2 && mkdir ${CMAKE_CURRENT_BINARY_DIR}/pac2
+					   # COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/spicy && mkdir ${CMAKE_CURRENT_BINARY_DIR}/spicy
                        # COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/scripts ${CMAKE_CURRENT_BINARY_DIR}/scripts
-                       # COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/pac2    ${CMAKE_CURRENT_BINARY_DIR}/pac2
+                       # COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/spicy    ${CMAKE_CURRENT_BINARY_DIR}/spicy
 
 
 else ()

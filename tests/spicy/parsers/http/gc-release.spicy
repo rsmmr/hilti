@@ -1,0 +1,42 @@
+#
+# @TEST-EXEC: hilti-build %INPUT ${PARSERS}/http.spicy ${SPICY_DRIVER} -d -o a.out
+# @TEST-EXEC: awk -f generate.awk | HILTI_DEBUG= ./a.out -i 50 -g -p HTTP::Replies >output 2>&1
+# @TEST-EXEC: cat output | ${SCRIPTS}/canonify-gc-leaks >gc-leaks
+# @TEST-EXEC: btest-diff gc-leaks
+#
+# This test checks that with a large HTTP message, the input is parsed
+# in small chunks without buffering them unnecessarily. In other words,
+# even though the input is large, the heap size should stay
+# constant as memory management cleans up.
+#
+# If this fails, then somewhere a on the upper layers of the call stack
+# a pointer is referencing already processed input, preventing
+# reference counting from cleaning up. If the latter, it can be hard to pinpoint
+# unfortunately where exactly that's happening.
+
+module Test;
+
+import parsers/http;
+
+on HTTP::Message::%done {
+    print "Content-Length:", self.content_length;
+    }
+
+@TEST-START-FILE generate.awk
+# Generates a huge dummy HTTP response.
+
+BEGIN {
+    print "HTTP/1.1 200 OK"
+    print "Content-Length:", 1000 * 1024;
+    print "Content-Type: application/octet-stream"
+    print ""
+
+    for ( i = 0; i < 1000; i++ ) {
+        for ( j = 0; j < 1024; j++ )
+            printf("A");
+        }
+    }
+@TEST-END-FILE
+
+
+

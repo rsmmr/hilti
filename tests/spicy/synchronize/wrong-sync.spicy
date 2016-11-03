@@ -1,0 +1,19 @@
+#
+# @TEST-EXEC-FAIL: spicyc %INPUT >>output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+
+module Mini;
+
+export type test1 = unit {
+    l: list<test2> &count=5 &synchronize; # can't sync here.
+
+    on %done   { print "%done:", self; }
+};
+
+type test2 = unit {
+       : b"abc";
+       x: bytes &length=2;
+
+    on %sync   { print "%synced"; }
+};

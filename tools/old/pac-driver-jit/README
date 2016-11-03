@@ -1,9 +1,0 @@
-
-pac-driver is a standalone driver for BinPAC++ parsers. It compiles
-parsers just-in-time and then feeds them its standard input.
-
-Note that most of the code here is a clone of the original pac-driver,
-with JIT functionality added. Eventually we should either remove one
-of the two, or merge the two (if that makes sense), or factor out the
-common functionality if we want to keep both.
-

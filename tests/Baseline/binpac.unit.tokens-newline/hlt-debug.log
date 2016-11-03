@@ -1,4 +1,0 @@
-00000001 [binpac/main-thread]           test
-00000002 [binpac/main-thread]             line1 = FooBar
-00000003 [binpac/main-thread]             crlf = \x0d\x0a
-00000004 [binpac/main-thread]             line2 = Foo123BarBar

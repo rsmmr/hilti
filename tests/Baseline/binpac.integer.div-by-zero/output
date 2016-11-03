@@ -1,4 +1,0 @@
-
->>> a 
-div-by-zero.pac2:6-8: error, division by zero [pass::binpac::Validator]
-div-by-zero.pac2: Aborting due to input error.

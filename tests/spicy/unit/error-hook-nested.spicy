@@ -1,0 +1,21 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT ${SPICY_DRIVER} -o a.out
+# @TEST-EXEC-FAIL: echo 1234567 | ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+type test2 = unit {
+    x: bytes &length=4;
+    y: bytes &length=6;
+
+    on %error { print "Error test2", self; }
+};
+
+export type test1 = unit {
+       a: bytes &length=4 { print self; }
+       t: test2;
+       b: bytes &length=6;
+
+       on %error { print "Error test1", self; }
+};

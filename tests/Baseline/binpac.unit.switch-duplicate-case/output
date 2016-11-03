@@ -1,4 +1,0 @@
-
->>> 2
-switch-duplicate-case.pac2:15-15: error, duplicate case [pass::binpac::Validator]
-switch-duplicate-case.pac2: Aborting due to input error.

@@ -1,0 +1,40 @@
+#
+# @TEST-EXEC:  spicy-driver-test %INPUT -- -l >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type Main1 = unit {
+    %mimetype = "application/foo";
+    %mimetype = "application/bar";
+
+    %port = 80/tcp;
+    %port = 53/udp;
+
+    %description = "Foo Bar";
+
+    a: bytes &length=2;
+};
+
+export type Main2 = unit {
+    %port = 80/tcp;
+    %port = 53/udp;
+
+    %description = "Foo Bar";
+
+    a: bytes &length=2;
+};
+
+export type Main3 = unit {
+    %mimetype = "application/foo";
+    %mimetype = "application/bar";
+
+    a: bytes &length=2;
+};
+
+export type Main4 = unit {
+    %description = "Foo Bar";
+
+    a: bytes &length=2;
+};
+

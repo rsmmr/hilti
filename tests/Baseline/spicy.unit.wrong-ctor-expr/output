@@ -1,0 +1,4 @@
+
+>>> <ctor::Unit>
+wrong-ctor-expr.spicy:16-16: error, in union ctor either all fields or none must have a name [pass::spicy::Validator]
+compiling 0x2d0aa00 failed

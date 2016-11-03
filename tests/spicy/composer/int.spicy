@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  printf "\001\377\001\002\001\002\001\002\003\004\001\002\003\004\005\006\007\010" | spicy-driver-test -c %INPUT | hexdump -C  >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+    a: int<8>;
+    b: int<8>;
+    c: int<16> &byteorder=Spicy::ByteOrder::Little;
+    d: int<16> &byteorder=Spicy::ByteOrder::Big;
+    e: int<32>;
+    f: int<64>;
+
+#    on %done { print self; }
+};

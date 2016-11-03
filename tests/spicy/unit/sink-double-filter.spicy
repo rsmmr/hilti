@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  echo 'VFhrZ2JHbDBkR3hsSUdacGJIUmxjaUIwWlhOMElRbz0K' | spicy-driver-test %INPUT -- -p Mini::Main >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import Spicy;
+
+export type Main = unit {
+    raw: bytes &eod -> self.data;
+
+    on %init {
+        self.data.connect(new Sub);
+        self.data.add_filter(Spicy::Filter::BASE64);
+        self.data.add_filter(Spicy::Filter::BASE64);
+    }
+
+    var data: sink;
+};
+
+export type Sub = unit {
+    msg: bytes &eod {
+        print self.msg;
+        }
+};

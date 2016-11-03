@@ -1,0 +1,5 @@
+00000001 [spicy/main-thread]            test
+00000002 [spicy/main-thread]              a = 10
+00000003 [spicy/main-thread]              b = 63
+00000004 [spicy/main-thread]                x1 = 15
+00000005 [spicy/main-thread]                x2 = A (3)

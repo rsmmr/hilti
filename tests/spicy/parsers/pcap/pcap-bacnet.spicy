@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC: cp ${DIST}/bro/spicy/bacnet.spicy .
+# @TEST-EXEC: cat ${DIST}/bro/tests/Traces/bacnet/BBMD_Results.pcap | spicy-driver-test -p pcap::PcapFile %INPUT bacnet.spicy ${PARSERS}/pcap.spicy >output
+# @TEST-EXEC: btest-diff output
+#
+# @TEST-KNOWN-FAILURE: Depends on list/eof.spicy being fixed.
+
+module Test;
+
+import Spicy;
+import bacnet;
+import parsers/pcap;
+
+on BACnet::Message::%done {
+	print self;
+}

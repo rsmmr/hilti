@@ -17,7 +17,7 @@ sphinx:
 	sphinx-build -b html . $(BUILDDIR)/html
 
 autogen:
-	( ../build/tools/hilti-doc; ../build/tools/binpac-doc ) | ../scripts/doc-to-rst $(BUILDDIR)/autogen
+	( ../build/tools/hilti-doc; ../build/tools/spicy-doc ) | ../scripts/doc-to-rst $(BUILDDIR)/autogen
 
 clean:
 	rm -rf $(BUILDDIR)

@@ -37,7 +37,7 @@ set(SRCS
     ${autogen}/re-parse.c
     )
 
-set(all_deps generate_parser ${SRCS} ${OBJS} ${CMAKE_CURRENT_BINARY_DIR}/binpac.hlt.h)
+set(all_deps generate_parser ${SRCS} ${OBJS} ${CMAKE_CURRENT_BINARY_DIR}/spicy.hlt.h)
 
 if (${LLVM_ENABLE_DEBUG})
     add_library(jrxdbg STATIC ${SRCS})

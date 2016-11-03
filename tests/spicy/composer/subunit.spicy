@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC:  printf '1234\001567890' | spicy-driver-test -c %INPUT | hexdump -C >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+    a: bytes &length=4;
+    foo: Foo;
+    b: bytes &length=6;
+};
+
+type Foo = unit {
+    i: int8;
+};

@@ -1,0 +1,24 @@
+#
+# @TEST-EXEC:  cat %DIR/v1cert.der| spicy-driver-test %INPUT ${PARSERS}/asn1.spicy ${PARSERS}/x509.spicy >v1
+# @TEST-EXEC:  cat %DIR/google.der| spicy-driver-test %INPUT ${PARSERS}/asn1.spicy ${PARSERS}/x509.spicy >google
+# @TEST-EXEC:  btest-diff v1
+# @TEST-EXEC:  btest-diff google
+#
+
+module Test;
+
+import parsers/asn1;
+import parsers/x509;
+
+on x509::tbscertificate::%done {
+  print "Version: ", self.version;
+  print "Serial number: ", self.serial;
+  print "Valid from: ", self.validity.not_before;
+  print "Valid till: ", self.validity.not_after;
+  print "Signature algorithm: ", self.signature.algorithm;
+  print "Public key algorithm: ", self.subjectPublicKeyInfo.algorithm.algorithm;
+}
+
+on x509::cert_issuer_component::%done {
+  print "Name oid: ", self.tpe, " value: ", self.value;
+}

@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+#
+# Builds a *.cc that links to libspicy.
+
+clang++ $@ `${HILTI_CONFIG} --compiler --cxxflags --ldflags --libs` `${SPICY_CONFIG} --compiler --cxxflags --ldflags --libs`

@@ -1,0 +1,19 @@
+#
+# @TEST-EXEC:  echo 1234567890 | HILTI_DEBUG=spicy spicy-driver-test -e 4:test1 -e 8:test2 -e 8:test3 %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+       a: b"1234";
+       b: object<string>;
+       c: b"5678";
+       d: object<string>;
+       e: object<string>;
+       f: b"90";
+
+       on %done {
+           print self;
+       }
+};

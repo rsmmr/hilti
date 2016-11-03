@@ -5,14 +5,14 @@ export {
 	## Dump debug information about analyzers to stderr (for debugging only). 
 	const dump_debug = F &redef;
 
-	## Dump generated HILTI/BinPAC++ code to stderr (for debugging only).
+	## Dump generated HILTI/Spicy code to stderr (for debugging only).
 	const dump_code = F &redef;
 
-	## Dump generated HILTI/BinPAC++ code to stderr before finalizing the modules. (for
+	## Dump generated HILTI/Spicy code to stderr before finalizing the modules. (for
 	## debugging only). 
 	const dump_code_pre_finalize = F &redef;
 
-	## Dump all HILTI/BinPAC++ code to stderr (for debugging only).
+	## Dump all HILTI/Spicy code to stderr (for debugging only).
 	const dump_code_all = F &redef;
 
 	## Disable code verification (for debugging only).
@@ -34,8 +34,8 @@ export {
 	## Tags for codegen debug output as colon-separated string.
 	const cg_debug = "" &redef;
 
-	## Save all generated BinPAC++ modules into "bro.<X>.pac2"
-	const save_pac2 = F &redef;
+	## Save all generated Spicy modules into "bro.<X>.spicy"
+	const save_spicy = F &redef;
 
 	## Save all HILTI modules into "bro.<X>.hlt"
 	const save_hilti = F &redef;
@@ -49,21 +49,21 @@ export {
 	## Activate the Bro script compiler.
 	const compile_scripts = F &redef;
 
-	## If we're compiling scripts, interface the BinPAC++ directly 
+	## If we're compiling scripts, interface the Spicy directly 
 	## with the compiled events (rather than queuening them through Bro's
 	## core.) 
-	const pac2_to_compiler = T &redef;
+	const spicy_to_compiler = T &redef;
 
 	## Number of HILTI worker threads to spawn.
 	const hilti_workers = 2 &redef;
 }
 
-event pac2_analyzer_for_port(a: Analyzer::Tag, p: port)
+event spicy_analyzer_for_port(a: Analyzer::Tag, p: port)
 	{
 	Analyzer::register_for_port(a, p);
 	}
 
-event pac2_analyzer_for_mime_type(a: Files::Tag, mt: string)
+event spicy_analyzer_for_mime_type(a: Files::Tag, mt: string)
 	{
 	Files::register_for_mime_type(a, mt);
 	}

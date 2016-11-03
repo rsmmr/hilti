@@ -1,4 +1,0 @@
-
->>> (Unresolved operator bar((b"B")))
-wrong-overload.pac2:18-18: error, Ambigious call of overloaded function [pass::binpac::OverloadResolver]
-wrong-overload.pac2: Aborting due to input error.

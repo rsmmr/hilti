@@ -345,7 +345,7 @@ private:
     /// imports, in particular when encountering cycles.
     std::map<string, shared_ptr<Module>> _modules;
 
-    /// TODO: binpac context needs this, should be doing it differently.
+    /// TODO: Spicy context needs this, should be doing it differently.
 public:
     // Tracking passes.
     struct PassInfo {

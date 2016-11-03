@@ -1,13 +1,13 @@
 
 // TODO: This is getting very messy. The Manager needs a refactoring
-// to split out the BinPAC++ part and get rid of the PIMPLing.
+// to split out the Spicy part and get rid of the PIMPLing.
 
 #include <memory>
 
 #include <glob.h>
 
 extern "C" {
-#include <libbinpac/libbinpac++.h>
+#include <libspicy/libspicy.h>
 }
 
 #undef DBG_LOG
@@ -26,16 +26,16 @@ extern "C" {
 
 #undef List
 
-// HILTI/BinPAC includes.
+// HILTI/Spicy includes.
 #include <ast/declaration.h>
-#include <binpac/binpac++.h>
-#include <binpac/declaration.h>
-#include <binpac/expression.h>
-#include <binpac/function.h>
-#include <binpac/jit.h>
-#include <binpac/scope.h>
-#include <binpac/statement.h>
-#include <binpac/type.h>
+#include <spicy/spicy.h>
+#include <spicy/declaration.h>
+#include <spicy/expression.h>
+#include <spicy/function.h>
+#include <spicy/jit.h>
+#include <spicy/scope.h>
+#include <spicy/statement.h>
+#include <spicy/type.h>
 #include <hilti/hilti.h>
 #include <hilti/jit.h>
 
@@ -46,9 +46,9 @@ extern "C" {
 #include "Converter.h"
 #include "LocalReporter.h"
 #include "Manager.h"
-#include "Pac2AST.h"
-#include "Pac2Analyzer.h"
-#include "Pac2FileAnalyzer.h"
+#include "SpicyAST.h"
+#include "SpicyAnalyzer.h"
+#include "SpicyFileAnalyzer.h"
 #include "Plugin.h"
 #include "compiler/Compiler.h"
 #include "compiler/ConversionBuilder.h"
@@ -59,7 +59,7 @@ extern "C" {
 #include "functions.bif.h"
 
 using namespace bro::hilti;
-using namespace binpac;
+using namespace spicy;
 
 using std::shared_ptr;
 using std::string;
@@ -93,8 +93,8 @@ struct Port {
     }
 };
 
-// Description of a BinPAC++ protocol analyzer.
-struct bro::hilti::Pac2AnalyzerInfo {
+// Description of a Spicy protocol analyzer.
+struct bro::hilti::SpicyAnalyzerInfo {
     string location;            // Location where the analyzer was defined.
     string name;                // Name of the analyzer.
     analyzer::Tag tag;          // analyzer::Tag for this analyzer.
@@ -106,41 +106,41 @@ struct bro::hilti::Pac2AnalyzerInfo {
         unit_name_orig; // The fully-qualified name of the unit type to parse the originator side.
     string
         unit_name_resp; // The fully-qualified name of the unit type to parse the originator side.
-    shared_ptr<Pac2AST::UnitInfo> unit_orig; // The type of the unit to parse the originator side.
-    shared_ptr<Pac2AST::UnitInfo> unit_resp; // The type of the unit to parse the originator side.
-    binpac_parser* parser_orig; // The parser for the originator side (coming out of JIT).
-    binpac_parser* parser_resp; // The parser for the responder side (coming out of JIT).
+    shared_ptr<SpicyAST::UnitInfo> unit_orig; // The type of the unit to parse the originator side.
+    shared_ptr<SpicyAST::UnitInfo> unit_resp; // The type of the unit to parse the originator side.
+    spicy_parser* parser_orig; // The parser for the originator side (coming out of JIT).
+    spicy_parser* parser_resp; // The parser for the responder side (coming out of JIT).
 };
 
-// Description of a BinPAC++ file analyzer.
-struct bro::hilti::Pac2FileAnalyzerInfo {
+// Description of a Spicy file analyzer.
+struct bro::hilti::SpicyFileAnalyzerInfo {
     string location;                    // Location where the analyzer was defined.
     string name;                        // Name of the analyzer.
     file_analysis::Tag tag;             // file_analysis::Tag for this analyzer.
     std::list<string> mime_types;       // The mime_types associated with the analyzer.
     string unit_name;                   // The fully-qualified name of the unit type to parse with.
-    shared_ptr<Pac2AST::UnitInfo> unit; // The type of the unit to parse the originator side.
-    binpac_parser* parser;              // The parser coming out of JIT.
+    shared_ptr<SpicyAST::UnitInfo> unit; // The type of the unit to parse the originator side.
+    spicy_parser* parser;              // The parser coming out of JIT.
 };
 
 // XXX
-struct bro::hilti::Pac2ExpressionAccessor {
+struct bro::hilti::SpicyExpressionAccessor {
     int nr;                                     // Position of this expression in argument list.
     string expr;                                // The string representation of the expression.
     bool dollar_id;                             // True if this is a "magic" $-ID.
-    shared_ptr<::binpac::Type> btype = nullptr; // The BinPAC++ type of the expression.
+    shared_ptr<::spicy::Type> btype = nullptr; // The Spicy type of the expression.
     shared_ptr<::hilti::Type> htype = nullptr;  // The corresponding HILTI type of the expression.
-    std::shared_ptr<::binpac::declaration::Function> pac2_func =
+    std::shared_ptr<::spicy::declaration::Function> spicy_func =
         nullptr; // Implementation of function that evaluates the expression.
     std::shared_ptr<::hilti::declaration::Function> hlt_func =
         nullptr; // Declaration of a function that evaluates the expression.
 };
 
-// Description of a BinPAC++ module.
-struct bro::hilti::Pac2ModuleInfo {
+// Description of a Spicy module.
+struct bro::hilti::SpicyModuleInfo {
     string path;                                   // The path the module was read from.
-    shared_ptr<::binpac::CompilerContext> context; // The context used for the module.
-    shared_ptr<::binpac::Module> module;           // The module itself.
+    shared_ptr<::spicy::CompilerContext> context; // The context used for the module.
+    shared_ptr<::spicy::Module> module;           // The module itself.
     shared_ptr<ValueConverter> value_converter;
     std::list<shared_ptr<::hilti::ID>> dep_types; // Types we need to import into the HILTI module.
 
@@ -148,14 +148,14 @@ struct bro::hilti::Pac2ModuleInfo {
     shared_ptr<::hilti::CompilerContext> hilti_context;
     shared_ptr<compiler::ModuleBuilder> hilti_mbuilder;
 
-    // The BroHooks_*.pac2 module.
-    shared_ptr<::binpac::Module> pac2_module;
-    shared_ptr<::hilti::Module> pac2_hilti_module;
+    // The BroHooks_*.spicy module.
+    shared_ptr<::spicy::Module> spicy_module;
+    shared_ptr<::hilti::Module> spicy_hilti_module;
 };
 
 // Description of an event defined by an *.evt file
-struct bro::hilti::Pac2EventInfo {
-    typedef std::list<shared_ptr<Pac2ExpressionAccessor>> accessor_list;
+struct bro::hilti::SpicyEventInfo {
+    typedef std::list<shared_ptr<SpicyExpressionAccessor>> accessor_list;
 
     // Information parsed directly from the *.evt file.
     string file;             // The path of the *.evt file we parsed this from.
@@ -170,11 +170,11 @@ struct bro::hilti::Pac2EventInfo {
     // Computed information.
     string unit;       // The fully qualified name of the unit type.
     string hook_local; // The local part of the triggering hook (i.e., w/o the unit name).
-    shared_ptr<::binpac::type::Unit> unit_type; // The BinPAC++ type of referenced unit.
-    shared_ptr<::binpac::Module> unit_module;   // The module the referenced unit is defined in.
-    shared_ptr<::binpac::declaration::Hook> pac2_hook;      // The generated BinPAC hook.
+    shared_ptr<::spicy::type::Unit> unit_type; // The Spicy type of referenced unit.
+    shared_ptr<::spicy::Module> unit_module;   // The module the referenced unit is defined in.
+    shared_ptr<::spicy::declaration::Hook> spicy_hook;      // The generated Spicy hook.
     shared_ptr<::hilti::declaration::Function> hilti_raise; // The generated HILTI raise() function.
-    shared_ptr<Pac2ModuleInfo> minfo;                       // The module the event was defined in.
+    shared_ptr<SpicyModuleInfo> minfo;                       // The module the event was defined in.
     BroType* bro_event_type;                                // The type of the Bro event.
     EventHandlerPtr bro_event_handler; // The type of the corresponding Bro event. Set only if we
                                        // have a handler.
@@ -183,18 +183,18 @@ struct bro::hilti::Pac2EventInfo {
 
 // Implementation of the Manager class attributes.
 struct Manager::PIMPL {
-    typedef std::list<shared_ptr<Pac2ModuleInfo>> pac2_module_list;
-    typedef std::list<shared_ptr<Pac2EventInfo>> pac2_event_list;
-    typedef std::list<shared_ptr<Pac2AnalyzerInfo>> pac2_analyzer_list;
-    typedef std::list<shared_ptr<Pac2FileAnalyzerInfo>> pac2_file_analyzer_list;
-    typedef std::vector<shared_ptr<Pac2AnalyzerInfo>> pac2_analyzer_vector;
-    typedef std::vector<shared_ptr<Pac2FileAnalyzerInfo>> pac2_file_analyzer_vector;
+    typedef std::list<shared_ptr<SpicyModuleInfo>> spicy_module_list;
+    typedef std::list<shared_ptr<SpicyEventInfo>> spicy_event_list;
+    typedef std::list<shared_ptr<SpicyAnalyzerInfo>> spicy_analyzer_list;
+    typedef std::list<shared_ptr<SpicyFileAnalyzerInfo>> spicy_file_analyzer_list;
+    typedef std::vector<shared_ptr<SpicyAnalyzerInfo>> spicy_analyzer_vector;
+    typedef std::vector<shared_ptr<SpicyFileAnalyzerInfo>> spicy_file_analyzer_vector;
     typedef std::list<shared_ptr<::hilti::Module>> hilti_module_list;
     typedef std::list<std::unique_ptr<llvm::Module>> llvm_module_list;
     typedef std::set<std::string> path_set;
 
     std::shared_ptr<::hilti::Options> hilti_options = nullptr;
-    std::shared_ptr<::binpac::Options> pac2_options = nullptr;
+    std::shared_ptr<::spicy::Options> spicy_options = nullptr;
 
     bool compile_all;            // Compile all event code, even if no handler, set from
                                  // BifConst::Hilti::compile_all.
@@ -204,34 +204,34 @@ struct Manager::PIMPL {
     bool dump_code_all;          // Output all code, set from BifConst::Hilti::dump_code_all.
     bool dump_code_pre_finalize; // Output generated code before finalizing the module, set from
                                  // BifConst::Hilti::dump_code_pre_finalize.
-    bool save_pac2;              // Saves all generated BinPAC++ modules into a file, set from
-                                 // BifConst::Hilti::save_pac2.
+    bool save_spicy;              // Saves all generated Spicy modules into a file, set from
+                                 // BifConst::Hilti::save_spicy.
     bool save_hilti; // Saves all HILTI modules into a file, set from BifConst::Hilti::save_hilti.
     bool save_llvm;  // Saves the final linked LLVM code into a file, set from
                      // BifConst::Hilti::save_llvm.
-    bool pac2_to_compiler; // If compiling scripts, raise event hooks from BinPAC++ code directly.
+    bool spicy_to_compiler; // If compiling scripts, raise event hooks from Spicy code directly.
     unsigned int profile;  // True to enable run-time profiling.
     unsigned int hilti_workers; // Number of HILTI worker threads to spawn.
 
     std::list<string> import_paths;
-    Pac2AST* pac2_ast;
+    SpicyAST* spicy_ast;
     string libbro_path;
     compiler::Compiler* compiler;
 
-    pac2_module_list pac2_modules;     // All loaded modules. Indexed by their paths.
-    pac2_event_list pac2_events;       // All events found in the *.evt files.
-    pac2_analyzer_list pac2_analyzers; // All analyzers found in the *.evt files.
-    pac2_analyzer_vector
-        pac2_analyzers_by_subtype; // All analyzers indexed by their analyzer::Tag subtype.
-    pac2_file_analyzer_list pac2_file_analyzers; // All file analyzers found in the *.evt files.
-    pac2_file_analyzer_vector pac2_file_analyzers_by_subtype; // All file analyzers indexed by their
+    spicy_module_list spicy_modules;     // All loaded modules. Indexed by their paths.
+    spicy_event_list spicy_events;       // All events found in the *.evt files.
+    spicy_analyzer_list spicy_analyzers; // All analyzers found in the *.evt files.
+    spicy_analyzer_vector
+        spicy_analyzers_by_subtype; // All analyzers indexed by their analyzer::Tag subtype.
+    spicy_file_analyzer_list spicy_file_analyzers; // All file analyzers found in the *.evt files.
+    spicy_file_analyzer_vector spicy_file_analyzers_by_subtype; // All file analyzers indexed by their
                                                               // file_analysis::Tag subtype.
     path_set evt_files;                                       // All loaded *.evt files.
-    path_set pac2_files;                                      // All loaded *.pac2 files.
+    path_set spicy_files;                                      // All loaded *.spicy files.
     path_set hlt_files; // All loaded *.hlt files specified by the user.
 
-    shared_ptr<::hilti::CompilerContextJIT<::binpac::JIT>> hilti_context = nullptr;
-    shared_ptr<::binpac::CompilerContext> pac2_context = nullptr;
+    shared_ptr<::hilti::CompilerContextJIT<::spicy::JIT>> hilti_context = nullptr;
+    shared_ptr<::spicy::CompilerContext> spicy_context = nullptr;
 
     // All compiled LLVM modules. These will eventually be linked into
     // the final code.
@@ -256,16 +256,16 @@ Manager::Manager()
     pre_scripts_init_run = false;
     post_scripts_init_run = false;
 
-    pimpl->pac2_ast = new Pac2AST;
+    pimpl->spicy_ast = new SpicyAST;
 
-    char* dir = getenv("BRO_PAC2_PATH");
+    char* dir = getenv("BRO_SPICY_PATH");
     if ( dir )
         AddLibraryPath(dir);
 }
 
 Manager::~Manager()
 {
-    delete pimpl->pac2_ast;
+    delete pimpl->spicy_ast;
     delete pimpl;
 }
 
@@ -292,23 +292,23 @@ bool Manager::InitPreScripts()
     assert(! post_scripts_init_run);
 
     ::hilti::init();
-    ::binpac::init_pac2();
+    ::spicy::init_spicy();
 
     add_input_file("init-bare-hilti.bro");
 
     pre_scripts_init_run = true;
 
     pimpl->hilti_options = std::make_shared<::hilti::Options>();
-    pimpl->pac2_options = std::make_shared<::binpac::Options>();
+    pimpl->spicy_options = std::make_shared<::spicy::Options>();
 
     for ( auto dir : pimpl->import_paths ) {
         pimpl->hilti_options->libdirs_hlt.push_back(dir);
-        pimpl->pac2_options->libdirs_hlt.push_back(dir);
-        pimpl->pac2_options->libdirs_pac2.push_back(dir);
+        pimpl->spicy_options->libdirs_hlt.push_back(dir);
+        pimpl->spicy_options->libdirs_spicy.push_back(dir);
     }
 
-    pimpl->pac2_context = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
-    pimpl->hilti_context = pimpl->pac2_context->hiltiContext();
+    pimpl->spicy_context = std::make_shared<::spicy::CompilerContext>(pimpl->spicy_options);
+    pimpl->hilti_context = pimpl->spicy_context->hiltiContext();
     pimpl->compiler = new compiler::Compiler(pimpl->hilti_context);
     pimpl->type_converter = std::make_shared<TypeConverter>(pimpl->compiler);
 
@@ -338,10 +338,10 @@ bool Manager::InitPostScripts()
     pimpl->dump_code = BifConst::Hilti::dump_code;
     pimpl->dump_code_pre_finalize = BifConst::Hilti::dump_code_pre_finalize;
     pimpl->dump_code_all = BifConst::Hilti::dump_code_all;
-    pimpl->save_pac2 = BifConst::Hilti::save_pac2;
+    pimpl->save_spicy = BifConst::Hilti::save_spicy;
     pimpl->save_hilti = BifConst::Hilti::save_hilti;
     pimpl->save_llvm = BifConst::Hilti::save_llvm;
-    pimpl->pac2_to_compiler = BifConst::Hilti::pac2_to_compiler;
+    pimpl->spicy_to_compiler = BifConst::Hilti::spicy_to_compiler;
     pimpl->hilti_workers = BifConst::Hilti::hilti_workers;
 
     pimpl->hilti_options->jit = true;
@@ -352,17 +352,17 @@ bool Manager::InitPostScripts()
     pimpl->hilti_options->cg_debug = cg_debug;
     pimpl->hilti_options->module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
 
-    pimpl->pac2_options->jit = true;
-    pimpl->pac2_options->debug = BifConst::Hilti::debug;
-    pimpl->pac2_options->optimize = BifConst::Hilti::optimize;
-    pimpl->pac2_options->profile = BifConst::Hilti::profile;
-    pimpl->pac2_options->verify = ! BifConst::Hilti::no_verify;
-    pimpl->pac2_options->cg_debug = cg_debug;
-    pimpl->pac2_options->module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
+    pimpl->spicy_options->jit = true;
+    pimpl->spicy_options->debug = BifConst::Hilti::debug;
+    pimpl->spicy_options->optimize = BifConst::Hilti::optimize;
+    pimpl->spicy_options->profile = BifConst::Hilti::profile;
+    pimpl->spicy_options->verify = ! BifConst::Hilti::no_verify;
+    pimpl->spicy_options->cg_debug = cg_debug;
+    pimpl->spicy_options->module_cache = BifConst::Hilti::use_cache ? ".cache" : "";
 
     pimpl->jit = nullptr;
 
-    for ( auto a : pimpl->pac2_analyzers ) {
+    for ( auto a : pimpl->spicy_analyzers ) {
         if ( a->replaces.empty() )
             continue;
 
@@ -408,13 +408,13 @@ bool Manager::LoadFile(const std::string& file)
         return false;
     }
 
-    if ( path.size() > 5 && path.substr(path.size() - 5) == ".pac2" ) {
-        if ( pimpl->pac2_files.find(path) != pimpl->pac2_files.end() )
+    if ( path.size() > 6 && path.substr(path.size() - 6) == ".spicy" ) {
+        if ( pimpl->spicy_files.find(path) != pimpl->spicy_files.end() )
             // Already loaded.
             return true;
 
-        pimpl->pac2_files.insert(path);
-        return LoadPac2Module(path);
+        pimpl->spicy_files.insert(path);
+        return LoadSpicyModule(path);
     }
 
     if ( path.size() > 4 && path.substr(path.size() - 4) == ".evt" ) {
@@ -423,7 +423,7 @@ bool Manager::LoadFile(const std::string& file)
             return true;
 
         pimpl->evt_files.insert(path);
-        return LoadPac2Events(path);
+        return LoadSpicyEvents(path);
     }
 
     if ( path.size() > 4 && path.substr(path.size() - 4) == ".hlt" ) {
@@ -521,11 +521,11 @@ done:
     return result;
 }
 
-bool Manager::PopulateEvent(shared_ptr<Pac2EventInfo> ev)
+bool Manager::PopulateEvent(shared_ptr<SpicyEventInfo> ev)
 {
     // If we find the path directly, it's a unit type; then add a "%done"
     // to form the hook name.
-    auto uinfo = pimpl->pac2_ast->LookupUnit(ev->path);
+    auto uinfo = pimpl->spicy_ast->LookupUnit(ev->path);
 
     string hook;
     string hook_local;
@@ -545,7 +545,7 @@ bool Manager::PopulateEvent(shared_ptr<Pac2EventInfo> ev)
             hook_local = p.back();
             p.pop_back();
             unit = ::util::strjoin(p, "::");
-            uinfo = pimpl->pac2_ast->LookupUnit(unit);
+            uinfo = pimpl->spicy_ast->LookupUnit(unit);
             hook = ev->path;
         }
     }
@@ -559,7 +559,7 @@ bool Manager::PopulateEvent(shared_ptr<Pac2EventInfo> ev)
     ev->hook_local = hook_local;
     ev->unit = unit;
     ev->unit_type = uinfo->unit_type;
-    ev->unit_module = uinfo->unit_type->firstParent<::binpac::Module>();
+    ev->unit_module = uinfo->unit_type->firstParent<::spicy::Module>();
     ev->minfo = uinfo->minfo;
 
     assert(ev->unit_module);
@@ -580,9 +580,9 @@ bool Manager::Compile()
     if ( ! CompileBroScripts() )
         return false;
 
-    for ( auto a : pimpl->pac2_analyzers ) {
+    for ( auto a : pimpl->spicy_analyzers ) {
         if ( a->unit_name_orig.size() ) {
-            a->unit_orig = pimpl->pac2_ast->LookupUnit(a->unit_name_orig);
+            a->unit_orig = pimpl->spicy_ast->LookupUnit(a->unit_name_orig);
 
             if ( ! a->unit_orig ) {
                 reporter::error(::util::fmt("unknown unit type %s with analyzer %s",
@@ -592,7 +592,7 @@ bool Manager::Compile()
         }
 
         if ( a->unit_name_resp.size() ) {
-            a->unit_resp = pimpl->pac2_ast->LookupUnit(a->unit_name_resp);
+            a->unit_resp = pimpl->spicy_ast->LookupUnit(a->unit_name_resp);
 
             if ( ! a->unit_resp ) {
                 reporter::error(
@@ -602,9 +602,9 @@ bool Manager::Compile()
         }
     }
 
-    for ( auto a : pimpl->pac2_file_analyzers ) {
+    for ( auto a : pimpl->spicy_file_analyzers ) {
         if ( a->unit_name.size() ) {
-            a->unit = pimpl->pac2_ast->LookupUnit(a->unit_name);
+            a->unit = pimpl->spicy_ast->LookupUnit(a->unit_name);
 
             if ( ! a->unit ) {
                 reporter::error(::util::fmt("unknown unit type %s with file analyzer %s",
@@ -617,20 +617,20 @@ bool Manager::Compile()
             val_list* vals = new val_list;
             vals->append(a->tag.AsEnumVal()->Ref());
             vals->append(new ::StringVal(mt));
-            EventHandlerPtr handler = internal_handler("pac2_analyzer_for_mime_type");
+            EventHandlerPtr handler = internal_handler("spicy_analyzer_for_mime_type");
             mgr.QueueEvent(handler, vals);
         }
     }
 
-    // Create the pac2 hooks and accessor functions.
-    for ( auto ev : pimpl->pac2_events ) {
-        if ( ! CreatePac2Hook(ev.get()) )
+    // Create the Spicy hooks and accessor functions.
+    for ( auto ev : pimpl->spicy_events ) {
+        if ( ! CreateSpicyHook(ev.get()) )
             return false;
     }
 
-    // Compile all the *.pac2 modules.
-    for ( auto m : pimpl->pac2_modules ) {
-        // Compile the *.pac2 module itself.
+    // Compile all the *.spicy modules.
+    for ( auto m : pimpl->spicy_modules ) {
+        // Compile the *.spicy module itself.
         shared_ptr<::hilti::Module> hilti_module_out;
         auto llvm_module = m->context->compile(m->module, &hilti_module_out);
 
@@ -638,7 +638,7 @@ bool Manager::Compile()
             return false;
 
         if ( pimpl->save_hilti && hilti_module_out ) {
-            ofstream out(::util::fmt("bro.pac2.%s.hlt", hilti_module_out->id()->name()));
+            ofstream out(::util::fmt("bro.spicy.%s.hlt", hilti_module_out->id()->name()));
             pimpl->hilti_context->print(hilti_module_out, out);
             out.close();
         }
@@ -646,33 +646,33 @@ bool Manager::Compile()
         pimpl->llvm_modules.push_back(std::move(llvm_module));
         // m->llvm_modules.push_back(llvm_module);
 
-        // Compile the generated hooks *.pac2 module.
+        // Compile the generated hooks *.spicy module.
         if ( pimpl->dump_code_pre_finalize ) {
-            std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.pac2\n",
-                                     m->pac2_module->id()->name())
+            std::cerr << ::util::fmt("\n=== Pre-finalize AST: %s.spicy\n",
+                                     m->spicy_module->id()->name())
                       << std::endl;
-            pimpl->pac2_context->dump(m->pac2_module, std::cerr);
-            std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.pac2\n",
-                                     m->pac2_module->id()->name())
+            pimpl->spicy_context->dump(m->spicy_module, std::cerr);
+            std::cerr << ::util::fmt("\n=== Pre-finalize code: %s.spicy\n",
+                                     m->spicy_module->id()->name())
                       << std::endl;
-            pimpl->pac2_context->print(m->pac2_module, std::cerr);
+            pimpl->spicy_context->print(m->spicy_module, std::cerr);
         }
 
-        if ( ! pimpl->pac2_context->finalize(m->pac2_module) )
+        if ( ! pimpl->spicy_context->finalize(m->spicy_module) )
             return false;
 
         if ( pimpl->dump_code_pre_finalize ) {
-            std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile AST: %s.pac2\n",
-                                     m->pac2_module->id()->name())
+            std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile AST: %s.spicy\n",
+                                     m->spicy_module->id()->name())
                       << std::endl;
-            pimpl->pac2_context->dump(m->pac2_module, std::cerr);
-            std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile code: %s.pac2\n",
-                                     m->pac2_module->id()->name())
+            pimpl->spicy_context->dump(m->spicy_module, std::cerr);
+            std::cerr << ::util::fmt("\n=== Post-finalize, pre-compile code: %s.spicy\n",
+                                     m->spicy_module->id()->name())
                       << std::endl;
-            pimpl->pac2_context->print(m->pac2_module, std::cerr);
+            pimpl->spicy_context->print(m->spicy_module, std::cerr);
         }
 
-        llvm_module = pimpl->pac2_context->compile(m->pac2_module, &m->pac2_hilti_module);
+        llvm_module = pimpl->spicy_context->compile(m->spicy_module, &m->spicy_hilti_module);
 
         if ( ! llvm_module )
             return false;
@@ -680,26 +680,26 @@ bool Manager::Compile()
         pimpl->llvm_modules.push_back(std::move(llvm_module));
         // m->llvm_modules.push_back(llvm_module);
 
-        if ( m->pac2_hilti_module )
-            pimpl->hilti_modules.push_back(m->pac2_hilti_module);
+        if ( m->spicy_hilti_module )
+            pimpl->hilti_modules.push_back(m->spicy_hilti_module);
 
-        if ( pimpl->save_pac2 ) {
-            ofstream out(::util::fmt("bro.%s.pac2", m->pac2_module->id()->name()));
-            pimpl->pac2_context->print(m->pac2_module, out);
+        if ( pimpl->save_spicy ) {
+            ofstream out(::util::fmt("bro.%s.spicy", m->spicy_module->id()->name()));
+            pimpl->spicy_context->print(m->spicy_module, out);
             out.close();
         }
 
         AddHiltiTypesForModule(m);
     }
 
-    for ( auto ev : pimpl->pac2_events )
+    for ( auto ev : pimpl->spicy_events )
         AddHiltiTypesForEvent(ev);
 
-    for ( auto minfo : pimpl->pac2_modules )
+    for ( auto minfo : pimpl->spicy_modules )
         minfo->hilti_context->resolveTypes(minfo->hilti_mbuilder->module());
 
     // Create the HILTi raise functions().
-    for ( auto ev : pimpl->pac2_events ) {
+    for ( auto ev : pimpl->spicy_events ) {
         BuildBroEventSignature(ev);
         RegisterBroEvent(ev);
 
@@ -726,7 +726,7 @@ bool Manager::Compile()
     pimpl->hilti_modules.push_back(libbro);
 
     // Compile all the *.hlt modules.
-    for ( auto m : pimpl->pac2_modules ) {
+    for ( auto m : pimpl->spicy_modules ) {
         AddHiltiTypesForModule(m);
 
         if ( pimpl->dump_code_pre_finalize ) {
@@ -779,13 +779,13 @@ bool Manager::Compile()
         return false;
 
     // Compile and link all the HILTI modules into LLVM. We use the
-    // BinPAC++ context here to make sure we gets its additional
+    // Spicy context here to make sure we gets its additional
     // libraries linked.
     //
     PLUGIN_DBG_LOG(HiltiPlugin, "Compiling & linking all HILTI code into a single LLVM module");
 
     auto llvm_module =
-        pimpl->pac2_context->linkModules("__bro_linked__", std::move(pimpl->llvm_modules));
+        pimpl->spicy_context->linkModules("__bro_linked__", std::move(pimpl->llvm_modules));
 
     if ( ! llvm_module ) {
         reporter::error("linking failed");
@@ -805,22 +805,22 @@ bool Manager::Compile()
 
     PLUGIN_DBG_LOG(HiltiPlugin, "Registering analyzers through events");
 
-    for ( auto a : pimpl->pac2_analyzers ) {
+    for ( auto a : pimpl->spicy_analyzers ) {
         for ( auto p : a->ports ) {
             val_list* vals = new val_list;
             vals->append(a->tag.AsEnumVal()->Ref());
             vals->append(new ::PortVal(p.port, p.proto));
-            EventHandlerPtr handler = internal_handler("pac2_analyzer_for_port");
+            EventHandlerPtr handler = internal_handler("spicy_analyzer_for_port");
             mgr.QueueEvent(handler, vals);
         }
     }
 
-    for ( auto a : pimpl->pac2_file_analyzers ) {
+    for ( auto a : pimpl->spicy_file_analyzers ) {
         for ( auto mt : a->mime_types ) {
             val_list* vals = new val_list;
             vals->append(a->tag.AsEnumVal()->Ref());
             vals->append(new ::StringVal(mt));
-            EventHandlerPtr handler = internal_handler("pac2_analyzer_for_mime_type");
+            EventHandlerPtr handler = internal_handler("spicy_analyzer_for_mime_type");
             mgr.QueueEvent(handler, vals);
         }
     }
@@ -882,30 +882,30 @@ bool Manager::RunJIT(std::unique_ptr<llvm::Module> llvm_module)
 
     pimpl->jit = std::move(jit);
 
-    PLUGIN_DBG_LOG(HiltiPlugin, "Retrieving binpac_parsers() function");
+    PLUGIN_DBG_LOG(HiltiPlugin, "Retrieving spicy_parsers() function");
 
 #ifdef BRO_PLUGIN_HAVE_PROFILING
     profile_update(PROFILE_JIT_LAND, PROFILE_START);
 #endif
 
-    typedef hlt_list* (*binpac_parsers_func)(hlt_exception * *excpt, hlt_execution_context * ctx);
-    auto binpac_parsers = (binpac_parsers_func)pimpl->jit->nativeFunction("binpac_parsers");
+    typedef hlt_list* (*spicy_parsers_func)(hlt_exception * *excpt, hlt_execution_context * ctx);
+    auto spicy_parsers = (spicy_parsers_func)pimpl->jit->nativeFunction("spicy_parsers");
 
 #ifdef BRO_PLUGIN_HAVE_PROFILING
     profile_update(PROFILE_JIT_LAND, PROFILE_STOP);
 #endif
 
-    if ( ! binpac_parsers ) {
-        reporter::error("no function binpac_parsers()");
+    if ( ! spicy_parsers ) {
+        reporter::error("no function spicy_parsers()");
         return false;
     }
 
-    PLUGIN_DBG_LOG(HiltiPlugin, "Calling binpac_parsers() function");
+    PLUGIN_DBG_LOG(HiltiPlugin, "Calling spicy_parsers() function");
 
     hlt_exception* excpt = 0;
     hlt_execution_context* ctx = hlt_global_execution_context();
 
-    hlt_list* parsers = (*binpac_parsers)(&excpt, ctx);
+    hlt_list* parsers = (*spicy_parsers)(&excpt, ctx);
 
     // Record them with our analyzers.
     ExtractParsers(parsers);
@@ -955,7 +955,7 @@ bool Manager::RunJIT(std::unique_ptr<llvm::Module> llvm_module)
     if ( ! register_func )
         reporter::fatal_error("Bro::register_protocol_analyzer() not available");
 
-    for ( auto a : pimpl->pac2_file_analyzers ) {
+    for ( auto a : pimpl->spicy_file_analyzers ) {
         val_list* args = new val_list;
         args->append(a->tag.AsEnumVal()->Ref());
         register_func->Call(args);
@@ -964,7 +964,7 @@ bool Manager::RunJIT(std::unique_ptr<llvm::Module> llvm_module)
     return true;
 }
 
-bool Manager::LoadPac2Module(const string& path)
+bool Manager::LoadSpicyModule(const string& path)
 {
     std::ifstream in(path);
 
@@ -978,7 +978,7 @@ bool Manager::LoadPac2Module(const string& path)
     // ctx->enableDebug(dbg_scanner, dbg_parser, dbg_scopes, dbg_grammars);
 
     reporter::push_location(path, 0);
-    auto ctx = std::make_shared<::binpac::CompilerContext>(pimpl->pac2_options);
+    auto ctx = std::make_shared<::spicy::CompilerContext>(pimpl->spicy_options);
     ctx->hiltiContext()->setLLVMContext(&pimpl->hilti_context->llvmContext());
 
     auto module = ctx->load(path);
@@ -991,15 +991,15 @@ bool Manager::LoadPac2Module(const string& path)
 
     auto name = module->id()->name();
 
-    auto minfo = std::make_shared<Pac2ModuleInfo>();
+    auto minfo = std::make_shared<SpicyModuleInfo>();
     minfo->path = path;
     minfo->context = ctx;
     minfo->module = module;
 
-    minfo->pac2_module = std::make_shared<::binpac::Module>(pimpl->pac2_context.get(),
-                                                            std::make_shared<::binpac::ID>(
+    minfo->spicy_module = std::make_shared<::spicy::Module>(pimpl->spicy_context.get(),
+                                                            std::make_shared<::spicy::ID>(
                                                                 ::util::fmt("BroHooks_%s", name)));
-    minfo->pac2_module->import("Bro");
+    minfo->spicy_module->import("Bro");
 
     minfo->hilti_context = std::make_shared<::hilti::CompilerContext>(pimpl->hilti_options);
     minfo->hilti_context->setLLVMContext(&pimpl->hilti_context->llvmContext());
@@ -1012,16 +1012,16 @@ bool Manager::LoadPac2Module(const string& path)
     minfo->value_converter =
         std::make_shared<ValueConverter>(minfo->hilti_mbuilder.get(), pimpl->type_converter.get());
 
-    pimpl->pac2_modules.push_back(minfo);
+    pimpl->spicy_modules.push_back(minfo);
 
-    pimpl->pac2_ast->process(minfo, module);
+    pimpl->spicy_ast->process(minfo, module);
 
     // Make exported enum types available to Bro.
     for ( auto t : module->exportedTypes() ) {
-        if ( ! ast::rtti::isA<::binpac::type::Enum>(t) )
+        if ( ! ast::rtti::isA<::spicy::type::Enum>(t) )
             continue;
 
-        auto htype = pimpl->pac2_context->hiltiType(t, &minfo->dep_types);
+        auto htype = pimpl->spicy_context->hiltiType(t, &minfo->dep_types);
         pimpl->type_converter->Convert(htype, t);
     }
 
@@ -1218,7 +1218,7 @@ static bool extract_expr(const string& chunk, size_t* i, string* expr)
     return true;
 
 error:
-    reporter::error(::util::fmt("expected BinPAC++ expression"));
+    reporter::error(::util::fmt("expected Spicy expression"));
     return false;
 }
 
@@ -1297,7 +1297,7 @@ error:
     return false;
 }
 
-bool Manager::LoadPac2Events(const string& path)
+bool Manager::LoadSpicyEvents(const string& path)
 {
     std::ifstream in(path);
 
@@ -1310,7 +1310,7 @@ bool Manager::LoadPac2Events(const string& path)
 
     int lineno = 0;
     string chunk;
-    PIMPL::pac2_event_list new_events;
+    PIMPL::spicy_event_list new_events;
 
     while ( ! in.eof() ) {
         reporter::push_location(path, ++lineno);
@@ -1345,12 +1345,12 @@ bool Manager::LoadPac2Events(const string& path)
         chunk = ::util::strtrim(chunk);
 
         if ( looking_at(chunk, 0, "protocol") ) {
-            auto a = ParsePac2AnalyzerSpec(chunk);
+            auto a = ParseSpicyAnalyzerSpec(chunk);
 
             if ( ! a )
                 goto error;
 
-            pimpl->pac2_analyzers.push_back(a);
+            pimpl->spicy_analyzers.push_back(a);
             RegisterBroAnalyzer(a);
             PLUGIN_DBG_LOG(HiltiPlugin, "Finished processing analyzer definition for %s",
                            a->name.c_str());
@@ -1358,19 +1358,19 @@ bool Manager::LoadPac2Events(const string& path)
 
 
         else if ( looking_at(chunk, 0, "file") ) {
-            auto a = ParsePac2FileAnalyzerSpec(chunk);
+            auto a = ParseSpicyFileAnalyzerSpec(chunk);
 
             if ( ! a )
                 goto error;
 
-            pimpl->pac2_file_analyzers.push_back(a);
+            pimpl->spicy_file_analyzers.push_back(a);
             RegisterBroFileAnalyzer(a);
             PLUGIN_DBG_LOG(HiltiPlugin, "Finished processing file analyzer definition for %s",
                            a->name.c_str());
         }
 
         else if ( looking_at(chunk, 0, "on") ) {
-            auto ev = ParsePac2EventSpec(chunk);
+            auto ev = ParseSpicyEventSpec(chunk);
 
             if ( ! ev )
                 goto error;
@@ -1378,7 +1378,7 @@ bool Manager::LoadPac2Events(const string& path)
             ev->file = path;
 
             new_events.push_back(ev);
-            pimpl->pac2_events.push_back(ev);
+            pimpl->spicy_events.push_back(ev);
             HiltiPlugin.AddEvent(ev->name);
 
             PLUGIN_DBG_LOG(HiltiPlugin, "Finished processing event definition for %s",
@@ -1391,27 +1391,27 @@ bool Manager::LoadPac2Events(const string& path)
             if ( ! eat_token(chunk, &i, "grammar") )
                 return 0;
 
-            string pac2;
+            string spcy;
 
-            if ( ! extract_path(chunk, &i, &pac2) )
+            if ( ! extract_path(chunk, &i, &spcy) )
                 goto error;
 
-            size_t j = pac2.find_last_of("/.");
+            size_t j = spcy.find_last_of("/.");
 
-            if ( j == string::npos || pac2[j] == '/' )
-                pac2 += ".pac2";
+            if ( j == string::npos || spcy[j] == '/' )
+                spcy += ".spicy";
 
             string dirname;
 
             j = path.find_last_of("/");
             if ( j != string::npos ) {
                 dirname = path.substr(0, j);
-                pimpl->pac2_options->libdirs_pac2.push_front(dirname);
+                pimpl->spicy_options->libdirs_spicy.push_front(dirname);
             }
 
-            pac2 = SearchFile(pac2, dirname);
+            spcy = SearchFile(spcy, dirname);
 
-            if ( ! HiltiPlugin.LoadBroFile(pac2.c_str()) )
+            if ( ! HiltiPlugin.LoadBroFile(spcy.c_str()) )
                 goto error;
         }
 
@@ -1441,9 +1441,9 @@ bool Manager::LoadPac2Events(const string& path)
     return true;
 }
 
-shared_ptr<Pac2AnalyzerInfo> Manager::ParsePac2AnalyzerSpec(const string& chunk)
+shared_ptr<SpicyAnalyzerInfo> Manager::ParseSpicyAnalyzerSpec(const string& chunk)
 {
-    auto a = std::make_shared<Pac2AnalyzerInfo>();
+    auto a = std::make_shared<SpicyAnalyzerInfo>();
     a->location = reporter::current_location();
     a->parser_orig = 0;
     a->parser_resp = 0;
@@ -1595,9 +1595,9 @@ shared_ptr<Pac2AnalyzerInfo> Manager::ParsePac2AnalyzerSpec(const string& chunk)
     return a;
 }
 
-shared_ptr<Pac2FileAnalyzerInfo> Manager::ParsePac2FileAnalyzerSpec(const string& chunk)
+shared_ptr<SpicyFileAnalyzerInfo> Manager::ParseSpicyFileAnalyzerSpec(const string& chunk)
 {
-    auto a = std::make_shared<Pac2FileAnalyzerInfo>();
+    auto a = std::make_shared<SpicyFileAnalyzerInfo>();
     a->location = reporter::current_location();
     a->parser = 0;
 
@@ -1658,9 +1658,9 @@ shared_ptr<Pac2FileAnalyzerInfo> Manager::ParsePac2FileAnalyzerSpec(const string
     return a;
 }
 
-shared_ptr<Pac2EventInfo> Manager::ParsePac2EventSpec(const string& chunk)
+shared_ptr<SpicyEventInfo> Manager::ParseSpicyEventSpec(const string& chunk)
 {
-    auto ev = std::make_shared<Pac2EventInfo>();
+    auto ev = std::make_shared<SpicyEventInfo>();
 
     std::list<string> exprs;
 
@@ -1767,21 +1767,21 @@ shared_ptr<Pac2EventInfo> Manager::ParsePac2EventSpec(const string& chunk)
     return ev;
 }
 
-void Manager::RegisterBroAnalyzer(shared_ptr<Pac2AnalyzerInfo> a)
+void Manager::RegisterBroAnalyzer(shared_ptr<SpicyAnalyzerInfo> a)
 {
-    analyzer::Tag::subtype_t stype = pimpl->pac2_analyzers_by_subtype.size();
-    pimpl->pac2_analyzers_by_subtype.push_back(a);
+    analyzer::Tag::subtype_t stype = pimpl->spicy_analyzers_by_subtype.size();
+    pimpl->spicy_analyzers_by_subtype.push_back(a);
     a->tag = HiltiPlugin.AddAnalyzer(a->name, a->proto, stype);
 }
 
-void Manager::RegisterBroFileAnalyzer(shared_ptr<Pac2FileAnalyzerInfo> a)
+void Manager::RegisterBroFileAnalyzer(shared_ptr<SpicyFileAnalyzerInfo> a)
 {
-    file_analysis::Tag::subtype_t stype = pimpl->pac2_file_analyzers_by_subtype.size();
-    pimpl->pac2_file_analyzers_by_subtype.push_back(a);
+    file_analysis::Tag::subtype_t stype = pimpl->spicy_file_analyzers_by_subtype.size();
+    pimpl->spicy_file_analyzers_by_subtype.push_back(a);
     a->tag = HiltiPlugin.AddFileAnalyzer(a->name, stype);
 }
 
-void Manager::BuildBroEventSignature(shared_ptr<Pac2EventInfo> ev)
+void Manager::BuildBroEventSignature(shared_ptr<SpicyEventInfo> ev)
 {
     type_decl_list* types = new type_decl_list();
 
@@ -1893,7 +1893,7 @@ void Manager::InstallTypeMappings(shared_ptr<compiler::ModuleBuilder> mbuilder, 
     }
 }
 
-void Manager::RegisterBroEvent(shared_ptr<Pac2EventInfo> ev)
+void Manager::RegisterBroEvent(shared_ptr<SpicyEventInfo> ev)
 {
     assert(ev->bro_event_type);
 
@@ -1969,28 +1969,28 @@ void Manager::EventSignatureMismatch(const string& name, const ::BroType* have,
     return;
 }
 
-static shared_ptr<::binpac::Expression> id_expr(const string& id)
+static shared_ptr<::spicy::Expression> id_expr(const string& id)
 {
-    return std::make_shared<::binpac::expression::ID>(std::make_shared<::binpac::ID>(id));
+    return std::make_shared<::spicy::expression::ID>(std::make_shared<::spicy::ID>(id));
 }
 
-bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
+bool Manager::CreateSpicyHook(SpicyEventInfo* ev)
 {
     if ( ! WantEvent(ev) )
         return true;
 
-    // Find the pac2 module that this event belongs to.
-    PLUGIN_DBG_LOG(HiltiPlugin, "Adding pac2 hook %s for event %s", ev->hook.c_str(),
+    // Find the Spicy module that this event belongs to.
+    PLUGIN_DBG_LOG(HiltiPlugin, "Adding Spicy hook %s for event %s", ev->hook.c_str(),
                    ev->name.c_str());
 
-    ev->minfo->pac2_module->import(ev->unit_module->id());
+    ev->minfo->spicy_module->import(ev->unit_module->id());
 
     auto body =
-        std::make_shared<::binpac::statement::Block>(ev->minfo->pac2_module->body()->scope());
+        std::make_shared<::spicy::statement::Block>(ev->minfo->spicy_module->body()->scope());
 
     // If the event comes with a condition, evaluate that first.
     if ( ev->condition.size() ) {
-        auto cond = pimpl->pac2_context->parseExpression(ev->condition);
+        auto cond = pimpl->spicy_context->parseExpression(ev->condition);
 
         if ( ! cond ) {
             reporter::error(
@@ -1998,94 +1998,94 @@ bool Manager::CreatePac2Hook(Pac2EventInfo* ev)
             return false;
         }
 
-        ::binpac::expression_list args = {cond};
+        ::spicy::expression_list args = {cond};
         auto not_ =
-            std::make_shared<::binpac::expression::UnresolvedOperator>(::binpac::operator_::Not,
+            std::make_shared<::spicy::expression::UnresolvedOperator>(::spicy::operator_::Not,
                                                                        args);
-        auto return_ = std::make_shared<::binpac::statement::Return>(nullptr);
-        auto if_ = std::make_shared<::binpac::statement::IfElse>(not_, return_);
+        auto return_ = std::make_shared<::spicy::statement::Return>(nullptr);
+        auto if_ = std::make_shared<::spicy::statement::IfElse>(not_, return_);
 
         body->addStatement(if_);
     }
 
     // Raise the event.
 
-    ::binpac::expression_list args_tuple;
+    ::spicy::expression_list args_tuple;
 
     for ( auto m : ev->unit_type->scope()->map() ) {
         auto n = (m.first != "$$" ? m.first : "__dollardollar");
-        auto t = ::ast::rtti::tryCast<::binpac::expression::ParserState>(m.second->front());
+        auto t = ::ast::rtti::tryCast<::spicy::expression::ParserState>(m.second->front());
 
         if ( t )
             args_tuple.push_back(id_expr(n));
     }
 
-    auto args = std::make_shared<::binpac::expression::Constant>(
-        std::make_shared<::binpac::constant::Tuple>(args_tuple));
+    auto args = std::make_shared<::spicy::expression::Constant>(
+        std::make_shared<::spicy::constant::Tuple>(args_tuple));
 
     auto raise_name =
         ::util::fmt("%s::raise_%s_%p", ev->minfo->hilti_mbuilder->module()->id()->name(),
                     ::util::strreplace(ev->name, "::", "_"), ev);
-    ::binpac::expression_list op_args = {id_expr(raise_name), args};
+    ::spicy::expression_list op_args = {id_expr(raise_name), args};
     auto call =
-        std::make_shared<::binpac::expression::UnresolvedOperator>(::binpac::operator_::Call,
+        std::make_shared<::spicy::expression::UnresolvedOperator>(::spicy::operator_::Call,
                                                                    op_args);
-    auto stmt = std::make_shared<::binpac::statement::Expression>(call);
+    auto stmt = std::make_shared<::spicy::statement::Expression>(call);
 
     body->addStatement(stmt);
 
-    auto hook = std::make_shared<::binpac::Hook>(body, ::binpac::Hook::PARSE, ev->priority);
+    auto hook = std::make_shared<::spicy::Hook>(body, ::spicy::Hook::PARSE, ev->priority);
     auto hdecl =
-        std::make_shared<::binpac::declaration::Hook>(std::make_shared<::binpac::ID>(ev->hook),
+        std::make_shared<::spicy::declaration::Hook>(std::make_shared<::spicy::ID>(ev->hook),
                                                       hook);
 
     auto raise_result =
-        std::make_shared<::binpac::type::function::Result>(std::make_shared<::binpac::type::Void>(),
+        std::make_shared<::spicy::type::function::Result>(std::make_shared<::spicy::type::Void>(),
                                                            true);
-    ::binpac::parameter_list raise_params;
+    ::spicy::parameter_list raise_params;
 
     for ( auto m : ev->unit_type->scope()->map() ) {
         auto n = (m.first != "$$" ? m.first : "__dollardollar");
-        auto t = ::ast::rtti::tryCast<::binpac::expression::ParserState>(m.second->front());
+        auto t = ::ast::rtti::tryCast<::spicy::expression::ParserState>(m.second->front());
 
         if ( t ) {
-            auto id = std::make_shared<::binpac::ID>(n);
-            auto p = std::make_shared<::binpac::type::function::Parameter>(id, t->type(), false,
+            auto id = std::make_shared<::spicy::ID>(n);
+            auto p = std::make_shared<::spicy::type::function::Parameter>(id, t->type(), false,
                                                                            false, nullptr);
             raise_params.push_back(p);
         }
     }
 
     auto raise_type =
-        std::make_shared<::binpac::type::Function>(raise_result, raise_params,
-                                                   ::binpac::type::function::BINPAC_HILTI);
+        std::make_shared<::spicy::type::Function>(raise_result, raise_params,
+                                                   ::spicy::type::function::SPICY_HILTI);
     auto raise_func =
-        std::make_shared<::binpac::Function>(std::make_shared<::binpac::ID>(raise_name), raise_type,
-                                             ev->minfo->pac2_module);
-    auto rdecl = std::make_shared<::binpac::declaration::Function>(raise_func,
-                                                                   ::binpac::Declaration::IMPORTED);
+        std::make_shared<::spicy::Function>(std::make_shared<::spicy::ID>(raise_name), raise_type,
+                                             ev->minfo->spicy_module);
+    auto rdecl = std::make_shared<::spicy::declaration::Function>(raise_func,
+                                                                   ::spicy::Declaration::IMPORTED);
 
-    ev->minfo->pac2_module->body()->addDeclaration(hdecl);
-    ev->minfo->pac2_module->body()->addDeclaration(rdecl);
+    ev->minfo->spicy_module->body()->addDeclaration(hdecl);
+    ev->minfo->spicy_module->body()->addDeclaration(rdecl);
 
-    ev->pac2_hook = hdecl;
+    ev->spicy_hook = hdecl;
 
     return true;
 }
 
-bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
+bool Manager::CreateExpressionAccessors(shared_ptr<SpicyEventInfo> ev)
 {
     int nr = 0;
 
     for ( auto e : ev->exprs ) {
-        auto acc = std::make_shared<Pac2ExpressionAccessor>();
+        auto acc = std::make_shared<SpicyExpressionAccessor>();
         acc->nr = ++nr;
         acc->expr = e;
         acc->dollar_id = util::startsWith(e, "$");
 
         if ( ! acc->dollar_id )
             // We set the other fields below in a second loop.
-            acc->pac2_func = CreatePac2ExpressionAccessor(ev, acc->nr, e);
+            acc->spicy_func = CreateSpicyExpressionAccessor(ev, acc->nr, e);
 
         else {
             if ( e != "$conn" && e != "$is_orig" && e != "$file" ) {
@@ -2098,17 +2098,17 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
     }
 
     // Resolve the code as far possible.
-    ev->minfo->pac2_module->import(ev->unit_module->id());
-    pimpl->pac2_context->partialFinalize(ev->minfo->pac2_module);
+    ev->minfo->spicy_module->import(ev->unit_module->id());
+    pimpl->spicy_context->partialFinalize(ev->minfo->spicy_module);
 
     for ( auto acc : ev->expr_accessors ) {
         if ( acc->dollar_id )
             continue;
 
         acc->btype =
-            acc->pac2_func ? acc->pac2_func->function()->type()->result()->type() : nullptr;
+            acc->spicy_func ? acc->spicy_func->function()->type()->result()->type() : nullptr;
         acc->htype = acc->btype ?
-                         pimpl->pac2_context->hiltiType(acc->btype, &ev->minfo->dep_types) :
+                         pimpl->spicy_context->hiltiType(acc->btype, &ev->minfo->dep_types) :
                          nullptr;
         acc->hlt_func = DeclareHiltiExpressionAccessor(ev, acc->nr, acc->htype);
     }
@@ -2116,61 +2116,61 @@ bool Manager::CreateExpressionAccessors(shared_ptr<Pac2EventInfo> ev)
     return true;
 }
 
-shared_ptr<binpac::declaration::Function> Manager::CreatePac2ExpressionAccessor(
-    shared_ptr<Pac2EventInfo> ev, int nr, const string& expr)
+shared_ptr<spicy::declaration::Function> Manager::CreateSpicyExpressionAccessor(
+    shared_ptr<SpicyEventInfo> ev, int nr, const string& expr)
 {
     auto fname =
         ::util::fmt("accessor_%s_arg%d_%p", ::util::strreplace(ev->name, "::", "_"), nr, ev);
 
-    PLUGIN_DBG_LOG(HiltiPlugin, "Defining BinPAC++ function %s for parameter %d of event %s",
+    PLUGIN_DBG_LOG(HiltiPlugin, "Defining Spicy function %s for parameter %d of event %s",
                    fname.c_str(), nr, ev->name.c_str());
 
-    auto pac2_expr = pimpl->pac2_context->parseExpression(expr);
+    auto spicy_expr = pimpl->spicy_context->parseExpression(expr);
 
-    if ( ! pac2_expr ) {
+    if ( ! spicy_expr ) {
         reporter::error(::util::fmt("error parsing expression '%s'", expr));
         return nullptr;
     }
 
-    auto stmt = std::make_shared<::binpac::statement::Return>(pac2_expr);
+    auto stmt = std::make_shared<::spicy::statement::Return>(spicy_expr);
     auto body =
-        std::make_shared<::binpac::statement::Block>(ev->minfo->pac2_module->body()->scope());
+        std::make_shared<::spicy::statement::Block>(ev->minfo->spicy_module->body()->scope());
     body->addStatement(stmt);
 
-    auto unknown = std::make_shared<::binpac::type::Unknown>();
-    auto func_result = std::make_shared<::binpac::type::function::Result>(unknown, true);
+    auto unknown = std::make_shared<::spicy::type::Unknown>();
+    auto func_result = std::make_shared<::spicy::type::function::Result>(unknown, true);
 
-    ::binpac::parameter_list func_params;
+    ::spicy::parameter_list func_params;
 
     for ( auto m : ev->unit_type->scope()->map() ) {
         auto n = (m.first != "$$" ? m.first : "__dollardollar");
-        auto t = ::ast::rtti::tryCast<::binpac::expression::ParserState>(m.second->front());
+        auto t = ::ast::rtti::tryCast<::spicy::expression::ParserState>(m.second->front());
 
         if ( t ) {
-            auto id = std::make_shared<::binpac::ID>(n);
-            auto p = std::make_shared<::binpac::type::function::Parameter>(id, t->type(), false,
+            auto id = std::make_shared<::spicy::ID>(n);
+            auto p = std::make_shared<::spicy::type::function::Parameter>(id, t->type(), false,
                                                                            false, nullptr);
             func_params.push_back(p);
         }
     }
 
-    auto ftype = std::make_shared<::binpac::type::Function>(func_result, func_params,
-                                                            ::binpac::type::function::BINPAC_HILTI);
-    auto func = std::make_shared<::binpac::Function>(std::make_shared<::binpac::ID>(fname), ftype,
-                                                     ev->minfo->pac2_module, body);
+    auto ftype = std::make_shared<::spicy::type::Function>(func_result, func_params,
+                                                            ::spicy::type::function::SPICY_HILTI);
+    auto func = std::make_shared<::spicy::Function>(std::make_shared<::spicy::ID>(fname), ftype,
+                                                     ev->minfo->spicy_module, body);
     auto fdecl =
-        std::make_shared<::binpac::declaration::Function>(func, ::binpac::Declaration::EXPORTED);
+        std::make_shared<::spicy::declaration::Function>(func, ::spicy::Declaration::EXPORTED);
 
-    ev->minfo->pac2_module->body()->addDeclaration(fdecl);
+    ev->minfo->spicy_module->body()->addDeclaration(fdecl);
 
     return fdecl;
 }
 
 
 shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccessor(
-    shared_ptr<Pac2EventInfo> ev, int nr, shared_ptr<::hilti::Type> rtype)
+    shared_ptr<SpicyEventInfo> ev, int nr, shared_ptr<::hilti::Type> rtype)
 {
-    auto fname = ::util::fmt("%s::accessor_%s_arg%d_%p", ev->minfo->pac2_module->id()->name(),
+    auto fname = ::util::fmt("%s::accessor_%s_arg%d_%p", ev->minfo->spicy_module->id()->name(),
                              ::util::strreplace(ev->name, "::", "_"), nr, ev);
 
     PLUGIN_DBG_LOG(HiltiPlugin, "Declaring HILTI function %s for parameter %d of event %s",
@@ -2182,11 +2182,11 @@ shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccess
 
     for ( auto m : ev->unit_type->scope()->map() ) {
         auto n = (m.first != "$$" ? m.first : "__dollardollar");
-        auto t = ::ast::rtti::tryCast<::binpac::expression::ParserState>(m.second->front());
+        auto t = ::ast::rtti::tryCast<::spicy::expression::ParserState>(m.second->front());
 
         if ( t ) {
             auto id = ::hilti::builder::id::node(n);
-            auto htype = pimpl->pac2_context->hiltiType(t->type(), &ev->minfo->dep_types);
+            auto htype = pimpl->spicy_context->hiltiType(t->type(), &ev->minfo->dep_types);
             auto p = ::hilti::builder::function::parameter(id, htype, false, nullptr);
             func_params.push_back(p);
         }
@@ -2194,7 +2194,7 @@ shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccess
 
     auto cookie =
         ::hilti::builder::function::parameter("cookie",
-                                              ::hilti::builder::type::byName("LibBro::Pac2Cookie"),
+                                              ::hilti::builder::type::byName("LibBro::SpicyCookie"),
                                               false, nullptr);
     func_params.push_back(cookie);
 
@@ -2204,14 +2204,14 @@ shared_ptr<::hilti::declaration::Function> Manager::DeclareHiltiExpressionAccess
     return func;
 }
 
-void Manager::AddHiltiTypesForModule(shared_ptr<Pac2ModuleInfo> minfo)
+void Manager::AddHiltiTypesForModule(shared_ptr<SpicyModuleInfo> minfo)
 {
     for ( auto id : minfo->dep_types ) {
         if ( minfo->hilti_mbuilder->declared(id) )
             continue;
 
-        assert(minfo->pac2_hilti_module);
-        auto t = minfo->pac2_hilti_module->body()->scope()->lookup(id, true);
+        assert(minfo->spicy_hilti_module);
+        auto t = minfo->spicy_hilti_module->body()->scope()->lookup(id, true);
         assert(t.size() == 1);
 
         auto type = ast::rtti::checkedCast<::hilti::expression::Type>(t.front())->typeValue();
@@ -2219,22 +2219,22 @@ void Manager::AddHiltiTypesForModule(shared_ptr<Pac2ModuleInfo> minfo)
     }
 }
 
-void Manager::AddHiltiTypesForEvent(shared_ptr<Pac2EventInfo> ev)
+void Manager::AddHiltiTypesForEvent(shared_ptr<SpicyEventInfo> ev)
 {
     auto uid = ::hilti::builder::id::node(ev->unit);
 
     if ( ev->minfo->hilti_mbuilder->declared(uid) )
         return;
 
-    assert(ev->minfo->pac2_hilti_module);
-    auto t = ev->minfo->pac2_hilti_module->body()->scope()->lookup(uid, true);
+    assert(ev->minfo->spicy_hilti_module);
+    auto t = ev->minfo->spicy_hilti_module->body()->scope()->lookup(uid, true);
     assert(t.size() == 1);
 
     auto unit_type = ast::rtti::checkedCast<::hilti::expression::Type>(t.front())->typeValue();
     ev->minfo->hilti_mbuilder->addType(ev->unit, unit_type);
 }
 
-bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
+bool Manager::CreateHiltiEventFunction(SpicyEventInfo* ev)
 {
     if ( ! WantEvent(ev) )
         return true;
@@ -2250,11 +2250,11 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 
     for ( auto m : ev->unit_type->scope()->map() ) {
         auto n = (m.first != "$$" ? m.first : "__dollardollar");
-        auto t = ::ast::rtti::tryCast<::binpac::expression::ParserState>(m.second->front());
+        auto t = ::ast::rtti::tryCast<::spicy::expression::ParserState>(m.second->front());
 
         if ( t ) {
             auto id = ::hilti::builder::id::node(n);
-            auto htype = pimpl->pac2_context->hiltiType(t->type(), &ev->minfo->dep_types);
+            auto htype = pimpl->spicy_context->hiltiType(t->type(), &ev->minfo->dep_types);
             auto p = ::hilti::builder::function::parameter(id, htype, false, nullptr);
             args.push_back(p);
         }
@@ -2262,7 +2262,7 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
 
     auto cookie =
         ::hilti::builder::function::parameter("cookie",
-                                              ::hilti::builder::type::byName("LibBro::Pac2Cookie"),
+                                              ::hilti::builder::type::byName("LibBro::SpicyCookie"),
                                               false, nullptr);
     args.push_back(cookie);
 
@@ -2276,7 +2276,7 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
     mbuilder->builder()->addInstruction(::hilti::instruction::profiler::Start,
                                         ::hilti::builder::string::create(string("bro/") + fname));
 
-    if ( pimpl->compile_scripts && pimpl->pac2_to_compiler )
+    if ( pimpl->compile_scripts && pimpl->spicy_to_compiler )
         CreateHiltiEventFunctionBodyForHilti(ev);
     else
         CreateHiltiEventFunctionBodyForBro(ev);
@@ -2293,7 +2293,7 @@ bool Manager::CreateHiltiEventFunction(Pac2EventInfo* ev)
     return true;
 }
 
-bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
+bool Manager::CreateHiltiEventFunctionBodyForBro(SpicyEventInfo* ev)
 {
     auto mbuilder = ev->minfo->hilti_mbuilder;
 
@@ -2339,7 +2339,7 @@ bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
 
             for ( auto m : ev->unit_type->scope()->map() ) {
                 auto n = (m.first != "$$" ? m.first : "__dollardollar");
-                auto t = ::ast::rtti::tryCast<::binpac::expression::ParserState>(m.second->front());
+                auto t = ::ast::rtti::tryCast<::spicy::expression::ParserState>(m.second->front());
 
                 if ( t )
                     args.push_back(::hilti::builder::id::create(n));
@@ -2391,7 +2391,7 @@ bool Manager::CreateHiltiEventFunctionBodyForBro(Pac2EventInfo* ev)
     return true;
 }
 
-bool Manager::CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev)
+bool Manager::CreateHiltiEventFunctionBodyForHilti(SpicyEventInfo* ev)
 {
     assert(ev->bro_event_handler->LocalHandler());
 
@@ -2444,7 +2444,7 @@ bool Manager::CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev)
         }
 
         else {
-            // TODO: If BinPAC++'s and Bro's mapping to HILTI
+            // TODO: If Spicy's and Bro's mapping to HILTI
             // don't match, we need to do more conversion here
             // ... Update: first example below for integers ...
             auto arg = mbuilder->addTmp("t", e->htype);
@@ -2455,7 +2455,7 @@ bool Manager::CreateHiltiEventFunctionBodyForHilti(Pac2EventInfo* ev)
 
             for ( auto m : ev->unit_type->scope()->map() ) {
                 auto n = (m.first != "$$" ? m.first : "__dollardollar");
-                auto t = ::ast::rtti::tryCast<::binpac::expression::ParserState>(m.second->front());
+                auto t = ::ast::rtti::tryCast<::spicy::expression::ParserState>(m.second->front());
 
                 if ( t )
                     eargs.push_back(::hilti::builder::id::create(n));
@@ -2496,10 +2496,10 @@ void Manager::ExtractParsers(hlt_list* parsers)
     hlt_iterator_list i = hlt_list_begin(parsers, &excpt, ctx);
     hlt_iterator_list end = hlt_list_end(parsers, &excpt, ctx);
 
-    std::map<string, binpac_parser*> parser_map;
+    std::map<string, spicy_parser*> parser_map;
 
     while ( ! (hlt_iterator_list_eq(i, end, &excpt, ctx) || excpt) ) {
-        binpac_parser* p = *(binpac_parser**)hlt_iterator_list_deref(i, &excpt, ctx);
+        spicy_parser* p = *(spicy_parser**)hlt_iterator_list_deref(i, &excpt, ctx);
         char* name = hlt_string_to_native(p->name, &excpt, ctx);
         parser_map.insert(std::make_pair(name, p));
         hlt_free(name);
@@ -2507,13 +2507,13 @@ void Manager::ExtractParsers(hlt_list* parsers)
         i = hlt_iterator_list_incr(i, &excpt, ctx);
     }
 
-    for ( auto a : pimpl->pac2_analyzers ) {
+    for ( auto a : pimpl->spicy_analyzers ) {
         if ( a->unit_name_orig.size() ) {
             auto i = parser_map.find(a->unit_name_orig);
 
             if ( i != parser_map.end() ) {
                 a->parser_orig = i->second;
-                GC_CCTOR(a->parser_orig, hlt_BinPACHilti_Parser, ctx);
+                GC_CCTOR(a->parser_orig, hlt_SpicyHilti_Parser, ctx);
             }
         }
 
@@ -2522,12 +2522,12 @@ void Manager::ExtractParsers(hlt_list* parsers)
 
             if ( i != parser_map.end() ) {
                 a->parser_resp = i->second;
-                GC_CCTOR(a->parser_resp, hlt_BinPACHilti_Parser, ctx);
+                GC_CCTOR(a->parser_resp, hlt_SpicyHilti_Parser, ctx);
             }
         }
     }
 
-    for ( auto a : pimpl->pac2_file_analyzers ) {
+    for ( auto a : pimpl->spicy_file_analyzers ) {
         if ( a->unit_name.empty() )
             continue;
 
@@ -2535,41 +2535,41 @@ void Manager::ExtractParsers(hlt_list* parsers)
 
         if ( i != parser_map.end() ) {
             a->parser = i->second;
-            GC_CCTOR(a->parser, hlt_BinPACHilti_Parser, ctx);
+            GC_CCTOR(a->parser, hlt_SpicyHilti_Parser, ctx);
         }
     }
 
     for ( auto p : parser_map ) {
-        GC_DTOR(p.second, hlt_BinPACHilti_Parser, ctx);
+        GC_DTOR(p.second, hlt_SpicyHilti_Parser, ctx);
     }
 }
 
 string Manager::AnalyzerName(const analyzer::Tag& tag)
 {
-    return pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->name;
+    return pimpl->spicy_analyzers_by_subtype[tag.Subtype()]->name;
 }
 
 string Manager::FileAnalyzerName(const file_analysis::Tag& tag)
 {
-    return pimpl->pac2_file_analyzers_by_subtype[tag.Subtype()]->name;
+    return pimpl->spicy_file_analyzers_by_subtype[tag.Subtype()]->name;
 }
 
-struct __binpac_parser* Manager::ParserForAnalyzer(const analyzer::Tag& tag, bool is_orig)
+struct __spicy_parser* Manager::ParserForAnalyzer(const analyzer::Tag& tag, bool is_orig)
 {
     if ( is_orig )
-        return pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->parser_orig;
+        return pimpl->spicy_analyzers_by_subtype[tag.Subtype()]->parser_orig;
     else
-        return pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->parser_resp;
+        return pimpl->spicy_analyzers_by_subtype[tag.Subtype()]->parser_resp;
 }
 
-struct __binpac_parser* Manager::ParserForFileAnalyzer(const file_analysis::Tag& tag)
+struct __spicy_parser* Manager::ParserForFileAnalyzer(const file_analysis::Tag& tag)
 {
-    return pimpl->pac2_file_analyzers_by_subtype[tag.Subtype()]->parser;
+    return pimpl->spicy_file_analyzers_by_subtype[tag.Subtype()]->parser;
 }
 
 analyzer::Tag Manager::TagForAnalyzer(const analyzer::Tag& tag)
 {
-    analyzer::Tag replaces = pimpl->pac2_analyzers_by_subtype[tag.Subtype()]->replaces_tag;
+    analyzer::Tag replaces = pimpl->spicy_analyzers_by_subtype[tag.Subtype()]->replaces_tag;
     return replaces ? replaces : tag;
 }
 
@@ -2734,26 +2734,26 @@ void Manager::RegisterNativeFunction(const ::Func* func, void* native)
     pimpl->native_functions[id] = native;
 }
 
-bool Manager::WantEvent(Pac2EventInfo* ev)
+bool Manager::WantEvent(SpicyEventInfo* ev)
 {
     EventHandlerPtr handler = event_registry->Lookup(ev->name.c_str());
     return handler || pimpl->compile_all;
 }
 
-bool Manager::WantEvent(shared_ptr<Pac2EventInfo> ev)
+bool Manager::WantEvent(shared_ptr<SpicyEventInfo> ev)
 {
     return WantEvent(ev.get());
 }
 
 void Manager::DumpDebug()
 {
-    std::cerr << "BinPAC++ analyzer summary:" << std::endl;
+    std::cerr << "Spicy analyzer summary:" << std::endl;
     std::cerr << std::endl;
 
     std::cerr << "  Modules" << std::endl;
 
-    for ( PIMPL::pac2_module_list::iterator i = pimpl->pac2_modules.begin();
-          i != pimpl->pac2_modules.end(); i++ ) {
+    for ( PIMPL::spicy_module_list::iterator i = pimpl->spicy_modules.begin();
+          i != pimpl->spicy_modules.end(); i++ ) {
         auto minfo = *i;
         std::cerr << "    " << minfo->module->id()->name() << " (from " << minfo->path << ")"
                   << std::endl;
@@ -2769,10 +2769,10 @@ void Manager::DumpDebug()
         unit_name_orig; // The fully-qualified name of the unit type to parse the originator side.
     string
         unit_name_resp; // The fully-qualified name of the unit type to parse the originator side.
-    shared_ptr<binpac::type::Unit> unit_orig; // The type of the unit to parse the originator side.
-    shared_ptr<binpac::type::Unit> unit_resp; // The type of the unit to parse the originator side.
+    shared_ptr<spicy::type::Unit> unit_orig; // The type of the unit to parse the originator side.
+    shared_ptr<spicy::type::Unit> unit_resp; // The type of the unit to parse the originator side.
 
-    for ( auto i = pimpl->pac2_analyzers.begin(); i != pimpl->pac2_analyzers.end(); i++ ) {
+    for ( auto i = pimpl->spicy_analyzers.begin(); i != pimpl->spicy_analyzers.end(); i++ ) {
         auto a = *i;
 
         string proto = transportToString(a->proto);
@@ -2823,7 +2823,7 @@ void Manager::DumpDebug()
     std::cerr << std::endl;
     std::cerr << "  File Analyzers" << std::endl;
 
-    for ( auto i = pimpl->pac2_file_analyzers.begin(); i != pimpl->pac2_file_analyzers.end();
+    for ( auto i = pimpl->spicy_file_analyzers.begin(); i != pimpl->spicy_file_analyzers.end();
           i++ ) {
         auto a = *i;
 
@@ -2853,8 +2853,8 @@ void Manager::DumpDebug()
     std::cerr << std::endl;
     std::cerr << "  Units" << std::endl;
 
-    for ( Pac2AST::unit_map::const_iterator i = pimpl->pac2_ast->Units().begin();
-          i != pimpl->pac2_ast->Units().end(); i++ ) {
+    for ( SpicyAST::unit_map::const_iterator i = pimpl->spicy_ast->Units().begin();
+          i != pimpl->spicy_ast->Units().end(); i++ ) {
         auto uinfo = i->second;
         std::cerr << "    " << uinfo->name << std::endl;
     }
@@ -2862,8 +2862,8 @@ void Manager::DumpDebug()
     std::cerr << std::endl;
     std::cerr << "  Events" << std::endl;
 
-    for ( PIMPL::pac2_event_list::iterator i = pimpl->pac2_events.begin();
-          i != pimpl->pac2_events.end(); i++ ) {
+    for ( PIMPL::spicy_event_list::iterator i = pimpl->spicy_events.begin();
+          i != pimpl->spicy_events.end(); i++ ) {
         auto ev = *i;
 
         string args;
@@ -2895,11 +2895,11 @@ void Manager::DumpDebug()
         else
             std::cerr << "(not created)" << std::endl;
 
-        std::cerr << "      - [BinPAC++] ";
+        std::cerr << "      - [Spicy] ";
 
-        if ( ev->pac2_hook ) {
-            auto id = ev->pac2_hook->id();
-            auto hook = ev->pac2_hook->hook();
+        if ( ev->spicy_hook ) {
+            auto id = ev->spicy_hook->id();
+            auto hook = ev->spicy_hook->hook();
             std::cerr << id->pathAsString() << std::endl;
         }
         else
@@ -2924,12 +2924,12 @@ void Manager::DumpDebug()
 void Manager::DumpCode(bool all)
 {
 #if 0
-	std::cerr << ::util::fmt("\n=== Final code: %s.pac2\n", pimpl->pac2_module->id()->name()) << std::endl;
+	std::cerr << ::util::fmt("\n=== Final code: %s.spicy\n", pimpl->spicy_module->id()->name()) << std::endl;
 
-	if ( pimpl->pac2_context && pimpl->pac2_module )
-		pimpl->pac2_context->print(pimpl->pac2_module, std::cerr);
+	if ( pimpl->spicy_context && pimpl->spicy_module )
+		pimpl->spicy_context->print(pimpl->spicy_module, std::cerr);
 	else
-		std::cerr << "(No BinPAC++ code generated.)" << std::endl;
+		std::cerr << "(No Spicy code generated.)" << std::endl;
 
 	if ( ! all )
 		{

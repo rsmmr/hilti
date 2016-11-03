@@ -1,0 +1,28 @@
+#
+# @TEST-EXEC:  echo 1234567890 | spicy-driver-test -c %INPUT >>output
+# @TEST-EXEC:  echo 2234567890 | spicy-driver-test -c %INPUT >>output
+# @TEST-EXEC:  echo 3234567890 | spicy-driver-test -c %INPUT >>output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+
+       a: bytes &length=1;
+
+       switch ( self.a ) {
+           b"1" ->  {
+                       b: bytes &length=1;
+                       c: bytes &length=3;
+                    }
+           b"2" ->  d: bytes &length=4;
+           *    ->  e: bytes &length=4;
+           };
+
+
+       on %done {
+#          print self;
+       }
+};
+

@@ -5,7 +5,7 @@
 #ifndef BRO_PLUGIN_HILTI_CONVERTER_H
 #define BRO_PLUGIN_HILTI_CONVERTER_H
 
-#include <binpac/binpac++.h>
+#include <spicy/spicy.h>
 #include <hilti/hilti.h>
 
 class BroType;
@@ -25,8 +25,8 @@ class ModuleBuilder;
 class Compiler;
 }
 
-// Converts from BinPAC++ types to Bro types.
-class TypeConverter : ast::Visitor<::hilti::AstInfo, BroType*, shared_ptr<::binpac::Type>> {
+// Converts from Spicy types to Bro types.
+class TypeConverter : ast::Visitor<::hilti::AstInfo, BroType*, shared_ptr<::spicy::Type>> {
 public:
     /**
      * XXX
@@ -34,23 +34,23 @@ public:
     TypeConverter(compiler::Compiler* compiler);
 
     /**
-     * Converts a HILTI type corresponding to a BinPAC++ type into a Bro
+     * Converts a HILTI type corresponding to a Spicy type into a Bro
      * type. Aborts for unsupported types.
      *
      * @param type The HILTI type to convert.
      *
-     * @param btype An optional BinPAC++ type that \a type may correspond to.
+     * @param btype An optional Spicy type that \a type may correspond to.
      *
      * @return The newly allocated Bro type.
      */
     BroType* Convert(std::shared_ptr<::hilti::Type> type,
-                     std::shared_ptr<::binpac::Type> btype = nullptr);
+                     std::shared_ptr<::spicy::Type> btype = nullptr);
 
     /**
      * XXX
      */
     uint64_t TypeIndex(std::shared_ptr<::hilti::Type> type,
-                       std::shared_ptr<::binpac::Type> btype = nullptr);
+                       std::shared_ptr<::spicy::Type> btype = nullptr);
 
 protected:
     void visit(::hilti::type::Address* b) override;
@@ -71,10 +71,10 @@ protected:
     void visit(::hilti::type::Union* u) override;
 
 private:
-    string CacheIndex(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype);
+    string CacheIndex(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::spicy::Type> btype);
     BroType* LookupCachedType(std::shared_ptr<::hilti::Type> type,
-                              std::shared_ptr<::binpac::Type> btype);
-    void CacheType(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::binpac::Type> btype,
+                              std::shared_ptr<::spicy::Type> btype);
+    void CacheType(std::shared_ptr<::hilti::Type> type, std::shared_ptr<::spicy::Type> btype,
                    BroType* bro_type);
 
     compiler::Compiler* compiler = 0;
@@ -100,18 +100,18 @@ public:
      *
      * @param dst A HILTI expression referencing the location where to store the converted value.
      *
-     * @param btype A BinPAC++ type that \a value may correspond to.
+     * @param btype A Spicy type that \a value may correspond to.
      *
      * @returns True if the conversion was successul.
      */
     bool Convert(shared_ptr<::hilti::Expression> value, shared_ptr<::hilti::Expression> dst,
-                 std::shared_ptr<::binpac::Type> btype, BroType* hint = nullptr);
+                 std::shared_ptr<::spicy::Type> btype, BroType* hint = nullptr);
 
 protected:
     /**
-     * Returns the BinPAC++ type passed \a Convert() during visiting; null if none.
+     * Returns the Spicy type passed \a Convert() during visiting; null if none.
      */
-    shared_ptr<::binpac::Type> arg3() const;
+    shared_ptr<::spicy::Type> arg3() const;
 
     /**
      * Returns the current block builder.
@@ -138,7 +138,7 @@ private:
     compiler::ModuleBuilder* mbuilder;
     TypeConverter* type_converter;
 
-    shared_ptr<::binpac::Type> _arg3 = nullptr;
+    shared_ptr<::spicy::Type> _arg3 = nullptr;
     std::list<BroType*> _bro_type_hints;
 };
 }

@@ -1,0 +1,15 @@
+#
+# @TEST-EXEC:  echo FooBarFoo123BarBar | HILTI_DEBUG=spicy:spicy-verbose spicy-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type test = unit {
+
+     a: /Foo/;
+     b: /Bar/;
+     c: /Foo[0-9]*Bar/;
+     d: /Bar/;
+
+     on %done { print self; }
+};

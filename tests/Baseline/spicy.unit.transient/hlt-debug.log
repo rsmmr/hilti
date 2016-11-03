@@ -1,0 +1,3 @@
+00000001 [spicy/main-thread]            test
+00000002 [spicy/main-thread]              a = 1234
+00000003 [spicy/main-thread]              b = 567890

@@ -1,0 +1,2 @@
+hilti: uncaught exception, IndexError (from /home/robin/work/hilti/libhilti/map_set.c:360)
+/home/robin/work/hilti/tests/Scripts/spicy-driver-test: line 48: 33851 Aborted                 $cmdline

@@ -1,0 +1,8 @@
+# @TEST-EXEC: spicy-driver -D context -O %INPUT 2>&1 | grep -q libspicy-rt.bc
+# @TEST-EXEC: spicy-driver -D context -d %INPUT 2>&1 | grep -q libspicy-rt-dbg.bc
+
+module Test;
+
+print "Hello, world!";
+print 42;
+print True;

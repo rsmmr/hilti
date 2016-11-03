@@ -1,0 +1,26 @@
+#
+# @TEST-EXEC:  printf 1234567890 | spicy-driver-test %INPUT -- -p Mini::Test >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type Test = unit {
+      var sub: sink;
+
+      a: bytes &eod &transient -> self.sub;
+
+      on %init {
+          self.sub.connect(new Sub());
+      }
+};
+
+export type Sub = unit {
+       a: bytes &length=4;
+       b: bytes &length=6
+          {
+          local i = self.input();
+          print *i++;
+          print *i++;
+          print *i++;
+          }
+};

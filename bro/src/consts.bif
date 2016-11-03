@@ -4,13 +4,13 @@ module Hilti;
 # DumpVV debug information about analyzers to stderr (for debugging only). 
 const dump_debug: bool;
 
-# Dump generated HILTI/BinPAC++ code to stderr (for debugging only).
+# Dump generated HILTI/Spicy code to stderr (for debugging only).
 const dump_code: bool;
 
-# Dump all HILTI/BinPAC++ code to stderr (for debugging only).
+# Dump all HILTI/Spicy code to stderr (for debugging only).
 const dump_code_all: bool;
 
-# Dump generated HILTI/BinPAC++ code to stderr before finalizing the modules. (for
+# Dump generated HILTI/Spicy code to stderr before finalizing the modules. (for
 # debugging only). 
 const dump_code_pre_finalize: bool;
 
@@ -33,8 +33,8 @@ const profile: count;
 # Tags for codegen debug output as colon-separated string.
 const cg_debug: string;
 
-# Save all generated BinPAC++ modules into "bro.<X>.pac2"
-const save_pac2: bool;
+# Save all generated Spicy modules into "bro.<X>.spicy"
+const save_spicy: bool;
 
 # Save all HILTI modules into "bro.<X>.hlt"
 const save_hilti: bool;
@@ -48,9 +48,9 @@ const use_cache: bool;
 # Activate the Bro script compiler.
 const compile_scripts: bool;
 
-# If we're compiling scripts, interface the BinPAC++ directly  with the compiled
+# If we're compiling scripts, interface the Spicy directly  with the compiled
 # events (rather than queuening them through Bro's core.) 
-const pac2_to_compiler: bool;
+const spicy_to_compiler: bool;
 
 # Number of HILTI worker threads to spawn.
 const hilti_workers: count;

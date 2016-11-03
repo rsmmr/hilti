@@ -1,0 +1,35 @@
+00000001 [spicy-verbose/main-thread]   - - triggering hook Mini::test::%init
+00000002 [spicy/main-thread]           test
+00000003 [spicy-verbose/main-thread]     - parsing Sequence: test -> ctor:__anon1 ctor:__anon2 ctor:__anon3 ctor:__anon4
+00000004 [spicy-verbose/main-thread]       * input is |FooBa...| (lit-mode: default; frozen: True)
+00000005 [spicy-verbose/main-thread]       * look-ahead is 0
+00000006 [spicy-verbose/main-thread]       * look-ahead-start is |...| (lit-mode: default; frozen: False)
+00000007 [spicy-verbose/main-thread]     - parsing Ctor: ctor:__anon1 -> /Foo/ (regexp/id 1)
+00000008 [spicy-verbose/main-thread]       * input is |FooBa...| (lit-mode: default; frozen: True)
+00000009 [spicy-verbose/main-thread]       * look-ahead is 0
+00000010 [spicy-verbose/main-thread]       * look-ahead-start is |...| (lit-mode: default; frozen: False)
+00000011 [spicy/main-thread]             __anon1 = Foo
+00000012 [spicy-verbose/main-thread]     - - triggering hook Mini::test::__anon1%intern%0x463e958
+00000013 [spicy-verbose/main-thread]     - - triggering hook Mini::test::__anon1%extern
+00000014 [spicy-verbose/main-thread]     - parsing Ctor: ctor:__anon2 -> /Bar/ (regexp/id 2)
+00000015 [spicy-verbose/main-thread]       * input is |BarFo...| (lit-mode: default; frozen: True)
+00000016 [spicy-verbose/main-thread]       * look-ahead is 0
+00000017 [spicy-verbose/main-thread]       * look-ahead-start is |FooBa...| (lit-mode: default; frozen: True)
+00000018 [spicy/main-thread]             __anon2 = Bar
+00000019 [spicy-verbose/main-thread]     - - triggering hook Mini::test::__anon2%intern%0x463f718
+00000020 [spicy-verbose/main-thread]     - - triggering hook Mini::test::__anon2%extern
+00000021 [spicy-verbose/main-thread]     - parsing Ctor: ctor:__anon3 -> /Foo[0-9]*Bar/ (regexp/id 3)
+00000022 [spicy-verbose/main-thread]       * input is |Foo12...| (lit-mode: default; frozen: True)
+00000023 [spicy-verbose/main-thread]       * look-ahead is 0
+00000024 [spicy-verbose/main-thread]       * look-ahead-start is |BarFo...| (lit-mode: default; frozen: True)
+00000025 [spicy/main-thread]             __anon3 = Foo123Bar
+00000026 [spicy-verbose/main-thread]     - - triggering hook Mini::test::__anon3%intern%0x46404e8
+00000027 [spicy-verbose/main-thread]     - - triggering hook Mini::test::__anon3%extern
+00000028 [spicy-verbose/main-thread]     - parsing Ctor: ctor:__anon4 -> /Bar/ (regexp/id 2)
+00000029 [spicy-verbose/main-thread]       * input is |Bar\x0a...| (lit-mode: default; frozen: True)
+00000030 [spicy-verbose/main-thread]       * look-ahead is 0
+00000031 [spicy-verbose/main-thread]       * look-ahead-start is |Foo12...| (lit-mode: default; frozen: True)
+00000032 [spicy/main-thread]             __anon4 = Bar
+00000033 [spicy-verbose/main-thread]     - - triggering hook Mini::test::__anon4%intern%0x46412b8
+00000034 [spicy-verbose/main-thread]     - - triggering hook Mini::test::__anon4%extern
+00000035 [spicy-verbose/main-thread]     - - triggering hook Mini::test::%done

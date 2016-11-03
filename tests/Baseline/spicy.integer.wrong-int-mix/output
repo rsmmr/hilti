@@ -1,0 +1,4 @@
+
+>>> a 
+wrong-int-mix.spicy:6-8: error, incompatible integer operands [pass::spicy::Validator]
+wrong-int-mix.spicy: Aborting due to input error.

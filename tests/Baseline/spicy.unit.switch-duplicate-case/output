@@ -1,0 +1,4 @@
+
+>>> 2
+switch-duplicate-case.spicy:15-15: error, duplicate case [pass::spicy::Validator]
+switch-duplicate-case.spicy: Aborting due to input error.

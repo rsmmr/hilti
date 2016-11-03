@@ -1,0 +1,116 @@
+#! /usr/bin/env bash
+#
+# Scripts for use in Spicy unit tests for building spicy-driver-based
+# standalone binaries. It supports a number of different built variants,
+# depending on environments variables. Usage:
+#
+#     spicy-driver-tests <build options> -- <runtime options>
+#
+#  <build optiosn> must only be options understood by both hilti-build and spicy-driver-jit.
+#
+#  <runtime options> will be passed to spicy-driver at runtime (e.g., "-p Foo" to select a parser).
+#
+# The script understands the following environment variables:
+#
+#    SPICY_DRIVER_TEST_MODE=jit          -> Use spicy-driver-jit
+#    SPICY_DRIVER_TEST_MODE=hilti-build  -> Use hilti-build, plus execution of the resulting binary.
+#
+#    SPICY_DRIVER_TEST_DEBUG=0           -> Build release version.
+#    SPICY_DRIVER_TEST_DEBUG=1           -> Build debug version.
+#
+#    SPICY_DRIVER_TEST_INCREMENTAL=<n>   -> Run spicy-driver with '-i <n>'.
+#
+#    SPICY_DRIVER                        -> Path to spicy-driver.c to use with hilti-build.
+#    SPICY_DRIVER_JIT                    -> Path to spicy-driver-jit executable.
+#    HILTI_BUILD                       -> Path to hilti-build.
+#
+# By default, the scripts uses hilti-build in debug mode and non-incremental inoput.
+# If the paths aren't given, the script takes a guess.
+
+base=$(cd `dirname $0`/../.. >/dev/null; pwd -P)
+
+debug="$SPICY_DRIVER_TEST_DEBUG"
+mode="$SPICY_DRIVER_TEST_MODE"
+incr="$SPICY_DRIVER_TEST_INCREMENTAL"
+spicy_driver="$SPICY_DRIVER"
+spicy_driver_jit="$SPICY_DRIVER_JIT"
+hilti_build="$HILTI_BUILD"
+
+test "$mode" != "" || mode=hilti-build
+test "$debug" != "" || debug=1
+test "$spicy_driver" != "" || spicy_driver=$base/tools/spicy-driver/spicy-driver.cc
+test "$spicy_driver_jit" != "" || spicy_driver_jit=$base/build/tools/spicy-driver/spicy-driver
+test "$hilti_build" != "" || hilti_build=$base/tools/hilti-build
+
+cache=.spicy-driver-test.cache
+
+function execute()
+{
+    cmdline=$@
+
+    if [ "$TEST_VERBOSE" != "" ]; then
+        echo $cmdline | sed "s#$base/#[...]/#g" >>$TEST_VERBOSE
+    fi
+
+    $cmdline
+}
+
+function executeWithCache()
+{
+    cmdline=$@
+
+    if [ -e "$cache" ]; then
+        if [ "`cat $cache | sed 's/\n//g'`" == "$cmdline" ]; then
+            # We have already executed this command line.
+            if [ "$TEST_VERBOSE" != "" ]; then
+                echo "$cmdline [cached]" | sed "s#$base/#[...]/#g" >>$TEST_VERBOSE
+            fi
+
+            return 0;
+        fi
+    fi
+
+    echo $cmdline >$cache
+    execute $cmdline
+}
+
+
+build_opts=""
+runtime_opts=""
+
+while [ "$1" != "" -a "$1" != "--" ]; do
+    build_opts="$build_opts $1"
+    shift
+done
+
+shift
+
+while [ "$1" != "" ]; do
+    runtime_opts="$runtime_opts $1"
+    shift
+done
+
+if [ "$debug" == "1" ]; then
+    build_opts="-d $build_opts"
+else
+    build_opts="-O $build_opts"
+fi
+
+if [ "$incr" != "" ]; then
+    runtime_opts="-i $incr $runtime_opts"
+fi
+
+#stdin=.spicy-driver-test.stdin.$$.tmp
+#cat >$stdin
+
+if [ "$mode" == "hilti-build" ]; then
+    executeWithCache $hilti_build $build_opts -t $spicy_driver -o a.out || exit 1
+    execute ./a.out $runtime_opts || exit 1
+
+elif [ "$mode" == "jit" ]; then
+    execute $spicy_driver_jit $runtime_opts $build_opts || exit 1
+
+else
+    echo "unknown spicy-driver-test mode '$mode'" >&2
+    exit 1
+fi

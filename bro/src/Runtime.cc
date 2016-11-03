@@ -1,5 +1,5 @@
 //
-// Runtime functions supporting the generated HILTI/BinPAC++ code.
+// Runtime functions supporting the generated HILTI/Spicy code.
 //
 // These function all assume "HILTI-C" linkage. Note that they must all be
 // 'extern "C"' here.
@@ -27,33 +27,33 @@ extern "C" {
 
 #undef List
 
-#include <autogen/bro.pac2.h>
+#include <autogen/bro.spicy.h>
 #include <hilti/context.h>
 
 extern "C" {
 
 // Internal LibBro::* functions.
 
-static bro::hilti::pac2_cookie::Protocol* get_protocol_cookie(void* cookie, const char* tag)
+static bro::hilti::spicy_cookie::Protocol* get_protocol_cookie(void* cookie, const char* tag)
 {
     assert(cookie);
-    auto c = ((bro::hilti::Pac2Cookie*)cookie);
+    auto c = ((bro::hilti::SpicyCookie*)cookie);
 
-    if ( c->type != bro::hilti::Pac2Cookie::PROTOCOL )
+    if ( c->type != bro::hilti::SpicyCookie::PROTOCOL )
         bro::hilti::reporter::fatal_error(
-            util::fmt("BinPAC++ error: %s cannot be used outside of protocol analysis", tag));
+            util::fmt("Spicy error: %s cannot be used outside of protocol analysis", tag));
 
     return &c->protocol_cookie;
 }
 
-static bro::hilti::pac2_cookie::File* get_file_cookie(void* cookie, const char* tag)
+static bro::hilti::spicy_cookie::File* get_file_cookie(void* cookie, const char* tag)
 {
     assert(cookie);
-    auto c = ((bro::hilti::Pac2Cookie*)cookie);
+    auto c = ((bro::hilti::SpicyCookie*)cookie);
 
-    if ( c->type != bro::hilti::Pac2Cookie::FILE )
+    if ( c->type != bro::hilti::SpicyCookie::FILE )
         bro::hilti::reporter::fatal_error(
-            util::fmt("BinPAC++ error: %s cannot be used outside of file analysis", tag));
+            util::fmt("Spicy error: %s cannot be used outside of file analysis", tag));
 
     return &c->file_cookie;
 }
@@ -853,7 +853,7 @@ void* libbro_object_mapping_lookup_hilti(::BroObj* obj, hlt_exception** excpt,
 
 // User-visible Bro::* functions.
 
-static string _file_id(bro::hilti::pac2_cookie::Protocol* c)
+static string _file_id(bro::hilti::spicy_cookie::Protocol* c)
 {
     auto id = ::util::fmt("%p-%d", c->analyzer, (int)c->is_orig);
     return file_mgr->HashHandle(id);

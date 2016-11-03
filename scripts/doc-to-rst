@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #
 # Converts the output of hilti-doc into a series of reST documents for
-# the HILTI and BinPAC++ documentatin. Note that it will overwrite existing
+# the HILTI and Spicy documentatin. Note that it will overwrite existing
 # files in the
 # output directory.
 
@@ -62,7 +62,7 @@ def hiltiInstruction(out, instr):
     print >>out, canonicalizeText(getDoc(instr, "description"))
     print >>out
 
-def fmtPac2Operator(op):
+def fmtSpicyOperator(op):
     kind = getDoc(op, "kind")
     op1 = "t:%s" % getDoc(op, "type_op1").replace("<*>", "")
     op2 = "t:%s" % getDoc(op, "type_op2").replace("<*>", "")
@@ -188,11 +188,11 @@ def fmtPac2Operator(op):
     if kind == "Size":
         return ("size", "op:| %s op:|" % op1)
 
-    print >>sys.stderr, "unknown pac2 operator", kind
+    print >>sys.stderr, "unknown spicy operator", kind
     sys.exit(1)
 
-def pac2Operator(out, op):
-    (symbol, sig) = fmtPac2Operator(op)
+def spicyOperator(out, op):
+    (symbol, sig) = fmtSpicyOperator(op)
 
     if not symbol:
         return
@@ -200,12 +200,12 @@ def pac2Operator(out, op):
     ns = getDoc(op, "namespace")
     kind = getDoc(op, "kind")
 
-    print >>out, ".. pac2:operator:: %s::%s %s" % (ns, kind, sig)
+    print >>out, ".. spicy:operator:: %s::%s %s" % (ns, kind, sig)
     print >>out
     print >>out, canonicalizeText(getDoc(op, "description"))
     print >>out
 
-def pac2Method(out, op):
+def spicyMethod(out, op):
     args = []
 
     for i in range(5):
@@ -228,7 +228,7 @@ def pac2Method(out, op):
     if not result:
         result = "-"
 
-    print >>out, ".. pac2:method:: %s::%s %s %s (%s)" % (ns, method, result, method, ", ".join(args))
+    print >>out, ".. spicy:method:: %s::%s %s %s (%s)" % (ns, method, result, method, ", ".join(args))
     print >>out
     print >>out, canonicalizeText(getDoc(op, "description"))
     print >>out
@@ -242,7 +242,7 @@ Doc = ConfigParser.RawConfigParser()
 Doc.read('/dev/stdin')
 
 hiltiGroups = {}
-pac2Groups = {}
+spicyGroups = {}
 
 for section in Doc.sections():
     if section.startswith("hilti-instruction:"):
@@ -257,20 +257,20 @@ for section in Doc.sections():
 
         hiltiGroups[group][idx] += [section]
 
-    if section.startswith("binpac-operator:"):
+    if section.startswith("spicy-operator:"):
         idx = getDoc(section, "kind")
         group = getDoc(section, "namespace")
 
         if group.endswith("_"):
             group = group[:-1]
 
-        if not group in pac2Groups:
-            pac2Groups[group] = {}
+        if not group in spicyGroups:
+            spicyGroups[group] = {}
 
-        if not idx in pac2Groups[group]:
-            pac2Groups[group][idx] = []
+        if not idx in spicyGroups[group]:
+            spicyGroups[group][idx] = []
 
-        pac2Groups[group][idx] += [section]
+        spicyGroups[group][idx] += [section]
 
 for group in hiltiGroups.keys():
 
@@ -282,19 +282,19 @@ for group in hiltiGroups.keys():
 
     out.close()
 
-for group in pac2Groups.keys():
+for group in spicyGroups.keys():
 
-    out = open(os.path.join(OutputDir, "pac2-%s.rst" % group), "w")
+    out = open(os.path.join(OutputDir, "spicy-%s.rst" % group), "w")
     print >>out
     print >>out, ".. rubric:: Operators"
     print >>out
 
     cnt = 0
 
-    for idx in sorted(pac2Groups[group].keys()):
+    for idx in sorted(spicyGroups[group].keys()):
         if idx != "MethodCall":
-            for method in pac2Groups[group][idx]:
-                pac2Operator(out, method)
+            for method in spicyGroups[group][idx]:
+                spicyOperator(out, method)
                 cnt += 1
 
     if not cnt:
@@ -306,10 +306,10 @@ for group in pac2Groups.keys():
 
     cnt = 0
 
-    for idx in sorted(pac2Groups[group].keys()):
+    for idx in sorted(spicyGroups[group].keys()):
         if idx == "MethodCall":
-            for method in pac2Groups[group][idx]:
-                pac2Method(out, method)
+            for method in spicyGroups[group][idx]:
+                spicyMethod(out, method)
                 cnt += 1
 
     if not cnt:

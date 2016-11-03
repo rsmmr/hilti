@@ -1,0 +1,18 @@
+#
+# @TEST-EXEC:  printf "\001\012\013\001\014\015\002\016\017" | spicy-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+#
+
+module HTTP;
+
+type Item = unit {
+    x: uint<8>;
+    y: uint<16>;
+};
+
+export type Test = unit {
+    a: list<Item>;
+    b: uint<8>(0x02);
+
+    on %done { print self; }
+    };

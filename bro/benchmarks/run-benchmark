@@ -430,29 +430,29 @@ fi
 
 ### HTTP ##########################################################################
 
-## BinPAC++ HTTP analyzer, standard interpreter.
+## Spicy HTTP analyzer, standard interpreter.
 
 enabled=0
 scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2
+    create_sandbox http-spicy
     run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
     compare_output stderr.std stderr.hlt # Should be empty.
     record_timing std hlt
     finish_sandbox
 fi
 
-## BinPAC++ HTTP analyzer, standard interpreter, with logs
+## Spicy HTTP analyzer, standard interpreter, with logs
 
 enabled=0
 scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2-logs
+    create_sandbox http-spicy-logs
     run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=F
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
     compare_output stderr.std stderr.hlt # Should be empty.
     compare_logs http.std.log http.hlt.log  "request_body_len response_body_len"
     compare_logs files.std.log files.hlt.log "conn_uids duration seen_bytes missing_bytes total_bytes timedout overflow_bytes"
@@ -505,29 +505,29 @@ if [ ${enabled} == 1 ]; then
     finish_sandbox
 fi
 
-## BinPAC++ HTTP analyzer, compiled scripts, but direct connection for events disabled.
+## Spicy HTTP analyzer, compiled scripts, but direct connection for events disabled.
 
 enabled=0
 scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2-compiler-indirect
+    create_sandbox http-spicy-compiler-indirect
     run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
     compare_output stderr.std stderr.hlt
     record_timing std hlt
     finish_sandbox
 fi
 
-## BinPAC++ HTTP analyzer, compiled scripts, with direct connection for events enabled.
+## Spicy HTTP analyzer, compiled scripts, with direct connection for events enabled.
 
 enabled=0
 scripts="base/protocols/http base/files/hash frameworks/files/hash-all-files"
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox http-pac2-compiler-direct
+    create_sandbox http-spicy-compiler-direct
     run_bro_with_trace std ${trace_http} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+    run_bro_with_trace hlt ${trace_http} ${scripts} http.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=T
     compare_output stderr.std stderr.hlt
     record_timing std hlt
     finish_sandbox
@@ -535,15 +535,15 @@ fi
 
 ### DNS ##########################################################################
 
-## BinPAC++ DNS analyzer, standard interpreter.
+## Spicy DNS analyzer, standard interpreter.
 
 enabled=0
 scripts=base/protocols/dns
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2
+    create_sandbox dns-spicy
     run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
     compare_output stderr.std stderr.hlt # Should be empty.
     record_timing std hlt
     finish_sandbox
@@ -563,43 +563,43 @@ if [ ${enabled} == 1 ]; then
     finish_sandbox
 fi
 
-## BinPAC++ DNS analyzer, compiled scripts, but direct connection for events disabled.
+## Spicy DNS analyzer, compiled scripts, but direct connection for events disabled.
 
 enabled=0
 scripts=base/protocols/dns
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2-compiler-indirect
+    create_sandbox dns-spicy-compiler-indirect
     run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=F
     compare_output stderr.std stderr.hlt
     record_timing std hlt
     finish_sandbox
 fi
 
-## BinPAC++ DNS analyzer, compiled scripts, with direct connection for events enabled.
+## Spicy DNS analyzer, compiled scripts, with direct connection for events enabled.
 
 enabled=0
 scripts=base/protocols/dns
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2-compiler-direct
+    create_sandbox dns-spicy-compiler-direct
     run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=T
-    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::pac2_to_compiler=T
+    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=T Hilti::compile_scripts=T Hilti::spicy_to_compiler=T
     compare_output stderr.std stderr.hlt
     record_timing std hlt
     finish_sandbox
 fi
 
-## BinPAC++ DNS analyzer, standard interpreter, with logs.
+## Spicy DNS analyzer, standard interpreter, with logs.
 
 enabled=0
 scripts=base/protocols/dns
 
 if [ ${enabled} == 1 ]; then
-    create_sandbox dns-pac2-logs
+    create_sandbox dns-spicy-logs
     run_bro_with_trace std ${trace_dns} ${scripts} Log::disable_logging=F
-    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=F Hilti::pac2_to_compiler=F
+    run_bro_with_trace hlt ${trace_dns} ${scripts} dns.evt ${hilti_optimize} Log::disable_logging=F Hilti::compile_scripts=F Hilti::spicy_to_compiler=F
     compare_output stderr.std stderr.hlt # Should be empty.
     compare_logs dns.std.log dns.hlt.log
     check_baseline dns.hlt.log

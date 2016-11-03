@@ -1,0 +1,50 @@
+#
+# @TEST-EXEC:  echo ..AB1DE..FG2HI.. | spicy-driver-test %INPUT -- -p Mini::Main >output 2>&1
+# @TEST-EXEC:  echo ..AB12DEF..      | spicy-driver-test %INPUT -- -p Mini::Main >>output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type Main = unit {
+    a: bytes &eod &transient -> self.data;
+
+    var data: sink;
+
+    on %init {
+        self.data.try_connect_mime_type(b"application/worth-trying");
+    }
+
+    on %done {
+        print "Main", self;
+    }
+};
+
+export type Sub1 = unit {
+    %mimetype = "application/worth-trying";
+    %synchronize-at = /..1/;
+
+    x: bytes &length=2;
+    y: b"1";
+    z: bytes &length=2;
+
+    on y { self.confirm(); }
+    on %done { print "%done Sub1 ", self; }
+    on %sync { print "%sync Sub1 ", self; }
+    on %confirmed { print "%confirmed Sub1 ", self; }
+    on %disabled { print "%disabled Sub1 ", self; }
+};
+
+export type Sub2 = unit {
+    %mimetype = "application/worth-trying";
+    %synchronize-at = /..2/;
+
+    x: bytes &length=2;
+    y: b"2";
+    z: bytes &length=2;
+
+    on y { self.confirm(); }
+    on %done { print "%done Sub2 ", self; }
+    on %sync { print "%sync Sub2 ", self; }
+    on %confirmed { print "%confirmed Sub2 ", self; }
+    on %disabled { print "%disabled Sub2 ", self; }
+};

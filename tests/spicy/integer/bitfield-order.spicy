@@ -1,0 +1,33 @@
+# $Id$
+#
+# @TEST-EXEC:  printf '\100\001\100\001\100\001' | HILTI_DEBUG=spicy spicy-driver-test -d %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+# @TEST-EXEC:  btest-diff hlt-debug.log
+
+module Mini;
+
+import Spicy;
+
+export type test = unit {
+
+    f1: bitfield(16) {
+        x1: 0;
+        x2: 1..2;
+        } &bitorder=Spicy::BitOrder::MSB0;
+
+    f2: bitfield(16) {
+        x1: 0;
+        x2: 1..2;
+        } &bitorder=Spicy::BitOrder::LSB0;
+
+    f3: bitfield(16) {
+        x1: 0;
+        x2: 1..2;
+        };
+
+    on %done {
+        print self.f1.x1, self.f1.x2;
+        print self.f2.x1, self.f2.x2;
+        print self.f3.x1, self.f3.x2;
+        }
+};

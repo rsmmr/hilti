@@ -1,0 +1,6 @@
+
+>>> (Unresolved operator b .startswith(122345))
+method-call-mismatch.spicy:11-11: error, no matching operator found for types
+got operands: (bytes, startswith, (int<64>))
+candidate operators:
+method-call-mismatch.spicy: Aborting due to input error.

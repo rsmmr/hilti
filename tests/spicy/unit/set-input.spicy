@@ -1,0 +1,28 @@
+#
+# @TEST-EXEC:  printf 1234567890 | spicy-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+type Foo = unit {
+    a:   bytes &length=5 {
+            self.saved = self.input();
+            self.set_position(self.saved);
+         }
+
+    var saved: iter<bytes>;
+};
+
+export type test = unit {
+    a: bytes &length=5;
+    f: Foo;
+    b: bytes &length=5 {
+           self.set_position(self.f.saved);
+           }
+    c: bytes &length=5;
+
+    on %done {
+        print self.a, self.f.a, self.b, self.c;
+        }
+
+};

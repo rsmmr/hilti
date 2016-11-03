@@ -1,0 +1,23 @@
+00000001 [spicy-sinks/main-thread]      connected parser Mini::Sub [0x607c630] to sink 0x6f5e8c0
+00000002 [spicy/main-thread]            Main
+00000003 [spicy-sinks/main-thread]      reassembler/0x6f5e8c0: fastpath block seq=0 upper=5 |12345| (5 bytes)
+00000004 [spicy-sinks/main-thread]      starting to deliver to sink 0x6f5e8c0 at rseq 0
+00000005 [spicy-sinks/main-thread]      delivering to sink 0x6f5e8c0: |12345| (5 bytes)
+00000006 [spicy-sinks/main-thread]      - start delivering to sink 0x6f5e8c0 for parser 0x607c630
+00000007 [spicy/main-thread]              Sub
+00000008 [spicy-sinks/main-thread]      - delivering to sink 0x6f5e8c0 suspended for parser 0x607c630
+00000009 [spicy-sinks/main-thread]      trimming sink 0x6f5e8c0 to rseq 5
+00000010 [spicy-sinks/main-thread]      done delivering to sink 0x6f5e8c0
+00000011 [spicy/main-thread]                a = 12345
+00000012 [spicy-sinks/main-thread]      reassembler/0x6f5e8c0: fastpath block seq=5 upper=60 |678901234567890123456789\x00123456789012345678901 ...| (55 bytes)
+00000013 [spicy-sinks/main-thread]      starting to deliver to sink 0x6f5e8c0 at rseq 5
+00000014 [spicy-sinks/main-thread]      delivering to sink 0x6f5e8c0: |678901234567890123456789\x00123456789012345678901 ...| (55 bytes)
+00000015 [spicy-sinks/main-thread]      - resuming delivering to sink 0x6f5e8c0 for parser 0x607c630
+00000016 [spicy/main-thread]                s1 = 12345678901234567890123456789\x001234567890123456789012345
+00000017 [spicy-sinks/main-thread]      - delivering to sink 0x6f5e8c0 finished for parser 0x607c630
+00000018 [spicy-sinks/main-thread]      trimming sink 0x6f5e8c0 to rseq 60
+00000019 [spicy-sinks/main-thread]      done delivering to sink 0x6f5e8c0
+00000020 [spicy/main-thread]              b = 678901234567890123456789\x00123456789012345678901234567890
+00000021 [spicy-sinks/main-thread]      closing sink 0x6f5e8c0
+00000022 [spicy-sinks/main-thread]      trimming sink 0x6f5e8c0 to eod
+00000023 [spicy-sinks/main-thread]      closed sink 0x6f5e8c0, disconnected all parsers

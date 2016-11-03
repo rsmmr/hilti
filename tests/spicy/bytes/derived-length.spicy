@@ -1,0 +1,13 @@
+#
+# @TEST-EXEC:  printf "\001\000\002ABC" | spicy-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+       a: uint8;
+       b: uint16;
+       c: bytes &length = self.a + self.b
+           { print self.c; }
+};

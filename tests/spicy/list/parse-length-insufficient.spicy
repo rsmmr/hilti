@@ -1,0 +1,17 @@
+# @TEST-EXEC-FAIL:  printf '\002\001\002\003\004\005\006\007' | spicy-driver-test %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+export type TestX = unit {
+  # list of byte-length 5
+  list_entries: list<Entry> &length=5;
+  b: uint8;
+
+  on %done { print self; }
+};
+
+type Entry = unit {
+  a: uint8;
+  b: bytes &length=self.a;
+};

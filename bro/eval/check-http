@@ -9,29 +9,29 @@ trace=$1
 scripts=`dirname $0`/http-events.bro
 seed=`dirname $0`/random.seed
 
-rm -f events-std.bst events-pac.bst
-rm -f http-events-std.log http-events-pac.log
-rm -f types-events-std.bst* types-events-pac.bst*
+rm -f events-std.bst events-spicy.bst
+rm -f http-events-std.log http-events-spicy.log
+rm -f types-events-std.bst* types-events-spicy.bst*
 rm -f results.events-types.txt results.events.txt
 
 export BRO_SEED_FILE=$seed
 
-echo === Running BinPAC++ Bro ...
-bro -Q -r ${trace} http.evt ${scripts} HTTPEvents::log_events=T HTTPEvents::pac2=T
+echo === Running Spicy Bro ...
+bro -Q -r ${trace} http.evt ${scripts} HTTPEvents::log_events=T HTTPEvents::spicy=T
 
 echo === Running standard Bro ...
-bro -Q -r ${trace} ${scripts} HTTPEvents::log_events=T HTTPEvents::pac2=F
+bro -Q -r ${trace} ${scripts} HTTPEvents::log_events=T HTTPEvents::spicy=F
 
 echo === Comparing events ....
-cat http-events-std.log http-events-pac.log | sort -k 3 | uniq -c -f 2 | sort -rn | sed 's/^ *//g' >results.events.txt
+cat http-events-std.log http-events-spicy.log | sort -k 3 | uniq -c -f 2 | sort -rn | sed 's/^ *//g' >results.events.txt
 
 echo === Comparing event types ...
-for i in events-std.bst events-pac.bst; do
+for i in events-std.bst events-spicy.bst; do
     bro -x ${i} ${scripts} | sed 's/^[^]]*\] //g' | sed 's/(.*//g' | sort | uniq -c | sort -rn | sed 's/^ *//g' >types-${i}.txt
 done
 
-diff -u types-events-std.bst.txt types-events-pac.bst.txt >results.events-types.txt
-head -100 types-events-std.bst.txt types-events-pac.bst.txt >>results.events-types.txt
+diff -u types-events-std.bst.txt types-events-spicy.bst.txt >results.events-types.txt
+head -100 types-events-std.bst.txt types-events-spicy.bst.txt >>results.events-types.txt
 
 echo === Results in
 ls results*.txt

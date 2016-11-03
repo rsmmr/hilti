@@ -34,7 +34,7 @@ class ModuleBuilder;
 }
 }
 
-namespace binpac {
+namespace spicy {
 class Type;
 }
 
@@ -355,7 +355,7 @@ public:
      */
     std::shared_ptr<::hilti::Expression> RuntimeHiltiToVal(
         std::shared_ptr<::hilti::Expression> val, const ::BroType* type,
-        shared_ptr<::binpac::Type> pac_type = nullptr);
+        shared_ptr<::spicy::Type> spicy_type = nullptr);
 
     /**
      * XXX

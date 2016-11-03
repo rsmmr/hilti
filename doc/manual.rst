@@ -9,7 +9,7 @@ Table of Contents
    :numbered:
 
    install/index.rst
-   binpac/index.rst
+   spicy/index.rst
    hilti/index.rst
 
 Index

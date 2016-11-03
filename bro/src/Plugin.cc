@@ -5,8 +5,8 @@
 #include "Event.h"
 #include "LocalReporter.h"
 #include "Manager.h"
-#include "Pac2Analyzer.h"
-#include "Pac2FileAnalyzer.h"
+#include "SpicyAnalyzer.h"
+#include "SpicyFileAnalyzer.h"
 #include "Plugin.h"
 #include "RuntimeInterface.h"
 #include "analyzer/Component.h"
@@ -49,7 +49,7 @@ plugin::Configuration plugin::Bro_Hilti::Plugin::Configure()
 {
     plugin::Configuration config;
     config.name = "Bro::Hilti";
-    config.description = "Dynamically compiled HILTI/BinPAC++ functionality (*.pac2, *.evt, *.hlt)";
+    config.description = "Dynamically compiled HILTI/Spicy functionality (*.spicy, *.evt, *.hlt)";
     config.version.major = 0;
     config.version.minor = 1;
 
@@ -61,7 +61,7 @@ plugin::Configuration plugin::Bro_Hilti::Plugin::Configure()
 void plugin::Bro_Hilti::Plugin::InitPreScript()
 {
     string dir = HiltiPlugin.PluginDirectory();
-    dir += "/pac2";
+    dir += "/spicy";
     _manager->AddLibraryPath(dir.c_str());
 
     if ( ! _manager->InitPreScripts() )
@@ -125,11 +125,11 @@ analyzer::Tag plugin::Bro_Hilti::Plugin::AddAnalyzer(const string& name, Transpo
 
     switch ( proto ) {
     case TRANSPORT_TCP:
-        factory = Pac2_TCP_Analyzer::InstantiateAnalyzer;
+        factory = Spicy_TCP_Analyzer::InstantiateAnalyzer;
         break;
 
     case TRANSPORT_UDP:
-        factory = Pac2_UDP_Analyzer::InstantiateAnalyzer;
+        factory = Spicy_UDP_Analyzer::InstantiateAnalyzer;
         break;
 
     default:
@@ -150,7 +150,7 @@ analyzer::Tag plugin::Bro_Hilti::Plugin::AddAnalyzer(const string& name, Transpo
 file_analysis::Tag plugin::Bro_Hilti::Plugin::AddFileAnalyzer(const string& name,
                                                               file_analysis::Tag::subtype_t stype)
 {
-    auto c = new ::file_analysis::Component(name, Pac2_FileAnalyzer::InstantiateAnalyzer, stype);
+    auto c = new ::file_analysis::Component(name, Spicy_FileAnalyzer::InstantiateAnalyzer, stype);
     AddComponent(c);
 
     // TODO: Should Bro do this? It has run component intiialization at this point already, so ours
@@ -172,7 +172,7 @@ void plugin::Bro_Hilti::Plugin::RequestEvent(EventHandlerPtr handler)
 
 int plugin::Bro_Hilti::Plugin::HookLoadFile(const std::string& file, const std::string& ext)
 {
-    if ( ext == "pac2" || ext == "evt" || ext == "hlt" )
+    if ( ext == "spicy" || ext == "evt" || ext == "hlt" )
         return _manager->LoadFile(file) ? 1 : 0;
 
     return -1;

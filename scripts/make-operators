@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 #
-# Autogenerates files with support code implementing BinPAC++ operators.
+# Autogenerates files with support code implementing Spicy operators.
 #
 # This creates
 #
@@ -82,13 +82,13 @@ if [ "$kind" == "-h" ]; then
     cat </dev/null >$dst/operators-expression-builder.h.tmp
 
     cat </dev/null >$dst/operators-declare.h.tmp <<EOF
-namespace binpac {
+namespace spicy {
 EOF
 
 
     cat >$dst/operators-register.cc.tmp <<EOF
 
-namespace binpac {
+namespace spicy {
 
 void __registerAllOperators()
 {

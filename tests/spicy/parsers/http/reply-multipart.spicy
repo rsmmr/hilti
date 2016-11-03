@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  cat %DIR/reply-multipart.dat | spicy-driver-test %INPUT ${PARSERS}/http.spicy -- -p HTTP::Replies >>output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import parsers/http;
+
+on HTTP::Request::%done {
+    print self;
+    }
+
+on HTTP::Reply::%done {
+    print self;
+    }
+
+export type EatAll = unit {
+    %mimetype = "*";
+
+    data: bytes &eod { print "I ate all:", self.data; }
+};

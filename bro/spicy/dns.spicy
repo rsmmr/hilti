@@ -1,0 +1,182 @@
+# $Id$
+#
+# TODO:
+#
+#    * Do we want to put bitfields into the unit namespace?
+#    * Nicer way to consume the pointer in the Label's switch?
+
+module DNS;
+
+import Bro;
+
+global dns_skip_all_auth = Bro::get_const_bool("dns_skip_all_auth");
+global dns_skip_all_addl = Bro::get_const_bool("dns_skip_all_addl");
+
+type RDType = enum {
+    A = 1, NS = 2, MD = 3, MF = 4, CNAME = 5, SOA = 6, MB = 7, MG = 8, MR = 9,
+    NULL = 10, WKS = 11, PTR = 12, HINFO = 13, MINFO = 14, MX = 15, TXT = 16,
+    AAAA = 28, NBS = 32, SRV= 33, A6 = 38, EDNS = 41 };
+
+type RRType = enum {
+    ANSWER = 1, AUTH = 2, ADDL = 3
+};
+
+export type Message = unit {
+    header:     Header;
+    question:   list<Question(self)>                       &transient &count=self.header.qdcount;
+    answer:     list<ResourceRecord(self, RRType::ANSWER)> &transient &count=self.header.ancount;
+    authority:  list<ResourceRecord(self, RRType::AUTH)>   &transient &count=self.header.nscount if ( ! (dns_skip_all_auth || dns_skip_all_addl) );
+    additional: list<ResourceRecord(self, RRType::ADDL)>   &transient &count=self.header.arcount if ( ! dns_skip_all_addl );
+
+    on %done {
+        Bro::dpd_confirm();
+    }
+};
+
+type Header = unit {
+    id    : uint16;
+    flags : bitfield(16) {
+            qr: 0;
+            opcode: 1..4;
+            aa: 5;
+            tc: 6;
+            rd: 7;
+            ra: 8;
+            z:  9..11;
+            rcode: 12..15;
+        } &bitorder = Spicy::BitOrder::MSB0;
+
+    qdcount: uint16;
+    ancount: uint16;
+    nscount: uint16;
+    arcount: uint16;
+
+	var rejected : bool;
+
+	on %done {
+	    # Mimic Bro in determining when a request has been rejected.
+        if ( self.qdcount == 0 )
+		    self.rejected = (self.flags.rcode != 0); # 0 == NoError;
+
+        else
+		    self.rejected = (self.flags.qr == 1 &&
+                             self.ancount == 0 &&
+							 self.nscount == 0 &&
+			                 self.arcount == 0);
+	}
+};
+
+type Question = unit(msg: Message) {
+    qname:  Name(msg);
+    qtype:  uint16;
+    qclass: uint16;
+};
+
+type ResourceRecord = unit(msg: Message, rrtype: RRType) {
+    name:   Name(msg);
+    ty:     uint16 &convert=RDType($$);
+    class:  uint16;
+    ttl:    uint32 &convert=cast<interval>($$);
+    rdlen:  uint16;
+
+    switch ( self.ty ) {
+        RDType::NS, RDType::CNAME, RDType::PTR
+                     -> rname:   Name(msg);
+        RDType::A    -> a:       addr &ipv4;
+        RDType::AAAA -> a:       addr &ipv6;
+        RDType::MX   -> mx:      RDataMX(msg);
+        RDType::SOA  -> soa:     RDataSOA(msg);
+        RDType::TXT  -> txt:     list<CharacterString(msg)> &length=self.rdlen;
+
+        *            -> rdata:   bytes &length=self.rdlen;
+    };
+};
+
+type RDataMX = unit(msg: Message) {
+    preference: uint16;
+    name:	    Name(msg);
+};
+
+type RDataSOA = unit(msg: Message) {
+    mname:      Name(msg);
+    rname:      Name(msg);
+    serial:     uint32;
+    refresh:    uint32 &convert=cast<interval>($$);
+    retry:      uint32 &convert=cast<interval>($$);
+    expire:     uint32 &convert=cast<interval>($$);
+    minimum:    uint32 &convert=cast<interval>($$);
+};
+
+type CharacterString = unit(msg: Message) {
+    len: uint8;
+    data: bytes &length=(self.len);
+};
+
+type Name = unit(msg: Message) {
+    : list<Label(msg, self)> &until($$.len.offset == 0 || $$.len.compressed != 0);
+
+    # Parsed labels are collected in this list.
+    var labels: bytes = b"";
+};
+
+type Pointer = unit(msg: Message, label: Label) {
+    len: bitfield(16) {
+        offset: 0..13;
+        };
+
+    name: Name(msg) &parse(msg.input() + self.len.offset);
+    };
+
+type Label = unit(msg: Message, name: Name) {
+    len: bitfield(8) {
+        offset: 0..5;
+        compressed: 6..7;
+        };
+
+    switch ( self.len.compressed ) {
+        0 ->    label: bytes &length=self.len.offset {
+                    name.labels += b".";
+                    name.labels += self.label;
+                    }
+
+        3 ->    ptr: Pointer(msg, self) &parse(self.input()) {
+                    name.labels += self.ptr.name.labels;
+                    self.adjust = 2; # Consume the additional byte in %done.
+                    }
+    };
+
+    on %done {
+        if ( self.adjust > 0 )
+            self.set_position(self.input() + self.adjust);
+    }
+
+    var adjust: uint<64> = 0;
+};
+
+# Joins the labels in a name into a bytes object.
+bytes bro_name(name: Name)
+{
+    return name.labels.strip(Spicy::Side::Both, b".").lower();
+}
+
+# Converts a DNS::Message into a Bro dns_msg.
+tuple<uint64, uint64, uint64, bool, bool, bool, bool, bool, uint64, uint64, uint64, uint64, uint64>
+bro_msg(hdr: Header)
+{
+    return (hdr.id, hdr.flags.opcode, hdr.flags.rcode, hdr.flags.qr, hdr.flags.aa, hdr.flags.tc, hdr.flags.rd,
+            hdr.flags.ra, hdr.flags.z, hdr.qdcount, hdr.ancount, hdr.nscount, hdr.arcount);
+}
+
+# Converts a DNS::ResourceRecord into a Bro dns_answer.
+tuple<uint64, bytes, uint64, uint64, interval>
+bro_answer(rr: ResourceRecord, rrtype: RRType)
+{
+    return (cast<uint64>(rrtype), bro_name(rr.name), cast<uint64>(rr.ty), rr.class, rr.ttl);
+}
+
+# Converts a DNS::RDataSOA into a Bro dns_soa.
+tuple<bytes, bytes, uint64, interval, interval, interval, interval>
+bro_soa(soa: RDataSOA)
+{
+    return (bro_name(soa.mname), bro_name(soa.rname), soa.serial, soa.refresh, soa.retry, soa.expire, soa.minimum);
+}

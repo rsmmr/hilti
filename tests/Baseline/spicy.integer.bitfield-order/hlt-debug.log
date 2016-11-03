@@ -1,0 +1,10 @@
+00000001 [spicy/main-thread]            test
+00000002 [spicy/main-thread]              f1 = 16385
+00000003 [spicy/main-thread]                x1 = 0
+00000004 [spicy/main-thread]                x2 = 2
+00000005 [spicy/main-thread]              f2 = 16385
+00000006 [spicy/main-thread]                x1 = 1
+00000007 [spicy/main-thread]                x2 = 0
+00000008 [spicy/main-thread]              f3 = 16385
+00000009 [spicy/main-thread]                x1 = 1
+00000010 [spicy/main-thread]                x2 = 0

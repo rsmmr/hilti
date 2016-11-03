@@ -1,0 +1,15 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import Spicy;
+
+global b = b"VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==";
+
+print b;
+print Spicy::base64_decode(b);
+print Spicy::base64_encode(b"The quick brown fox jumps over the lazy dog");

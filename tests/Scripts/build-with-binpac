@@ -1,5 +1,0 @@
-#! /usr/bin/env bash
-#
-# Builds a *.cc that links to libbinpac.
-
-clang++ $@ `${HILTI_CONFIG} --compiler --cxxflags --ldflags --libs` `${BINPAC_CONFIG} --compiler --cxxflags --ldflags --libs`
