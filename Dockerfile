@@ -1,6 +1,6 @@
 
 # This is based on https://github.com/rsmmr/install-clang/blob/master/Dockerfile
-FROM        rsmmr/clang:3.5
+FROM        rsmmr/clang:3.9
 MAINTAINER  Robin Sommer <robin@icir.org>
 
 # Setup packages.
@@ -22,8 +22,8 @@ ADD docker/ .
 CMD hilti-config --version; bash
 
 # Setup Bro
-RUN cd /opt && git clone -b release/2.4 --recursive git://git.bro.org/bro
-RUN cd /opt/bro && CXX="/opt/llvm/bin/clang++ --stdlib=libc++" ./configure && make -j 5 && make install
+RUN cd /opt && git clone -b beta/2.5 --recursive git://git.bro.org/bro
+RUN cd /opt/bro && CXX="/opt/llvm/bin/clang++" ./configure && make -j 5 && make install
 
 # Setup HILTI.
 ADD . /opt/hilti

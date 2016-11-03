@@ -159,5 +159,5 @@ class HltDomain(Domain):
                                     contnode, target + ' ' + objtype)
 
     def get_objects(self):
-        for (typ, name), docname in self.data['objects'].iteritems():
+        for (typ, name), docname in self.data['objects'].items():
             yield name, name, typ, docname, typ + '-' + name, 1

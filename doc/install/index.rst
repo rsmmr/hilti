@@ -9,11 +9,14 @@ Prerequisites
 -------------
 
 The HILTI framework is developed on 64-bit Linux and MacOS, and will
-most likely not work on other platforms.
+most likely not work on other platforms currently.
 
-To compile the framework, you need LLVM >= 3.4 and Clang >= 3.4 from
-http://llvm.org, along with C++11-compatible standard libraries. This
-combo can still be painful to set up; see below for help.
+To compile the framework, you need LLVM 3.9 and Clang 3.9 from
+http://llvm.org, along with C++11-compatible standard libraries.
+
+For Bro integration:
+
+* Bro 2.5, compiled from source (http://www.bro.org)
 
 For unit testing:
 
@@ -21,7 +24,7 @@ For unit testing:
 
 For generating the documentation:
 
-* Sphinx 1.1 (http://sphinx.pocoo.org)::
+* Sphinx 1.3 (http://sphinx.pocoo.org)::
 
     > easy_install sphinx
 
@@ -34,20 +37,6 @@ Clone the git repository::
 
 There's also a `mirror on github
 <http://www.github.com/rsmmr/hilti>`_, which you can browse directly.
-
-Installing LLVM/clang/libc++
-----------------------------
-
-If your OS doesn't come with a full LLVM/clang 3.4 setup that also
-includes C++11 standard libraries, you'll need to compile it yourself.
-This is a bit cumbersome unfortunately as one needs to compile clang
-twice: once to boostrap and once with the right ``libc++``. Order of
-the involved steps is important.
-
-To make this easier, there's a script doing the necessary steps at
-http://github.org/rsmmr/install-clang. See the installation
-instructions there. In the following we assume that LLVM/clang is
-available via ``PATH``.
 
 Compiling the HILTI framework
 -----------------------------
@@ -65,10 +54,7 @@ directory::
 If you want to compile the included Bro plugin as well, you also need
 to tell ``make`` where your Bro source tree is::
 
-    > make BRO_DIST=/path/to/bro
-
-As HILTI requires Bro's new plugin support, you will need to use the
-current git master version of Bro.
+    > make BRO_DIST=/path/to/bro/src/distribution
 
 If everything has worked right, there should now be a binary
 ``build/tools/hiltic`` afterwards (as well as a few others).
@@ -90,7 +76,8 @@ want to link to them from some directory that's in your ``PATH``, such
 as::
 
      > export PATH=$HOME/bin:$PATH
-     > ln -s binpacpp/hilti2/build/tools/{hiltic,hilti-config,hilti-prof,binpac++} $HOME/bin
+     > ln -s
+     binpacpp/hilti2/build/tools/{hiltic,hiltip,hilti-config,hilti-prof,binpac-config,binpac++,pac-driver,pac-dump} $HOME/bin
      > ln -s binpacpp/hilti2/build/tools/pac-driver/pac-driver $HOME/bin
      > ln -s binpacpp/hilti2/tools/hilti-build $HOME/bin
 
@@ -102,10 +89,9 @@ indeed found in the ``PATH``.
 Docker Image
 ------------
 
-As it can still be a bit tricky to set this is all up, there's also a
-`Docker image <https://registry.hub.docker.com/u/rsmmr/hilti/>`_
-available that comes with all pieces preinstalled (HILTI/Spicy,
-Bro, LLVM/clang)::
+There's also a `Docker image
+<https://registry.hub.docker.com/u/rsmmr/hilti/>`_ available that
+comes with all pieces preinstalled (HILTI/Spicy, Bro, LLVM/clang)::
 
     # docker run -i -t "rsmmr/hilti"
     HILTI 0.3-11
