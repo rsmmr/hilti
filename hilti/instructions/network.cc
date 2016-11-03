@@ -9,9 +9,7 @@
 ///
 /// \cproto hlt_net
 
-#include "define-instruction.h"
-
-iBegin(network, Equal, "equal")
+iBegin(network::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::network, true);
     iOp2(optype::network, true);
@@ -30,7 +28,7 @@ iBegin(network, Equal, "equal")
     )")
 iEnd
 
-iBegin(network, EqualAddr, "equal")
+iBegin(network::EqualAddr, "equal")
     iTarget(optype::boolean);
     iOp1(optype::network, true);
     iOp2(optype::address, true);
@@ -44,7 +42,7 @@ iBegin(network, EqualAddr, "equal")
     )")
 iEnd
 
-iBegin(network, Family, "net.family")
+iBegin(network::Family, "net.family")
     iTarget(optype::enum_);
     iOp1(optype::network, true);
 
@@ -63,7 +61,7 @@ iBegin(network, Family, "net.family")
 
 iEnd
 
-iBegin(network, Length, "net.length")
+iBegin(network::Length, "net.length")
     iTarget(optype::int8);
     iOp1(optype::network, true);
 
@@ -77,7 +75,7 @@ iBegin(network, Length, "net.length")
 
 iEnd
 
-iBegin(network, Prefix, "net.prefix")
+iBegin(network::Prefix, "net.prefix")
     iTarget(optype::address);
     iOp1(optype::network, true);
 
@@ -90,7 +88,7 @@ iBegin(network, Prefix, "net.prefix")
     )")
 iEnd
 
-iBegin(network, Contains, "net.contains")
+iBegin(network::Contains, "net.contains")
     iTarget(optype::boolean);
     iOp1(optype::network, true);
     iOp2(optype::address, true);

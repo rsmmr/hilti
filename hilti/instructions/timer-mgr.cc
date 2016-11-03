@@ -4,9 +4,7 @@
 ///
 /// \cproto hlt_timer_mgr*
 
-#include "define-instruction.h"
-
-iBegin(timer_mgr, New, "new")
+iBegin(timer_mgr::New, "new")
     iTarget(optype::refTimerMgr);
     iOp1(optype::typeTimerMgr, true);
 
@@ -22,7 +20,7 @@ iBegin(timer_mgr, New, "new")
 iEnd
 
 
-iBegin(timer_mgr, Advance, "timer_mgr.advance")
+iBegin(timer_mgr::Advance, "timer_mgr.advance")
     iOp1(optype::time, true);
     iOp2(optype::optional(optype::refTimerMgr), false);
 
@@ -38,7 +36,7 @@ iBegin(timer_mgr, Advance, "timer_mgr.advance")
     )")
 iEnd
 
-iBegin(timer_mgr, AdvanceGlobal, "timer_mgr.advance_global")
+iBegin(timer_mgr::AdvanceGlobal, "timer_mgr.advance_global")
     iOp1(optype::time, true);
 
     iValidate
@@ -54,7 +52,7 @@ iBegin(timer_mgr, AdvanceGlobal, "timer_mgr.advance_global")
     )")
 iEnd
 
-iBegin(timer_mgr, Current, "timer_mgr.current")
+iBegin(timer_mgr::Current, "timer_mgr.current")
     iTarget(optype::time);
     iOp1(optype::optional(optype::refTimerMgr), true);
 
@@ -69,7 +67,7 @@ iBegin(timer_mgr, Current, "timer_mgr.current")
 
 iEnd
 
-iBegin(timer_mgr, Expire, "timer_mgr.expire")
+iBegin(timer_mgr::Expire, "timer_mgr.expire")
     iOp1(optype::boolean, true);
     iOp2(optype::optional(optype::refTimerMgr), false);
 
@@ -87,7 +85,7 @@ iBegin(timer_mgr, Expire, "timer_mgr.expire")
 
 iEnd
 
-iBegin(timer_mgr, Schedule, "timer_mgr.schedule")
+iBegin(timer_mgr::Schedule, "timer_mgr.schedule")
     iOp1(optype::time, true);
     iOp2(optype::refTimer, false);
     iOp3(optype::optional(optype::refTimerMgr), false);

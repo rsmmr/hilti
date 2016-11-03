@@ -1,25 +1,28 @@
 
-#include "define-instruction.h"
 
-#include "../builder/nodes.h"
-#include "../module.h"
-#include "misc.h"
+iBegin(Misc::Select, "select")
+    iTarget(optype::any);
+    iOp1(optype::boolean, true);
+    iOp2(optype::any, true);
+    iOp3(optype::any, true);
 
-iBeginCC(Misc)
-    iValidateCC(Select)
-    {
+    iValidate {
         canCoerceTo(op2, target->type());
         canCoerceTo(op3, target->type());
     }
 
-    iDocCC(Select, R"(
+    iDoc(R"(
         Returns *op2* if *op1* is True, and *op3* otherwise.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(Misc)
-    iValidateCC(SelectValue)
-    {
+iBegin(Misc::SelectValue, "select.value")
+    iTarget(optype::any);
+    iOp1(optype::any, true);
+    iOp2(optype::tuple, true);
+    iOp3(optype::optional(optype::any), true);
+
+    iValidate {
         auto ty_op1 = op1->type();
         auto ty_op2 = ast::rtti::checkedCast<type::Tuple>(op2->type());
 
@@ -48,20 +51,21 @@ iBeginCC(Misc)
         }
     }
 
-    iDocCC(SelectValue, R"(
-        Matches *op1* against the first elements of set of 2-tuples *op2*. If a match is
-        found, returns the second element of the corresponding 2-tuple. If multiple matches
-        are found, one is returned but it's undefined which one. If no match is found, returns *op3*
-        if given, or throws a ValueError otherwise.
-    )")
-iEndCC
+    iDoc(R"(
+        Matches *op1* against the first elements of set of 2-tuples *op2*. If a
+        match is found, returns the second element of the corresponding 2-tuple.
+        If multiple matches are found, one is returned but it's undefined
+        which one. If no match is found, returns *op3* if given, or throws a
+        ValueError otherwise.
+    )");
+iEnd
 
-iBeginCC(Misc)
-    iValidateCC(Nop)
-    {
+iBegin(Misc::Nop, "nop")
+
+    iValidate {
     }
 
-    iDocCC(Nop, R"(
+    iDoc(R"(
         Evaluates into nothing.
-    )")
-iEndCC
+    )");
+iEnd

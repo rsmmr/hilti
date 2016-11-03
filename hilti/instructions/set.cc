@@ -25,9 +25,7 @@
 /// \cproto hlt_set_iter
 ///
 
-#include "define-instruction.h"
-
-iBegin(iterSet, Begin, "begin")
+iBegin(iterSet::Begin, "begin")
     iTarget(optype::iterSet);
     iOp1(optype::refSet, true);
 
@@ -41,7 +39,7 @@ iBegin(iterSet, Begin, "begin")
     )")
 iEnd
 
-iBegin(iterSet, End, "end")
+iBegin(iterSet::End, "end")
     iTarget(optype::iterSet);
     iOp1(optype::refSet, true);
 
@@ -55,7 +53,7 @@ iBegin(iterSet, End, "end")
     )")
 iEnd
 
-iBegin(iterSet, Incr, "incr")
+iBegin(iterSet::Incr, "incr")
     iTarget(optype::iterSet);
     iOp1(optype::iterSet, true);
 
@@ -69,7 +67,7 @@ iBegin(iterSet, Incr, "incr")
     )")
 iEnd
 
-iBegin(iterSet, Equal, "equal")
+iBegin(iterSet::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::iterSet, true);
     iOp2(optype::iterSet, true);
@@ -85,7 +83,7 @@ iBegin(iterSet, Equal, "equal")
 
 iEnd
 
-iBegin(iterSet, Deref, "deref")
+iBegin(iterSet::Deref, "deref")
     iTarget(optype::any);
     iOp1(optype::iterSet, true);
 
@@ -101,7 +99,7 @@ iBegin(iterSet, Deref, "deref")
 iEnd
 
 
-iBegin(set, New, "new")
+iBegin(set::New, "new")
     iTarget(optype::refSet);
     iOp1(optype::typeSet, true);
     iOp2(optype::optional(optype::refTimerMgr), false);
@@ -118,7 +116,7 @@ iBegin(set, New, "new")
 iEnd
 
 
-iBegin(set, Clear, "set.clear")
+iBegin(set::Clear, "set.clear")
     iOp1(optype::refSet, false);
 
     iValidate
@@ -131,7 +129,7 @@ iBegin(set, Clear, "set.clear")
 
 iEnd
 
-iBegin(set, Exists, "set.exists")
+iBegin(set::Exists, "set.exists")
     iTarget(optype::boolean);
     iOp1(optype::refSet, true);
     iOp2(optype::any, true);
@@ -148,7 +146,7 @@ iBegin(set, Exists, "set.exists")
 
 iEnd
 
-iBegin(set, Insert, "set.insert")
+iBegin(set::Insert, "set.insert")
     iOp1(optype::refSet, false);
     iOp2(optype::any, false);
 
@@ -164,7 +162,7 @@ iBegin(set, Insert, "set.insert")
 
 iEnd
 
-iBegin(set, Remove, "set.remove")
+iBegin(set::Remove, "set.remove")
     iOp1(optype::refSet, false);
     iOp2(optype::any, true);
 
@@ -180,7 +178,7 @@ iBegin(set, Remove, "set.remove")
 
 iEnd
 
-iBegin(set, Size, "set.size")
+iBegin(set::Size, "set.size")
     iTarget(optype::int64);
     iOp1(optype::refSet, true);
 
@@ -194,7 +192,7 @@ iBegin(set, Size, "set.size")
 
 iEnd
 
-iBegin(set, Timeout, "set.timeout")
+iBegin(set::Timeout, "set.timeout")
     iOp1(optype::refSet, true);
     iOp2(optype::enum_, true);
     iOp3(optype::interval, true);

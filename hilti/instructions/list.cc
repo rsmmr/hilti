@@ -12,9 +12,7 @@
 /// \cproto hlt_list_iter
 ///
 
-#include "define-instruction.h"
-
-iBegin(iterList, Begin, "begin")
+iBegin(iterList::Begin, "begin")
     iTarget(optype::iterList);
     iOp1(optype::refList, true);
 
@@ -28,7 +26,7 @@ iBegin(iterList, Begin, "begin")
     )")
 iEnd
 
-iBegin(iterList, End, "end")
+iBegin(iterList::End, "end")
     iTarget(optype::iterList);
     iOp1(optype::refList, true);
 
@@ -42,7 +40,7 @@ iBegin(iterList, End, "end")
     )")
 iEnd
 
-iBegin(iterList, Incr, "incr")
+iBegin(iterList::Incr, "incr")
     iTarget(optype::iterList);
     iOp1(optype::iterList, true);
 
@@ -56,7 +54,7 @@ iBegin(iterList, Incr, "incr")
     )")
 iEnd
 
-iBegin(iterList, Equal, "equal")
+iBegin(iterList::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::iterList, true);
     iOp2(optype::iterList, true);
@@ -72,7 +70,7 @@ iBegin(iterList, Equal, "equal")
 
 iEnd
 
-iBegin(iterList, Deref, "deref")
+iBegin(iterList::Deref, "deref")
     iTarget(optype::any);
     iOp1(optype::iterList, true);
 
@@ -87,7 +85,7 @@ iBegin(iterList, Deref, "deref")
 
 iEnd
 
-iBegin(list, New, "new")
+iBegin(list::New, "new")
     iTarget(optype::refList);
     iOp1(optype::typeList, true);
     iOp2(optype::optional(optype::refTimerMgr), true);
@@ -104,7 +102,7 @@ iBegin(list, New, "new")
 iEnd
 
 
-iBegin(list, Back, "list.back")
+iBegin(list::Back, "list.back")
     iTarget(optype::any);
     iOp1(optype::refList, true);
 
@@ -120,7 +118,7 @@ iBegin(list, Back, "list.back")
 
 iEnd
 
-iBegin(list, Erase, "list.erase")
+iBegin(list::Erase, "list.erase")
     iOp1(optype::iterList, false);
 
     iValidate
@@ -133,7 +131,7 @@ iBegin(list, Erase, "list.erase")
 
 iEnd
 
-iBegin(list, Front, "list.front")
+iBegin(list::Front, "list.front")
     iTarget(optype::any);
     iOp1(optype::refList, true);
 
@@ -149,7 +147,7 @@ iBegin(list, Front, "list.front")
 
 iEnd
 
-iBegin(list, Insert, "list.insert")
+iBegin(list::Insert, "list.insert")
     iOp1(optype::any, false);
     iOp2(optype::iterList, true);
 
@@ -166,7 +164,7 @@ iBegin(list, Insert, "list.insert")
 
 iEnd
 
-iBegin(list, PopBack, "list.pop_back")
+iBegin(list::PopBack, "list.pop_back")
     iTarget(optype::any);
     iOp1(optype::refList, true);
 
@@ -182,7 +180,7 @@ iBegin(list, PopBack, "list.pop_back")
 
 iEnd
 
-iBegin(list, PopFront, "list.pop_front")
+iBegin(list::PopFront, "list.pop_front")
     iTarget(optype::any);
     iOp1(optype::refList, true);
 
@@ -198,7 +196,7 @@ iBegin(list, PopFront, "list.pop_front")
 
 iEnd
 
-iBegin(list, PushBack, "list.push_back")
+iBegin(list::PushBack, "list.push_back")
     iOp1(optype::refList, false);
     iOp2(optype::any, false);
 
@@ -213,7 +211,7 @@ iBegin(list, PushBack, "list.push_back")
 
 iEnd
 
-iBegin(list, PushFront, "list.push_front")
+iBegin(list::PushFront, "list.push_front")
     iOp1(optype::refList, false);
     iOp2(optype::any, false);
 
@@ -228,7 +226,7 @@ iBegin(list, PushFront, "list.push_front")
 
 iEnd
 
-iBegin(list, Append, "list.append")
+iBegin(list::Append, "list.append")
     iOp1(optype::refList, false);
     iOp2(optype::refList, false);
 
@@ -243,7 +241,7 @@ iBegin(list, Append, "list.append")
 
 iEnd
 
-iBegin(list, Size, "list.size")
+iBegin(list::Size, "list.size")
     iTarget(optype::int64);
     iOp1(optype::refList, true);
 
@@ -257,7 +255,7 @@ iBegin(list, Size, "list.size")
 
 iEnd
 
-iBegin(list, Timeout, "list.timeout")
+iBegin(list::Timeout, "list.timeout")
     iOp1(optype::refList, true);
     iOp2(optype::enum_, true);
     iOp3(optype::interval, true);

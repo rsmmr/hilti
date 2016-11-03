@@ -15,9 +15,7 @@
 ///
 /// \cproto hlt_timer_mgr*
 
-#include "define-instruction.h"
-
-iBegin(timer, New, "new")
+iBegin(timer::New, "new")
     iTarget(optype::refTimer);
     iOp1(optype::typeTimer, true);
     iOp2(optype::function, true);
@@ -38,7 +36,7 @@ iBegin(timer, New, "new")
 iEnd
 
 
-iBegin(timer, Cancel, "timer.cancel")
+iBegin(timer::Cancel, "timer.cancel")
     iOp1(optype::refTimer, false);
 
     iValidate
@@ -52,7 +50,7 @@ iBegin(timer, Cancel, "timer.cancel")
 
 iEnd
 
-iBegin(timer, Update, "timer.update")
+iBegin(timer::Update, "timer.update")
     iOp1(optype::refTimer, false);
     iOp2(optype::time, true);
 

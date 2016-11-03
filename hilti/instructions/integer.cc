@@ -29,9 +29,7 @@
 ///     33..64  int64_t
 ///     ======  =======
 
-#include "define-instruction.h"
-
-iBegin(integer, Equal, "equal")
+iBegin(integer::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -46,7 +44,7 @@ iBegin(integer, Equal, "equal")
     )")
 iEnd
 
-iBegin(integer, Incr, "incr")
+iBegin(integer::Incr, "incr")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
 
@@ -60,7 +58,7 @@ iBegin(integer, Incr, "incr")
     )")
 iEnd
 
-iBegin(integer, IncrBy, "incr_by")
+iBegin(integer::IncrBy, "incr_by")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -74,7 +72,7 @@ iBegin(integer, IncrBy, "incr_by")
     )")
 iEnd
 
-iBegin(integer, Decr, "decr")
+iBegin(integer::Decr, "decr")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
 
@@ -88,7 +86,7 @@ iBegin(integer, Decr, "decr")
     )")
 iEnd
 
-iBegin(integer, DecrBy, "decr_by")
+iBegin(integer::DecrBy, "decr_by")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -102,7 +100,7 @@ iBegin(integer, DecrBy, "decr_by")
     )")
 iEnd
 
-iBegin(integer, Add, "int.add")
+iBegin(integer::Add, "int.add")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -121,7 +119,7 @@ iBegin(integer, Add, "int.add")
 iEnd
 
 
-iBegin(integer, Sub, "int.sub")
+iBegin(integer::Sub, "int.sub")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -139,7 +137,7 @@ iBegin(integer, Sub, "int.sub")
 
 iEnd
 
-iBegin(integer, Div, "int.div")
+iBegin(integer::Div, "int.div")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -169,7 +167,7 @@ iBegin(integer, Div, "int.div")
 
 iEnd
 
-iBegin(integer, Sleq, "int.sleq")
+iBegin(integer::Sleq, "int.sleq")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -186,7 +184,7 @@ iBegin(integer, Sleq, "int.sleq")
 
 iEnd
 
-iBegin(integer, AsSDouble, "int.as_sdouble")
+iBegin(integer::AsSDouble, "int.as_sdouble")
     iTarget(optype::double_);
     iOp1(optype::integer, true);
 
@@ -200,7 +198,7 @@ iBegin(integer, AsSDouble, "int.as_sdouble")
 
 iEnd
 
-iBegin(integer, Pow, "int.pow")
+iBegin(integer::Pow, "int.pow")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -217,7 +215,7 @@ iBegin(integer, Pow, "int.pow")
 
 iEnd
 
-iBegin(integer, SExt, "int.sext")
+iBegin(integer::SExt, "int.sext")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
 
@@ -237,7 +235,7 @@ iBegin(integer, SExt, "int.sext")
 
 iEnd
 
-iBegin(integer, Shr, "int.shr")
+iBegin(integer::Shr, "int.shr")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -256,7 +254,7 @@ iBegin(integer, Shr, "int.shr")
 
 iEnd
 
-iBegin(integer, Mul, "int.mul")
+iBegin(integer::Mul, "int.mul")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -274,7 +272,7 @@ iBegin(integer, Mul, "int.mul")
 
 iEnd
 
-iBegin(integer, Shl, "int.shl")
+iBegin(integer::Shl, "int.shl")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -293,7 +291,7 @@ iBegin(integer, Shl, "int.shl")
 
 iEnd
 
-iBegin(integer, Ult, "int.ult")
+iBegin(integer::Ult, "int.ult")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -310,7 +308,7 @@ iBegin(integer, Ult, "int.ult")
 
 iEnd
 
-iBegin(integer, Uleq, "int.uleq")
+iBegin(integer::Uleq, "int.uleq")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -327,7 +325,7 @@ iBegin(integer, Uleq, "int.uleq")
 
 iEnd
 
-iBegin(integer, Ashr, "int.ashr")
+iBegin(integer::Ashr, "int.ashr")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -347,7 +345,7 @@ iBegin(integer, Ashr, "int.ashr")
 
 iEnd
 
-iBegin(integer, Mask, "int.mask")
+iBegin(integer::Mask, "int.mask")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -365,7 +363,7 @@ iBegin(integer, Mask, "int.mask")
 
 iEnd
 
-iBegin(integer, Mod, "int.mod")
+iBegin(integer::Mod, "int.mod")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -394,7 +392,7 @@ iBegin(integer, Mod, "int.mod")
 
 iEnd
 
-iBegin(integer, Eq, "int.eq")
+iBegin(integer::Eq, "int.eq")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -410,7 +408,7 @@ iBegin(integer, Eq, "int.eq")
 
 iEnd
 
-iBegin(integer, ZExt, "int.zext")
+iBegin(integer::ZExt, "int.zext")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
 
@@ -430,7 +428,7 @@ iBegin(integer, ZExt, "int.zext")
 
 iEnd
 
-iBegin(integer, AsTime, "int.as_time")
+iBegin(integer::AsTime, "int.as_time")
     iTarget(optype::time);
     iOp1(optype::integer, true);
 
@@ -444,7 +442,7 @@ iBegin(integer, AsTime, "int.as_time")
       )")
 iEnd
 
-iBegin(integer, Slt, "int.slt")
+iBegin(integer::Slt, "int.slt")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -461,7 +459,7 @@ iBegin(integer, Slt, "int.slt")
 
 iEnd
 
-iBegin(integer, Trunc, "int.trunc")
+iBegin(integer::Trunc, "int.trunc")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
 
@@ -481,7 +479,7 @@ iBegin(integer, Trunc, "int.trunc")
 
 iEnd
 
-iBegin(integer, Sgeq, "int.sgeq")
+iBegin(integer::Sgeq, "int.sgeq")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -498,7 +496,7 @@ iBegin(integer, Sgeq, "int.sgeq")
 
 iEnd
 
-iBegin(integer, AsUDouble, "int.as_udouble")
+iBegin(integer::AsUDouble, "int.as_udouble")
     iTarget(optype::double_);
     iOp1(optype::integer, true);
 
@@ -512,7 +510,7 @@ iBegin(integer, AsUDouble, "int.as_udouble")
 
 iEnd
 
-iBegin(integer, Or, "int.or")
+iBegin(integer::Or, "int.or")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -530,7 +528,7 @@ iBegin(integer, Or, "int.or")
 
 iEnd
 
-iBegin(integer, Ugeq, "int.ugeq")
+iBegin(integer::Ugeq, "int.ugeq")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -547,7 +545,7 @@ iBegin(integer, Ugeq, "int.ugeq")
 
 iEnd
 
-iBegin(integer, Sgt, "int.sgt")
+iBegin(integer::Sgt, "int.sgt")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -564,7 +562,7 @@ iBegin(integer, Sgt, "int.sgt")
 
 iEnd
 
-iBegin(integer, AsInterval, "int.as_interval")
+iBegin(integer::AsInterval, "int.as_interval")
     iTarget(optype::interval);
     iOp1(optype::integer, true);
 
@@ -578,7 +576,7 @@ iBegin(integer, AsInterval, "int.as_interval")
      )")
 iEnd
 
-iBegin(integer, Xor, "int.xor")
+iBegin(integer::Xor, "int.xor")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -596,7 +594,7 @@ iBegin(integer, Xor, "int.xor")
 
 iEnd
 
-iBegin(integer, And, "int.and")
+iBegin(integer::And, "int.and")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -614,7 +612,7 @@ iBegin(integer, And, "int.and")
 
 iEnd
 
-iBegin(integer, Ugt, "int.ugt")
+iBegin(integer::Ugt, "int.ugt")
     iTarget(optype::boolean);
     iOp1(optype::integer, true);
     iOp2(optype::integer, true);
@@ -631,7 +629,7 @@ iBegin(integer, Ugt, "int.ugt")
 
 iEnd
 
-iBegin(integer, ToHost, "int.to_host")
+iBegin(integer::ToHost, "int.to_host")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::enum_, true);
@@ -646,7 +644,7 @@ iBegin(integer, ToHost, "int.to_host")
      )")
 iEnd
 
-iBegin(integer, FromHost, "int.from_host")
+iBegin(integer::FromHost, "int.from_host")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
     iOp2(optype::enum_, true);
@@ -661,7 +659,7 @@ iBegin(integer, FromHost, "int.from_host")
      )")
 iEnd
 
-iBegin(integer, Flip, "int.flip")
+iBegin(integer::Flip, "int.flip")
     iTarget(optype::integer);
     iOp1(optype::integer, true);
 

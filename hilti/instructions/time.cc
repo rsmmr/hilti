@@ -23,9 +23,7 @@
 ///
 /// \cproto hlt_time
 
-#include "define-instruction.h"
-
-iBegin(time, Equal, "equal")
+iBegin(time::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::time, true);
     iOp2(optype::time, true);
@@ -40,7 +38,7 @@ iBegin(time, Equal, "equal")
 
 iEnd
 
-iBegin(time, Add, "time.add")
+iBegin(time::Add, "time.add")
     iTarget(optype::time);
     iOp1(optype::time, true);
     iOp2(optype::interval, true);
@@ -55,7 +53,7 @@ iBegin(time, Add, "time.add")
 
 iEnd
 
-iBegin(time, AsDouble, "time.as_double")
+iBegin(time::AsDouble, "time.as_double")
     iTarget(optype::double_);
     iOp1(optype::time, true);
 
@@ -70,7 +68,7 @@ iBegin(time, AsDouble, "time.as_double")
 
 iEnd
 
-iBegin(time, FromDouble, "time.from_double")
+iBegin(time::FromDouble, "time.from_double")
     iTarget(optype::time);
     iOp1(optype::double_, true);
 
@@ -83,7 +81,7 @@ iBegin(time, FromDouble, "time.from_double")
     )")
 iEnd
 
-iBegin(time, AsInt, "time.as_int")
+iBegin(time::AsInt, "time.as_int")
     iTarget(optype::int64);
     iOp1(optype::time, true);
 
@@ -98,7 +96,7 @@ iBegin(time, AsInt, "time.as_int")
 
 iEnd
 
-iBegin(time, Eq, "time.eq")
+iBegin(time::Eq, "time.eq")
     iTarget(optype::boolean);
     iOp1(optype::time, true);
     iOp2(optype::time, true);
@@ -113,7 +111,7 @@ iBegin(time, Eq, "time.eq")
 
 iEnd
 
-iBegin(time, Gt, "time.gt")
+iBegin(time::Gt, "time.gt")
     iTarget(optype::boolean);
     iOp1(optype::time, true);
     iOp2(optype::time, true);
@@ -129,7 +127,7 @@ iBegin(time, Gt, "time.gt")
 
 iEnd
 
-iBegin(time, Lt, "time.lt")
+iBegin(time::Lt, "time.lt")
     iTarget(optype::boolean);
     iOp1(optype::time, true);
     iOp2(optype::time, true);
@@ -145,7 +143,7 @@ iBegin(time, Lt, "time.lt")
 
 iEnd
 
-iBegin(time, Leq, "time.leq")
+iBegin(time::Leq, "time.leq")
     iTarget(optype::boolean);
     iOp1(optype::time, true);
     iOp2(optype::time, true);
@@ -161,7 +159,7 @@ iBegin(time, Leq, "time.leq")
 
 iEnd
 
-iBegin(time, Geq, "time.geq")
+iBegin(time::Geq, "time.geq")
     iTarget(optype::boolean);
     iOp1(optype::time, true);
     iOp2(optype::time, true);
@@ -177,7 +175,7 @@ iBegin(time, Geq, "time.geq")
 
 iEnd
 
-iBegin(time, Nsecs, "time.nsecs")
+iBegin(time::Nsecs, "time.nsecs")
     iTarget(optype::int64);
     iOp1(optype::time, true);
 
@@ -191,7 +189,7 @@ iBegin(time, Nsecs, "time.nsecs")
 
 iEnd
 
-iBegin(time, SubTime, "time.sub")
+iBegin(time::SubTime, "time.sub")
     iTarget(optype::interval);
     iOp1(optype::time, true);
     iOp2(optype::time, true);
@@ -205,7 +203,7 @@ iBegin(time, SubTime, "time.sub")
     )")
 iEnd
 
-iBegin(time, SubInterval, "time.sub")
+iBegin(time::SubInterval, "time.sub")
     iTarget(optype::time);
     iOp1(optype::time, true);
     iOp2(optype::interval, true);
@@ -219,7 +217,7 @@ iBegin(time, SubInterval, "time.sub")
     )")
 iEnd
 
-iBegin(time, Wall, "time.wall")
+iBegin(time::Wall, "time.wall")
     iTarget(optype::time);
 
     iValidate

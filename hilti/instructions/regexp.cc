@@ -9,8 +9,6 @@
 /// \cproto hlt_regexp*
 ///
 
-#include "define-instruction.h"
-
 static inline void _checkMatchTokenTupleBytes(const Instruction* i, shared_ptr<Expression> target)
 {
     auto i32 = builder::integer::type(32);
@@ -19,7 +17,7 @@ static inline void _checkMatchTokenTupleBytes(const Instruction* i, shared_ptr<E
     i->canCoerceTo(builder::tuple::type(tt), target);
 }
 
-iBegin(regexp, New, "new")
+iBegin(regexp::New, "new")
     iTarget(optype::refRegExp);
     iOp1(optype::typeRegExp, true);
 
@@ -36,7 +34,7 @@ iBegin(regexp, New, "new")
 iEnd
 
 
-iBegin(regexp, CompileString, "regexp.compile")
+iBegin(regexp::CompileString, "regexp.compile")
     iOp1(optype::refRegExp, false);
     iOp2(optype::string, true);
 
@@ -59,7 +57,7 @@ iBegin(regexp, CompileString, "regexp.compile")
 
 iEnd
 
-iBegin(regexp, CompileSet, "regexp.compile")
+iBegin(regexp::CompileSet, "regexp.compile")
     iOp1(optype::refRegExp, false);
     iOp2(optype::refList, false);
 
@@ -85,7 +83,7 @@ iBegin(regexp, CompileSet, "regexp.compile")
 iEnd
 
 
-iBegin(regexp, FindBytes, "regexp.find")
+iBegin(regexp::FindBytes, "regexp.find")
     iTarget(optype::int32);
     iOp1(optype::refRegExp, true);
     iOp2(optype::iterBytes, true);
@@ -111,7 +109,7 @@ iBegin(regexp, FindBytes, "regexp.find")
 
 iEnd
 
-iBegin(regexp, FindString, "regexp.find")
+iBegin(regexp::FindString, "regexp.find")
     iTarget(optype::int32);
     iOp1(optype::refRegExp, true);
     iOp2(optype::string, true);
@@ -138,7 +136,7 @@ iBegin(regexp, FindString, "regexp.find")
 iEnd
 
 
-iBegin(regexp, GroupsString, "regexp.groups")
+iBegin(regexp::GroupsString, "regexp.groups")
     iTarget(optype::refVector);
     iOp1(optype::refRegExp, true);
     iOp2(optype::string, true);
@@ -165,7 +163,7 @@ iBegin(regexp, GroupsString, "regexp.groups")
 
 iEnd
 
-iBegin(regexp, GroupsBytes, "regexp.groups")
+iBegin(regexp::GroupsBytes, "regexp.groups")
     iTarget(optype::refVector);
     iOp1(optype::refRegExp, true);
     iOp2(optype::iterBytes, true);
@@ -198,7 +196,7 @@ iBegin(regexp, GroupsBytes, "regexp.groups")
 iEnd
 
 
-iBegin(regexp, MatchTokenString, "regexp.match_token")
+iBegin(regexp::MatchTokenString, "regexp.match_token")
     iTarget(optype::tuple);
     iOp1(optype::refRegExp, true);
     iOp2(optype::string, true);
@@ -229,7 +227,7 @@ iBegin(regexp, MatchTokenString, "regexp.match_token")
 
 iEnd
 
-iBegin(regexp, MatchTokenBytes, "regexp.match_token")
+iBegin(regexp::MatchTokenBytes, "regexp.match_token")
     iTarget(optype::tuple);
     iOp1(optype::refRegExp, true);
     iOp2(optype::iterBytes, true);
@@ -262,7 +260,7 @@ iBegin(regexp, MatchTokenBytes, "regexp.match_token")
 iEnd
 
 
-iBegin(regexp, MatchTokenAdvanceString, "regexp.match_token_advance")
+iBegin(regexp::MatchTokenAdvanceString, "regexp.match_token_advance")
     iTarget(optype::tuple);
     iOp1(optype::refMatchTokenState, false);
     iOp2(optype::string, true);
@@ -296,7 +294,7 @@ iBegin(regexp, MatchTokenAdvanceString, "regexp.match_token_advance")
 
 iEnd
 
-iBegin(regexp, MatchTokenAdvanceBytes, "regexp.match_token_advance")
+iBegin(regexp::MatchTokenAdvanceBytes, "regexp.match_token_advance")
     iTarget(optype::tuple);
     iOp1(optype::refMatchTokenState, false);
     iOp2(optype::iterBytes, true);
@@ -329,7 +327,7 @@ iBegin(regexp, MatchTokenAdvanceBytes, "regexp.match_token_advance")
 
 iEnd
 
-iBegin(regexp, MatchTokenInit, "regexp.match_token_init")
+iBegin(regexp::MatchTokenInit, "regexp.match_token_init")
     iTarget(optype::refMatchTokenState);
     iOp1(optype::refRegExp, true);
 
@@ -351,7 +349,7 @@ iBegin(regexp, MatchTokenInit, "regexp.match_token_init")
 
 iEnd
 
-iBegin(regexp, SpanString, "regexp.span")
+iBegin(regexp::SpanString, "regexp.span")
     iTarget(optype::tuple);
     iOp1(optype::refRegExp, true);
     iOp2(optype::string, true);
@@ -377,7 +375,7 @@ iBegin(regexp, SpanString, "regexp.span")
 
 iEnd
 
-iBegin(regexp, SpanBytes, "regexp.span")
+iBegin(regexp::SpanBytes, "regexp.span")
     iTarget(optype::tuple);
     iOp1(optype::refRegExp, true);
     iOp2(optype::iterBytes, true);

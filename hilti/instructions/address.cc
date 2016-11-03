@@ -9,24 +9,21 @@
 ///
 /// \cproto hlt_addr
 
-#include "define-instruction.h"
-
-iBegin(address, Equal, "equal")
+iBegin(address::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::address, true);
     iOp2(optype::address, true);
 
-    iValidate
-    {
+    iValidate {
     }
 
     iDoc(R"(
         Returns true if *op1* is equal to *op2*.
-    )")
+    )");
 
 iEnd
 
-iBegin(address, Family, "addr.family")
+iBegin(address::Family, "addr.family")
     iTarget(optype::enum_);
     iOp1(optype::address, true);
 
@@ -39,9 +36,9 @@ iBegin(address, Family, "addr.family")
     }
 
     iDoc(R"(    
-        Returns the address family of *op1*, which can be either
-        :hlt:glob:`Hilti::AddrFamily::IPv4` or
+        Returns the address family of *op1*, which can
+        be either :hlt:glob:`Hilti::AddrFamily::IPv4` or
         :hlt:glob:`Hilti::AddrFamily::IPv6`.
-    )")
+    )");
 
 iEnd

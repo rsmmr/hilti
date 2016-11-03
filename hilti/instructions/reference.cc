@@ -1,7 +1,5 @@
 
-#include "define-instruction.h"
-
-iBegin(reference, AsBool, "ref.as_bool")
+iBegin(reference::AsBool, "ref.as_bool")
     iTarget(optype::boolean);
     iOp1(optype::refAny, true);
 

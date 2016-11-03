@@ -8,9 +8,7 @@
 ///
 /// \cproto int8_t
 
-#include "define-instruction.h"
-
-iBegin(boolean, Equal, "equal")
+iBegin(boolean::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::boolean, true);
     iOp2(optype::boolean, true);
@@ -25,7 +23,7 @@ iBegin(boolean, Equal, "equal")
 
 iEnd
 
-iBegin(boolean, And, "bool.and")
+iBegin(boolean::And, "bool.and")
     iTarget(optype::boolean);
     iOp1(optype::boolean, true);
     iOp2(optype::boolean, true);
@@ -40,7 +38,7 @@ iBegin(boolean, And, "bool.and")
 
 iEnd
 
-iBegin(boolean, Not, "bool.not")
+iBegin(boolean::Not, "bool.not")
     iTarget(optype::boolean);
     iOp1(optype::boolean, true);
 
@@ -54,7 +52,7 @@ iBegin(boolean, Not, "bool.not")
 
 iEnd
 
-iBegin(boolean, Or, "bool.or")
+iBegin(boolean::Or, "bool.or")
     iTarget(optype::boolean);
     iOp1(optype::boolean, true);
     iOp2(optype::boolean, true);

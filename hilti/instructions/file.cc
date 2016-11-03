@@ -4,9 +4,7 @@
 /// \cproto hlt_file*
 ///
 
-#include "define-instruction.h"
-
-iBegin(file, New, "new")
+iBegin(file::New, "new")
     iTarget(optype::refFile);
     iOp1(optype::typeFile, true);
 
@@ -22,7 +20,7 @@ iBegin(file, New, "new")
 iEnd
 
 
-iBegin(file, Close, "file.close")
+iBegin(file::Close, "file.close")
     iOp1(optype::refFile, false);
 
     iValidate
@@ -37,7 +35,7 @@ iBegin(file, Close, "file.close")
 
 iEnd
 
-iBegin(file, Open, "file.open")
+iBegin(file::Open, "file.open")
     iOp1(optype::refFile, false);
     iOp2(optype::string, true);
     iOp3(optype::optional(optype::tuple), true);
@@ -66,7 +64,7 @@ iBegin(file, Open, "file.open")
 
 iEnd
 
-iBegin(file, WriteString, "file.write")
+iBegin(file::WriteString, "file.write")
     iOp1(optype::refFile, false);
     iOp2(optype::string, true);
 
@@ -88,7 +86,7 @@ iBegin(file, WriteString, "file.write")
 
 iEnd
 
-iBegin(file, WriteBytes, "file.write")
+iBegin(file::WriteBytes, "file.write")
     iOp1(optype::refFile, false);
     iOp2(optype::refBytes, true);
 

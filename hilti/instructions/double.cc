@@ -8,9 +8,7 @@
 ///
 /// \cproto double
 
-#include "define-instruction.h"
-
-iBegin(double_, Equal, "equal")
+iBegin(double_::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -24,7 +22,7 @@ iBegin(double_, Equal, "equal")
     )")
 iEnd
 
-iBegin(double_, Add, "double.add")
+iBegin(double_::Add, "double.add")
     iTarget(optype::double_);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -40,7 +38,7 @@ iBegin(double_, Add, "double.add")
 
 iEnd
 
-iBegin(double_, AsInterval, "double.as_interval")
+iBegin(double_::AsInterval, "double.as_interval")
     iTarget(optype::interval);
     iOp1(optype::double_, true);
 
@@ -55,7 +53,7 @@ iBegin(double_, AsInterval, "double.as_interval")
 
 iEnd
 
-iBegin(double_, AsSInt, "double.as_sint")
+iBegin(double_::AsSInt, "double.as_sint")
     iTarget(optype::integer);
     iOp1(optype::double_, true);
 
@@ -70,7 +68,7 @@ iBegin(double_, AsSInt, "double.as_sint")
 
 iEnd
 
-iBegin(double_, AsTime, "double.as_time")
+iBegin(double_::AsTime, "double.as_time")
     iTarget(optype::time);
     iOp1(optype::double_, true);
 
@@ -85,7 +83,7 @@ iBegin(double_, AsTime, "double.as_time")
 
 iEnd
 
-iBegin(double_, AsUInt, "double.as_uint")
+iBegin(double_::AsUInt, "double.as_uint")
     iTarget(optype::integer);
     iOp1(optype::double_, true);
 
@@ -100,7 +98,7 @@ iBegin(double_, AsUInt, "double.as_uint")
 
 iEnd
 
-iBegin(double_, Div, "double.div")
+iBegin(double_::Div, "double.div")
     iTarget(optype::double_);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -124,7 +122,7 @@ iBegin(double_, Div, "double.div")
 
 iEnd
 
-iBegin(double_, Eq, "double.eq")
+iBegin(double_::Eq, "double.eq")
     iTarget(optype::boolean);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -139,7 +137,7 @@ iBegin(double_, Eq, "double.eq")
 
 iEnd
 
-iBegin(double_, Gt, "double.gt")
+iBegin(double_::Gt, "double.gt")
     iTarget(optype::boolean);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -154,7 +152,7 @@ iBegin(double_, Gt, "double.gt")
 
 iEnd
 
-iBegin(double_, Geq, "double.geq")
+iBegin(double_::Geq, "double.geq")
     iTarget(optype::boolean);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -169,7 +167,7 @@ iBegin(double_, Geq, "double.geq")
 
 iEnd
 
-iBegin(double_, Lt, "double.lt")
+iBegin(double_::Lt, "double.lt")
     iTarget(optype::boolean);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -183,7 +181,7 @@ iBegin(double_, Lt, "double.lt")
     )")
 iEnd
 
-iBegin(double_, Leq, "double.leq")
+iBegin(double_::Leq, "double.leq")
     iTarget(optype::boolean);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -197,7 +195,7 @@ iBegin(double_, Leq, "double.leq")
     )")
 iEnd
 
-iBegin(double_, Mod, "double.mod")
+iBegin(double_::Mod, "double.mod")
     iTarget(optype::double_);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -221,7 +219,7 @@ iBegin(double_, Mod, "double.mod")
 
 iEnd
 
-iBegin(double_, Mul, "double.mul")
+iBegin(double_::Mul, "double.mul")
     iTarget(optype::double_);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -237,7 +235,7 @@ iBegin(double_, Mul, "double.mul")
 
 iEnd
 
-iBegin(double_, PowDouble, "double.pow")
+iBegin(double_::PowDouble, "double.pow")
     iTarget(optype::double_);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);
@@ -253,7 +251,7 @@ iBegin(double_, PowDouble, "double.pow")
 
 iEnd
 
-iBegin(double_, Sub, "double.sub")
+iBegin(double_::Sub, "double.sub")
     iTarget(optype::double_);
     iOp1(optype::double_, true);
     iOp2(optype::double_, true);

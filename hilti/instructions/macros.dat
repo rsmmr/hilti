@@ -27,7 +27,7 @@ namespace hilti { namespace statement { namespace instruction { namespace $NAMES
 
         ACCEPT_VISITOR(hilti::statement::instruction::Resolved)
     };
-} } }
+} } } }
 
 namespace hilti { namespace instruction { namespace $NAMESPACE { namespace __class {
     class $CLASS : public hilti::Instruction {
@@ -38,15 +38,15 @@ namespace hilti { namespace instruction { namespace $NAMESPACE { namespace __cla
                                                                     const Location& l = Location::None)
             { return std::make_shared<hilti::statement::instruction::$NAMESPACE::$CLASS>(instruction, ops, l); }
 
-        $CLASS() : hilti::Instruction(std::make_shared<ID>(name), $CLASS, factory)
+        $CLASS() : hilti::Instruction(std::make_shared<ID>($2), "$NAMESPACE", "$CLASS", factory)
             { }
 
-        virtual ~cls()
+        virtual ~$CLASS()
             { }
 
 ===
 > iEnd h
-    }
+    };
 } } }  }
 
 ===
@@ -79,41 +79,51 @@ namespace hilti { namespace instruction { namespace $NAMESPACE { namespace __cla
 > iFlowInfo h
         FlowInfo __flowInfo(FlowInfo fi) override;
 ===
+> <<HEADER>> cc
+
+#include "$BASENAME.h"
+
+#define __get_op(n) ops[n] ? ops[n]->sharedPtr<Expression>() : shared_ptr<Expression>();
+
+===
 >> iBegin cc
-namespace hilti { namespace statement { namespace instruction { namespace $NAMESPACE { namespace __class {
+namespace hilti { namespace instruction { namespace $NAMESPACE { namespace __class {
 ===
 > iEnd cc
-}
+
+} } }
 
 void __register_$NAMESPACE_$CLASS()
 {
-    ::hilti::instruction::ns::cls =
+    ::hilti::instruction::$NAMESPACE::$CLASS =
         std::make_shared<::hilti::instruction::$NAMESPACE::__class::$CLASS>();
     InstructionRegistry::globalRegistry()->addInstruction(::hilti::instruction::$NAMESPACE::$CLASS);
 }
 
-AST_RTTI_BEGIN(hilti::instruction::$NAMESPACE::__class::$CLASS, id##_1)
+} // namespace hilti
+
+AST_RTTI_BEGIN(hilti::instruction::$NAMESPACE::__class::$CLASS, $NAMESPACE_ID_$CLASS_1)
 AST_RTTI_PARENT(hilti::Instruction)
-AST_RTTI_END(id##_1)
+AST_RTTI_END($NAMESPACE_ID_$CLASS_1)
 AST_RTTI_CAST_BEGIN(hilti::instruction::$NAMESPACE::__class::$CLASS)
 AST_RTTI_CAST_PARENT(hilti::Instruction)
 AST_RTTI_CAST_END()
 
-AST_RTTI_BEGIN(hilti::statement::instruction::$NAMESPACE::$CLASS, id##_2)
+AST_RTTI_BEGIN(hilti::statement::instruction::$NAMESPACE::$CLASS, $NAMESPACE_ID_$CLASS_2)
 AST_RTTI_PARENT(hilti::statement::instruction::Resolved)
-AST_RTTI_END(id##_2)
+AST_RTTI_END($NAMESPACE_ID_$CLASS_2)
 AST_RTTI_CAST_BEGIN(hilti::statement::instruction::$NAMESPACE::$CLASS)
 AST_RTTI_CAST_PARENT(hilti::statement::instruction::Resolved)
 AST_RTTI_CAST_END()
 
 ===
 > iTarget cc
-std::pair<shared_ptr<Type>, bool> $NAMESPACE::$CLASS::__typeOp0() const override
+std::pair<shared_ptr<Type>, bool> $CLASS::__typeOp0() const
 {
     return std::make_pair($1, false);
 }
 
-bool $NAMESPACE::$CLASS::__matchOp0(shared_ptr<Expression> op, bool coerce) override
+bool $CLASS::__matchOp0(shared_ptr<Expression> op, bool coerce)
 {
     if ( ! op )
         return __defaultOp0() || ast::rtti::isA<type::OptionalArgument>($1);
@@ -131,12 +141,12 @@ bool $NAMESPACE::$CLASS::__matchOp0(shared_ptr<Expression> op, bool coerce) over
 
 ===
 > iOp* cc
-std::pair<shared_ptr<Type>, bool> $NAMESPACE::$CLASS::__typeOp$POSTFIX() const override
+std::pair<shared_ptr<Type>, bool> $CLASS::__typeOp$POSTFIX() const
 {
     return std::make_pair($1, $2);
 }
 
-bool $NAMESPACE::$CLASS::__matchOp$POSTFIX(shared_ptr<Expression> op, bool coerce) override
+bool $CLASS::__matchOp$POSTFIX(shared_ptr<Expression> op, bool coerce)
 {
     if ( ! op )
         return __defaultOp$POSTFIX() || ast::rtti::isA<type::OptionalArgument>($1);
@@ -154,20 +164,20 @@ bool $NAMESPACE::$CLASS::__matchOp$POSTFIX(shared_ptr<Expression> op, bool coerc
 
 ===
 > iDefault* cc
-shared_ptr<Expression> $NAMESPACE::$CLASS::__default$POSTFIX() const override
+shared_ptr<Expression> $CLASS::__default$POSTFIX() const
 {
     return std::make_shared<expression::Constant>(std::make_shared<Constant>($1));
 }
 
 ===
 > iHideInDebugTrace cc
-bool $NAMESPACE::$CLASS::__hideInDebugTrace() const override
+bool $CLASS::__hideInDebugTrace() const
 {
     return true;
 }
 ===
-> iValidate cc
-void $NAMESPACE::$CLASS::__validate(const hilti::instruction::Operands& ops) const
+> iValidate cc code-block
+void $CLASS::__validate(const hilti::instruction::Operands& ops) const
 {
     shared_ptr<Expression> target = __get_op(0);
     shared_ptr<Expression> op1 = __get_op(1);
@@ -175,22 +185,19 @@ void $NAMESPACE::$CLASS::__validate(const hilti::instruction::Operands& ops) con
     shared_ptr<Expression> op3 = __get_op(3);
 ===
 > iDoc cc
-}
-
-const char* $NAMESPACE::$CLASS::__doc() const
+const char* $CLASS::__doc() const
 {
     return $1;
+}
 ===
 > iTerminator cc
-bool $NAMESPACE::$CLASS::__terminator() const override
+bool $CLASS::__terminator() const
 {
     return true;
 }
 ===
-> iSuccessors cc
-}
-
-std::set<shared_ptr<Expression>> $NAMESPACE::$CLASS::__successors(const hilti::instruction::Operands& ops) const
+> iSuccessors cc code-block
+std::set<shared_ptr<Expression>> $CLASS::__successors(const hilti::instruction::Operands& ops) const
 {
     shared_ptr<Expression> target = __get_op(0);
     shared_ptr<Expression> op1 = __get_op(1);
@@ -198,9 +205,7 @@ std::set<shared_ptr<Expression>> $NAMESPACE::$CLASS::__successors(const hilti::i
     shared_ptr<Expression> op3 = __get_op(3);
 
 ===
-> iFlowInfo cc
-}
-
-FlowInfo cls::__flowInfo(FlowInfo fi)
+> iFlowInfo cc code-block
+FlowInfo $CLASS::__flowInfo(FlowInfo fi)
 {
 ===

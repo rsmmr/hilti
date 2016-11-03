@@ -19,9 +19,7 @@
 ///
 /// \cproto hlt_interval
 
-#include "define-instruction.h"
-
-iBegin(interval, Equal, "equal")
+iBegin(interval::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::interval, true);
     iOp2(optype::interval, true);
@@ -36,7 +34,7 @@ iBegin(interval, Equal, "equal")
 
 iEnd
 
-iBegin(interval, Add, "interval.add")
+iBegin(interval::Add, "interval.add")
     iTarget(optype::interval);
     iOp1(optype::interval, true);
     iOp2(optype::interval, true);
@@ -51,7 +49,7 @@ iBegin(interval, Add, "interval.add")
 
 iEnd
 
-iBegin(interval, AsDouble, "interval.as_double")
+iBegin(interval::AsDouble, "interval.as_double")
     iTarget(optype::double_);
     iOp1(optype::interval, true);
 
@@ -66,7 +64,7 @@ iBegin(interval, AsDouble, "interval.as_double")
 
 iEnd
 
-iBegin(interval, FromDouble, "interval.from_double")
+iBegin(interval::FromDouble, "interval.from_double")
     iTarget(optype::interval);
     iOp1(optype::double_, true);
 
@@ -79,7 +77,7 @@ iBegin(interval, FromDouble, "interval.from_double")
     )")
 iEnd
 
-iBegin(interval, AsInt, "interval.as_int")
+iBegin(interval::AsInt, "interval.as_int")
     iTarget(optype::int64);
     iOp1(optype::interval, true);
 
@@ -93,7 +91,7 @@ iBegin(interval, AsInt, "interval.as_int")
 
 iEnd
 
-iBegin(interval, Eq, "interval.eq")
+iBegin(interval::Eq, "interval.eq")
     iTarget(optype::boolean);
     iOp1(optype::interval, true);
     iOp2(optype::interval, true);
@@ -109,7 +107,7 @@ iBegin(interval, Eq, "interval.eq")
 
 iEnd
 
-iBegin(interval, Gt, "interval.gt")
+iBegin(interval::Gt, "interval.gt")
     iTarget(optype::boolean);
     iOp1(optype::interval, true);
     iOp2(optype::interval, true);
@@ -125,7 +123,7 @@ iBegin(interval, Gt, "interval.gt")
 
 iEnd
 
-iBegin(interval, Lt, "interval.lt")
+iBegin(interval::Lt, "interval.lt")
     iTarget(optype::boolean);
     iOp1(optype::interval, true);
     iOp2(optype::interval, true);
@@ -141,7 +139,7 @@ iBegin(interval, Lt, "interval.lt")
 
 iEnd
 
-iBegin(interval, Geq, "interval.geq")
+iBegin(interval::Geq, "interval.geq")
     iTarget(optype::boolean);
     iOp1(optype::interval, true);
     iOp2(optype::interval, true);
@@ -157,7 +155,7 @@ iBegin(interval, Geq, "interval.geq")
 
 iEnd
 
-iBegin(interval, Leq, "interval.leq")
+iBegin(interval::Leq, "interval.leq")
     iTarget(optype::boolean);
     iOp1(optype::interval, true);
     iOp2(optype::interval, true);
@@ -173,7 +171,7 @@ iBegin(interval, Leq, "interval.leq")
 
 iEnd
 
-iBegin(interval, Mul, "interval.mul")
+iBegin(interval::Mul, "interval.mul")
     iTarget(optype::interval);
     iOp1(optype::interval, true);
     iOp2(optype::int64, true);
@@ -188,7 +186,7 @@ iBegin(interval, Mul, "interval.mul")
 
 iEnd
 
-iBegin(interval, Nsecs, "interval.nsecs")
+iBegin(interval::Nsecs, "interval.nsecs")
     iTarget(optype::int64);
     iOp1(optype::interval, true);
 
@@ -202,7 +200,7 @@ iBegin(interval, Nsecs, "interval.nsecs")
 
 iEnd
 
-iBegin(interval, Sub, "interval.sub")
+iBegin(interval::Sub, "interval.sub")
     iTarget(optype::interval);
     iOp1(optype::interval, true);
     iOp2(optype::interval, true);

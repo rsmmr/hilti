@@ -40,9 +40,7 @@
 ///
 /// \cproto hlt_bitset
 
-#include "define-instruction.h"
-
-iBegin(bitset, Equal, "equal")
+iBegin(bitset::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::bitset, true);
     iOp2(optype::bitset, true);
@@ -61,7 +59,7 @@ iBegin(bitset, Equal, "equal")
     )")
 iEnd
 
-iBegin(bitset, Clear, "bitset.clear")
+iBegin(bitset::Clear, "bitset.clear")
     iTarget(optype::bitset);
     iOp1(optype::bitset, true);
     iOp2(optype::bitset, true);
@@ -86,7 +84,7 @@ iBegin(bitset, Clear, "bitset.clear")
 
 iEnd
 
-iBegin(bitset, Has, "bitset.has")
+iBegin(bitset::Has, "bitset.has")
     iTarget(optype::boolean);
     iOp1(optype::bitset, true);
     iOp2(optype::bitset, true);
@@ -107,7 +105,7 @@ iBegin(bitset, Has, "bitset.has")
 
 iEnd
 
-iBegin(bitset, Set, "bitset.set")
+iBegin(bitset::Set, "bitset.set")
     iTarget(optype::bitset);
     iOp1(optype::bitset, true);
     iOp2(optype::bitset, true);

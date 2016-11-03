@@ -29,9 +29,7 @@
 /// \cproto hlt_vector_iter
 ///
 
-#include "define-instruction.h"
-
-iBegin(iterVector, Begin, "begin")
+iBegin(iterVector::Begin, "begin")
     iTarget(optype::iterVector);
     iOp1(optype::refVector, true);
 
@@ -45,7 +43,7 @@ iBegin(iterVector, Begin, "begin")
     )")
 iEnd
 
-iBegin(iterVector, End, "end")
+iBegin(iterVector::End, "end")
     iTarget(optype::iterVector);
     iOp1(optype::refVector, true);
 
@@ -59,7 +57,7 @@ iBegin(iterVector, End, "end")
     )")
 iEnd
 
-iBegin(iterVector, Incr, "incr")
+iBegin(iterVector::Incr, "incr")
     iTarget(optype::iterVector);
     iOp1(optype::iterVector, true);
 
@@ -73,7 +71,7 @@ iBegin(iterVector, Incr, "incr")
     )")
 iEnd
 
-iBegin(iterVector, Equal, "equal")
+iBegin(iterVector::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::iterVector, true);
     iOp2(optype::iterVector, true);
@@ -89,7 +87,7 @@ iBegin(iterVector, Equal, "equal")
 
 iEnd
 
-iBegin(iterVector, Deref, "deref")
+iBegin(iterVector::Deref, "deref")
     iTarget(optype::any);
     iOp1(optype::iterVector, true);
 
@@ -104,7 +102,7 @@ iBegin(iterVector, Deref, "deref")
 
 iEnd
 
-iBegin(vector, New, "new")
+iBegin(vector::New, "new")
     iTarget(optype::refVector);
     iOp1(optype::typeVector, true);
     iOp2(optype::optional(optype::refTimerMgr), false);
@@ -120,7 +118,7 @@ iBegin(vector, New, "new")
 
 iEnd
 
-iBegin(vector, Get, "vector.get")
+iBegin(vector::Get, "vector.get")
     iTarget(optype::any);
     iOp1(optype::refVector, true);
     iOp2(optype::int64, true);
@@ -136,7 +134,7 @@ iBegin(vector, Get, "vector.get")
 
 iEnd
 
-iBegin(vector, Exists, "vector.exists")
+iBegin(vector::Exists, "vector.exists")
     iTarget(optype::boolean);
     iOp1(optype::refVector, true);
     iOp2(optype::int64, true);
@@ -151,7 +149,7 @@ iBegin(vector, Exists, "vector.exists")
 
 iEnd
 
-iBegin(vector, PushBack, "vector.push_back")
+iBegin(vector::PushBack, "vector.push_back")
     iOp1(optype::refVector, false);
     iOp2(optype::any, false);
 
@@ -166,7 +164,7 @@ iBegin(vector, PushBack, "vector.push_back")
 
 iEnd
 
-iBegin(vector, Reserve, "vector.reserve")
+iBegin(vector::Reserve, "vector.reserve")
     iOp1(optype::refVector, false);
     iOp2(optype::int64, true);
 
@@ -184,7 +182,7 @@ iBegin(vector, Reserve, "vector.reserve")
 
 iEnd
 
-iBegin(vector, Set, "vector.set")
+iBegin(vector::Set, "vector.set")
     iOp1(optype::refVector, false);
     iOp2(optype::int64, true);
     iOp3(optype::any, false);
@@ -200,7 +198,7 @@ iBegin(vector, Set, "vector.set")
 
 iEnd
 
-iBegin(vector, Size, "vector.size")
+iBegin(vector::Size, "vector.size")
     iTarget(optype::int64);
     iOp1(optype::refVector, true);
 
@@ -215,7 +213,7 @@ iBegin(vector, Size, "vector.size")
 
 iEnd
 
-iBegin(vector, Timeout, "vector.timeout")
+iBegin(vector::Timeout, "vector.timeout")
     iOp1(optype::refVector, true);
     iOp2(optype::enum_, true);
     iOp3(optype::interval, true);

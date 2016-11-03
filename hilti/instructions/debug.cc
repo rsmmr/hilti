@@ -1,5 +1,5 @@
 
-iBegin(debug, Assert, "debug.assert")
+iBegin(debug::Assert, "debug.assert")
     iOp1(optype::boolean, true);
     iOp2(optype::optional(optype::string), true);
     iHideInDebugTrace();
@@ -17,7 +17,7 @@ iBegin(debug, Assert, "debug.assert")
 
 iEnd
 
-iBegin(debug, InternalError, "debug.internal_error")
+iBegin(debug::InternalError, "debug.internal_error")
     iOp1(optype::string, true);
 
     iValidate
@@ -32,7 +32,7 @@ iBegin(debug, InternalError, "debug.internal_error")
 
 iEnd
 
-iBegin(debug, Msg, "debug.msg")
+iBegin(debug::Msg, "debug.msg")
     iOp1(optype::string, true);
     iOp2(optype::string, true);
     iOp3(optype::tuple, true);
@@ -51,7 +51,7 @@ iBegin(debug, Msg, "debug.msg")
 
 iEnd
 
-iBegin(debug, PopIndent, "debug.pop_indent")
+iBegin(debug::PopIndent, "debug.pop_indent")
     iHideInDebugTrace();
 
     iValidate
@@ -66,7 +66,7 @@ iBegin(debug, PopIndent, "debug.pop_indent")
 
 iEnd
 
-iBegin(debug, PushIndent, "debug.push_indent")
+iBegin(debug::PushIndent, "debug.push_indent")
     iHideInDebugTrace();
 
     iValidate

@@ -4,13 +4,15 @@
 #include "instructions/optypes.h"
 
 // Auto-generated in ${autogen}/instructions-register.cc
+namespace hilti {
 extern void __registerAllInstructions();
+}
 
 void hilti::init()
 {
     ast::rtti::RTTI::init();
     hilti::optype::__init();
-    __registerAllInstructions();
+    hilti::__registerAllInstructions();
 }
 
 extern string hilti::version()

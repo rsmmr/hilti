@@ -60,44 +60,44 @@ set_property(SOURCE ${autogen}/scanner.cc APPEND PROPERTY COMPILE_FLAGS "-Wno-nu
 ### Generate the instruction declarations.
 
 set(instructions
-    instructions/address.h
-    instructions/bitset.h
-    instructions/bool.h
-    instructions/bytes.h
-    instructions/caddr.h
-    instructions/callable.h
-    instructions/channel.h
-    instructions/classifier.h
-    instructions/debug.h
-    instructions/double.h
-    instructions/enum.h
-    instructions/exception.h
-    instructions/file.h
-    instructions/flow.h
-    instructions/hook.h
-    instructions/integer.h
-    instructions/interval.h
-    instructions/iosrc.h
-    instructions/list.h
-    instructions/map.h
-    instructions/misc.h
-    instructions/network.h
-    instructions/operators.h
-    instructions/overlay.h
-    instructions/port.h
-    instructions/profiler.h
-    instructions/reference.h
-    instructions/regexp.h
-    instructions/set.h
-    instructions/string.h
-    instructions/struct.h
-    instructions/time.h
-    instructions/timer-mgr.h
-    instructions/timer.h
-    instructions/union.h
-    instructions/thread.h
-    instructions/tuple.h
-    instructions/vector.h
+    instructions/address.cc
+    instructions/bitset.cc
+    instructions/bool.cc
+    instructions/bytes.cc
+    instructions/caddr.cc
+    instructions/callable.cc
+    instructions/channel.cc
+    instructions/classifier.cc
+    instructions/debug.cc
+    instructions/double.cc
+    instructions/enum.cc
+    instructions/exception.cc
+    instructions/file.cc
+    instructions/flow.cc
+    instructions/hook.cc
+    instructions/integer.cc
+    instructions/interval.cc
+    instructions/iosrc.cc
+    instructions/list.cc
+    instructions/map.cc
+    instructions/misc.cc
+    instructions/network.cc
+    instructions/operators.cc
+    instructions/overlay.cc
+    instructions/port.cc
+    instructions/profiler.cc
+    instructions/reference.cc
+    instructions/regexp.cc
+    instructions/set.cc
+    instructions/string.cc
+    instructions/struct.cc
+    instructions/time.cc
+    instructions/timer-mgr.cc
+    instructions/timer.cc
+    instructions/thread.cc
+    instructions/union.cc
+    instructions/tuple.cc
+    instructions/vector.cc
 )
 
 add_custom_command(
@@ -108,30 +108,35 @@ add_custom_command(
             ${autogen}/instructions-stmt-builder.h
             ${autogen}/instructions-register.cc
    COMMAND  ${scripts}/make-instructions -h ${CMAKE_CURRENT_SOURCE_DIR} ${autogen} ${instructions}
-   DEPENDS  instructions/define-instruction.h ${instructions} ${scripts}/make-instructions
+   DEPENDS  ${instructions} ${scripts}/make-instructions
 )
 
-foreach(hdr ${instructions})
-   string(REPLACE ".h" ".cc" cc "${hdr}")
-   string(REPLACE "instructions/" "${autogen}/instructions/" cc "${cc}")
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen}/instructions)
+
+foreach(in ${instructions})
+   string(REPLACE ".cc" "" base "${in}")
+
+   set(h  "${autogen}/${base}.h")
+   set(cc "${autogen}/${base}.cc")
 
    set(instructions_cc ${instructions_cc} ${cc})
 
    add_custom_command(
-       OUTPUT   ${cc}
-       COMMAND  ${scripts}/make-instructions -cc ${CMAKE_CURRENT_SOURCE_DIR} ${autogen} ${hdr}
-       DEPENDS  instructions/define-instruction.h ${hdr} ${scripts}/make-instructions
+       OUTPUT   ${h} ${cc}
+       COMMAND  ${scripts}/expand-macros ${CMAKE_CURRENT_SOURCE_DIR}/instructions/macros.dat ${CMAKE_CURRENT_SOURCE_DIR}/${in} ${autogen}/instructions
+       DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/${in} ${scripts}/expand-macros ${CMAKE_CURRENT_SOURCE_DIR}/instructions/macros.dat
    )
 
+   set_source_files_properties(${h}  PROPERTIES GENERATED 1)
    set_source_files_properties(${cc} PROPERTIES GENERATED 1)
 endforeach ()
 
 set_source_files_properties(${autogen}/instructions.h PROPERTIES GENERATED 1)
 set_source_files_properties(${autogen}/instructions-declare.h PROPERTIES GENERATED 1)
+set_source_files_properties(${autogen}/instructions-define.cc PROPERTIES GENERATED 1)
 set_source_files_properties(${autogen}/instructions-visits.h PROPERTIES GENERATED 1)
 set_source_files_properties(${autogen}/instructions-stmt-builder.h PROPERTIES GENERATED 1)
 set_source_files_properties(${autogen}/instructions-register.cc  PROPERTIES GENERATED 1)
-set_source_files_properties(${autogen}/instructions-define.cc  PROPERTIES GENERATED 1)
 
 ### Build libhilti.
 
@@ -158,25 +163,9 @@ add_library (hilti STATIC
     builder/block.cc
     builder/module.cc
 
-    instructions/bytes.cc
-    instructions/callable.cc
-    instructions/channel.cc
-    instructions/classifier.cc
-    instructions/flow.cc
-    instructions/exception.cc
-    instructions/hook.cc
-    instructions/iosrc.cc
-    instructions/misc.cc
-    instructions/operators.cc
-    instructions/optypes.cc
-    instructions/port.cc
-    instructions/profiler.cc
-    instructions/struct.cc
-    instructions/thread.cc
-    instructions/tuple.cc
-    instructions/union.cc
-
     parser/driver.cc
+
+    instructions/optypes.cc
 
     passes/block-flattener.cc
     passes/block-normalizer.cc
@@ -251,10 +240,10 @@ add_library (hilti STATIC
 
     ${autogen}/instructions.h
     ${autogen}/instructions-declare.h
+    ${autogen}/instructions-define.cc
     ${autogen}/instructions-visits.h
     ${autogen}/instructions-stmt-builder.h
     ${autogen}/instructions-register.cc
-    ${autogen}/instructions-define.cc
 
     ${autogen}/visitor-rtti.cc
 
@@ -266,6 +255,7 @@ add_library (hilti STATIC
     $<TARGET_OBJECTS:util>
     $<TARGET_OBJECTS:hilti-ffi>
 )
+
 
 add_dependencies(hilti generate_parser_hilti)
 target_link_libraries(hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})

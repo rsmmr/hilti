@@ -28,7 +28,7 @@ static shared_ptr<type::overlay::Field> _overlayField(const Instruction* i,
     return f;
 }
 
-iBegin(overlay, Attach, "overlay.attach")
+iBegin(overlay::Attach, "overlay.attach")
     iOp1(optype::overlay, false);
     iOp2(optype::iterBytes, true);
 
@@ -45,7 +45,7 @@ iBegin(overlay, Attach, "overlay.attach")
 
 iEnd
 
-iBegin(overlay, Get, "overlay.get")
+iBegin(overlay::Get, "overlay.get")
     iTarget(optype::any);
     iOp1(optype::overlay, false);
     iOp2(optype::string, true);
@@ -81,7 +81,7 @@ iBegin(overlay, Get, "overlay.get")
     )")
 iEnd
 
-iBegin(overlay, GetStatic, "overlay.get")
+iBegin(overlay::GetStatic, "overlay.get")
     iTarget(optype::any);
     iOp1(optype::typeOverlay, true);
     iOp2(optype::string, true);

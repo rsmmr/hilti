@@ -20,9 +20,7 @@
 ///
 /// \cproto hlt_string
 
-#include "define-instruction.h"
-
-iBegin(string, Equal, "equal")
+iBegin(string::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
@@ -37,7 +35,7 @@ iBegin(string, Equal, "equal")
 
 iEnd
 
-iBegin(string, Cmp, "string.cmp")
+iBegin(string::Cmp, "string.cmp")
     iTarget(optype::boolean);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
@@ -53,7 +51,7 @@ iBegin(string, Cmp, "string.cmp")
 
 iEnd
 
-iBegin(string, Concat, "string.concat")
+iBegin(string::Concat, "string.concat")
     iTarget(optype::string);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
@@ -68,7 +66,7 @@ iBegin(string, Concat, "string.concat")
 
 iEnd
 
-iBegin(string, Decode, "string.decode")
+iBegin(string::Decode, "string.decode")
     iTarget(optype::string);
     iOp1(optype::refBytes, true);
     iOp2(optype::enum_, true);
@@ -90,7 +88,7 @@ iBegin(string, Decode, "string.decode")
 
 iEnd
 
-iBegin(string, Encode, "string.encode")
+iBegin(string::Encode, "string.encode")
     iTarget(optype::refBytes);
     iOp1(optype::string, true);
     iOp2(optype::enum_, true);
@@ -110,7 +108,7 @@ iBegin(string, Encode, "string.encode")
 
 iEnd
 
-iBegin(string, Find, "string.find")
+iBegin(string::Find, "string.find")
     iTarget(optype::int64);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
@@ -126,7 +124,7 @@ iBegin(string, Find, "string.find")
 
 iEnd
 
-iBegin(string, Length, "string.length")
+iBegin(string::Length, "string.length")
     iTarget(optype::int64);
     iOp1(optype::string, true);
 
@@ -140,7 +138,7 @@ iBegin(string, Length, "string.length")
 
 iEnd
 
-iBegin(string, Lt, "string.lt")
+iBegin(string::Lt, "string.lt")
     iTarget(optype::boolean);
     iOp1(optype::string, true);
     iOp2(optype::string, true);
@@ -156,7 +154,7 @@ iBegin(string, Lt, "string.lt")
 
 iEnd
 
-iBegin(string, Substr, "string.substr")
+iBegin(string::Substr, "string.substr")
     iTarget(optype::string);
     iOp1(optype::string, true);
     iOp2(optype::int64, true);
@@ -172,7 +170,7 @@ iBegin(string, Substr, "string.substr")
     )")
 iEnd
 
-iBegin(string, Join, "string.join")
+iBegin(string::Join, "string.join")
     iTarget(optype::string);
     iOp1(optype::string, true);
     iOp2(optype::refList, true);

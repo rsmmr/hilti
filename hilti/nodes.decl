@@ -372,4 +372,3 @@ statement::instruction::Resolved
   : statement::Instruction
 statement::instruction::Unresolved
   : statement::Instruction
-

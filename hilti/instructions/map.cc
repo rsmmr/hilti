@@ -26,9 +26,7 @@
 /// \cproto hlt_map_iter
 ///
 
-#include "define-instruction.h"
-
-iBegin(iterMap, Begin, "begin")
+iBegin(iterMap::Begin, "begin")
     iTarget(optype::iterMap);
     iOp1(optype::refMap, true);
 
@@ -42,7 +40,7 @@ iBegin(iterMap, Begin, "begin")
     )")
 iEnd
 
-iBegin(iterMap, End, "end")
+iBegin(iterMap::End, "end")
     iTarget(optype::iterMap);
     iOp1(optype::refMap, true);
 
@@ -56,7 +54,7 @@ iBegin(iterMap, End, "end")
     )")
 iEnd
 
-iBegin(iterMap, Incr, "incr")
+iBegin(iterMap::Incr, "incr")
     iTarget(optype::iterMap);
     iOp1(optype::iterMap, true);
 
@@ -70,7 +68,7 @@ iBegin(iterMap, Incr, "incr")
     )")
 iEnd
 
-iBegin(iterMap, Equal, "equal")
+iBegin(iterMap::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::iterMap, true);
     iOp2(optype::iterMap, true);
@@ -86,7 +84,7 @@ iBegin(iterMap, Equal, "equal")
 
 iEnd
 
-iBegin(iterMap, Deref, "deref")
+iBegin(iterMap::Deref, "deref")
     iTarget(optype::any);
     iOp1(optype::iterMap, true);
 
@@ -106,7 +104,7 @@ iBegin(iterMap, Deref, "deref")
 iEnd
 
 
-iBegin(map, New, "new")
+iBegin(map::New, "new")
     iTarget(optype::refMap);
     iOp1(optype::typeMap, true);
     iOp2(optype::optional(optype::refTimerMgr), false);
@@ -123,7 +121,7 @@ iBegin(map, New, "new")
 iEnd
 
 
-iBegin(map, Clear, "map.clear")
+iBegin(map::Clear, "map.clear")
     iOp1(optype::refMap, false);
 
     iValidate
@@ -136,7 +134,7 @@ iBegin(map, Clear, "map.clear")
 
 iEnd
 
-iBegin(map, Default, "map.default")
+iBegin(map::Default, "map.default")
     iOp1(optype::refMap, false);
     iOp2(optype::any, true);
 
@@ -166,7 +164,7 @@ iBegin(map, Default, "map.default")
 
 iEnd
 
-iBegin(map, Exists, "map.exists")
+iBegin(map::Exists, "map.exists")
     iTarget(optype::boolean);
     iOp1(optype::refMap, true);
     iOp2(optype::any, true);
@@ -183,7 +181,7 @@ iBegin(map, Exists, "map.exists")
 
 iEnd
 
-iBegin(map, Get, "map.get")
+iBegin(map::Get, "map.get")
     iTarget(optype::any);
     iOp1(optype::refMap, true);
     iOp2(optype::any, true);
@@ -204,7 +202,7 @@ iEnd
 // TODO: Once we have a clone operator we should make the default constant
 // and then clone it when it's returned.
 
-iBegin(map, GetDefault, "map.get_default")
+iBegin(map::GetDefault, "map.get_default")
     iTarget(optype::any);
     iOp1(optype::refMap, true);
     iOp2(optype::any, true);
@@ -224,7 +222,7 @@ iBegin(map, GetDefault, "map.get_default")
 
 iEnd
 
-iBegin(map, Insert, "map.insert")
+iBegin(map::Insert, "map.insert")
     iOp1(optype::refMap, false);
     iOp2(optype::any, false);
     iOp3(optype::any, false);
@@ -242,7 +240,7 @@ iBegin(map, Insert, "map.insert")
 
 iEnd
 
-iBegin(map, Remove, "map.remove")
+iBegin(map::Remove, "map.remove")
     iOp1(optype::refMap, false);
     iOp2(optype::any, true);
 
@@ -258,7 +256,7 @@ iBegin(map, Remove, "map.remove")
 
 iEnd
 
-iBegin(map, Size, "map.size")
+iBegin(map::Size, "map.size")
     iTarget(optype::int64);
     iOp1(optype::refMap, true);
 
@@ -272,7 +270,7 @@ iBegin(map, Size, "map.size")
 
 iEnd
 
-iBegin(map, Timeout, "map.timeout")
+iBegin(map::Timeout, "map.timeout")
     iOp1(optype::refMap, true);
     iOp2(optype::enum_, true);
     iOp3(optype::interval, true);

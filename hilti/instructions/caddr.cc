@@ -1,7 +1,5 @@
 
-#include "define-instruction.h"
-
-iBegin(caddr, Function, "caddr.function")
+iBegin(caddr::Function, "caddr.function")
     iTarget(optype::tuple);
     iOp1(optype::function, true);
 
@@ -27,7 +25,7 @@ iBegin(caddr, Function, "caddr.function")
 
 iEnd
 
-iBegin(caddr, Equal, "equal")
+iBegin(caddr::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::caddr, true);
     iOp2(optype::caddr, true);

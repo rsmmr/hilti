@@ -18,9 +18,7 @@
 ///
 /// \cproto hlt_enum
 
-#include "define-instruction.h"
-
-iBegin(enum_, Equal, "equal")
+iBegin(enum_::Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::enum_, true);
     iOp2(optype::enum_, true);
@@ -37,7 +35,7 @@ iBegin(enum_, Equal, "equal")
     )")
 iEnd
 
-iBegin(enum_, FromInt, "enum.from_int")
+iBegin(enum_::FromInt, "enum.from_int")
     iTarget(optype::enum_);
     iOp1(optype::integer, true);
 
@@ -55,7 +53,7 @@ iBegin(enum_, FromInt, "enum.from_int")
 
 iEnd
 
-iBegin(enum_, ToInt, "enum.to_int")
+iBegin(enum_::ToInt, "enum.to_int")
     iTarget(optype::integer);
     iOp1(optype::enum_, true);
 
