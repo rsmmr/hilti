@@ -2,28 +2,15 @@
 # This is just a wrapper around the CMake setup.
 #
 
+BUILD=build
+
 GIT=git://git.icir.org/hilti
 
 DOCKER_IMAGE=rsmmr/hilti
 DOCKER_TMP=/xa/robin/hilti-docker-build
 
-all: release
-
-debug:
-	test -d build || mkdir build
-	( cd build; test -e Makefile || cmake -D CMAKE_BUILD_TYPE=Debug -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
-
-debug-ninja:
-	test -d build || mkdir build
-	( cd build; test -e build.ninja || cmake -G Ninja -D CMAKE_BUILD_TYPE=Debug -D BRO_DIST=$${BRO_DIST} ..; ninja )
-
-release:
-	test -d build || mkdir build
-	( cd build; test -e Makefile || cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BRO_DIST=$${BRO_DIST} ..; $(MAKE) )
-
-release-ninja:
-	test -d build || mkdir build
-	( cd build; test -e build.ninja || cmake -G Ninja -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BRO_DIST=$${BRO_DIST} ..; ninja )
+all: configured
+	$(MAKE) -C $(BUILD) $@
 
 clean:
 	rm -rf build
@@ -35,6 +22,10 @@ test:
 
 tags:
 	update-tags
+
+configured:
+	@test -d $(BUILD) || ( echo "Error: No build/ directory found. Did you run configure?" && exit 1 )
+	@test -e $(BUILD)/Makefile || ( echo "Error: No build/Makefile found. Did you run configure?" && exit 1 )
 
 clang-format:
 	@test $$(clang-format -version | cut -d ' ' -f 3 | sed 's/\.//g') -ge 390 || (echo "Must have clang-format >= 3.9"; exit 1)
