@@ -1,1 +1,270 @@
-_templates/index.html
+{% extends "layout.html" %}
+{% set title = "HILTI and Spicy" %}
+{% set docstitle = "" %}
+{% set theme_nosidebar = True %}
+{% set theme_showheader = False %}
+{% set theme_showrelbartop = False %}
+{% set theme_showrelbartop = False %}
+
+{%- block relbar1 %} {% endblock %}
+{%- block relbar2 %} {% endblock %}
+
+{% block body %}
+
+<table width="100%" border="0" cellspacing="0" cellpadding="20em" style="table-layout: fixed">
+<tr>
+<td align="left" valign="top" width="50%">
+
+<table width="100%" border="0" cellspacing="0" cellpadding="10em">
+<tr>
+<td align="left" valign="middle">
+    <img src="{{ pathto("_static/logo.png", 1)}}" alt="Logo">
+</td>
+
+<td align="left" valign="top">
+    <div style="font-size: 110%;">
+    <p>
+    <b>HILTI.</b> A high-level intermediary language for traffic
+    inspection.
+    </p>
+    <p>
+    <b><strike>BinPAC++</strike> Spicy.</b> A next-generation parser generator for network
+    protocols and file formats.
+    </p>
+    </div>
+</td>
+
+</tr>
+</table>
+
+<h2>Download and Installation</h2>
+
+<p>
+The source code for both HILTI and Spicy is hosted at
+<tt>git://git.icir.org/hilti</tt>. There's is also
+<a href="http://www.github.com/rsmmr/hilti">a mirror on github</a>.
+Follow the <a href="{{ pathto("install/index") }}">installation
+instructions</a> to get it up and running.
+</p>
+
+<p>
+We do not offer any further archives or packages for download right
+now. However, there's a <a href="{{ pathto("install/index") }}#docker">Docker image</a>
+that comes with everything preinstalled.
+</p>
+
+<h2>Documentation</h2>
+
+<p>
+There is the
+<a href="{{ pathto("manual")}}">start of a manual</a>. It's very
+preliminary at this point, and very incomplete.
+</p>
+
+<p>
+For more background on HILTI, see the <a
+href="http://www.icir.org/robin/papers/imc14-hilti.pdf">IMC paper</a>.
+</p>
+
+<p>
+For more background on Spicy, see the <a
+href="http://www.icir.org/robin/papers/Spicy-TR-15-004.pdf">Technical Report</a>.
+</p>
+
+<p>
+For a demo of Spicy, watch the <a
+href="http://youtu.be/3sQ6thi_BR0">presentation</a>
+at <a href="http://www.bro.org/community/brocon2014.html">BroCon
+2014</a>.
+</p>
+
+
+<h2><a name="contact">Mailing List & Contact</a></h2>
+
+For questions and discussion of HILTI and Spicy, join our
+<a href="http://mailman.icsi.berkeley.edu/mailman/listinfo/hilti">mailing list</a>.
+To report problems, please use the <a
+href="https://github.com/rsmmr/hilti/issues">github tracker</a>. To
+submit patches, file a github pull request. If you want to contact the
+development team directly,
+<a href="mailto:hilti-project@icir.org">email us</a>.
+
+<h2>Frequently Asked Questions</h2>
+
+<dl>
+
+<dt>What's the current implementation status?</dt>
+<dd>
+HILTI and Spicy are currently in prototype state; they aren't
+production-ready yet. While they are functional and provide most of
+the initially targeted functionality at this point, that doesn't mean
+they are necessarily also stable, robust, efficient, portable,
+user-friendly, or documented.
+</dd>
+
+<dt>Well, so when do you expect this all to be production-ready then?</dt>
+<dd>
+There's quite a bit still left to do, and it will require more
+resources to make that happen. <a href="#contact">Let us know</a>
+if you want to help.
+</dd>
+
+<dt>Which platforms are supported?</dt>
+<dd>
+We develop HILTI and Spicy on 64-bit Linux and MacOS; other
+platforms are unlikely to work at the moment.
+</dd>
+
+<dt>Can I use Spicy with Bro?</dt>
+<dd>
+Yes, we have developed a
+<a href="{{ pathto("binpac/bro/index")}}">Bro plugin</a>
+that integrates Spicy transparently into
+<a href="http://www.bro.org">Bro</a>.
+</dd>
+
+<dt>Oh, so is this all tied to Bro?</dt>
+<dd>
+No, not at all. While coming out of the
+<a href="http://www.bro.org">Bro Project</a>,
+HILTI and Spicy are standalone systems designed with generic C APIs
+suitable for integration into a wide range of potentially quite
+different applications.
+</dd>
+
+<dt>Alright, what's the license?</dt>
+<dd>
+HILTI and Spicy are open-source and come with a BSD license, which
+allows for pretty much unrestricted use as long as you leave the
+license header in place.
+</dd>
+
+<dt>I hear Spicy, I hear BinPAC++, that's confusing!?</dt>
+<dd>
+BinPAC++ used to be the working title of the parser generator. We have
+since renamed the project to Spicy, as it's not actually related to
+the original 2004 BinPAC system at all&mdash;it's aiming at the same
+problem space but taking a completely different approach. As the
+renaming remains work in progress, you'll still see lots of
+evidence of that former name, including in tools (e.g.,
+<tt>pac-driver</tt>)
+and file extensions (<tt>*.pac2</tt>).
+</dd>
+
+<dt>Who's behind all this?</dt>
+<dd>
+HILTI and Spicy are developed by the 
+<a href="http://www.icir.org">Networking and Security
+Group</a> at the <a href="http://www.icsi.berkeley.edu">International
+Computer Science Institute</a>, a non-profit research institute
+affiliated with the <a href="http://www.berkeley.edu">University of
+California, Berkeley</a>. Development is funded in part by the
+<a href="http://www.nsf.gov">National Science Foundation</a>.
+</dd>
+
+</dl>
+
+</td>
+
+<td align="left" valign="top" width="50%">
+
+<h2>About HILTI</h2>
+
+<p>
+When developing networking systems such as firewalls, routers, and
+intrusion detection systems, one faces a striking gap between the ease
+with which one can often describe a desired analysis in high-level
+terms, and the tremendous amount of low-level implementation details
+that one must still grapple with to come to a robust solution. HILTI
+bridges this divide by providing an abstract execution environment for
+deep, stateful network traffic analysis. It offers <em>platform</em>
+to application developers that provides much of the low-level
+functionality, without tying it to a specific analysis structure.
+</p>
+
+<p>
+HILTI consists of two parts: (1) an <em>abstract machine model</em> that
+caters specifically to the networking domain, directly supporting the
+field's common abstractions and idioms in its instruction set; and (2)
+a <em>compiler toolchain</em>, built on top of <a
+href="http://www.llvm.org">LLVM</a>, for turning programs
+written for the abstract machine into optimized, natively executable
+code.
+</p>
+
+<div class="highlight">
+<pre>
+# cat hello-world.hlt
+module Main
+
+import Hilti
+
+void run() {
+  call Hilti::print ("Hello, HILTI world!")
+}
+
+# hiltic -j hello-world.hlt
+Hello, HILTI world!
+</pre>
+</div>
+
+<h2>About Spicy</h2>
+
+<p>
+Spicy (formerly BinPAC++) is a next-generation parser generator that makes it easy to
+build parsers for network protocols, file formats, and more. Spicy
+is more than just a "yacc for protocols": it's an all-in-one system
+that enables developers to write attributed grammars defining both
+syntax and semantics of an input format inside a single comprehensive
+scripting language.
+</p>
+
+<p>
+The Spicy toolchain, built on top of HILTI, turns such grammars
+into efficient parsing code that exposes an well-defined C interface
+to its host application for feeding in input and retrieving results.
+At runtime, parsing proceeds fully incrementally&mdash;and potentially
+in parallel&mdash;on input streams of arbitrary size. Compilation
+takes place either statically at build time, or or just-in-time at
+startup.
+</p>
+
+<div class="highlight">
+<pre>
+# cat http-request.pac2
+module HTTP;
+
+const Token      = /[^ \t\r\n]+/;
+const WhiteSpace = /[ \t]+/;
+const NewLine    = /\r?\n/;
+
+export type RequestLine = unit {
+  method:  Token;
+  :        WhiteSpace;
+  uri:     Token;
+  :        WhiteSpace;
+  version: Version;
+  :        NewLine;
+
+  on %done {
+    print self.method, self.uri, self.version.number;
+    }
+};
+
+type Version = unit {
+  :       /HTTP\//;
+  number: /[0-9]+\.[0-9]+/;
+};
+
+# echo "GET /index.html HTTP/1.0" | pac-driver http-request.pac2
+GET /index.html 1.0
+</pre>
+</div>
+
+
+
+</td>
+</tr>
+</table>
+
+{% endblock %}

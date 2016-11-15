@@ -1,10 +1,9 @@
 
-#include "define-instruction.h"
+iBegin(exception::New, "new")
+    iTarget(optype::refException);
+    iOp1(optype::typeException, true);
 
-#include "exception.h"
-
-iBeginCC(exception)
-    iValidateCC(New)
+    iValidate
     {
         auto type = ast::rtti::tryCast<expression::Type>(op1)->typeValue();
         auto etype = ast::rtti::tryCast<type::Exception>(type);
@@ -14,13 +13,17 @@ iBeginCC(exception)
                                     etype->argType()->render().c_str()));
     }
 
-    iDocCC(New, R"(
+    iDoc(R"(
         Instantiates a new exception.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(exception)
-    iValidateCC(NewWithArg)
+iBegin(exception::NewWithArg, "new")
+    iTarget(optype::refException);
+    iOp1(optype::typeException, true);
+    iOp2(optype::any, true);
+
+    iValidate
     {
         auto type = ast::rtti::tryCast<expression::Type>(op1)->typeValue();
         auto etype = ast::rtti::tryCast<type::Exception>(type);
@@ -31,99 +34,70 @@ iBeginCC(exception)
             canCoerceTo(op2, etype->argType());
     }
 
-    iDocCC(NewWithArg, R"(
-        Instantiates a new exception)
-    )")
-iEndCC
+    iDoc(R"(
+        Instantiates a new exception.
+    )");
+iEnd
 
-iBeginCC(exception)
-    iValidateCC(Throw)
+iBegin(exception::Throw, "exception.throw")
+    iOp1(optype::refException, false);
+
+    iValidate
     {
     }
 
-    iDocCC(Throw, R"(    
-        Throws an exception)
-        closest handler.
-    )")
-iEndCC
+    iDoc(R"(
+         Throws an exception, triggering the closest handler.
+    )");
+iEnd
 
-iBeginCC(exception)
-    iValidateCC(__BeginHandler)
+iBegin(exception::__BeginHandler, "exception.__begin_handler")
+    iOp1(optype::label, true);
+    iOp2(optype::optional(optype::typeException), true);
+
+    iValidate
     {
     }
 
-    iDocCC(__BeginHandler, R"(
-       Internal instruction beginning scope of an exception handler. Note that this instruction is used statically at compile-time, not exectued at run-time. It is thus subject to its static location, not control flow.
-    )")
-iEndCC
+    iDoc(R"(
+        Internal instruction beginning scope of an exception handler. Note that
+        this instruction is used statically at compile-time, not exectued at
+        run-time. It is thus subject to its static location, not control flow.
+    )");
+iEnd
 
-iBeginCC(exception)
-    iValidateCC(__EndHandler)
+iBegin(exception::__EndHandler, "exception.__end_handler")
+    iValidate
     {
     }
 
-    iDocCC(__EndHandler, R"(
-       Internal instruction ending scope of most current exception handler. Note that this instruction is used statically at compile-time, not exectued at run-time. It is thus subject to its static location, not control flow.
-    )")
-iEndCC
+    iDoc(R"(
+            Internal instruction ending scope of most current exception handler.
+            Note that this instruction is used statically at compile-time, not
+            exectued at run-time. It is thus subject to its static location, not
+            control flow.
+    )");
+iEnd
 
-iBeginCC(exception)
-    iValidateCC(__GetAndClear)
+iBegin(exception::__GetAndClear, "exception.__get_and_clear")
+    iTarget(optype::refException);
+
+    iValidate
     {
     }
 
-    iDocCC(__GetAndClear, R"(
-       Internal instruction returning the currently raised exception, clearing it.
-    )")
-iEndCC
+    iDoc(R"(
+        Internal instruction returning the currently raised exception, clearing
+        it.
+    )");
+iEnd
 
-iBeginCC(exception)
-    iValidateCC(__Clear)
+iBegin(exception::__Clear, "exception.__clear")
+    iValidate
     {
     }
 
-    iDocCC(__Clear, R"(
-       Internal instruction clearing the currently raised exception.
-    )")
-iEndCC
-
-// iBeginCC(exception);
-//     iValidateCC(__Match) {
-//     }
-//
-//     iSuccessorsCC(__Match) {
-//         return { op2, op3 };
-//     }
-//
-//     iDocCC(__Match, R"(
-//        Internal instruction matching the currently raised exception againt a type. If it matches,
-//        the instruction
-//        branches to *op1*, otherwise to *op2*. If the type is *any*, it matches any currently
-//        raised exception.
-//     )")
-// iEndCC
-//
-// iBeginCC(exception);
-//     iValidateCC(__Current) {
-//     }
-//
-//     iDocCC(__Current, R"(
-//        Internal instruction returning the currently raised exception)
-//     )")
-// iEndCC
-//
-//
-// iBeginCC(exception);
-//     iValidateCC(__Reraise) {
-//     }
-//
-//     iSuccessorsCC(__Reraise) {
-//         return std::set<shared_ptr<Expression>>();
-//     }
-//
-//     iDocCC(__Reraise, R"(
-//        Internal instruction that reraises the current exception up the stack to the next caller.
-//     )")
-// iEndCC
-// #endif
-//
+    iDoc(R"(
+        Internal instruction clearing any currently raised exception.
+    )");
+iEnd

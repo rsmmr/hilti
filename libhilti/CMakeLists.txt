@@ -16,9 +16,6 @@ set(c_release_flags              "-O0") # Do not optimize. We optimize during li
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DJRX_USE_HILTI -I${CMAKE_SOURCE_DIR}/justrx/src")
 
-# include(EnableClangDebugging)
-# include(HiltiConfig)
-
 include(CheckFunctionExists)
 check_function_exists(mallinfo HAVE_MALLINFO)
 

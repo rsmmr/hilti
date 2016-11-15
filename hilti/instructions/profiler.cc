@@ -1,12 +1,10 @@
 
-#include "define-instruction.h"
+iBegin(profiler::Start, "profiler.start")
+    iOp1(optype::string, true);
+    iOp2(optype::optional(optype::any), true);
+    iOp3(optype::optional(optype::refTimerMgr), true);
 
-#include "../module.h"
-#include "profiler.h"
-
-iBeginCC(profiler)
-    iValidateCC(Start)
-    {
+    iValidate {
         // FIXME: We need to check here that the enum is right, and that the
         // argument matches with what the profilter type expects.
 
@@ -49,49 +47,49 @@ iBeginCC(profiler)
               "int64|interval)");
     }
 
-    iDocCC(Start, R"(
-        Starts collecting profiling with a profilter associated with tag
-        *op1*, *op2* specifies a ``Hilti:: ProfileStyle``, defining when
-        automatic snapshots should be taken of the profiler's counters; the
-        first element of *op2* is the style, and the second its argument if
-        one is needed (if not, the argument is simply ignored). If *op3* is
-        given, it attaches a ``timer_mgr`` to the started profiling, which
-        will then (1) record times according to the timer manager progress,
-        and (2) can trigger snaptshots according to its time.  If a tag is
-        given for which a profiler has already been started, this instruction
-        increases the profiler's level by one, and ``profiler.stop`` command
-        will only record information if it has been called a matching number
-        of times.  If profiling support is not compiled in, this instruction
-        is a no-op.
-    )")
-iEndCC
+    iDoc(R"(
+        Starts collecting profiling with a profilter associated with tag *op1*,
+        *op2* specifies a ``Hilti:: ProfileStyle``, defining when automatic
+        snapshots should be taken of the profiler's counters; the first element
+        of *op2* is the style, and the second its argument if one is needed (if
+        not, the argument is simply ignored). If *op3* is given, it attaches
+        a ``timer_mgr`` to the started profiling, which will then (1) record
+        times according to the timer manager progress, and (2) can trigger
+        snaptshots according to its time. If a tag is given for which a profiler
+        has already been started, this instruction increases the profiler's
+        level by one, and ``profiler.stop`` command will only record information
+        if it has been called a matching number of times. If profiling support
+        is not compiled in, this instruction is a no-op.
+    )");
+iEnd
 
-iBeginCC(profiler)
-    iValidateCC(Stop)
-    {
+iBegin(profiler::Stop, "profiler.stop")
+    iOp1(optype::string, true);
+
+    iValidate {
     }
 
-    iDocCC(Stop, R"(
+    iDoc(R"(
         Stops the profiler associated with the tag *op1*, recording its
         current state to disk. However, a profiler is only stopped if ``stop``
         has been called as often as it has previously been started with
         ``profile.start``.  If profiling support is not compiled in, this
         instruction is a no-op.
-    )")
+    )");
+iEnd
 
-iEndCC
+iBegin(profiler::Update, "profiler.update")
+    iOp1(optype::string, true);
+    iOp2(optype::optional(optype::int64), true);
 
-iBeginCC(profiler)
-    iValidateCC(Update)
-    {
+    iValidate {
     }
 
-    iDocCC(Update, R"(
-        Records a snapshot of the current state of the profiler associated
-        with tag *op1* (in ``STANDARD`` mode, otherwise according to the
-        style).  If *op2* is given, the profiler's user-defined counter is
-        adjusted by that amount.  If profiling support is not compiled in,
-        this instruction is a no-op.
-    )")
-
-iEndCC
+    iDoc(R"(
+        Records a snapshot of the current state of the profiler associated with
+        tag *op1* (in ``STANDARD`` mode, otherwise according to the style). If
+        *op2* is given, the profiler's user-defined counter is adjusted by that
+        amount. If profiling support is not compiled in, this instruction is a
+        no-op.
+    )");
+iEnd

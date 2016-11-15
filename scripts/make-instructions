@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 #
-# Autogenerates files with support code implementing instructions.
+# Autogenerates files with support code implementing HILTI instructions.
 #
 # This creates
 #
@@ -12,9 +12,8 @@
 #       instructions-stmt-builder.h
 #       instructions-register.cc
 #
-#     With -cc:
-#       foo.cc
 
+scripts=`dirname $0`
 
 function getInstructions
 {
@@ -39,7 +38,6 @@ function unlock ()
 
 if [ $# -le 2 ]; then
     echo "usage: `basename $0` -h  <current-source-directory> <target-directory> *.h"
-    echo "                     -cc <current-source-directory> <target-directory> foo.h"
     exit 1
 fi
 
@@ -52,38 +50,11 @@ shift
 
 cd $src
 
-hdrs=$@
+hdrs=$(echo $@ | sed 's/\.cc/.h/g')
 tmp=$dst/make-instructions.tmp.$$
 
 ## Get the names of all instruction classes (e.g., "integer::Add").
-cat $hdrs | getInstructions >$tmp
-
-if [ "$kind" == "-cc" ]; then
-
-    ##### Create instructions/*.cc that registers all instructions with the InstructionRegistry.
-
-    mkdir -p $dst/instructions
-
-    for hdr in $hdrs; do
-        cc=$dst/instructions/`echo $hdr | sed 's#.*/\([^/]*\)\.h#\1.cc#g'`
-
-        cat >$cc <<EOF
-
-#include <hilti/hilti-intern.h>
-
-#include <hilti/instructions/define-instruction.h>
-#include <hilti/$hdr>
-
-EOF
-
-        cat $hdr | getInstructions | while read line; do
-            ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
-            cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
-            id=`echo "$cls::$ns" | sed 's/::/_/g'`
-            echo "IMPLEMENT_INSTRUCTION($ns, $cls, $id);" >>$cc
-        done
-    done
-fi
+cat $@ | getInstructions >$tmp
 
 ##### Create instructions.h that includes all the instruction *.h files.
 
@@ -104,63 +75,90 @@ if [ "$kind" == "-h" ]; then
         fi
     fi
 
-    cat >$dst/instructions.h <<EOF
+    #### Create instructions-declare.h that declares all instruction statement classes, and 
+    #### instructions-visits.h with visit() methods for all instruction statement classes, and
+    #### instructions-exoression-builder.h with visit() methods for the statement builder.
+    #### instructions-register.cc with calls to instructions register functions.
 
-#ifndef HILTI_INSTRUCTIONS_INSTRUCTIONS_H
-#define HILTI_INSTRUCTIONS_INSTRUCTIONS_H
+    cat </dev/null >$dst/instructions-visits.h.tmp
+    cat </dev/null >$dst/instructions-stmt-builder.h.tmp
 
-#include <hilti/instructions/define-instruction.h>
-
+    cat </dev/null >$dst/instructions-declare.h.tmp <<EOF
+namespace hilti {
 EOF
 
-    cat >$dst/instructions-define.cc <<EOF
+    cat >$dst/instructions-define.cc.tmp <<EOF
 
 #include <hilti/hilti-intern.h>
 
+namespace hilti {
+
 EOF
 
-    for h in $hdrs; do
-        echo "#include <hilti/$h>" >>$dst/instructions.h
-    done
+    cat >$dst/instructions-register.cc.tmp <<EOF
 
-    echo >>$dst/instructions.h
-    echo "#endif" >>$dst/instructions.h
+namespace hilti {
 
-    #### Create instructions-declare.h that declares all instruction statement classes, and 
-    #### instructions-visits.h with visit() methods for all instruction statement classes, and
-    #### instructions-stmt-builder.h with visit() methods for the statement builder.
-    #### instructions-register.cc with calls to instructions register functions.
-
-    cat </dev/null >$dst/instructions-declare.h
-    cat </dev/null >$dst/instructions-visits.h
-    cat </dev/null >$dst/instructions-stmt-builder.h
-
-    cat >$dst/instructions-register.cc <<EOF
 void __registerAllInstructions()
 {
 EOF
 
     cat $tmp | while read line; do
         ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
-        cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
-        echo "namespace hilti { namespace statement { namespace instruction { namespace $ns { class $cls; } } }; }" >>$dst/instructions-declare.h
-        echo "namespace hilti { namespace instruction { namespace $ns { namespace __class { class $cls; } extern shared_ptr<::hilti::instruction::$ns::__class::$cls> $cls; } }; }" >>$dst/instructions-declare.h
-        echo "namespace hilti { namespace instruction { namespace $ns { namespace __class { class $cls; } shared_ptr<::hilti::instruction::$ns::__class::$cls> $cls; } } };" >>$dst/instructions-define.cc
+        cls=`echo $line | sed 's/\(.*\)::\([^: ]*\) *\( *:[^:].*\)\{0,\}/\2/g'`
+        echo "namespace statement { namespace instruction { namespace $ns { class $cls; } } };" >>$dst/instructions-declare.h.tmp
+        echo "namespace instruction { namespace $ns { namespace __class { class $cls; } extern std::shared_ptr<::hilti::instruction::$ns::__class::$cls> $cls; } }" >>$dst/instructions-declare.h.tmp
+        echo "namespace instruction { namespace $ns { namespace __class { class $cls; } std::shared_ptr<::hilti::instruction::$ns::__class::$cls> $cls; } }" >>$dst/instructions-define.cc.tmp
 
-        echo "       virtual void visit(statement::instruction::$ns::$cls* i) {}" >>$dst/instructions-visits.h
+        echo "       virtual void visit(statement::instruction::$ns::$cls* i) {}" >>$dst/instructions-visits.h.tmp
 
-        echo "       void visit(statement::instruction::$ns::$cls* i) override;" >>$dst/instructions-stmt-builder.h
+        echo "       void visit(statement::instruction::$ns::$cls* i) override;" >>$dst/instructions-stmt-builder.h.tmp
 
         name=`echo $line | sed 's/::/_/g'`
-        echo "    extern void __register_${ns}_${cls}(); __register_${ns}_${cls}();" >>$dst/instructions-register.cc
+        echo "    extern void __register_${ns}_${cls}(); __register_${ns}_${cls}();" >>$dst/instructions-register.cc.tmp
     done
 
-    cat >>$dst/instructions-register.cc <<EOF
+    cat >>$dst/instructions-register.cc.tmp <<EOF
+}
+
 }
 EOF
+
+    cat >>$dst/instructions-declare.h.tmp <<EOF
+}
+EOF
+
+    cat >>$dst/instructions-define.cc.tmp <<EOF
+}
+EOF
+
+    cat >$dst/instructions.h.tmp <<EOF
+
+#ifndef HILTI_AUTOGEN_INSTRUCTIONS_H
+#define HILTI_AUTOGEN_INSTRUCTIONS_H
+
+EOF
+
+    for h in $hdrs; do
+        echo "#include <hilti/autogen/$h>" >>$dst/instructions.h.tmp
+    done
+
+    echo >>$dst/instructions.h.tmp
+    echo "#endif" >>$dst/instructions.h.tmp
+
+
     date +%s >$TIMESTAMP
 
 fi
+
+#### Put live if content has changed compared to last run.
+
+$scripts/install-if-changed $dst/instructions-register.cc.tmp $dst/instructions-register.cc
+$scripts/install-if-changed $dst/instructions-declare.h.tmp $dst/instructions-declare.h
+$scripts/install-if-changed $dst/instructions-define.cc.tmp $dst/instructions-define.cc
+$scripts/install-if-changed $dst/instructions-stmt-builder.h.tmp $dst/instructions-stmt-builder.h
+$scripts/install-if-changed $dst/instructions-visits.h.tmp $dst/instructions-visits.h
+$scripts/install-if-changed $dst/instructions.h.tmp $dst/instructions.h
 
 #### Cleanup.
 

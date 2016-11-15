@@ -1,8 +1,11 @@
+///
+/// \type X
+///
+/// \ctor X
+///
+/// \cproto X
+///
 
-#include "define-instruction.h"
-
-#include "../module.h"
-#include "callable.h"
 
 static void _checkBinding(const Instruction* i, shared_ptr<Expression> op1,
                           shared_ptr<Expression> op2, shared_ptr<Expression> op3)
@@ -39,24 +42,37 @@ static void _checkBinding(const Instruction* i, shared_ptr<Expression> op1,
         i->equalTypes(p.first->type(), p.second->type());
 }
 
-iBeginCC(callable)
-    iValidateCC(NewFunction)
-    {
+
+iBegin(callable::NewFunction, "new")
+    iTarget(optype::refCallable);
+    iOp1(optype::typeCallable, true);
+    iOp2(optype::function, true);
+    iOp3(optype::tuple, false);
+
+    iValidate {
         return _checkBinding(this, op1, op2, op3);
     }
 
-    iDocCC(NewFunction, R"(
-        Instantiates a new *callable* instance, binding arguments *op2* to a call of function *op1*. If *op2* has less element than the function expects, the callable will be bound partially.
-    )")
-iEndCC
+    iDoc(R"(
+        Instantiates a new *callable* instance, binding arguments *op2* to a
+        call of function *op1*. If *op2* has less element than the function
+        expects, the callable will be bound partially.
+    )");
+iEnd
 
-iBeginCC(callable)
-    iValidateCC(NewHook)
-    {
+iBegin(callable::NewHook, "new")
+    iTarget(optype::refCallable);
+    iOp1(optype::typeCallable, true);
+    iOp2(optype::hook, true);
+    iOp3(optype::tuple, false);
+
+    iValidate {
         return _checkBinding(this, op1, op2, op3);
     }
 
-    iDocCC(NewHook, R"(
-        Instantiates a new *callable* instance, binding arguments *op2* to an execution of hook *op1*. If *op2* has less element than the hook expects, the callable will be bound partially.
-    )")
-iEndCC
+    iDoc(R"(
+        Instantiates a new *callable* instance, binding arguments *op2* to
+        an execution of hook *op1*. If *op2* has less element than the hook
+        expects, the callable will be bound partially.
+    )");
+iEnd

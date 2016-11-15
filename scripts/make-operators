@@ -48,11 +48,10 @@ shift
 
 cd $src
 
-hdrs=$@
 tmp=$dst/make-operators.tmp.$$
 
 ## Get the names of all operator classes (e.g., "integer::Add").
-cat $hdrs | getoperators >$tmp
+cat $@ | getoperators >$tmp
 
 ##### Create operators.h that includes all the operator *.h files.
 

@@ -1,9 +1,5 @@
 
-#include "define-instruction.h"
-
-#include "../builder/nodes.h"
-#include "../module.h"
-#include "flow.h"
+// Instructions controlling flow.
 
 static void _validateBranches(const Instruction* ins, shared_ptr<Expression> op,
                               shared_ptr<Type> ty_op1, bool by_type)
@@ -81,8 +77,11 @@ static std::set<shared_ptr<Expression>> _successorBranches(const Instruction* in
     return succ;
 }
 
-iBeginCC(flow)
-    iValidateCC(ReturnResult)
+iBegin(flow::ReturnResult, "return.result")
+    iTerminator();
+    iOp1(optype::any, false);
+
+    iValidate
     {
         auto decl = validator()->current<Declaration>();
 
@@ -92,44 +91,49 @@ iBeginCC(flow)
         }
     }
 
-    iSuccessorsCC(ReturnResult)
+    iSuccessors
     {
         return std::set<shared_ptr<Expression>>();
     }
 
-    iDocCC(ReturnResult, "");
-iEndCC
+    iDoc(R"(
+    )");
+iEnd
 
-iBeginCC(flow)
-    iValidateCC(ReturnVoid)
+iBegin(flow::ReturnVoid, "return.void")
+    iTerminator();
+
+    iValidate
     {
     }
 
-    iSuccessorsCC(ReturnVoid)
-    {
-        return std::set<shared_ptr<Expression>>();
-    }
-
-    iDocCC(ReturnVoid, "");
-iEndCC
-
-iBeginCC(flow)
-    iValidateCC(BlockEnd)
-    {
-    }
-
-    iSuccessorsCC(BlockEnd)
+    iSuccessors
     {
         return std::set<shared_ptr<Expression>>();
     }
 
-    iDocCC(
-        BlockEnd,
-        "Internal instruction marking the end of a block that doesn't have any other terminator.");
-iEndCC
+    iDoc(R"(
+    )");
+iEnd
 
-iBeginCC(flow)
-    iValidateCC(CallVoid)
+iBegin(flow::BlockEnd, "block.end")
+    iTerminator();
+
+    iSuccessors
+    {
+        return std::set<shared_ptr<Expression>>();
+    }
+
+    iDoc(R"(
+        Internal instruction marking the end of a block that doesn't have any other terminator.
+    )");
+iEnd
+
+iBegin(flow::CallVoid, "call")
+    iOp1(optype::function, true);
+    iOp2(optype::tuple, false);
+
+    iValidate
     {
         auto ftype = ast::rtti::checkedCast<type::Function>(op1->type());
         auto rtype = ftype->result()->type();
@@ -138,11 +142,16 @@ iBeginCC(flow)
         checkCallResult(rtype, none);
     }
 
-    iDocCC(CallVoid, "");
-iEndCC
+    iDoc(R"(
+    )");
+iEnd
 
-iBeginCC(flow)
-    iValidateCC(CallResult)
+iBegin(flow::CallResult, "call")
+    iTarget(optype::any);
+    iOp1(optype::function, true);
+    iOp2(optype::tuple, false);
+
+    iValidate
     {
         auto ftype = ast::rtti::checkedCast<type::Function>(op1->type());
         auto rtype = ftype->result()->type();
@@ -150,11 +159,16 @@ iBeginCC(flow)
         checkCallResult(rtype, target->type());
     }
 
-    iDocCC(CallResult, "");
-iEndCC
+    iDoc(R"(
+    )");
+iEnd
 
-iBeginCC(flow)
-    iValidateCC(CallCallableResult)
+iBegin(flow::CallCallableResult, "call")
+    iTarget(optype::any);
+    iOp1(optype::refCallable, true);
+    iOp2(optype::optional(optype::tuple), false);
+
+    iValidate
     {
         auto rt = ast::rtti::checkedCast<type::Reference>(op1->type());
         auto ftype = ast::rtti::checkedCast<type::Callable>(rt->argType());
@@ -163,11 +177,15 @@ iBeginCC(flow)
         checkCallResult(rtype, target->type());
     }
 
-    iDocCC(CallCallableResult, "");
-iEndCC
+    iDoc(R"(
+    )");
+iEnd
 
-iBeginCC(flow)
-    iValidateCC(CallCallableVoid)
+iBegin(flow::CallCallableVoid, "call")
+    iOp1(optype::refCallable, true);
+    iOp2(optype::optional(optype::tuple), false);
+
+    iValidate
     {
         auto rt = ast::rtti::checkedCast<type::Reference>(op1->type());
         auto ftype = ast::rtti::checkedCast<type::Callable>(rt->argType());
@@ -177,25 +195,29 @@ iBeginCC(flow)
         checkCallResult(rtype, none);
     }
 
-    iDocCC(CallCallableVoid, "");
-iEndCC
 
-iBeginCC(flow)
-    iValidateCC(Yield)
+    iDoc(R"(
+    )");
+iEnd
+
+iBegin(flow::Yield, "yield")
+    iValidate
     {
     }
 
-    iDocCC(Yield, R"(
+    iDoc(R"(
         Yields processing back to the current scheduler, to be resumed later.
         If running in a virtual thread other than zero, this instruction yields
         to other virtual threads running within the same physical thread. If
         running in virtual thread zero (or in non-threading mode), returns
         execution back to the calling C function (see interfacing with C).
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(flow)
-    iValidateCC(YieldUntil)
+iBegin(flow::YieldUntil, "yield.until")
+    iOp1(optype::any, false);
+
+    iValidate
     {
         shared_ptr<Type> ty = op1->type();
         auto rtype = ast::rtti::tryCast<type::Reference>(ty);
@@ -207,46 +229,55 @@ iBeginCC(flow)
             error(op1, "operand type does not support yield.until");
     }
 
-    iDocCC(YieldUntil, R"(
-        TODO.
-    )")
-iEndCC
+    iDoc(R"(
+        )");
+iEnd
 
-iBeginCC(flow)
-    iValidateCC(IfElse)
-    {
-    }
+iBegin(flow::IfElse, "if.else")
+    iTerminator();
+    iOp1(optype::boolean, true);
+    iOp2(optype::label, true);
+    iOp3(optype::label, true);
 
-    iSuccessorsCC(IfElse)
+    iSuccessors
     {
         return {op2, op3};
     }
 
-    iDocCC(IfElse, R"(
-        Transfers control label *op2* if *op1* is true, and to *op3*
-        otherwise.
-    )")
-
-iEndCC
-
-iBeginCC(flow)
-    iValidateCC(Jump)
+    iValidate
     {
     }
 
-    iSuccessorsCC(Jump)
+    iDoc(R"(
+        Transfers control label *op2* if *op1* is true, and to *op3* otherwise.
+    )");
+iEnd
+
+iBegin(flow::Jump, "jump")
+    iTerminator();
+    iOp1(optype::label, true);
+
+    iValidate
+    {
+    }
+
+    iSuccessors
     {
         return {op1};
     }
 
-    iDocCC(Jump, R"(
+    iDoc(R"(
         Jumps unconditionally to label *op2*.
-    )")
+    )");
+iEnd
 
-iEndCC
+iBegin(flow::Switch, "switch")
+    iTerminator();
+    iOp1(optype::any, true);
+    iOp2(optype::label, true);
+    iOp3(optype::tuple, true);
 
-iBeginCC(flow)
-    iValidateCC(Switch)
+    iValidate
     {
         auto ty_op1 = op1->type();
         auto ty_op2 = ast::rtti::checkedCast<type::Label>(op2->type());
@@ -260,26 +291,30 @@ iBeginCC(flow)
         _validateBranches(this, op3, ty_op1, false);
     }
 
-    iSuccessorsCC(Switch)
+    iSuccessors
     {
         return _successorBranches(this, op3, op2);
     }
 
-    iDocCC(Switch, R"(
+    iDoc(R"(
         Branches to one of several alternatives. *op1* determines which
-        alternative to take.  *op3* is a tuple of giving all alternatives as
-        2-tuples *(value, destination)*. *value* must be of the same type as
-        *op1*, and *destination* is a block label. If *value* equals *op1*,
-        control is transfered to the corresponding block. If multiple
-        alternatives match *op1*, one of them is taken but it's undefined
-        which one. If no alternative matches, control is transfered to block
-        *op2*.
-    )")
+        alternative to take. *op3* is a tuple of giving all alternatives as
+        2-tuples *(value, destination)*. *value* must be of the same type
+        as *op1*, and *destination* is a block label. If *value* equals
+        *op1*, control is transfered to the corresponding block. If multiple
+        alternatives match *op1*, one of them is taken but it's undefined which
+        one. If no alternative matches, control is transfered to block *op2*.
+    )");
 
-iEndCC
+iEnd
 
-iBeginCC(flow)
-    iValidateCC(DispatchUnion)
+iBegin(flow::DispatchUnion, "dispatch")
+    iTerminator();
+    iOp1(optype::union_, true);
+    iOp2(optype::label, true);
+    iOp3(optype::tuple, true);
+
+    iValidate
     {
         auto ty_op1 = op1->type();
         auto ty_op2 = ast::rtti::checkedCast<type::Label>(op2->type());
@@ -288,20 +323,22 @@ iBeginCC(flow)
         _validateBranches(this, op3, ty_op1, true);
     }
 
-    iSuccessorsCC(DispatchUnion)
+    iSuccessors
     {
         return _successorBranches(this, op3, op2);
     }
 
-    iDocCC(DispatchUnion, R"(
-        Branches to one of several alternatives. The type of the current value of union *op1* determines which
-        alternative to take.  *op3* is a tuple of giving all alternatives as
-        2-tuples *(type, destination)*. *type* must be one of the types that the union *op1* defines.
-        and *destination* is a block label. If *type* equals that of the current value of *op1*,
-        control is transfered to the corresponding block. If multiple
-        alternatives match the type, one of them is taken but it's undefined
-        which one. If no alternative matches (including when no unit field is set), control is transfered to block
-        *op2*.
-    )")
+    iDoc(R"(
+        Branches to one of several alternatives. The type of the current
+        value of union *op1* determines which alternative to take. *op3* is a
+        tuple of giving all alternatives as 2-tuples *(type, destination)*.
+        *type* must be one of the types that the union *op1* defines. and
+        *destination* is a block label. If *type* equals that of the current
+        value of *op1*, control is transfered to the corresponding block. If
+        multiple alternatives match the type, one of them is taken but it's
+        undefined which one. If no alternative matches (including when no unit
+        field is set), control is transfered to block *op2*.
+    )");
+iEnd
 
-iEndCC
+

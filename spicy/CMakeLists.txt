@@ -102,6 +102,7 @@ foreach(in ${operators})
        DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/${in} ${scripts}/expand-macros ${CMAKE_CURRENT_SOURCE_DIR}/operators/macros.dat
    )
 
+   set_source_files_properties(${h}  PROPERTIES GENERATED 1)
    set_source_files_properties(${cc} PROPERTIES GENERATED 1)
 
 endforeach ()

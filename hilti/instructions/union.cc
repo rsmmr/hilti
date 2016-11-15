@@ -1,17 +1,9 @@
 ///
 /// \type Structures
 ///
-/// The ``struct`` data type groups a set of heterogenous, named fields. Each
-/// instance tracks which fields have already been set. Fields may optionally
-/// provide default values that are returned when it's read but hasn't been
-/// set yet.
-///
-///
-
-#include "define-instruction.h"
-
-#include "../module.h"
-#include "union.h"
+/// The ``union`` data type groups a set of heterogenous, and optionally
+/// namedm fields, of which at any time at most one can be set. Each instance track which field
+/// is currently set to allow for type-safe access.
 
 static shared_ptr<type::union_::Field> _unionField(const Instruction* i,
                                                    shared_ptr<type::Union> stype,
@@ -81,9 +73,13 @@ static shared_ptr<type::union_::Field> _unionField(const Instruction* i, shared_
     return _unionField(i, stype, field_type);
 }
 
-iBeginCC(union_)
-    iValidateCC(InitField)
-    {
+iBegin(union_::InitField, "union.init")
+    iTarget(optype::union_);
+    iOp1(optype::typeUnion, true);
+    iOp2(optype::string, true);
+    iOp3(optype::any, false);
+
+    iValidate {
         if ( ! isConstant(op2) )
             return;
 
@@ -100,16 +96,19 @@ iBeginCC(union_)
         canCoerceTo(op3, f->type());
     }
 
-    iDocCC(InitField, R"(
-        Returns a union of type *op1* with the field named *op2* set to
-        value *op3*. The type of the *op3* must match the type of the field. All other fields
-        will automatically become unset.
-    )")
-iEndCC
+    iDoc(R"(
+        Returns a union of type *op1* with the field named *op2* set to value
+        *op3*. The type of the *op3* must match the type of the field. All other
+        fields will automatically become unset.
+    )");
+iEnd
 
-iBeginCC(union_)
-    iValidateCC(InitType)
-    {
+iBegin(union_::InitType, "union.init")
+    iTarget(optype::union_);
+    iOp1(optype::typeUnion, true);
+    iOp2(optype::any, false);
+
+    iValidate {
         auto utype = ast::rtti::tryCast<type::Union>(typedType(op1));
         if ( ! utype ) {
             error(op1, "not a union type");
@@ -121,16 +120,19 @@ iBeginCC(union_)
             return;
     }
 
-    iDocCC(InitType, R"(
-        Returns a union of type *op1* with the field of the same type as *op2* to *op2*.
-        There must be exactly one field of that type. All other fields
+    iDoc(R"(
+        Returns a union of type *op1* with the field of the same type as *op2*
+        to *op2*. There must be exactly one field of that type. All other fields
         will automatically become unset.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(union_)
-    iValidateCC(GetField)
-    {
+iBegin(union_::GetField, "union.get")
+    iTarget(optype::any);
+    iOp1(optype::union_, true);
+    iOp2(optype::string, true);
+
+    iValidate {
         if ( ! isConstant(op2) )
             return;
 
@@ -142,54 +144,65 @@ iBeginCC(union_)
         canCoerceTo(f->type(), target);
     }
 
-    iDocCC(GetField, R"(
+    iDoc(R"(
         Returns the field named *op2* in the union referenced by *op1*. The
         field name must be a constant, and the type of the target must match
         the field's type. If a field is requested that is not currently set, an
         ``UndefinedValue`` exception is raised.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(union_)
-    iValidateCC(GetType)
-    {
+iBegin(union_::GetType, "union.get")
+    iTarget(optype::any);
+    iOp1(optype::union_, true);
+
+    iValidate {
         auto f = _unionField(this, op1, target->type());
 
         if ( ! f )
             return;
     }
 
-    iDocCC(GetType, R"(
-        Returns the value of the field in the union that has the same type as *target*.
-        There must be exactl one field of that type. If a field is requested that is
-        not currently set, an ``UndefinedValue`` exception is raised.
-    )")
-iEndCC
+    iDoc(R"(
+        Returns the value of the field in the union that has the same type as
+        *target*. There must be exactl one field of that type. If a field is
+        requested that is not currently set, an ``UndefinedValue`` exception is
+        raised.
 
-iBeginCC(union_)
-    iValidateCC(IsSetField)
-    {
+    )");
+iEnd
+
+iBegin(union_::IsSetField, "union.is_set")
+    iTarget(optype::boolean);
+    iOp1(optype::union_, true);
+    iOp2(optype::string, true);
+
+    iValidate {
         if ( ! isConstant(op2) )
             return;
 
         _unionField(this, op1, op2);
     }
 
-    iDocCC(IsSetField, R"(
-        Returns *True* if the field named *op2* is current set to  a value, and
-        *False otherwise. If the *union.is_set* returns *True*, a subsequent call
-        to ~~Get for that field will not raise an exception.
-    )")
-iEndCC
+    iDoc(R"(
+        Returns *True* if the field named *op2* is current set to a value, and
+        *False otherwise. If the *union.is_set* returns *True*, a subsequent
+        call to ~~Get for that field will not raise an exception.
+    )");
+iEnd
 
-iBeginCC(union_)
-    iValidateCC(IsSetType)
-    {
+iBegin(union_::IsSetType, "union.is_set")
+    iTarget(optype::boolean);
+    iOp1(optype::union_, true);
+    iOp2(optype::typeAny, true);
+
+    iValidate {
         _unionField(this, op1, typedType(op2));
     }
 
-    iDocCC(IsSetType, R"(
-        Returns *True* if the field that has type *op2* is currently set to a value, and
-        *False otherwise. There must be exactly one field of type *op2*.
-    )")
-iEndCC
+    iDoc(R"(
+        Returns *True* if the field that has type *op2* is currently set to a
+        value, and *False otherwise. There must be exactly one field of type
+        *op2*.
+    )");
+iEnd

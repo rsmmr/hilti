@@ -1,26 +1,37 @@
+///
+/// \type Tuple
+///
+/// The *tuple* data type represents ordered tuples of other values, which
+/// can be of mixed type. Tuple are however statically types and therefore
+/// need the individual types to be specified as type parameters, e.g.,
+/// ``tuple<int32,string,bool>`` to represent a 3-tuple of ``int32``,
+/// ``string``, and ``bool``. Tuple values are enclosed in parentheses with
+/// the individual components separated by commas, e.g., ``(42, "foo",
+/// True)``. If not explictly initialized, tuples are set to their
+/// components' default values initially.
 
-#include "define-instruction.h"
 
-#include "../expression.h"
-#include "../module.h"
-#include "../type.h"
-#include "tuple.h"
+iBegin(tuple::Equal, "equal")
+    iTarget(optype::boolean);
+    iOp1(optype::tuple, true);
+    iOp2(optype::tuple, true);
 
-iBeginCC(tuple)
-    iValidateCC(Equal)
-    {
+    iValidate {
         equalTypes(op1, op2);
         // TODO: Check that we can compare the tuple element recursively.
     }
 
-    iDocCC(Equal, R"(
+    iDoc(R"(
         Returns True if the tuple in *op1* equals the tuple in *op2*.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(tuple)
-    iValidateCC(Index)
-    {
+iBegin(tuple::Index, "tuple.index")
+    iTarget(optype::any);
+    iOp1(optype::tuple, true);
+    iOp2(optype::integer, true);
+
+    iValidate {
         auto ty_target = target->type();
         auto ttype = ast::rtti::tryCast<type::Tuple>(op1->type());
 
@@ -41,17 +52,20 @@ iBeginCC(tuple)
         }
     }
 
-    iDocCC(Index, R"(
-       Returns the tuple's value with index *op2*. The index is zero-based. *op2* must be an integer *constant*.
-    )")
-iEndCC
+    iDoc(R"(
+       Returns the tuple's value with index *op2*. The index is zero-based.
+       *op2* must be an integer *constant*.
+    )");
+iEnd
 
-iBeginCC(tuple)
-    iValidateCC(Length)
-    {
+iBegin(tuple::Length, "tuple.length")
+    iTarget(optype::int64);
+    iOp1(optype::tuple, true);
+
+    iValidate {
     }
 
-    iDocCC(Length, R"(
+    iDoc(R"(
        Returns the number of elements that the tuple *op1* has.
-    )")
-iEndCC
+    )");
+iEnd

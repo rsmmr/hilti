@@ -1,80 +1,106 @@
+///
+/// \type Channel
+///
+/// A channel is a high-performance data type for I/O operations that is
+/// designed to efficiently transfer large volumes of data both between the
+/// host application and HILTI and intra-HILTI components.
+///
+/// The channel behavior depends on its type parameters which enable
+/// fine-tuning along the following dimensions:
+///
+/// * Capacity. The capacity represents the maximum number of items a channel
+///         can hold. A full bounded channel cannot accomodate further items
+///         and a reader must first consume an item to render the channel
+///         writable again. By default, channels are unbounded and can grow
+///         arbitrarily large.
+///
+/// \cproto hlt_channel*
+///
 
-#include "define-instruction.h"
 
-#include "../module.h"
-#include "channel.h"
+iBegin(channel::New, "new")
+    iTarget(optype::refChannel);
+    iOp1(optype::typeChannel, true);
+    iOp2(optype::optional(optype::int64), true);
 
-iBeginCC(channel)
-    iValidateCC(New)
-    {
+    iValidate {
         equalTypes(referencedType(target), typedType(op1));
     }
 
-    iDocCC(New, R"(
+    iDoc(R"(
          Allocates a new instance of a channel storing elements of type *op1*.
-         *op2* defines the channel's capacity, i.e., the maximal number of items it
-         can store. The capacity defaults to zero, which creates a channel of
+         *op2* defines the channel's capacity, i.e., the maximal number of items
+         it can store. The capacity defaults to zero, which creates a channel of
          unbounded capacity.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(channel)
-    iValidateCC(Read)
-    {
+iBegin(channel::Read, "channel.read")
+    iTarget(optype::any);
+    iOp1(optype::refChannel, true);
+
+    iValidate {
         canCoerceTo(argType(op1), target);
     }
 
-    iDocCC(Read, R"(    
-        Returns the next channel item from the channel referenced by *op1*. If
-        the channel is empty, the instruction blocks until an item becomes
+    iDoc(R"(
+        Returns the next channel item from the channel referenced by *op1*.
+        If the channel is empty, the instruction blocks until an item becomes
         available.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(channel)
-    iValidateCC(ReadTry)
-    {
+iBegin(channel::ReadTry, "channel.read_try")
+    iTarget(optype::any);
+    iOp1(optype::refChannel, true);
+
+    iValidate {
         canCoerceTo(argType(op1), target);
     }
 
-    iDocCC(ReadTry, R"(    
+    iDoc(R"(
         Returns the next channel item from the channel referenced by *op1*. If
         the channel is empty, the instruction raises a ``WouldBlock``
         exception.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(channel)
-    iValidateCC(Size)
-    {
+iBegin(channel::Size, "channel.size")
+    iTarget(optype::int64);
+    iOp1(optype::refChannel, true);
+
+    iValidate {
     }
 
-    iDocCC(Size, R"(    
-        Returns the current number of items in the channel referenced by
-        *op1*.
-    )")
-iEndCC
+    iDoc(R"(
+        Returns the current number of items in the channel referenced by *op1*.
+    )");
+iEnd
 
-iBeginCC(channel)
-    iValidateCC(Write)
-    {
+iBegin(channel::Write, "channel.write")
+    iOp1(optype::refChannel, false);
+    iOp2(optype::any, false);
+
+    iValidate {
         canCoerceTo(op2, argType(op1));
     }
 
-    iDocCC(Write, R"(    
+    iDoc(R"(
         Writes an item into the channel referenced by *op1*. If the channel is
         full, the instruction blocks until a slot becomes available.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(channel)
-    iValidateCC(WriteTry)
-    {
+iBegin(channel::WriteTry, "channel.write_try")
+    iOp1(optype::refChannel, false);
+    iOp2(optype::any, false);
+
+    iValidate {
         canCoerceTo(op2, argType(op1));
     }
 
-    iDocCC(WriteTry, R"(    
+    iDoc(R"(
         Writes an item into the channel referenced by *op1*. If the channel is
         full, the instruction raises a ``WouldBlock`` exception.
-    )")
-iEndCC
+    )");
+iEnd

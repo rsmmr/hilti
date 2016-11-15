@@ -1,114 +1,137 @@
+///
+/// \type iosrc<Hilti::IOSrc:*>
+///
+/// The *iosrc* data type represents a source of external input coming in for
+/// processing. It transparently supports a set of different sources
+/// (currently only ``libpcap``-based, but in the future potentially other's
+/// as well.). Elements of an IOSrc are ``bytes`` objects and come with a
+/// timestamp.
+///
+/// \cproto hlt_iosrc*
+///
+/// \type ``iter<iosrc>``
+///
+/// \default An iterator over the elements retrieved from an *iosrc*.
+///
+/// \cproto hlt_bytes_iter
+///
 
-#include "define-instruction.h"
 
-#include "../module.h"
-#include "iosrc.h"
+iBegin(iterIOSource::Begin, "begin")
+    iTarget(optype::iterIOSource);
+    iOp1(optype::refIOSource, true);
 
-iBeginCC(iterIOSource)
-    iValidateCC(Begin)
-    {
+    iValidate {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
-    iDocCC(Begin, R"(
+    iDoc(R"(
         Returns an iterator for iterating over all elements of a packet source
         *op1*. The instruction will block until the first element becomes
         available.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(iterIOSource)
-    iValidateCC(End)
-    {
+iBegin(iterIOSource::End, "end")
+    iTarget(optype::iterIOSource);
+    iOp1(optype::refIOSource, true);
+
+    iValidate {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
-    iDocCC(End, R"(
+    iDoc(R"(
          Returns an iterator representing an exhausted packet source *op1*.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(iterIOSource)
-    iValidateCC(Incr)
-    {
+iBegin(iterIOSource::Incr, "incr")
+    iTarget(optype::iterIOSource);
+    iOp1(optype::iterIOSource, true);
+
+    iValidate {
         equalTypes(target, op1);
     }
 
-    iDocCC(Incr, R"(
+    iDoc(R"(
         Advances the iterator to the next element, or the end position if
         already exhausted. The instruction will block until the next element
         becomes available.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(iterIOSource)
-    iValidateCC(Equal)
-    {
+iBegin(iterIOSource::Equal, "equal")
+    iTarget(optype::boolean);
+    iOp1(optype::iterIOSource, true);
+    iOp2(optype::iterIOSource, true);
+
+    iValidate {
         equalTypes(op1, op2);
     }
 
-    iDocCC(Equal, R"(
+    iDoc(R"(
        Returns true if *op1* and *op2* reference the same element.
-    )")
+    )");
+iEnd
 
-iEndCC
+iBegin(iterIOSource::Deref, "deref")
+    iTarget(optype::tuple);
+    iOp1(optype::iterIOSource, true);
 
-iBeginCC(iterIOSource)
-    iValidateCC(Deref)
-    {
+    iValidate {
         // TODO:  Check tuple.
     }
 
-    iDocCC(Deref, R"(
+    iDoc(R"(
        Returns the element the iterator is pointing at as a tuple ``(double,
        ref<bytes>)``.
-    )")
+    )");
+iEnd
 
-iEndCC
+iBegin(ioSource::New, "new")
+    iTarget(optype::refIOSource);
+    iOp1(optype::typeIOSource, true);
+    iOp2(optype::string, true);
 
-
-iBeginCC(ioSource)
-    iValidateCC(New)
-    {
+    iValidate {
         equalTypes(referencedType(target), typedType(op1));
     }
 
-    iDocCC(New, R"(
+    iDoc(R"(
         Instantiates a new *iosrc* instance, and initializes it for reading.
-        The format of string *op2* is depending on the kind of ``iosrc``. For
-        :hlt:glob:`PcapLive`, it is the name of the local interface to IOSourceen
-        on. For :hlt:glob:`PcapLive`, it is the name of the trace file.
+        The format of string *op2* is depending on the kind of ``iosrc``.
+        For :hlt:glob:`PcapLive`, it is the name of the local interface to
+        IOSourceen on. For :hlt:glob:`PcapLive`, it is the name of the trace
+        file.
 
         Raises: :hlt:type:`IOSrcError` if the packet source cannot be opened.
-    )")
+    )");
+iEnd
 
-iEndCC
+iBegin(ioSource::Close, "iosrc.close")
+    iOp1(optype::refIOSource, false);
 
-
-iBeginCC(ioSource)
-    iValidateCC(Close)
-    {
+    iValidate {
     }
 
-    iDocCC(Close, R"(    
-        Closes the packet source *op1*. No further packets can then be read
-        (if tried, ``pkrsrc.read`` will raise a ~~IOSrcError exception).
-    )")
+    iDoc(R"(
+        Closes the packet source *op1*. No further packets can then be read (if
+        tried, ``pkrsrc.read`` will raise a ~~IOSrcError exception).
+    )");
+iEnd
 
-iEndCC
+iBegin(ioSource::Read, "iosrc.read")
+    iTarget(optype::tuple);
+    iOp1(optype::refIOSource, false);
 
-iBeginCC(ioSource)
-    iValidateCC(Read)
-    {
+    iValidate {
         // TODO:  Check tuple.
     }
 
-    iDocCC(Read, R"(    
+    iDoc(R"(
         Returns the next element from the I/O source *op1*. If currently no
-        element is available, the instruction blocks until one is.  Raises:
-        ~~IOSrcExhausted if the source has been exhausted.  Raises:
-        ~~IOSrcError if there is any other problem with returning the next
-        element.
-    )")
-
-iEndCC
+        element is available, the instruction blocks until one is. Raises:
+        ~~IOSrcExhausted if the source has been exhausted. Raises: ~~IOSrcError
+        if there is any other problem with returning the next element.
+    )");
+iEnd

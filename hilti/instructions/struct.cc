@@ -8,11 +8,6 @@
 ///
 ///
 
-#include "define-instruction.h"
-
-#include "../module.h"
-#include "struct.h"
-
 static shared_ptr<type::struct_::Field> _structField(const Instruction* i,
                                                      shared_ptr<Expression> op,
                                                      shared_ptr<Expression> field)
@@ -45,20 +40,26 @@ static shared_ptr<type::struct_::Field> _structField(const Instruction* i,
     return nullptr;
 }
 
-iBeginCC(struct_)
-    iValidateCC(New)
-    {
+
+iBegin(struct_::New, "new")
+    iTarget(optype::refStruct);
+    iOp1(optype::typeStruct, true);
+
+    iValidate {
         equalTypes(referencedType(target), typedType(op1));
     }
 
-    iDocCC(New, R"(
+    iDoc(R"(
         Instantiates a new object of the given ``struct`` type.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(struct_)
-    iValidateCC(Get)
-    {
+iBegin(struct_::Get, "struct.get")
+    iTarget(optype::any);
+    iOp1(optype::refStruct, true);
+    iOp2(optype::string, true);
+
+    iValidate {
         if ( ! isConstant(op2) )
             return;
 
@@ -70,18 +71,22 @@ iBeginCC(struct_)
         canCoerceTo(f->type(), target);
     }
 
-    iDocCC(Get, R"(
+    iDoc(R"(
         Returns the field named *op2* in the struct referenced by *op1*. The
         field name must be a constant, and the type of the target must match
         the field's type. If a field is requested that has not been set, its
         default value is returned if it has any defined. If it has not, an
         ``UndefinedValue`` exception is raised.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(struct_)
-    iValidateCC(GetDefault)
-    {
+iBegin(struct_::GetDefault, "struct.get_default")
+    iTarget(optype::any);
+    iOp1(optype::refStruct, true);
+    iOp2(optype::string, true);
+    iOp3(optype::any, false);
+
+    iValidate {
         if ( ! isConstant(op2) )
             return;
 
@@ -93,35 +98,40 @@ iBeginCC(struct_)
         canCoerceTo(op3, target);
     }
 
-    iDocCC(GetDefault, R"(
+    iDoc(R"(
         Returns the field named *op2* in the struct referenced by *op1*, or a
-        default value *op3* if not set (if the field has a default itself,
-        that however has priority). The field name must be a constant, and the
-        type of the target must match the field's type, as must that of the
-        default value.
-    )")
-iEndCC
+        default value *op3* if not set (if the field has a default itself, that
+        however has priority). The field name must be a constant, and the type
+        of the target must match the field's type, as must that of the default
+        value.
+    )");
+iEnd
 
-iBeginCC(struct_)
-    iValidateCC(IsSet)
-    {
+iBegin(struct_::IsSet, "struct.is_set")
+    iTarget(optype::boolean);
+    iOp1(optype::refStruct, true);
+    iOp2(optype::string, true);
+
+    iValidate {
         if ( ! isConstant(op2) )
             return;
 
         _structField(this, op1, op2);
     }
 
-    iDocCC(IsSet, R"(
+    iDoc(R"(
         Returns *True* if the field named *op2* has been set to a value, and
         *False otherwise. If the instruction returns *True*, a subsequent call
         to ~~Get will not raise an exception.
-    )")
-iEndCC
+    )");
+iEnd
 
+iBegin(struct_::Set, "struct.set")
+    iOp1(optype::refStruct, false);
+    iOp2(optype::string, true);
+    iOp3(optype::any, false);
 
-iBeginCC(struct_)
-    iValidateCC(Set)
-    {
+    iValidate {
         if ( ! isConstant(op2) )
             return;
 
@@ -132,25 +142,27 @@ iBeginCC(struct_)
         canCoerceTo(op3, f->type());
     }
 
-    iDocCC(Set, R"(
+    iDoc(R"(
         Sets the field named *op2* in the struct referenced by *op1* to the
         value *op3*. The type of the *op3* must match the type of the field.
-    )")
-iEndCC
+    )");
+iEnd
 
-iBeginCC(struct_)
-    iValidateCC(Unset)
-    {
+iBegin(struct_::Unset, "struct.unset")
+    iOp1(optype::refStruct, false);
+    iOp2(optype::string, true);
+
+    iValidate {
         if ( ! isConstant(op2) )
             return;
 
         _structField(this, op1, op2);
     }
 
-    iDocCC(Unset, R"(
+    iDoc(R"(
         Unsets the field named *op2* in the struct referenced by *op1*. An
-        unset field appears just as if it had never been assigned an value; in
-        particular, it will be reset to its default value if has been one
+        unset field appears just as if it had never been assigned an value;
+        in particular, it will be reset to its default value if has been one
         assigned.
-    )")
-iEndCC
+    )");
+iEnd

@@ -73,7 +73,8 @@ cls_value = "<No class>"
 cls_value_arg = None
 cls_ns = "<No namespace>"
 basename = os.path.splitext(os.path.basename(sys.argv[2]))[0]
-stdifdef = os.getcwd().upper().replace(".", "_").replace("/", "_").replace("+", "_").replace("-", "_") + "_" + basename.upper()
+stdifdef = (os.getcwd() + "_" + basename)
+stdifdef = stdifdef.upper().replace(".", "_").replace("/", "_").replace("+", "_").replace("-", "_")
 
 state = "macro"
 
@@ -91,6 +92,7 @@ for line in open(sys.argv[1]):
         m = line.split()
         name = m[1]
         file = m[2]
+        code_block = (len(m) > 3 and m[3] == "code-block")
 
         if m[0] == ">>":
             cls_macro = name
@@ -125,7 +127,7 @@ for line in open(sys.argv[1]):
         else:
             regexp = re.compile("^[\t ]*%s(%s)\\b(\((.*)\))?" % (name, postfix))
 
-        macros[name] += [(regexp, file, files[file], content)]
+        macros[name] += [(regexp, file, files[file], code_block, content)]
 
         state = "macro"
 
@@ -133,7 +135,7 @@ noreplace = False
 
 for (name, items) in macros.items():
     for val in items:
-        (regexp, fname, file, content) = val
+        (regexp, fname, file, code_block, content) = val
 
         content = content.replace("$STDIFDEF", stdifdef)
         content = content.replace("$BASENAME", basename)
@@ -149,6 +151,7 @@ split_re = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''', re.MULTILINE | re.DO
 # "
 
 accumulator = ""
+eat_opening_brace = False
 
 for input in open(sys.argv[2]):
     found = False
@@ -164,13 +167,27 @@ for input in open(sys.argv[2]):
     line = accumulator.replace("\n", " ").strip() + "\n"
     accumulator = ""
 
+    if eat_opening_brace:
+        m = re.match(r"^\s*\{", line)
+        if m:
+            line = line[m.end():]
+            eat_opening_brace = False
+
     for (name, items) in macros.items():
         for val in items:
-            (regexp, fname, file, content) = val
+            (regexp, fname, file, code_block, content) = val
 
             m = regexp.match(line)
 
             if m:
+                if code_block:
+                    l2 = line[m.end():]
+                    m2 = re.match(r"\s*\{", l2)
+                    if m2:
+                        line = line[m.start():m.end()] + l2[m2.end():]
+                    else:
+                        eat_opening_brace = True
+
                 postfix = m.group(1)
 
                 # Split at commas, but only if outside of quotation marks.
@@ -256,7 +273,7 @@ for input in open(sys.argv[2]):
 
 for (name, items) in macros.items():
     for val in items:
-        (regexp, fname, file, content) = val
+        (regexp, fname, file, code_block, content) = val
         if name == "<<FOOTER>>":
             print >>file, content
 
