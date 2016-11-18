@@ -485,7 +485,7 @@ static hlt_string _object_to_string(const hlt_type_info* type, void* obj, __hlt_
 }
 
 hlt_string spicy_object_to_string(const hlt_type_info* type, void* obj, hlt_exception** excpt,
-                                   hlt_execution_context* ctx)
+                                  hlt_execution_context* ctx)
 {
     __hlt_pointer_stack seen;
     __hlt_pointer_stack_init(&seen);
@@ -498,7 +498,7 @@ hlt_string spicy_object_to_string(const hlt_type_info* type, void* obj, hlt_exce
 }
 
 void spicyhilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_exception** excpt,
-                       hlt_execution_context* ctx)
+                      hlt_execution_context* ctx)
 {
     hlt_string s = spicy_object_to_string(type, obj, excpt, ctx);
 

@@ -69,7 +69,7 @@ void spicy_fatal_error(const char* msg)
 
 // Note that this function can be called before spicy_init().
 void spicyhilti_register_parser(spicy_parser* parser, hlt_type_info* pobj, hlt_exception** excpt,
-                                 hlt_execution_context* ctx)
+                                hlt_execution_context* ctx)
 {
     GC_CCTOR(parser, hlt_SpicyHilti_Parser, ctx);
 
@@ -97,7 +97,7 @@ void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* c
 }
 
 void spicy_debug_print_ptr(hlt_string tag, const hlt_type_info* type, void** ptr,
-                            hlt_exception** excpt, hlt_execution_context* ctx)
+                           hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(false);
 }

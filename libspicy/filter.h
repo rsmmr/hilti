@@ -14,13 +14,13 @@ struct __spicy_filter_definition;
 struct spicy_filter;
 
 typedef struct spicy_filter* (*__spicy_filter_allocate)(hlt_exception** excpt,
-                                                          hlt_execution_context* ctx);
+                                                        hlt_execution_context* ctx);
 typedef void (*__spicy_filter_dtor)(hlt_type_info* ti, struct spicy_filter*,
-                                     hlt_execution_context* ctx);
+                                    hlt_execution_context* ctx);
 typedef hlt_bytes* (*__spicy_filter_decode)(struct spicy_filter*, hlt_bytes* data,
-                                             hlt_exception** excpt, hlt_execution_context* ctx);
+                                            hlt_exception** excpt, hlt_execution_context* ctx);
 typedef void (*__spicy_filter_close)(struct spicy_filter*, hlt_exception** excpt,
-                                      hlt_execution_context* ctx);
+                                     hlt_execution_context* ctx);
 
 // Internal definition of a filter type.
 struct __spicy_filter_definition {
@@ -39,7 +39,7 @@ typedef struct __spicy_filter_definition __spicy_filter_definition;
 /// additional struct per pre-defined filter type storing filter-specific
 /// information.
 struct spicy_filter {
-    __hlt_gchdr __gch;               /// Header for garbage collection.
+    __hlt_gchdr __gch;              /// Header for garbage collection.
     __spicy_filter_definition* def; /// Type object describing the filter type.
     struct spicy_filter* next;      /// Link to next filter in chain.
 };
@@ -59,7 +59,7 @@ __HLT_DECLARE_RTTI_GC_TYPE(spicy_filter);
 ///
 /// Raised: FilterUnsupported - If the given filter type is not supported by the run-time system.
 extern spicy_filter* spicyhilti_filter_add(spicy_filter* head, hlt_enum ftype,
-                                             hlt_exception** excpt, hlt_execution_context* ctx);
+                                           hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Adds an already instantiated filter to a filter chain. For internal use.
 ///
@@ -72,7 +72,7 @@ extern spicy_filter* spicyhilti_filter_add(spicy_filter* head, hlt_enum ftype,
 ///
 /// Raised: FilterUnsupported - If the given filter type is not supported by the run-time system.
 extern spicy_filter* __spicyhilti_filter_add(spicy_filter* head, spicy_filter* filter,
-                                               hlt_exception** excpt, hlt_execution_context* ctx);
+                                             hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Closes and deletes a filter chain.
 ///
@@ -86,7 +86,7 @@ extern spicy_filter* __spicyhilti_filter_add(spicy_filter* head, spicy_filter* f
 /// exception. The assumption is that if no exception is raised, all input has
 /// been fully processed after closing the filter.
 extern void spicyhilti_filter_close(spicy_filter* head, hlt_exception** excpt,
-                                     hlt_execution_context* ctx);
+                                    hlt_execution_context* ctx);
 
 /// Pipes data into a filter chain. If further filters have been chained to
 /// this one, the data is passed through all of them.
@@ -108,7 +108,7 @@ extern void spicyhilti_filter_close(spicy_filter* head, hlt_exception** excpt,
 /// Raises: FilterError - If there's a problem with the filtering process.
 /// After raising this error, this filter must not be used again.
 extern hlt_bytes* spicyhilti_filter_decode(spicy_filter* head, hlt_bytes* data,
-                                            hlt_exception** excpt,
-                                            hlt_execution_context* ctx); // ref!
+                                           hlt_exception** excpt,
+                                           hlt_execution_context* ctx); // ref!
 
 #endif

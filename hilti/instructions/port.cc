@@ -14,7 +14,8 @@ iBegin(port::Equal, "equal")
     iOp1(optype::port, true);
     iOp2(optype::port, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -26,7 +27,8 @@ iBegin(port::Protocol, "port.protocol")
     iTarget(optype::enum_);
     iOp1(optype::port, true);
 
-    iValidate {
+    iValidate
+    {
         auto ty_target = ast::rtti::checkedCast<type::Enum>(target->type());
 
         if ( util::strtolower(ty_target->id()->pathAsString()) != "hilti::protocol" )

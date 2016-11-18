@@ -6,6 +6,6 @@
 #include <libhilti/rtti.h>
 
 extern hlt_string spicy_object_to_string(const hlt_type_info* type, void* obj,
-                                          hlt_exception** excpt, hlt_execution_context* ctx);
+                                         hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

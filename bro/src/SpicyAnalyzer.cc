@@ -12,8 +12,8 @@ extern "C" {
 
 #include "LocalReporter.h"
 #include "Manager.h"
-#include "SpicyAnalyzer.h"
 #include "Plugin.h"
+#include "SpicyAnalyzer.h"
 
 using namespace bro::hilti;
 using namespace spicy;
@@ -331,7 +331,7 @@ void Spicy_TCP_Analyzer::EndpointEOF(bool is_orig)
 }
 
 void Spicy_TCP_Analyzer::ConnectionClosed(analyzer::tcp::TCP_Endpoint* endpoint,
-                                         analyzer::tcp::TCP_Endpoint* peer, int gen_event)
+                                          analyzer::tcp::TCP_Endpoint* peer, int gen_event)
 {
     TCP_ApplicationAnalyzer::ConnectionClosed(endpoint, peer, gen_event);
 }
@@ -377,7 +377,7 @@ void Spicy_UDP_Analyzer::Done()
 }
 
 void Spicy_UDP_Analyzer::DeliverPacket(int len, const u_char* data, bool is_orig, uint64 seq,
-                                      const IP_Hdr* ip, int caplen)
+                                       const IP_Hdr* ip, int caplen)
 {
     Analyzer::DeliverPacket(len, data, is_orig, seq, ip, caplen);
 

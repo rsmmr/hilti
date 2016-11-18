@@ -966,11 +966,11 @@ public:
 enum CallingConvention {
     SPICY,         /// Default calling convention for Spicy functions.
     SPICY_HILTI,   /// A HILTI function with additional implicit Spicy parameters.
-    HILTI,          /// A HILTI function.
+    HILTI,         /// A HILTI function.
     SPICY_HILTI_C, /// A function with HILTI-C calling convention and additional implicit Spicy
-                    /// parameters.
-    HILTI_C,        /// A function with HILTI-C calling convention.
-    C               /// A function with standard C calling convention.
+                   /// parameters.
+    HILTI_C,       /// A function with HILTI-C calling convention.
+    C              /// A function with standard C calling convention.
 };
 }
 
@@ -2058,7 +2058,7 @@ public:
     // then the unit, then the module. Returns null if none of them defines
     // the property/attribute.
     shared_ptr<spicy::Expression> inheritedProperty(const string& property,
-                                                     shared_ptr<type::unit::Item> item = nullptr);
+                                                    shared_ptr<type::unit::Item> item = nullptr);
 
     /// XXX Compare to production::supportsSynchronize.
     bool supportsSynchronize();

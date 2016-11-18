@@ -117,12 +117,12 @@ static void __connect_one(spicy_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_f
         ctx->blockable = saved_blockable;
 
         _spicyhilti_sink_connect_intern(sink, mp->parser->type_info, &pobj, mp->parser, mtype_full,
-                                         excpt, ctx);
+                                        excpt, ctx);
     }
 }
 
 void spicyhilti_mime_register_parser(spicy_parser* parser, hlt_exception** excpt,
-                                      hlt_execution_context* ctx)
+                                     hlt_execution_context* ctx)
 {
     if ( ! (parser->mime_types && parser->new_func) )
         return;
@@ -158,16 +158,16 @@ void spicyhilti_mime_register_parser(spicy_parser* parser, hlt_exception** excpt
 }
 
 void spicyhilti_sink_connect_mimetype_string(spicy_sink* sink, hlt_string mtype, int8_t try_mode,
-                                              void* cookie, hlt_exception** excpt,
-                                              hlt_execution_context* ctx)
+                                             void* cookie, hlt_exception** excpt,
+                                             hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_string_encode(mtype, Hilti_Charset_ASCII, excpt, ctx);
     spicyhilti_sink_connect_mimetype_bytes(sink, b, 0, cookie, excpt, ctx);
 }
 
 void spicyhilti_sink_connect_mimetype_bytes(spicy_sink* sink, hlt_bytes* mtype, int8_t try_mode,
-                                             void* cookie, hlt_exception** excpt,
-                                             hlt_execution_context* ctx)
+                                            void* cookie, hlt_exception** excpt,
+                                            hlt_execution_context* ctx)
 {
     __connect_one(sink, mtype, mtype, try_mode, cookie, excpt, ctx);
 

@@ -39,8 +39,8 @@ void CodeBuilder::visit(ctor::Unit* m)
         auto val = hiltiExpression(init, itype);
         cg()->hiltiItemSet(result, item, val);
 
-        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName(
-                                       "SpicyHilti::AttributeNotSet")),
+        cg()->builder()->pushCatch(hilti::builder::reference::type(
+                                       hilti::builder::type::byName("SpicyHilti::AttributeNotSet")),
                                    hilti::builder::id::node("e"));
         // Nothing to do in catch.
         cg()->builder()->popCatch();

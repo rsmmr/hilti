@@ -4,8 +4,8 @@
 #include "Type.h"
 #undef List
 
-#include <spicy/type.h>
 #include <hilti/builder/builder.h>
+#include <spicy/type.h>
 
 #include "Converter.h"
 #include "LocalReporter.h"

@@ -95,8 +95,7 @@ shared_ptr<spicy::Module> spicy::CompilerContext::load(string path, bool finaliz
 }
 
 
-shared_ptr<spicy::Module> spicy::CompilerContext::parse(std::istream& in,
-                                                          const std::string& sname)
+shared_ptr<spicy::Module> spicy::CompilerContext::parse(std::istream& in, const std::string& sname)
 {
     spicy_parser::Driver driver;
     driver.forwardLoggingTo(this);
@@ -190,8 +189,8 @@ void spicy::CompilerContext::_endPass()
         auto indent = string(_hilti_context->passes().size(), ' ');
 
         if ( cgpasses || delta >= 0.1 )
-            std::cerr << util::fmt("(%2.2fs) %sspicy::%s [module \"%s\"]", delta, indent,
-                                   pass.name, pass.module)
+            std::cerr << util::fmt("(%2.2fs) %sspicy::%s [module \"%s\"]", delta, indent, pass.name,
+                                   pass.module)
                       << std::endl;
     }
 
@@ -426,14 +425,14 @@ shared_ptr<hilti::CompilerContextJIT<spicy::JIT>> spicy::CompilerContext::hiltiC
 }
 
 shared_ptr<hilti::Type> spicy::CompilerContext::hiltiType(shared_ptr<spicy::Type> type,
-                                                           id_list* deps)
+                                                          id_list* deps)
 {
     codegen::TypeBuilder tb(nullptr);
     return tb.hiltiType(type, deps);
 }
 
 void spicy::CompilerContext::toCacheKey(shared_ptr<Module> module,
-                                         ::util::cache::FileCache::Key* key)
+                                        ::util::cache::FileCache::Key* key)
 {
     if ( module->path() != "-" )
         key->files.insert(module->path());

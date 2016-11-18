@@ -21,7 +21,8 @@ iBegin(iterIOSource::Begin, "begin")
     iTarget(optype::iterIOSource);
     iOp1(optype::refIOSource, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -36,7 +37,8 @@ iBegin(iterIOSource::End, "end")
     iTarget(optype::iterIOSource);
     iOp1(optype::refIOSource, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(iteratedType(target), referencedType(op1));
     }
 
@@ -49,7 +51,8 @@ iBegin(iterIOSource::Incr, "incr")
     iTarget(optype::iterIOSource);
     iOp1(optype::iterIOSource, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(target, op1);
     }
 
@@ -65,7 +68,8 @@ iBegin(iterIOSource::Equal, "equal")
     iOp1(optype::iterIOSource, true);
     iOp2(optype::iterIOSource, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(op1, op2);
     }
 
@@ -78,7 +82,8 @@ iBegin(iterIOSource::Deref, "deref")
     iTarget(optype::tuple);
     iOp1(optype::iterIOSource, true);
 
-    iValidate {
+    iValidate
+    {
         // TODO:  Check tuple.
     }
 
@@ -93,7 +98,8 @@ iBegin(ioSource::New, "new")
     iOp1(optype::typeIOSource, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -111,7 +117,8 @@ iEnd
 iBegin(ioSource::Close, "iosrc.close")
     iOp1(optype::refIOSource, false);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -124,7 +131,8 @@ iBegin(ioSource::Read, "iosrc.read")
     iTarget(optype::tuple);
     iOp1(optype::refIOSource, false);
 
-    iValidate {
+    iValidate
+    {
         // TODO:  Check tuple.
     }
 

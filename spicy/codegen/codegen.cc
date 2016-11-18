@@ -556,8 +556,8 @@ shared_ptr<hilti::Expression> CodeGen::hiltiRunHook(
 }
 
 shared_ptr<spicy::ID> CodeGen::hookForItem(shared_ptr<type::Unit> unit,
-                                            shared_ptr<type::unit::Item> item, bool foreach,
-                                            bool private_, bool compose)
+                                           shared_ptr<type::unit::Item> item, bool foreach,
+                                           bool private_, bool compose)
 {
     string fe = foreach ? "%foreach" : "";
     string pr = private_ ? util::fmt("%%intern%%%p", item.get()) : "%extern";
@@ -572,7 +572,7 @@ shared_ptr<spicy::ID> CodeGen::hookForItem(shared_ptr<type::Unit> unit,
 }
 
 shared_ptr<spicy::ID> CodeGen::hookForUnit(shared_ptr<type::Unit> unit, const string& name,
-                                            bool compose)
+                                           bool compose)
 {
     string co = compose ? string("compose_") : string("");
 
@@ -1106,10 +1106,8 @@ shared_ptr<hilti::Expression> CodeGen::hiltiExtractsBitsFromInteger(
     builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
     moduleBuilder()->popBuilder(bdefault);
 
-    auto elsb0 =
-        hilti::builder::id::create(hiltiID(std::make_shared<ID>("Spicy::BitOrder::LSB0")));
-    auto emsb0 =
-        hilti::builder::id::create(hiltiID(std::make_shared<ID>("Spicy::BitOrder::MSB0")));
+    auto elsb0 = hilti::builder::id::create(hiltiID(std::make_shared<ID>("Spicy::BitOrder::LSB0")));
+    auto emsb0 = hilti::builder::id::create(hiltiID(std::make_shared<ID>("Spicy::BitOrder::MSB0")));
 
     cases.push_back(std::make_pair(elsb0, blsb0));
     cases.push_back(std::make_pair(emsb0, bmsb0));
@@ -1177,10 +1175,8 @@ shared_ptr<hilti::Expression> CodeGen::hiltiInsertBitsIntoInteger(
     builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
     moduleBuilder()->popBuilder(bdefault);
 
-    auto elsb0 =
-        hilti::builder::id::create(hiltiID(std::make_shared<ID>("Spicy::BitOrder::LSB0")));
-    auto emsb0 =
-        hilti::builder::id::create(hiltiID(std::make_shared<ID>("Spicy::BitOrder::MSB0")));
+    auto elsb0 = hilti::builder::id::create(hiltiID(std::make_shared<ID>("Spicy::BitOrder::LSB0")));
+    auto emsb0 = hilti::builder::id::create(hiltiID(std::make_shared<ID>("Spicy::BitOrder::MSB0")));
 
     cases.push_back(std::make_pair(elsb0, blsb0));
     cases.push_back(std::make_pair(emsb0, bmsb0));
@@ -1902,8 +1898,8 @@ shared_ptr<hilti::Expression> CodeGen::hiltiIntPackFormat(int width, bool signed
             return p3;
     }
 
-    auto t1 = hilti::builder::tuple::create(
-        {hilti::builder::id::create("Spicy::ByteOrder::Little"), p1});
+    auto t1 =
+        hilti::builder::tuple::create({hilti::builder::id::create("Spicy::ByteOrder::Little"), p1});
 
     auto t2 =
         hilti::builder::tuple::create({hilti::builder::id::create("Spicy::ByteOrder::Big"), p2});

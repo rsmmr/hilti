@@ -11,7 +11,7 @@ using namespace spicy;
 using namespace spicy_parser;
 
 shared_ptr<spicy::Module> Driver::parse(CompilerContext* ctx, std::istream& in,
-                                         const std::string& sname)
+                                        const std::string& sname)
 {
     _sname = sname;
     _context = ctx;
@@ -36,7 +36,7 @@ shared_ptr<spicy::Module> Driver::parse(CompilerContext* ctx, std::istream& in,
 }
 
 shared_ptr<spicy::Expression> Driver::parseExpression(spicy::CompilerContext* ctx,
-                                                       const std::string& expr)
+                                                      const std::string& expr)
 {
     _sname = util::fmt("<%s>", expr);
     _context = ctx;

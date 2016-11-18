@@ -1,4 +1,25 @@
 
+0.5 | 2016-11-18 14:18:16 -0800
+
+  * Rename BinPAC++ to Spicy. All corresponding files, tools,
+    libaries, etc. change their names (e.g., "pac-driver" is now
+    "spicy-driver", "binpac++" is now "spicyc", "libbinpac" is
+    "libspicy", etc.)
+
+  * Port to LLVM 3.9. The code now requires a LLVM/clang 3.9. It
+    however no longer needs anything special regarding libc++ etc; any
+    stock LLVM setup should work. This significantly simplifies
+    installation.
+
+  * A new "configure" script wraps the cmake configuration.
+
+  * The HILTI instruction implementation now uses the same macro
+    mechanism as Spicy's operators.
+
+  * The code has been reformatted with clang-format. This
+    unforturtanetely means that pretty much any existing patch won't
+    apply cleanly anymore.
+
 0.4-29 | 2015-09-02 09:44:29 -0700
 
   * Docker tweaks. (Robin Sommer)

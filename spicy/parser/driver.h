@@ -16,10 +16,10 @@
 
 #undef YY_DECL
 #define YY_DECL                                                                                    \
-    spicy_parser::Parser::token_type                                                              \
-    spicy_parser::Scanner::lex(spicy_parser::Parser::semantic_type* yylval,                      \
-                                spicy_parser::Parser::location_type* yylloc,                      \
-                                spicy_parser::Driver& driver)
+    spicy_parser::Parser::token_type                                                               \
+    spicy_parser::Scanner::lex(spicy_parser::Parser::semantic_type* yylval,                        \
+                               spicy_parser::Parser::location_type* yylloc,                        \
+                               spicy_parser::Driver& driver)
 
 struct yystype_spicy {
     bool bval;
@@ -100,9 +100,9 @@ class location;
 class Driver : public ast::Logger {
 public:
     shared_ptr<spicy::Module> parse(spicy::CompilerContext* ctx, std::istream& in,
-                                     const std::string& sname);
+                                    const std::string& sname);
     shared_ptr<spicy::Expression> parseExpression(spicy::CompilerContext* ctx,
-                                                   const std::string& expr);
+                                                  const std::string& expr);
 
     // Report parsing errors.
     void error(const std::string& m, const spicy_parser::location& l);

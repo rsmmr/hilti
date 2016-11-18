@@ -12,8 +12,8 @@ extern "C" {
 
 #include "LocalReporter.h"
 #include "Manager.h"
-#include "SpicyFileAnalyzer.h"
 #include "Plugin.h"
+#include "SpicyFileAnalyzer.h"
 
 using namespace bro::hilti;
 using namespace spicy;
@@ -229,7 +229,7 @@ bool Spicy_FileAnalyzer::EndOfFile()
 }
 
 file_analysis::Analyzer* Spicy_FileAnalyzer::InstantiateAnalyzer(RecordVal* args,
-                                                                file_analysis::File* file)
+                                                                 file_analysis::File* file)
 {
     return new Spicy_FileAnalyzer(args, file);
 }

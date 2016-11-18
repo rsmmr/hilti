@@ -5,7 +5,7 @@
 #include "3rdparty/libb64/include/b64/cencode.h"
 
 hlt_bytes* spicy_base64_encode(hlt_bytes* b, hlt_exception** excpt,
-                                hlt_execution_context* ctx) // &noref
+                               hlt_execution_context* ctx) // &noref
 {
     hlt_bytes_block block;
     hlt_iterator_bytes start = hlt_bytes_begin(b, excpt, ctx);
@@ -39,7 +39,7 @@ hlt_bytes* spicy_base64_encode(hlt_bytes* b, hlt_exception** excpt,
 }
 
 hlt_bytes* spicy_base64_decode(hlt_bytes* b, hlt_exception** excpt,
-                                hlt_execution_context* ctx) // &noref
+                               hlt_execution_context* ctx) // &noref
 {
     hlt_bytes_block block;
     hlt_iterator_bytes start = hlt_bytes_begin(b, excpt, ctx);

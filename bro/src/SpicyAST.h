@@ -19,10 +19,10 @@ public:
     /// A struct recording information about a unit type found in a *.spicy
     /// file.
     struct UnitInfo {
-        string name;                              // The fully-qualified name of the unit type.
-        bool exported;                            // True if the unit is exported.
+        string name;                             // The fully-qualified name of the unit type.
+        bool exported;                           // True if the unit is exported.
         shared_ptr<spicy::type::Unit> unit_type; // The unit's type.
-        shared_ptr<SpicyModuleInfo> minfo;         // The module this unit was defined in.
+        shared_ptr<SpicyModuleInfo> minfo;       // The module this unit was defined in.
     };
 
     typedef std::map<string, shared_ptr<UnitInfo>> unit_map;

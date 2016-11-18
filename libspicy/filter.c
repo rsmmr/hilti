@@ -41,7 +41,7 @@ void spicy_filter_dtor(hlt_type_info* ti, spicy_filter* filter, hlt_execution_co
 }
 
 spicy_filter* spicyhilti_filter_add(spicy_filter* head, hlt_enum ftype, hlt_exception** excpt,
-                                      hlt_execution_context* ctx)
+                                    hlt_execution_context* ctx)
 {
     spicy_filter* filter = 0;
 
@@ -65,7 +65,7 @@ spicy_filter* spicyhilti_filter_add(spicy_filter* head, hlt_enum ftype, hlt_exce
 }
 
 spicy_filter* __spicyhilti_filter_add(spicy_filter* head, spicy_filter* filter,
-                                        hlt_exception** excpt, hlt_execution_context* ctx)
+                                      hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! head )
         return filter;
@@ -79,8 +79,7 @@ spicy_filter* __spicyhilti_filter_add(spicy_filter* head, spicy_filter* filter,
     return head;
 }
 
-void spicyhilti_filter_close(spicy_filter* head, hlt_exception** excpt,
-                              hlt_execution_context* ctx)
+void spicyhilti_filter_close(spicy_filter* head, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! head )
         return;
@@ -99,10 +98,10 @@ void spicyhilti_filter_close(spicy_filter* head, hlt_exception** excpt,
 
 // We borrow this from sink.c
 extern void spicy_dbg_deliver(spicy_sink* sink, hlt_bytes* data, spicy_filter* filter,
-                               hlt_exception** excpt, hlt_execution_context* ctx);
+                              hlt_exception** excpt, hlt_execution_context* ctx);
 
 hlt_bytes* spicyhilti_filter_decode(spicy_filter* head, hlt_bytes* data, hlt_exception** excpt,
-                                     hlt_execution_context* ctx) // &ref(!)
+                                    hlt_execution_context* ctx) // &ref(!)
 {
     spicy_filter* filter = head;
 

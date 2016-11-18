@@ -144,7 +144,7 @@ void Normalizer::visit(type::unit::item::Field* f)
                     ops = {nattr, ctype};
                     auto ne =
                         std::make_shared<spicy::expression::UnresolvedOperator>(operator_::Cast,
-                                                                                 ops);
+                                                                                ops);
                     auto convert_back = std::make_shared<Attribute>("convert_back", ne);
 
                     attributes->add(convert_back);

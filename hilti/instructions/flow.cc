@@ -340,5 +340,3 @@ iBegin(flow::DispatchUnion, "dispatch")
         field is set), control is transfered to block *op2*.
     )");
 iEnd
-
-

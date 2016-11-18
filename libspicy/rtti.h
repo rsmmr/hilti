@@ -70,14 +70,14 @@ typedef uint64_t spicy_unit_item_kind;
 /// Returns the SPICY_TYPE_* ID associated with a HILTI type. Returns
 /// SPICY_TYPE_ERROR if none.
 spicy_type_id spicy_type_get_id(const hlt_type_info* type, hlt_exception** excpt,
-                                  hlt_execution_context* ctx);
+                                hlt_execution_context* ctx);
 
 /// Meta-information about a unit item in the C representation.
 struct __spicy_unit_item {
-    const char* name;           ///< The name of the item. Empty string for anonymous items.
-    const hlt_type_info* type;  ///< The type of the item's HILTI value.
+    const char* name;          ///< The name of the item. Empty string for anonymous items.
+    const hlt_type_info* type; ///< The type of the item's HILTI value.
     spicy_unit_item_kind kind; ///< One of the SPICY_UNIT_ITEM_* constants.
-    int8_t hide;                ///< True if the item has been marked with &hide.
+    int8_t hide;               ///< True if the item has been marked with &hide.
 
     /// A pointer to the item's HILTI value. Null if the item is not set, or
     /// no unit instance has been specified. Note that for a type
@@ -114,47 +114,46 @@ typedef uint64_t spicy_unit_cookie;
 /// Returns: Cookie for next call, or 0 if end has been reached. In the
 /// latter case, \a dst won't have been changed.
 extern spicy_unit_cookie spicy_unit_iterate(spicy_unit_item* dst, const hlt_type_info* type,
-                                              void* unit, int flags, spicy_unit_cookie cookie,
-                                              hlt_exception** excpt, hlt_execution_context* ctx);
+                                            void* unit, int flags, spicy_unit_cookie cookie,
+                                            hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the element type of a list.
 extern const hlt_type_info* spicy_list_element_type(const hlt_type_info* type,
-                                                     hlt_exception** excpt,
-                                                     hlt_execution_context* ctx);
-
-/// Returns the element type of a set.
-extern const hlt_type_info* spicy_set_element_type(const hlt_type_info* type,
                                                     hlt_exception** excpt,
                                                     hlt_execution_context* ctx);
 
+/// Returns the element type of a set.
+extern const hlt_type_info* spicy_set_element_type(const hlt_type_info* type, hlt_exception** excpt,
+                                                   hlt_execution_context* ctx);
+
 /// Returns the element type of a vector.
 extern const hlt_type_info* spicy_vector_element_type(const hlt_type_info* type,
-                                                       hlt_exception** excpt,
-                                                       hlt_execution_context* ctx);
+                                                      hlt_exception** excpt,
+                                                      hlt_execution_context* ctx);
 
 /// Returns the key type of a map.
 extern const hlt_type_info* spicy_map_key_type(const hlt_type_info* type, hlt_exception** excpt,
-                                                hlt_execution_context* ctx);
+                                               hlt_execution_context* ctx);
 
 /// Returns the value type of a map.
 extern const hlt_type_info* spicy_map_value_type(const hlt_type_info* type, hlt_exception** excpt,
-                                                  hlt_execution_context* ctx);
+                                                 hlt_execution_context* ctx);
 
 /// Returns the wrapped type T of an \c optional<T> type.
 extern const hlt_type_info* spicy_optional_type(const hlt_type_info* type, hlt_exception** excpt,
-                                                 hlt_execution_context* ctx);
+                                                hlt_execution_context* ctx);
 
 /// Returns the type embedded insided an object<T> type.
 extern const hlt_type_info* spicy_embedded_type(const hlt_type_info* type, hlt_exception** excpt,
-                                                 hlt_execution_context* ctx);
+                                                hlt_execution_context* ctx);
 
 /// Returns the width of an integer type.
 extern int spicy_integer_witdh(const hlt_type_info* type, hlt_exception** excpt,
-                                hlt_execution_context* ctx);
+                               hlt_execution_context* ctx);
 
 /// Returns true if an integer type is signed, false if unsigned.
 extern int8_t spicy_integer_signed(const hlt_type_info* type, hlt_exception** excpt,
-                                    hlt_execution_context* ctx);
+                                   hlt_execution_context* ctx);
 
 
 #endif

@@ -29,10 +29,10 @@ typedef struct __chunk {
 } __chunk;
 
 struct spicy_sink {
-    __hlt_gchdr __gch;     // Header for garbage collection.
-    __parser_state* head;  // List of parsing states.
+    __hlt_gchdr __gch;    // Header for garbage collection.
+    __parser_state* head; // List of parsing states.
     spicy_filter* filter; // Potential filter attached.
-    uint64_t size;         // Number of bytes written so far. TODO: Still needed? XXX
+    uint64_t size;        // Number of bytes written so far. TODO: Still needed? XXX
 
     // Reassembly state.
     int64_t policy;             // Reassembly policy of type SpicyHilti::ReassemblyPolicy.
@@ -48,11 +48,11 @@ struct spicy_sink {
 __HLT_RTTI_GC_TYPE(spicy_sink, HLT_TYPE_SPICY_SINK);
 
 void spicy_dbg_deliver(spicy_sink* sink, hlt_bytes* data, spicy_filter* filter,
-                        hlt_exception** excpt, hlt_execution_context* ctx);
+                       hlt_exception** excpt, hlt_execution_context* ctx);
 void spicy_dbg_reassembler(spicy_sink* sink, const char* msg, hlt_bytes* data, uint64_t seq,
-                            int64_t len, hlt_exception** excpt, hlt_execution_context* ctx);
+                           int64_t len, hlt_exception** excpt, hlt_execution_context* ctx);
 void spicy_dbg_reassembler_buffer(spicy_sink* sink, const char* msg, hlt_exception** excpt,
-                                   hlt_execution_context* ctx);
+                                  hlt_execution_context* ctx);
 
 static void __cctor_state(__parser_state* state, hlt_execution_context* ctx)
 {
@@ -454,8 +454,7 @@ static int8_t __deliver_chunk(spicy_sink* sink, hlt_bytes* data, uint64_t rseq, 
                 continue;
             }
 
-            DBG_LOG("spicy-sinks", "- resuming delivering to sink %p for parser %p", sink,
-                    s->pobj);
+            DBG_LOG("spicy-sinks", "- resuming delivering to sink %p for parser %p", sink, s->pobj);
 
             // Subsequent chunk, resume.
             hlt_bytes_append(s->data, data, excpt, ctx);
@@ -502,8 +501,7 @@ static int8_t __deliver_chunk(spicy_sink* sink, hlt_bytes* data, uint64_t rseq, 
         }
 
         else {
-            DBG_LOG("spicy-sinks", "- delivering to sink %p finished for parser %p", sink,
-                    s->pobj);
+            DBG_LOG("spicy-sinks", "- delivering to sink %p finished for parser %p", sink, s->pobj);
             __parser_state* next = s->next;
             // This guy is finished, remove.
             __unlink_state(sink, s, ctx);
@@ -772,9 +770,8 @@ spicy_sink* spicyhilti_sink_new(hlt_exception** excpt, hlt_execution_context* ct
     return sink;
 }
 
-void spicyhilti_sink_set_initial_sequence_number(spicy_sink* sink, uint64_t initial_seq,
-                                                  void* user, hlt_exception** excpt,
-                                                  hlt_execution_context* ctx)
+void spicyhilti_sink_set_initial_sequence_number(spicy_sink* sink, uint64_t initial_seq, void* user,
+                                                 hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( sink->cur_rseq || sink->first_chunk ) {
         spicyhilti_sink_close(sink, user, excpt, ctx);
@@ -787,8 +784,8 @@ void spicyhilti_sink_set_initial_sequence_number(spicy_sink* sink, uint64_t init
     sink->initial_seq = initial_seq;
 }
 
-void spicyhilti_sink_set_policy(spicy_sink* sink, int64_t policy, void* user,
-                                 hlt_exception** excpt, hlt_execution_context* ctx)
+void spicyhilti_sink_set_policy(spicy_sink* sink, int64_t policy, void* user, hlt_exception** excpt,
+                                hlt_execution_context* ctx)
 {
     if ( policy == hlt_enum_value(Spicy_ReassemblyPolicy_First, excpt, ctx) )
         return;
@@ -799,7 +796,7 @@ void spicyhilti_sink_set_policy(spicy_sink* sink, int64_t policy, void* user,
 }
 
 void spicyhilti_sink_set_auto_trim(spicy_sink* sink, int8_t enable, void* user,
-                                    hlt_exception** excpt, hlt_execution_context* ctx)
+                                   hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( enable )
         return;
@@ -811,15 +808,15 @@ void spicyhilti_sink_set_auto_trim(spicy_sink* sink, int8_t enable, void* user,
 }
 
 void spicyhilti_sink_connect(spicy_sink* sink, const hlt_type_info* type, void** pobj,
-                              spicy_parser* parser, hlt_exception** excpt,
-                              hlt_execution_context* ctx)
+                             spicy_parser* parser, hlt_exception** excpt,
+                             hlt_execution_context* ctx)
 {
     _spicyhilti_sink_connect_intern(sink, type, pobj, parser, 0, excpt, ctx);
 }
 
 void _spicyhilti_sink_connect_intern(spicy_sink* sink, const hlt_type_info* type, void** pobj,
-                                      spicy_parser* parser, hlt_bytes* mtype,
-                                      hlt_exception** excpt, hlt_execution_context* ctx)
+                                     spicy_parser* parser, hlt_bytes* mtype, hlt_exception** excpt,
+                                     hlt_execution_context* ctx)
 {
     __parser_state* state = hlt_malloc(sizeof(__parser_state));
     state->parser = parser;
@@ -854,7 +851,7 @@ void _spicyhilti_sink_connect_intern(spicy_sink* sink, const hlt_type_info* type
 }
 
 void spicyhilti_sink_disconnect(spicy_sink* sink, const hlt_type_info* type, void** pobj,
-                                 hlt_exception** excpt, hlt_execution_context* ctx)
+                                hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! sink )
         return;
@@ -882,7 +879,7 @@ void spicyhilti_sink_disconnect(spicy_sink* sink, const hlt_type_info* type, voi
 }
 
 void spicy_dbg_deliver(spicy_sink* sink, hlt_bytes* data, spicy_filter* filter,
-                        hlt_exception** excpt, hlt_execution_context* ctx)
+                       hlt_exception** excpt, hlt_execution_context* ctx)
 {
 #ifdef DEBUG
     // Log data with non-printable characters escaped and output trimmed if
@@ -928,7 +925,7 @@ void spicy_dbg_deliver(spicy_sink* sink, hlt_bytes* data, spicy_filter* filter,
 }
 
 void spicy_dbg_reassembler_buffer(spicy_sink* sink, const char* msg, hlt_exception** excpt,
-                                   hlt_execution_context* ctx)
+                                  hlt_execution_context* ctx)
 {
 #ifdef DEBUG
     if ( ! sink->first_chunk ) {
@@ -957,7 +954,7 @@ void spicy_dbg_reassembler_buffer(spicy_sink* sink, const char* msg, hlt_excepti
 }
 
 void spicy_dbg_reassembler(spicy_sink* sink, const char* msg, hlt_bytes* data, uint64_t seq,
-                            int64_t len, hlt_exception** excpt, hlt_execution_context* ctx)
+                           int64_t len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
 #ifdef DEBUG
     // Log data with non-printable characters escaped and output trimmed if
@@ -1000,12 +997,11 @@ void spicy_dbg_reassembler(spicy_sink* sink, const char* msg, hlt_bytes* data, u
     if ( data ) {
         if ( len >= 0 )
             DBG_LOG("spicy-sinks", "reassembler/%p: %s seq=% " PRIu64 " upper=%" PRIu64
-                                    " |%s%s| (%" PRIu64 " bytes)",
+                                   " |%s%s| (%" PRIu64 " bytes)",
                     sink, msg, seq, seq + len, buffer, dots, dlen);
         else
-            DBG_LOG("spicy-sinks",
-                    "reassembler/%p: %s seq=% " PRIu64 " |%s%s| (%" PRIu64 " bytes)", sink, msg,
-                    seq, buffer, dots, dlen);
+            DBG_LOG("spicy-sinks", "reassembler/%p: %s seq=% " PRIu64 " |%s%s| (%" PRIu64 " bytes)",
+                    sink, msg, seq, buffer, dots, dlen);
     }
 
     else {
@@ -1019,14 +1015,14 @@ void spicy_dbg_reassembler(spicy_sink* sink, const char* msg, hlt_bytes* data, u
 }
 
 void spicyhilti_sink_append(spicy_sink* sink, hlt_bytes* data, void* user, hlt_exception** excpt,
-                             hlt_execution_context* ctx)
+                            hlt_execution_context* ctx)
 {
     hlt_bytes_size len = hlt_bytes_len(data, excpt, ctx);
     __new_block(sink, data, sink->cur_rseq, len, user, excpt, ctx);
 }
 
 void spicyhilti_sink_write(spicy_sink* sink, hlt_bytes* data, uint64_t seq, void* user,
-                            hlt_exception** excpt, hlt_execution_context* ctx)
+                           hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -1036,8 +1032,8 @@ void spicyhilti_sink_write(spicy_sink* sink, hlt_bytes* data, uint64_t seq, void
 }
 
 void spicyhilti_sink_write_custom_length(spicy_sink* sink, hlt_bytes* data, uint64_t seq,
-                                          uint64_t len, void* user, hlt_exception** excpt,
-                                          hlt_execution_context* ctx)
+                                         uint64_t len, void* user, hlt_exception** excpt,
+                                         hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -1046,7 +1042,7 @@ void spicyhilti_sink_write_custom_length(spicy_sink* sink, hlt_bytes* data, uint
 }
 
 void spicyhilti_sink_gap(spicy_sink* sink, uint64_t seq, uint64_t len, void* user,
-                          hlt_exception** excpt, hlt_execution_context* ctx)
+                         hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -1055,7 +1051,7 @@ void spicyhilti_sink_gap(spicy_sink* sink, uint64_t seq, uint64_t len, void* use
 }
 
 void spicyhilti_sink_trim(spicy_sink* sink, uint64_t seq, void* user, hlt_exception** excpt,
-                           hlt_execution_context* ctx)
+                          hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -1065,7 +1061,7 @@ void spicyhilti_sink_trim(spicy_sink* sink, uint64_t seq, void* user, hlt_except
 }
 
 void spicyhilti_sink_skip(spicy_sink* sink, uint64_t seq, void* user, hlt_exception** excpt,
-                           hlt_execution_context* ctx)
+                          hlt_execution_context* ctx)
 {
     if ( ! __check_seq(sink, seq, user, excpt, ctx) )
         return;
@@ -1075,7 +1071,7 @@ void spicyhilti_sink_skip(spicy_sink* sink, uint64_t seq, void* user, hlt_except
 }
 
 void spicyhilti_sink_close(spicy_sink* sink, void* user, hlt_exception** excpt,
-                            hlt_execution_context* ctx)
+                           hlt_execution_context* ctx)
 {
     DBG_LOG("spicy-sinks", "closing sink %p", sink);
 
@@ -1099,7 +1095,7 @@ void spicyhilti_sink_close(spicy_sink* sink, void* user, hlt_exception** excpt,
 }
 
 void spicyhilti_sink_add_filter(spicy_sink* sink, hlt_enum ftype, hlt_exception** excpt,
-                                 hlt_execution_context* ctx)
+                                hlt_execution_context* ctx)
 {
     spicy_filter* old_filter = sink->filter;
     sink->filter = spicyhilti_filter_add(sink->filter, ftype, excpt, ctx);
@@ -1115,7 +1111,7 @@ uint64_t spicyhilti_sink_size(spicy_sink* sink, hlt_exception** excpt, hlt_execu
 }
 
 uint64_t spicyhilti_sink_sequence(spicy_sink* sink, hlt_exception** excpt,
-                                   hlt_execution_context* ctx)
+                                  hlt_execution_context* ctx)
 {
     // XXX
     return sink->cur_rseq + sink->initial_seq;

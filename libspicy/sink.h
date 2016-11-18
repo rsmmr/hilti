@@ -36,8 +36,8 @@ extern spicy_sink* spicyhilti_sink_new(hlt_exception** excpt, hlt_execution_cont
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_set_initial_sequence_number(spicy_sink* sink, uint64_t initial_seq,
-                                                         void* user, hlt_exception** excpt,
-                                                         hlt_execution_context* ctx);
+                                                        void* user, hlt_exception** excpt,
+                                                        hlt_execution_context* ctx);
 
 /// Sets the reassembly policy for a sink. If not set, the policy defaults
 /// to.
@@ -54,7 +54,7 @@ extern void spicyhilti_sink_set_initial_sequence_number(spicy_sink* sink, uint64
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_set_policy(spicy_sink* sink, int64_t policy, void* user,
-                                        hlt_exception** excpt, hlt_execution_context* ctx);
+                                       hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Sets the state of auto-trimming. If on (which is the default), the sink
 /// will automatically trim all data that been processed by the parser. If
@@ -70,7 +70,7 @@ extern void spicyhilti_sink_set_policy(spicy_sink* sink, int64_t policy, void* u
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_set_auto_trim(spicy_sink* sink, int8_t enable, void* user,
-                                           hlt_exception** excpt, hlt_execution_context* ctx);
+                                          hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Connects a parser to a sink. Note that there can be only one parser of
 /// each type. If there's already one of the same kind, the request is
@@ -82,13 +82,13 @@ extern void spicyhilti_sink_set_auto_trim(spicy_sink* sink, int8_t enable, void*
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_connect(spicy_sink* sink, const hlt_type_info* type, void** pobj,
-                                     spicy_parser* parser, hlt_exception** excpt,
-                                     hlt_execution_context* ctx);
+                                    spicy_parser* parser, hlt_exception** excpt,
+                                    hlt_execution_context* ctx);
 
 // Internal version which also optionally takes the MIME type for better debugging output.
 extern void _spicyhilti_sink_connect_intern(spicy_sink* sink, const hlt_type_info* type,
-                                             void** pobj, spicy_parser* parser, hlt_bytes* mtype,
-                                             hlt_exception** excpt, hlt_execution_context* ctx);
+                                            void** pobj, spicy_parser* parser, hlt_bytes* mtype,
+                                            hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Disconnects a parser from a sink. The parser is first signaled an
 /// end-of-data (and thus it might still be doing some work), and then
@@ -100,7 +100,7 @@ extern void _spicyhilti_sink_connect_intern(spicy_sink* sink, const hlt_type_inf
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_disconnect(spicy_sink* sink, const hlt_type_info* type, void** pobj,
-                                        hlt_exception** excpt, hlt_execution_context* ctx);
+                                       hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Writes data into a sink, appending it at the end of the data passed in so
 /// far.
@@ -110,7 +110,7 @@ extern void spicyhilti_sink_disconnect(spicy_sink* sink, const hlt_type_info* ty
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_append(spicy_sink* sink, hlt_bytes* data, void* user,
-                                    hlt_exception** excpt, hlt_execution_context* ctx);
+                                   hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Writes data into a sink. The data will be inserted into the byte stream
 /// at the given position.
@@ -125,7 +125,7 @@ extern void spicyhilti_sink_append(spicy_sink* sink, hlt_bytes* data, void* user
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_write(spicy_sink* sink, hlt_bytes* data, uint64_t seq, void* user,
-                                   hlt_exception** excpt, hlt_execution_context* ctx);
+                                  hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Writes data into a sink. The data will be inserted into the byte stream
 /// at the given position. This version can associate a custom length with
@@ -145,8 +145,8 @@ extern void spicyhilti_sink_write(spicy_sink* sink, hlt_bytes* data, uint64_t se
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_write_custom_length(spicy_sink* sink, hlt_bytes* data, uint64_t seq,
-                                                 uint64_t len, void* user, hlt_exception** excpt,
-                                                 hlt_execution_context* ctx);
+                                                uint64_t len, void* user, hlt_exception** excpt,
+                                                hlt_execution_context* ctx);
 
 /// Reports a gap in the input stream, i.e., data that for sure will be not
 /// be seen anymore. If processing reaches a gap, it will stop there and
@@ -162,7 +162,7 @@ extern void spicyhilti_sink_write_custom_length(spicy_sink* sink, hlt_bytes* dat
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_gap(spicy_sink* sink, uint64_t seq, uint64_t len, void* user,
-                                 hlt_exception** excpt, hlt_execution_context* ctx);
+                                hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Skips ahead in the input stream to a given given sequence number. This is
 /// useful for skipping over data that's not interesting. Data that has still
@@ -178,8 +178,8 @@ extern void spicyhilti_sink_gap(spicy_sink* sink, uint64_t seq, uint64_t len, vo
 ///
 /// excpt: &
 /// ctx: &
-extern void spicyhilti_sink_skip(spicy_sink* sink, uint64_t seq, void* user,
-                                  hlt_exception** excpt, hlt_execution_context* ctx);
+extern void spicyhilti_sink_skip(spicy_sink* sink, uint64_t seq, void* user, hlt_exception** excpt,
+                                 hlt_execution_context* ctx);
 
 /// Trims input data up to a given given sequence number. This means that all
 /// still buffered before that point will be discarded. If new data comes in
@@ -194,8 +194,8 @@ extern void spicyhilti_sink_skip(spicy_sink* sink, uint64_t seq, void* user,
 ///
 /// excpt: &
 /// ctx: &
-extern void spicyhilti_sink_trim(spicy_sink* sink, uint64_t seq, void* user,
-                                  hlt_exception** excpt, hlt_execution_context* ctx);
+extern void spicyhilti_sink_trim(spicy_sink* sink, uint64_t seq, void* user, hlt_exception** excpt,
+                                 hlt_execution_context* ctx);
 
 /// Close a sink by disconnecting all parsers.  Afterwards, the sink most no
 /// longer be used.
@@ -204,7 +204,7 @@ extern void spicyhilti_sink_trim(spicy_sink* sink, uint64_t seq, void* user,
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_close(spicy_sink* sink, void* user, hlt_exception** excpt,
-                                   hlt_execution_context* ctx);
+                                  hlt_execution_context* ctx);
 
 /// Attaches a filter to the sink. All data written to the sink will
 /// then be passed through the filter first. Multiple filters can be attached, and the
@@ -215,7 +215,7 @@ extern void spicyhilti_sink_close(spicy_sink* sink, void* user, hlt_exception** 
 /// excpt: &
 /// ctx: &
 extern void spicyhilti_sink_add_filter(spicy_sink* sink, hlt_enum ftype, hlt_exception** excpt,
-                                        hlt_execution_context* ctx);
+                                       hlt_execution_context* ctx);
 
 /// Returns the number of bytes written to a sink so far. If the sink has
 /// filters attached, this returns the size after filtering.
@@ -224,7 +224,7 @@ extern void spicyhilti_sink_add_filter(spicy_sink* sink, hlt_enum ftype, hlt_exc
 /// excpt: &
 /// ctx: &
 extern uint64_t spicyhilti_sink_size(spicy_sink* sink, hlt_exception** excpt,
-                                      hlt_execution_context* ctx);
+                                     hlt_execution_context* ctx);
 
 /// Returns the sequence number of the current position in input stream being
 /// parsed.
@@ -233,7 +233,7 @@ extern uint64_t spicyhilti_sink_size(spicy_sink* sink, hlt_exception** excpt,
 /// excpt: &
 /// ctx: &
 extern uint64_t spicyhilti_sink_sequence(spicy_sink* sink, hlt_exception** excpt,
-                                          hlt_execution_context* ctx);
+                                         hlt_execution_context* ctx);
 
 
 #endif

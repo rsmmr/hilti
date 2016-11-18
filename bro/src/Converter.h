@@ -5,8 +5,8 @@
 #ifndef BRO_PLUGIN_HILTI_CONVERTER_H
 #define BRO_PLUGIN_HILTI_CONVERTER_H
 
-#include <spicy/spicy.h>
 #include <hilti/hilti.h>
+#include <spicy/spicy.h>
 
 class BroType;
 

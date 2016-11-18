@@ -25,8 +25,8 @@ void CodeBuilder::visit(constant::Tuple* t)
         auto he = cg()->hiltiConstantOptional(e);
         cg()->builder()->addInstruction(tmp, ::hilti::instruction::operator_::Assign, he);
 
-        cg()->builder()->pushCatch(hilti::builder::reference::type(hilti::builder::type::byName(
-                                       "SpicyHilti::AttributeNotSet")),
+        cg()->builder()->pushCatch(hilti::builder::reference::type(
+                                       hilti::builder::type::byName("SpicyHilti::AttributeNotSet")),
                                    hilti::builder::id::node("e"));
 
         // Nothing to do, default of tmp is right.

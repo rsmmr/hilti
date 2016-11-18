@@ -220,11 +220,10 @@ void CodeBuilder::visit(expression::operator_::sink::SetInitialSequenceNumber* i
     auto sink = cg()->hiltiExpression(i->op1());
     auto seq = cg()->hiltiExpression(callParameter(i->op3(), 0));
 
-    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
-                                    hilti::builder::id::create(
-                                        "SpicyHilti::sink_set_initial_sequence_number"),
-                                    hilti::builder::tuple::create(
-                                        {sink, seq, cg()->hiltiCookie()}));
+    cg()->builder()
+        ->addInstruction(hilti::instruction::flow::CallVoid,
+                         hilti::builder::id::create("SpicyHilti::sink_set_initial_sequence_number"),
+                         hilti::builder::tuple::create({sink, seq, cg()->hiltiCookie()}));
 
     setResult(std::make_shared<hilti::expression::Void>());
 }

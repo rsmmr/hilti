@@ -5,10 +5,10 @@
 #include "Event.h"
 #include "LocalReporter.h"
 #include "Manager.h"
-#include "SpicyAnalyzer.h"
-#include "SpicyFileAnalyzer.h"
 #include "Plugin.h"
 #include "RuntimeInterface.h"
+#include "SpicyAnalyzer.h"
+#include "SpicyFileAnalyzer.h"
 #include "analyzer/Component.h"
 
 #ifdef BRO_PLUGIN_CHECK_LEAKS

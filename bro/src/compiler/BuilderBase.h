@@ -49,8 +49,6 @@ extern plugin::Bro_Hilti::Plugin HiltiPlugin;
 namespace bro {
 namespace hilti {
 
-class ValueConverter;
-
 namespace compiler {
 
 #ifdef DEBUG
@@ -144,12 +142,6 @@ public:
      * corresponding method of the ModuleBuilder.
      */
     class ValueBuilder* ValueBuilder() const;
-
-    /**
-     * Returns the conversion builder to use. This forwards to the
-     * corresponding method of the ModuleBuilder.
-     */
-    class ValueConverter* ValueConverter() const;
 
     /**
      * Returns the internal HILTI-level symbol for a Bro Function.

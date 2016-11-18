@@ -23,7 +23,8 @@ iBegin(channel::New, "new")
     iOp1(optype::typeChannel, true);
     iOp2(optype::optional(optype::int64), true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -39,7 +40,8 @@ iBegin(channel::Read, "channel.read")
     iTarget(optype::any);
     iOp1(optype::refChannel, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(argType(op1), target);
     }
 
@@ -54,7 +56,8 @@ iBegin(channel::ReadTry, "channel.read_try")
     iTarget(optype::any);
     iOp1(optype::refChannel, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(argType(op1), target);
     }
 
@@ -69,7 +72,8 @@ iBegin(channel::Size, "channel.size")
     iTarget(optype::int64);
     iOp1(optype::refChannel, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -81,7 +85,8 @@ iBegin(channel::Write, "channel.write")
     iOp1(optype::refChannel, false);
     iOp2(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, argType(op1));
     }
 
@@ -95,7 +100,8 @@ iBegin(channel::WriteTry, "channel.write_try")
     iOp1(optype::refChannel, false);
     iOp2(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, argType(op1));
     }
 

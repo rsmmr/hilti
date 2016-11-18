@@ -16,14 +16,13 @@ spicy_filter* __spicy_filter_base64_allocate(hlt_exception** excpt, hlt_executio
     return (spicy_filter*)filter;
 }
 
-void __spicy_filter_base64_dtor(hlt_type_info* ti, spicy_filter* filter,
-                                 hlt_execution_context* ctx)
+void __spicy_filter_base64_dtor(hlt_type_info* ti, spicy_filter* filter, hlt_execution_context* ctx)
 {
     // Nothing to do.
 }
 
 void __spicy_filter_base64_close(spicy_filter* filter, hlt_exception** excpt,
-                                  hlt_execution_context* ctx_)
+                                 hlt_execution_context* ctx_)
 {
     // Unclear in which state we should be here if all has been decoded. I'd
     // think just "step_a", but I have also observed "step_d" even though all
@@ -33,7 +32,7 @@ void __spicy_filter_base64_close(spicy_filter* filter, hlt_exception** excpt,
 }
 
 hlt_bytes* __spicy_filter_base64_decode(spicy_filter* filter_gen, hlt_bytes* data,
-                                         hlt_exception** excpt, hlt_execution_context* ctx)
+                                        hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __spicy_filter_base64* filter = (__spicy_filter_base64*)filter_gen;
 

@@ -11,7 +11,7 @@ typedef struct {
 } __spicy_filter_zlib;
 
 void __spicy_filter_zlib_close(spicy_filter* filter_gen, hlt_exception** excpt,
-                                hlt_execution_context* ctx_)
+                               hlt_execution_context* ctx_)
 {
     __spicy_filter_zlib* filter = (__spicy_filter_zlib*)filter_gen;
 
@@ -56,7 +56,7 @@ void __spicy_filter_zlib_dtor(hlt_type_info* ti, spicy_filter* filter, hlt_execu
 }
 
 hlt_bytes* __spicy_filter_zlib_decode(spicy_filter* filter_gen, hlt_bytes* data,
-                                       hlt_exception** excpt, hlt_execution_context* ctx)
+                                      hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __spicy_filter_zlib* filter = (__spicy_filter_zlib*)filter_gen;
 

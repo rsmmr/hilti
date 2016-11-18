@@ -28,16 +28,16 @@ extern "C" {
 
 // HILTI/Spicy includes.
 #include <ast/declaration.h>
-#include <spicy/spicy.h>
+#include <hilti/hilti.h>
+#include <hilti/jit.h>
 #include <spicy/declaration.h>
 #include <spicy/expression.h>
 #include <spicy/function.h>
 #include <spicy/jit.h>
 #include <spicy/scope.h>
+#include <spicy/spicy.h>
 #include <spicy/statement.h>
 #include <spicy/type.h>
-#include <hilti/hilti.h>
-#include <hilti/jit.h>
 
 // LLVM includes.
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
@@ -46,10 +46,10 @@ extern "C" {
 #include "Converter.h"
 #include "LocalReporter.h"
 #include "Manager.h"
+#include "Plugin.h"
 #include "SpicyAST.h"
 #include "SpicyAnalyzer.h"
 #include "SpicyFileAnalyzer.h"
-#include "Plugin.h"
 #include "compiler/Compiler.h"
 #include "compiler/ConversionBuilder.h"
 #include "compiler/ModuleBuilder.h"
@@ -114,22 +114,22 @@ struct bro::hilti::SpicyAnalyzerInfo {
 
 // Description of a Spicy file analyzer.
 struct bro::hilti::SpicyFileAnalyzerInfo {
-    string location;                    // Location where the analyzer was defined.
-    string name;                        // Name of the analyzer.
-    file_analysis::Tag tag;             // file_analysis::Tag for this analyzer.
-    std::list<string> mime_types;       // The mime_types associated with the analyzer.
-    string unit_name;                   // The fully-qualified name of the unit type to parse with.
+    string location;                     // Location where the analyzer was defined.
+    string name;                         // Name of the analyzer.
+    file_analysis::Tag tag;              // file_analysis::Tag for this analyzer.
+    std::list<string> mime_types;        // The mime_types associated with the analyzer.
+    string unit_name;                    // The fully-qualified name of the unit type to parse with.
     shared_ptr<SpicyAST::UnitInfo> unit; // The type of the unit to parse the originator side.
-    spicy_parser* parser;              // The parser coming out of JIT.
+    spicy_parser* parser;                // The parser coming out of JIT.
 };
 
 // XXX
 struct bro::hilti::SpicyExpressionAccessor {
-    int nr;                                     // Position of this expression in argument list.
-    string expr;                                // The string representation of the expression.
-    bool dollar_id;                             // True if this is a "magic" $-ID.
+    int nr;                                    // Position of this expression in argument list.
+    string expr;                               // The string representation of the expression.
+    bool dollar_id;                            // True if this is a "magic" $-ID.
     shared_ptr<::spicy::Type> btype = nullptr; // The Spicy type of the expression.
-    shared_ptr<::hilti::Type> htype = nullptr;  // The corresponding HILTI type of the expression.
+    shared_ptr<::hilti::Type> htype = nullptr; // The corresponding HILTI type of the expression.
     std::shared_ptr<::spicy::declaration::Function> spicy_func =
         nullptr; // Implementation of function that evaluates the expression.
     std::shared_ptr<::hilti::declaration::Function> hlt_func =
@@ -138,7 +138,7 @@ struct bro::hilti::SpicyExpressionAccessor {
 
 // Description of a Spicy module.
 struct bro::hilti::SpicyModuleInfo {
-    string path;                                   // The path the module was read from.
+    string path;                                  // The path the module was read from.
     shared_ptr<::spicy::CompilerContext> context; // The context used for the module.
     shared_ptr<::spicy::Module> module;           // The module itself.
     shared_ptr<ValueConverter> value_converter;
@@ -174,7 +174,7 @@ struct bro::hilti::SpicyEventInfo {
     shared_ptr<::spicy::Module> unit_module;   // The module the referenced unit is defined in.
     shared_ptr<::spicy::declaration::Hook> spicy_hook;      // The generated Spicy hook.
     shared_ptr<::hilti::declaration::Function> hilti_raise; // The generated HILTI raise() function.
-    shared_ptr<SpicyModuleInfo> minfo;                       // The module the event was defined in.
+    shared_ptr<SpicyModuleInfo> minfo;                      // The module the event was defined in.
     BroType* bro_event_type;                                // The type of the Bro event.
     EventHandlerPtr bro_event_handler; // The type of the corresponding Bro event. Set only if we
                                        // have a handler.
@@ -204,13 +204,13 @@ struct Manager::PIMPL {
     bool dump_code_all;          // Output all code, set from BifConst::Hilti::dump_code_all.
     bool dump_code_pre_finalize; // Output generated code before finalizing the module, set from
                                  // BifConst::Hilti::dump_code_pre_finalize.
-    bool save_spicy;              // Saves all generated Spicy modules into a file, set from
+    bool save_spicy;             // Saves all generated Spicy modules into a file, set from
                                  // BifConst::Hilti::save_spicy.
     bool save_hilti; // Saves all HILTI modules into a file, set from BifConst::Hilti::save_hilti.
     bool save_llvm;  // Saves the final linked LLVM code into a file, set from
                      // BifConst::Hilti::save_llvm.
-    bool spicy_to_compiler; // If compiling scripts, raise event hooks from Spicy code directly.
-    unsigned int profile;  // True to enable run-time profiling.
+    bool spicy_to_compiler;     // If compiling scripts, raise event hooks from Spicy code directly.
+    unsigned int profile;       // True to enable run-time profiling.
     unsigned int hilti_workers; // Number of HILTI worker threads to spawn.
 
     std::list<string> import_paths;
@@ -224,11 +224,12 @@ struct Manager::PIMPL {
     spicy_analyzer_vector
         spicy_analyzers_by_subtype; // All analyzers indexed by their analyzer::Tag subtype.
     spicy_file_analyzer_list spicy_file_analyzers; // All file analyzers found in the *.evt files.
-    spicy_file_analyzer_vector spicy_file_analyzers_by_subtype; // All file analyzers indexed by their
-                                                              // file_analysis::Tag subtype.
-    path_set evt_files;                                       // All loaded *.evt files.
-    path_set spicy_files;                                      // All loaded *.spicy files.
-    path_set hlt_files; // All loaded *.hlt files specified by the user.
+    spicy_file_analyzer_vector
+        spicy_file_analyzers_by_subtype; // All file analyzers indexed by their
+                                         // file_analysis::Tag subtype.
+    path_set evt_files;                  // All loaded *.evt files.
+    path_set spicy_files;                // All loaded *.spicy files.
+    path_set hlt_files;                  // All loaded *.hlt files specified by the user.
 
     shared_ptr<::hilti::CompilerContextJIT<::spicy::JIT>> hilti_context = nullptr;
     shared_ptr<::spicy::CompilerContext> spicy_context = nullptr;
@@ -2001,7 +2002,7 @@ bool Manager::CreateSpicyHook(SpicyEventInfo* ev)
         ::spicy::expression_list args = {cond};
         auto not_ =
             std::make_shared<::spicy::expression::UnresolvedOperator>(::spicy::operator_::Not,
-                                                                       args);
+                                                                      args);
         auto return_ = std::make_shared<::spicy::statement::Return>(nullptr);
         auto if_ = std::make_shared<::spicy::statement::IfElse>(not_, return_);
 
@@ -2027,21 +2028,19 @@ bool Manager::CreateSpicyHook(SpicyEventInfo* ev)
         ::util::fmt("%s::raise_%s_%p", ev->minfo->hilti_mbuilder->module()->id()->name(),
                     ::util::strreplace(ev->name, "::", "_"), ev);
     ::spicy::expression_list op_args = {id_expr(raise_name), args};
-    auto call =
-        std::make_shared<::spicy::expression::UnresolvedOperator>(::spicy::operator_::Call,
-                                                                   op_args);
+    auto call = std::make_shared<::spicy::expression::UnresolvedOperator>(::spicy::operator_::Call,
+                                                                          op_args);
     auto stmt = std::make_shared<::spicy::statement::Expression>(call);
 
     body->addStatement(stmt);
 
     auto hook = std::make_shared<::spicy::Hook>(body, ::spicy::Hook::PARSE, ev->priority);
     auto hdecl =
-        std::make_shared<::spicy::declaration::Hook>(std::make_shared<::spicy::ID>(ev->hook),
-                                                      hook);
+        std::make_shared<::spicy::declaration::Hook>(std::make_shared<::spicy::ID>(ev->hook), hook);
 
     auto raise_result =
         std::make_shared<::spicy::type::function::Result>(std::make_shared<::spicy::type::Void>(),
-                                                           true);
+                                                          true);
     ::spicy::parameter_list raise_params;
 
     for ( auto m : ev->unit_type->scope()->map() ) {
@@ -2051,19 +2050,18 @@ bool Manager::CreateSpicyHook(SpicyEventInfo* ev)
         if ( t ) {
             auto id = std::make_shared<::spicy::ID>(n);
             auto p = std::make_shared<::spicy::type::function::Parameter>(id, t->type(), false,
-                                                                           false, nullptr);
+                                                                          false, nullptr);
             raise_params.push_back(p);
         }
     }
 
     auto raise_type =
         std::make_shared<::spicy::type::Function>(raise_result, raise_params,
-                                                   ::spicy::type::function::SPICY_HILTI);
-    auto raise_func =
-        std::make_shared<::spicy::Function>(std::make_shared<::spicy::ID>(raise_name), raise_type,
-                                             ev->minfo->spicy_module);
+                                                  ::spicy::type::function::SPICY_HILTI);
+    auto raise_func = std::make_shared<::spicy::Function>(std::make_shared<::spicy::ID>(raise_name),
+                                                          raise_type, ev->minfo->spicy_module);
     auto rdecl = std::make_shared<::spicy::declaration::Function>(raise_func,
-                                                                   ::spicy::Declaration::IMPORTED);
+                                                                  ::spicy::Declaration::IMPORTED);
 
     ev->minfo->spicy_module->body()->addDeclaration(hdecl);
     ev->minfo->spicy_module->body()->addDeclaration(rdecl);
@@ -2149,15 +2147,15 @@ shared_ptr<spicy::declaration::Function> Manager::CreateSpicyExpressionAccessor(
         if ( t ) {
             auto id = std::make_shared<::spicy::ID>(n);
             auto p = std::make_shared<::spicy::type::function::Parameter>(id, t->type(), false,
-                                                                           false, nullptr);
+                                                                          false, nullptr);
             func_params.push_back(p);
         }
     }
 
     auto ftype = std::make_shared<::spicy::type::Function>(func_result, func_params,
-                                                            ::spicy::type::function::SPICY_HILTI);
+                                                           ::spicy::type::function::SPICY_HILTI);
     auto func = std::make_shared<::spicy::Function>(std::make_shared<::spicy::ID>(fname), ftype,
-                                                     ev->minfo->spicy_module, body);
+                                                    ev->minfo->spicy_module, body);
     auto fdecl =
         std::make_shared<::spicy::declaration::Function>(func, ::spicy::Declaration::EXPORTED);
 

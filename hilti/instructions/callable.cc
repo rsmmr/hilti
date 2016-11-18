@@ -49,7 +49,8 @@ iBegin(callable::NewFunction, "new")
     iOp2(optype::function, true);
     iOp3(optype::tuple, false);
 
-    iValidate {
+    iValidate
+    {
         return _checkBinding(this, op1, op2, op3);
     }
 
@@ -66,7 +67,8 @@ iBegin(callable::NewHook, "new")
     iOp2(optype::hook, true);
     iOp3(optype::tuple, false);
 
-    iValidate {
+    iValidate
+    {
         return _checkBinding(this, op1, op2, op3);
     }
 

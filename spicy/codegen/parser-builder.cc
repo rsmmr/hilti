@@ -67,8 +67,7 @@ static shared_ptr<hilti::Type> _hiltiTypeParser()
 
 static shared_ptr<hilti::Type> _hiltiTypeFilter()
 {
-    return hilti::builder::reference::type(
-        hilti::builder::type::byName("SpicyHilti::ParseFilter"));
+    return hilti::builder::reference::type(hilti::builder::type::byName("SpicyHilti::ParseFilter"));
 }
 
 // Returns the value representin "no look-ahead""

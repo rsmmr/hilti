@@ -45,7 +45,8 @@ iBegin(struct_::New, "new")
     iTarget(optype::refStruct);
     iOp1(optype::typeStruct, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(referencedType(target), typedType(op1));
     }
 
@@ -59,7 +60,8 @@ iBegin(struct_::Get, "struct.get")
     iOp1(optype::refStruct, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -86,7 +88,8 @@ iBegin(struct_::GetDefault, "struct.get_default")
     iOp2(optype::string, true);
     iOp3(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -112,7 +115,8 @@ iBegin(struct_::IsSet, "struct.is_set")
     iOp1(optype::refStruct, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -131,7 +135,8 @@ iBegin(struct_::Set, "struct.set")
     iOp2(optype::string, true);
     iOp3(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -152,7 +157,8 @@ iBegin(struct_::Unset, "struct.unset")
     iOp1(optype::refStruct, false);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
         if ( ! isConstant(op2) )
             return;
 

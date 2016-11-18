@@ -1,8 +1,8 @@
 
 #include "SpicyAST.h"
 
-#include <spicy/spicy.h>
 #include <spicy/declaration.h>
+#include <spicy/spicy.h>
 #include <spicy/type.h>
 
 using namespace bro::hilti;

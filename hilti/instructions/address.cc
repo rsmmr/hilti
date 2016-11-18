@@ -14,7 +14,8 @@ iBegin(address::Equal, "equal")
     iOp1(optype::address, true);
     iOp2(optype::address, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(

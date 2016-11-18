@@ -79,7 +79,8 @@ iBegin(union_::InitField, "union.init")
     iOp2(optype::string, true);
     iOp3(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -108,7 +109,8 @@ iBegin(union_::InitType, "union.init")
     iOp1(optype::typeUnion, true);
     iOp2(optype::any, false);
 
-    iValidate {
+    iValidate
+    {
         auto utype = ast::rtti::tryCast<type::Union>(typedType(op1));
         if ( ! utype ) {
             error(op1, "not a union type");
@@ -132,7 +134,8 @@ iBegin(union_::GetField, "union.get")
     iOp1(optype::union_, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -156,7 +159,8 @@ iBegin(union_::GetType, "union.get")
     iTarget(optype::any);
     iOp1(optype::union_, true);
 
-    iValidate {
+    iValidate
+    {
         auto f = _unionField(this, op1, target->type());
 
         if ( ! f )
@@ -177,7 +181,8 @@ iBegin(union_::IsSetField, "union.is_set")
     iOp1(optype::union_, true);
     iOp2(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
         if ( ! isConstant(op2) )
             return;
 
@@ -196,7 +201,8 @@ iBegin(union_::IsSetType, "union.is_set")
     iOp1(optype::union_, true);
     iOp2(optype::typeAny, true);
 
-    iValidate {
+    iValidate
+    {
         _unionField(this, op1, typedType(op2));
     }
 

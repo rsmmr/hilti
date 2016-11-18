@@ -4,7 +4,8 @@ iBegin(profiler::Start, "profiler.start")
     iOp2(optype::optional(optype::any), true);
     iOp3(optype::optional(optype::refTimerMgr), true);
 
-    iValidate {
+    iValidate
+    {
         // FIXME: We need to check here that the enum is right, and that the
         // argument matches with what the profilter type expects.
 
@@ -66,7 +67,8 @@ iEnd
 iBegin(profiler::Stop, "profiler.stop")
     iOp1(optype::string, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(
@@ -82,7 +84,8 @@ iBegin(profiler::Update, "profiler.update")
     iOp1(optype::string, true);
     iOp2(optype::optional(optype::int64), true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(

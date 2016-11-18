@@ -1479,7 +1479,7 @@ unit::item::field::Container::Container(shared_ptr<ID> id, shared_ptr<Field> fie
         body_push->addStatement(std::make_shared<statement::Expression>(push_back, l));
 
         auto hook_push = std::make_shared<spicy::Hook>(body_push, spicy::Hook::PARSE, 254, false,
-                                                        true, parameter_list(), l);
+                                                       true, parameter_list(), l);
         addHook(hook_push);
     }
 
@@ -1513,7 +1513,7 @@ unit::item::field::Container::Container(shared_ptr<ID> id, shared_ptr<Field> fie
 
         auto prio = until_including ? -255 : 255;
         auto hook = std::make_shared<spicy::Hook>(body, spicy::Hook::PARSE, prio, false, true,
-                                                   parameter_list(), l);
+                                                  parameter_list(), l);
         addHook(hook);
 
         if ( until )
@@ -2093,7 +2093,7 @@ bool Unit::ctorNoNames() const
 }
 
 shared_ptr<spicy::Expression> Unit::inheritedProperty(const string& pname,
-                                                       shared_ptr<type::unit::Item> item)
+                                                      shared_ptr<type::unit::Item> item)
 {
     shared_ptr<spicy::Expression> expr = nullptr;
 

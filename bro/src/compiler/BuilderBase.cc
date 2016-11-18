@@ -90,11 +90,6 @@ class ValueBuilder* BuilderBase::ValueBuilder() const
     return mbuilder->ValueBuilder();
 }
 
-class ::bro::hilti::ValueConverter* BuilderBase::ValueConverter() const
-{
-    return mbuilder->ValueConverter();
-}
-
 std::string BuilderBase::HiltiSymbol(const ::Func* func, bool include_module)
 {
     return mbuilder->Compiler()->HiltiSymbol(func, mbuilder->module(), include_module);

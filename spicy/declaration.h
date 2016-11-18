@@ -98,8 +98,7 @@ public:
     /// linkage: The declaration's linkage.
     ///
     /// l: An associated location.
-    Function(shared_ptr<spicy::Function> func, Linkage linkage,
-             const Location& l = Location::None);
+    Function(shared_ptr<spicy::Function> func, Linkage linkage, const Location& l = Location::None);
 
     ACCEPT_VISITOR(spicy::Declaration);
 };

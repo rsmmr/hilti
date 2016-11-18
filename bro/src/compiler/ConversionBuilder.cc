@@ -2,8 +2,8 @@
 #include <Type.h>
 #undef List
 
-#include <spicy/spicy.h>
 #include <hilti/hilti.h>
+#include <spicy/spicy.h>
 #include <util/util.h>
 
 #include "Compiler.h"
@@ -70,7 +70,8 @@ shared_ptr<::hilti::Expression> ConversionBuilder::ConvertBroToHilti(
 }
 
 shared_ptr<::hilti::Expression> ConversionBuilder::ConvertHiltiToBro(
-    shared_ptr<::hilti::Expression> val, const ::BroType* type, shared_ptr<::spicy::Type> spicy_type)
+    shared_ptr<::hilti::Expression> val, const ::BroType* type,
+    shared_ptr<::spicy::Type> spicy_type)
 {
     _spicy_type = spicy_type;
 

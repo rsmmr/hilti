@@ -5,13 +5,13 @@
 #include "misc.h"
 
 hlt_string spicy_fmt_string(hlt_string fmt, const hlt_type_info* type, void* tuple,
-                             hlt_exception** excpt, hlt_execution_context* ctx) // &noref
+                            hlt_exception** excpt, hlt_execution_context* ctx) // &noref
 {
     return hilti_fmt(fmt, type, tuple, excpt, ctx);
 }
 
 hlt_bytes* spicy_fmt_bytes(hlt_bytes* fmt, const hlt_type_info* type, void* tuple,
-                            hlt_exception** excpt, hlt_execution_context* ctx) // &noref
+                           hlt_exception** excpt, hlt_execution_context* ctx) // &noref
 {
     // TODO: We hardcode the character set here for now. Pass as additional
     // parameter?
@@ -25,7 +25,7 @@ hlt_bytes* spicy_fmt_bytes(hlt_bytes* fmt, const hlt_type_info* type, void* tupl
 }
 
 hlt_time spicy_mktime(int64_t y, int64_t m, int64_t d, int64_t H, int64_t M, int64_t S,
-                       hlt_exception** excpt, hlt_execution_context* ctx)
+                      hlt_exception** excpt, hlt_execution_context* ctx)
 {
     struct tm t;
     t.tm_sec = S;
@@ -66,7 +66,7 @@ static void _sha256_update(sha256_ctx* sctx, hlt_bytes* b, hlt_exception** excpt
 static char base64[] = "0123456789abcdef";
 
 hlt_bytes* spicy_sha256(hlt_bytes* data, hlt_bytes* seed, uint64_t len, hlt_exception** excpt,
-                         hlt_execution_context* ctx)
+                        hlt_execution_context* ctx)
 {
     sha256_ctx sctx;
     sha256_init(&sctx);
@@ -93,7 +93,7 @@ hlt_bytes* spicy_sha256(hlt_bytes* data, hlt_bytes* seed, uint64_t len, hlt_exce
 }
 
 hlt_addr spicy_anonymize(hlt_addr addr, uint64_t seed, hlt_exception** excpt,
-                          hlt_execution_context* ctx)
+                         hlt_execution_context* ctx)
 {
     hlt_addr anon;
 

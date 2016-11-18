@@ -16,7 +16,8 @@ iBegin(tuple::Equal, "equal")
     iOp1(optype::tuple, true);
     iOp2(optype::tuple, true);
 
-    iValidate {
+    iValidate
+    {
         equalTypes(op1, op2);
         // TODO: Check that we can compare the tuple element recursively.
     }
@@ -31,7 +32,8 @@ iBegin(tuple::Index, "tuple.index")
     iOp1(optype::tuple, true);
     iOp2(optype::integer, true);
 
-    iValidate {
+    iValidate
+    {
         auto ty_target = target->type();
         auto ttype = ast::rtti::tryCast<type::Tuple>(op1->type());
 
@@ -62,7 +64,8 @@ iBegin(tuple::Length, "tuple.length")
     iTarget(optype::int64);
     iOp1(optype::tuple, true);
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(

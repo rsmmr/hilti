@@ -6,7 +6,8 @@ iBegin(Misc::Select, "select")
     iOp2(optype::any, true);
     iOp3(optype::any, true);
 
-    iValidate {
+    iValidate
+    {
         canCoerceTo(op2, target->type());
         canCoerceTo(op3, target->type());
     }
@@ -22,7 +23,8 @@ iBegin(Misc::SelectValue, "select.value")
     iOp2(optype::tuple, true);
     iOp3(optype::optional(optype::any), true);
 
-    iValidate {
+    iValidate
+    {
         auto ty_op1 = op1->type();
         auto ty_op2 = ast::rtti::checkedCast<type::Tuple>(op2->type());
 
@@ -62,7 +64,8 @@ iEnd
 
 iBegin(Misc::Nop, "nop")
 
-    iValidate {
+    iValidate
+    {
     }
 
     iDoc(R"(

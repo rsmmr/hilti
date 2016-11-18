@@ -4,7 +4,7 @@
 #include <libhilti/libhilti.h>
 
 spicy_type_id spicy_type_get_id(const hlt_type_info* type, hlt_exception** excpt,
-                                  hlt_execution_context* ctx)
+                                hlt_execution_context* ctx)
 {
     if ( type->hostapp_value ) {
         void* ptr = hlt_tuple_get(type->hostapp_type, type->hostapp_value, 0, excpt, ctx);
@@ -105,8 +105,8 @@ spicy_type_id spicy_type_get_id(const hlt_type_info* type, hlt_exception** excpt
 }
 
 spicy_unit_cookie spicy_unit_iterate(spicy_unit_item* dst, const hlt_type_info* type, void* unit,
-                                       int flags, spicy_unit_cookie idx, hlt_exception** excpt,
-                                       hlt_execution_context* ctx)
+                                     int flags, spicy_unit_cookie idx, hlt_exception** excpt,
+                                     hlt_execution_context* ctx)
 {
     if ( ! idx )
         // First call.
