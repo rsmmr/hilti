@@ -1,5 +1,5 @@
 
-0.5 | 2016-11-18 14:18:16 -0800
+0.5 | 2016-11-20 07:56:11 -0800
 
   * Rename BinPAC++ to Spicy. All corresponding files, tools,
     libaries, etc. change their names (e.g., "pac-driver" is now
@@ -9,7 +9,8 @@
   * Port to LLVM 3.9. The code now requires a LLVM/clang 3.9. It
     however no longer needs anything special regarding libc++ etc; any
     stock LLVM setup should work. This significantly simplifies
-    installation.
+    installation. This comes with quite a bit of internal updates as
+    well, including switching to our own RTTI system.
 
   * A new "configure" script wraps the cmake configuration.
 
@@ -19,6 +20,8 @@
   * The code has been reformatted with clang-format. This
     unforturtanetely means that pretty much any existing patch won't
     apply cleanly anymore.
+
+  * Updated installation instructions.
 
 0.4-29 | 2015-09-02 09:44:29 -0700
 

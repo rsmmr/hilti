@@ -49,15 +49,13 @@ prerequisites are available. Just run make in the top-level
 directory::
 
     > cd hilti
+    > ./configure
     > make
 
 If you want to compile the included Bro plugin as well, you also need
-to tell ``make`` where your Bro source tree is::
+to tell ``configure where your Bro source tree is::
 
-    > make BRO_DIST=/path/to/bro/src/distribution
-
-If everything has worked right, there should now be a binary
-``build/tools/hiltic`` afterwards (as well as a few others).
+    > ./configure --bro-dist=/path/to/your/bro/tree
 
 Next, you should see if two simple tests succeed::
 
@@ -76,9 +74,10 @@ want to link to them from some directory that's in your ``PATH``, such
 as::
 
      > export PATH=$HOME/bin:$PATH
-     > ln -s hilti/build/tools/{hiltic,hiltip,hilti-config,hilti-prof,spicy-config,spicyc,spicy-driver,spicy-dump} $HOME/bin
-     > ln -s hilti/build/tools/spicy-driver/spicy-driver $HOME/bin
-     > ln -s hilti/tools/hilti-build $HOME/bin
+     > ln -s build/tools/{hiltic,hilti-config,hiltip,spicyc,spicy-config} $HOME/bin
+     > ln -s build/tools/spicy-driver/spicy-driver $HOME/bin
+     > ln -s build/tools/spicy-dump/spicy-dump $HOME/bin
+     > ln -s tools/hilti-build $HOME/bin
 
 In the remainder of this documentation, we assume that these tools are
 indeed found in the ``PATH``.
@@ -93,22 +92,20 @@ There's also a `Docker image
 comes with all pieces preinstalled (HILTI/Spicy, Bro, LLVM/clang)::
 
     # docker run -i -t "rsmmr/hilti"
-    HILTI 0.3-11
-    Spicy 0.3-11
-    root@b18c7c5bc7e2:~# cat hello-world.spicy
-    module Test;
-
-    print "Hello, world!";
-    root@b18c7c5bc7e2:~# spicy-driver hello-world.spicy
+    HILTI 0.5
+    Spicy 0.5
+    root@830b7bdd1491:~# spicy-driver hello-world.spicy
     Hello, world!
-    root@b18c7c5bc7e2:~# bro -NN Bro::Hilti
-    Bro::Hilti - Dynamically compiled HILTI/Spicy functionality (*.spicy, *.evt, *.hlt) (dynamic, version 0.1)
+    root@830b7bdd1491:~# bro -NN Bro::Hilti
+    Bro::Hilti - Dynamically compiled HILTI/Spicy functionality (*.spicy,
     [...]
-    root@b18c7c5bc7e2:~# bro hello-world.spicy
+    root@830b7bdd1491:~# bro hello-world.spicy
     Hello, world!
-    root@b18c7c5bc7e2:~# bro -r ssh-single-conn.trace ./ssh-banner.bro ssh.evt
-    SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp], F, 1.99, OpenSSH_3.9p1
-    SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp, resp_h=131.159.14.23, resp_p=22/tcp], T, 2.0, OpenSSH_3.8.1p1
+    root@830b7bdd1491:~# bro -r ssh-single-conn.trace ./ssh-banner.bro ssh.evt
+    SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp,
+    resp_h=131.159.14.23, resp_p=22/tcp], F, 1.99, OpenSSH_3.9p1
+    SSH banner, [orig_h=192.150.186.169, orig_p=49244/tcp,
+    resp_h=131.159.14.23, resp_p=22/tcp], T, 2.0, OpenSSH_3.8.1p1
 
 To build the Docker image yourself from the supplied Dockerfile, you
 can use the make target::

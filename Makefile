@@ -4,24 +4,21 @@
 
 BUILD=build
 
-GIT=git://git.icir.org/hilti
-
+DOCKER_TAG=rsmmr/hilti
+DOCKER_VERSION=`cat VERSION`
 DOCKER_IMAGE=rsmmr/hilti
-DOCKER_TMP=/xa/robin/hilti-docker-build
+DOCKER_TMP=hilti-docker-build.tmp
 
 all: configured
 	$(MAKE) -C $(BUILD) $@
 
 clean:
-	rm -rf build
+	rm -rf build $(DOCKER_TMP)
 	( cd doc && $(MAKE) clean )
 
 test:
 	-( cd tests && btest -j -f diag.log )
 	-( cd bro/tests && btest -j -f diag.log )
-
-tags:
-	update-tags
 
 configured:
 	@test -d $(BUILD) || ( echo "Error: No build/ directory found. Did you run configure?" && exit 1 )
@@ -32,22 +29,28 @@ clang-format:
 	@(clang-format -dump-config | grep -q SpacesAroundConditions) || (echo "Must have patched version of clang-format"; exit 1)
 	clang-format -i $$(scripts/source-files)
 
+### Docker targets.
+
+docker-check:
+	@test $$(docker info 2>/dev/null | grep "Base Device Size" | awk '{print int($$4)}') -ge 30 \
+     || (echo "Increase Docker base device size to 30g, see http://www.projectatomic.io/blog/2016/03/daemon_option_basedevicesize/" \
+     && false)
+
 docker-build:
 	rm -rf $(DOCKER_TMP)
 	mkdir -p $(DOCKER_TMP)
-	(cd $(DOCKER_TMP) && git clone ${GIT})
+	(export hilti=$$(pwd); cd $(DOCKER_TMP) && git clone $$hilti hilti)
 	cp Makefile $(DOCKER_TMP)/hilti
 	cp Dockerfile $(DOCKER_TMP)/hilti
 	(cd $(DOCKER_TMP)/hilti && make docker-build-internal)
 
 docker-build-internal:
-	docker build -t ${DOCKER_IMAGE} .
-	docker tag -f `docker inspect --format='{{.Id}}' ${DOCKER_IMAGE}` ${DOCKER_IMAGE}:`cat VERSION`
-	docker tag -f `docker inspect --format='{{.Id}}' ${DOCKER_IMAGE}` ${DOCKER_IMAGE}:latest
+	docker build -t $(DOCKER_TAG):$(DOCKER_VERSION) -f Dockerfile .
+	docker tag -f $$(docker inspect --format='{{.Id}}' $(DOCKER_TAG):$(DOCKER_VERSION)) $(DOCKER_TAG):latest
 
 docker-run:
-	docker run -i -t ${DOCKER_IMAGE}
+	docker run -i -t ${DOCKER_TAG}:latest
 
 docker-push:
 	docker login
-	docker push ${DOCKER_IMAGE}
+	docker push ${DOCKER_TAG}:latest
