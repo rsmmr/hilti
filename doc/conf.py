@@ -52,7 +52,7 @@ master_doc = 'manual'
 
 # General information about the project.
 project = u'HILTI'
-copyright = u'2014, The International Computer Science Institute'
+copyright = u'2016, The International Computer Science Institute'
 version = open("../VERSION", "r").read()
 release = version
 
