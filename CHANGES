@@ -1,4 +1,8 @@
 
+0.5-4 | 2016-11-20 20:06:45 -0800
+
+  * Fix for Sphinx >= 1.4 compability. (Robin Sommer)
+
 0.5-3 | 2016-11-20 19:57:06 -0800
 
   * Fix for Darwin. (Robin Sommer)

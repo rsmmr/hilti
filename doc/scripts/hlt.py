@@ -12,8 +12,17 @@ from sphinx.locale import l_, _
 from sphinx.directives import ObjectDescription
 from sphinx.roles import XRefRole
 from sphinx.util.nodes import make_refnode
+from sphinx import version_info
 
 from docutils import nodes
+
+# Wrapper for creating a tuple for index nodes, staying backwards
+# compatible to Sphinx < 1.4:
+def make_index_tuple(indextype, indexentry, targetname, targetname2):
+    if version_info >= (1, 4, 0, '', 0):
+        return (indextype, indexentry, targetname, targetname2, None)
+    else:
+        return (indextype, indexentry, targetname, targetname2)
 
 class HltGeneric(ObjectDescription):
     def add_target_and_index(self, name, sig, signode):
@@ -36,7 +45,7 @@ class HltGeneric(ObjectDescription):
             objects[key] = self.env.docname
         indextext = self.get_index_text(self.objtype, name)
         if indextext:
-            self.indexnode['entries'].append(('single', indextext,
+            self.indexnode['entries'].append(make_index_tuple('single', indextext,
                                               targetname, targetname))
 
     def get_index_text(self, objectname, name):
