@@ -24,9 +24,6 @@ CMD hilti-config --version; spicy-config --version; bash
 WORKDIR /root
 ADD docker/ .
 
-# Default to run upon container startup.
-CMD hilti-config --version; bash
-
 # Set up Bro
 RUN mkdir -p /opt/bro/src
 RUN cd /opt/bro && git clone -b release/2.5 --recursive git://git.bro.org/bro src
