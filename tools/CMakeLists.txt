@@ -4,7 +4,7 @@ include(DefaultCompilerSettings)
 set(hilti_build "${CMAKE_CURRENT_SOURCE_DIR}/../tools/hilti-build")
 
 if ( "${CMAKE_BUILD_TYPE}" MATCHES "Debug" )
-    set(hilti_runtime hilti-rt-dbg)
+    set(hilti_runtime hilti-rt-dbg ${CMAKE_BINARY_DIR}/libhilti/libhilti-rt-native.a)
     set(spicy_runtime spicy-rt-dbg)
 else ()
     set(hilti_runtime hilti-rt)

@@ -1,4 +1,10 @@
 
+0.5-2 | 2016-11-20 19:39:06 -0800
+
+  * Fix for Darwin. (Robin Sommer)
+
+  * Dockerfile fix. (Robin Sommer)
+
 0.5 | 2016-11-20 08:17:44 -0800
 
   * Rename BinPAC++ to Spicy. All corresponding files, tools,
