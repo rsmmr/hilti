@@ -7,7 +7,7 @@ if ( "${CMAKE_BUILD_TYPE}" MATCHES "Debug" )
     set(hilti_runtime hilti-rt-dbg ${CMAKE_BINARY_DIR}/libhilti/libhilti-rt-native.a)
     set(spicy_runtime spicy-rt-dbg)
 else ()
-    set(hilti_runtime hilti-rt)
+    set(hilti_runtime hilti-rt ${CMAKE_BINARY_DIR}/libhilti/libhilti-rt-native.a)
     set(spicy_runtime spicy-rt)
 endif ()
 
