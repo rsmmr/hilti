@@ -9,6 +9,7 @@ RUN apt-get -y install cmake git build-essential vim python curl ninja-build
 RUN apt-get -y install bison flex libpapi-dev libgoogle-perftools-dev
 RUN apt-get -y install libpcap-dev libssl-dev python-dev swig zlib1g-dev
 RUN apt-get -y install gdb
+RUN apt-get -y install btest bsdmainutils
 RUN apt-get -y --allow-unauthenticated install clang-3.9 llvm-3.9 lldb-3.9
 
 RUN cd /usr/bin && for i in $(ls *-3.9); do ln -s $i $(echo $i | sed 's/-3.9//g'); done
