@@ -1,4 +1,24 @@
 
+0.5-20 | 2017-01-15 18:58:46 -0800
+
+  * Add btest and bsdmainutils to Docker image. (Dirk Loss)
+
+  * Set fixed timezone for timezone-dependent tests. (Dirk Loss)
+
+  * Remove note regarding BinPAC++ from Spicy doc. (Dirk Loss)
+
+  * Fix header flags in dns.spicy and add RFC 2535 bits. (Dirk Loss)
+
+  * Add more types and functions to reference doc. (Dirk Loss)
+
+  * Remove -f flag from "docker tag" command. (Dirk Loss)
+
+  * Add doxygen/Sphinx/better-theme to Docker image. (Dirk Loss)
+
+  * Web site: Replacing TR with ACSAC paper. (Robin Sommer)
+
+  * Web site: Updating index page. (Robin Sommer)
+
 0.5-4 | 2016-11-20 20:06:45 -0800
 
   * Fix for Sphinx >= 1.4 compability. (Robin Sommer)
