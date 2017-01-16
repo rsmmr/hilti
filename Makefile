@@ -46,7 +46,7 @@ docker-build:
 
 docker-build-internal:
 	docker build -t $(DOCKER_TAG):$(DOCKER_VERSION) -f Dockerfile .
-	docker tag -f $$(docker inspect --format='{{.Id}}' $(DOCKER_TAG):$(DOCKER_VERSION)) $(DOCKER_TAG):latest
+	docker tag $$(docker inspect --format='{{.Id}}' $(DOCKER_TAG):$(DOCKER_VERSION)) $(DOCKER_TAG):latest
 
 docker-run:
 	docker run -i -t ${DOCKER_TAG}:latest
