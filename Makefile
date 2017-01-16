@@ -36,7 +36,7 @@ docker-check:
      || (echo "Increase Docker base device size to 30g, see http://www.projectatomic.io/blog/2016/03/daemon_option_basedevicesize/" \
      && false)
 
-docker-build:
+docker-build: docker-check
 	rm -rf $(DOCKER_TMP)
 	mkdir -p $(DOCKER_TMP)
 	(export hilti=$$(pwd); cd $(DOCKER_TMP) && git clone $$hilti hilti)
