@@ -11,6 +11,10 @@ RUN apt-get -y install libpcap-dev libssl-dev python-dev swig zlib1g-dev
 RUN apt-get -y install gdb
 RUN apt-get -y --allow-unauthenticated install clang-3.9 llvm-3.9 lldb-3.9
 
+# Additional tools to build the docs
+RUN apt-get -y install doxygen python-sphinx python-pip
+RUN pip install sphinx-better-theme
+
 RUN cd /usr/bin && for i in $(ls *-3.9); do ln -s $i $(echo $i | sed 's/-3.9//g'); done
 
 ENV PATH $PATH:/usr/local/bro/bin:/opt/bro/aux/btest
