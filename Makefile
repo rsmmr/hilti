@@ -31,10 +31,14 @@ clang-format:
 
 ### Docker targets.
 
+# Make sure that if Docker uses the devicemapper, the base image size is sufficient.
 docker-check:
-	@test $$(docker info 2>/dev/null | grep "Base Device Size" | awk '{print int($$4)}') -ge 30 \
-     || (echo "Increase Docker base device size to 30g, see http://www.projectatomic.io/blog/2016/03/daemon_option_basedevicesize/" \
-     && false)
+	@if (docker info 2>/dev/null) | grep -q "devicemapper"; then \
+        if [ "$$(docker info 2>/dev/null | grep "Base Device Size" | awk '{print int($$4)}')" -lt 30 ]; then \
+            echo "Increase Docker base device size to 30g, see http://www.projectatomic.io/blog/2016/03/daemon_option_basedevicesize"; \
+            false; \
+        fi; \
+    fi
 
 docker-build: docker-check
 	rm -rf $(DOCKER_TMP)
@@ -53,4 +57,5 @@ docker-run:
 
 docker-push:
 	docker login
+	docker push $(DOCKER_TAG):$(DOCKER_VERSION)
 	docker push ${DOCKER_TAG}:latest
