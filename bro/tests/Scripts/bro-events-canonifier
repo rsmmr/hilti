@@ -1,4 +1,4 @@
-#! /usr/bin/bash
+#! /usr/bin/env bash
 
 # Not sure why the file IDs aren't stable.
 sed 's/, F[a-zA-Z0-9]\{16,17\}/, FXXXXXXX/g'
